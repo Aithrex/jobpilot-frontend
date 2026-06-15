@@ -1040,7 +1040,7 @@ export default function AuthGate({ children, title, description }: AuthGateProps
             <div className="text-center mb-7">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/25 mb-4">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-[10px] uppercase tracking-wider font-semibold text-purple-300">AI-Powered Resume Tailoring</span>
+                <span className="text-[10px] uppercase tracking-wider font-semibold text-purple-300">JobPilot · Your job-hunt workspace</span>
               </div>
               <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-purple-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">
                 {typedTitle}

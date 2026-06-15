@@ -1,23 +1,20 @@
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { lazy, Suspense, useState, useCallback, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { lazy, Suspense } from 'react';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { ThemeProvider } from './components/theme-provider';
 import { UnderTheHoodProvider } from './contexts/UnderTheHoodContext';
 import { AuthProvider } from './contexts/AuthContext';
 import { FeedbackProvider } from './components/feedback/FeedbackWidget';
-import UnderTheHoodDrawer from './components/UnderTheHoodDrawer';
-import Welcome from './pages/Welcome';
-import Home from './pages/Home';
-import ProjectArchitecture from './pages/ProjectArchitecture';
+import Landing from './pages/Landing';
+import Login from './pages/Login';
+import Register from './pages/Register';
 import NotFound from './pages/NotFound';
-import { useKonamiCode } from './components/DeployRunner';
 
+// Workspace + heavier routes are lazy-loaded so the public landing stays light.
 const ResumeParser = lazy(() => import('./pages/ResumeParser'));
-const DeployRunner = lazy(() => import('./components/DeployRunner'));
-const CloudLab = lazy(() => import('./pages/CloudLab'));
 const AdminPortal = lazy(() => import('./pages/AdminPortal'));
 const GmailCallback = lazy(() => import('./pages/GmailCallback'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
@@ -30,53 +27,47 @@ function RouteLoadingFallback() {
     <div className="min-h-screen flex items-center justify-center" aria-live="polite">
       <div className="flex items-center gap-2 text-muted-foreground">
         <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-        <span>Loading workspace...</span>
+        <span>Loading workspace…</span>
       </div>
     </div>
   );
 }
 
-// Inner component that can use hooks
 function AppContent() {
-  const [showGame, setShowGame] = useState(false);
-
-  const openGame = useCallback(() => {
-    setShowGame(true);
-  }, []);
-
-  useKonamiCode(openGame);
-
-  // Also listen for custom event from footer gamepad button
-  useEffect(() => {
-    const handler = () => setShowGame(true);
-    window.addEventListener('open-deploy-runner', handler);
-    return () => window.removeEventListener('open-deploy-runner', handler);
-  }, []);
-
   return (
     <>
       <Toaster />
-      <UnderTheHoodDrawer />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Welcome />} />
-          <Route path="/welcome" element={<Welcome />} />
-          <Route path="/home" element={<Home />} />
-          <Route path="/cloud-lab" element={<Suspense fallback={<RouteLoadingFallback />}><CloudLab /></Suspense>} />
-          <Route path="/project/:slug" element={<ProjectArchitecture />} />
-          <Route path="/resume-parser" element={<Suspense fallback={<RouteLoadingFallback />}><ResumeParser /></Suspense>} />
+          {/* Public */}
+          <Route path="/" element={<Landing />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+
+          {/* Product workspace (AuthGate handles the sign-in wall) */}
+          <Route
+            path="/app"
+            element={
+              <Suspense fallback={<RouteLoadingFallback />}>
+                <ResumeParser />
+              </Suspense>
+            }
+          />
+
+          {/* Utility routes */}
           <Route path="/admin" element={<Suspense fallback={<RouteLoadingFallback />}><AdminPortal /></Suspense>} />
           <Route path="/oauth/gmail/callback" element={<Suspense fallback={<RouteLoadingFallback />}><GmailCallback /></Suspense>} />
           <Route path="/reset-password" element={<Suspense fallback={<RouteLoadingFallback />}><ResetPassword /></Suspense>} />
           <Route path="/applypilot/privacy" element={<Suspense fallback={<RouteLoadingFallback />}><ApplyPilotPrivacy /></Suspense>} />
+
+          {/* Legacy redirects → product-first paths */}
+          <Route path="/resume-parser" element={<Navigate to="/app" replace />} />
+          <Route path="/home" element={<Navigate to="/app" replace />} />
+          <Route path="/welcome" element={<Navigate to="/" replace />} />
+
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
-
-      {/* Easter Egg: Deploy Runner Game (Konami Code) */}
-      <Suspense fallback={null}>
-        <DeployRunner isOpen={showGame} onClose={() => setShowGame(false)} />
-      </Suspense>
     </>
   );
 }
@@ -100,4 +91,3 @@ const App = () => (
 );
 
 export default App;
-

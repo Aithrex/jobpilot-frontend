@@ -29,6 +29,7 @@ import type {
 } from "@/types/resume";
 
 const ResumeEditor = lazy(() => import("@/components/resume/ResumeEditor"));
+const DashboardTab = lazy(() => import("@/components/resume/DashboardTab"));
 const BatchTailor = lazy(() => import("@/components/resume/BatchTailor"));
 const InterviewPrepTab = lazy(() => import("@/components/resume/InterviewPrepTab"));
 const ApplicationsTab = lazy(() => import("@/components/resume/ApplicationsTab"));
@@ -39,6 +40,24 @@ const VisaTimelineTab = lazy(() => import("@/components/visa/VisaTimelineTab"));
 const BetaLabTab = lazy(() => import("@/components/beta/BetaLabTab"));
 
 // ─── Shared Icons ───────────────────────────────────────────────────────────
+
+function DashboardIcon({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.8}
+      stroke="currentColor"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z"
+      />
+    </svg>
+  );
+}
 
 function SparklesIcon({ className = "w-5 h-5" }: { className?: string }) {
   return (
@@ -295,6 +314,7 @@ function ChevronIcon({
 }
 
 type NavTab =
+  | "dashboard"
   | "tailor"
   | "batch"
   | "jobs"
@@ -5937,6 +5957,12 @@ type ResumeNavSection = {
 
 const NAV_ITEMS: ResumeNavItem[] = [
   {
+    key: "dashboard",
+    label: "Dashboard",
+    icon: <DashboardIcon className="w-4 h-4" />,
+    hint: "Your job-hunt overview",
+  },
+  {
     key: "tailor",
     label: "Tailor",
     icon: <SparklesIcon className="w-4 h-4" />,
@@ -6008,6 +6034,7 @@ const NAV_ITEMS: ResumeNavItem[] = [
 ];
 
 const NAV_SECTIONS: ResumeNavSection[] = [
+  { label: "Overview", items: ["dashboard"] },
   { label: "Create", items: ["tailor", "batch"] },
   { label: "Library", items: ["my-resumes", "tailored", "applications"] },
   { label: "Career", items: ["interview", "visa", "copilot", "jobs"] },
@@ -6115,7 +6142,7 @@ function ResumeSectionNav({
 function UserInitial({ value, className = "" }: { value?: string | null; className?: string }) {
   return (
     <span
-      className={`inline-flex items-center justify-center rounded-lg bg-gradient-to-br from-purple-500 to-indigo-600 text-xs font-bold text-white shadow-sm shadow-indigo-500/25 ${className}`}
+      className={`brand-gradient inline-flex items-center justify-center rounded-lg text-xs font-bold text-white shadow-sm shadow-primary/25 ${className}`}
     >
       {(value || "U").charAt(0).toUpperCase()}
     </span>
@@ -6172,6 +6199,7 @@ function SidebarAccount({
 // Keeping this in sync with NavTab manually is fine since both lists are short
 // and live in this file.
 const VALID_NAV_TABS: readonly NavTab[] = [
+  "dashboard",
   "tailor",
   "batch",
   "jobs",
@@ -6197,7 +6225,7 @@ export default function ResumeParser() {
   // Seed from ?tab= so refresh / OAuth-callback redirects (e.g.
   // /resume-parser?tab=applications&gmail=linked) actually land on the
   // expected tab instead of falling back to "tailor" with a stale URL.
-  const [activeNav, setActiveNav] = useState<NavTab>(() => readTabFromUrl() ?? "tailor");
+  const [activeNav, setActiveNav] = useState<NavTab>(() => readTabFromUrl() ?? "dashboard");
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [sidebarHoverExpanded, setSidebarHoverExpanded] = useState(false);
@@ -6284,8 +6312,8 @@ export default function ResumeParser() {
 
   return (
     <AuthGate
-      title="AI Resume Tailor"
-      description="Upload your resume, tailor it to any job description, and get ATS compatibility scores powered by AI."
+      title="JobPilot"
+      description="Your workspace for the job hunt — tailor resumes to any JD, track applications, read the market, and prep with intent."
     >
       <div
         className="min-h-screen bg-white dark:bg-gray-950 antialiased pb-24 lg:pb-0"
@@ -6309,14 +6337,14 @@ export default function ResumeParser() {
               </button>
 
               {/* Logo */}
-              <div className="flex items-center gap-2.5 shrink-0">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-purple-500/25">
+              <a href="/" className="flex items-center gap-2.5 shrink-0" aria-label="JobPilot home">
+                <div className="brand-gradient w-8 h-8 rounded-lg flex items-center justify-center shadow-lg shadow-primary/25">
                   <SparklesIcon className="w-4 h-4 text-white" />
                 </div>
-                <h1 className="text-lg font-bold bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent hidden sm:block">
-                  Resume Tailor
+                <h1 className="font-display text-lg font-extrabold tracking-tight hidden sm:block">
+                  JobPilot
                 </h1>
-              </div>
+              </a>
 
               <div className="min-w-0 flex-1 ml-4 border-l border-gray-200 dark:border-gray-800 pl-4 py-0.5">
                 <div className="flex items-center gap-1.5 text-gray-900 dark:text-gray-100">
@@ -6342,8 +6370,9 @@ export default function ResumeParser() {
                 <ThemeToggle />
                 <button
                   type="button"
-                  onClick={() => (window.location.href = "/home")}
+                  onClick={() => (window.location.href = "/")}
                   aria-label="Home"
+                  title="JobPilot home"
                   className="inline-flex items-center justify-center w-9 h-9 rounded-full text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50"
                 >
                   <HomeIcon className="w-4 h-4" />
@@ -6354,7 +6383,7 @@ export default function ResumeParser() {
                     onClick={() => setUserMenuOpen((v) => !v)}
                     aria-haspopup="menu"
                     aria-expanded={userMenuOpen}
-                    className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 text-white text-xs font-bold ring-2 ring-purple-500/40 hover:ring-purple-500/60 hover:scale-105 transition-all"
+                    className="brand-gradient inline-flex items-center justify-center w-9 h-9 rounded-full text-white text-xs font-bold ring-2 ring-primary/40 hover:ring-primary/60 hover:scale-105 transition-all"
                   >
                     {(user?.name || user?.email || "U").charAt(0).toUpperCase()}
                   </button>
@@ -6417,12 +6446,12 @@ export default function ResumeParser() {
               >
                 <div className="flex h-16 items-center justify-between border-b border-gray-200 px-4 dark:border-white/10">
                   <div className="flex min-w-0 items-center gap-2.5">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-purple-500 to-indigo-600 shadow-lg shadow-purple-500/25">
+                    <div className="brand-gradient flex h-9 w-9 shrink-0 items-center justify-center rounded-lg shadow-lg shadow-primary/25">
                       <SparklesIcon className="h-4 w-4 text-white" />
                     </div>
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-bold text-gray-950 dark:text-white">
-                        Resume Tailor
+                      <p className="font-display truncate text-sm font-extrabold text-gray-950 dark:text-white">
+                        JobPilot
                       </p>
                       <p className="truncate text-xs text-gray-500 dark:text-gray-400">
                         {activeNavItem.label}
@@ -6470,12 +6499,12 @@ export default function ResumeParser() {
               >
                 {!sidebarEffectiveCollapsed && (
                   <div className="flex min-w-0 items-center gap-3">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-purple-500 to-indigo-600 shadow-lg shadow-purple-500/20">
+                    <div className="brand-gradient flex h-9 w-9 shrink-0 items-center justify-center rounded-lg shadow-lg shadow-primary/20">
                       <SparklesIcon className="h-4 w-4 text-white" />
                     </div>
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-bold text-gray-950 dark:text-white">
-                        Resume Tailor
+                      <p className="font-display truncate text-sm font-extrabold text-gray-950 dark:text-white">
+                        JobPilot
                       </p>
                       <p className="truncate text-xs font-medium text-gray-500 dark:text-gray-400">
                         Workspace
@@ -6530,6 +6559,17 @@ export default function ResumeParser() {
 
             <main className="min-w-0 flex-1 px-4 py-6 sm:px-6 lg:px-8">
               <div className="mx-auto max-w-[1500px]">
+              {activeNav === "dashboard" && (
+                <Suspense
+                  fallback={
+                    <div className="rounded-xl border border-gray-200 dark:border-white/[0.07] bg-white dark:bg-gray-900/40 p-8 text-center">
+                      <div className="h-6 w-1/3 animate-pulse rounded bg-gray-200 dark:bg-white/10 mx-auto" />
+                    </div>
+                  }
+                >
+                  <DashboardTab userName={user?.name || user?.email} onNavigate={selectNav} />
+                </Suspense>
+              )}
               {/* Tailor + Jobs stay mounted once visited so an in-flight tailor
                   or pipeline run doesn't drop its results when the user switches
                   away mid-run. Other tabs unmount as before. */}
