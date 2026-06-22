@@ -2,12 +2,12 @@
  * API service layer for backend communication
  *
  * This service provides a clean interface to all backend API endpoints.
- * The backend is organized in a microservice-like architecture with:
- * - /api/auth - Authentication
- * - /api/info - Visitor tracking
- * - /api/contact - Contact form
- * - /api/session - Session management
- * - /api/geo - IP geolocation
+ * The product surface is organized into:
+ * - /api/auth - Authentication (login, register, OAuth, password reset)
+ * - /api/resume - Resume parsing, tailoring, career copilot, interview prep
+ * - /api/jobs - Job search & daily pipeline
+ * - /api/billing - Plans & upgrades
+ * - /api/admin - Super-admin console (stats, users, feedback, quotas)
  */
 
 import { toast } from "sonner";
@@ -209,6 +209,17 @@ class ApiService {
       role?: string;
       sector?: string;
       created_at?: string;
+      plan?: string;
+      onboarded?: boolean;
+      preferences?: Record<string, unknown>;
+      entitlements?: {
+        plan: string;
+        plan_label?: string;
+        features: string[];
+        limits: Record<string, number | null>;
+      };
+      is_admin?: boolean;
+      auth_providers?: string[];
     }>("/auth/profile", {
       method: "GET",
     });
@@ -255,6 +266,202 @@ class ApiService {
       method: "POST",
       body: JSON.stringify({ token, new_password: newPassword }),
     });
+  }
+
+  // ── Social sign-in ("Continue with …") ───────────────────────
+  async getOAuthProviders() {
+    return this.request<{ providers: string[] }>("/auth/oauth/providers");
+  }
+
+  /**
+   * Begin a social sign-in: fetches the provider's authorize URL and (by
+   * default) redirects the browser to it. The provider then 302s back to
+   * /oauth/callback#token=… which AuthCallback consumes.
+   */
+  async beginSocialAuth(provider: string, opts?: { redirect?: boolean; fingerprint_hash?: string }) {
+    const qs = opts?.fingerprint_hash
+      ? `?fingerprint_hash=${encodeURIComponent(opts.fingerprint_hash)}`
+      : "";
+    const res = await this.request<{ authorize_url: string }>(
+      `/auth/oauth/${encodeURIComponent(provider)}/authorize${qs}`,
+    );
+    if (res.data?.authorize_url && opts?.redirect !== false && typeof window !== "undefined") {
+      window.location.assign(res.data.authorize_url);
+    }
+    return res;
+  }
+
+  // ── Personalization / onboarding preferences ─────────────────
+  async savePreferences(prefs: Record<string, unknown>) {
+    return this.request<Awaited<ReturnType<ApiService["getProfile"]>>["data"]>(
+      "/auth/preferences",
+      { method: "PUT", body: JSON.stringify(prefs) },
+    );
+  }
+
+  // ── Billing / plan (freemium) ────────────────────────────────
+  async getBillingPlan() {
+    return this.request<{
+      plan: string;
+      plan_label?: string;
+      plan_since?: string | null;
+      features: string[];
+      limits: Record<string, number | null>;
+      usage: Record<string, {
+        feature: string; used: number; limit: number | null; remaining: number | null;
+        unlimited: boolean; period: string; resets_at: string; resets_in_seconds: number;
+      }>;
+      plans: Record<string, { label: string; price_monthly: number; features: string[]; limits: Record<string, number | null> }>;
+    }>("/billing/plan");
+  }
+
+  async upgradePlan(tier: string) {
+    return this.request<{ checkout_url: string | null; requested_tier: string | null; message: string }>(
+      "/billing/upgrade",
+      { method: "POST", body: JSON.stringify({ tier }) },
+    );
+  }
+
+  // ── Learning Hub (Pillar B) ──────────────────────────────────
+  /** Submit an AI study-plan generation job and poll until the plan is ready. */
+  async createLearningPlan(
+    topic: string,
+    opts?: { target_role?: string; weeks?: number },
+  ) {
+    const submit = await this.request<{ job_id: string }>("/resume/learning/plan", {
+      method: "POST",
+      body: JSON.stringify({ topic, ...opts }),
+    }, 30000);
+    if (submit.error) return { error: submit.error, status: submit.status, errorPayload: submit.errorPayload };
+    if (!submit.data?.job_id) return { error: "Failed to start plan generation" };
+    return this.pollJob<{ path_id: string; path: import("../types/learning").LearningPath }>(
+      submit.data.job_id,
+      150000,
+    );
+  }
+
+  async getLearningPaths() {
+    return this.request<{ paths: import("../types/learning").LearningPathSummary[] }>(
+      "/resume/learning/paths",
+    );
+  }
+
+  async getLearningPath(pathId: string) {
+    return this.request<{
+      path: import("../types/learning").LearningPath;
+      progress: import("../types/learning").LearningProgress;
+    }>(`/resume/learning/paths/${encodeURIComponent(pathId)}`);
+  }
+
+  async deleteLearningPath(pathId: string) {
+    return this.request<{ ok: boolean }>(
+      `/resume/learning/paths/${encodeURIComponent(pathId)}`,
+      { method: "DELETE" },
+    );
+  }
+
+  async completeLearningModule(pathId: string, week: number) {
+    return this.request<import("../types/learning").ModuleCompletionResult>(
+      `/resume/learning/paths/${encodeURIComponent(pathId)}/module/${week}/complete`,
+      { method: "POST" },
+      30000,
+    );
+  }
+
+  async generateLearningQuiz(pathId: string, week: number) {
+    return this.request<import("../types/learning").Quiz>(
+      `/resume/learning/paths/${encodeURIComponent(pathId)}/quiz`,
+      { method: "POST", body: JSON.stringify({ week }) },
+      60000,
+    );
+  }
+
+  // ── Interview Pattern Coach + salary (Pillar D) ──────────────
+  async getInterviewCoach() {
+    return this.request<import("../types/interview").CoachSummary>(
+      "/resume/interview/coach",
+      {},
+      45000,
+    );
+  }
+
+  async getInterviewAttempts(limit = 50) {
+    return this.request<{ attempts: import("../types/interview").InterviewAttempt[] }>(
+      `/resume/interview/attempts?limit=${limit}`,
+    );
+  }
+
+  async getInterviewFit(recordId: string) {
+    return this.request<import("../types/interview").InterviewFit>(
+      "/resume/interview/fit",
+      { method: "POST", body: JSON.stringify({ record_id: recordId }) },
+      45000,
+    );
+  }
+
+  async getSalaryEstimate(role: string, opts?: { level?: string; location?: string }) {
+    return this.request<import("../types/interview").SalaryEstimate>(
+      "/resume/salary",
+      { method: "POST", body: JSON.stringify({ role, ...opts }) },
+      45000,
+    );
+  }
+
+  // ── Events (hackathons/webinars) + post drafting (Pillar C) ──
+  async getEvents(type?: "hackathon" | "webinar") {
+    const qs = type ? `?type=${type}` : "";
+    return this.request<{ events: import("../types/events").EventItem[] }>(`/resume/events${qs}`);
+  }
+
+  async refreshEvents() {
+    const submit = await this.request<{ job_id: string }>("/resume/events/refresh", { method: "POST" }, 30000);
+    if (submit.error) return { error: submit.error, status: submit.status };
+    if (!submit.data?.job_id) return { error: "Could not start refresh" };
+    return this.pollJob<{ upserted: number; by_source: Record<string, number> }>(submit.data.job_id, 90000);
+  }
+
+  async getEvent(eventId: string) {
+    return this.request<import("../types/events").EventItem>(`/resume/events/${encodeURIComponent(eventId)}`);
+  }
+
+  async setEventRelation(
+    eventId: string,
+    relation: import("../types/events").EventRelation,
+    opts?: { outcome?: string; notes?: string },
+  ) {
+    return this.request<{ event_id: string; relation: string }>(
+      `/resume/events/${encodeURIComponent(eventId)}/relation`,
+      { method: "POST", body: JSON.stringify({ relation, ...opts }) },
+    );
+  }
+
+  async draftPost(input: { event_id?: string; achievement?: string; audience?: string; relation?: string }) {
+    const submit = await this.request<{ job_id: string }>("/resume/events/draft-post", {
+      method: "POST",
+      body: JSON.stringify(input),
+    }, 30000);
+    if (submit.error) return { error: submit.error, status: submit.status, errorPayload: submit.errorPayload };
+    if (!submit.data?.job_id) return { error: "Could not start drafting" };
+    return this.pollJob<{ draft_id: string; variants: import("../types/events").PostVariant[] }>(
+      submit.data.job_id,
+      120000,
+    );
+  }
+
+  async getPosts() {
+    return this.request<{ posts: import("../types/events").PostDraft[] }>("/resume/posts");
+  }
+
+  // ── Personalized recommendations (Pillar A) ──────────────────
+  async getRecommendations() {
+    return this.request<{ recommendations: import("../types/recommendations").Recommendation[] }>(
+      "/resume/recommendations",
+    );
+  }
+
+  // ── Cross-feature dashboard overview (interconnection layer) ──
+  async getOverview() {
+    return this.request<import("../types/overview").DashboardOverview>("/resume/overview");
   }
 
   async getVisaProfile() {
@@ -340,324 +547,6 @@ class ApiService {
       method: "POST",
       body: JSON.stringify({ email, password }),
     });
-  }
-
-  // ============================================
-  // Visitor info endpoints (/api/info)
-  // ============================================
-
-  async storeVisitorInfo(data: Record<string, any>) {
-    return this.request<{
-      message: string;
-      ip: string;
-      status: "new" | "existing";
-      session_id: string;
-      location?: {
-        city: string;
-        country: string;
-      };
-    }>("/info", {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
-  }
-
-  async getVisitorStats() {
-    return this.request<{
-      total_visitors: number;
-      unique_ips: number;
-      visitors_24h: number;
-      visitors_7d: number;
-      visitors_30d: number;
-      top_countries: Array<{ country: string; count: number }>;
-      top_cities: Array<{ city: string; count: number }>;
-      top_pages: Array<{ page: string; count: number }>;
-      top_browsers: Array<{ browser: string; count: number }>;
-      sessions: {
-        total_sessions: number;
-        active_sessions_1h: number;
-        tracked_sessions: number;
-      };
-    }>("/info/stats", {
-      method: "GET",
-    });
-  }
-
-  async registerVisitor(data: {
-    firstName: string;
-    middleName?: string;
-    lastName: string;
-    email: string;
-    linkedinUrl?: string;
-    fingerprint?: Record<string, any>;
-    sessionId?: string;
-  }) {
-    return this.request<{
-      success: boolean;
-      message: string;
-      linkedin: { found: boolean; url?: string; headline?: string };
-      organization: string | null;
-      location?: {
-        city: string;
-        country: string;
-      };
-    }>("/info/register-visitor", {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
-  }
-
-  async getOrgStats(queryParams?: string) {
-    return this.request<{
-      total_visitors: number;
-      organizations: Array<{
-        name: string;
-        visitors: number;
-        latest_visit: string | null;
-      }>;
-      total_registered: number;
-      linkedin_profiles_found: number;
-      notable_linkedin?: Array<{ name: string; count: number }>;
-      top_countries?: Array<{ country: string; count: number }>;
-      map_locations?: Array<{
-        country: string;
-        city?: string | null;
-        latitude?: number | null;
-        longitude?: number | null;
-        count: number;
-      }>;
-    }>(`/info/org-stats${queryParams || ""}`, {
-      method: "GET",
-    });
-  }
-
-  // ============================================
-  // Session endpoints (/api/session)
-  // ============================================
-
-  async validateSession(sessionId: string) {
-    return this.request<{
-      valid: boolean;
-      session_id: string;
-      is_new: boolean;
-      page_views: number;
-      is_tracked: boolean;
-    }>("/session/validate", {
-      method: "POST",
-      body: JSON.stringify({ session_id: sessionId }),
-    });
-  }
-
-  async trackPageView(sessionId: string, page: string) {
-    return this.request<{
-      success: boolean;
-      message: string;
-    }>("/session/track-page", {
-      method: "POST",
-      body: JSON.stringify({ session_id: sessionId, page }),
-    });
-  }
-
-  async getSessionStats() {
-    return this.request<{
-      total_sessions: number;
-      active_sessions_1h: number;
-      tracked_sessions: number;
-    }>("/session/stats", {
-      method: "GET",
-    });
-  }
-
-  async trackSectionTime(data: {
-    session_id: string;
-    page: string;
-    totalTimeMs: number;
-    sections: { [key: string]: { timeMs: number; visits: number } };
-    timestamp: string;
-  }) {
-    return this.request<{
-      success: boolean;
-      message: string;
-    }>("/session/track-time", {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
-  }
-
-  async getSectionAnalytics() {
-    return this.request<{
-      total_sessions: number;
-      sections: Array<{
-        id: string;
-        label: string;
-        avg_time_ms: number;
-        avg_time_sec: number;
-        total_time_ms: number;
-        total_visits: number;
-        session_count: number;
-        max_time_ms: number;
-        min_time_ms: number;
-        engagement_pct: number;
-      }>;
-      avg_total_time_ms: number;
-      avg_total_time_sec: number;
-      engagement_over_time: Array<{
-        date: string;
-        sessions: number;
-        avg_time_sec: number;
-      }>;
-      top_section: string;
-      total_engagement_ms: number;
-    }>("/session/section-analytics", {
-      method: "GET",
-    });
-  }
-
-  // ============================================
-  // Geolocation endpoints (/api/geo)
-  // ============================================
-
-  async lookupIP(ip?: string) {
-    return this.request<{
-      ip: string;
-      city: string;
-      region: string;
-      country: string;
-      country_name: string;
-      timezone: string;
-      org: string;
-      latitude?: number;
-      longitude?: number;
-    }>("/geo/lookup", {
-      method: "POST",
-      body: JSON.stringify({ ip }),
-    });
-  }
-
-  async getMyIP() {
-    return this.request<{
-      ip: string;
-      location: {
-        city: string;
-        region: string;
-        country: string;
-        timezone: string;
-      };
-    }>("/geo/my-ip", {
-      method: "GET",
-    });
-  }
-
-  async getIPStats() {
-    return this.request<{
-      total_cached_ips: number;
-      top_countries: Array<{ country: string; count: number }>;
-      top_cities: Array<{ city: string; count: number }>;
-    }>("/geo/stats", {
-      method: "GET",
-    });
-  }
-
-  // ============================================
-  // Contact endpoints (/api/contact)
-  // ============================================
-
-  async submitContact(
-    name: string,
-    email: string,
-    subject: string,
-    message: string,
-  ) {
-    return this.request<{ message: string; success: boolean }>("/contact", {
-      method: "POST",
-      body: JSON.stringify({ name, email, subject, message }),
-    });
-  }
-
-  async getContactMessages() {
-    return this.request<{
-      messages: Array<{
-        id: number;
-        name: string;
-        email: string;
-        subject: string;
-        message: string;
-        created_at: string;
-        ip_address: string;
-      }>;
-    }>("/contact/messages", {
-      method: "GET",
-    });
-  }
-
-  // ============================================
-  // Chat endpoints (/api/chat)
-  // ============================================
-
-  async sendChatMessage(
-    message: string,
-    history?: Array<{ role: string; content: string }>,
-  ) {
-    return this.request<{ response: string; success: boolean }>("/chat", {
-      method: "POST",
-      body: JSON.stringify({ message, history }),
-    });
-  }
-
-  // ----- Concierge (animated avatar with tool-calling) -----
-  async sendConciergeTurn(payload: {
-    message: string;
-    history?: Array<{ role: string; content: string }>;
-    current_section?: string | null;
-    recruiter_mode?: boolean;
-  }) {
-    return this.request<{
-      spoken: string;
-      caption: string;
-      intents: Array<{ name: string; args: Record<string, unknown> }>;
-      display: { type: string; payload: Record<string, unknown> } | null;
-      suggestions: string[];
-      emotion: "neutral" | "happy" | "thoughtful" | "excited";
-      meta?: { model?: string; recruiter_mode?: boolean };
-      success?: boolean;
-    }>("/chat/concierge", {
-      method: "POST",
-      body: JSON.stringify(payload),
-    }, 25000);
-  }
-
-  // ============================================
-  // Cloud Diary (powers Now Building ticker + agent's Builder specialist)
-  // ============================================
-
-  async getCloudDiary(limit = 5) {
-    return this.request<{
-      ok: boolean;
-      data: {
-        entries: Array<{
-          date: string;
-          headline: string;
-          highlights: string[];
-          tech: string[];
-          shipping_score?: number;
-          created_at?: string;
-        }>;
-        count: number;
-      };
-    }>(`/chat/diary?limit=${limit}`, { method: "GET" });
-  }
-
-  async getLatestDiary() {
-    return this.request<{
-      ok: boolean;
-      data: {
-        date: string;
-        headline: string;
-        highlights: string[];
-        tech: string[];
-        shipping_score?: number;
-      } | null;
-    }>("/chat/diary/latest", { method: "GET" });
   }
 
   // ============================================
@@ -2409,585 +2298,6 @@ class ApiService {
       tailoring_records: any[];
     }>(`/admin/user/${encodeURIComponent(email)}`);
   }
-
-  async getAdminResumes() {
-    return this.request<{ resumes: any[] }>("/admin/resumes");
-  }
-
-  async getAdminTailoring(opts?: { status?: string; limit?: number }) {
-    const params = new URLSearchParams();
-    if (opts?.status) params.set("status", opts.status);
-    if (opts?.limit) params.set("limit", String(opts.limit));
-    const qs = params.toString();
-    return this.request<{ records: any[] }>(
-      `/admin/tailoring${qs ? `?${qs}` : ""}`,
-    );
-  }
-
-  async getAdminTailoringDetail(
-    recordId: string,
-    includeCurrentResume = false,
-  ) {
-    const qs = includeCurrentResume ? "?include_current_resume=1" : "";
-    return this.request<{ record: any }>(
-      `/admin/tailoring/${encodeURIComponent(recordId)}${qs}`,
-    );
-  }
-
-  async getAdminApplications(status?: string) {
-    const qs = status ? `?status=${encodeURIComponent(status)}` : "";
-    return this.request<{ applications: any[] }>(`/admin/applications${qs}`);
-  }
-
-  async getAdminInterviewPrep() {
-    return this.request<{ prep_packs: any[] }>("/admin/interview-prep");
-  }
-
-  async getAdminResumeUrl(
-    s3Key: string,
-    disposition: "inline" | "attachment" = "inline",
-    filename?: string,
-  ) {
-    let url = `/admin/resume-url?s3_key=${encodeURIComponent(s3Key)}&disposition=${disposition}`;
-    if (filename) url += `&filename=${encodeURIComponent(filename)}`;
-    return this.request<{ url: string; content_type: string }>(url);
-  }
-
-  async getAdminActivity() {
-    return this.request<{
-      activities: Array<{
-        type: string;
-        email: string;
-        name?: string;
-        detail?: string;
-        company?: string;
-        ats_score?: number;
-        timestamp: string;
-      }>;
-    }>("/admin/activity");
-  }
-
-  // ═══════════════════════════════════════════════════════════════
-  //  REQUEST TRACING - distributed tracing waterfall
-  // ═══════════════════════════════════════════════════════════════
-
-  async traceRequest(): Promise<ApiResponse<TraceResult>> {
-    // baseURL already ends with /api (e.g. http://localhost:5000/api)
-    const url = `${this.baseURL}/trace`;
-
-    // Clear any stale Resource Timing entries for this URL
-    performance.clearResourceTimings();
-
-    try {
-      const fetchStart = performance.now();
-      const response = await fetch(url, { cache: "no-store" });
-      const fetchEnd = performance.now();
-
-      if (!response.ok) {
-        return { error: `HTTP ${response.status}` };
-      }
-
-      const serverData = await response.json();
-      const totalMs = Math.round((fetchEnd - fetchStart) * 100) / 100;
-
-      // Get Resource Timing entry for this specific request
-      const entries = performance.getEntriesByType(
-        "resource",
-      ) as PerformanceResourceTiming[];
-      const entry = entries.find((e) => e.name.includes("/trace"));
-
-      // Helper: safely compute duration from Resource Timing (handles cross-origin zeroes)
-      const safeDelta = (a: number, b: number, max: number) => {
-        if (!a || !b || a <= 0 || b <= 0) return 0;
-        const d = Math.round((a - b) * 100) / 100;
-        return d > 0 && d < max ? d : 0;
-      };
-
-      const client = {
-        total_ms: totalMs,
-        dns_ms: entry
-          ? safeDelta(entry.domainLookupEnd, entry.domainLookupStart, totalMs)
-          : 0,
-        tcp_tls_ms: entry
-          ? safeDelta(entry.connectEnd, entry.connectStart, totalMs)
-          : 0,
-        ttfb_ms: entry
-          ? safeDelta(entry.responseStart, entry.requestStart, totalMs)
-          : 0,
-        download_ms: entry
-          ? safeDelta(entry.responseEnd, entry.responseStart, totalMs)
-          : 0,
-      };
-
-      return {
-        data: {
-          ...serverData,
-          client,
-        },
-      };
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : "Trace request failed",
-      };
-    }
-  }
-
-  async traceDeepRequest(): Promise<ApiResponse<DeepTraceResult>> {
-    const url = `${this.baseURL}/trace/deep`;
-
-    performance.clearResourceTimings();
-
-    try {
-      const fetchStart = performance.now();
-      const response = await fetch(url, { cache: "no-store" });
-      const fetchEnd = performance.now();
-
-      if (!response.ok) {
-        return { error: `HTTP ${response.status}` };
-      }
-
-      const serverData = await response.json();
-      const totalMs = Math.round((fetchEnd - fetchStart) * 100) / 100;
-
-      const entries = performance.getEntriesByType(
-        "resource",
-      ) as PerformanceResourceTiming[];
-      const entry = entries.find((e) => e.name.includes("/trace/deep"));
-
-      const safeDelta = (a: number, b: number, max: number) => {
-        if (!a || !b || a <= 0 || b <= 0) return 0;
-        const d = Math.round((a - b) * 100) / 100;
-        return d > 0 && d < max ? d : 0;
-      };
-
-      const client = {
-        total_ms: totalMs,
-        dns_ms: entry
-          ? safeDelta(entry.domainLookupEnd, entry.domainLookupStart, totalMs)
-          : 0,
-        tcp_tls_ms: entry
-          ? safeDelta(entry.connectEnd, entry.connectStart, totalMs)
-          : 0,
-        ttfb_ms: entry
-          ? safeDelta(entry.responseStart, entry.requestStart, totalMs)
-          : 0,
-        download_ms: entry
-          ? safeDelta(entry.responseEnd, entry.responseStart, totalMs)
-          : 0,
-      };
-
-      return {
-        data: {
-          ...serverData,
-          client,
-        },
-      };
-    } catch (error) {
-      return {
-        error:
-          error instanceof Error ? error.message : "Deep trace request failed",
-      };
-    }
-  }
-
-  async tracePageLoad(): Promise<ApiResponse<PageLoadTraceResult>> {
-    const url = `${this.baseURL}/trace/pageload`;
-
-    try {
-      // 1. Collect Navigation Timing (the actual page load)
-      const navEntries = performance.getEntriesByType(
-        "navigation",
-      ) as PerformanceNavigationTiming[];
-      const nav = navEntries[0];
-
-      const navigation = nav
-        ? {
-            dns_ms:
-              Math.round((nav.domainLookupEnd - nav.domainLookupStart) * 100) /
-              100,
-            tcp_ms: Math.round((nav.connectEnd - nav.connectStart) * 100) / 100,
-            tls_ms:
-              nav.secureConnectionStart > 0
-                ? Math.round(
-                    (nav.connectEnd - nav.secureConnectionStart) * 100,
-                  ) / 100
-                : 0,
-            ttfb_ms:
-              Math.round((nav.responseStart - nav.requestStart) * 100) / 100,
-            document_download_ms:
-              Math.round((nav.responseEnd - nav.responseStart) * 100) / 100,
-            dom_parse_ms:
-              Math.round((nav.domInteractive - nav.responseEnd) * 100) / 100,
-            dom_interactive_ms: Math.round(nav.domInteractive * 100) / 100,
-            page_load_ms:
-              Math.round(
-                (nav.loadEventEnd > 0 ? nav.loadEventEnd : performance.now()) *
-                  100,
-              ) / 100,
-            redirect_ms:
-              Math.round((nav.redirectEnd - nav.redirectStart) * 100) / 100,
-            transfer_size: nav.transferSize || 0,
-          }
-        : {
-            dns_ms: 0,
-            tcp_ms: 0,
-            tls_ms: 0,
-            ttfb_ms: 0,
-            document_download_ms: 0,
-            dom_parse_ms: 0,
-            dom_interactive_ms: 0,
-            page_load_ms: Math.round(performance.now() * 100) / 100,
-            redirect_ms: 0,
-            transfer_size: 0,
-          };
-
-      // 2. Collect Resource Timing (all loaded assets)
-      const allResources = performance.getEntriesByType(
-        "resource",
-      ) as PerformanceResourceTiming[];
-
-      const categorize = (
-        entries: PerformanceResourceTiming[],
-        filter: (e: PerformanceResourceTiming) => boolean,
-      ) =>
-        entries
-          .filter(filter)
-          .map((e) => ({
-            name: e.name.split("/").pop()?.split("?")[0] || e.name,
-            duration: Math.round(e.duration * 100) / 100,
-            size: e.transferSize || 0,
-          }))
-          .sort((a, b) => b.duration - a.duration)
-          .slice(0, 5);
-
-      const scripts = categorize(
-        allResources,
-        (e) => e.initiatorType === "script" || e.name.endsWith(".js"),
-      );
-      const styles = categorize(
-        allResources,
-        (e) =>
-          e.initiatorType === "link" &&
-          (e.name.endsWith(".css") || e.name.includes(".css")),
-      );
-      const apiCalls = categorize(allResources, (e) =>
-        e.name.includes("/api/"),
-      );
-      const fonts = categorize(
-        allResources,
-        (e) =>
-          e.initiatorType === "css" ||
-          e.name.match(/\.(woff2?|ttf|otf)/) !== null,
-      );
-
-      const totalTransferKb = Math.round(
-        allResources.reduce((sum, e) => sum + (e.transferSize || 0), 0) / 1024,
-      );
-
-      const resources = {
-        scripts,
-        styles,
-        api_calls: apiCalls,
-        fonts,
-        total_resources: allResources.length,
-        total_transfer_kb: totalTransferKb,
-      };
-
-      // 3. Fetch server-side Lambda/container data
-      performance.clearResourceTimings();
-      const fetchStart = performance.now();
-      const response = await fetch(url, { cache: "no-store" });
-      const fetchEnd = performance.now();
-
-      if (!response.ok) {
-        return { error: `HTTP ${response.status}` };
-      }
-
-      const serverData = await response.json();
-      const totalMs = Math.round((fetchEnd - fetchStart) * 100) / 100;
-
-      const entries = performance.getEntriesByType(
-        "resource",
-      ) as PerformanceResourceTiming[];
-      const entry = entries.find((e) => e.name.includes("/trace/pageload"));
-
-      const safeDelta = (a: number, b: number, max: number) => {
-        if (!a || !b || a <= 0 || b <= 0) return 0;
-        const d = Math.round((a - b) * 100) / 100;
-        return d > 0 && d < max ? d : 0;
-      };
-
-      const client = {
-        total_ms: totalMs,
-        dns_ms: entry
-          ? safeDelta(entry.domainLookupEnd, entry.domainLookupStart, totalMs)
-          : 0,
-        tcp_tls_ms: entry
-          ? safeDelta(entry.connectEnd, entry.connectStart, totalMs)
-          : 0,
-        ttfb_ms: entry
-          ? safeDelta(entry.responseStart, entry.requestStart, totalMs)
-          : 0,
-        download_ms: entry
-          ? safeDelta(entry.responseEnd, entry.responseStart, totalMs)
-          : 0,
-      };
-
-      return {
-        data: {
-          ...serverData,
-          client,
-          navigation,
-          resources,
-        },
-      };
-    } catch (error) {
-      return {
-        error:
-          error instanceof Error ? error.message : "Page load trace failed",
-      };
-    }
-  }
 }
-
-// Trace result type
-export interface TraceResult {
-  trace_id: string;
-  timestamp: string;
-  cold_start: boolean;
-  server: {
-    total_ms: number;
-    lambda_init_ms: number;
-    flask_routing_ms: number;
-    db_ping_ms: number;
-    db_status: string;
-  };
-  lambda: {
-    region: string;
-    memory_mb: number;
-    function_name: string;
-    request_id: string;
-  };
-  xray: {
-    trace_id: string;
-    console_url: string;
-    enabled: boolean;
-  };
-  client: {
-    total_ms: number;
-    dns_ms: number;
-    tcp_tls_ms: number;
-    ttfb_ms: number;
-    download_ms: number;
-  };
-}
-
-// Deep trace result type (real DB queries)
-export interface DeepTraceQuery {
-  name: string;
-  collection: string;
-  operation: string;
-  ms: number;
-  result: number;
-}
-
-export interface DeepTraceResult {
-  trace_id: string;
-  timestamp: string;
-  cold_start: boolean;
-  server: {
-    total_ms: number;
-    lambda_init_ms: number;
-    flask_routing_ms: number;
-    total_db_ms: number;
-    db_status: string;
-  };
-  queries: DeepTraceQuery[];
-  data: {
-    unique_visitors: number;
-    total_registered: number;
-    organizations: number;
-    linkedin_found: number;
-    map_locations: number;
-  };
-  lambda: {
-    region: string;
-    memory_mb: number;
-    function_name: string;
-    request_id: string;
-  };
-  xray: {
-    trace_id: string;
-    console_url: string;
-    enabled: boolean;
-  };
-  client: {
-    total_ms: number;
-    dns_ms: number;
-    tcp_tls_ms: number;
-    ttfb_ms: number;
-    download_ms: number;
-  };
-}
-
-// Page load trace result type
-export interface PageLoadTraceResult {
-  trace_id: string;
-  timestamp: string;
-  cold_start: boolean;
-  server: {
-    total_ms: number;
-    lambda_init_ms: number;
-    flask_routing_ms: number;
-    db_ping_ms: number;
-    db_status: string;
-  };
-  container: {
-    cold_start_init_ms: number;
-    first_request_id: string | null;
-    is_warm: boolean;
-  };
-  lambda: {
-    region: string;
-    memory_mb: number;
-    function_name: string;
-    request_id: string;
-  };
-  xray: {
-    trace_id: string;
-    console_url: string;
-    enabled: boolean;
-  };
-  infrastructure: {
-    dns: string;
-    cdn: string;
-    static_origin: string;
-    api_origin: string;
-    compute: string;
-    database: string;
-    tracing: string;
-    security: string;
-  };
-  // Added client-side
-  client: {
-    total_ms: number;
-    dns_ms: number;
-    tcp_tls_ms: number;
-    ttfb_ms: number;
-    download_ms: number;
-  };
-  navigation: {
-    dns_ms: number;
-    tcp_ms: number;
-    tls_ms: number;
-    ttfb_ms: number;
-    document_download_ms: number;
-    dom_parse_ms: number;
-    dom_interactive_ms: number;
-    page_load_ms: number;
-    redirect_ms: number;
-    transfer_size: number;
-  };
-  resources: {
-    scripts: { name: string; duration: number; size: number }[];
-    styles: { name: string; duration: number; size: number }[];
-    api_calls: { name: string; duration: number; size: number }[];
-    fonts: { name: string; duration: number; size: number }[];
-    total_resources: number;
-    total_transfer_kb: number;
-  };
-}
-
-// ============================================
-// CI/CD Sandbox Endpoints
-// ============================================
-
-interface SandboxStatus {
-  status: string;
-  conclusion: string | null;
-  run_id: number;
-  html_url?: string;
-  jobs: {
-    name: string;
-    status: string;
-    conclusion: string | null;
-    steps: {
-      name: string;
-      status: string;
-      conclusion: string | null;
-    }[];
-  }[];
-}
-
-interface SandboxLatest {
-  message: string;
-  color: string;
-  timestamp: string;
-}
-
-declare module ApiService {
-  interface Prototype {
-    deploySandboxMessage(
-      message: string,
-      color: string,
-    ): Promise<ApiResponse<any>>;
-    getSandboxStatus(): Promise<ApiResponse<SandboxStatus>>;
-    getLatestSandboxMessage(): Promise<ApiResponse<SandboxLatest>>;
-  }
-}
-
-Object.assign(ApiService.prototype, {
-  async deploySandboxMessage(this: ApiService, message: string, color: string) {
-    return this["request"]("/infra/sandbox/deploy", {
-      method: "POST",
-      body: JSON.stringify({ message, color }),
-    });
-  },
-
-  async getSandboxStatus(this: ApiService) {
-    return this["request"]("/infra/sandbox/status", {
-      method: "GET",
-    });
-  },
-
-  async getLatestSandboxMessage(this: ApiService) {
-    return this["request"]("/infra/sandbox/latest", {
-      method: "GET",
-    });
-  },
-
-  // ============================================
-  // Ephemeral Preview Environments (admin)
-  // ============================================
-  async listAdminEnvironments(this: ApiService, opts?: { fresh?: boolean }) {
-    const qs = opts?.fresh ? "?fresh=true" : "";
-    return this["request"]<{
-      environments: Array<{
-        branch_slug: string;
-        pr_number?: number | string;
-        head_ref?: string;
-        actor?: string;
-        status?: string;
-        frontend_url?: string;
-        api_url?: string;
-        api_id?: string;
-        layer_version_arn?: string;
-        mongo_db?: string;
-        created_at?: string;
-        last_seen_at?: string;
-        gh_run_id?: string;
-        resource_arns?: string[];
-      }>;
-      count: number;
-    }>(`/admin/environments${qs}`);
-  },
-
-  async teardownAdminEnvironment(this: ApiService, slug: string) {
-    return this["request"]<{ ok: boolean; slug: string; status: string }>(
-      `/admin/environments/${encodeURIComponent(slug)}/teardown`,
-      { method: "POST" }
-    );
-  },
-});
 
 export const apiService = new ApiService(API_BASE_URL);

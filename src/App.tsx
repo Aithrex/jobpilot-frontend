@@ -5,9 +5,10 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { ThemeProvider } from './components/theme-provider';
-import { UnderTheHoodProvider } from './contexts/UnderTheHoodContext';
 import { AuthProvider } from './contexts/AuthContext';
 import { FeedbackProvider } from './components/feedback/FeedbackWidget';
+import { UpgradeModalProvider } from './components/billing/UpgradeModalProvider';
+import OnboardingWizard from './components/onboarding/OnboardingWizard';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -17,6 +18,7 @@ import NotFound from './pages/NotFound';
 const ResumeParser = lazy(() => import('./pages/ResumeParser'));
 const AdminPortal = lazy(() => import('./pages/AdminPortal'));
 const GmailCallback = lazy(() => import('./pages/GmailCallback'));
+const AuthCallback = lazy(() => import('./pages/AuthCallback'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const ApplyPilotPrivacy = lazy(() => import('./pages/ApplyPilotPrivacy'));
 
@@ -44,18 +46,22 @@ function AppContent() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
 
-          {/* Product workspace (AuthGate handles the sign-in wall) */}
+          {/* Product workspace (AuthGate handles the sign-in wall). The
+              OnboardingWizard self-gates to authed users who haven't onboarded. */}
           <Route
             path="/app"
             element={
               <Suspense fallback={<RouteLoadingFallback />}>
                 <ResumeParser />
+                <OnboardingWizard />
               </Suspense>
             }
           />
 
           {/* Utility routes */}
           <Route path="/admin" element={<Suspense fallback={<RouteLoadingFallback />}><AdminPortal /></Suspense>} />
+          {/* Social sign-in landing (distinct from the Gmail-sync callback above) */}
+          <Route path="/oauth/callback" element={<Suspense fallback={<RouteLoadingFallback />}><AuthCallback /></Suspense>} />
           <Route path="/oauth/gmail/callback" element={<Suspense fallback={<RouteLoadingFallback />}><GmailCallback /></Suspense>} />
           <Route path="/reset-password" element={<Suspense fallback={<RouteLoadingFallback />}><ResetPassword /></Suspense>} />
           <Route path="/applypilot/privacy" element={<Suspense fallback={<RouteLoadingFallback />}><ApplyPilotPrivacy /></Suspense>} />
@@ -77,13 +83,13 @@ const App = () => (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="system">
         <AuthProvider>
-          <UnderTheHoodProvider>
+          <UpgradeModalProvider>
             <TooltipProvider>
               <FeedbackProvider>
                 <AppContent />
               </FeedbackProvider>
             </TooltipProvider>
-          </UnderTheHoodProvider>
+          </UpgradeModalProvider>
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>

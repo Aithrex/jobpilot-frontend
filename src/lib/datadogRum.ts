@@ -7,8 +7,8 @@
  * Config notes:
  *  • clientToken is a public write-only token — safe to ship in the bundle.
  *  • allowedTracingUrls injects x-datadog-* + traceparent headers into fetch/XHR
- *    calls to api.manneharshithsiddardha.com so backend Lambda spans link to
- *    the RUM session resource.
+ *    calls to the JobPilot API (same-origin /api in prod) so backend Lambda
+ *    spans link to the RUM session resource.
  *  • sessionReplaySampleRate is 0 because Session Replay is a paid feature
  *    above the free tier — flip up later if you upgrade.
  */
@@ -35,7 +35,7 @@ export function initDatadogRum(): void {
     applicationId,
     clientToken,
     site,
-    service: "portfolio-frontend",
+    service: "jobpilot-frontend",
     env,
     version,
     sessionSampleRate: 100,
@@ -45,9 +45,9 @@ export function initDatadogRum(): void {
     trackLongTasks: true,
     defaultPrivacyLevel: "mask-user-input",
     allowedTracingUrls: [
-      // Stitch RUM session → backend APM trace for any API call to our domain.
-      (url) => url.startsWith("https://manneharshithsiddardha.com/api"),
-      (url) => url.startsWith("https://www.manneharshithsiddardha.com/api"),
+      // Stitch RUM session → backend APM trace for any API call to our own
+      // origin (the app talks to same-origin /api in production).
+      (url) => url.startsWith(window.location.origin + "/api"),
     ],
     traceSampleRate: 100,
     // Send both Datadog headers and the W3C standard so any upstream is happy.

@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { AlertCircle, Eye, EyeOff, Loader2, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { AuthShell } from '@/components/auth/AuthShell';
+import { SocialAuthButtons } from '@/components/auth/SocialAuthButtons';
 
 const ROLE_OPTIONS = [
   'Software Engineer', 'Data Scientist', 'Product Manager',
@@ -43,8 +44,10 @@ export default function Register() {
       setError('Please enter a valid email address.');
       return;
     }
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters.');
+    // Mirror the backend's password policy for instant feedback.
+    const strong = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$/.test(password);
+    if (!strong) {
+      setError('Password must be 8+ characters with an uppercase letter, a number, and a symbol.');
       return;
     }
     if (password !== confirmPassword) {
@@ -88,6 +91,10 @@ export default function Register() {
         </>
       }
     >
+      <div className="mb-5">
+        <SocialAuthButtons verb="Sign up with" />
+      </div>
+
       <form onSubmit={handleSubmit} className="space-y-5">
         {error && (
           <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2.5 text-sm text-destructive">
@@ -138,7 +145,7 @@ export default function Register() {
               type={showPassword ? 'text' : 'password'}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="At least 6 characters"
+              placeholder="8+ chars, with a number & symbol"
               className="pr-10"
               autoComplete="new-password"
               required

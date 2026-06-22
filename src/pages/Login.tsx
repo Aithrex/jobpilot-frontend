@@ -8,6 +8,7 @@ import { AlertCircle, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AuthShell } from '@/components/auth/AuthShell';
 import { ForgotPasswordDialog } from '@/components/auth/ForgotPasswordDialog';
+import { SocialAuthButtons } from '@/components/auth/SocialAuthButtons';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -71,6 +72,10 @@ export default function Login() {
         </>
       }
     >
+      <div className="mb-5">
+        <SocialAuthButtons verb="Continue with" />
+      </div>
+
       <form onSubmit={handleSubmit} className="space-y-5">
         {error && (
           <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2.5 text-sm text-destructive">

@@ -3,20 +3,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiService } from '@/lib/api';
 import { useNavigate } from 'react-router-dom';
-import { EnvironmentsPanel } from './admin/EnvironmentsPanel';
 import { QuotasPanel } from './admin/QuotasPanel';
 import { FeedbackPanel } from './admin/FeedbackPanel';
-
-const SUPER_ADMIN_EMAIL = 'mannesiddardha@gmail.com';
 
 type Tab =
   | 'overview'
   | 'users'
-  | 'resumes'
-  | 'tailoring'
-  | 'applications'
-  | 'prep'
-  | 'environments'
   | 'quotas'
   | 'feedback';
 
@@ -71,16 +63,6 @@ interface AdminApplication {
   next_action_date?: string | null; next_action_note?: string;
   recruiter_name?: string; recruiter_email?: string; recruiter_company?: string;
   job_url?: string; created_at?: string; updated_at?: string;
-}
-interface AdminPrepPack {
-  record_id: string; user_email: string;
-  jd_analysis?: { job_title?: string; company?: string };
-  interview_prep?: {
-    generated_at?: string; grounded_version_id?: string;
-    content?: { role_type?: string };
-  };
-  application?: { status?: string };
-  created_at?: string;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
@@ -705,16 +687,6 @@ function PageShell({ children }: { children: React.ReactNode }) {
   );
 }
 
-// Generic Toolbar row — used by list panels (Users, Resumes, Tailoring, Prep).
-function Toolbar({ left, right }: { left?: React.ReactNode; right?: React.ReactNode }) {
-  return (
-    <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-      <div className="flex-1 flex items-center gap-3 flex-wrap min-w-0">{left}</div>
-      {right && <div className="flex items-center gap-2 shrink-0 flex-wrap">{right}</div>}
-    </div>
-  );
-}
-
 // Surface card — standardized container used everywhere list/analytics content
 // lives. Prevents drift between panels (each tab used a slightly different
 // border/background recipe before).
@@ -766,11 +738,6 @@ const NAV_ITEMS: { key: Tab; label: string; icon: React.ComponentType<{ c?: stri
   { key: 'users',        label: 'Users',          icon: Icon.Users },
   { key: 'quotas',       label: 'Quotas',         icon: Icon.Bolt },
   { key: 'feedback',     label: 'Feedback',       icon: Icon.Doc },
-  { key: 'resumes',      label: 'Parsed Resumes', icon: Icon.Doc },
-  { key: 'tailoring',    label: 'Tailoring',      icon: Icon.Bolt },
-  { key: 'applications', label: 'Applications',   icon: Icon.Briefcase },
-  { key: 'prep',         label: 'Interview Prep', icon: Icon.Brain },
-  { key: 'environments', label: 'Environments',   icon: Icon.Bolt },
 ];
 
 function Sidebar({
@@ -969,65 +936,31 @@ function Topbar({ title, subtitle, onRefresh, refreshing, right }: {
 // ═════════════════════════════════════════════════════════════════════════
 
 export default function AdminPortal() {
-  const { user, isAuthenticated, isLoading: authLoading, logout } = useAuth();
+  const { user, isAuthenticated, isAdmin, isLoading: authLoading, logout } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>('overview');
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [users, setUsers] = useState<AdminUser[]>([]);
-  const [resumes, setResumes] = useState<any[]>([]);
-  const [tailoring, setTailoring] = useState<any[]>([]);
-  const [applications, setApplications] = useState<AdminApplication[]>([]);
-  const [prepPacks, setPrepPacks] = useState<AdminPrepPack[]>([]);
-  const [activities, setActivities] = useState<Activity[]>([]);
   const [selectedUser, setSelectedUser] = useState<UserDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
   const [userSearch, setUserSearch] = useState('');
 
-  const isSuperAdmin = isAuthenticated && user?.email === SUPER_ADMIN_EMAIL;
+  // Admin access is now driven by the server `is_admin` flag (set for the
+  // seeded admins + anyone promoted in the users collection), not a hardcoded
+  // email — so the real product owner isn't locked out.
+  const isSuperAdmin = isAuthenticated && isAdmin;
 
   const fetchStats = useCallback(async () => {
     const res = await apiService.getAdminStats();
     if (res.data?.total_users != null) setStats(res.data);
     else if (res.error) setError(res.error);
   }, []);
-  const fetchActivity = useCallback(async () => {
-    const res = await apiService.getAdminActivity();
-    if (res.data?.activities) setActivities(res.data.activities);
-  }, []);
   const fetchUsers = useCallback(async () => {
     setLoading(true);
     const res = await apiService.getAdminUsers();
     if (res.data?.users) setUsers(res.data.users);
-    else if (res.error) setError(res.error);
-    setLoading(false);
-  }, []);
-  const fetchResumes = useCallback(async () => {
-    setLoading(true);
-    const res = await apiService.getAdminResumes();
-    if (res.data?.resumes) setResumes(res.data.resumes);
-    else if (res.error) setError(res.error);
-    setLoading(false);
-  }, []);
-  const fetchTailoring = useCallback(async () => {
-    setLoading(true);
-    const res = await apiService.getAdminTailoring();
-    if (res.data?.records) setTailoring(res.data.records);
-    else if (res.error) setError(res.error);
-    setLoading(false);
-  }, []);
-  const fetchApplications = useCallback(async () => {
-    setLoading(true);
-    const res = await apiService.getAdminApplications();
-    if (res.data?.applications) setApplications(res.data.applications as AdminApplication[]);
-    else if (res.error) setError(res.error);
-    setLoading(false);
-  }, []);
-  const fetchPrepPacks = useCallback(async () => {
-    setLoading(true);
-    const res = await apiService.getAdminInterviewPrep();
-    if (res.data?.prep_packs) setPrepPacks(res.data.prep_packs as AdminPrepPack[]);
     else if (res.error) setError(res.error);
     setLoading(false);
   }, []);
@@ -1041,46 +974,30 @@ export default function AdminPortal() {
 
   useEffect(() => {
     if (!isSuperAdmin) return;
-    fetchStats(); fetchActivity();
-  }, [isSuperAdmin, fetchStats, fetchActivity]);
+    fetchStats();
+  }, [isSuperAdmin, fetchStats]);
 
   useEffect(() => {
     if (!isSuperAdmin) return;
-    // Overview now feeds analytics widgets (ATS distribution, top roles,
-    // velocity trend, conversion funnel) from the same datasets used by
-    // other tabs — pull them once on landing so the dashboard hydrates with
-    // real data instead of permanently-empty charts.
-    if (tab === 'overview') {
+    // Overview and Users both surface the registered-user list (the Overview
+    // funnel / "recently active" widgets read from it), so hydrate it on
+    // landing for either tab.
+    if (tab === 'overview' || tab === 'users') {
       if (users.length === 0) fetchUsers();
-      if (tailoring.length === 0) fetchTailoring();
-      if (applications.length === 0) fetchApplications();
     }
-    else if (tab === 'users') fetchUsers();
-    else if (tab === 'resumes') fetchResumes();
-    else if (tab === 'tailoring') fetchTailoring();
-    else if (tab === 'applications') fetchApplications();
-    else if (tab === 'prep') fetchPrepPacks();
-  }, [tab, isSuperAdmin, users.length, tailoring.length, applications.length, fetchUsers, fetchResumes, fetchTailoring, fetchApplications, fetchPrepPacks]);
+  }, [tab, isSuperAdmin, users.length, fetchUsers]);
 
   const handleRefresh = async () => {
     setError(''); setRefreshing(true);
     await Promise.all([
-      fetchStats(), fetchActivity(),
-      tab === 'users' ? fetchUsers() : Promise.resolve(),
-      tab === 'resumes' ? fetchResumes() : Promise.resolve(),
-      tab === 'tailoring' ? fetchTailoring() : Promise.resolve(),
-      tab === 'applications' ? fetchApplications() : Promise.resolve(),
-      tab === 'prep' ? fetchPrepPacks() : Promise.resolve(),
+      fetchStats(),
+      (tab === 'users' || tab === 'overview') ? fetchUsers() : Promise.resolve(),
     ]);
     setRefreshing(false);
   };
 
   const counts: Partial<Record<Tab, number>> = {
     users: stats?.total_users,
-    resumes: stats?.total_parsed_resumes,
-    tailoring: stats?.total_tailoring_sessions,
-    applications: stats?.total_applications,
-    prep: stats?.total_interview_prep_packs,
   };
 
   if (authLoading) {
@@ -1108,11 +1025,6 @@ export default function AdminPortal() {
     users:        { title: 'Users',          subtitle: `${stats?.total_users ?? 0} registered · ${stats?.users_7d ?? 0} this week` },
     quotas:       { title: 'Quotas',         subtitle: 'Daily tailor limits per user — raise for active job hunts.' },
     feedback:     { title: 'Feedback',       subtitle: 'User-submitted notes, bugs, and ideas. Respond and resolve.' },
-    resumes:      { title: 'Parsed Resumes', subtitle: 'Structured resumes extracted from user uploads.' },
-    tailoring:    { title: 'Tailoring',      subtitle: 'Every JD-tailored session with version + cache metadata.' },
-    applications: { title: 'Applications',   subtitle: 'Pipeline across all users — draft through offer.' },
-    prep:         { title: 'Interview Prep', subtitle: 'AI-generated prep packs by role type and user.' },
-    environments: { title: 'Environments',   subtitle: 'Per-PR ephemeral preview envs — auto-reaped after 7 days idle.' },
   };
 
   return (
@@ -1166,28 +1078,15 @@ export default function AdminPortal() {
                 ) : tab === 'overview' ? (
                   <OverviewPanel
                     stats={stats}
-                    activities={activities}
                     users={users}
-                    tailoring={tailoring}
-                    applications={applications}
                     onSelectUser={(email) => { setTab('users'); fetchUserDetail(email); }}
                   />
                 ) : tab === 'users' ? (
                   <UsersPanel users={users} loading={loading} search={userSearch} setSearch={setUserSearch} onSelect={fetchUserDetail} />
-                ) : tab === 'resumes' ? (
-                  <ResumesPanel resumes={resumes} loading={loading} />
-                ) : tab === 'tailoring' ? (
-                  <TailoringPanel records={tailoring} loading={loading} />
-                ) : tab === 'applications' ? (
-                  <ApplicationsPanel applications={applications} loading={loading} onRefetch={fetchApplications} setApplications={setApplications} />
-                ) : tab === 'environments' ? (
-                  <EnvironmentsPanel />
                 ) : tab === 'quotas' ? (
                   <QuotasPanel />
-                ) : tab === 'feedback' ? (
-                  <FeedbackPanel />
                 ) : (
-                  <PrepPanel prepPacks={prepPacks} loading={loading} />
+                  <FeedbackPanel />
                 )}
               </PageShell>
             </motion.div>
@@ -1200,14 +1099,18 @@ export default function AdminPortal() {
 
 // ─── Overview Panel ───────────────────────────────────────────────────────
 
-function OverviewPanel({ stats, activities, users, tailoring, applications, onSelectUser }: {
+function OverviewPanel({ stats, users, onSelectUser }: {
   stats: AdminStats | null;
-  activities: Activity[];
   users: AdminUser[];
-  tailoring: any[];
-  applications: AdminApplication[];
   onSelectUser?: (email: string) => void;
 }) {
+  // Per-session datasets (tailoring records, applications, activity feed) were
+  // backed by admin endpoints that no longer exist. Overview now derives its
+  // analytics purely from the rollup `stats` payload and the user list; the
+  // detail widgets degrade gracefully when these arrays are empty.
+  const tailoring: any[] = [];
+  const applications: AdminApplication[] = [];
+  const activities: Activity[] = [];
   if (!stats) {
     return (
       <div className="space-y-6">
@@ -1681,956 +1584,6 @@ function UsersPanel({ users, loading, search, setSearch, onSelect }: {
   );
 }
 
-// ─── Resumes Panel ────────────────────────────────────────────────────────
-
-type ResumeSort = 'recent' | 'oldest' | 'most_skills' | 'most_experience';
-
-function ResumesPanel({ resumes, loading }: { resumes: any[]; loading: boolean }) {
-  const [search, setSearch] = useState('');
-  const [sort, setSort] = useState<ResumeSort>('recent');
-  const [density, setDensity] = useState<'grid' | 'table'>('grid');
-
-  const processed = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    let list = resumes.slice();
-    if (q) {
-      list = list.filter(r =>
-        (r.user_email || '').toLowerCase().includes(q)
-        || (r.contact?.name || '').toLowerCase().includes(q)
-        || (r.summary || '').toLowerCase().includes(q)
-        || (Object.values(r.skills || {}).flat() as string[]).some(s => (s || '').toLowerCase().includes(q)),
-      );
-    }
-    const t = (s: string | null | undefined) => (parseISO(s)?.getTime() ?? 0);
-    const skillCount = (r: any) => (Object.values(r.skills || {}).flat() as string[]).length;
-    switch (sort) {
-      case 'recent':          list.sort((a, b) => t(b.parsed_at) - t(a.parsed_at)); break;
-      case 'oldest':          list.sort((a, b) => t(a.parsed_at) - t(b.parsed_at)); break;
-      case 'most_skills':     list.sort((a, b) => skillCount(b) - skillCount(a)); break;
-      case 'most_experience': list.sort((a, b) => (b.experience?.length || 0) - (a.experience?.length || 0)); break;
-    }
-    return list;
-  }, [resumes, search, sort]);
-
-  // Roll-ups for the audit summary tiles.
-  const kpis = useMemo(() => {
-    const withSummary = resumes.filter(r => r.summary && r.summary.length > 0).length;
-    const withExp = resumes.filter(r => (r.experience?.length || 0) > 0).length;
-    const withProj = resumes.filter(r => (r.projects?.length || 0) > 0).length;
-    const skillTotal = resumes.reduce((s, r) => s + (Object.values(r.skills || {}).flat() as string[]).length, 0);
-    const avgSkills = resumes.length ? Math.round(skillTotal / resumes.length) : 0;
-    return { withSummary, withExp, withProj, avgSkills };
-  }, [resumes]);
-
-  if (loading) return <SkeletonRow />;
-  if (resumes.length === 0) {
-    return <EmptyHero icon={<Icon.Doc c="w-5 h-5" />} title="No parsed resumes yet" subtitle="Parsed resumes appear here after users upload and process their CVs." />;
-  }
-
-  return (
-    <div className="space-y-5">
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <StatTile label="Parsed" value={resumes.length} tint="emerald" />
-        <StatTile label="With summary" value={kpis.withSummary} sub={`${resumes.length ? Math.round((kpis.withSummary / resumes.length) * 100) : 0}%`} tint="indigo" />
-        <StatTile label="With experience" value={kpis.withExp} sub={`${kpis.withProj} have projects`} tint="violet" />
-        <StatTile label="Avg skills" value={kpis.avgSkills} tint="cyan" />
-      </div>
-
-      <Toolbar
-        left={<>
-          <div className="flex-1 max-w-md min-w-[200px]">
-            <SearchBox value={search} onChange={setSearch} placeholder="Search name, email, summary, or skills…" />
-          </div>
-        </>}
-        right={<>
-          <Select
-            value={sort}
-            onChange={(v) => setSort(v as ResumeSort)}
-            options={[
-              { value: 'recent',          label: 'Newest parsed' },
-              { value: 'oldest',          label: 'Oldest parsed' },
-              { value: 'most_skills',     label: 'Most skills' },
-              { value: 'most_experience', label: 'Most experience' },
-            ]}
-          />
-          <div className="inline-flex rounded-lg bg-white/[0.03] border border-white/[0.06] p-0.5">
-            <button
-              onClick={() => setDensity('grid')}
-              className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-medium transition ${density === 'grid' ? 'bg-white/10 text-white' : 'text-gray-500'}`}
-              title="Card grid"
-              aria-label="Card grid"
-            ><Icon.Kanban c="w-3.5 h-3.5" /></button>
-            <button
-              onClick={() => setDensity('table')}
-              className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-medium transition ${density === 'table' ? 'bg-white/10 text-white' : 'text-gray-500'}`}
-              title="Table"
-              aria-label="Table"
-            ><Icon.List c="w-3.5 h-3.5" /></button>
-          </div>
-          <span className="text-xs text-gray-500 tabular-nums whitespace-nowrap">{processed.length} of {resumes.length}</span>
-        </>}
-      />
-
-      {processed.length === 0 ? (
-        <EmptyHero icon={<Icon.Search c="w-5 h-5" />} title="No matches" subtitle="Try a different search term." />
-      ) : density === 'grid' ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {processed.map((r, i) => <ResumeCard key={i} r={r} />)}
-        </div>
-      ) : (
-        <Card padded={false}>
-          <div className="overflow-x-auto overscroll-contain">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-white/[0.06] bg-white/[0.02]">
-                  {['Name', 'Email', 'Skills', 'Exp', 'Edu', 'Projects', 'Parsed'].map(h => (
-                    <th key={h} className="text-left px-4 py-3 text-[10px] text-gray-500 font-semibold uppercase tracking-wider whitespace-nowrap">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {processed.map((r, i) => {
-                  const skillCount = (Object.values(r.skills || {}).flat() as string[]).length;
-                  return (
-                    <tr key={i} className="border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors">
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <Avatar seed={r.contact?.name || r.user_email} size="sm" />
-                          <span className="text-sm text-gray-200 font-medium truncate max-w-[220px]">{r.contact?.name || 'Unknown'}</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-xs text-gray-500 font-mono truncate max-w-[260px]">{r.user_email}</td>
-                      <td className="px-4 py-3 text-xs text-gray-400 tabular-nums">{skillCount}</td>
-                      <td className="px-4 py-3 text-xs text-gray-400 tabular-nums">{r.experience?.length || 0}</td>
-                      <td className="px-4 py-3 text-xs text-gray-400 tabular-nums">{r.education?.length || 0}</td>
-                      <td className="px-4 py-3 text-xs text-gray-400 tabular-nums">{r.projects?.length || 0}</td>
-                      <td className="px-4 py-3"><TimeStamp iso={r.parsed_at} /></td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </Card>
-      )}
-    </div>
-  );
-}
-
-function ResumeCard({ r }: { r: any }) {
-  const [open, setOpen] = useState(false);
-  const skillsFlat: string[] = Object.values(r.skills || {}).flat() as string[];
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-      className="rounded-2xl border border-white/[0.06] bg-gradient-to-b from-white/[0.025] to-white/[0.01] overflow-hidden transition-all hover:border-white/[0.12]"
-    >
-      <div className="p-5 space-y-3">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
-            <Avatar seed={r.contact?.name || r.user_email} size="lg" />
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-white truncate">{r.contact?.name || 'Unknown'}</p>
-              <p className="text-[11px] text-gray-500 font-mono truncate">{r.user_email}</p>
-            </div>
-          </div>
-          <TimeStamp iso={r.parsed_at} className="text-[10px] text-gray-600 whitespace-nowrap shrink-0" />
-        </div>
-
-        {r.summary && <p className="text-xs text-gray-400 line-clamp-2 leading-relaxed">{r.summary}</p>}
-
-        {skillsFlat.length > 0 && (
-          <div className="flex flex-wrap gap-1">
-            {skillsFlat.slice(0, 8).map((s, i) => (
-              <span key={i} className="px-1.5 py-0.5 rounded bg-white/[0.04] text-[10px] text-gray-400 border border-white/[0.05]">{s}</span>
-            ))}
-            {skillsFlat.length > 8 && <span className="text-[10px] text-gray-600">+{skillsFlat.length - 8}</span>}
-          </div>
-        )}
-
-        {r.experience?.length > 0 && (
-          <div className="flex items-center justify-between text-[11px] text-gray-500 pt-2 border-t border-white/[0.04]">
-            <span>{r.experience.length} role{r.experience.length > 1 ? 's' : ''} · {r.education?.length || 0} edu · {r.projects?.length || 0} proj</span>
-            <button onClick={() => setOpen(o => !o)} className="text-indigo-400 hover:text-indigo-300">{open ? 'Less' : 'More'}</button>
-          </div>
-        )}
-
-        {open && r.experience?.length > 0 && (
-          <div className="space-y-1.5 pt-2 border-t border-white/[0.04]">
-            {r.experience.slice(0, 3).map((e: any, i: number) => (
-              <div key={i} className="text-[11px]">
-                <p className="text-gray-300 font-medium truncate">{e.title} · {e.company}</p>
-                <p className="text-gray-600 text-[10px]">{e.dates}</p>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </motion.div>
-  );
-}
-
-// ─── Tailoring Panel ──────────────────────────────────────────────────────
-
-type TailoringSort = 'recent' | 'oldest' | 'ats_desc' | 'ats_asc' | 'versions';
-
-function TailoringPanel({ records, loading }: { records: any[]; loading: boolean }) {
-  const [search, setSearch] = useState('');
-  const [sort, setSort] = useState<TailoringSort>('recent');
-  const [filter, setFilter] = useState<'all' | 'with_ats' | 'with_prep' | 'multi_version' | 'applied'>('all');
-  const [selected, setSelected] = useState<any | null>(null);
-
-  const processed = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    let list = records.slice();
-    if (q) {
-      list = list.filter(r =>
-        (r.user_email || '').toLowerCase().includes(q)
-        || (r.jd_analysis?.job_title || '').toLowerCase().includes(q)
-        || (r.jd_analysis?.company || '').toLowerCase().includes(q),
-      );
-    }
-    if (filter === 'with_ats')      list = list.filter(r => r.ats_scores?.overall != null);
-    if (filter === 'with_prep')     list = list.filter(r => r._summary?.interview_prep_ready);
-    if (filter === 'multi_version') list = list.filter(r => (r._summary?.version_count || 0) > 1);
-    if (filter === 'applied')       list = list.filter(r => r._summary?.application_status && r._summary.application_status !== 'draft');
-
-    const t = (s: string | null | undefined) => (parseISO(s)?.getTime() ?? 0);
-    switch (sort) {
-      case 'recent':   list.sort((a, b) => t(b.created_at) - t(a.created_at)); break;
-      case 'oldest':   list.sort((a, b) => t(a.created_at) - t(b.created_at)); break;
-      case 'ats_desc': list.sort((a, b) => (b.ats_scores?.overall || -1) - (a.ats_scores?.overall || -1)); break;
-      case 'ats_asc':  list.sort((a, b) => (a.ats_scores?.overall ?? 999) - (b.ats_scores?.overall ?? 999)); break;
-      case 'versions': list.sort((a, b) => (b._summary?.version_count || 0) - (a._summary?.version_count || 0)); break;
-    }
-    return list;
-  }, [records, search, sort, filter]);
-
-  // Roll-ups for the toolbar KPI strip — gives a quick at-a-glance audit.
-  const kpis = useMemo(() => {
-    const scored = records.filter(r => r.ats_scores?.overall != null);
-    const avg = scored.length
-      ? Math.round(scored.reduce((s, r) => s + r.ats_scores.overall, 0) / scored.length)
-      : null;
-    const ge80 = scored.filter(r => r.ats_scores.overall >= 80).length;
-    const lt60 = scored.filter(r => r.ats_scores.overall < 60).length;
-    const multi = records.filter(r => (r._summary?.version_count || 0) > 1).length;
-    const prep = records.filter(r => r._summary?.interview_prep_ready).length;
-    const applied = records.filter(r => r._summary?.application_status && r._summary.application_status !== 'draft').length;
-    return { avg, ge80, lt60, multi, prep, applied, scored: scored.length };
-  }, [records]);
-
-  if (loading) return <SkeletonRow />;
-  if (records.length === 0) {
-    return <EmptyHero icon={<Icon.Bolt c="w-5 h-5" />} title="No tailoring sessions yet" subtitle="Appears after any user runs the tailor pipeline." />;
-  }
-
-  if (selected) {
-    return <TailoringDetail record={selected} onBack={() => setSelected(null)} />;
-  }
-
-  return (
-    <div className="space-y-5">
-      {/* Audit summary strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
-        <StatTile label="Sessions" value={records.length} tint="violet" />
-        <StatTile label="Scored" value={kpis.scored} sub={`${records.length ? Math.round((kpis.scored / records.length) * 100) : 0}%`} tint="cyan" />
-        <StatTile label="Avg ATS" value={kpis.avg ?? '—'} tint="emerald" />
-        <StatTile label="ATS ≥ 80" value={kpis.ge80} sub={`${kpis.lt60} below 60`} tint="amber" />
-        <StatTile label="Multi-version" value={kpis.multi} tint="indigo" />
-        <StatTile label="Prep ready" value={kpis.prep} sub={`${kpis.applied} applied`} tint="rose" />
-      </div>
-
-      <Toolbar
-        left={<>
-          <div className="flex-1 max-w-md min-w-[200px]">
-            <SearchBox value={search} onChange={setSearch} placeholder="Search email, role, or company…" />
-          </div>
-          <FilterPills
-            value={filter}
-            onChange={(v) => setFilter(v as any)}
-            options={[
-              { value: 'all',           label: 'All',           count: records.length },
-              { value: 'with_ats',      label: 'With ATS',      count: kpis.scored },
-              { value: 'with_prep',     label: 'With prep',     count: kpis.prep },
-              { value: 'multi_version', label: 'Multi-version', count: kpis.multi },
-              { value: 'applied',       label: 'Applied',       count: kpis.applied },
-            ]}
-          />
-        </>}
-        right={<>
-          <Select
-            value={sort}
-            onChange={(v) => setSort(v as TailoringSort)}
-            options={[
-              { value: 'recent',   label: 'Newest first' },
-              { value: 'oldest',   label: 'Oldest first' },
-              { value: 'ats_desc', label: 'ATS · high → low' },
-              { value: 'ats_asc',  label: 'ATS · low → high' },
-              { value: 'versions', label: 'Most versions' },
-            ]}
-          />
-          <span className="text-xs text-gray-500 tabular-nums whitespace-nowrap">{processed.length} of {records.length}</span>
-        </>}
-      />
-
-      <Card padded={false}>
-        <div className="overflow-x-auto overscroll-contain">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-white/[0.06] bg-white/[0.02]">
-                {['User', 'Role', 'Company', 'Versions', 'Files', 'Status', 'Prep', 'ATS', 'Created', ''].map(h => (
-                  <th key={h} className="text-left px-4 py-3 text-[10px] text-gray-500 font-semibold uppercase tracking-wider whitespace-nowrap">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {processed.map((r, i) => {
-                const s = r._summary || {};
-                const ats = r.ats_scores?.overall;
-                return (
-                  <tr
-                    key={i}
-                    onClick={() => setSelected(r)}
-                    className="group border-b border-white/[0.03] hover:bg-white/[0.03] transition-colors cursor-pointer"
-                  >
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <Avatar seed={r.user_email} size="sm" />
-                        <span className="text-xs text-gray-300 font-mono truncate max-w-[180px]">{r.user_email}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-200 font-medium">{r.jd_analysis?.job_title || '—'}</td>
-                    <td className="px-4 py-3 text-xs text-gray-500">{r.jd_analysis?.company && r.jd_analysis.company !== 'Not specified' ? r.jd_analysis.company : '—'}</td>
-                    <td className="px-4 py-3">
-                      {s.version_count ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-violet-500/15 text-violet-300 text-[10px] font-semibold border border-violet-500/25">
-                          v{s.current_version_number ?? s.version_count}/{s.version_count}
-                          {s.current_source && s.current_source !== 'initial' && <span className="opacity-60 text-[9px]">· {s.current_source}</span>}
-                        </span>
-                      ) : <span className="text-xs text-gray-700">—</span>}
-                    </td>
-                    <td className="px-4 py-3">
-                      {s.files_cached ? (
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 text-[10px] font-bold">{s.files_cached}</span>
-                      ) : <span className="text-xs text-gray-700">—</span>}
-                    </td>
-                    <td className="px-4 py-3"><StatusPill status={s.application_status} size="sm" /></td>
-                    <td className="px-4 py-3">
-                      {s.interview_prep_ready ? (
-                        <span className="inline-flex items-center justify-center h-5 w-5 rounded-md bg-blue-500/15 text-blue-400 text-[10px] font-bold">✓</span>
-                      ) : <span className="text-xs text-gray-700">—</span>}
-                    </td>
-                    <td className="px-4 py-3">
-                      {ats != null ? (
-                        <span className={`inline-flex items-center justify-center h-7 w-12 rounded-lg text-xs font-bold tabular-nums ${
-                          ats >= 80 ? 'bg-emerald-500/15 text-emerald-400' :
-                          ats >= 60 ? 'bg-amber-500/15 text-amber-400' : 'bg-red-500/15 text-red-400'
-                        }`}>{ats}</span>
-                      ) : <span className="text-xs text-gray-700">—</span>}
-                    </td>
-                    <td className="px-4 py-3"><TimeStamp iso={r.created_at} /></td>
-                    <td className="px-4 py-3">
-                      <Icon.Chevron c="w-3.5 h-3.5 text-gray-700 group-hover:text-gray-300" />
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </Card>
-    </div>
-  );
-}
-
-// Compact KPI cell used by panel toolbars. Lighter than KPICard.
-function StatTile({ label, value, sub, tint = 'indigo' }: {
-  label: string; value: number | string; sub?: string;
-  tint?: 'indigo' | 'emerald' | 'amber' | 'rose' | 'cyan' | 'violet';
-}) {
-  const tints: Record<string, string> = {
-    indigo:  'from-indigo-500/15 ring-indigo-500/25 text-indigo-200',
-    emerald: 'from-emerald-500/15 ring-emerald-500/25 text-emerald-200',
-    amber:   'from-amber-500/15 ring-amber-500/25 text-amber-200',
-    rose:    'from-rose-500/15 ring-rose-500/25 text-rose-200',
-    cyan:    'from-cyan-500/15 ring-cyan-500/25 text-cyan-200',
-    violet:  'from-violet-500/15 ring-violet-500/25 text-violet-200',
-  };
-  return (
-    <div className={`rounded-xl ring-1 bg-gradient-to-b ${tints[tint]} to-transparent px-3.5 py-3`}>
-      <p className="text-[10px] uppercase tracking-wider opacity-70 font-semibold">{label}</p>
-      <p className="text-xl font-bold tabular-nums leading-tight mt-0.5">{value}</p>
-      {sub && <p className="text-[10px] opacity-60 mt-0.5 truncate">{sub}</p>}
-    </div>
-  );
-}
-
-function FilterPills({ value, onChange, options }: {
-  value: string;
-  onChange: (v: string) => void;
-  options: { value: string; label: string; count: number }[];
-}) {
-  return (
-    <div className="flex items-center gap-1.5 flex-wrap">
-      {options.map(o => {
-        const active = value === o.value;
-        return (
-          <button
-            key={o.value}
-            onClick={() => onChange(o.value)}
-            className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold border transition ${
-              active
-                ? 'bg-indigo-500/15 text-indigo-200 border-indigo-500/30'
-                : 'bg-white/[0.03] text-gray-400 border-white/[0.06] hover:border-white/10 hover:text-gray-200'
-            }`}
-          >
-            <span>{o.label}</span>
-            <span className={`tabular-nums font-bold ${active ? 'opacity-90' : 'opacity-60'}`}>{o.count}</span>
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-function Select({ value, onChange, options }: {
-  value: string;
-  onChange: (v: string) => void;
-  options: { value: string; label: string }[];
-}) {
-  return (
-    <select
-      value={value}
-      onChange={e => onChange(e.target.value)}
-      className="h-9 pl-3 pr-8 rounded-xl bg-white/[0.03] border border-white/[0.06] text-xs text-gray-200 focus:outline-none focus:border-indigo-500/40 focus:ring-1 focus:ring-indigo-500/30 transition appearance-none bg-no-repeat bg-right"
-      style={{
-        backgroundImage:
-          'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 20 20\' stroke=\'%23a3a3a3\' stroke-width=\'1.8\'%3E%3Cpath d=\'m6 8 4 4 4-4\'/%3E%3C/svg%3E")',
-        backgroundSize: '14px',
-        backgroundPosition: 'right 10px center',
-      }}
-    >
-      {options.map(o => (
-        <option key={o.value} value={o.value} className="bg-[#0d0d14] text-gray-200">{o.label}</option>
-      ))}
-    </select>
-  );
-}
-
-// Read-only audit drawer for a single tailoring session. Surfaces JD, ATS
-// sub-scores, version timeline, app status, and prep readiness — everything
-// an admin needs to inspect a record without leaving the Tailoring tab.
-function TailoringDetail({ record, onBack }: { record: any; onBack: () => void }) {
-  const s = record._summary || {};
-  const jd = record.jd_analysis || {};
-  const ats = record.ats_scores || {};
-  const overall: number | undefined = ats.overall;
-  const subScores: { label: string; value: number }[] = [];
-  for (const k of Object.keys(ats)) {
-    if (k === 'overall') continue;
-    if (typeof ats[k] === 'number') subScores.push({ label: k.replace(/_/g, ' '), value: ats[k] });
-  }
-  const versions = (record.versions || []) as any[];
-  const sortedVersions = [...versions].sort((a, b) => (a.version_number || 0) - (b.version_number || 0));
-  const app = record.application || {};
-  const prep = record.interview_prep || {};
-  const atsColor =
-    overall == null ? 'bg-gray-500/10 text-gray-400 ring-gray-500/20' :
-    overall >= 80 ? 'bg-emerald-500/15 text-emerald-300 ring-emerald-500/30' :
-    overall >= 60 ? 'bg-amber-500/15 text-amber-300 ring-amber-500/30' :
-                    'bg-red-500/15 text-red-300 ring-red-500/30';
-
-  return (
-    <div className="space-y-5">
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-3">
-        <button onClick={onBack} className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-white transition">
-          <Icon.Back c="w-3.5 h-3.5" /> Tailoring
-        </button>
-        <span className="text-gray-700">/</span>
-        <span className="text-xs text-gray-300">{jd.job_title || 'Untitled'}{jd.company && jd.company !== 'Not specified' ? ` · ${jd.company}` : ''}</span>
-      </div>
-
-      {/* Hero */}
-      <Card className="bg-gradient-to-br from-violet-500/10 via-white/[0.02] to-transparent">
-        <div className="flex items-start gap-5 flex-wrap">
-          <Avatar seed={record.user_email} size="lg" />
-          <div className="min-w-0 flex-1">
-            <h2 className="text-lg font-bold text-white">{jd.job_title || 'Untitled tailoring session'}</h2>
-            {jd.company && jd.company !== 'Not specified' && (
-              <p className="text-sm text-gray-400">at <span className="text-gray-200 font-medium">{jd.company}</span></p>
-            )}
-            <p className="text-xs text-gray-500 font-mono mt-1">{record.user_email}</p>
-            <div className="flex items-center gap-3 mt-3 text-[11px] text-gray-500 flex-wrap">
-              <TimeStamp iso={record.created_at} prefix="Created" />
-              {record.updated_at && <><span className="text-gray-700">·</span><TimeStamp iso={record.updated_at} prefix="Updated" /></>}
-              {record.ats_scored_at && <><span className="text-gray-700">·</span><TimeStamp iso={record.ats_scored_at} prefix="Scored" /></>}
-            </div>
-          </div>
-          <div className={`shrink-0 inline-flex flex-col items-center gap-0.5 px-5 py-3 rounded-2xl ring-1 ${atsColor}`}>
-            <span className="text-[10px] uppercase tracking-wider opacity-70 font-semibold">ATS Overall</span>
-            <span className="text-3xl font-bold tabular-nums">{overall ?? '—'}</span>
-          </div>
-        </div>
-      </Card>
-
-      {/* Stats row */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <StatTile label="Versions" value={s.version_count || 0} sub={s.current_version_number ? `current v${s.current_version_number}` : undefined} tint="violet" />
-        <StatTile label="Cached files" value={s.files_cached || 0} sub={s.version_sources?.length ? s.version_sources.join(' · ') : undefined} tint="cyan" />
-        <StatTile label="App status" value={s.application_status || '—'} sub={app.applied_at ? `applied ${fmtRel(app.applied_at)}` : undefined} tint="indigo" />
-        <StatTile label="Prep ready" value={prep.generated_at ? '✓' : '—'} sub={prep.generated_at ? fmtRel(prep.generated_at) : 'Not generated'} tint="rose" />
-      </div>
-
-      {/* ATS sub-scores */}
-      {subScores.length > 0 && (
-        <Card>
-          <SectionHeading title="ATS sub-scores" subtitle="Per-category breakdown of the latest scoring pass." />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3">
-            {subScores.map(s => (
-              <HBar
-                key={s.label}
-                label={s.label.replace(/\b\w/g, c => c.toUpperCase())}
-                value={s.value}
-                max={100}
-                color={s.value >= 80 ? 'emerald' : s.value >= 60 ? 'amber' : 'rose'}
-                sub="/ 100"
-              />
-            ))}
-          </div>
-        </Card>
-      )}
-
-      {/* JD analysis */}
-      {(jd.must_haves?.length > 0 || jd.nice_to_haves?.length > 0 || jd.keywords?.length > 0) && (
-        <Card>
-          <SectionHeading title="JD analysis" subtitle="What the tailor pipeline extracted from the job description." />
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-            <JDChips title="Must-haves" items={jd.must_haves} tint="rose" />
-            <JDChips title="Nice-to-haves" items={jd.nice_to_haves} tint="amber" />
-            <JDChips title="Keywords" items={jd.keywords} tint="indigo" />
-          </div>
-        </Card>
-      )}
-
-      {/* Version timeline */}
-      {sortedVersions.length > 0 && (
-        <Card>
-          <SectionHeading
-            title="Version history"
-            subtitle={`${sortedVersions.length} version${sortedVersions.length === 1 ? '' : 's'} · current v${s.current_version_number ?? sortedVersions[sortedVersions.length - 1].version_number}`}
-          />
-          <div className="relative pl-4">
-            <span className="absolute left-1.5 top-2 bottom-2 w-px bg-gradient-to-b from-violet-500/40 via-white/[0.06] to-transparent" />
-            <ul className="space-y-3">
-              {sortedVersions.map((v: any) => {
-                const isCurrent = v.version_id === record.current_version_id;
-                const files = v.files || {};
-                const fileEntries = Object.entries(files).filter(([, f]) => f && typeof f === 'object');
-                return (
-                  <li key={v.version_id} className="relative pl-4">
-                    <span className={`absolute -left-[3px] top-2 w-2.5 h-2.5 rounded-full ring-2 ring-[#0a0a0f] ${isCurrent ? 'bg-violet-400' : 'bg-white/30'}`} />
-                    <div className="flex flex-wrap items-baseline gap-2">
-                      <span className="text-sm font-semibold text-white">v{v.version_number}</span>
-                      <span className="text-[10px] uppercase tracking-wider text-gray-500 px-1.5 py-0.5 rounded bg-white/[0.04] border border-white/[0.06]">{v.source || 'initial'}</span>
-                      {isCurrent && <span className="text-[10px] uppercase tracking-wider text-violet-200 px-1.5 py-0.5 rounded bg-violet-500/15 border border-violet-500/25">Current</span>}
-                      <TimeStamp iso={v.created_at} className="text-[11px] text-gray-500 whitespace-nowrap" />
-                    </div>
-                    {v.note && <p className="text-xs text-gray-400 mt-1 italic">{v.note}</p>}
-                    {fileEntries.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 mt-2">
-                        {fileEntries.map(([k, f]) => {
-                          const file = f as any;
-                          return (
-                            <span key={k} className="inline-flex items-center gap-1.5 text-[10px] px-1.5 py-0.5 rounded-md border border-white/[0.06] bg-white/[0.03] text-gray-400">
-                              <Icon.Doc c="w-3 h-3" />
-                              <span className="uppercase font-bold tracking-wider">{k}</span>
-                              {file.rendered_at && <TimeStamp iso={file.rendered_at} className="text-[10px] text-gray-600" />}
-                            </span>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        </Card>
-      )}
-
-      {/* Application + Prep details */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card>
-          <SectionHeading title="Application" />
-          <div className="space-y-1">
-            <Info label="Status" value={app.status ? app.status : '—'} />
-            <Info label="Applied" value={fmtAbsolute(app.applied_at)} />
-            <Info label="Next action" value={app.next_action_date ? `${fmtAbsolute(app.next_action_date)}${app.next_action_note ? ` · ${app.next_action_note}` : ''}` : '—'} />
-            <Info label="Recruiter" value={app.recruiter_name || app.recruiter_email || '—'} />
-            <Info label="Recruiter company" value={app.recruiter_company || '—'} />
-            <Info label="Job URL" value={app.job_url || record.job_url || '—'} />
-          </div>
-        </Card>
-        <Card>
-          <SectionHeading title="Interview prep" />
-          <div className="space-y-1">
-            <Info label="Generated" value={fmtAbsolute(prep.generated_at)} />
-            <Info label="Grounded on version" value={prep.grounded_version_id || '—'} mono />
-            <Info label="Role type" value={prep.content?.role_type || '—'} />
-            <Info label="Record ID" value={record.record_id || '—'} mono />
-          </div>
-        </Card>
-      </div>
-    </div>
-  );
-}
-
-function JDChips({ title, items, tint }: { title: string; items?: string[]; tint: 'rose' | 'amber' | 'indigo' }) {
-  const tints: Record<string, string> = {
-    rose:   'bg-rose-500/10 text-rose-300 border-rose-500/20',
-    amber:  'bg-amber-500/10 text-amber-300 border-amber-500/20',
-    indigo: 'bg-indigo-500/10 text-indigo-300 border-indigo-500/20',
-  };
-  if (!items || items.length === 0) {
-    return (
-      <div>
-        <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold mb-2">{title}</p>
-        <p className="text-xs text-gray-600 italic">None extracted.</p>
-      </div>
-    );
-  }
-  return (
-    <div>
-      <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold mb-2">{title} · {items.length}</p>
-      <div className="flex flex-wrap gap-1.5">
-        {items.map((it, i) => (
-          <span key={i} className={`px-2 py-0.5 rounded text-[11px] border ${tints[tint]}`}>{it}</span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ─── Applications Panel ───────────────────────────────────────────────────
-
-function ApplicationsPanel({
-  applications, loading, onRefetch, setApplications,
-}: {
-  applications: AdminApplication[]; loading: boolean;
-  onRefetch: () => void; setApplications: (a: AdminApplication[]) => void;
-}) {
-  const [view, setView] = useState<'kanban' | 'list'>('kanban');
-  const [filterStatus, setFilterStatus] = useState<string>('all');
-
-  const filtered = useMemo(() => {
-    if (filterStatus === 'all') return applications;
-    return applications.filter(a => a.status === filterStatus);
-  }, [applications, filterStatus]);
-
-  const grouped = useMemo(() => {
-    const g: Record<string, AdminApplication[]> = {};
-    STATUSES.forEach(s => (g[s] = []));
-    for (const a of filtered) {
-      const s = (a.status || 'draft') as string;
-      if (!g[s]) g[s] = [];
-      g[s].push(a);
-    }
-    return g;
-  }, [filtered]);
-
-  const counts: Record<string, number> = {};
-  applications.forEach(a => {
-    const s = a.status || 'draft';
-    counts[s] = (counts[s] || 0) + 1;
-  });
-
-  if (loading) return <SkeletonRow />;
-  if (applications.length === 0) {
-    return <EmptyHero icon={<Icon.Briefcase c="w-5 h-5" />} title="No application tracker data yet" subtitle="Users flag a status from their Tailored Resumes and they land here." />;
-  }
-
-  const applyStatusFilter = async (st: string) => {
-    setFilterStatus(st);
-    if (st === 'all') return onRefetch();
-    const r = await apiService.getAdminApplications(st);
-    if (r.data?.applications) setApplications(r.data.applications as AdminApplication[]);
-  };
-
-  return (
-    <div className="space-y-5">
-      {/* Filter + view toggle */}
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <button
-            onClick={() => applyStatusFilter('all')}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold border transition ${
-              filterStatus === 'all' ? 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30' : 'bg-white/[0.03] text-gray-400 border-white/[0.06] hover:border-white/10'
-            }`}
-          >
-            <span>All</span><span className="font-bold tabular-nums">{applications.length}</span>
-          </button>
-          {STATUSES.map(st => {
-            const n = counts[st] || 0;
-            if (n === 0) return null;
-            const meta = STATUS_COLORS[st];
-            const active = filterStatus === st;
-            return (
-              <button
-                key={st}
-                onClick={() => applyStatusFilter(st)}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[11px] font-semibold transition ${
-                  active ? meta.chip + ' ring-1 ring-white/10' : 'bg-white/[0.02] text-gray-400 border-white/[0.06] hover:bg-white/[0.04]'
-                }`}
-              >
-                <span className={`w-1.5 h-1.5 rounded-full ${meta.dot}`} />
-                <span>{meta.label}</span><span className="font-bold tabular-nums">{n}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="inline-flex rounded-lg bg-white/[0.03] border border-white/[0.06] p-0.5">
-          <button
-            onClick={() => setView('kanban')}
-            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium transition ${
-              view === 'kanban' ? 'bg-white/10 text-white' : 'text-gray-500'
-            }`}
-          ><Icon.Kanban c="w-3.5 h-3.5" />Kanban</button>
-          <button
-            onClick={() => setView('list')}
-            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium transition ${
-              view === 'list' ? 'bg-white/10 text-white' : 'text-gray-500'
-            }`}
-          ><Icon.List c="w-3.5 h-3.5" />List</button>
-        </div>
-      </div>
-
-      {/* Kanban */}
-      {view === 'kanban' ? (
-        <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-7 gap-3">
-          {STATUSES.map(st => {
-            const items = grouped[st] || [];
-            const meta = STATUS_COLORS[st];
-            return (
-              <div key={st} className="rounded-xl border border-white/[0.06] bg-white/[0.015] overflow-hidden">
-                <div className="px-3 py-2.5 border-b border-white/[0.06] flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <span className={`w-1.5 h-1.5 rounded-full ${meta.dot}`} />
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-gray-300">{meta.label}</span>
-                  </div>
-                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-white/[0.04] text-gray-500 tabular-nums">{items.length}</span>
-                </div>
-                <div className="p-2 space-y-2 min-h-[100px] max-h-[60vh] overflow-y-auto overscroll-contain">
-                  {items.length === 0 ? (
-                    <p className="text-[10px] text-gray-600 italic text-center py-4">empty</p>
-                  ) : items.map(a => <AppCard key={a.record_id} a={a} />)}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      ) : (
-        <div className="overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.01]">
-          <div className="overflow-x-auto overscroll-contain">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-white/[0.06] bg-white/[0.02]">
-                  {['User', 'Role · Company', 'Status', 'Applied', 'Next action', 'Recruiter', 'ATS'].map(h => (
-                    <th key={h} className="text-left px-4 py-3 text-[10px] text-gray-500 font-semibold uppercase tracking-wider whitespace-nowrap">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((a, i) => (
-                  <tr key={i} className="border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors">
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <Avatar seed={a.user_email} size="sm" />
-                        <span className="font-mono text-xs text-gray-400 truncate max-w-[180px]">{a.user_email}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <p className="text-sm text-gray-200 font-medium">{a.job_title || '—'}</p>
-                      <p className="text-xs text-gray-500">{a.company && a.company !== 'Not specified' ? a.company : '—'}</p>
-                    </td>
-                    <td className="px-4 py-3"><StatusPill status={a.status} /></td>
-                    <td className="px-4 py-3"><TimeStamp iso={a.applied_at} /></td>
-                    <td className="px-4 py-3 text-xs">
-                      {a.next_action_date ? (
-                        <div>
-                          <TimeStamp iso={a.next_action_date} className="text-xs text-gray-300 whitespace-nowrap" />
-                          {a.next_action_note && <p className="text-gray-600 italic">{a.next_action_note}</p>}
-                        </div>
-                      ) : <span className="text-gray-700">—</span>}
-                    </td>
-                    <td className="px-4 py-3 text-xs">
-                      {a.recruiter_name || a.recruiter_email ? (
-                        <div>
-                          <p className="text-gray-300">{a.recruiter_name || '—'}</p>
-                          {a.recruiter_email && <p className="text-gray-600 font-mono text-[10px]">{a.recruiter_email}</p>}
-                        </div>
-                      ) : <span className="text-gray-700">—</span>}
-                    </td>
-                    <td className="px-4 py-3">
-                      {a.ats_overall != null ? (
-                        <span className={`inline-flex items-center justify-center h-7 w-12 rounded-lg text-xs font-bold tabular-nums ${
-                          a.ats_overall >= 80 ? 'bg-emerald-500/15 text-emerald-400' :
-                          a.ats_overall >= 60 ? 'bg-amber-500/15 text-amber-400' : 'bg-red-500/15 text-red-400'
-                        }`}>{a.ats_overall}</span>
-                      ) : <span className="text-xs text-gray-700">—</span>}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function AppCard({ a }: { a: AdminApplication }) {
-  const daysUntil = a.next_action_date ? Math.round((new Date(a.next_action_date).getTime() - Date.now()) / 86400000) : null;
-  const overdue = daysUntil !== null && daysUntil < 0;
-  const urgent = daysUntil !== null && daysUntil <= 2;
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
-      className={`group rounded-lg border px-3 py-2.5 transition-all cursor-pointer ${
-        overdue ? 'border-red-500/40 bg-red-500/5' :
-        urgent  ? 'border-amber-500/30 bg-amber-500/5' :
-                  'border-white/[0.06] bg-white/[0.02] hover:border-white/10'
-      }`}
-    >
-      <div className="flex items-start gap-2">
-        <Avatar seed={a.user_email} size="sm" />
-        <div className="min-w-0 flex-1">
-          <p className="text-[12.5px] font-semibold text-white truncate leading-snug">{a.job_title || 'Untitled'}</p>
-          {a.company && a.company !== 'Not specified' && (
-            <p className="text-[10px] text-gray-500 truncate">{a.company}</p>
-          )}
-          <p className="text-[10px] text-gray-600 font-mono truncate mt-0.5">{a.user_email}</p>
-        </div>
-      </div>
-
-      {(a.ats_overall != null || daysUntil !== null) && (
-        <div className="flex items-center gap-2 mt-2 flex-wrap">
-          {a.ats_overall != null && (
-            <span className={`text-[10px] font-bold tabular-nums ${
-              a.ats_overall >= 80 ? 'text-emerald-400' : a.ats_overall >= 60 ? 'text-amber-400' : 'text-red-400'
-            }`}>ATS {a.ats_overall}</span>
-          )}
-          {daysUntil !== null && (
-            <span className={`text-[10px] font-medium ${overdue ? 'text-red-400 font-bold' : urgent ? 'text-amber-400' : 'text-gray-500'}`}>
-              {overdue ? `${Math.abs(daysUntil)}d overdue` : daysUntil === 0 ? 'today' : `in ${daysUntil}d`}
-            </span>
-          )}
-          {a.next_action_note && <span className="text-[10px] text-gray-600 italic truncate max-w-[120px]">· {a.next_action_note}</span>}
-        </div>
-      )}
-
-      {(a.recruiter_name || a.recruiter_email) && (
-        <p className="text-[10px] text-gray-500 mt-1.5 truncate">
-          {a.recruiter_name || a.recruiter_email}{a.recruiter_company ? ` · ${a.recruiter_company}` : ''}
-        </p>
-      )}
-    </motion.div>
-  );
-}
-
-// ─── Prep Panel ───────────────────────────────────────────────────────────
-
-function PrepPanel({ prepPacks, loading }: { prepPacks: AdminPrepPack[]; loading: boolean }) {
-  const [search, setSearch] = useState('');
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return prepPacks;
-    return prepPacks.filter(p =>
-      (p.user_email || '').toLowerCase().includes(q)
-      || (p.jd_analysis?.job_title || '').toLowerCase().includes(q)
-      || (p.jd_analysis?.company || '').toLowerCase().includes(q),
-    );
-  }, [prepPacks, search]);
-
-  const byRoleType: Record<string, number> = {};
-  prepPacks.forEach(p => {
-    const rt = p.interview_prep?.content?.role_type || 'generic';
-    byRoleType[rt] = (byRoleType[rt] || 0) + 1;
-  });
-
-  if (loading) return <SkeletonRow />;
-  if (prepPacks.length === 0) {
-    return <EmptyHero icon={<Icon.Brain c="w-5 h-5" />} title="No interview prep packs generated yet" subtitle="Packs appear here after users open the Interview Prep tab on a tailored resume." />;
-  }
-
-  return (
-    <div className="space-y-5">
-      {/* Role type distribution */}
-      <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-5">
-        <SectionHeading title="By role type" subtitle="Detected role types across all generated packs." />
-        <div className="flex items-center gap-2 flex-wrap">
-          {Object.entries(byRoleType).sort((a, b) => b[1] - a[1]).map(([rt, n]) => (
-            <div key={rt} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/25 text-xs">
-              <span className="capitalize text-indigo-300/70">{rt}</span>
-              <span className="font-bold text-indigo-200 tabular-nums">{n}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Search */}
-      <div className="flex items-center gap-3">
-        <div className="flex-1 max-w-md"><SearchBox value={search} onChange={setSearch} placeholder="Search email, role, or company…" /></div>
-        <span className="text-xs text-gray-500 tabular-nums whitespace-nowrap">{filtered.length} of {prepPacks.length}</span>
-      </div>
-
-      <div className="overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.01]">
-        <div className="overflow-x-auto overscroll-contain">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-white/[0.06] bg-white/[0.02]">
-                {['User', 'Role · Company', 'Role Type', 'App Status', 'Prep Generated', 'Session Created'].map(h => (
-                  <th key={h} className="text-left px-4 py-3 text-[10px] text-gray-500 font-semibold uppercase tracking-wider whitespace-nowrap">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((p, i) => {
-                const rt = p.interview_prep?.content?.role_type;
-                return (
-                  <tr key={i} className="border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors">
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <Avatar seed={p.user_email} size="sm" />
-                        <span className="font-mono text-xs text-gray-400 truncate max-w-[180px]">{p.user_email}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <p className="text-sm text-gray-200 font-medium">{p.jd_analysis?.job_title || '—'}</p>
-                      <p className="text-xs text-gray-500">{p.jd_analysis?.company && p.jd_analysis.company !== 'Not specified' ? p.jd_analysis.company : '—'}</p>
-                    </td>
-                    <td className="px-4 py-3">
-                      {rt ? (
-                        <span className="inline-flex px-2 py-0.5 rounded text-[10px] font-semibold capitalize border bg-indigo-500/15 text-indigo-300 border-indigo-500/25">{rt}</span>
-                      ) : <span className="text-xs text-gray-700">—</span>}
-                    </td>
-                    <td className="px-4 py-3"><StatusPill status={p.application?.status} size="sm" /></td>
-                    <td className="px-4 py-3"><TimeStamp iso={p.interview_prep?.generated_at} /></td>
-                    <td className="px-4 py-3"><TimeStamp iso={p.created_at} /></td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ─── User Detail Drawer ───────────────────────────────────────────────────
 
 function UserDetailDrawer({ detail, onBack }: { detail: UserDetail; onBack: () => void }) {
@@ -2638,10 +1591,10 @@ function UserDetailDrawer({ detail, onBack }: { detail: UserDetail; onBack: () =
   const [section, setSection] = useState<'overview' | 'resume' | 'files' | 'tailoring'>('overview');
   const [viewerUrl, setViewerUrl] = useState<string | null>(null);
   const [viewerFilename, setViewerFilename] = useState('');
-  const [downloadingKey, setDownloadingKey] = useState<string | null>(null);
+  // Always null now that inline file access is disabled, but FileBlock still
+  // reads it to decide the per-row "busy" state.
+  const [downloadingKey] = useState<string | null>(null);
   const [viewerError, setViewerError] = useState('');
-
-  const getExt = (name: string) => { const d = name.lastIndexOf('.'); return d !== -1 ? name.slice(d + 1).toLowerCase() : ''; };
 
   // Revoke any blob URL when the modal closes so we don't leak memory.
   const closeViewer = useCallback(() => {
@@ -2652,49 +1605,15 @@ function UserDetailDrawer({ detail, onBack }: { detail: UserDetail; onBack: () =
     return () => { if (viewerUrl && viewerUrl.startsWith('blob:')) URL.revokeObjectURL(viewerUrl); };
   }, [viewerUrl]);
 
-  const handleViewResume = async (s3Key: string, filename?: string) => {
-    setDownloadingKey(s3Key); setViewerError('');
-    const fname = filename || s3Key.split('/').pop() || 'resume.pdf';
-    const ext = getExt(fname);
-    try {
-      if (ext === 'docx' || ext === 'doc') {
-        // DOCX can't preview inline — download instead.
-        const res = await apiService.getAdminResumeUrl(s3Key, 'attachment', fname);
-        if (res.data?.url) window.open(res.data.url, '_blank');
-        return;
-      }
-      // PDF — fetch the presigned URL as a blob so the iframe loads from a
-      // blob: URL (CSP `frame-src 'self' blob:` allows that) instead of
-      // from the cross-origin S3 host (which CSP blocks).
-      const res = await apiService.getAdminResumeUrl(s3Key, 'inline', fname);
-      if (!res.data?.url) {
-        setViewerError(res.error || 'Failed to get resume URL');
-        return;
-      }
-      try {
-        const resp = await fetch(res.data.url);
-        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-        const blob = await resp.blob();
-        const blobUrl = URL.createObjectURL(blob);
-        setViewerUrl(blobUrl);
-        setViewerFilename(fname);
-      } catch (fetchErr) {
-        // Cross-origin fetch failed (CORS, network, etc.) — fall back to
-        // a new-tab open so the user still gets the file.
-        console.warn('Inline preview fetch failed, opening in new tab:', fetchErr);
-        window.open(res.data.url, '_blank');
-      }
-    } finally { setDownloadingKey(null); }
+  // Inline preview / download of a user's resume files relied on a presigned
+  // S3 URL endpoint that is no longer part of the product surface. The Files
+  // tab still lists what each user has on record; surfacing the raw file is
+  // intentionally disabled.
+  const fileAccessUnavailable = () => {
+    setViewerError('Resume file access is not available in this build.');
   };
-
-  const handleDownload = async (s3Key: string, filename?: string) => {
-    setDownloadingKey(s3Key);
-    const fname = filename || s3Key.split('/').pop() || 'resume.pdf';
-    try {
-      const res = await apiService.getAdminResumeUrl(s3Key, 'attachment', fname);
-      if (res.data?.url) window.open(res.data.url, '_blank');
-    } finally { setDownloadingKey(null); }
-  };
+  const handleViewResume = () => fileAccessUnavailable();
+  const handleDownload = () => fileAccessUnavailable();
 
   const sections: { key: typeof section; label: string; count?: number }[] = [
     { key: 'overview',  label: 'Overview' },

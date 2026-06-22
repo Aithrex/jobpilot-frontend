@@ -92,9 +92,8 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
     <FeedbackContext.Provider value={value}>
       {children}
       {/* Floating launcher — vertically rotated tab on the LEFT edge so it
-          never collides with the bottom-right cluster (Chatbot, Concierge,
-          BuilderAgent, ResumeParser's sticky action bar). Vertically
-          centered → always within thumb reach on desktop. */}
+          never collides with the ResumeParser workspace's bottom-right sticky
+          action bar. Vertically centered → always within thumb reach. */}
       {isAuthenticated && (
         <button
           type="button"

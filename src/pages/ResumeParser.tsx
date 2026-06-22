@@ -3,14 +3,15 @@ import { motion, AnimatePresence } from "framer-motion";
 import { apiService } from "@/lib/api";
 import AuthGate from "@/components/AuthGate";
 import { useAuth } from "@/contexts/AuthContext";
-import { useVisitorTracking } from "@/hooks/useVisitorTracking";
 import { useDailyUsage, DailyUsage } from "@/hooks/useDailyUsage";
 import { DailyUsageBadge } from "@/components/quota/DailyUsageBadge";
 import { QuotaLimitDialog } from "@/components/quota/QuotaLimitDialog";
 import { useFeedback } from "@/components/feedback/FeedbackWidget";
 import { buildCoverLetterFilename, titleCaseName } from "@/lib/filename";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Bot, Menu, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
+import { Bot, CreditCard, GraduationCap, Trophy, Users, Menu, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
+import { ConnectedTo } from "@/components/resume/ConnectedTo";
+import MobileBottomNav from "@/components/layout/MobileBottomNav";
 import { lazy, Suspense } from "react";
 import { toast } from "sonner";
 import ResumeDashboard, {
@@ -38,6 +39,10 @@ const JobOpportunitiesTab = lazy(() => import("@/components/resume/JobOpportunit
 const CareerCopilotTab = lazy(() => import("@/components/resume/CareerCopilotTab"));
 const VisaTimelineTab = lazy(() => import("@/components/visa/VisaTimelineTab"));
 const BetaLabTab = lazy(() => import("@/components/beta/BetaLabTab"));
+const BillingTab = lazy(() => import("@/components/billing/BillingTab"));
+const LearningHubTab = lazy(() => import("@/components/resume/LearningHubTab"));
+const EventsTab = lazy(() => import("@/components/resume/EventsTab"));
+const NetworkTab = lazy(() => import("@/components/resume/NetworkTab"));
 
 // ─── Shared Icons ───────────────────────────────────────────────────────────
 
@@ -325,6 +330,10 @@ type NavTab =
   | "visa"
   | "beta"
   | "copilot"
+  | "learning"
+  | "events"
+  | "network"
+  | "billing"
   | "profile";
 
 const ROLE_OPTIONS = [
@@ -6026,6 +6035,30 @@ const NAV_ITEMS: ResumeNavItem[] = [
     hint: "Discover and save roles",
   },
   {
+    key: "learning",
+    label: "Learning Hub",
+    icon: <GraduationCap className="w-4 h-4" />,
+    hint: "Study plans + skill→job loop",
+  },
+  {
+    key: "events",
+    label: "Events",
+    icon: <Trophy className="w-4 h-4" />,
+    hint: "Vetted hackathons & webinars",
+  },
+  {
+    key: "network",
+    label: "Network & Posts",
+    icon: <Users className="w-4 h-4" />,
+    hint: "Draft posts about your wins",
+  },
+  {
+    key: "billing",
+    label: "Billing",
+    icon: <CreditCard className="w-4 h-4" />,
+    hint: "Plan + usage",
+  },
+  {
     key: "profile",
     label: "Profile",
     icon: <UserCircleIcon className="w-4 h-4" />,
@@ -6038,8 +6071,9 @@ const NAV_SECTIONS: ResumeNavSection[] = [
   { label: "Create", items: ["tailor", "batch"] },
   { label: "Library", items: ["my-resumes", "tailored", "applications"] },
   { label: "Career", items: ["interview", "visa", "copilot", "jobs"] },
+  { label: "Grow", items: ["learning", "events", "network"] },
   { label: "Experimental", items: ["beta"] },
-  { label: "Account", items: ["profile"] },
+  { label: "Account", items: ["billing", "profile"] },
 ];
 
 function ResumeSectionNav({
@@ -6210,6 +6244,10 @@ const VALID_NAV_TABS: readonly NavTab[] = [
   "visa",
   "beta",
   "copilot",
+  "learning",
+  "events",
+  "network",
+  "billing",
   "profile",
 ] as const;
 
@@ -6233,7 +6271,6 @@ export default function ResumeParser() {
     if (typeof window === "undefined") return false;
     return window.localStorage.getItem("resumeParserSidebarCollapsed") === "true";
   });
-  useVisitorTracking("resume-parser");
 
   const activeNavItem = useMemo(
     () => NAV_ITEMS.find((item) => item.key === activeNav) ?? NAV_ITEMS[0],
@@ -6264,13 +6301,23 @@ export default function ResumeParser() {
     const toJobs = () => selectNav('jobs');
     const toTailor = () => selectNav('tailor');
     const toBatchTailor = () => selectNav('batch');
+    // Generic cross-link hop: any component can dispatch
+    // `jobpilot:navigate` with detail = a valid tab key (used by ConnectedTo).
+    const toTab = (e: Event) => {
+      const tab = (e as CustomEvent).detail;
+      if (typeof tab === 'string' && (VALID_NAV_TABS as readonly string[]).includes(tab)) {
+        selectNav(tab as NavTab);
+      }
+    };
     window.addEventListener('portfolio:navigate-to-jobs', toJobs);
     window.addEventListener('portfolio:navigate-to-tailor', toTailor);
     window.addEventListener('portfolio:navigate-to-batch-tailor', toBatchTailor);
+    window.addEventListener('jobpilot:navigate', toTab as EventListener);
     return () => {
       window.removeEventListener('portfolio:navigate-to-jobs', toJobs);
       window.removeEventListener('portfolio:navigate-to-tailor', toTailor);
       window.removeEventListener('portfolio:navigate-to-batch-tailor', toBatchTailor);
+      window.removeEventListener('jobpilot:navigate', toTab as EventListener);
     };
   }, [selectNav]);
 
@@ -6559,6 +6606,9 @@ export default function ResumeParser() {
 
             <main className="min-w-0 flex-1 px-4 py-6 sm:px-6 lg:px-8">
               <div className="mx-auto max-w-[1500px]">
+              {/* Cross-link tissue: contextual related-feature shortcuts for
+                  the active tab (no-op on tabs with their own rich linking). */}
+              <ConnectedTo from={activeNav} />
               {activeNav === "dashboard" && (
                 <Suspense
                   fallback={
@@ -6662,11 +6712,52 @@ export default function ResumeParser() {
                   <CareerCopilotTab />
                 </Suspense>
               )}
+              {activeNav === "learning" && (
+                <Suspense
+                  fallback={
+                    <div className="rounded-xl border border-gray-200 dark:border-white/[0.07] bg-white dark:bg-gray-900/40 p-8 text-center">
+                      <div className="h-6 w-1/3 animate-pulse rounded bg-gray-200 dark:bg-white/10 mx-auto" />
+                    </div>
+                  }
+                >
+                  <LearningHubTab />
+                </Suspense>
+              )}
+              {activeNav === "events" && (
+                <Suspense fallback={<div className="p-8 text-center"><div className="h-6 w-1/3 animate-pulse rounded bg-gray-200 dark:bg-white/10 mx-auto" /></div>}>
+                  <EventsTab />
+                </Suspense>
+              )}
+              {activeNav === "network" && (
+                <Suspense fallback={<div className="p-8 text-center"><div className="h-6 w-1/3 animate-pulse rounded bg-gray-200 dark:bg-white/10 mx-auto" /></div>}>
+                  <NetworkTab />
+                </Suspense>
+              )}
+              {activeNav === "billing" && (
+                <Suspense
+                  fallback={
+                    <div className="rounded-xl border border-gray-200 dark:border-white/[0.07] bg-white dark:bg-gray-900/40 p-8 text-center">
+                      <div className="h-6 w-1/3 animate-pulse rounded bg-gray-200 dark:bg-white/10 mx-auto" />
+                    </div>
+                  }
+                >
+                  <BillingTab />
+                </Suspense>
+              )}
               {activeNav === "profile" && <ProfileTab />}
               </div>
             </main>
           </div>
         </div>
+
+        {/* Instagram-style bottom nav for mobile/tablet; desktop uses the sidebar. */}
+        <MobileBottomNav
+          items={NAV_ITEMS}
+          sections={NAV_SECTIONS}
+          activeKey={activeNav}
+          onSelect={(key) => selectNav(key as NavTab)}
+          primaryKeys={["dashboard", "jobs", "tailor", "interview"]}
+        />
 
         <style>{`
           .hide-scrollbar::-webkit-scrollbar { display: none; }

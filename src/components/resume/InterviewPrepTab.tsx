@@ -13,8 +13,9 @@ import {
 } from "./InterviewPrep/PracticeCards";
 import CoachChat from "./InterviewPrep/CoachChat";
 import MockInterview from "./InterviewPrep/MockInterview";
+import InterviewInsights from "./InterviewInsights";
 
-type TopTab = "overview" | "questions" | "practical" | "edge" | "mock" | "coach";
+type TopTab = "overview" | "questions" | "practical" | "edge" | "mock" | "coach" | "insights";
 type QSubTab = "behavioral" | "technical" | "company" | "tough";
 type PracticalSubTab = "coding" | "system_design" | "case_study" | "data_challenge";
 
@@ -242,6 +243,7 @@ export default function InterviewPrepTab() {
     { key: "edge",      label: "Your Edge",   icon: "🎯" },
     { key: "mock",      label: "Mock Interview", icon: "🎤" },
     { key: "coach",     label: "AI Coach",    icon: "🧑‍🏫" },
+    { key: "insights",  label: "Insights",    icon: "📈" },
   ].filter(t => t.show === undefined || t.show);
 
   return (
@@ -627,6 +629,9 @@ export default function InterviewPrepTab() {
                         />
                       </div>
                     )}
+
+                    {/* ── Interview Pattern Coach: cross-role insights (Pillar D) ── */}
+                    {topTab === "insights" && <InterviewInsights />}
                   </div>
                 </>
               )}
