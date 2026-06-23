@@ -3,11 +3,14 @@ import {
   MapPin, Building2, Clock, DollarSign, Briefcase, ExternalLink,
   BookmarkPlus, BookmarkCheck, Sparkles, Target, FileText, Wand2, ChevronDown,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { JobAnalysisModal } from './JobAnalysisModal';
 import { ResumeTailorModal } from './ResumeTailorModal';
+import { JobTrustBadge } from './JobTrustBadge';
+import { apiService } from '@/lib/api';
 import type { Job } from '@/types/jobs';
 
 interface JobCardProps {
@@ -51,10 +54,38 @@ export function JobCard({ job, saved, jobStatus, onSave, onUnsave, onQuickApply 
   const [analysisOpen, setAnalysisOpen] = useState(false);
   const [analysisAction, setAnalysisAction] = useState<'summarize' | 'missing_skills' | 'cover_letter'>('summarize');
   const [tailorOpen, setTailorOpen] = useState(false);
+  const [scanning, setScanning] = useState(false);
 
   const openAnalysis = (action: typeof analysisAction) => {
     setAnalysisAction(action);
     setAnalysisOpen(true);
+  };
+
+  const runDeepScan = async () => {
+    setScanning(true);
+    try {
+      const res = await apiService.checkJobTrust(job);
+      const r = res.data;
+      if (!r) {
+        toast.error('Could not scan this posting');
+        return;
+      }
+      const title =
+        r.trust_band === 'high_risk'
+          ? 'High scam / ghost-job risk'
+          : r.trust_band === 'caution'
+            ? 'Some risk signals found'
+            : 'No scam signals found';
+      const description =
+        r.advice || r.llm_rationale || (r.trust_reasons || []).slice(0, 2).join(' · ') || undefined;
+      if (r.trust_band === 'high_risk') toast.error(title, { description });
+      else if (r.trust_band === 'caution') toast.warning(title, { description });
+      else toast.success(title, { description });
+    } catch {
+      toast.error('Scan failed — try again');
+    } finally {
+      setScanning(false);
+    }
   };
 
   const apply = buildApplyUrl(job);
@@ -88,6 +119,19 @@ export function JobCard({ job, saved, jobStatus, onSave, onUnsave, onQuickApply 
                 <MapPin className="h-3 w-3 flex-shrink-0" />
                 <span className="truncate">{job.location}</span>
               </p>
+              {job.trust_band && (
+                <div className="mt-1.5 flex items-center gap-2">
+                  <JobTrustBadge band={job.trust_band} score={job.trust_score} reasons={job.trust_reasons} />
+                  <button
+                    type="button"
+                    onClick={runDeepScan}
+                    disabled={scanning}
+                    className="text-[10px] font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:underline disabled:opacity-50"
+                  >
+                    {scanning ? 'Scanning…' : 'Deep-scan'}
+                  </button>
+                </div>
+              )}
             </div>
             <MatchScoreRing score={job.match_score} />
           </div>

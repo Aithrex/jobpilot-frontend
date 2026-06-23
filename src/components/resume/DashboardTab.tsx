@@ -3,7 +3,12 @@ import { motion } from 'framer-motion';
 import { apiService } from '@/lib/api';
 import type { TechChronicleItem } from '@/types/techChronicle';
 import type { DashboardOverview } from '@/types/overview';
+import type { CareerReadiness } from '@/types/career';
 import { RecommendedForYou } from './RecommendedForYou';
+import { CareerReadinessCard } from './CareerReadinessCard';
+import { CareerPath } from './CareerPath';
+import { GitHubProofCard } from './GitHubProofCard';
+import { LinkedInAuditCard } from './LinkedInAuditCard';
 import {
   Sparkles, Search, ClipboardList, GraduationCap, Bot, Flame, Send,
   TrendingUp, ArrowRight, ArrowUpRight, RefreshCw, Briefcase, Trophy, Mic,
@@ -109,6 +114,7 @@ const QUICK_ACTIONS: { key: NavKey; icon: typeof Sparkles; title: string }[] = [
 
 export default function DashboardTab({ userName, onNavigate }: DashboardTabProps) {
   const [overview, setOverview] = useState<DashboardOverview | null>(null);
+  const [readiness, setReadiness] = useState<CareerReadiness | null>(null);
   const [streak, setStreak] = useState<StreakData | null>(null);
   const [brief, setBrief] = useState<{ headline: string; lines: string[] } | null>(null);
   const [trends, setTrends] = useState<TechChronicleItem[]>([]);
@@ -116,13 +122,18 @@ export default function DashboardTab({ userName, onNavigate }: DashboardTabProps
 
   const load = async () => {
     setLoading(true);
-    const [ovR, stR, brR, trR] = await Promise.all([
+    const [ovR, crR, stR, brR, trR] = await Promise.all([
       apiService.getOverview().catch(() => ({ error: 'x' } as const)),
+      apiService.getCareerReadiness().catch(() => ({ error: 'x' } as const)),
       apiService.getApplicationStreak().catch(() => ({ error: 'x' } as const)),
       apiService.getMorningBrief().catch(() => ({ error: 'x' } as const)),
       apiService.getTechChronicle('all').catch(() => ({ error: 'x' } as const)),
     ]);
     if ('data' in ovR && ovR.data) setOverview(ovR.data as DashboardOverview);
+    // Guard against the backend's {} error-fallback — only accept a real score.
+    if ('data' in crR && crR.data && Array.isArray((crR.data as CareerReadiness).dimensions)) {
+      setReadiness(crR.data as CareerReadiness);
+    }
     if ('data' in stR && stR.data) setStreak(stR.data as StreakData);
     if ('data' in brR && brR.data?.briefing) setBrief({ headline: brR.data.briefing.headline, lines: brR.data.briefing.lines || [] });
     if ('data' in trR && trR.data) setTrends((trR.data.items || []).slice(0, 6));
@@ -157,6 +168,14 @@ export default function DashboardTab({ userName, onNavigate }: DashboardTabProps
         </button>
       </div>
 
+      {/* Compass — career readiness: where you are → your next step */}
+      <CareerReadinessCard data={readiness} loading={loading} onNavigate={(t) => onNavigate(t as NavKey)} />
+
+      {/* Your path — the guided, build-one-step-at-a-time journey */}
+      {readiness?.build_plan && readiness.build_plan.length > 0 && (
+        <CareerPath steps={readiness.build_plan} onNavigate={(t) => onNavigate(t as NavKey)} />
+      )}
+
       {/* Hero stats — each links into its surface */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
         <StatCard icon={Send} label="Applications" value={streak?.total_applications ?? totalApps} sub={`${o?.applications.active ?? 0} active`} onClick={() => onNavigate('applications')} />
@@ -187,6 +206,12 @@ export default function DashboardTab({ userName, onNavigate }: DashboardTabProps
 
       {/* ── Interconnected pillar grid ── */}
       <div className="grid gap-4 lg:grid-cols-3">
+        {/* GitHub proof-of-skill — recognize what you've built */}
+        <GitHubProofCard onLinked={load} />
+
+        {/* LinkedIn self-audit — build a standout presence */}
+        <LinkedInAuditCard />
+
         {/* Pipeline */}
         <ConnectCard icon={ClipboardList} title="Application pipeline" onOpen={() => onNavigate('applications')}
           footer={(o?.applications.stale ?? 0) > 0 ? (

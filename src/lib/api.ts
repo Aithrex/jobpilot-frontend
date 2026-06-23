@@ -464,6 +464,33 @@ class ApiService {
     return this.request<import("../types/overview").DashboardOverview>("/resume/overview");
   }
 
+  // ── Career Readiness Score (the Compass spine) ──
+  async getCareerReadiness() {
+    return this.request<import("../types/career").CareerReadiness>(
+      "/resume/career-readiness",
+    );
+  }
+
+  async getGithub() {
+    return this.request<{ linked: boolean; profile: import("../types/career").GithubProfile | null }>(
+      "/resume/github",
+    );
+  }
+
+  async linkGithub(username: string) {
+    return this.request<{ linked: boolean; profile: import("../types/career").GithubProfile }>(
+      "/resume/github/link",
+      { method: "POST", body: JSON.stringify({ username }) },
+    );
+  }
+
+  async auditLinkedin(linkedinUrl: string) {
+    return this.request<import("../types/career").LinkedinAudit>(
+      "/resume/linkedin/audit",
+      { method: "POST", body: JSON.stringify({ linkedin_url: linkedinUrl }) },
+    );
+  }
+
   async getVisaProfile() {
     return this.request<{ profile: import("../types/visa").VisaProfile }>(
       "/resume/visa/profile",
@@ -773,6 +800,16 @@ class ApiService {
       method: "POST",
       body: JSON.stringify({ job, action }),
     });
+  }
+
+  async checkJobTrust(job: import("../types/jobs").Job) {
+    return this.request<import("../types/jobs").JobTrustResult>(
+      "/jobs/trust-check",
+      {
+        method: "POST",
+        body: JSON.stringify({ job }),
+      },
+    );
   }
 
   async uploadResume(

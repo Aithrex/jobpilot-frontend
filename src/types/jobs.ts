@@ -190,6 +190,22 @@ export interface Job {
   match_score: number;
   matched_skills: string[];
   missing_skills: string[];
+  // Scam-shield: deterministic trust assessment attached to every search result
+  // (server-side, no LLM). Optional — saved/older payloads may omit it.
+  trust_score?: number;
+  trust_band?: 'trusted' | 'caution' | 'high_risk';
+  trust_flags?: string[];
+  trust_reasons?: string[];
+}
+
+export interface JobTrustResult {
+  trust_score: number;
+  trust_band: 'trusted' | 'caution' | 'high_risk';
+  trust_flags: string[];
+  trust_reasons: string[];
+  llm_rationale?: string;
+  advice?: string;
+  llm_confidence?: number;
 }
 
 export interface SavedJob {
