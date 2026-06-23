@@ -204,14 +204,19 @@ export default function DashboardTab({ userName, onNavigate }: DashboardTabProps
       {/* Recommended for you — personalized cross-feature feed */}
       <RecommendedForYou onNavigate={(t) => onNavigate(t as NavKey)} />
 
-      {/* ── Interconnected pillar grid ── */}
+      {/* Build your professional presence — proof that recognizes the building */}
+      <section>
+        <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-muted-foreground">
+          Build your professional presence
+        </h2>
+        <div className="grid gap-4 lg:grid-cols-2">
+          <GitHubProofCard onLinked={load} />
+          <LinkedInAuditCard />
+        </div>
+      </section>
+
+      {/* ── Your toolkit: each pillar links into its surface ── */}
       <div className="grid gap-4 lg:grid-cols-3">
-        {/* GitHub proof-of-skill — recognize what you've built */}
-        <GitHubProofCard onLinked={load} />
-
-        {/* LinkedIn self-audit — build a standout presence */}
-        <LinkedInAuditCard />
-
         {/* Pipeline */}
         <ConnectCard icon={ClipboardList} title="Application pipeline" onOpen={() => onNavigate('applications')}
           footer={(o?.applications.stale ?? 0) > 0 ? (

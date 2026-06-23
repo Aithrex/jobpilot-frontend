@@ -1,0 +1,45 @@
+{
+  "manifest_version": 3,
+  "name": "JobPilot — Apply Assistant",
+  "version": "0.1.0",
+  "description": "High-signal application autofill + résumé-grounded answers. You review, you submit — never spray-and-pray.",
+  "permissions": ["storage", "activeTab", "scripting"],
+  "host_permissions": [
+    "http://localhost:5000/*",
+    "https://*.myworkdayjobs.com/*",
+    "https://boards.greenhouse.io/*",
+    "https://job-boards.greenhouse.io/*",
+    "https://jobs.lever.co/*",
+    "https://*.icims.com/*",
+    "https://*.ashbyhq.com/*",
+    "https://jobs.ashbyhq.com/*",
+    "https://*.smartrecruiters.com/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "JobPilot Apply Assistant"
+  },
+  "background": { "service_worker": "background.js" },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*.myworkdayjobs.com/*",
+        "https://boards.greenhouse.io/*",
+        "https://job-boards.greenhouse.io/*",
+        "https://jobs.lever.co/*",
+        "https://*.icims.com/*",
+        "https://*.ashbyhq.com/*",
+        "https://jobs.ashbyhq.com/*",
+        "https://*.smartrecruiters.com/*"
+      ],
+      "js": ["config.js", "content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["http://localhost:5173/*"],
+      "js": ["config.js", "tokensync.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
