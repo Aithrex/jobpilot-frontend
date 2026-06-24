@@ -491,6 +491,46 @@ class ApiService {
     );
   }
 
+  // ── Connect & act: GitHub / LinkedIn OAuth integrations ──────
+  async getConnectStatus() {
+    return this.request<import("../types/career").ConnectStatus>(
+      "/resume/connect/status",
+    );
+  }
+
+  async getConnectAuthorizeUrl(provider: "github" | "linkedin") {
+    return this.request<{ authorize_url: string }>(
+      `/resume/connect/${provider}/authorize`,
+    );
+  }
+
+  async disconnectProvider(provider: "github" | "linkedin") {
+    return this.request<{ ok: boolean }>(
+      `/resume/connect/${provider}/disconnect`,
+      { method: "POST" },
+    );
+  }
+
+  async publishGithubProject(payload: {
+    name: string;
+    description?: string;
+    kind?: string;
+  }) {
+    return this.request<{ repo_url: string; files: string[] }>(
+      "/resume/connect/github/publish",
+      { method: "POST", body: JSON.stringify(payload) },
+      30000,
+    );
+  }
+
+  async postToLinkedin(text: string) {
+    return this.request<{ post_url: string | null; post_id: string | null }>(
+      "/resume/connect/linkedin/post",
+      { method: "POST", body: JSON.stringify({ text }) },
+      30000,
+    );
+  }
+
   async getVisaProfile() {
     return this.request<{ profile: import("../types/visa").VisaProfile }>(
       "/resume/visa/profile",

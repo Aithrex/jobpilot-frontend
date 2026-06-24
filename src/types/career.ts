@@ -63,6 +63,11 @@ export interface GithubRepo {
   topics: string[];
 }
 
+export interface ConnectStatus {
+  github: { connected: boolean; login?: string };
+  linkedin: { connected: boolean; name?: string };
+}
+
 export interface GithubProfile {
   username: string;
   name: string | null;

@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
+import { toast } from 'sonner';
 import { apiService } from '@/lib/api';
 import type { TechChronicleItem } from '@/types/techChronicle';
 import type { DashboardOverview } from '@/types/overview';
-import type { CareerReadiness } from '@/types/career';
+import type { CareerReadiness, ConnectStatus } from '@/types/career';
 import { RecommendedForYou } from './RecommendedForYou';
 import { CareerReadinessCard } from './CareerReadinessCard';
 import { CareerPath } from './CareerPath';
@@ -118,16 +119,18 @@ export default function DashboardTab({ userName, onNavigate }: DashboardTabProps
   const [streak, setStreak] = useState<StreakData | null>(null);
   const [brief, setBrief] = useState<{ headline: string; lines: string[] } | null>(null);
   const [trends, setTrends] = useState<TechChronicleItem[]>([]);
+  const [connect, setConnect] = useState<ConnectStatus | null>(null);
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
     setLoading(true);
-    const [ovR, crR, stR, brR, trR] = await Promise.all([
+    const [ovR, crR, stR, brR, trR, cnR] = await Promise.all([
       apiService.getOverview().catch(() => ({ error: 'x' } as const)),
       apiService.getCareerReadiness().catch(() => ({ error: 'x' } as const)),
       apiService.getApplicationStreak().catch(() => ({ error: 'x' } as const)),
       apiService.getMorningBrief().catch(() => ({ error: 'x' } as const)),
       apiService.getTechChronicle('all').catch(() => ({ error: 'x' } as const)),
+      apiService.getConnectStatus().catch(() => ({ error: 'x' } as const)),
     ]);
     if ('data' in ovR && ovR.data) setOverview(ovR.data as DashboardOverview);
     // Guard against the backend's {} error-fallback — only accept a real score.
@@ -137,10 +140,37 @@ export default function DashboardTab({ userName, onNavigate }: DashboardTabProps
     if ('data' in stR && stR.data) setStreak(stR.data as StreakData);
     if ('data' in brR && brR.data?.briefing) setBrief({ headline: brR.data.briefing.headline, lines: brR.data.briefing.lines || [] });
     if ('data' in trR && trR.data) setTrends((trR.data.items || []).slice(0, 6));
+    // Guard against the {} error-fallback — only accept a shape with both providers.
+    if ('data' in cnR && cnR.data && (cnR.data as ConnectStatus).github && (cnR.data as ConnectStatus).linkedin) {
+      setConnect(cnR.data as ConnectStatus);
+    }
     setLoading(false);
   };
 
+  const reloadConnect = async () => {
+    const r = await apiService.getConnectStatus().catch(() => ({ error: 'x' } as const));
+    if ('data' in r && r.data && (r.data as ConnectStatus).github && (r.data as ConnectStatus).linkedin) {
+      setConnect(r.data as ConnectStatus);
+    }
+  };
+
   useEffect(() => { void load(); /* eslint-disable-next-line */ }, []);
+
+  // After OAuth the backend redirects to /app?connected=<p> | ?connect_error=<r>.
+  // Surface a toast, then strip the param so a refresh doesn't re-fire it.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const connected = params.get('connected');
+    const error = params.get('connect_error');
+    if (!connected && !error) return;
+    if (connected) toast.success(`${connected} connected`);
+    if (error) toast.error(`Couldn't connect: ${error.replace(/_/g, ' ')}`);
+    params.delete('connected');
+    params.delete('connect_error');
+    const qs = params.toString();
+    window.history.replaceState({}, '', `${window.location.pathname}${qs ? `?${qs}` : ''}${window.location.hash}`);
+  }, []);
 
   const o = overview;
   const byStatus = o?.applications.by_status || {};
@@ -210,8 +240,8 @@ export default function DashboardTab({ userName, onNavigate }: DashboardTabProps
           Build your professional presence
         </h2>
         <div className="grid gap-4 lg:grid-cols-2">
-          <GitHubProofCard onLinked={load} />
-          <LinkedInAuditCard />
+          <GitHubProofCard onLinked={load} connect={connect} reloadConnect={reloadConnect} />
+          <LinkedInAuditCard connect={connect} reloadConnect={reloadConnect} />
         </div>
       </section>
 

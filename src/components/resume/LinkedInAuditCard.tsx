@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Linkedin, ArrowRight, Copy, Check } from 'lucide-react';
+import { Linkedin, ArrowRight, Copy, Check, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiService } from '@/lib/api';
-import type { LinkedinAudit } from '@/types/career';
+import type { LinkedinAudit, ConnectStatus } from '@/types/career';
 
 const DOT: Record<string, string> = {
   good: 'bg-emerald-500',
@@ -10,12 +10,20 @@ const DOT: Record<string, string> = {
   missing: 'bg-destructive',
 };
 
+interface LinkedInAuditCardProps {
+  connect?: ConnectStatus | null;
+  reloadConnect?: () => void;
+}
+
 /**
  * LinkedIn self-audit. We don't (and can't) scrape LinkedIn — this builds honest,
  * specific guidance from the user's real résumé + goal, plus a paste-ready headline
  * and About. Helps a student present as a legitimate, well-positioned candidate.
+ *
+ * The footer adds an optional OAuth "connect & act" capability: once connected,
+ * the user can review and post an update to LinkedIn (always human-approved).
  */
-export function LinkedInAuditCard() {
+export function LinkedInAuditCard({ connect, reloadConnect }: LinkedInAuditCardProps) {
   const [audit, setAudit] = useState<LinkedinAudit | null>(null);
   const [url, setUrl] = useState('');
   const [busy, setBusy] = useState(false);
@@ -88,6 +96,8 @@ export function LinkedInAuditCard() {
             {copied === 'a' ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />} Copy suggested “About”
           </button>
         )}
+
+        <LinkedInConnect connect={connect} reloadConnect={reloadConnect} prefill={audit.headline} />
       </div>
     );
   }
@@ -116,6 +126,150 @@ export function LinkedInAuditCard() {
           {busy ? 'Auditing…' : <>Audit <ArrowRight className="h-3.5 w-3.5" /></>}
         </button>
       </div>
+
+      <LinkedInConnect connect={connect} reloadConnect={reloadConnect} />
+    </div>
+  );
+}
+
+/**
+ * "Connect & act" footer — OAuth LinkedIn so the user can post an update.
+ * The user always writes/reviews the text before posting (human-approved).
+ */
+function LinkedInConnect({ connect, reloadConnect, prefill }: {
+  connect?: ConnectStatus | null; reloadConnect?: () => void; prefill?: string;
+}) {
+  const li = connect?.linkedin;
+  const [connecting, setConnecting] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState(prefill || '');
+  const [posting, setPosting] = useState(false);
+  const [disconnecting, setDisconnecting] = useState(false);
+
+  const startConnect = async () => {
+    setConnecting(true);
+    try {
+      const r = await apiService.getConnectAuthorizeUrl('linkedin');
+      if (r.data?.authorize_url) {
+        window.location.href = r.data.authorize_url;
+      } else {
+        toast.error(r.error || 'LinkedIn connect is unavailable right now');
+        setConnecting(false);
+      }
+    } catch {
+      toast.error('Could not start LinkedIn connect');
+      setConnecting(false);
+    }
+  };
+
+  const post = async () => {
+    const t = text.trim();
+    if (!t) {
+      toast.error('Write something to post');
+      return;
+    }
+    setPosting(true);
+    try {
+      const r = await apiService.postToLinkedin(t);
+      if (r.data && !r.error) {
+        if (r.data.post_url) {
+          toast.success('Posted to LinkedIn', {
+            action: { label: 'View', onClick: () => window.open(r.data!.post_url!, '_blank', 'noopener,noreferrer') },
+          });
+        } else {
+          toast.success('Posted to LinkedIn');
+        }
+        setOpen(false);
+        setText('');
+      } else {
+        toast.error(r.error || 'Could not post to LinkedIn');
+      }
+    } catch {
+      toast.error('Post failed — try again');
+    } finally {
+      setPosting(false);
+    }
+  };
+
+  const disconnect = async () => {
+    setDisconnecting(true);
+    try {
+      const r = await apiService.disconnectProvider('linkedin');
+      if (r.data?.ok) {
+        toast.success('LinkedIn disconnected');
+        reloadConnect?.();
+      } else {
+        toast.error(r.error || 'Could not disconnect');
+      }
+    } catch {
+      toast.error('Could not disconnect');
+    } finally {
+      setDisconnecting(false);
+    }
+  };
+
+  if (!li?.connected) {
+    return (
+      <div className="mt-3 border-t border-border pt-3">
+        <button
+          onClick={startConnect}
+          disabled={connecting}
+          className="inline-flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground hover:text-foreground disabled:opacity-50"
+        >
+          <Linkedin className="h-3.5 w-3.5 text-[#0a66c2]" /> {connecting ? 'Connecting…' : 'Connect LinkedIn to post'}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-3 border-t border-border pt-3">
+      <div className="flex items-center gap-2">
+        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
+          <Linkedin className="h-3.5 w-3.5 text-[#0a66c2]" /> Connected{li.name ? ` as ${li.name}` : ''}
+        </span>
+        <button
+          onClick={disconnect}
+          disabled={disconnecting}
+          className="ml-auto text-[11px] font-medium text-muted-foreground hover:text-destructive disabled:opacity-50"
+        >
+          {disconnecting ? 'Disconnecting…' : 'Disconnect'}
+        </button>
+      </div>
+
+      {!open ? (
+        <button
+          onClick={() => { setText(prefill || ''); setOpen(true); }}
+          className="mt-2 inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+        >
+          <Send className="h-3.5 w-3.5" /> Post to LinkedIn
+        </button>
+      ) : (
+        <div className="mt-2 space-y-2">
+          <textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            rows={4}
+            placeholder="Write your post… you review it before it goes live."
+            className="w-full resize-y rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+          />
+          <div className="flex items-center gap-2">
+            <button
+              onClick={post}
+              disabled={posting || !text.trim()}
+              className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+            >
+              {posting ? 'Posting…' : <>Post <Send className="h-3.5 w-3.5" /></>}
+            </button>
+            <button
+              onClick={() => setOpen(false)}
+              className="text-[11px] font-medium text-muted-foreground hover:text-foreground"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
