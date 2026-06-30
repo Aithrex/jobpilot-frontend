@@ -1,0 +1,13 @@
+# Copy to terraform.tfvars and fill in.
+
+project     = "jobpilot"
+environment = "prod"
+domain_name = "aspirely.me"
+subject_alternative_names = ["www.aspirely.me"]
+
+# Backend API Gateway host (NO https://). Get it from the backend stack:
+#   cd ../../../jobpilot-backend/infra/terraform && terraform output -raw api_endpoint
+# then strip the leading https://
+api_gateway_domain = "REPLACE_ME.execute-api.us-east-1.amazonaws.com"
+
+price_class = "PriceClass_100"
