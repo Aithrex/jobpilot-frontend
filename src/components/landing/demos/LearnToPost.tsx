@@ -92,7 +92,7 @@ export default function LearnToPost() {
                 initial={{ opacity: reduce ? 1 : 0, y: reduce ? 0 : 10 }}
                 animate={{ opacity: show ? 1 : 0, y: show ? 0 : 10 }}
                 transition={{ duration: reduce ? 0 : 0.45, ease: EASE, delay: reduce ? 0 : i * 0.22 }}
-                className="relative flex flex-col gap-2 rounded-xl border border-border bg-card/60 p-3"
+                className="relative flex min-w-0 flex-col gap-2 rounded-xl border border-border bg-card/60 p-3"
               >
                 {/* travelling highlight: ring + soft shadow brighten as the flow passes */}
                 <motion.span
