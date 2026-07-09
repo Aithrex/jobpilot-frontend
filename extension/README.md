@@ -10,8 +10,10 @@ The backend already exists (`jobpilot-backend/blueprints/apply.py`); this is its
 
 ## What it does — "Fill, Review, One Tap"
 - **Autofill** name / email / phone / location / LinkedIn / GitHub / portfolio /
-  current company on Workday, Greenhouse, Lever, Ashby, SmartRecruiters, Workable
-  (and iCIMS) forms — only into empty fields, never overwriting what you've typed.
+  current company on Workday, Greenhouse, Lever, Ashby, SmartRecruiters, and
+  Workable forms — only into empty fields, never overwriting what you've typed.
+  Other ATSes (e.g. iCIMS) are handled best-effort by the generic semantic
+  matcher, so expect more amber-confidence fields there.
 - **Review Card**: after autofill, an isolated (shadow-DOM) overlay lists every
   field it filled, the value, and a per-field confidence — green (deterministic),
   amber (guessed / AI-matched, verify), red (do it yourself). Every value is

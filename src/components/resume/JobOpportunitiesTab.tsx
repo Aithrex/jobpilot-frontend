@@ -95,8 +95,9 @@ export default function JobOpportunitiesTab() {
             </span>
           </div>
           <p className="text-sm text-muted-foreground max-w-xl">
-            A daily pipeline of roles from LinkedIn and Workday, with smart filters built around
-            your resume. Applying moves a job straight into Saved, marked as applied.
+            A daily pipeline of roles pulled straight from company career portals — Workday,
+            Greenhouse, Lever, and Ashby — with smart filters built around your resume.
+            Applying moves a job straight into Saved, marked as applied.
           </p>
         </div>
         <div className="inline-flex w-fit items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
