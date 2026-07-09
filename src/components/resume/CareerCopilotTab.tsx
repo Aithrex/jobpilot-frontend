@@ -118,6 +118,10 @@ type QuizQuestion = {
 
 // ─── Agent theming ──────────────────────────────────────────────────────────
 
+// Deliberate token exception: a categorical, data-driven agent color scale.
+// Eight agents need eight distinguishable hues — more than the semantic token
+// set offers. Chips always pair the color with the agent's name, so meaning
+// never rides on color alone.
 const AGENT_COLORS: Record<string, { grad: string; text: string }> = {
   memory:     { grad: "from-violet-500/20 to-fuchsia-500/10", text: "text-violet-700 dark:text-violet-300" },
   strategist: { grad: "from-sky-500/20 to-cyan-500/10",       text: "text-sky-700 dark:text-sky-300" },
@@ -147,7 +151,7 @@ function PipelineChips({ steps }: { steps: PipelineStep[] }) {
           <span
             key={`${s.agent}-${i}`}
             title={s.summary}
-            className={`inline-flex max-w-full items-center gap-1 rounded-lg border border-white/10 bg-gradient-to-r ${c.grad} px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-800 dark:text-gray-200`}
+            className={`inline-flex max-w-full items-center gap-1 rounded-lg border border-border/60 bg-gradient-to-r ${c.grad} px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-foreground`}
           >
             <span className="shrink-0 text-[9px] opacity-80">{s.agent}</span>
             <span className="truncate font-normal normal-case">{s.label}</span>
@@ -161,8 +165,8 @@ function PipelineChips({ steps }: { steps: PipelineStep[] }) {
 function ToolCallLog({ calls }: { calls: ToolCall[] }) {
   if (!calls?.length) return null;
   return (
-    <details className="mt-2 text-[11px] text-gray-500 dark:text-gray-400">
-      <summary className="cursor-pointer font-semibold hover:text-indigo-600 dark:hover:text-indigo-300">
+    <details className="mt-2 text-[11px] text-muted-foreground">
+      <summary className="cursor-pointer font-semibold hover:text-primary">
         {calls.length} tool call{calls.length !== 1 ? "s" : ""} executed
       </summary>
       <ul className="mt-1 ml-3 space-y-1 list-disc">
@@ -184,21 +188,21 @@ function DeliverableCard({ d }: { d: Deliverable }) {
   if (d.type === "ppt") {
     const slides = (data.slides || []) as Array<{ title: string; bullets: string[]; speaker_notes?: string }>;
     return (
-      <div className="mt-3 rounded-xl border border-teal-500/20 bg-teal-500/[0.04] p-3 text-xs">
-        <p className="font-bold text-teal-800 dark:text-teal-200 flex items-center gap-1.5">
+      <div className="mt-3 rounded-xl border border-primary/20 bg-primary/[0.04] p-3 text-xs">
+        <p className="font-bold text-primary flex items-center gap-1.5">
           <Layers className="h-3.5 w-3.5" /> PPT Outline — {String(data.title || "")}
         </p>
-        {(data.subtitle as string) && <p className="text-gray-500 text-[11px] mt-0.5">{String(data.subtitle)}</p>}
+        {(data.subtitle as string) && <p className="text-muted-foreground text-[11px] mt-0.5">{String(data.subtitle)}</p>}
         <ol className="mt-2 ml-4 list-decimal space-y-1.5">
           {slides.map((s, i) => (
             <li key={i}>
-              <span className="font-semibold text-gray-900 dark:text-white">{s.title}</span>
+              <span className="font-semibold text-foreground">{s.title}</span>
               {s.bullets?.length > 0 && (
-                <ul className="ml-3 list-disc text-gray-600 dark:text-gray-400">
+                <ul className="ml-3 list-disc text-muted-foreground">
                   {s.bullets.map((b, j) => <li key={j}>{b}</li>)}
                 </ul>
               )}
-              {s.speaker_notes && <p className="italic text-gray-400 mt-0.5">{s.speaker_notes}</p>}
+              {s.speaker_notes && <p className="italic text-muted-foreground/70 mt-0.5">{s.speaker_notes}</p>}
             </li>
           ))}
         </ol>
@@ -208,14 +212,14 @@ function DeliverableCard({ d }: { d: Deliverable }) {
   if (d.type === "pdf") {
     const sections = (data.sections || []) as Array<{ heading: string; body: string }>;
     return (
-      <div className="mt-3 rounded-xl border border-blue-500/20 bg-blue-500/[0.04] p-3 text-xs">
-        <p className="font-bold text-blue-800 dark:text-blue-200 flex items-center gap-1.5">
+      <div className="mt-3 rounded-xl border border-primary/20 bg-primary/[0.04] p-3 text-xs">
+        <p className="font-bold text-primary flex items-center gap-1.5">
           <FileText className="h-3.5 w-3.5" /> PDF One-Pager — {String(data.title || "")}
         </p>
         {sections.map((s, i) => (
           <div key={i} className="mt-2">
-            <p className="font-semibold text-gray-900 dark:text-white">{s.heading}</p>
-            <p className="text-gray-600 dark:text-gray-300 mt-0.5 leading-relaxed whitespace-pre-wrap">{s.body}</p>
+            <p className="font-semibold text-foreground">{s.heading}</p>
+            <p className="text-muted-foreground mt-0.5 leading-relaxed whitespace-pre-wrap">{s.body}</p>
           </div>
         ))}
       </div>
@@ -224,23 +228,23 @@ function DeliverableCard({ d }: { d: Deliverable }) {
   if (d.type === "project") {
     const milestones = (data.milestones || []) as Array<{ title: string; deliverable: string; duration: string }>;
     return (
-      <div className="mt-3 rounded-xl border border-indigo-500/20 bg-indigo-500/[0.04] p-3 text-xs">
-        <p className="font-bold text-indigo-800 dark:text-indigo-200 flex items-center gap-1.5">
+      <div className="mt-3 rounded-xl border border-primary/20 bg-primary/[0.04] p-3 text-xs">
+        <p className="font-bold text-primary flex items-center gap-1.5">
           <Zap className="h-3.5 w-3.5" /> Project Scaffold — {String(data.name || "")}
         </p>
-        <p className="text-gray-600 dark:text-gray-300 mt-1">{String(data.description || "")}</p>
-        {(data.tech_stack as string) && <p className="mt-1 text-gray-500">Stack: {String(data.tech_stack)}</p>}
+        <p className="text-muted-foreground mt-1">{String(data.description || "")}</p>
+        {(data.tech_stack as string) && <p className="mt-1 text-muted-foreground">Stack: {String(data.tech_stack)}</p>}
         <ol className="mt-2 ml-4 list-decimal space-y-1">
           {milestones.map((m, i) => (
             <li key={i}>
               <span className="font-semibold">{m.title}</span>
-              <span className="text-gray-400 ml-1">({m.duration})</span>
-              <span className="block text-gray-500">{m.deliverable}</span>
+              <span className="text-muted-foreground/70 ml-1">({m.duration})</span>
+              <span className="block text-muted-foreground">{m.deliverable}</span>
             </li>
           ))}
         </ol>
         {(data.folder_structure as string) && (
-          <pre className="mt-2 rounded bg-gray-100 dark:bg-gray-800 p-2 text-[10px] text-gray-700 dark:text-gray-300 overflow-auto whitespace-pre-wrap">
+          <pre className="mt-2 rounded bg-muted p-2 text-[10px] text-foreground/90 overflow-auto whitespace-pre-wrap">
             {String(data.folder_structure)}
           </pre>
         )}
@@ -266,16 +270,16 @@ function KpiRow({ cards }: { cards: KpiCard[] }) {
         return (
           <div
             key={k.label}
-            className="rounded-xl border border-gray-200/80 bg-white/70 px-3 py-2.5 dark:border-white/10 dark:bg-white/[0.03]"
+            className="rounded-xl border border-border bg-card px-3 py-2.5 shadow-soft"
           >
             <div className="flex items-center gap-2">
-              <Ic className="h-4 w-4 text-indigo-500" />
-              <span className="text-lg font-bold text-gray-900 dark:text-white tabular-nums">{k.value}</span>
+              <Ic className="h-4 w-4 text-primary" />
+              <span className="font-display text-lg font-extrabold text-foreground tabular-nums">{k.value}</span>
               {k.trend && (
-                <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">{k.trend}</span>
+                <span className="text-[10px] font-semibold text-success">{k.trend}</span>
               )}
             </div>
-            <p className="text-[10px] text-gray-500 dark:text-gray-400 font-medium mt-0.5">{k.label}</p>
+            <p className="text-[10px] text-muted-foreground font-medium mt-0.5">{k.label}</p>
           </div>
         );
       })}
@@ -298,14 +302,39 @@ function TimelineList({ events }: { events: TimelineEvent[] }) {
         const Ic = iconFor(e.type);
         return (
           <div key={i} className="flex gap-2 text-xs">
-            <Ic className="h-3.5 w-3.5 shrink-0 text-gray-400 mt-0.5" />
+            <Ic className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70 mt-0.5" />
             <div className="min-w-0">
-              <p className="text-gray-700 dark:text-gray-300">{e.description}</p>
-              <p className="text-[10px] text-gray-400 dark:text-gray-500">{new Date(e.timestamp).toLocaleString()}</p>
+              <p className="text-foreground/90">{e.description}</p>
+              <p className="text-[10px] text-muted-foreground/70">{new Date(e.timestamp).toLocaleString()}</p>
             </div>
           </div>
         );
       })}
+    </div>
+  );
+}
+
+function SectionSkeleton({ heights = ["h-24", "h-24"] }: { heights?: string[] }) {
+  return (
+    <div className="space-y-3" aria-hidden>
+      {heights.map((h, i) => (
+        <div key={i} className={`animate-pulse rounded-xl bg-muted ${h}`} />
+      ))}
+    </div>
+  );
+}
+
+function SectionErrorNote({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return (
+    <div className="flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/[0.06] px-4 py-3 text-xs text-destructive">
+      <p className="flex-1 leading-relaxed">{message}</p>
+      <button
+        type="button"
+        onClick={onRetry}
+        className="shrink-0 rounded font-semibold underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/40"
+      >
+        Retry
+      </button>
     </div>
   );
 }
@@ -432,15 +461,21 @@ export default function CareerCopilotTab() {
   const [subTab, setSubTab] = useState<SubTab>("chat");
   const endRef = useRef<HTMLDivElement>(null);
 
+  // Per-section async UI state (loading skeletons + quiet inline errors).
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [sectionBusy, setSectionBusy] = useState<Partial<Record<SubTab, boolean>>>({});
+  const [sectionError, setSectionError] = useState<Partial<Record<SubTab, string | null>>>({});
+
   const scrollToBottom = () => endRef.current?.scrollIntoView({ behavior: "smooth" });
 
   // ─── Data fetchers ──────────────────────────────────────────────────────
 
   const loadState = useCallback(async () => {
     setLoading(true);
+    setLoadError(null);
     const r = await apiService.getCareerCopilotState();
     setLoading(false);
-    if (r.error) { toast.error(r.error); return; }
+    if (r.error) { setLoadError(r.error); return; }
     const d = r.data!;
     setMessages((d.messages || []) as CopilotMessage[]);
     setHasResume(!!d.has_resume);
@@ -460,7 +495,11 @@ export default function CareerCopilotTab() {
   }, []);
 
   const loadCampaigns = useCallback(async () => {
+    setSectionBusy((p) => ({ ...p, outreach: true }));
+    setSectionError((p) => ({ ...p, outreach: null }));
     const r = await apiService.getOutreachCampaigns();
+    setSectionBusy((p) => ({ ...p, outreach: false }));
+    if (r.error) { setSectionError((p) => ({ ...p, outreach: r.error })); return; }
     if (r.data?.campaigns) setCampaigns(r.data.campaigns);
   }, []);
 
@@ -479,32 +518,46 @@ export default function CareerCopilotTab() {
   }, []);
 
   const loadNetworkData = useCallback(async () => {
+    setSectionBusy((p) => ({ ...p, network: true }));
+    setSectionError((p) => ({ ...p, network: null }));
     const [contactsResp, insightsResp] = await Promise.all([
       apiService.getNetworkContacts(),
       apiService.getNetworkingInsights(),
     ]);
+    setSectionBusy((p) => ({ ...p, network: false }));
+    if (contactsResp.error) setSectionError((p) => ({ ...p, network: contactsResp.error }));
     if (contactsResp.data?.contacts) setNetworkContacts(contactsResp.data.contacts as NetworkContact[]);
     if (insightsResp.data?.insights) setNetworkInsights(insightsResp.data.insights);
   }, []);
 
   const loadOffersData = useCallback(async () => {
+    setSectionBusy((p) => ({ ...p, offers: true }));
+    setSectionError((p) => ({ ...p, offers: null }));
     const [offersResp, compareResp] = await Promise.all([
       apiService.getOffers(),
       apiService.compareOffers(),
     ]);
+    setSectionBusy((p) => ({ ...p, offers: false }));
+    if (offersResp.error) setSectionError((p) => ({ ...p, offers: offersResp.error }));
     if (offersResp.data?.offers) setOffers(offersResp.data.offers as OfferItem[]);
     if (compareResp.data?.comparison) setOfferCompare(compareResp.data.comparison);
   }, []);
+
+  const loadDashboard = useCallback(async () => {
+    setSectionBusy((p) => ({ ...p, dashboard: true }));
+    await Promise.all([loadTimeline(), loadMemory(), loadMomentum()]);
+    setSectionBusy((p) => ({ ...p, dashboard: false }));
+  }, [loadTimeline, loadMemory, loadMomentum]);
 
   useEffect(() => { void loadState(); }, [loadState]);
   useEffect(() => { scrollToBottom(); }, [messages]);
 
   useEffect(() => {
     if (subTab === "outreach") void loadCampaigns();
-    if (subTab === "dashboard") { void loadTimeline(); void loadMemory(); void loadMomentum(); }
+    if (subTab === "dashboard") void loadDashboard();
     if (subTab === "network") void loadNetworkData();
     if (subTab === "offers") void loadOffersData();
-  }, [subTab, loadCampaigns, loadTimeline, loadMemory, loadMomentum, loadNetworkData, loadOffersData]);
+  }, [subTab, loadCampaigns, loadDashboard, loadNetworkData, loadOffersData]);
 
   // ─── Chat ───────────────────────────────────────────────────────────────
 
@@ -539,7 +592,7 @@ export default function CareerCopilotTab() {
       trackId ? { track_id: trackId } : { custom_topic: customTopic.trim() || undefined },
     );
     setPgBusy(false);
-    if (r.error || !r.data?.ok) { toast.error(r.data?.error || r.error || "Failed"); return; }
+    if (r.error || !r.data?.ok) { toast.error(r.data?.error || r.error || "Couldn't start the track"); return; }
     setPlayground((r.data.playground as PlaygroundState) || null);
     setCustomTopic("");
     setQuiz(null); setQuizAnswers({}); setQuizSubmitted(false);
@@ -586,7 +639,7 @@ export default function CareerCopilotTab() {
       channel: newCampaign.channel,
     });
     setOutreachBusy(false);
-    if (r.error || !r.data?.ok) { toast.error(r.error || "Failed"); return; }
+    if (r.error || !r.data?.ok) { toast.error(r.error || "Couldn't create the campaign"); return; }
     setShowNewCampaign(false);
     setNewCampaign({ company: "", role: "", channel: "email" });
     toast.success("Campaign created");
@@ -725,13 +778,29 @@ export default function CareerCopilotTab() {
 
   if (loading) {
     return (
-      <div className="min-h-[50vh] rounded-2xl border border-gray-200 dark:border-white/[0.08] bg-white/60 p-4 dark:bg-gray-900/40">
+      <div className="min-h-[50vh] rounded-2xl border border-border bg-card p-4">
         <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-          <div className="h-20 animate-pulse rounded-xl bg-gray-200/70 dark:bg-white/10" />
-          <div className="h-20 animate-pulse rounded-xl bg-gray-200/70 dark:bg-white/10" />
-          <div className="h-20 animate-pulse rounded-xl bg-gray-200/70 dark:bg-white/10" />
+          <div className="h-20 animate-pulse rounded-xl bg-muted" />
+          <div className="h-20 animate-pulse rounded-xl bg-muted" />
+          <div className="h-20 animate-pulse rounded-xl bg-muted" />
         </div>
-        <div className="mt-4 h-64 animate-pulse rounded-xl bg-gray-200/70 dark:bg-white/10" />
+        <div className="mt-4 h-64 animate-pulse rounded-xl bg-muted" />
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="rounded-2xl border border-destructive/30 bg-destructive/[0.06] p-6">
+        <p className="text-sm font-semibold text-destructive">Couldn't load your copilot workspace.</p>
+        <p className="mt-1 text-xs text-muted-foreground">{loadError}</p>
+        <button
+          type="button"
+          onClick={() => void loadState()}
+          className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition hover:border-primary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <History className="h-3.5 w-3.5" /> Try again
+        </button>
       </div>
     );
   }
@@ -750,33 +819,33 @@ export default function CareerCopilotTab() {
   return (
     <div className="space-y-5">
       {/* Header */}
-      <header className="rounded-2xl border border-indigo-500/15 bg-gradient-to-br from-indigo-500/10 via-purple-500/5 to-transparent p-5 sm:p-6">
+      <header className="mesh-accent rounded-2xl border border-primary/20 p-5 sm:p-6 shadow-soft">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="space-y-1">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-indigo-600/90 dark:text-indigo-300">
-              Multi-agent agentic RAG
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
+              Career · Copilot
             </p>
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-950 dark:text-white">
+            <h2 className="font-display text-xl sm:text-2xl font-extrabold tracking-tight text-foreground">
               Career Copilot
             </h2>
-            <p className="max-w-2xl text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+            <p className="max-w-2xl text-sm text-muted-foreground leading-relaxed">
               Ask naturally and get grounded responses from your resume context. Use this workspace for outreach, interview drills,
               application strategy, networking, and offer decisions — all in one guided flow.
             </p>
             <div className="mt-2 flex flex-wrap gap-1.5">
-              <span className="rounded-full border border-indigo-500/20 bg-indigo-500/10 px-2 py-0.5 text-[10px] font-semibold text-indigo-700 dark:text-indigo-300">Resume-grounded answers</span>
-              <span className="rounded-full border border-violet-500/20 bg-violet-500/10 px-2 py-0.5 text-[10px] font-semibold text-violet-700 dark:text-violet-300">Multi-agent tools</span>
-              <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 dark:text-emerald-300">Actionable next steps</span>
+              <span className="rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">Resume-grounded answers</span>
+              <span className="rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">Multi-agent tools</span>
+              <span className="rounded-full border border-success/20 bg-success/10 px-2 py-0.5 text-[10px] font-semibold text-success">Actionable next steps</span>
             </div>
             {!hasResume && (
-              <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">
+              <p className="mt-1 text-sm text-warning">
                 No parsed resume — upload in <strong>My Resumes</strong> for grounded answers.
               </p>
             )}
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <button type="button" onClick={() => void loadState()}
-              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-gray-200 bg-white/80 px-3 text-xs font-semibold text-gray-700 transition hover:border-indigo-500/30 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-border bg-card px-3 text-xs font-semibold text-foreground transition hover:border-primary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <History className="h-3.5 w-3.5" /> Refresh
             </button>
@@ -788,16 +857,16 @@ export default function CareerCopilotTab() {
       {kpiCards.length > 0 && <KpiRow cards={kpiCards} />}
 
       {/* Sub-tab bar */}
-      <div className="flex flex-wrap gap-1 rounded-xl border border-gray-200/80 bg-white/60 p-1 dark:border-white/10 dark:bg-gray-900/40">
+      <div className="flex flex-wrap gap-1 rounded-xl border border-border bg-card/60 p-1">
         {SUB_TABS.map((t) => (
           <button
             key={t.id}
             type="button"
             onClick={() => setSubTab(t.id)}
-            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50 ${
+            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
               subTab === t.id
-                ? "bg-indigo-500/15 text-indigo-800 dark:text-indigo-200 ring-1 ring-indigo-500/20 shadow-sm"
-                : "text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+                ? "bg-primary/15 text-primary ring-1 ring-primary/20 shadow-soft"
+                : "text-muted-foreground hover:text-foreground"
             }`}
           >
             <t.icon className="h-4 w-4" />
@@ -812,13 +881,13 @@ export default function CareerCopilotTab() {
 
           {/* ═══════════ CHAT TAB ═══════════ */}
           {subTab === "chat" && (
-            <div className="rounded-2xl border border-gray-200/90 bg-white/90 shadow-sm dark:border-white/[0.08] dark:bg-gray-900/50">
-              <div className="flex items-center justify-between border-b border-gray-200/80 px-4 py-2.5 dark:border-white/10">
-                <span className="flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-white">
-                  <Bot className="h-4 w-4 text-indigo-500" /> Agentic chat
+            <div className="rounded-2xl border border-border bg-card shadow-soft">
+              <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
+                <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                  <Bot className="h-4 w-4 text-primary" /> Agentic chat
                 </span>
                 <button type="button" onClick={() => void onReset()}
-                  className="text-xs text-red-600/80 dark:text-red-400 font-medium rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40"
+                  className="text-xs text-destructive font-medium rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/40"
                 >
                   <Trash2 className="inline h-3 w-3 mr-1" />Clear
                 </button>
@@ -834,16 +903,16 @@ export default function CareerCopilotTab() {
                       key={quick.title}
                       type="button"
                       onClick={() => void send(quick.prompt)}
-                      className="rounded-lg border border-gray-200/80 bg-white/80 px-3 py-2 text-left text-xs transition hover:border-indigo-500/30 hover:bg-indigo-500/[0.03] dark:border-white/10 dark:bg-white/[0.03]"
+                      className="rounded-lg border border-border bg-card px-3 py-2 text-left text-xs transition hover:border-primary/30 hover:bg-primary/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
-                      <p className="font-semibold text-gray-900 dark:text-white">{quick.title}</p>
-                      <p className="mt-0.5 text-gray-500 dark:text-gray-400">One-click starter</p>
+                      <p className="font-semibold text-foreground">{quick.title}</p>
+                      <p className="mt-0.5 text-muted-foreground">One-click starter</p>
                     </button>
                   ))}
                 </div>
                 {messages.length === 0 && (
-                  <div className="rounded-xl border border-dashed border-indigo-500/25 bg-indigo-500/[0.04] p-5 text-sm text-gray-600 dark:text-gray-400">
-                    <div className="mb-2 flex items-center gap-2 font-semibold text-indigo-700 dark:text-indigo-300">
+                  <div className="rounded-xl border border-dashed border-primary/25 bg-primary/[0.04] p-5 text-sm text-muted-foreground">
+                    <div className="mb-2 flex items-center gap-2 font-semibold text-primary">
                       <Sparkles className="h-4 w-4" /> Start with a play or ask anything
                     </div>
                     <ul className="ml-1 list-inside list-disc space-y-1.5 text-[13px]">
@@ -870,8 +939,8 @@ export default function CareerCopilotTab() {
                       >
                         <div className={`max-w-[92%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
                           isUser
-                            ? "bg-indigo-600 text-white"
-                            : "bg-gray-100/90 text-gray-900 dark:bg-white/10 dark:text-gray-100"
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted text-foreground"
                         }`}>
                           <div className="whitespace-pre-wrap break-words">{m.content}</div>
                           {!isUser && pipe?.length ? <PipelineChips steps={pipe} /> : null}
@@ -883,42 +952,42 @@ export default function CareerCopilotTab() {
                   })}
                 </AnimatePresence>
                 {sending && (
-                  <div className="flex items-center gap-2 text-sm text-indigo-600 dark:text-indigo-300">
+                  <div className="flex items-center gap-2 text-sm text-primary">
                     <Loader2 className="h-4 w-4 animate-spin" /> Orchestrating agents…
                   </div>
                 )}
                 <div ref={endRef} />
               </div>
               {citations.length > 0 && (
-                <div className="border-t border-gray-200/80 px-4 py-3 text-xs text-gray-500 dark:text-gray-400 dark:border-white/10">
-                  <p className="mb-1 font-semibold text-gray-700 dark:text-gray-300">RAG sources</p>
+                <div className="border-t border-border px-4 py-3 text-xs text-muted-foreground">
+                  <p className="mb-1 font-semibold text-foreground/90">RAG sources</p>
                   <ul className="space-y-1">
                     {citations.slice(0, 4).map((c) => (
                       <li key={c.id}>
-                        <span className="font-mono text-[10px] text-indigo-500">{c.id}</span> {c.snippet}
+                        <span className="font-mono text-[10px] text-primary">{c.id}</span> {c.snippet}
                       </li>
                     ))}
                   </ul>
                 </div>
               )}
-              <div className="border-t border-gray-200/90 p-3 sm:p-4 space-y-3 dark:border-white/10">
+              <div className="border-t border-border p-3 sm:p-4 space-y-3">
                 <button type="button" onClick={() => setShowJd((s) => !s)}
-                  className="text-xs font-semibold text-indigo-600 dark:text-indigo-400"
+                  className="text-xs font-semibold text-primary"
                 >
                   {showJd ? "Hide" : "Attach"} job description
                 </button>
                 {showJd && (
                   <textarea value={jdPaste} onChange={(e) => setJdPaste(e.target.value)} rows={3}
-                    placeholder="Paste JD — agents use it for tailoring, outreach, and interview prep."
-                    className="w-full rounded-xl border border-gray-200 bg-white/80 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-indigo-500/50 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-white/10 dark:bg-gray-950/50 dark:text-white"
+                    placeholder="Paste a job description — agents use it for tailoring, outreach, and interview prep."
+                    className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
                   />
                 )}
-                {compliance && <p className="text-[11px] text-amber-800/90 dark:text-amber-200/80">{compliance}</p>}
+                {compliance && <p className="text-[11px] text-warning">{compliance}</p>}
                 {suggested.length > 0 && (
                   <div className="flex flex-wrap gap-1.5">
                     {suggested.map((s) => (
                       <button key={s} type="button" onClick={() => void send(s)}
-                        className="rounded-full border border-indigo-500/20 bg-indigo-500/5 px-2.5 py-1 text-[11px] font-medium text-indigo-800 dark:text-indigo-200 hover:bg-indigo-500/10 transition"
+                        className="rounded-full border border-primary/20 bg-primary/5 px-2.5 py-1 text-[11px] font-medium text-primary hover:bg-primary/10 transition"
                       >{s}</button>
                     ))}
                   </div>
@@ -928,10 +997,10 @@ export default function CareerCopilotTab() {
                     onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void send(); } }}
                     rows={2}
                     placeholder="Ask: outreach, PPT, project scaffold, STAR answers, tailoring…"
-                    className="min-h-[44px] flex-1 rounded-xl border border-gray-200 bg-white/90 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-indigo-500/50 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-white/10 dark:bg-gray-950/60 dark:text-white"
+                    className="min-h-[44px] flex-1 rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
                   />
-                  <button type="button" disabled={sending || !input.trim()} onClick={() => void send()}
-                    className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-sm font-semibold text-white shadow-md shadow-indigo-500/25 dark:shadow-indigo-500/10 transition-all duration-200 hover:scale-105 hover:shadow-lg hover:shadow-indigo-500/40 dark:hover:shadow-indigo-500/20 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 disabled:hover:shadow-md"
+                  <button type="button" disabled={sending || !input.trim()} onClick={() => void send()} aria-label="Send message"
+                    className="brand-gradient inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-sm font-semibold text-white shadow-soft transition-all duration-200 hover:scale-105 hover:shadow-panel active:scale-95 disabled:opacity-50 disabled:hover:scale-100 disabled:hover:shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                   >
                     {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                   </button>
@@ -944,60 +1013,67 @@ export default function CareerCopilotTab() {
           {subTab === "outreach" && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                  <Target className="h-4 w-4 text-rose-500" /> Outreach campaigns
+                <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                  <Target className="h-4 w-4 text-primary" /> Outreach campaigns
                 </h3>
                 <button type="button" onClick={() => setShowNewCampaign(true)}
-                  className="inline-flex items-center gap-1 rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white"
+                  className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground"
                 >
                   <Plus className="h-3.5 w-3.5" /> New campaign
                 </button>
               </div>
               {showNewCampaign && (
-                <div className="rounded-xl border border-rose-500/20 bg-rose-500/[0.04] p-4 space-y-3">
+                <div className="rounded-xl border border-primary/20 bg-primary/[0.04] p-4 space-y-3">
                   <input value={newCampaign.company} onChange={(e) => setNewCampaign((p) => ({ ...p, company: e.target.value }))}
-                    placeholder="Target company" className="w-full rounded-lg border border-gray-200 bg-white/90 px-3 py-2 text-sm dark:border-white/10 dark:bg-gray-950/50 dark:text-white" />
+                    placeholder="Target company" className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground" />
                   <input value={newCampaign.role} onChange={(e) => setNewCampaign((p) => ({ ...p, role: e.target.value }))}
-                    placeholder="Target role" className="w-full rounded-lg border border-gray-200 bg-white/90 px-3 py-2 text-sm dark:border-white/10 dark:bg-gray-950/50 dark:text-white" />
+                    placeholder="Target role" className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground" />
                   <div className="flex gap-2">
                     {["email", "linkedin", "twitter"].map((ch) => (
                       <button key={ch} type="button" onClick={() => setNewCampaign((p) => ({ ...p, channel: ch }))}
                         className={`rounded-lg border px-3 py-1.5 text-xs font-semibold capitalize ${
                           newCampaign.channel === ch
-                            ? "border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-300"
-                            : "border-gray-200 text-gray-500 dark:border-white/10"
+                            ? "border-primary/30 bg-primary/10 text-primary"
+                            : "border-border text-muted-foreground"
                         }`}
                       >{ch}</button>
                     ))}
                   </div>
                   <div className="flex gap-2">
                     <button type="button" disabled={outreachBusy} onClick={() => void createCampaign()}
-                      className="rounded-lg bg-rose-600 px-4 py-2 text-xs font-semibold text-white disabled:opacity-50"
+                      className="rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50"
                     >{outreachBusy ? "Creating…" : "Create & auto-generate sequence"}</button>
-                    <button type="button" onClick={() => setShowNewCampaign(false)} className="text-xs text-gray-500 dark:text-gray-400">Cancel</button>
+                    <button type="button" onClick={() => setShowNewCampaign(false)} className="text-xs text-muted-foreground">Cancel</button>
                   </div>
                 </div>
               )}
+              {sectionBusy.outreach ? (
+                <SectionSkeleton heights={["h-28", "h-28"]} />
+              ) : sectionError.outreach ? (
+                <SectionErrorNote message="Couldn't load your campaigns." onRetry={() => void loadCampaigns()} />
+              ) : (
+                <>
               {campaigns.length === 0 && !showNewCampaign && (
-                <div className="rounded-xl border border-dashed border-gray-300 dark:border-white/10 p-6 text-center text-sm text-gray-500">
-                  No campaigns yet. Create one to get an AI-generated outreach sequence.
+                <div className="rounded-xl border border-dashed border-border py-10 text-center">
+                  <Mail className="mx-auto mb-2 h-5 w-5 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground">No campaigns yet. Create one to get a ready-to-send outreach sequence.</p>
                 </div>
               )}
               {campaigns.map((c) => {
                 const ChIcon = CHANNEL_ICON[c.channel] || Mail;
                 return (
-                  <div key={c.campaign_id} className="rounded-xl border border-gray-200/80 bg-white/80 p-4 dark:border-white/10 dark:bg-gray-900/50">
+                  <div key={c.campaign_id} className="rounded-xl border border-border bg-card p-4 shadow-soft">
                     <div className="flex items-start justify-between">
                       <div>
-                        <p className="text-sm font-bold text-gray-900 dark:text-white">{c.target_role} @ {c.target_company}</p>
-                        <p className="text-[11px] text-gray-500 flex items-center gap-1 mt-0.5">
+                        <p className="text-sm font-bold text-foreground">{c.target_role} @ {c.target_company}</p>
+                        <p className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5">
                           <ChIcon className="h-3 w-3" /> {c.channel} · {c.status}
                         </p>
                       </div>
                       <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
-                        c.status === "active" ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
-                        : c.status === "completed" ? "bg-blue-500/10 text-blue-700 dark:text-blue-300"
-                        : "bg-gray-500/10 text-gray-600 dark:text-gray-400"
+                        c.status === "active" ? "bg-success/10 text-success"
+                        : c.status === "completed" ? "bg-primary/10 text-primary"
+                        : "bg-muted text-muted-foreground"
                       }`}>{c.status}</span>
                     </div>
                     {c.sequence?.length > 0 && (
@@ -1005,32 +1081,32 @@ export default function CareerCopilotTab() {
                         {c.sequence.map((s, si) => (
                           <div key={si} className="flex items-start gap-2 text-xs">
                             <div className={`mt-1 h-4 w-4 shrink-0 rounded-full flex items-center justify-center text-[9px] font-bold ${
-                              s.status === "sent" ? "bg-emerald-500 text-white"
-                              : s.status === "replied" ? "bg-blue-500 text-white"
-                              : s.status === "skipped" ? "bg-gray-400 text-white"
-                              : "border-2 border-gray-300 dark:border-gray-600 text-gray-400"
+                              s.status === "sent" ? "bg-success text-white"
+                              : s.status === "replied" ? "bg-primary text-primary-foreground"
+                              : s.status === "skipped" ? "bg-muted-foreground/70 text-white"
+                              : "border-2 border-border text-muted-foreground"
                             }`}>
                               {s.status === "sent" || s.status === "replied" ? <Check className="h-2.5 w-2.5" /> : s.step}
                             </div>
                             <div className="min-w-0 flex-1">
-                              <p className="font-semibold text-gray-800 dark:text-gray-200">{s.action}</p>
+                              <p className="font-semibold text-foreground">{s.action}</p>
                               {s.template && (
-                                <p className="mt-1 text-gray-500 dark:text-gray-400 whitespace-pre-wrap leading-relaxed">{s.template}</p>
+                                <p className="mt-1 text-muted-foreground whitespace-pre-wrap leading-relaxed">{s.template}</p>
                               )}
                               <div className="mt-1.5 flex gap-1.5">
                                 {s.status === "pending" && (
                                   <>
                                     <button type="button" onClick={() => void markStep(c.campaign_id, si, "sent")}
-                                      className="rounded px-2 py-0.5 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-semibold"
+                                      className="rounded px-2 py-0.5 bg-success/10 text-success font-semibold"
                                     >Mark sent</button>
                                     <button type="button" onClick={() => void markStep(c.campaign_id, si, "skipped")}
-                                      className="rounded px-2 py-0.5 bg-gray-500/10 text-gray-600 dark:text-gray-400 font-semibold"
+                                      className="rounded px-2 py-0.5 bg-muted text-muted-foreground font-semibold"
                                     >Skip</button>
                                   </>
                                 )}
                                 {s.status === "sent" && (
                                   <button type="button" onClick={() => void markStep(c.campaign_id, si, "replied")}
-                                    className="rounded px-2 py-0.5 bg-blue-500/10 text-blue-700 dark:text-blue-300 font-semibold"
+                                    className="rounded px-2 py-0.5 bg-primary/10 text-primary font-semibold"
                                   >Got reply</button>
                                 )}
                               </div>
@@ -1042,38 +1118,40 @@ export default function CareerCopilotTab() {
                   </div>
                 );
               })}
+                </>
+              )}
             </div>
           )}
 
           {/* ═══════════ PLAYGROUND TAB ═══════════ */}
           {subTab === "playground" && (
             <div className="space-y-5">
-              <div className="rounded-2xl border border-gray-200/90 bg-white/90 p-5 dark:border-white/[0.08] dark:bg-gray-900/50 space-y-5">
+              <div className="rounded-2xl border border-border bg-card p-5 shadow-soft space-y-5">
                 <div>
                   <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                      <BookOpen className="h-4 w-4 text-indigo-500" /> Guided learning paths
+                    <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                      <BookOpen className="h-4 w-4 text-primary" /> Guided learning paths
                     </h3>
                     {playground?.xp != null && (
-                      <span className="flex items-center gap-1 text-xs font-bold text-amber-600 dark:text-amber-300">
+                      <span className="flex items-center gap-1 text-xs font-bold text-warning">
                         <Trophy className="h-3.5 w-3.5" /> {playground.xp} XP
                         {(playground.streak ?? 0) > 0 && (
-                          <span className="flex items-center gap-0.5 ml-2 text-orange-600 dark:text-orange-300">
+                          <span className="flex items-center gap-0.5 ml-2 text-warning">
                             <Flame className="h-3.5 w-3.5" /> {playground.streak}d streak
                           </span>
                         )}
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     Theory → practice, basic → advanced. Complete tracks, earn XP, take assessments. Or type any topic below.
                   </p>
                   <div className="mt-3 flex flex-col gap-2 sm:flex-row">
                     <input value={customTopic} onChange={(e) => setCustomTopic(e.target.value)}
                       placeholder="e.g. Kubernetes for interviews, React performance patterns"
-                      className="min-w-0 flex-1 rounded-lg border border-gray-200 bg-white/90 px-3 py-2 text-sm dark:border-white/10 dark:bg-gray-950/50 dark:text-white" />
+                      className="min-w-0 flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground" />
                     <button type="button" disabled={pgBusy} onClick={() => void startTrack()}
-                      className="shrink-0 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                      className="shrink-0 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50"
                     >{pgBusy ? "Generating…" : "Generate custom track"}</button>
                   </div>
                 </div>
@@ -1081,45 +1159,45 @@ export default function CareerCopilotTab() {
                 <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                   {tracks.map((t) => (
                     <button key={t.id} type="button" onClick={() => void startTrack(t.id)} disabled={pgBusy}
-                      className="text-left rounded-xl border border-gray-200/80 p-3 text-xs transition hover:border-indigo-500/30 hover:shadow-sm dark:border-white/10"
+                      className="text-left rounded-xl border border-border p-3 text-xs transition hover:border-primary/30 hover:shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
-                      <span className="block font-bold text-gray-900 dark:text-white text-[13px] leading-snug">{t.title}</span>
-                      <span className="text-[11px] text-gray-500 dark:text-gray-400 line-clamp-2 mt-0.5">{t.description}</span>
-                      <span className="mt-1.5 inline-block text-[10px] font-semibold text-indigo-600 dark:text-indigo-300">
+                      <span className="block font-bold text-foreground text-[13px] leading-snug">{t.title}</span>
+                      <span className="text-[11px] text-muted-foreground line-clamp-2 mt-0.5">{t.description}</span>
+                      <span className="mt-1.5 inline-block text-[10px] font-semibold text-primary">
                         {t.steps.length} steps
                       </span>
                     </button>
                   ))}
                 </div>
                 {tracks.length === 0 && (
-                  <div className="rounded-lg border border-dashed border-gray-300 p-3 text-xs text-gray-500 dark:border-white/10 dark:text-gray-400">
+                  <div className="rounded-lg border border-dashed border-border p-3 text-xs text-muted-foreground">
                     No tracks yet. Generate a custom track to get started.
                   </div>
                 )}
 
                 {playground?.steps && playground.steps.length > 0 && (
-                  <div className="rounded-xl border border-indigo-500/20 bg-indigo-500/[0.05] p-4 space-y-3">
-                    <div className="h-1.5 overflow-hidden rounded-full bg-gray-200/80 dark:bg-white/10">
-                      <div className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all"
+                  <div className="rounded-xl border border-primary/20 bg-primary/[0.05] p-4 space-y-3">
+                    <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                      <div className="h-full rounded-full brand-gradient transition-all"
                         style={{ width: `${pgProgress}%` }} />
                     </div>
                     <div className="flex items-center justify-between">
-                      <p className="text-xs font-bold text-indigo-800 dark:text-indigo-200">
+                      <p className="text-xs font-bold text-primary">
                         {playground.custom_title || tracks.find((x) => x.id === playground.active_track)?.title || "Track"}
                         {playground.finished_at && " — complete"}
                       </p>
-                      <span className="text-[10px] text-gray-500">
+                      <span className="text-[10px] text-muted-foreground">
                         {playground.current_step ?? 0}/{playground.steps.length} steps
                       </span>
                     </div>
                     {playground.finished_at && !currentStep && (
                       <div className="space-y-2">
-                        <p className="text-sm text-gray-700 dark:text-gray-200 flex items-center gap-1.5">
-                          <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                        <p className="text-sm text-foreground/90 flex items-center gap-1.5">
+                          <CheckCircle2 className="h-4 w-4 text-success" />
                           Track complete. Take the assessment or send results to the copilot.
                         </p>
                         <button type="button" disabled={pgBusy} onClick={() => void runQuiz()}
-                          className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 text-xs font-semibold text-white disabled:opacity-50"
+                          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50"
                         >
                           <Award className="h-3.5 w-3.5" /> {pgBusy ? "Generating…" : "Take assessment"}
                         </button>
@@ -1128,36 +1206,36 @@ export default function CareerCopilotTab() {
                     {currentStep && !playground.finished_at && (
                       <>
                         <p className={`text-[10px] uppercase font-bold mt-1 ${
-                          currentStep.type === "practice" ? "text-emerald-600 dark:text-emerald-400" : "text-blue-600 dark:text-blue-400"
+                          currentStep.type === "practice" ? "text-success" : "text-primary"
                         }`}>
                           {currentStep.type === "practice" ? "Practice" : "Theory"} · Step {(playground.current_step ?? 0) + 1}
                         </p>
-                        <p className="text-sm font-semibold text-gray-900 dark:text-white">{currentStep.title}</p>
-                        <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">{currentStep.body}</p>
+                        <p className="text-sm font-semibold text-foreground">{currentStep.title}</p>
+                        <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{currentStep.body}</p>
                         <div className="flex gap-2">
                           <button type="button" disabled={pgBusy} onClick={() => void advance()}
-                            className="inline-flex items-center gap-1 text-sm font-semibold text-indigo-600 dark:text-indigo-300"
+                            className="inline-flex items-center gap-1 text-sm font-semibold text-primary"
                           >
                             <Play className="h-3.5 w-3.5" /> Mark done & next
                           </button>
                           <button type="button" onClick={() => void send(`Help me with: ${currentStep.title} — ${currentStep.body}`)}
-                            className="text-xs text-gray-500 underline"
+                            className="text-xs text-muted-foreground underline hover:text-foreground"
                           >Ask copilot</button>
                         </div>
                       </>
                     )}
-                    <button type="button" onClick={() => void resetPlay()} className="text-xs text-gray-400 underline">Reset</button>
+                    <button type="button" onClick={() => void resetPlay()} className="text-xs text-muted-foreground underline hover:text-foreground">Reset</button>
                   </div>
                 )}
 
                 {quiz && (
-                  <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.04] p-4 space-y-4">
-                    <p className="font-bold text-emerald-800 dark:text-emerald-200 text-sm flex items-center gap-1.5">
+                  <div className="rounded-xl border border-success/20 bg-success/[0.04] p-4 space-y-4">
+                    <p className="font-bold text-success text-sm flex items-center gap-1.5">
                       <Award className="h-4 w-4" /> Assessment
                     </p>
                     {quiz.map((q, qi) => (
                       <div key={qi} className="space-y-1.5">
-                        <p className="text-sm font-semibold text-gray-900 dark:text-white">{qi + 1}. {q.question}</p>
+                        <p className="text-sm font-semibold text-foreground">{qi + 1}. {q.question}</p>
                         <div className="space-y-1">
                           {q.options.map((opt, oi) => {
                             const selected = quizAnswers[qi] === oi;
@@ -1167,26 +1245,26 @@ export default function CareerCopilotTab() {
                               <button key={oi} type="button" disabled={quizSubmitted}
                                 onClick={() => setQuizAnswers((p) => ({ ...p, [qi]: oi }))}
                                 className={`w-full text-left rounded-lg border px-3 py-1.5 text-xs transition ${
-                                  isCorrect ? "border-emerald-500 bg-emerald-500/10 text-emerald-800 dark:text-emerald-200"
-                                  : isWrong ? "border-red-500 bg-red-500/10 text-red-800 dark:text-red-200"
-                                  : selected ? "border-indigo-500 bg-indigo-500/10 text-indigo-800 dark:text-indigo-200"
-                                  : "border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-300 hover:border-indigo-500/30"
+                                  isCorrect ? "border-success bg-success/10 text-success"
+                                  : isWrong ? "border-destructive bg-destructive/10 text-destructive"
+                                  : selected ? "border-primary bg-primary/10 text-primary"
+                                  : "border-border text-foreground/90 hover:border-primary/30"
                                 }`}
                               >{opt}</button>
                             );
                           })}
                         </div>
-                        {quizSubmitted && <p className="text-[11px] text-gray-500 italic">{q.explanation}</p>}
+                        {quizSubmitted && <p className="text-[11px] text-muted-foreground italic">{q.explanation}</p>}
                       </div>
                     ))}
                     {!quizSubmitted && (
                       <button type="button" onClick={() => setQuizSubmitted(true)}
                         disabled={Object.keys(quizAnswers).length < quiz.length}
-                        className="rounded-lg bg-emerald-600 px-4 py-2 text-xs font-semibold text-white disabled:opacity-50"
+                        className="rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50"
                       >Submit answers</button>
                     )}
                     {quizSubmitted && (
-                      <p className="text-sm font-bold text-emerald-700 dark:text-emerald-300">
+                      <p className="text-sm font-bold text-success">
                         Score: {quiz.filter((q, i) => quizAnswers[i] === q.correct_index).length}/{quiz.length}
                       </p>
                     )}
@@ -1199,30 +1277,34 @@ export default function CareerCopilotTab() {
           {/* ═══════════ DASHBOARD TAB ═══════════ */}
           {subTab === "dashboard" && (
             <div className="space-y-5">
+              {sectionBusy.dashboard ? (
+                <SectionSkeleton heights={["h-40", "h-40", "h-32"]} />
+              ) : (
+              <>
               {/* Activity timeline */}
-              <div className="rounded-2xl border border-gray-200/90 bg-white/90 p-5 dark:border-white/[0.08] dark:bg-gray-900/50">
-                <h3 className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-3">
-                  <Clock className="h-4 w-4 text-indigo-500" /> Activity timeline
+              <div className="rounded-2xl border border-border bg-card p-5 shadow-soft">
+                <h3 className="text-sm font-bold text-foreground flex items-center gap-2 mb-3">
+                  <Clock className="h-4 w-4 text-primary" /> Activity timeline
                 </h3>
                 {timeline.length > 0 ? <TimelineList events={timeline} /> : (
-                  <p className="text-xs text-gray-500 dark:text-gray-400">No activity yet. Start chatting, creating campaigns, or learning.</p>
+                  <p className="text-xs text-muted-foreground">No activity yet. Start chatting, creating campaigns, or learning.</p>
                 )}
               </div>
 
               {/* Focus distribution */}
               {focusItems.length > 0 && (
-                <div className="rounded-2xl border border-gray-200/90 bg-white/90 p-5 dark:border-white/[0.08] dark:bg-gray-900/50">
-                  <h3 className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-3">
-                    <BarChart3 className="h-4 w-4 text-indigo-500" /> Topic focus
+                <div className="rounded-2xl border border-border bg-card p-5 shadow-soft">
+                  <h3 className="text-sm font-bold text-foreground flex items-center gap-2 mb-3">
+                    <BarChart3 className="h-4 w-4 text-primary" /> Topic focus
                   </h3>
                   <div className="space-y-2">
                     {focusItems.map((f) => (
                       <div key={f.topic} className="flex items-center gap-3">
-                        <span className="w-20 text-xs font-medium text-gray-700 dark:text-gray-300 capitalize truncate">{f.topic}</span>
-                        <div className="flex-1 h-2 rounded-full bg-gray-200/80 dark:bg-white/10 overflow-hidden">
-                          <div className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-purple-500" style={{ width: `${f.pct}%` }} />
+                        <span className="w-20 text-xs font-medium text-foreground/90 capitalize truncate">{f.topic}</span>
+                        <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
+                          <div className="h-full rounded-full brand-gradient" style={{ width: `${f.pct}%` }} />
                         </div>
-                        <span className="text-[10px] font-semibold text-gray-500 tabular-nums w-8 text-right">{f.pct}%</span>
+                        <span className="text-[10px] font-semibold text-muted-foreground tabular-nums w-8 text-right">{f.pct}%</span>
                       </div>
                     ))}
                   </div>
@@ -1230,167 +1312,195 @@ export default function CareerCopilotTab() {
               )}
 
               {momentum && (
-                <div className="rounded-2xl border border-gray-200/90 bg-white/90 p-5 dark:border-white/[0.08] dark:bg-gray-900/50">
-                  <h3 className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-3">
-                    <Flame className="h-4 w-4 text-orange-500" /> Momentum engine
+                <div className="rounded-2xl border border-border bg-card p-5 shadow-soft">
+                  <h3 className="text-sm font-bold text-foreground flex items-center gap-2 mb-3">
+                    <Flame className="h-4 w-4 text-warning" /> Momentum engine
                   </h3>
                   <div className="grid gap-3 sm:grid-cols-3">
-                    <div className="rounded-lg border border-orange-500/20 bg-orange-500/5 p-3">
-                      <p className="text-[11px] text-gray-500 dark:text-gray-400">Current streak</p>
-                      <p className="text-xl font-bold text-orange-700 dark:text-orange-300">{momentum.streak} days</p>
+                    <div className="rounded-lg border border-warning/20 bg-warning/5 p-3">
+                      <p className="text-[11px] text-muted-foreground">Current streak</p>
+                      <p className="text-xl font-bold text-warning">{momentum.streak} days</p>
                     </div>
-                    <div className="rounded-lg border border-indigo-500/20 bg-indigo-500/5 p-3">
-                      <p className="text-[11px] text-gray-500 dark:text-gray-400">Momentum score</p>
-                      <p className="text-xl font-bold text-indigo-700 dark:text-indigo-300">{momentum.momentum_score}/100</p>
+                    <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
+                      <p className="text-[11px] text-muted-foreground">Momentum score</p>
+                      <p className="text-xl font-bold text-primary">{momentum.momentum_score}/100</p>
                     </div>
-                    <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3">
-                      <p className="text-[11px] text-gray-500 dark:text-gray-400">Week-over-week</p>
-                      <p className="text-xl font-bold text-emerald-700 dark:text-emerald-300">{momentum.this_week} vs {momentum.last_week}</p>
+                    <div className="rounded-lg border border-success/20 bg-success/5 p-3">
+                      <p className="text-[11px] text-muted-foreground">Week-over-week</p>
+                      <p className="text-xl font-bold text-success">{momentum.this_week} vs {momentum.last_week}</p>
                     </div>
                   </div>
                   <div className="mt-3 grid grid-cols-10 gap-1">
                     {momentum.heatmap.slice(-30).map((h) => (
-                      <div key={h.date} title={`${h.date}: ${h.count} actions`} className={`h-3 rounded ${h.count >= 3 ? "bg-indigo-500" : h.count >= 1 ? "bg-indigo-300 dark:bg-indigo-600" : "bg-gray-200 dark:bg-white/10"}`} />
+                      <div key={h.date} title={`${h.date}: ${h.count} actions`} className={`h-3 rounded ${h.count >= 3 ? "bg-primary" : h.count >= 1 ? "bg-primary/40" : "bg-muted"}`} />
                     ))}
                   </div>
                 </div>
               )}
 
               {weeklyDigest && (
-                <div className="rounded-2xl border border-violet-500/20 bg-violet-500/[0.05] p-5">
-                  <h3 className="text-sm font-bold text-violet-800 dark:text-violet-200">{weeklyDigest.headline}</h3>
-                  <p className="mt-1 text-xs text-gray-600 dark:text-gray-300">{weeklyDigest.summary}</p>
+                <div className="rounded-2xl border border-primary/20 bg-primary/[0.05] p-5">
+                  <h3 className="text-sm font-bold text-primary">{weeklyDigest.headline}</h3>
+                  <p className="mt-1 text-xs text-muted-foreground">{weeklyDigest.summary}</p>
                 </div>
               )}
 
               {/* Memory notes */}
-              <div className="rounded-2xl border border-gray-200/90 bg-white/90 p-5 dark:border-white/[0.08] dark:bg-gray-900/50">
-                <h3 className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-1">
-                  <Brain className="h-4 w-4 text-violet-500" /> Pinned memory
+              <div className="rounded-2xl border border-border bg-card p-5 shadow-soft">
+                <h3 className="text-sm font-bold text-foreground flex items-center gap-2 mb-1">
+                  <Brain className="h-4 w-4 text-primary" /> Pinned memory
                 </h3>
-                <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-3">
+                <p className="text-[11px] text-muted-foreground mb-3">
                   Pin preferences so agents always know them: "Remote only," "Target PM roles," "No FAANG."
                 </p>
                 <div className="space-y-2">
                   {Object.entries(memoryNotes).map(([k, v]) => (
-                    <div key={k} className="flex items-start gap-2 rounded-lg border border-gray-200/80 bg-gray-50/50 px-3 py-2 text-xs dark:border-white/10 dark:bg-white/[0.02]">
-                      <Pin className="h-3 w-3 text-violet-500 mt-0.5 shrink-0" />
+                    <div key={k} className="flex items-start gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs">
+                      <Pin className="h-3 w-3 text-primary mt-0.5 shrink-0" />
                       <div className="min-w-0 flex-1">
-                        <span className="font-bold text-gray-900 dark:text-white">{k}</span>
-                        <span className="mx-1 text-gray-400">→</span>
-                        <span className="text-gray-600 dark:text-gray-300">{v}</span>
+                        <span className="font-bold text-foreground">{k}</span>
+                        <span className="mx-1 text-muted-foreground/70">→</span>
+                        <span className="text-muted-foreground">{v}</span>
                       </div>
-                      <button type="button" onClick={() => void delMemory(k)} className="text-gray-400 hover:text-red-500">
+                      <button type="button" onClick={() => void delMemory(k)} className="text-muted-foreground/70 hover:text-destructive">
                         <X className="h-3 w-3" />
                       </button>
                     </div>
                   ))}
                 </div>
                 {Object.keys(memoryNotes).length === 0 && (
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                  <p className="text-xs text-muted-foreground">
                     Nothing pinned yet. Add preferences so the copilot remembers your constraints.
                   </p>
                 )}
                 <div className="mt-3 flex flex-col gap-2 sm:flex-row">
                   <input value={newMemKey} onChange={(e) => setNewMemKey(e.target.value)} placeholder="Key (e.g. constraint)"
-                    className="min-w-0 flex-1 rounded-lg border border-gray-200 bg-white/90 px-3 py-1.5 text-xs dark:border-white/10 dark:bg-gray-950/50 dark:text-white" />
+                    className="min-w-0 flex-1 rounded-lg border border-border bg-background px-3 py-1.5 text-xs text-foreground" />
                   <input value={newMemVal} onChange={(e) => setNewMemVal(e.target.value)} placeholder="Value (e.g. remote only)"
-                    className="min-w-0 flex-1 rounded-lg border border-gray-200 bg-white/90 px-3 py-1.5 text-xs dark:border-white/10 dark:bg-gray-950/50 dark:text-white" />
+                    className="min-w-0 flex-1 rounded-lg border border-border bg-background px-3 py-1.5 text-xs text-foreground" />
                   <button type="button" onClick={() => void addMemory()}
-                    className="shrink-0 rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white"
+                    className="shrink-0 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground"
                   ><Plus className="inline h-3 w-3 mr-0.5" /> Pin</button>
                 </div>
               </div>
+              </>
+              )}
             </div>
           )}
 
           {subTab === "network" && (
-            <div className="rounded-2xl border border-gray-200/90 bg-white/90 p-5 dark:border-white/[0.08] dark:bg-gray-900/50 space-y-4">
+            <div className="rounded-2xl border border-border bg-card p-5 shadow-soft space-y-4">
               <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 <input value={newContact.name} onChange={(e) => setNewContact((p) => ({ ...p, name: e.target.value }))} placeholder="Name"
-                  className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-gray-950/50 dark:text-white" />
+                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground" />
                 <input value={newContact.company} onChange={(e) => setNewContact((p) => ({ ...p, company: e.target.value }))} placeholder="Company"
-                  className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-gray-950/50 dark:text-white" />
+                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground" />
                 <input value={newContact.role} onChange={(e) => setNewContact((p) => ({ ...p, role: e.target.value }))} placeholder="Role"
-                  className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-gray-950/50 dark:text-white" />
+                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground" />
               </div>
               <textarea value={newContact.notes} onChange={(e) => setNewContact((p) => ({ ...p, notes: e.target.value }))} rows={2} placeholder="Notes"
-                className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-gray-950/50 dark:text-white" />
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground" />
               <button type="button" onClick={() => void addContact()} disabled={networkBusy}
-                className="rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white disabled:opacity-50">
+                className="rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50">
                 Add contact
               </button>
-              {networkInsights && <p className="text-xs text-gray-600 dark:text-gray-300">{networkInsights.analysis}</p>}
+              {sectionBusy.network ? (
+                <SectionSkeleton heights={["h-16", "h-16", "h-16"]} />
+              ) : sectionError.network ? (
+                <SectionErrorNote message="Couldn't load your contacts." onRetry={() => void loadNetworkData()} />
+              ) : (
+                <>
+              {networkInsights && <p className="text-xs text-muted-foreground">{networkInsights.analysis}</p>}
               <div className="space-y-2">
                 {networkContacts.map((c) => (
-                  <div key={c.contact_id} className="rounded-lg border border-gray-200/80 p-3 dark:border-white/10">
+                  <div key={c.contact_id} className="rounded-lg border border-border p-3">
                     <div className="flex items-start justify-between gap-2">
-                      <p className="text-sm font-semibold text-gray-900 dark:text-white">{c.name} {c.company ? `· ${c.company}` : ""}</p>
-                      <button type="button" onClick={() => void removeContact(c.contact_id)} className="text-xs text-red-500">Delete</button>
+                      <p className="text-sm font-semibold text-foreground">{c.name} {c.company ? `· ${c.company}` : ""}</p>
+                      <button type="button" onClick={() => void removeContact(c.contact_id)} className="text-xs text-destructive">Delete</button>
                     </div>
-                    {c.role && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{c.role}</p>}
+                    {c.role && <p className="text-xs text-muted-foreground mt-0.5">{c.role}</p>}
                     <div className="mt-2 flex flex-wrap gap-2">
-                      <button type="button" onClick={() => void makeIntro(c.contact_id)} className="rounded bg-indigo-500/10 px-2 py-1 text-[11px] font-semibold text-indigo-700 dark:text-indigo-300">Generate intro</button>
+                      <button type="button" onClick={() => void makeIntro(c.contact_id)} className="rounded bg-primary/10 px-2 py-1 text-[11px] font-semibold text-primary">Generate intro</button>
                       {introByContact[c.contact_id] && (
-                        <button type="button" onClick={() => navigator.clipboard?.writeText(introByContact[c.contact_id])} className="rounded bg-gray-200 px-2 py-1 text-[11px] dark:bg-white/10">Copy</button>
+                        <button type="button" onClick={() => navigator.clipboard?.writeText(introByContact[c.contact_id])} className="rounded bg-muted px-2 py-1 text-[11px]">Copy</button>
                       )}
                     </div>
-                    {introByContact[c.contact_id] && <p className="mt-2 whitespace-pre-wrap text-xs text-gray-600 dark:text-gray-300">{introByContact[c.contact_id]}</p>}
+                    {introByContact[c.contact_id] && <p className="mt-2 whitespace-pre-wrap text-xs text-muted-foreground">{introByContact[c.contact_id]}</p>}
                   </div>
                 ))}
-                {networkContacts.length === 0 && <p className="text-xs text-gray-500 dark:text-gray-400">No contacts yet. Add people to build your referral pipeline.</p>}
+                {networkContacts.length === 0 && (
+                  <div className="rounded-xl border border-dashed border-border py-8 text-center">
+                    <Linkedin className="mx-auto mb-2 h-5 w-5 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">No contacts yet. Add someone to start building your referral pipeline.</p>
+                  </div>
+                )}
               </div>
+                </>
+              )}
             </div>
           )}
 
           {subTab === "offers" && (
-            <div className="rounded-2xl border border-gray-200/90 bg-white/90 p-5 dark:border-white/[0.08] dark:bg-gray-900/50 space-y-4">
+            <div className="rounded-2xl border border-border bg-card p-5 shadow-soft space-y-4">
               <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 <input value={newOffer.company} onChange={(e) => setNewOffer((p) => ({ ...p, company: e.target.value }))} placeholder="Company"
-                  className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-gray-950/50 dark:text-white" />
+                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground" />
                 <input value={newOffer.role} onChange={(e) => setNewOffer((p) => ({ ...p, role: e.target.value }))} placeholder="Role"
-                  className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-gray-950/50 dark:text-white" />
+                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground" />
                 <input value={newOffer.base} onChange={(e) => setNewOffer((p) => ({ ...p, base: e.target.value }))} placeholder="Base salary"
-                  className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-gray-950/50 dark:text-white" />
+                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground" />
               </div>
               <button type="button" onClick={() => void addOffer()} disabled={offerBusy}
-                className="rounded-lg bg-emerald-600 px-4 py-2 text-xs font-semibold text-white disabled:opacity-50">
+                className="rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50">
                 Add offer
               </button>
+              {sectionBusy.offers ? (
+                <SectionSkeleton heights={["h-20", "h-24"]} />
+              ) : sectionError.offers ? (
+                <SectionErrorNote message="Couldn't load your offers." onRetry={() => void loadOffersData()} />
+              ) : (
+                <>
               {offerCompare && (
-                <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/[0.04] p-3">
-                  <p className="text-sm font-bold text-emerald-700 dark:text-emerald-300">{offerCompare.headline}</p>
-                  <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">{offerCompare.recommendation}</p>
+                <div className="rounded-lg border border-success/20 bg-success/[0.04] p-3">
+                  <p className="text-sm font-bold text-success">{offerCompare.headline}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{offerCompare.recommendation}</p>
                 </div>
               )}
               <div className="grid gap-3 md:grid-cols-2">
                 {offers.map((o) => (
-                  <div key={o.offer_id} className="rounded-lg border border-gray-200/80 p-3 dark:border-white/10">
+                  <div key={o.offer_id} className="rounded-lg border border-border p-3">
                     <div className="flex items-start justify-between gap-2">
-                      <p className="text-sm font-semibold text-gray-900 dark:text-white">{o.role} @ {o.company}</p>
-                      <button type="button" onClick={() => void removeOffer(o.offer_id)} className="text-xs text-red-500">Delete</button>
+                      <p className="text-sm font-semibold text-foreground">{o.role} @ {o.company}</p>
+                      <button type="button" onClick={() => void removeOffer(o.offer_id)} className="text-xs text-destructive">Delete</button>
                     </div>
-                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Base ${o.base || 0} · Bonus ${o.bonus || 0} · Equity ${o.equity || 0}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Base ${o.base || 0} · Bonus ${o.bonus || 0} · Equity ${o.equity || 0}</p>
                     <button type="button" onClick={() => void generateNegotiation(o.offer_id)}
-                      className="mt-2 rounded bg-indigo-500/10 px-2 py-1 text-[11px] font-semibold text-indigo-700 dark:text-indigo-300">
+                      className="mt-2 rounded bg-primary/10 px-2 py-1 text-[11px] font-semibold text-primary">
                       Generate negotiation script
                     </button>
-                    {negotiationByOffer[o.offer_id] && <p className="mt-2 whitespace-pre-wrap text-xs text-gray-600 dark:text-gray-300">{negotiationByOffer[o.offer_id]}</p>}
+                    {negotiationByOffer[o.offer_id] && <p className="mt-2 whitespace-pre-wrap text-xs text-muted-foreground">{negotiationByOffer[o.offer_id]}</p>}
                   </div>
                 ))}
-                {offers.length === 0 && <p className="text-xs text-gray-500 dark:text-gray-400">No offers yet. Add offers to compare total compensation and negotiation plans.</p>}
+                {offers.length === 0 && (
+                  <div className="rounded-xl border border-dashed border-border py-8 text-center md:col-span-2">
+                    <Award className="mx-auto mb-2 h-5 w-5 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">No offers yet. Add one to compare total compensation and plan your negotiation.</p>
+                  </div>
+                )}
               </div>
+                </>
+              )}
             </div>
           )}
         </div>
 
         {/* ═══════════ RIGHT SIDEBAR ═══════════ */}
         <aside className="min-w-0 space-y-4">
-          <div className="rounded-2xl border border-gray-200/90 bg-gradient-to-b from-white to-gray-50/50 p-4 dark:border-white/[0.08] dark:from-gray-900/80 dark:to-gray-950/80">
-            <h3 className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
-              <Lightbulb className="h-4 w-4 text-amber-500" /> Next best actions
+          <div className="rounded-2xl border border-border bg-card p-4 shadow-soft">
+            <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+              <Lightbulb className="h-4 w-4 text-warning" /> Next best actions
             </h3>
-            <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1">
+            <p className="text-[11px] text-muted-foreground mt-1">
               Adaptive picks from your latest context + behavior patterns.
             </p>
             <ul className="mt-3 space-y-2">
@@ -1398,28 +1508,28 @@ export default function CareerCopilotTab() {
                 <li key={i}>
                   <button
                     type="button"
-                    className="w-full rounded-lg border border-gray-200/80 bg-white/60 px-3 py-2 text-left text-xs dark:border-white/10 dark:bg-white/[0.03] hover:border-indigo-500/25 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50"
+                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-left text-xs hover:border-primary/25 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     onClick={() => { setSubTab("chat"); void send(a.title); }}
                   >
-                    <p className="font-semibold text-gray-900 dark:text-white">{a.title}</p>
-                    <p className="text-gray-500 dark:text-gray-400 mt-0.5 leading-snug">{a.reason}</p>
+                    <p className="font-semibold text-foreground">{a.title}</p>
+                    <p className="text-muted-foreground mt-0.5 leading-snug">{a.reason}</p>
                   </button>
                 </li>
               ))}
             </ul>
             {nba.length === 0 && (
-              <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">No suggestions yet. Chat once to get personalized next actions.</p>
+              <p className="mt-2 text-xs text-muted-foreground">No suggestions yet. Chat once to get personalized next actions.</p>
             )}
           </div>
 
           {/* Context card */}
-          <div className="rounded-2xl border border-gray-200/90 bg-white/70 p-4 text-xs dark:border-white/[0.08] dark:bg-white/[0.03]">
-            <p className="font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
-              <Layers className="h-3.5 w-3.5 text-indigo-500" /> System overview
+          <div className="rounded-2xl border border-border bg-card p-4 text-xs shadow-soft">
+            <p className="font-bold text-foreground flex items-center gap-1.5">
+              <Layers className="h-3.5 w-3.5 text-primary" /> System overview
             </p>
-            <ul className="mt-2 space-y-1.5 text-gray-500 dark:text-gray-400">
+            <ul className="mt-2 space-y-1.5 text-muted-foreground">
               <li className="flex items-center gap-1.5">
-                <span className={`h-2 w-2 rounded-full ${hasResume ? "bg-emerald-500" : "bg-red-500"}`} />
+                <span className={`h-2 w-2 rounded-full ${hasResume ? "bg-success" : "bg-destructive"}`} />
                 Resume: {hasResume ? "loaded" : "missing"}
               </li>
               <li>Messages: {messages.length}</li>
@@ -1429,12 +1539,12 @@ export default function CareerCopilotTab() {
           </div>
 
           {/* How it works */}
-          <div className="rounded-2xl border border-gray-200/90 p-4 text-xs text-gray-500 dark:text-gray-400 leading-relaxed dark:border-white/[0.08]">
-            <p className="font-semibold text-gray-800 dark:text-gray-200">How the agentic loop works</p>
+          <div className="rounded-2xl border border-border bg-card p-4 text-xs text-muted-foreground leading-relaxed shadow-soft">
+            <p className="font-semibold text-foreground">How the agentic loop works</p>
             <p className="mt-1.5">
-              Each message enters a <strong>ReAct orchestrator</strong>. Gemini Pro decides which tools to call
+              Each message enters a <strong>ReAct orchestrator</strong>. Aspirely decides which tools to call
               (resume RAG, JD analysis, bullet tailoring, email drafting, PPT/project scaffolding, quiz generation).
-              Tool results feed back to the model for up to 5 rounds. You see every agent and tool call in the pipeline chips.
+              Tool results feed back for up to 5 rounds, and every agent and tool call shows up in the pipeline chips.
             </p>
           </div>
         </aside>

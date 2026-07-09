@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PostComposer } from './PostComposer';
-import { PenLine, Trophy, Sparkles, Copy, Check } from 'lucide-react';
+import { PenLine, Trophy, Sparkles, Copy, Check, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import type { EventItem } from '@/types/events';
 
@@ -44,11 +44,11 @@ export default function NetworkTab() {
     <div className="mx-auto max-w-3xl space-y-6 p-4">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2 text-primary">
-            <PenLine className="h-5 w-5" />
-            <span className="text-sm font-semibold uppercase tracking-wide">Network & Posts</span>
+          <div className="flex items-center gap-1.5 text-primary">
+            <PenLine className="h-4 w-4" />
+            <span className="text-[11px] font-semibold uppercase tracking-[0.18em]">Grow · Network & posts</span>
           </div>
-          <h2 className="text-2xl font-bold tracking-tight">Turn wins into a personal brand</h2>
+          <h2 className="font-display text-2xl font-extrabold tracking-tight">Turn wins into a personal brand</h2>
           <p className="text-sm text-muted-foreground">Draft audience-tailored posts about what you built, learned, or won.</p>
         </div>
         <Button onClick={() => setComposer({ open: true, event: null })}>
@@ -58,9 +58,11 @@ export default function NetworkTab() {
 
       {/* Post about events */}
       <section>
-        <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Post about your events</h3>
+        <h3 className="overline mb-2 block">Post about your events</h3>
         {events.isLoading ? (
           <Skeleton className="h-20 w-full rounded-xl" />
+        ) : events.isError ? (
+          <SectionError text="Couldn't load your events." onRetry={() => events.refetch()} />
         ) : postable.length === 0 ? (
           <Card className="p-5 text-center text-sm text-muted-foreground">
             Mark an event as <span className="font-medium text-foreground">Attended</span> or <span className="font-medium text-foreground">Won</span> in the Events tab to draft a post about it.
@@ -71,7 +73,10 @@ export default function NetworkTab() {
               <Card key={e.event_id} className="flex items-center justify-between gap-3 p-3">
                 <div className="min-w-0">
                   <p className="truncate font-medium">{e.title}</p>
-                  <p className="text-xs text-muted-foreground">{e.relation === 'won' ? '🏆 Won' : 'Attended'}{e.org ? ` · ${e.org}` : ''}</p>
+                  <p className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                    {e.relation === 'won' && <Trophy className="h-3 w-3 text-warning" />}
+                    {e.relation === 'won' ? 'Won' : 'Attended'}{e.org ? ` · ${e.org}` : ''}
+                  </p>
                 </div>
                 <Button size="sm" variant="outline" className="shrink-0" onClick={() => setComposer({ open: true, event: e })}>
                   <PenLine className="h-3.5 w-3.5" /> Draft
@@ -84,11 +89,19 @@ export default function NetworkTab() {
 
       {/* Recent drafts */}
       <section>
-        <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Recent drafts</h3>
+        <h3 className="overline mb-2 block">Recent drafts</h3>
         {posts.isLoading ? (
           <Skeleton className="h-24 w-full rounded-xl" />
+        ) : posts.isError ? (
+          <SectionError text="Couldn't load your drafts." onRetry={() => posts.refetch()} />
         ) : (posts.data?.length ?? 0) === 0 ? (
-          <p className="text-sm text-muted-foreground">No drafts yet.</p>
+          <div className="rounded-xl border border-dashed border-border py-8 text-center">
+            <PenLine className="mx-auto mb-2 h-4 w-4 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">No drafts yet. Draft your first post and it will land here.</p>
+            <Button size="sm" variant="outline" className="mt-3" onClick={() => setComposer({ open: true, event: null })}>
+              <Sparkles className="h-3.5 w-3.5" /> Draft a post
+            </Button>
+          </div>
         ) : (
           <div className="space-y-3">
             {posts.data!.map((d) => {
@@ -101,12 +114,16 @@ export default function NetworkTab() {
                       <Trophy className="h-3 w-3" /> {d.audience}
                     </span>
                     <button onClick={() => copy(v.text, d.draft_id, v.hashtags)} className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
-                      {copied === d.draft_id ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
+                      {copied === d.draft_id ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
                       {copied === d.draft_id ? 'Copied' : 'Copy'}
                     </button>
                   </div>
                   <p className="line-clamp-3 whitespace-pre-wrap text-sm">{v.text}</p>
-                  {d.variants.length > 1 && <p className="mt-1 text-xs text-muted-foreground">+{d.variants.length - 1} more variant(s)</p>}
+                  {d.variants.length > 1 && (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      +{d.variants.length - 1} more {d.variants.length - 1 === 1 ? 'variant' : 'variants'}
+                    </p>
+                  )}
                 </Card>
               );
             })}
@@ -115,6 +132,16 @@ export default function NetworkTab() {
       </section>
 
       <PostComposer open={composer.open} onClose={() => setComposer({ open: false, event: null })} event={composer.event} />
+    </div>
+  );
+}
+
+function SectionError({ text, onRetry }: { text: string; onRetry: () => void }) {
+  return (
+    <div className="flex items-start gap-2 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+      <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+      <div className="flex-1">{text}</div>
+      <Button variant="outline" size="sm" onClick={onRetry}>Retry</Button>
     </div>
   );
 }

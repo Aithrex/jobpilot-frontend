@@ -9,7 +9,7 @@ import { LegitimacyBadge } from './LegitimacyBadge';
 import { PostComposer } from './PostComposer';
 import {
   Trophy, RefreshCw, ExternalLink, MapPin, Calendar, Gift, Loader2,
-  Bookmark, CalendarCheck, CircleCheck, PenLine, ChevronDown,
+  Bookmark, CalendarCheck, CircleCheck, PenLine, ChevronDown, AlertCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { EventItem, EventRelation } from '@/types/events';
@@ -69,7 +69,7 @@ export default function EventsTab() {
     if (res.error) { toast.error(res.error); return; }
     qc.invalidateQueries({ queryKey: ['events'] });
     if (next === 'won' || next === 'attended') {
-      toast.success(next === 'won' ? 'Marked as won 🏆' : 'Marked as attended', {
+      toast.success(next === 'won' ? 'Marked as won' : 'Marked as attended', {
         description: 'Want to post about it? Use “Draft post”.',
       });
     }
@@ -79,11 +79,11 @@ export default function EventsTab() {
     <div className="mx-auto max-w-3xl space-y-5 p-4">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2 text-primary">
-            <Trophy className="h-5 w-5" />
-            <span className="text-sm font-semibold uppercase tracking-wide">Events</span>
+          <div className="flex items-center gap-1.5 text-primary">
+            <Trophy className="h-4 w-4" />
+            <span className="text-[11px] font-semibold uppercase tracking-[0.18em]">Grow · Events</span>
           </div>
-          <h2 className="text-2xl font-bold tracking-tight">Hackathons & webinars, vetted</h2>
+          <h2 className="font-display text-2xl font-extrabold tracking-tight">Hackathons & webinars, vetted</h2>
           <p className="text-sm text-muted-foreground">Legitimacy-scored so you only invest in events worth your time.</p>
         </div>
         <Button variant="outline" onClick={refresh} disabled={refreshing}>
@@ -97,7 +97,7 @@ export default function EventsTab() {
           <button
             key={t.label}
             onClick={() => setType(t.id)}
-            className={`rounded-full border px-3 py-1.5 text-sm transition-colors ${type === t.id ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:border-primary/40'}`}
+            className={`rounded-full border px-3 py-1.5 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${type === t.id ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:border-primary/40'}`}
           >
             {t.label}
           </button>
@@ -108,10 +108,21 @@ export default function EventsTab() {
         <div className="space-y-3">
           {[0, 1, 2].map((i) => <Skeleton key={i} className="h-32 w-full rounded-xl" />)}
         </div>
+      ) : q.isError ? (
+        <div className="flex items-start gap-2 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <div className="flex-1">Couldn't load events. Check your connection and try again.</div>
+          <Button variant="outline" size="sm" onClick={() => q.refetch()}>Retry</Button>
+        </div>
       ) : (q.data?.length ?? 0) === 0 ? (
-        <Card className="p-8 text-center text-sm text-muted-foreground">
-          No events yet. Hit <span className="font-medium text-foreground">Refresh</span> to pull the latest from public sources.
-        </Card>
+        <div className="rounded-2xl border border-dashed border-border py-14 text-center">
+          <Trophy className="mx-auto mb-2 h-5 w-5 text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">No events yet.</p>
+          <Button variant="outline" size="sm" className="mt-3" onClick={refresh} disabled={refreshing}>
+            {refreshing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+            Pull the latest events
+          </Button>
+        </div>
       ) : (
         <>
           <div className="space-y-3">

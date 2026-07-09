@@ -66,7 +66,7 @@ export function ConnectedTo({ from }: { from: string }) {
           <button
             key={t}
             onClick={() => go(t)}
-            className="group inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 text-xs font-medium transition-colors hover:border-primary hover:text-primary"
+            className="group inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 text-xs font-medium transition-colors hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <Icon className="h-3.5 w-3.5" />
             {m.label}
