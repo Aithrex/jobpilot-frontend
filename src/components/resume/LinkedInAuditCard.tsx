@@ -71,7 +71,11 @@ export function LinkedInAuditCard({ connect, reloadConnect }: LinkedInAuditCardP
           <div className="mb-2 rounded-lg border border-border/60 bg-muted/20 p-2.5">
             <div className="mb-1 flex items-center justify-between">
               <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Suggested headline</span>
-              <button onClick={() => copy(audit.headline, 'h')} className="text-muted-foreground hover:text-foreground">
+              <button
+                onClick={() => copy(audit.headline, 'h')}
+                aria-label={copied === 'h' ? 'Headline copied' : 'Copy suggested headline'}
+                className="rounded text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
                 {copied === 'h' ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
               </button>
             </div>
@@ -118,6 +122,7 @@ export function LinkedInAuditCard({ connect, reloadConnect }: LinkedInAuditCardP
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && run()}
+          aria-label="LinkedIn profile URL (optional)"
           placeholder="LinkedIn URL (optional)"
           className="min-w-0 flex-1 rounded-lg border border-border bg-background px-3 py-1.5 text-sm outline-none focus:border-primary"
         />

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { apiService } from '@/lib/api';
 import { useUpgrade } from '@/components/billing/UpgradeModalProvider';
 import { Button } from '@/components/ui/button';
@@ -28,6 +28,7 @@ function isUpgrade(res: { status?: number; errorPayload?: Record<string, unknown
 
 export default function LearningHubTab() {
   const qc = useQueryClient();
+  const reduceMotion = useReducedMotion();
   const { open: openUpgrade } = useUpgrade();
   const [selected, setSelected] = useState<string | null>(null);
   const [topic, setTopic] = useState('');
@@ -173,8 +174,8 @@ export default function LearningHubTab() {
           {pathsQuery.data!.map((p, i) => (
             <motion.button
               key={p.path_id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={reduceMotion ? false : { opacity: 0, y: 10 }}
+              animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
               transition={{ delay: i * 0.04 }}
               onClick={() => setSelected(p.path_id)}
               className="w-full rounded-xl border border-border bg-card p-4 text-left transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-panel"
