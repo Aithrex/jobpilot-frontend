@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, useReducedMotion } from "framer-motion";
 import {
@@ -26,6 +34,12 @@ import type {
   WritingPrompt,
   WritingSample,
 } from "@/types/voicegraph";
+
+// The "reveal" surfaces — lazy-loaded, only mounted once the user has a ready
+// sample, so their chunks never load for someone who hasn't written yet.
+const VoiceProfileCard = lazy(() => import("./VoiceProfileCard"));
+const KnowledgeGraphReveal = lazy(() => import("./KnowledgeGraphReveal"));
+const AuthoredResumeView = lazy(() => import("./AuthoredResumeView"));
 
 type SaveState = "idle" | "saving" | "saved";
 
@@ -92,6 +106,7 @@ export default function VoiceGraphTab() {
       ) : (
         <WritingSurface
           minSignalWords={minSignalWords}
+          readyCount={status.samples.ready}
           reduce={!!reduce}
           onStatusChanged={() =>
             queryClient.invalidateQueries({ queryKey: [...VG_KEY, "status"] })
@@ -257,10 +272,12 @@ function ConsentGate({
 
 function WritingSurface({
   minSignalWords,
+  readyCount,
   reduce,
   onStatusChanged,
 }: {
   minSignalWords: number;
+  readyCount: number;
   reduce: boolean;
   onStatusChanged: () => void;
 }) {
@@ -566,6 +583,9 @@ function WritingSurface({
         }}
       />
 
+      {/* The reveal — only once there's at least one finished sample to learn from. */}
+      {readyCount >= 1 && <VoiceReveal reduce={reduce} />}
+
       <ConsentFooter
         onRevoked={() => {
           resetComposer();
@@ -573,6 +593,48 @@ function WritingSurface({
         }}
       />
     </>
+  );
+}
+
+/* ─────────────────────────── The reveal ─────────────────────────── */
+
+function VoiceReveal({ reduce }: { reduce: boolean }) {
+  return (
+    <div className="mt-14 space-y-14 border-t border-border pt-12">
+      <motion.p
+        initial={reduce ? false : { opacity: 0, y: 8 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-60px" }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+        className="text-center text-sm text-muted-foreground"
+      >
+        Now that you&apos;ve written something, here&apos;s what we heard back.
+      </motion.p>
+
+      <Suspense fallback={<RevealSkeleton />}>
+        <VoiceProfileCard />
+      </Suspense>
+      <Suspense fallback={<RevealSkeleton tall />}>
+        <KnowledgeGraphReveal />
+      </Suspense>
+      <Suspense fallback={<RevealSkeleton />}>
+        <AuthoredResumeView />
+      </Suspense>
+    </div>
+  );
+}
+
+function RevealSkeleton({ tall }: { tall?: boolean }) {
+  return (
+    <div className="space-y-4">
+      <div className="h-6 w-48 animate-pulse rounded bg-gray-200 dark:bg-white/10" />
+      <div
+        className={cn(
+          "animate-pulse rounded-2xl bg-gray-200 dark:bg-white/10",
+          tall ? "h-96" : "h-44",
+        )}
+      />
+    </div>
   );
 }
 

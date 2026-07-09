@@ -2198,6 +2198,48 @@ class ApiService {
     );
   }
 
+  /** The private knowledge graph built from the user's writing. */
+  async voiceGraphGraph() {
+    return this.request<import("../types/voicegraph").KnowledgeGraph>(
+      "/resume/voice-graph/graph",
+    );
+  }
+
+  /**
+   * The computed voice profile — or an `{ insufficient: true }` payload when
+   * there isn't yet enough writing to profile a voice.
+   */
+  async voiceGraphVoice() {
+    return this.request<import("../types/voicegraph").VoiceProfile>(
+      "/resume/voice-graph/voice",
+    );
+  }
+
+  /**
+   * Assemble a résumé purely from the user's own words — verbatim, nothing
+   * written by a model. May 403 `consent_required` or 400 `no_ready_samples`;
+   * request() forwards { status, errorPayload } so callers can branch.
+   */
+  async buildRawResume() {
+    return this.request<import("../types/voicegraph").AuthoredResumeDetail>(
+      "/resume/voice-graph/resume/raw",
+      { method: "POST", body: "{}" },
+      30000,
+    );
+  }
+
+  async listAuthoredResumes() {
+    return this.request<{ resumes: import("../types/voicegraph").AuthoredResume[] }>(
+      "/resume/voice-graph/resume",
+    );
+  }
+
+  async getAuthoredResume(id: string) {
+    return this.request<import("../types/voicegraph").AuthoredResumeDetail>(
+      `/resume/voice-graph/resume/${encodeURIComponent(id)}`,
+    );
+  }
+
   // ============================================
   // Gmail integration — auto-update application status from inbox
   // ============================================
