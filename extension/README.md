@@ -21,8 +21,35 @@ The backend already exists (`jobpilot-backend/blueprints/apply.py`); this is its
 - **Draft an answer**: résumé-grounded variants (via `/api/apply/answer`) for
   open-ended questions — from the panel (focus a box → *Draft*) or from the Review
   Card's per-question *Draft* button.
-- **Never auto-submits, never spray-and-pray.** No Submit click, no CAPTCHA bypass;
-  a client-side rate limit (40/hr, 150/day, with jitter) keeps behavior human.
+- **Default: never auto-submits, never spray-and-pray.** No Submit click, no CAPTCHA
+  bypass; a client-side rate limit (40/hr, 150/day, with jitter) keeps behavior human.
+
+## Opt-in auto-submit (off by default)
+The default and the fallback everywhere is the Review Card — *you* click Submit. As a
+strict, per-application exception, the extension can click the site's **own** Submit
+button, but **only** when all three gates pass:
+1. **Opt-in** — the server settings endpoint reports you opted in, **and** the local
+   toggle in the popup ("Allow auto-submit on this device") is on. That toggle defaults
+   **off** and is an always-available **kill switch**: turning it off disables
+   auto-submit here regardless of server state.
+2. **Approval** — the server's pending list has an `approved`, unexpired record whose
+   URL matches this exact page (host + path). The backend only lists applications past
+   their undo window; the extension re-checks the URL match and expiry.
+3. **No CAPTCHA** — the page has no bot-check widget. CAPTCHA is **detect-only**; we
+   never solve or bypass it. If one is present (or appears), we fall back to the Review
+   Card and surface it.
+
+When eligible, a prominent **countdown** (5s) with a big **Cancel** button appears; the
+site's Submit is clicked only if the countdown finishes uncancelled. Cancel (button,
+Escape, or clicking the backdrop) returns to the Review Card. After a successful click
+the extension reports to the backend (`mark-submitted`); it never clicks twice
+(in-memory guard + a persisted done-marker written *before* the click). Applications
+with unanswered open-ended questions are never auto-submitted.
+
+Backend contract (authenticated, same `Bearer` token as the rest of the extension):
+`GET /api/apply/auto-submit/settings` (opt-in flag; 404/non-`{enabled:true}` ⇒ review-only),
+`GET /api/apply/auto-submit/pending` (approved, eligible records),
+`POST /api/apply/auto-submit/mark-submitted` (`{ application_id, url, ats, status }`).
 
 ## How autofill resolves a field (in order)
 1. **Deterministic** — the active ATS adapter's `selector → canonical` map
@@ -56,12 +83,15 @@ own JobPilot backend.
 - `manifest.json` — MV3 manifest (permissions, content-script matches + load order)
 - `config.js` — your API base + web-app origin + LLM-disambiguation toggle (edit this)
 - `background.js` — service worker: token storage + API proxy (`/apply/profile`,
-  `/apply/answer`, gated `field-map`); validates every message envelope
-- `content.js` / `content.css` — on-page panel + autofill orchestrator
+  `/apply/answer`, gated `field-map`, `/apply/auto-submit/*`); validates every message envelope
+- `content.js` / `content.css` — on-page panel + autofill orchestrator (branches to
+  auto-submit when eligible, else the Review Card)
 - `adapters/*.js` — per-ATS field maps (`greenhouse`, `lever`, `ashby`, `workday`,
   `workable`, `smartrecruiters`, `generic`) + `index.js` registry
 - `lib/resolver.js` — field-resolution engine (deterministic → semantic → LLM)
 - `lib/reviewcard.js` — the shadow-DOM Review Card overlay
+- `lib/autosubmit.js` — opt-in auto-submit: the three gates, submit-button finder,
+  cancellable countdown overlay, and one-shot submit + report
 - `lib/redact.js` — PII redaction (only used on the opt-in LLM path)
 - `lib/ratelimit.js` — client-side fill cap + humanizing jitter
 - `tokensync.js` — auto-syncs the JWT from the web app

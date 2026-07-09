@@ -50,6 +50,7 @@
         "adapters/index.js",
         "lib/resolver.js",
         "lib/reviewcard.js",
+        "lib/autosubmit.js",
         "content.js"
       ],
       "css": ["content.css"],

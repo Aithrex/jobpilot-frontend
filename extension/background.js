@@ -127,6 +127,36 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
           sendResponse({ ok: r.ok, status: r.status, data: r.data });
           break;
         }
+        case "AUTOSUBMIT_SETTINGS": {
+          // Is the user opted in to auto-submit? A 404 / non-ok / non-true payload
+          // means "behave exactly as today" (Review Card only) — the content
+          // script treats anything but { enabled: true } as disabled.
+          const r = await apiFetch("/apply/auto-submit/settings");
+          sendResponse({ ok: r.ok, status: r.status, data: r.data });
+          break;
+        }
+        case "AUTOSUBMIT_PENDING": {
+          // Approved applications eligible to submit NOW (past their undo window,
+          // unexpired). The content script matches these to the current page.
+          const r = await apiFetch("/apply/auto-submit/pending");
+          sendResponse({ ok: r.ok, status: r.status, data: r.data });
+          break;
+        }
+        case "AUTOSUBMIT_MARK": {
+          // Report after clicking Submit. Requires an application_id; backend is
+          // expected to be idempotent (we also guard against double-clicks client-side).
+          const payload = msg.payload || {};
+          if (!payload || !payload.application_id) {
+            sendResponse({ ok: false, error: "application_id is required" });
+            break;
+          }
+          const r = await apiFetch("/apply/auto-submit/mark-submitted", {
+            method: "POST",
+            body: JSON.stringify(payload),
+          });
+          sendResponse({ ok: r.ok, status: r.status, data: r.data });
+          break;
+        }
         default:
           sendResponse({ ok: false, error: "unknown message" });
       }

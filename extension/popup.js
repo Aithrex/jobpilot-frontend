@@ -46,4 +46,31 @@ $("clear").addEventListener("click", async () => {
   refresh();
 });
 
+/* Auto-submit local kill switch. Stored in chrome.storage.local under
+ * `jp_autosubmit_local`; defaults OFF (review-only). This is the always-available
+ * local control that disables auto-submit regardless of the server's opt-in
+ * state. The content script only ever auto-submits when this is explicitly on
+ * AND the server settings endpoint reports the user opted in. */
+async function loadKill() {
+  try {
+    const bag = await chrome.storage.local.get("jp_autosubmit_local");
+    $("autosubmit").checked = bag.jp_autosubmit_local === true;
+  } catch (_) {
+    $("autosubmit").checked = false;
+  }
+}
+
+$("autosubmit").addEventListener("change", async () => {
+  const on = !!$("autosubmit").checked;
+  try {
+    await chrome.storage.local.set({ jp_autosubmit_local: on });
+    $("killdesc").textContent = on
+      ? "On for this device. JobPilot may auto-submit only applications you approved in the app — after a countdown you can cancel. Never touches CAPTCHAs."
+      : "Off = review-only (default). When on, JobPilot may auto-submit only applications you approved in the app — after a countdown you can cancel. Never touches CAPTCHAs.";
+  } catch (_) {
+    /* storage unavailable — auto-submit stays off (fail safe) */
+  }
+});
+
+loadKill();
 refresh();

@@ -13,9 +13,16 @@
  *   lib/resolver.js  → self.JPResolver
  *   lib/reviewcard.js→ self.JPReviewCard
  *
- * This script NEVER submits: no element.click() on submit buttons, no
- * form.submit(), no synthetic submit/Enter dispatch. It only writes field
- * values and drafts answers, all reviewable and reversible by the user.
+ * By default this script NEVER submits: it only writes field values and drafts
+ * answers, all reviewable and reversible by the user, then shows the Review Card.
+ *
+ * The ONE exception is the explicit, per-application OPT-IN auto-submit path
+ * (lib/autosubmit.js): only when the user has opted in (server settings + a local
+ * toggle that is off by default), there is an `approved`, eligible record for THIS
+ * exact application, and there is NO CAPTCHA on the page, we show a cancellable
+ * countdown and then click the site's OWN Submit button once. Every other case —
+ * and any error, ambiguity, or CAPTCHA — falls back to the Review Card. We never
+ * solve or bypass a CAPTCHA, and never submit without a matching approved record.
  */
 (function () {
   if (window.__jobpilotInjected) return;
@@ -245,7 +252,11 @@
 
     if (plan.length) await self.JPRateLimit.record();
 
-    const cardApi = self.JPReviewCard.open(rows, {
+    // The Review Card is the default AND the fallback for every non-eligible
+    // case below. `cardApi` is assigned only when the card is actually shown, so
+    // the auto-submit path never renders it.
+    let cardApi = null;
+    const reviewHandlers = {
       captcha,
       onEdit: (id, val) => {
         const target = elById.get(id) || (essayById.get(id) && essayById.get(id).el);
@@ -253,7 +264,7 @@
       },
       onDraft: async (id) => {
         const eq = essayById.get(id);
-        if (!eq) return;
+        if (!eq || !cardApi) return;
         const res = await send({ type: "GENERATE_ANSWER", payload: { question: eq.label } });
         if (!res || !res.ok || !res.data || !Array.isArray(res.data.variants) || !res.data.variants.length) {
           cardApi.setRow(id, { note: (res && res.data && (res.data.message || res.data.error)) || "Couldn't draft — try the panel's Draft button." });
@@ -269,10 +280,56 @@
         elById.set(id, eq.el); // now inline-editable through onEdit
         cardApi.setRow(id, { kind: "field", value: ans, confidence: "low", note: "AI draft inserted — make it yours before submitting." });
       },
-    });
+    };
 
-    if (captcha) flash("CAPTCHA detected — you solve it & submit.");
-    else flash(plan.length ? `Filled ${plan.length} field${plan.length === 1 ? "" : "s"} — review below` : "Nothing to autofill — see review");
+    function showReviewCard() {
+      cardApi = self.JPReviewCard.open(rows, reviewHandlers);
+      if (captcha) flash("CAPTCHA detected — you solve it & submit.");
+      else flash(plan.length ? `Filled ${plan.length} field${plan.length === 1 ? "" : "s"} — review below` : "Nothing to autofill — see review");
+    }
+
+    // ---- OPT-IN auto-submit branch (defaults to the Review Card in every other
+    // case). Gates: (1) opt-in [server settings + local kill switch], (2) an
+    // approved eligible record for THIS application, (3) no CAPTCHA. We also
+    // decline if the page has open-ended questions we didn't fill, since those
+    // are the user's to write — an auto-submit there would be low-signal. ----
+    const hasOpenEssays = rows.some((r) => r.kind === "essay");
+    let evalRes = { ok: false, reason: "unavailable" };
+    if (!captcha && !hasOpenEssays && self.JPAutoSubmit) {
+      try {
+        evalRes = await self.JPAutoSubmit.evaluate({ url: location.href, adapter, captcha });
+      } catch (_) {
+        evalRes = { ok: false, reason: "error" };
+      }
+    }
+
+    if (evalRes && evalRes.ok) {
+      flash("Approved application — starting a 5s countdown you can cancel…");
+      self.JPAutoSubmit.runCountdown({
+        seconds: 5,
+        record: evalRes.record,
+        onCancel: () => {
+          showReviewCard();
+          flash("Auto-submit cancelled — review & submit yourself.");
+        },
+        onSubmit: async () => {
+          let res;
+          try {
+            res = await self.JPAutoSubmit.performSubmit(evalRes);
+          } catch (_) {
+            res = { ok: false, message: "Auto-submit failed — review & submit yourself." };
+          }
+          if (!res || !res.ok) {
+            showReviewCard();
+            flash((res && res.message) || "Couldn't auto-submit — review & submit yourself.");
+          } else {
+            flash("Submitted — JobPilot clicked this site's Submit for your approved application.");
+          }
+        },
+      });
+    } else {
+      showReviewCard();
+    }
   });
 
   // ---- Draft an answer (focus-based; preserves the original flow) ----
