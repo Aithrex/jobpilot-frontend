@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
-  Inbox, Copy, Check, ExternalLink, Loader2, Sparkles, X, MailPlus,
+  Inbox, Copy, Check, CloudOff, ExternalLink, Loader2, Sparkles, X, MailPlus,
 } from "lucide-react";
 import { apiService } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -24,7 +24,7 @@ function CopyButton({ value, label }: { value: string; label: string }) {
   };
   return (
     <Button variant="ghost" size="sm" className="h-7 shrink-0 gap-1 px-2 text-[11px]" onClick={copy} aria-label={`Copy ${label}`}>
-      {copied ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3" />}
+      {copied ? <Check className="h-3 w-3 text-success" /> : <Copy className="h-3 w-3" />}
       {copied ? "Copied" : "Copy"}
     </Button>
   );
@@ -33,6 +33,8 @@ function CopyButton({ value, label }: { value: string; label: string }) {
 export function MailIngressCard() {
   const [hidden, setHidden] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   const [address, setAddress] = useState<MailIngressAddress | null>(null);
   const [suggestions, setSuggestions] = useState<MailIngressSuggestion[]>([]);
   const [provisioning, setProvisioning] = useState(false);
@@ -40,6 +42,8 @@ export function MailIngressCard() {
 
   useEffect(() => {
     let cancelled = false;
+    setLoading(true);
+    setLoadError(false);
     (async () => {
       const res = await apiService.getMailIngressSuggestions();
       if (cancelled) return;
@@ -57,13 +61,15 @@ export function MailIngressCard() {
           gmail_deep_link: res.data.gmail_deep_link,
         });
         setSuggestions(res.data.suggestions ?? []);
+      } else if (res.error) {
+        setLoadError(true);
       }
       setLoading(false);
     })();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [reloadKey]);
 
   const provision = async () => {
     setProvisioning(true);
@@ -95,19 +101,30 @@ export function MailIngressCard() {
   if (hidden) return null;
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+    <div className="rounded-2xl border border-border bg-card p-5 shadow-soft">
       <div className="mb-4 flex items-center gap-2">
         <span className="grid h-8 w-8 place-items-center rounded-lg bg-primary/10 text-primary">
           <Inbox className="h-4 w-4" />
         </span>
         <div>
-          <h3 className="text-sm font-bold">Inbox capture</h3>
+          <h3 className="text-sm font-semibold leading-tight text-foreground">Inbox capture</h3>
           <p className="text-xs text-muted-foreground">Forward job emails to auto-update your pipeline.</p>
         </div>
       </div>
 
       {loading ? (
         <div className="h-24 animate-pulse rounded-lg bg-muted" />
+      ) : loadError ? (
+        <div className="flex h-24 items-center justify-center gap-1.5 rounded-lg border border-dashed border-border text-xs text-muted-foreground">
+          <CloudOff className="h-3.5 w-3.5 shrink-0 text-warning" />
+          <span>Couldn't load inbox capture.</span>
+          <button
+            onClick={() => setReloadKey((k) => k + 1)}
+            className="font-semibold text-primary hover:underline"
+          >
+            Retry
+          </button>
+        </div>
       ) : !address?.provisioned ? (
         <div className="rounded-xl border border-dashed border-primary/30 bg-primary/[0.03] px-4 py-6 text-center">
           <MailPlus className="mx-auto mb-2 h-5 w-5 text-primary" />
@@ -117,7 +134,7 @@ export function MailIngressCard() {
           </p>
           <Button size="sm" className="mt-3 gap-1.5" disabled={provisioning} onClick={provision}>
             {provisioning ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-            Provision address
+            Create my address
           </Button>
         </div>
       ) : (
@@ -134,7 +151,7 @@ export function MailIngressCard() {
           {address.gmail_filter && (
             <div className="rounded-lg border border-border bg-background/60 p-3">
               <div className="flex items-center justify-between gap-2">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Gmail filter</p>
+                <p className="overline">Gmail filter</p>
                 <CopyButton value={address.gmail_filter} label="Gmail filter" />
               </div>
               <code className="mt-1 block break-all text-xs text-foreground/85">{address.gmail_filter}</code>
@@ -153,7 +170,7 @@ export function MailIngressCard() {
 
           {/* Low-confidence suggestions */}
           <div>
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+            <p className="overline mb-2">
               Needs your call ({suggestions.length})
             </p>
             {suggestions.length === 0 ? (

@@ -5,10 +5,13 @@ import { apiService } from '@/lib/api';
 import type { LinkedinAudit, ConnectStatus } from '@/types/career';
 
 const DOT: Record<string, string> = {
-  good: 'bg-emerald-500',
-  improve: 'bg-amber-500',
+  good: 'bg-success',
+  improve: 'bg-warning',
   missing: 'bg-destructive',
 };
+
+/** LinkedIn brand blue — intentional brand literal for the mark only; chrome stays tokenized. */
+const LINKEDIN_ICON = 'text-[#0a66c2]';
 
 interface LinkedInAuditCardProps {
   connect?: ConnectStatus | null;
@@ -54,10 +57,10 @@ export function LinkedInAuditCard({ connect, reloadConnect }: LinkedInAuditCardP
 
   if (audit) {
     return (
-      <div className="flex flex-col rounded-xl border border-border bg-card p-4 shadow-sm">
+      <div className="flex flex-col rounded-xl border border-border bg-card p-4 shadow-soft">
         <div className="mb-3 flex items-center gap-2">
-          <Linkedin className="h-4 w-4 text-[#0a66c2]" />
-          <h3 className="text-sm font-bold">LinkedIn audit</h3>
+          <Linkedin className={`h-4 w-4 ${LINKEDIN_ICON}`} />
+          <h3 className="text-sm font-semibold text-foreground">LinkedIn audit</h3>
           <span className="ml-auto">
             <span className="text-xl font-extrabold tabular-nums text-primary">{audit.score}</span>
             <span className="text-[10px] uppercase tracking-wider text-muted-foreground">/100</span>
@@ -67,7 +70,7 @@ export function LinkedInAuditCard({ connect, reloadConnect }: LinkedInAuditCardP
         {audit.headline && (
           <div className="mb-2 rounded-lg border border-border/60 bg-muted/20 p-2.5">
             <div className="mb-1 flex items-center justify-between">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Suggested headline</span>
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Suggested headline</span>
               <button onClick={() => copy(audit.headline, 'h')} className="text-muted-foreground hover:text-foreground">
                 {copied === 'h' ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
               </button>
@@ -103,9 +106,9 @@ export function LinkedInAuditCard({ connect, reloadConnect }: LinkedInAuditCardP
   }
 
   return (
-    <div className="flex flex-col rounded-xl border border-dashed border-[#0a66c2]/30 bg-[#0a66c2]/[0.03] p-4">
-      <div className="mb-1 flex items-center gap-2 text-sm font-bold">
-        <Linkedin className="h-4 w-4 text-[#0a66c2]" /> Polish your LinkedIn
+    <div className="flex flex-col rounded-xl border border-dashed border-primary/30 bg-primary/[0.03] p-4">
+      <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-foreground">
+        <Linkedin className={`h-4 w-4 ${LINKEDIN_ICON}`} /> Polish your LinkedIn
       </div>
       <p className="mb-3 text-xs leading-relaxed text-muted-foreground">
         Get a personalized audit + a ready-to-paste headline and About, built from your résumé and goal.
@@ -216,7 +219,7 @@ function LinkedInConnect({ connect, reloadConnect, prefill }: {
           disabled={connecting}
           className="inline-flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground hover:text-foreground disabled:opacity-50"
         >
-          <Linkedin className="h-3.5 w-3.5 text-[#0a66c2]" /> {connecting ? 'Connecting…' : 'Connect LinkedIn to post'}
+          <Linkedin className={`h-3.5 w-3.5 ${LINKEDIN_ICON}`} /> {connecting ? 'Connecting…' : 'Connect LinkedIn to post'}
         </button>
       </div>
     );
@@ -226,7 +229,7 @@ function LinkedInConnect({ connect, reloadConnect, prefill }: {
     <div className="mt-3 border-t border-border pt-3">
       <div className="flex items-center gap-2">
         <span className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
-          <Linkedin className="h-3.5 w-3.5 text-[#0a66c2]" /> Connected{li.name ? ` as ${li.name}` : ''}
+          <Linkedin className={`h-3.5 w-3.5 ${LINKEDIN_ICON}`} /> Connected{li.name ? ` as ${li.name}` : ''}
         </span>
         <button
           onClick={disconnect}

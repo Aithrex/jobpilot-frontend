@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Linkedin, Upload, Loader2, GitCompareArrows, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Linkedin, Upload, Loader2, GitCompareArrows, AlertCircle, CheckCircle2, CloudOff } from "lucide-react";
 import { toast } from "sonner";
 import { apiService } from "@/lib/api";
 import { useUpgrade } from "@/components/billing/UpgradeModalProvider";
@@ -10,9 +10,12 @@ import type { LinkedInDiff, LinkedInDiffItem } from "@/types/referrals";
 
 const SEVERITY_STYLES: Record<NonNullable<LinkedInDiffItem["severity"]>, string> = {
   info: "border-border bg-muted/40 text-muted-foreground",
-  minor: "border-amber-500/25 bg-amber-500/10 text-amber-700 dark:text-amber-300",
+  minor: "border-warning/25 bg-warning/10 text-warning",
   major: "border-destructive/30 bg-destructive/10 text-destructive",
 };
+
+/** LinkedIn brand blue — intentional brand literal for the mark only; chrome stays tokenized. */
+const LINKEDIN_TILE = "bg-[#0a66c2]/10 text-[#0a66c2]";
 
 function DiffRow({ item }: { item: LinkedInDiffItem }) {
   const sev = item.severity ?? "info";
@@ -52,19 +55,25 @@ export function LinkedInArchiveCard() {
   const [diff, setDiff] = useState<LinkedInDiff | null>(null);
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
+    setLoading(true);
+    setLoadError(false);
     (async () => {
-      const res = await apiService.getLinkedInDiff().catch(() => ({ error: "x" } as const));
+      const res = await apiService.getLinkedInDiff().catch(() => null);
       if (cancelled) return;
-      if ("data" in res && res.data) setDiff(res.data as LinkedInDiff);
+      if (res?.data) setDiff(res.data);
+      // 404 = no archive yet (the invitation state below); anything else is a real failure.
+      else if (!res || (res.error && res.status !== 404)) setLoadError(true);
       setLoading(false);
     })();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [reloadKey]);
 
   const onFile = async (file: File | undefined) => {
     if (!file) return;
@@ -91,14 +100,14 @@ export function LinkedInArchiveCard() {
       initial={{ opacity: 0, y: 10 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      className="flex flex-col rounded-xl border border-border bg-card p-4 shadow-sm"
+      className="flex flex-col rounded-xl border border-border bg-card p-4 shadow-soft"
     >
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="grid h-8 w-8 place-items-center rounded-lg bg-[#0a66c2]/10 text-[#0a66c2]">
+          <span className={`grid h-8 w-8 place-items-center rounded-lg ${LINKEDIN_TILE}`}>
             <Linkedin className="h-4 w-4" />
           </span>
-          <h3 className="text-sm font-bold">LinkedIn vs. résumé</h3>
+          <h3 className="text-sm font-semibold text-foreground">LinkedIn vs. résumé</h3>
         </div>
         <Button
           size="sm"
@@ -121,6 +130,17 @@ export function LinkedInArchiveCard() {
 
       {loading ? (
         <div className="h-16 animate-pulse rounded-lg bg-muted" />
+      ) : loadError ? (
+        <div className="flex h-16 items-center justify-center gap-1.5 rounded-lg border border-dashed border-border text-xs text-muted-foreground">
+          <CloudOff className="h-3.5 w-3.5 shrink-0 text-warning" />
+          <span>Couldn't load your comparison.</span>
+          <button
+            onClick={() => setReloadKey((k) => k + 1)}
+            className="font-semibold text-primary hover:underline"
+          >
+            Retry
+          </button>
+        </div>
       ) : !diff?.has_archive ? (
         <div className="rounded-lg border border-dashed border-border px-4 py-6 text-center">
           <GitCompareArrows className="mx-auto mb-2 h-5 w-5 text-muted-foreground" />
@@ -137,7 +157,7 @@ export function LinkedInArchiveCard() {
           </a>
         </div>
       ) : items.length === 0 ? (
-        <div className="flex items-center gap-2 rounded-lg border border-emerald-500/25 bg-emerald-500/10 px-3 py-3 text-xs text-emerald-700 dark:text-emerald-300">
+        <div className="flex items-center gap-2 rounded-lg border border-success/25 bg-success/10 px-3 py-3 text-xs text-success">
           <CheckCircle2 className="h-4 w-4 shrink-0" />
           Your LinkedIn and résumé are consistent. Nice.
         </div>

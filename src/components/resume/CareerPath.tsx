@@ -21,10 +21,10 @@ export function CareerPath({
   const complete = done === steps.length;
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+    <div className="rounded-2xl border border-border bg-card p-5 shadow-soft">
       <div className="mb-2 flex items-center justify-between gap-3">
-        <h2 className="text-sm font-bold">
-          {complete ? 'Your path — complete 🎉' : 'Your path'}
+        <h2 className="text-sm font-semibold text-foreground">
+          {complete ? 'Your path — complete' : 'Your path'}
         </h2>
         <span className="text-xs font-medium text-muted-foreground tabular-nums">{done}/{steps.length} done</span>
       </div>
@@ -50,7 +50,7 @@ export function CareerPath({
                 <span
                   className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full ${
                     s.done
-                      ? 'bg-emerald-500 text-white'
+                      ? 'bg-success text-white'
                       : isCurrent
                         ? 'bg-primary text-primary-foreground'
                         : 'border border-muted-foreground/40'

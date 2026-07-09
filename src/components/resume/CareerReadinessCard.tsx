@@ -4,8 +4,8 @@ import type { CareerReadiness, ReadinessBand, ReadinessDimension } from '@/types
 
 const BAND: Record<ReadinessBand, { ring: string; chip: string }> = {
   starting: { ring: 'hsl(var(--muted-foreground))', chip: 'bg-muted text-muted-foreground' },
-  building: { ring: 'hsl(38 92% 50%)', chip: 'bg-amber-500/15 text-amber-600 dark:text-amber-400' },
-  ready: { ring: 'hsl(150 65% 42%)', chip: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' },
+  building: { ring: 'hsl(var(--warning))', chip: 'bg-warning/10 text-warning' },
+  ready: { ring: 'hsl(var(--success))', chip: 'bg-success/10 text-success' },
   standout: { ring: 'hsl(var(--primary))', chip: 'bg-primary/15 text-primary' },
 };
 
@@ -23,7 +23,7 @@ function Ring({ score, color }: { score: number; color: string }) {
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-2xl font-extrabold leading-none tabular-nums">{score}</span>
+        <span className="font-display text-2xl font-extrabold leading-none tabular-nums tracking-tight">{score}</span>
         <span className="text-[9px] font-medium uppercase tracking-wider text-muted-foreground">/ 100</span>
       </div>
     </div>
@@ -31,7 +31,7 @@ function Ring({ score, color }: { score: number; color: string }) {
 }
 
 function DimBar({ d }: { d: ReadinessDimension }) {
-  const color = d.score >= 70 ? 'bg-emerald-500' : d.score >= 40 ? 'bg-amber-500' : 'bg-muted-foreground/50';
+  const color = d.score >= 70 ? 'bg-success' : d.score >= 40 ? 'bg-warning' : 'bg-muted-foreground/50';
   return (
     <div title={d.summary}>
       <div className="mb-1 flex items-center justify-between gap-2">
@@ -60,7 +60,7 @@ export function CareerReadinessCard({
   onNavigate: (tab: string) => void;
 }) {
   if (loading && !data) {
-    return <div className="h-44 animate-pulse rounded-2xl border border-border bg-card" />;
+    return <div className="h-44 animate-pulse rounded-2xl border border-border bg-card shadow-soft" />;
   }
   if (!data) return null;
   const band = BAND[data.band] || BAND.building;
@@ -70,7 +70,7 @@ export function CareerReadinessCard({
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/[0.06] via-card to-card p-5 shadow-sm"
+      className="mesh-accent overflow-hidden rounded-2xl border border-primary/20 p-5 shadow-soft"
     >
       <div className="flex flex-col gap-5 lg:flex-row lg:items-center">
         {/* Score + level + goal */}
@@ -106,7 +106,7 @@ export function CareerReadinessCard({
         {/* The one next step */}
         <div className="lg:w-64 lg:shrink-0">
           <div className="rounded-xl border border-border bg-background/60 p-3">
-            <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Your next step</div>
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Your next step</div>
             <div className="mt-1 text-sm font-semibold">{step.label}</div>
             <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{step.description}</p>
             <button

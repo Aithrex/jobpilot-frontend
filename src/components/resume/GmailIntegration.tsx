@@ -30,14 +30,17 @@ type GmailStatus = {
 };
 
 const STATUS_CHIP: Record<string, string> = {
-  draft: "bg-gray-500/15 text-gray-600 dark:text-gray-300",
-  applied: "bg-purple-500/15 text-purple-600 dark:text-purple-300",
-  interviewing: "bg-blue-500/15 text-blue-600 dark:text-blue-300",
-  offer: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-300",
-  rejected: "bg-red-500/15 text-red-600 dark:text-red-300",
-  ghosted: "bg-amber-500/15 text-amber-600 dark:text-amber-300",
-  withdrawn: "bg-gray-400/15 text-gray-500 dark:text-gray-400",
+  draft: "bg-muted text-muted-foreground",
+  applied: "bg-primary/10 text-primary",
+  interviewing: "bg-primary/10 text-primary",
+  offer: "bg-success/10 text-success",
+  rejected: "bg-destructive/10 text-destructive",
+  ghosted: "bg-warning/10 text-warning",
+  withdrawn: "bg-muted text-muted-foreground",
 };
+
+/** Gmail mark — Google's literal brand colors (intentional; all chrome around it stays tokenized). */
+const GMAIL_MARK = "bg-gradient-to-br from-[#EA4335] via-[#FBBC05] to-[#34A853]";
 
 function formatRelative(iso?: string | null): string {
   if (!iso) return "never";
@@ -55,6 +58,7 @@ function formatRelative(iso?: string | null): string {
 export default function GmailIntegration({ onSyncComplete }: { onSyncComplete?: () => void }) {
   const [status, setStatus] = useState<GmailStatus | null>(null);
   const [loading, setLoading] = useState(true);
+  const [statusError, setStatusError] = useState(false);
   const [linking, setLinking] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
@@ -63,7 +67,12 @@ export default function GmailIntegration({ onSyncComplete }: { onSyncComplete?: 
 
   const loadStatus = useCallback(async () => {
     const resp = await apiService.getGmailStatus();
-    if (resp.data) setStatus(resp.data);
+    if (resp.data) {
+      setStatus(resp.data);
+      setStatusError(false);
+    } else if (resp.error) {
+      setStatusError(true);
+    }
     setLoading(false);
   }, []);
 
@@ -84,7 +93,7 @@ export default function GmailIntegration({ onSyncComplete }: { onSyncComplete?: 
   useEffect(() => {
     const url = new URL(window.location.href);
     if (url.searchParams.get("gmail") === "linked") {
-      toast.success("Gmail linked. Click Sync to scan recent emails.");
+      toast.success("Gmail linked. Use Sync now to scan recent emails.");
       url.searchParams.delete("gmail");
       window.history.replaceState({}, "", url.toString());
       loadStatus();
@@ -235,21 +244,51 @@ export default function GmailIntegration({ onSyncComplete }: { onSyncComplete?: 
 
   const pendingCount = useMemo(() => suggestions.length, [suggestions]);
 
-  if (loading || !status) return null;
+  // Loading — a stable-height stand-in for the banner so nothing shifts.
+  if (loading) {
+    return (
+      <div className="rounded-2xl border border-border bg-card p-3.5 shadow-soft" aria-hidden="true">
+        <div className="flex items-center gap-3">
+          <div className="h-9 w-9 shrink-0 animate-pulse rounded-xl bg-muted" />
+          <div className="min-w-0 flex-1 space-y-1.5">
+            <div className="h-3 w-32 animate-pulse rounded bg-muted" />
+            <div className="h-2.5 w-56 max-w-full animate-pulse rounded bg-muted" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error — quiet inline failure with a retry, in place of the banner.
+  if (statusError && !status) {
+    return (
+      <div className="flex flex-wrap items-center gap-1.5 rounded-2xl border border-border bg-card p-3.5 text-xs text-muted-foreground shadow-soft">
+        <span>Couldn't check your Gmail connection.</span>
+        <button
+          onClick={() => { setLoading(true); void loadStatus(); }}
+          className="font-semibold text-primary hover:underline"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  if (!status) return null;
   if (!status.configured) return null; // server has no Google creds — hide silently
 
   return (
     <div className="space-y-3">
-      <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-white/60 dark:bg-gray-900/40 backdrop-blur-sm p-3.5">
+      <div className="rounded-2xl border border-border bg-card p-3.5 shadow-soft">
         <div className="flex items-center gap-3 flex-wrap">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-red-500 via-amber-500 to-emerald-500 flex items-center justify-center text-white text-sm font-bold shadow-sm">
+          <div className={`w-9 h-9 rounded-xl ${GMAIL_MARK} flex items-center justify-center text-white text-sm font-bold shadow-soft`}>
             ✉
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[12px] font-semibold text-gray-900 dark:text-gray-100">
+            <p className="text-[12px] font-semibold text-foreground">
               {status.connected ? "Gmail linked" : "Auto-update from Gmail"}
             </p>
-            <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
+            <p className="text-[11px] text-muted-foreground truncate">
               {status.connected
                 ? <>{status.gmail_address || "—"} · last sync {formatRelative(status.last_synced_at)}</>
                 : "Link your inbox so confirmations, interviews, and rejections move cards automatically."}
@@ -260,7 +299,7 @@ export default function GmailIntegration({ onSyncComplete }: { onSyncComplete?: 
               <button
                 onClick={handleConnect}
                 disabled={linking}
-                className="text-[11px] font-semibold px-3 py-1.5 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white shadow-sm disabled:opacity-60"
+                className="text-[11px] font-semibold px-3 py-1.5 rounded-lg bg-primary text-primary-foreground shadow-soft transition-colors hover:bg-primary/90 disabled:opacity-60"
               >
                 {linking ? "Opening Google…" : "Connect Gmail"}
               </button>
@@ -269,13 +308,13 @@ export default function GmailIntegration({ onSyncComplete }: { onSyncComplete?: 
                 <button
                   onClick={handleSync}
                   disabled={syncing}
-                  className="text-[11px] font-semibold px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white disabled:opacity-60"
+                  className="text-[11px] font-semibold px-3 py-1.5 rounded-lg bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60"
                 >
                   {syncing ? "Syncing…" : "Sync now"}
                 </button>
                 <button
                   onClick={handleDisconnect}
-                  className="text-[11px] font-medium px-2.5 py-1.5 rounded-lg border border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800/60"
+                  className="text-[11px] font-medium px-2.5 py-1.5 rounded-lg border border-border text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                 >
                   Disconnect
                 </button>
@@ -286,14 +325,14 @@ export default function GmailIntegration({ onSyncComplete }: { onSyncComplete?: 
       </div>
 
       {status.connected && pendingCount > 0 && (
-        <div className="rounded-2xl border border-purple-500/25 bg-purple-500/[0.05] p-3">
+        <div className="rounded-2xl border border-primary/25 bg-primary/[0.04] p-3">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-purple-700 dark:text-purple-300">
+            <p className="overline text-primary">
               Suggested updates · {pendingCount}
             </p>
             <button
               onClick={() => setShowSuggestions(s => !s)}
-              className="text-[10px] text-purple-600 dark:text-purple-300 hover:underline"
+              className="text-[10px] font-medium text-primary hover:underline"
             >
               {showSuggestions ? "Hide" : "Show"}
             </button>
@@ -305,45 +344,45 @@ export default function GmailIntegration({ onSyncComplete }: { onSyncComplete?: 
                 const toChip = STATUS_CHIP[s.suggested_status] || STATUS_CHIP.draft;
                 const conf = Math.round((s.confidence || 0) * 100);
                 return (
-                  <div key={s.suggestion_id} className="rounded-lg border border-purple-500/15 bg-white/80 dark:bg-gray-900/50 p-2.5">
+                  <div key={s.suggestion_id} className="rounded-lg border border-border/70 bg-background/60 p-2.5">
                     <div className="flex items-start justify-between gap-3 flex-wrap">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <p className="text-[12px] font-semibold text-gray-900 dark:text-white truncate">
+                          <p className="text-[12px] font-semibold text-foreground truncate">
                             {s.title || "Untitled role"}
-                            {s.company ? <span className="text-gray-500 dark:text-gray-400 font-normal"> · {s.company}</span> : null}
+                            {s.company ? <span className="text-muted-foreground font-normal"> · {s.company}</span> : null}
                           </p>
                           <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${fromChip}`}>{s.current_status}</span>
-                          <span className="text-[10px] text-gray-400">→</span>
+                          <span className="text-[10px] text-muted-foreground/70">→</span>
                           <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${toChip}`}>{s.suggested_status}</span>
-                          <span className="text-[10px] text-gray-500 dark:text-gray-400 tabular-nums">{conf}% confident</span>
+                          <span className="text-[10px] text-muted-foreground tabular-nums">{conf}% confident</span>
                         </div>
                         {s.subject && (
-                          <p className="mt-1 text-[11px] text-gray-700 dark:text-gray-300 truncate">
-                            <span className="text-gray-500 dark:text-gray-500">Subject:</span> {s.subject}
+                          <p className="mt-1 text-[11px] text-foreground/80 truncate">
+                            <span className="text-muted-foreground">Subject:</span> {s.subject}
                           </p>
                         )}
                         {s.from_address && (
-                          <p className="text-[10px] text-gray-500 dark:text-gray-400 truncate">
+                          <p className="text-[10px] text-muted-foreground truncate">
                             From: {s.from_name ? `${s.from_name} ` : ""}&lt;{s.from_address}&gt;
                           </p>
                         )}
                         {s.reason && (
-                          <p className="mt-1 text-[11px] italic text-gray-600 dark:text-gray-400">"{s.reason}"</p>
+                          <p className="mt-1 text-[11px] italic text-muted-foreground">"{s.reason}"</p>
                         )}
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
                         <button
                           onClick={() => handleApply(s.suggestion_id)}
                           disabled={busyId === s.suggestion_id}
-                          className="text-[10px] font-semibold px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white disabled:opacity-50"
+                          className="text-[10px] font-semibold px-2.5 py-1 rounded bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
                         >
                           Apply
                         </button>
                         <button
                           onClick={() => handleDismiss(s.suggestion_id)}
                           disabled={busyId === s.suggestion_id}
-                          className="text-[10px] font-medium px-2.5 py-1 rounded border border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800/60 disabled:opacity-50"
+                          className="text-[10px] font-medium px-2.5 py-1 rounded border border-border text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-50"
                         >
                           Dismiss
                         </button>

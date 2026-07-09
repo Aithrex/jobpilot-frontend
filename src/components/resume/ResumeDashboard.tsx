@@ -129,9 +129,7 @@ export default function ResumeDashboard({ onStartTailoring }: ResumeDashboardPro
     return (
       <div className="space-y-5">
         <StreakWidget />
-        <div className="animate-pulse">
-          <div className="h-24 rounded-xl bg-gray-200 dark:bg-gray-800/40" />
-        </div>
+        <div className="h-24 animate-pulse rounded-xl border border-border bg-card shadow-soft" aria-hidden="true" />
       </div>
     );
   }
@@ -140,8 +138,14 @@ export default function ResumeDashboard({ onStartTailoring }: ResumeDashboardPro
     return (
       <div className="space-y-5">
         <StreakWidget />
-        <div className="px-4 py-3 rounded-lg bg-red-900/20 border border-red-500/30">
-          <p className="text-sm text-red-300">{error}</p>
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3">
+          <p className="text-sm text-destructive">{error}</p>
+          <button
+            onClick={() => { setLoading(true); void fetchActive(); }}
+            className="text-sm font-semibold text-primary hover:underline"
+          >
+            Try again
+          </button>
         </div>
       </div>
     );
@@ -152,26 +156,25 @@ export default function ResumeDashboard({ onStartTailoring }: ResumeDashboardPro
     return (
       <div className="space-y-5">
         <StreakWidget />
-        <div className="relative overflow-hidden rounded-xl border border-dashed border-purple-500/30 bg-gradient-to-br from-gray-900 to-gray-950 p-8">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(236,72,153,0.06),transparent_60%)]" />
-        <div className="relative text-center space-y-4">
-          <div className="mx-auto w-14 h-14 rounded-full bg-purple-500/10 flex items-center justify-center">
-            <UploadIcon className="w-7 h-7 text-purple-400" />
+        <div className="rounded-xl border border-dashed border-primary/30 bg-primary/[0.03] p-8">
+        <div className="text-center space-y-4">
+          <div className="mx-auto w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
+            <UploadIcon className="w-7 h-7 text-primary" />
           </div>
           <div>
-            <p className="text-lg font-semibold text-gray-200">Upload Your Resume</p>
-            <p className="text-sm text-gray-400 mt-1">Upload a PDF or DOCX to start tailoring</p>
+            <p className="text-lg font-semibold text-foreground">Upload your resume</p>
+            <p className="text-sm text-muted-foreground mt-1">Add a PDF or DOCX to start tailoring</p>
           </div>
           <label className="inline-block cursor-pointer">
-            <span className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium text-sm text-white transition-all duration-200 ${
+            <span className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium text-sm text-primary-foreground transition-colors duration-200 ${
               uploading
-                ? 'bg-purple-700 cursor-wait'
-                : 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40'
+                ? 'bg-primary/70 cursor-wait'
+                : 'bg-primary hover:bg-primary/90 shadow-soft'
             }`}>
               {uploading ? (
-                <><span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" /> Uploading...</>
+                <><span className="animate-spin rounded-full h-4 w-4 border-2 border-primary-foreground border-t-transparent" /> Uploading…</>
               ) : (
-                <><UploadIcon className="w-4 h-4" /> Choose File</>
+                <><UploadIcon className="w-4 h-4" /> Choose file</>
               )}
             </span>
             <input
@@ -179,8 +182,8 @@ export default function ResumeDashboard({ onStartTailoring }: ResumeDashboardPro
               onChange={e => { const f = e.target.files?.[0]; if (f) handleUpload(f); }}
             />
           </label>
-          <p className="text-xs text-gray-500">PDF or DOCX, max 5 MB</p>
-          {uploadError && <p className="text-sm text-red-400">{uploadError}</p>}
+          <p className="text-xs text-muted-foreground">PDF or DOCX, max 5 MB</p>
+          {uploadError && <p className="text-sm text-destructive">{uploadError}</p>}
         </div>
         </div>
       </div>
@@ -193,28 +196,27 @@ export default function ResumeDashboard({ onStartTailoring }: ResumeDashboardPro
       <StreakWidget />
 
       <div className="flex items-center gap-2 mb-1">
-        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center shrink-0">
-          <span className="text-[10px] font-bold text-white">1</span>
+        <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center shrink-0">
+          <span className="text-[10px] font-bold text-primary-foreground">1</span>
         </div>
-        <p className="text-sm font-semibold text-gray-200">Your Resume</p>
+        <p className="text-sm font-semibold text-foreground">Your resume</p>
       </div>
 
-      <div className="relative overflow-hidden rounded-xl border border-purple-500/20 bg-gradient-to-br from-gray-900 via-gray-900 to-purple-950/20">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl" />
-        <div className="relative p-5">
-          <div className="flex items-start justify-between gap-4">
+      <div className="rounded-xl border border-border bg-card shadow-soft">
+        <div className="p-5">
+          <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="flex items-start gap-3.5 min-w-0 flex-1">
-              <div className="shrink-0 w-11 h-11 rounded-lg bg-purple-500/10 flex items-center justify-center mt-0.5">
-                <FileIcon className="w-5 h-5 text-purple-400" />
+              <div className="shrink-0 w-11 h-11 rounded-lg bg-primary/10 flex items-center justify-center mt-0.5">
+                <FileIcon className="w-5 h-5 text-primary" />
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <p className="text-sm font-semibold text-gray-100 truncate">{activeResume.filename}</p>
-                  <span className="shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
+                  <p className="text-sm font-semibold text-foreground truncate">{activeResume.filename}</p>
+                  <span className="shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-success/10 text-success border border-success/25">
                     Active
                   </span>
                 </div>
-                <p className="text-xs text-gray-400 mt-0.5">
+                <p className="text-xs text-muted-foreground mt-0.5">
                   Uploaded {formatDate(activeResume.uploaded_at)}
                   {activeResume.size ? ` \u00B7 ${formatBytes(activeResume.size)}` : ''}
                 </p>
@@ -223,13 +225,13 @@ export default function ResumeDashboard({ onStartTailoring }: ResumeDashboardPro
             <div className="flex gap-2 shrink-0">
               <button
                 onClick={onStartTailoring}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 transition-all duration-200"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 shadow-soft transition-colors duration-200"
               >
                 <SparklesIcon className="w-4 h-4" />
-                Tailor Resume
+                Tailor resume
               </button>
               <label className="cursor-pointer">
-                <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-gray-300 bg-gray-800 border border-gray-700 hover:border-gray-600 hover:text-gray-200 transition-all duration-200">
+                <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground border border-border bg-card hover:bg-accent hover:text-foreground transition-colors duration-200">
                   <UploadIcon className="w-3.5 h-3.5" />
                   Replace
                 </span>
@@ -243,13 +245,13 @@ export default function ResumeDashboard({ onStartTailoring }: ResumeDashboardPro
           </div>
           {uploading && (
             <div className="mt-3">
-              <div className="h-1 rounded-full bg-gray-800 overflow-hidden">
-                <div className="h-full w-3/5 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 animate-pulse" />
+              <div className="h-1 rounded-full bg-muted overflow-hidden">
+                <div className="h-full w-3/5 rounded-full bg-primary animate-pulse" />
               </div>
-              <p className="text-xs text-gray-400 mt-1">Uploading and parsing...</p>
+              <p className="text-xs text-muted-foreground mt-1">Uploading and parsing&hellip;</p>
             </div>
           )}
-          {uploadError && <p className="text-sm text-red-400 mt-2">{uploadError}</p>}
+          {uploadError && <p className="text-sm text-destructive mt-2">{uploadError}</p>}
         </div>
       </div>
     </div>

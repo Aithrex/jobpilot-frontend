@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Github, Star, ArrowRight, RefreshCw, Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiService } from '@/lib/api';
@@ -21,25 +21,28 @@ interface GitHubProofCardProps {
 export function GitHubProofCard({ onLinked, connect, reloadConnect }: GitHubProofCardProps) {
   const [profile, setProfile] = useState<GithubProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState(false);
 
-  useEffect(() => {
-    let active = true;
-    apiService
-      .getGithub()
-      .then((r) => {
-        if (active && r.data?.linked && r.data.profile) setProfile(r.data.profile);
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-    return () => {
-      active = false;
-    };
+  const loadProfile = useCallback(async () => {
+    setLoading(true);
+    setLoadError(false);
+    try {
+      const r = await apiService.getGithub();
+      if (r.data?.linked && r.data.profile) setProfile(r.data.profile);
+      else if (r.error) setLoadError(true);
+    } catch {
+      setLoadError(true);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    void loadProfile();
+  }, [loadProfile]);
 
   const link = async () => {
     const u = input.trim();
@@ -68,12 +71,29 @@ export function GitHubProofCard({ onLinked, connect, reloadConnect }: GitHubProo
   );
 
   if (loading) {
-    return <div className="h-40 animate-pulse rounded-xl border border-border bg-card" />;
+    return <div className="h-40 animate-pulse rounded-xl border border-border bg-card shadow-soft" />;
+  }
+
+  if (loadError && !profile) {
+    return (
+      <div className="flex min-h-40 flex-col rounded-xl border border-border bg-card p-4 shadow-soft">
+        <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-foreground">
+          <Github className="h-4 w-4" /> GitHub proof
+        </div>
+        <div className="flex flex-1 flex-wrap content-center items-center gap-1.5 text-xs text-muted-foreground">
+          <span>Couldn't load your GitHub profile.</span>
+          <button onClick={() => void loadProfile()} className="font-semibold text-primary hover:underline">
+            Retry
+          </button>
+        </div>
+        {footer}
+      </div>
+    );
   }
 
   if (profile && !editing) {
     return (
-      <div className="flex flex-col rounded-xl border border-border bg-card p-4 shadow-sm">
+      <div className="flex flex-col rounded-xl border border-border bg-card p-4 shadow-soft">
         <div className="mb-3 flex items-center gap-3">
           {profile.avatar_url ? (
             <img src={profile.avatar_url} alt="" className="h-10 w-10 rounded-full border border-border" />
@@ -87,7 +107,7 @@ export function GitHubProofCard({ onLinked, connect, reloadConnect }: GitHubProo
               href={profile.html_url || '#'}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1 truncate text-sm font-bold hover:underline"
+              className="flex items-center gap-1 truncate text-sm font-semibold hover:underline"
             >
               <Github className="h-3.5 w-3.5 text-muted-foreground" /> @{profile.username}
             </a>
@@ -146,7 +166,7 @@ export function GitHubProofCard({ onLinked, connect, reloadConnect }: GitHubProo
 
   return (
     <div className="flex flex-col rounded-xl border border-dashed border-primary/30 bg-primary/[0.03] p-4">
-      <div className="mb-1 flex items-center gap-2 text-sm font-bold">
+      <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-foreground">
         <Github className="h-4 w-4" /> Prove your skills
       </div>
       <p className="mb-3 text-xs leading-relaxed text-muted-foreground">
@@ -284,7 +304,7 @@ function GitHubConnect({ connect, reloadConnect }: { connect?: ConnectStatus | n
       ) : (
         <div className="mt-2 space-y-2 rounded-lg border border-border/60 bg-muted/20 p-2.5">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">New project</span>
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">New project</span>
             <button onClick={() => setShowForm(false)} className="text-muted-foreground hover:text-foreground">
               <X className="h-3.5 w-3.5" />
             </button>

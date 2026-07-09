@@ -74,7 +74,7 @@ export function PostComposer({
           <div className="rounded-lg border border-border bg-muted/40 p-3 text-sm">
             <span className="text-muted-foreground">About: </span>
             <span className="font-medium">{event.title}</span>
-            {relation === 'won' && <span className="ml-2 rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-semibold text-amber-600">Won</span>}
+            {relation === 'won' && <span className="ml-2 rounded-full bg-warning/10 px-2 py-0.5 text-xs font-semibold text-warning">Won</span>}
           </div>
         )}
 
@@ -114,7 +114,7 @@ export function PostComposer({
                 <div className="mb-1.5 flex items-center justify-between">
                   <span className="text-xs font-semibold uppercase tracking-wide text-primary">{v.angle}</span>
                   <button onClick={() => copy(v, i)} className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
-                    {copied === i ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
+                    {copied === i ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
                     {copied === i ? 'Copied' : 'Copy'}
                   </button>
                 </div>

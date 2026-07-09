@@ -56,7 +56,7 @@ function Shell({ children, className, band }: {
     <section
       aria-label="OPT unemployment clock"
       className={cn(
-        'rounded-xl border p-5 shadow-sm',
+        'rounded-xl border p-5 shadow-soft',
         band ? bandFrame(band) : 'border-border bg-card',
         className,
       )}
@@ -74,7 +74,7 @@ function Header({ band }: { band?: OptClock['status_band'] }) {
           <CalendarClock className="h-4 w-4" />
         </span>
         <div>
-          <h3 className="text-sm font-bold leading-tight">OPT Clock</h3>
+          <h3 className="text-sm font-semibold leading-tight text-foreground">OPT clock</h3>
           <p className="text-[11px] text-muted-foreground">Unemployment runway</p>
         </div>
       </div>
@@ -119,10 +119,10 @@ export default function OptClockCard({
       <Shell className={className}>
         <Header />
         <div className="space-y-3">
-          <div className="h-12 w-28 animate-pulse rounded bg-gray-200 dark:bg-white/10" />
-          <div className="h-3 w-40 animate-pulse rounded bg-gray-200 dark:bg-white/10" />
-          <div className="h-2 w-full animate-pulse rounded bg-gray-200 dark:bg-white/10" />
-          <div className="h-3 w-52 animate-pulse rounded bg-gray-200 dark:bg-white/10" />
+          <div className="h-12 w-28 animate-pulse rounded bg-muted" />
+          <div className="h-3 w-40 animate-pulse rounded bg-muted" />
+          <div className="h-2 w-full animate-pulse rounded bg-muted" />
+          <div className="h-3 w-52 animate-pulse rounded bg-muted" />
         </div>
       </Shell>
     );

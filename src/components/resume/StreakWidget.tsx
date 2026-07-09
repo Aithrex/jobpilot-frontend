@@ -1,5 +1,7 @@
 import { useEffect, useImperativeHandle, useState, forwardRef, useCallback } from 'react';
+import { CloudOff } from 'lucide-react';
 import { apiService } from '@/lib/api';
+import { cn } from '@/lib/utils';
 
 export interface StreakData {
   current_streak: number;
@@ -14,21 +16,11 @@ export interface StreakWidgetHandle {
   refresh: () => Promise<void>;
 }
 
-function FlameIcon({ className = 'w-5 h-5', muted = false }: { className?: string; muted?: boolean }) {
+/** Single-tone flame — inherits currentColor so callers pick the token. */
+function FlameIcon({ className = 'w-5 h-5' }: { className?: string }) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" strokeWidth={1.6} stroke="currentColor">
-      <defs>
-        <linearGradient id="flame-grad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={muted ? '#6b7280' : '#fbbf24'} />
-          <stop offset="60%" stopColor={muted ? '#4b5563' : '#fb923c'} />
-          <stop offset="100%" stopColor={muted ? '#374151' : '#ec4899'} />
-        </linearGradient>
-      </defs>
-      <path
-        d="M12 2.5c1.6 3.4 4.7 5 4.7 8.7 0 2-1.2 3.6-2.9 4.3.7-1.4.5-3-1-4.4-.4 2.4-2.1 3.4-3 4.6-1.4 1.8-1.4 4.6 1 6.2-3.6-.4-6.3-3.1-6.3-6.7 0-4.5 4-6.5 4-9.7 0-1 .3-2 .8-3 .7 1.2 2 1.7 2.7 0z"
-        fill="url(#flame-grad)"
-        stroke="none"
-      />
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M12 2.5c1.6 3.4 4.7 5 4.7 8.7 0 2-1.2 3.6-2.9 4.3.7-1.4.5-3-1-4.4-.4 2.4-2.1 3.4-3 4.6-1.4 1.8-1.4 4.6 1 6.2-3.6-.4-6.3-3.1-6.3-6.7 0-4.5 4-6.5 4-9.7 0-1 .3-2 .8-3 .7 1.2 2 1.7 2.7 0z" />
     </svg>
   );
 }
@@ -57,22 +49,27 @@ function variantFor(count: number): CellVariant {
   return 'peak';
 }
 
+/** Heat encoded as warning-tinted washes; numerals stay foreground for contrast. */
 const CELL_BASE_STYLES: Record<CellVariant, string> = {
-  empty: 'bg-gray-100 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700/30 text-gray-400 dark:text-gray-600',
-  low: 'bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/25 text-amber-600 dark:text-amber-300',
-  mid: 'bg-amber-100 dark:bg-amber-500/20 border-amber-300 dark:border-amber-400/40 text-amber-700 dark:text-amber-200',
-  high: 'bg-gradient-to-br from-amber-200 to-pink-100 dark:from-amber-500/35 dark:to-pink-500/25 border-pink-300 dark:border-pink-400/45 text-amber-800 dark:text-amber-100',
-  peak: 'bg-gradient-to-br from-amber-400 via-pink-500 to-purple-600 border-amber-300/70 text-white',
+  empty: 'bg-muted/50 border-border/70 text-muted-foreground',
+  low: 'bg-warning/10 border-warning/20 text-foreground/80',
+  mid: 'bg-warning/20 border-warning/30 text-foreground/90',
+  high: 'bg-warning/30 border-warning/40 text-foreground',
+  peak: 'bg-warning/40 border-warning/60 text-foreground',
 };
 
 const StreakWidget = forwardRef<StreakWidgetHandle, { compact?: boolean }>(({ compact = false }, ref) => {
   const [data, setData] = useState<StreakData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   const load = useCallback(async () => {
     const resp = await apiService.getApplicationStreak();
     if (resp.data) {
       setData(resp.data);
+      setError(false);
+    } else if (resp.error) {
+      setError(true);
     } else {
       const today = new Date();
       const heatmap = Array.from({ length: 30 }, (_, i) => {
@@ -103,7 +100,31 @@ const StreakWidget = forwardRef<StreakWidgetHandle, { compact?: boolean }>(({ co
 
   if (loading) {
     return (
-      <div className="animate-pulse h-12 rounded-xl bg-gray-200 dark:bg-gray-800/40 border border-gray-300 dark:border-gray-700/30" />
+      <div className="flex h-[72px] items-center gap-4 rounded-xl border border-border bg-card px-4 shadow-soft" aria-hidden="true">
+        <div className="h-6 w-6 shrink-0 animate-pulse rounded-full bg-muted" />
+        <div className="h-5 w-16 animate-pulse rounded bg-muted" />
+        <div className="h-5 w-20 animate-pulse rounded bg-muted" />
+        <div className="ml-auto hidden items-center gap-1.5 sm:flex">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="h-7 w-7 animate-pulse rounded-lg bg-muted" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (error && !data) {
+    return (
+      <div className="flex h-[72px] flex-wrap content-center items-center gap-1.5 rounded-xl border border-border bg-card px-4 text-xs text-muted-foreground shadow-soft">
+        <CloudOff className="h-3.5 w-3.5 shrink-0 text-warning" />
+        <span>Couldn't load your streak.</span>
+        <button
+          onClick={() => { setLoading(true); void load(); }}
+          className="font-semibold text-primary hover:underline"
+        >
+          Retry
+        </button>
+      </div>
     );
   }
 
@@ -114,20 +135,20 @@ const StreakWidget = forwardRef<StreakWidgetHandle, { compact?: boolean }>(({ co
   const recent = [...data.heatmap].reverse().slice(0, 10);
 
   return (
-    <div className="group relative overflow-hidden rounded-xl border border-gray-200 dark:border-white/[0.06] bg-gradient-to-br from-white via-gray-50 to-white dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 shadow-sm dark:shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset]">
-      {/* Top accent bar — gradient when alive, neutral when not */}
+    <div className="group relative overflow-hidden rounded-xl border border-border bg-card shadow-soft">
+      {/* Top accent bar — warm when the streak is alive, quiet when not */}
       <div
         className={`absolute inset-x-0 top-0 h-px ${
           isAlive
-            ? 'bg-gradient-to-r from-transparent via-amber-400/60 to-transparent'
-            : 'bg-gradient-to-r from-transparent via-gray-300/40 dark:via-gray-700/40 to-transparent'
+            ? 'bg-gradient-to-r from-transparent via-warning/60 to-transparent'
+            : 'bg-gradient-to-r from-transparent via-border to-transparent'
         }`}
       />
       {/* Ambient glow — only when streak is alive */}
       {isAlive && (
         <>
-          <div className="absolute -top-12 left-4 w-32 h-32 rounded-full bg-amber-500/10 blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-16 right-1/3 w-40 h-40 rounded-full bg-pink-500/5 blur-3xl pointer-events-none" />
+          <div className="absolute -top-12 left-4 w-32 h-32 rounded-full bg-warning/10 blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-16 right-1/3 w-40 h-40 rounded-full bg-primary/5 blur-3xl pointer-events-none" />
         </>
       )}
 
@@ -139,28 +160,27 @@ const StreakWidget = forwardRef<StreakWidgetHandle, { compact?: boolean }>(({ co
         >
           <div className="relative">
             {todayActive && (
-              <div className="absolute inset-0 -m-1 rounded-full bg-amber-500/25 blur-md pointer-events-none" />
+              <div className="absolute inset-0 -m-1 rounded-full bg-warning/20 blur-md pointer-events-none" />
             )}
-            <FlameIcon className="relative w-6 h-6" muted={!todayActive} />
+            <FlameIcon className={cn('relative w-6 h-6', todayActive ? 'text-warning' : 'text-muted-foreground/40')} />
           </div>
           <div className="flex items-baseline gap-1.5">
             <span
-              className={`text-2xl font-bold tabular-nums leading-none tracking-tight ${
-                todayActive
-                  ? 'bg-gradient-to-br from-amber-200 via-pink-300 to-purple-300 bg-clip-text text-transparent drop-shadow-[0_0_12px_rgba(251,146,60,0.3)]'
-                  : 'text-gray-400 dark:text-gray-600'
-              }`}
+              className={cn(
+                'font-display text-2xl font-extrabold tabular-nums leading-none tracking-tight',
+                todayActive ? 'text-foreground' : 'text-muted-foreground/60',
+              )}
             >
               {data.today_count}
             </span>
-            <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-500 leading-none">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground leading-none">
               today
             </span>
           </div>
         </div>
 
-        {/* Soft gradient divider */}
-        <div className="hidden sm:block h-8 w-px shrink-0 bg-gradient-to-b from-transparent via-gray-300 dark:via-white/10 to-transparent" />
+        {/* Soft divider */}
+        <div className="hidden sm:block h-8 w-px shrink-0 bg-gradient-to-b from-transparent via-border to-transparent" />
 
         {/* ── Day streak (secondary) ────────────────────────────────── */}
         <div
@@ -173,33 +193,30 @@ const StreakWidget = forwardRef<StreakWidgetHandle, { compact?: boolean }>(({ co
         >
           <div className="flex items-baseline gap-1.5">
             <span
-              className={`text-xl font-bold tabular-nums leading-none tracking-tight ${
-                isAlive
-                  ? 'text-amber-500 dark:text-amber-200'
-                  : 'text-gray-400 dark:text-gray-600'
-              }`}
+              className={cn(
+                'font-display text-xl font-extrabold tabular-nums leading-none tracking-tight',
+                isAlive ? 'text-warning' : 'text-muted-foreground/60',
+              )}
             >
               {data.current_streak}
             </span>
-            <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-500 leading-none">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground leading-none">
               day streak
             </span>
           </div>
           {data.longest_streak > 0 && data.longest_streak > data.current_streak && (
             <span
-              className="hidden md:inline-flex items-center gap-1.5 text-[10px] font-medium leading-none px-2 py-1 rounded-full border border-gray-200 dark:border-gray-700/40 bg-gray-100 dark:bg-gray-800/40"
+              className="hidden md:inline-flex items-center gap-1.5 text-[10px] font-medium leading-none px-2 py-1 rounded-full border border-border bg-muted"
               title={`Personal best: ${data.longest_streak} day${data.longest_streak === 1 ? '' : 's'}`}
             >
-              <span className="text-gray-500 dark:text-gray-400">Best</span>
-              <span className="tabular-nums text-gray-700 dark:text-gray-200 font-semibold">{data.longest_streak}</span>
+              <span className="text-muted-foreground">Best</span>
+              <span className="tabular-nums font-semibold text-foreground">{data.longest_streak}</span>
             </span>
           )}
         </div>
 
-        {/* Soft gradient divider */}
-        <div
-          className={`hidden sm:block h-8 w-px shrink-0 bg-gradient-to-b from-transparent via-gray-300 dark:via-white/10 to-transparent`}
-        />
+        {/* Soft divider */}
+        <div className="hidden sm:block h-8 w-px shrink-0 bg-gradient-to-b from-transparent via-border to-transparent" />
 
         {/* ── Right: today-first per-day cells ───────────────────────── */}
         {!compact && (
@@ -211,13 +228,13 @@ const StreakWidget = forwardRef<StreakWidgetHandle, { compact?: boolean }>(({ co
               const isHeroToday = isToday && todayActive;
 
               const baseTone = isHeroToday
-                ? 'bg-gradient-to-br from-amber-400 via-pink-500 to-purple-600 border-amber-300/80 text-white shadow-[0_0_18px_-2px_rgba(251,146,60,0.55)]'
+                ? 'bg-warning/30 border-warning/60 text-foreground'
                 : CELL_BASE_STYLES[variant];
 
               const sizing = isHeroToday
-                ? 'w-10 h-10 text-base ring-2 ring-amber-300/70 ring-offset-2 ring-offset-white dark:ring-offset-gray-950'
+                ? 'w-10 h-10 text-base ring-2 ring-warning/50 ring-offset-2 ring-offset-card'
                 : isToday
-                  ? 'w-7 h-7 text-[12px] ring-1 ring-amber-400/40'
+                  ? 'w-7 h-7 text-[12px] ring-1 ring-warning/40'
                   : 'w-7 h-7 text-[12px]';
 
               return (
@@ -229,34 +246,33 @@ const StreakWidget = forwardRef<StreakWidgetHandle, { compact?: boolean }>(({ co
                   <div
                     className={`relative rounded-lg border flex items-center justify-center font-semibold tabular-nums transition-all duration-200 ${baseTone} ${sizing} ${
                       isActive
-                        ? 'group-hover/cell:-translate-y-0.5 group-hover/cell:shadow-md'
-                        : 'group-hover/cell:border-gray-300 dark:group-hover/cell:border-gray-600/50'
+                        ? 'group-hover/cell:-translate-y-0.5 group-hover/cell:shadow-soft'
+                        : 'group-hover/cell:border-muted-foreground/40'
                     }`}
                   >
                     {isActive && (
                       <FlameIcon
-                        className={`absolute inset-0 w-full h-full pointer-events-none ${
+                        className={`absolute inset-0 w-full h-full pointer-events-none text-warning ${
                           isHeroToday ? 'opacity-30 animate-pulse' : 'opacity-20'
                         }`}
                       />
                     )}
                     {/* Empty days show a dim dot rather than a loud "0" */}
                     {!isActive ? (
-                      <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600/60" />
+                      <span className="w-1 h-1 rounded-full bg-muted-foreground/40" />
                     ) : (
                       <span className="relative leading-none">{cell.count}</span>
                     )}
                   </div>
                   <span
-                    className={`text-[9px] font-semibold uppercase tracking-wider leading-none ${
-                      isHeroToday
-                        ? 'text-amber-600 dark:text-amber-200'
-                        : isToday
-                          ? 'text-amber-500 dark:text-amber-400/80'
-                          : isActive
-                            ? 'text-gray-500 dark:text-gray-400'
-                            : 'text-gray-400 dark:text-gray-600'
-                    }`}
+                    className={cn(
+                      'text-[9px] font-semibold uppercase tracking-wider leading-none',
+                      isToday
+                        ? 'text-foreground'
+                        : isActive
+                          ? 'text-muted-foreground'
+                          : 'text-muted-foreground/60',
+                    )}
                   >
                     {isToday ? 'Today' : `${shortDay(cell.date)} ${dayOfMonth(cell.date)}`}
                   </span>
