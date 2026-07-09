@@ -2891,6 +2891,59 @@ class ApiService {
       onPartial,
     );
   }
+
+  // ============================================
+  // Auto-Apply (opt-in auto-submit) — /api/apply/auto-submit
+  // Rides the existing ANY /api/apply/{proxy+} edge route (no new Terraform).
+  // All endpoints 404 when AUTO_SUBMIT_ENABLED is off; callers treat 404 as
+  // "feature unavailable" and hide the surface.
+  // ============================================
+
+  async getAutoSubmitSettings() {
+    return this.request<import("../types/autoSubmit").AutoSubmitSettings>(
+      "/apply/auto-submit/settings",
+    );
+  }
+
+  async updateAutoSubmitSettings(enabled: boolean) {
+    return this.request<import("../types/autoSubmit").AutoSubmitSettings>(
+      "/apply/auto-submit/settings",
+      { method: "PUT", body: JSON.stringify({ enabled }) },
+    );
+  }
+
+  async approveAutoSubmit(
+    body: import("../types/autoSubmit").AutoSubmitApproveBody,
+  ) {
+    return this.request<import("../types/autoSubmit").AutoSubmitApproveResult>(
+      "/apply/auto-submit/approve",
+      { method: "POST", body: JSON.stringify(body) },
+    );
+  }
+
+  async cancelAutoSubmit(applicationId: string) {
+    return this.request<{
+      approval: import("../types/autoSubmit").AutoSubmitApprovalView;
+    }>("/apply/auto-submit/cancel", {
+      method: "POST",
+      body: JSON.stringify({ application_id: applicationId }),
+    });
+  }
+
+  async getAutoSubmitPending() {
+    return this.request<import("../types/autoSubmit").AutoSubmitPending>(
+      "/apply/auto-submit/pending",
+    );
+  }
+
+  async markAutoSubmitSubmitted(applicationId: string) {
+    return this.request<{
+      approval: import("../types/autoSubmit").AutoSubmitApprovalView;
+    }>("/apply/auto-submit/mark-submitted", {
+      method: "POST",
+      body: JSON.stringify({ application_id: applicationId }),
+    });
+  }
 }
 
 export const apiService = new ApiService(API_BASE_URL);

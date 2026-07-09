@@ -20,7 +20,7 @@ import type { TechChronicleItem } from '@/types/techChronicle';
 export type NavKey =
   | 'tailor' | 'batch' | 'jobs' | 'my-resumes' | 'tailored'
   | 'applications' | 'interview' | 'visa' | 'beta' | 'copilot' | 'profile'
-  | 'learning' | 'events' | 'network' | 'billing' | 'six-seconds';
+  | 'learning' | 'events' | 'network' | 'billing' | 'six-seconds' | 'auto-apply';
 
 export interface StreakData {
   current_streak: number;

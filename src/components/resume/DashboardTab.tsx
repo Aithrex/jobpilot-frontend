@@ -31,6 +31,7 @@ import { LinkedInAuditCard } from './LinkedInAuditCard';
 import { LinkedInArchiveCard } from './LinkedInArchiveCard';
 
 import { HeroAction } from './widgets/HeroAction';
+import AutoApplyEntryCard from '@/components/autoSubmit/AutoApplyEntryCard';
 import { WIDGETS } from './widgets/registry';
 import { spanClass, WidgetSkeleton } from './widgets/primitives';
 import { EASE, clamp01 } from './widgets/types';
@@ -198,6 +199,9 @@ export default function DashboardTab({ userName, onNavigate }: DashboardTabProps
         <>
           {/* The one recommended action */}
           <HeroAction ctx={ctx} />
+
+          {/* Auto-Apply entry point — self-hides when the feature is unavailable */}
+          <AutoApplyEntryCard onOpen={() => onNavigate('auto-apply')} />
 
           {/* The generated, relevance-ranked widget grid */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 [grid-auto-flow:dense]">
