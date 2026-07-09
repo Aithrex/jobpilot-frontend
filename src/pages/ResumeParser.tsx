@@ -9,7 +9,7 @@ import { QuotaLimitDialog } from "@/components/quota/QuotaLimitDialog";
 import { useFeedback } from "@/components/feedback/FeedbackWidget";
 import { buildCoverLetterFilename, titleCaseName } from "@/lib/filename";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Bot, CreditCard, GraduationCap, Trophy, Users, Mic, Menu, PanelLeftClose, PanelLeftOpen, X, Eye, TrendingUp, Bell } from "lucide-react";
+import { Bot, Building2, CreditCard, GraduationCap, Trophy, Users, Mic, Menu, PanelLeftClose, PanelLeftOpen, X, Eye, TrendingUp, Bell } from "lucide-react";
 import { ConnectedTo } from "@/components/resume/ConnectedTo";
 import MobileBottomNav from "@/components/layout/MobileBottomNav";
 import { lazy, Suspense } from "react";
@@ -36,6 +36,7 @@ const InterviewPrepTab = lazy(() => import("@/components/resume/InterviewPrepTab
 const ApplicationsTab = lazy(() => import("@/components/resume/ApplicationsTab"));
 const VersionDiffViewer = lazy(() => import("@/components/resume/VersionDiffViewer"));
 const JobOpportunitiesTab = lazy(() => import("@/components/resume/JobOpportunitiesTab"));
+const CareerPortalsTab = lazy(() => import("@/components/resume/CareerPortalsTab"));
 const CareerCopilotTab = lazy(() => import("@/components/resume/CareerCopilotTab"));
 const VisaTimelineTab = lazy(() => import("@/components/visa/VisaTimelineTab"));
 const BetaLabTab = lazy(() => import("@/components/beta/BetaLabTab"));
@@ -327,6 +328,7 @@ type NavTab =
   | "tailor"
   | "batch"
   | "jobs"
+  | "career-portals"
   | "my-resumes"
   | "tailored"
   | "applications"
@@ -6046,6 +6048,13 @@ const NAV_ITEMS: ResumeNavItem[] = [
     hint: "Discover and save roles",
   },
   {
+    key: "career-portals",
+    label: "Career Portals",
+    icon: <Building2 className="w-4 h-4" />,
+    badge: "New",
+    hint: "Live Workday + ATS career pages",
+  },
+  {
     key: "learning",
     label: "Learning Hub",
     icon: <GraduationCap className="w-4 h-4" />,
@@ -6106,7 +6115,7 @@ const NAV_SECTIONS: ResumeNavSection[] = [
   { label: "Overview", items: ["dashboard"] },
   { label: "Create", items: ["tailor", "batch"] },
   { label: "Library", items: ["my-resumes", "tailored", "applications"] },
-  { label: "Career", items: ["interview", "visa", "copilot", "jobs", "pipeline"] },
+  { label: "Career", items: ["interview", "visa", "copilot", "jobs", "career-portals", "pipeline"] },
   { label: "Grow", items: ["learning", "events", "network", "voicegraph", "six-seconds"] },
   { label: "Experimental", items: ["beta"] },
   { label: "Account", items: ["billing", "notifications", "profile"] },
@@ -6332,6 +6341,7 @@ const VALID_NAV_TABS: readonly NavTab[] = [
   "tailor",
   "batch",
   "jobs",
+  "career-portals",
   "my-resumes",
   "tailored",
   "applications",
@@ -6743,6 +6753,20 @@ export default function ResumeParser() {
                     }
                   >
                     <JobOpportunitiesTab />
+                  </Suspense>
+                </div>
+              )}
+
+              {wasVisited("career-portals") && (
+                <div style={{ display: isVisible("career-portals") ? undefined : "none" }}>
+                  <Suspense
+                    fallback={
+                      <div className="rounded-xl border border-border bg-card p-8 text-center">
+                        <div className="mx-auto h-6 w-1/3 animate-pulse rounded bg-muted" />
+                      </div>
+                    }
+                  >
+                    <CareerPortalsTab />
                   </Suspense>
                 </div>
               )}

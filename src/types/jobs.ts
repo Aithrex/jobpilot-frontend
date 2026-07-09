@@ -355,3 +355,130 @@ export interface BatchSearchResponse {
   cache_bypassed?: boolean;
 }
 
+// ── Career portals (direct Workday + career-page ATS fan-out) ──────────────
+// Same engine behind two catalogs: /api/jobs/workday (enterprise Workday
+// tenants) and /api/jobs/career-pages (Greenhouse / Lever / Ashby / …).
+
+export type CareerPortalVariant = 'workday' | 'careers';
+
+export type WorkdayRecency = 'today' | '24h' | '3d' | '7d' | '30d';
+
+export type CareerPortalFeasibility = 'strong' | 'possible' | 'stretch' | 'skip';
+
+export type CareerPortalSeniority = 'intern' | 'entry' | 'mid' | 'senior';
+
+/**
+ * JD-level visa signal for portal rows — a discrete band, NOT the
+ * `SponsorshipSignal` object on `Job.sponsorship`. 'refused' = the posting
+ * itself declines sponsorship (strongest signal); 'likely' = the company has
+ * a real recent H-1B filing record in public disclosure data; 'rare' = files
+ * occasionally; 'unknown' = no evidence either way (which is not a refusal).
+ */
+export type CareerPortalSponsorship = 'likely' | 'rare' | 'unknown' | 'refused';
+
+/** Job row returned by the portal search endpoints. Intentionally NOT an
+ *  extension of `Job` — portal rows carry catalog metadata (tenant/industry),
+ *  a string sponsorship band, and several `Job`-required fields only
+ *  optionally. The panel normalizes rows into `Job` for `JobCard`. */
+export interface WorkdayJob {
+  job_id: string;
+  title: string;
+  company: string;
+  location: string;
+  apply_link: string;
+  date_posted: string;
+  posted_text?: string;
+  is_remote: boolean;
+  /** Catalog slug of the company that served this row. */
+  tenant: string;
+  industry: string;
+  /** Career-pages rows: which ATS hosts this posting (greenhouse, lever,
+   *  ashby, smartrecruiters, workable, recruitee). Absent on Workday rows. */
+  ats?: string;
+  /** Whole days since posting (0 = today). null/undefined = unknown. */
+  days_ago?: number | null;
+  logo?: string;
+  description?: string;
+  salary?: string;
+  employment_type?: string;
+  source?: string;
+  match_score?: number;
+  matched_skills?: string[];
+  missing_skills?: string[];
+  /** True when the job title covers all core tokens of one of the user's
+   *  search titles — drives the ranking boost. */
+  title_matched?: boolean;
+  /** Which search terms (title families and/or resume skills) retrieved
+   *  this posting. */
+  matched_terms?: string[];
+  /** Definitive country from the job-detail API, set for enriched rows. */
+  country_code?: string;
+  /** Frank "can the base resume be honestly tailored into this JD?" verdict. */
+  tailor_feasibility?: CareerPortalFeasibility;
+  feasibility_reason?: string;
+  /** Title-derived seniority band. */
+  seniority?: CareerPortalSeniority;
+  h1b_sponsor?: boolean;
+  sponsorship?: CareerPortalSponsorship;
+  /** Evidence behind the sponsorship band — JD snippet or filings summary. */
+  sponsor_note?: string;
+}
+
+export interface WorkdayJobsParams {
+  titles?: string[];
+  industries?: string[];
+  companies?: string[];
+  /** Optional narrowing WITHIN the US (state/city/"Remote"). */
+  location?: string;
+  remote_only?: boolean;
+  /** Server-side US country facet on every tenant. Defaults to true. */
+  us_only?: boolean;
+  force_refresh?: boolean;
+}
+
+export interface WorkdayJobsProgress {
+  tenants_done: number;
+  tenants_total: number;
+  jobs_found: number;
+  /** "details" while full descriptions are being fetched for top matches. */
+  phase?: string;
+}
+
+export interface WorkdayJobsResult {
+  ok: boolean;
+  generated_at: string;
+  jobs: WorkdayJob[];
+  total: number;
+  window_counts: { today: number; d1: number; d3: number; d7: number; d30: number };
+  query_terms: string[];
+  tenants_total: number;
+  tenants_done: number;
+  tenants_with_results: number;
+  industries_available: string[];
+  /** Career-pages results: ATS kinds present in the catalog. */
+  ats_available?: string[];
+  cache_hit: boolean;
+  us_only?: boolean;
+  /** 0 => no parsed resume on this account (skill scoring unavailable). */
+  resume_skill_count?: number;
+  diagnostics?: { facet_fallbacks?: number; task_errors?: number };
+  errors: string[];
+  /** Present only on streaming partials while the fan-out is running. */
+  progress?: WorkdayJobsProgress;
+  /** True on streaming partials — the jobs list is a provisional top slice. */
+  streaming?: boolean;
+}
+
+export interface WorkdayCatalogIndustry {
+  key: string;
+  count: number;
+  companies: Array<{ display_name: string; tenant: string; ats?: string }>;
+}
+
+export interface WorkdayCatalog {
+  total: number;
+  industries: WorkdayCatalogIndustry[];
+  /** Career-pages catalog only: ATS kinds represented. */
+  ats_available?: string[];
+}
+

@@ -2816,6 +2816,81 @@ class ApiService {
       tailoring_records: any[];
     }>(`/admin/user/${encodeURIComponent(email)}`);
   }
+
+  // ============================================
+  // Career portals — direct Workday fan-out (/api/jobs/workday)
+  // ============================================
+
+  async getWorkdayCatalog() {
+    return this.request<import("../types/jobs").WorkdayCatalog>(
+      "/jobs/workday/catalog",
+      { method: "GET" },
+    );
+  }
+
+  async searchWorkdayJobs(
+    params: import("../types/jobs").WorkdayJobsParams,
+    onPartial?: (partial: import("../types/jobs").WorkdayJobsResult) => void,
+  ): Promise<ApiResponse<import("../types/jobs").WorkdayJobsResult>> {
+    const submitResp = await this.request<{ job_id: string }>(
+      "/jobs/workday/search",
+      {
+        method: "POST",
+        body: JSON.stringify(params),
+      },
+      30000,
+    );
+    if (submitResp.error) {
+      // Forward status + payload so a 403 upgrade_required / 429 quota surfaces.
+      return { error: submitResp.error, status: submitResp.status, errorPayload: submitResp.errorPayload };
+    }
+    if (!submitResp.data?.job_id) return { error: "Failed to start Workday search" };
+    // A cold full-catalog fan-out can take several minutes on Lambda; poll up
+    // to the function's 15-min ceiling. Matches stream in via onPartial the
+    // whole time, so the wait is visible, not a spinner.
+    return this.pollJob<import("../types/jobs").WorkdayJobsResult>(
+      submitResp.data.job_id,
+      900000,
+      undefined,
+      onPartial,
+    );
+  }
+
+  // ============================================
+  // Career portals — non-Workday ATS universe (/api/jobs/career-pages)
+  // ============================================
+
+  async getCareerPagesCatalog() {
+    return this.request<import("../types/jobs").WorkdayCatalog>(
+      "/jobs/career-pages/catalog",
+      { method: "GET" },
+    );
+  }
+
+  async searchCareerPagesJobs(
+    params: import("../types/jobs").WorkdayJobsParams,
+    onPartial?: (partial: import("../types/jobs").WorkdayJobsResult) => void,
+  ): Promise<ApiResponse<import("../types/jobs").WorkdayJobsResult>> {
+    const submitResp = await this.request<{ job_id: string }>(
+      "/jobs/career-pages/search",
+      {
+        method: "POST",
+        body: JSON.stringify(params),
+      },
+      30000,
+    );
+    if (submitResp.error) {
+      // Forward status + payload so a 403 upgrade_required / 429 quota surfaces.
+      return { error: submitResp.error, status: submitResp.status, errorPayload: submitResp.errorPayload };
+    }
+    if (!submitResp.data?.job_id) return { error: "Failed to start career-pages search" };
+    return this.pollJob<import("../types/jobs").WorkdayJobsResult>(
+      submitResp.data.job_id,
+      900000,
+      undefined,
+      onPartial,
+    );
+  }
 }
 
 export const apiService = new ApiService(API_BASE_URL);
