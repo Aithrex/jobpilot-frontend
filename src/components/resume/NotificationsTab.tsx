@@ -26,7 +26,7 @@ function SectionCard({ title, icon: Icon, children }: {
   title: string; icon: typeof Bell; children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+    <div className="rounded-2xl border border-border bg-card p-5 shadow-soft">
       <div className="mb-4 flex items-center gap-2">
         <span className="grid h-8 w-8 place-items-center rounded-lg bg-primary/10 text-primary">
           <Icon className="h-4 w-4" />
@@ -88,7 +88,7 @@ export default function NotificationsTab() {
 
   if (loading) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-4" aria-busy="true">
         <Skeleton className="h-24 rounded-2xl" />
         <Skeleton className="h-48 rounded-2xl" />
         <Skeleton className="h-48 rounded-2xl" />
@@ -127,7 +127,7 @@ export default function NotificationsTab() {
       </div>
 
       {/* Master switch */}
-      <div className="flex items-center justify-between rounded-2xl border border-border bg-card p-5 shadow-sm">
+      <div className="flex items-center justify-between rounded-2xl border border-border bg-card p-5 shadow-soft">
         <div>
           <p className="text-sm font-bold">All notifications</p>
           <p className="text-xs text-muted-foreground">Master switch for everything below.</p>

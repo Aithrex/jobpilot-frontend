@@ -28,8 +28,8 @@ const Q_SUBTABS: { key: QSubTab; label: string; icon: string }[] = [
 
 const PRACTICAL_SUBTABS: { key: PracticalSubTab; label: string; icon: string }[] = [
   { key: "coding",         label: "Coding",        icon: "💻" },
-  { key: "system_design",  label: "System Design", icon: "🏗" },
-  { key: "case_study",     label: "Case Studies",  icon: "📊" },
+  { key: "system_design",  label: "System design", icon: "🏗" },
+  { key: "case_study",     label: "Case studies",  icon: "📊" },
   { key: "data_challenge", label: "Data",          icon: "🔢" },
 ];
 
@@ -224,14 +224,14 @@ export default function InterviewPrepTab() {
   }, [practicalAvailable, practicalSub]);
 
   if (loading) {
-    return <div className="animate-pulse h-24 rounded-xl bg-gray-100/40 dark:bg-gray-800/40" />;
+    return <div className="space-y-4" aria-busy="true"><div className="h-28 animate-pulse rounded-2xl bg-muted/60" /><div className="grid grid-cols-1 gap-4 md:grid-cols-[260px_1fr]"><div className="h-64 animate-pulse rounded-xl bg-muted/40" /><div className="h-64 animate-pulse rounded-2xl bg-muted/40" /></div></div>;
   }
   if (records.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-gray-300 dark:border-gray-700 bg-gradient-to-b from-purple-500/5 to-transparent p-10 text-center">
-        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-500 text-white flex items-center justify-center mx-auto mb-3 text-xl shadow-lg shadow-purple-500/30">💡</div>
-        <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">No tailored resumes yet</p>
-        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Tailor a resume first — prep is grounded in your JD + resume.</p>
+      <div className="rounded-2xl border border-dashed border-border bg-gradient-to-b from-primary/5 to-transparent p-10 text-center">
+        <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-xl">💡</div>
+        <p className="text-sm font-semibold text-foreground">No tailored resumes yet</p>
+        <p className="text-xs text-muted-foreground mt-1">Tailor a resume to a job first — your prep pack is built from that resume and job description.</p>
       </div>
     );
   }
@@ -240,51 +240,51 @@ export default function InterviewPrepTab() {
     { key: "overview",  label: "Overview",    icon: "✨" },
     { key: "questions", label: "Questions",   icon: "❓" },
     { key: "practical", label: "Practical",   icon: "🧪", show: !!hasAnyPractical },
-    { key: "edge",      label: "Your Edge",   icon: "🎯" },
-    { key: "mock",      label: "Mock Interview", icon: "🎤" },
-    { key: "coach",     label: "AI Coach",    icon: "🧑‍🏫" },
+    { key: "edge",      label: "Your edge",   icon: "🎯" },
+    { key: "mock",      label: "Mock interview", icon: "🎤" },
+    { key: "coach",     label: "AI coach",    icon: "🧑‍🏫" },
     { key: "insights",  label: "Insights",    icon: "📈" },
   ].filter(t => t.show === undefined || t.show);
 
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl border border-gray-200/80 bg-white/70 p-4 dark:border-white/[0.08] dark:bg-gray-900/40">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Interview Prep</h2>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
-          A collaborative practice system — question banks, timed mock answers with AI grading, an always-on coach who knows your resume and JD.
+      <div className="rounded-2xl border border-border bg-card p-4 shadow-soft">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">Career · Interview</p><h2 className="mt-1 font-display text-2xl font-extrabold tracking-tight text-foreground">Interview Prep</h2>
+        <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
+          Question banks, timed mock answers with AI grading, and a coach that knows your resume and the job description.
         </p>
         <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <div className="rounded-lg border border-purple-500/20 bg-purple-500/5 px-3 py-2">
-            <p className="text-[10px] uppercase tracking-wide text-gray-500 dark:text-gray-400">Selected role</p>
-            <p className="truncate text-sm font-semibold text-purple-700 dark:text-purple-300">{selected?.jd_analysis?.job_title || "None"}</p>
+          <div className="rounded-lg border border-primary/20 bg-primary/5 px-3 py-2">
+            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Selected role</p>
+            <p className="truncate text-sm font-semibold text-primary">{selected?.jd_analysis?.job_title || "None"}</p>
           </div>
-          <div className="rounded-lg border border-blue-500/20 bg-blue-500/5 px-3 py-2">
-            <p className="text-[10px] uppercase tracking-wide text-gray-500 dark:text-gray-400">Questions</p>
-            <p className="text-sm font-semibold text-blue-700 dark:text-blue-300">{norm ? norm.behavioral.length + norm.technical.length + norm.company.length : 0}</p>
+          <div className="rounded-lg border border-border bg-muted/40 px-3 py-2">
+            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Questions</p>
+            <p className="text-sm font-semibold text-foreground">{norm ? norm.behavioral.length + norm.technical.length + norm.company.length : 0}</p>
           </div>
-          <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-3 py-2">
-            <p className="text-[10px] uppercase tracking-wide text-gray-500 dark:text-gray-400">Reviewed</p>
-            <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">{reviewed.size}/{totalItems}</p>
+          <div className="rounded-lg border border-success/20 bg-success/5 px-3 py-2">
+            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Reviewed</p>
+            <p className="text-sm font-semibold text-success">{reviewed.size}/{totalItems}</p>
           </div>
-          <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2">
-            <p className="text-[10px] uppercase tracking-wide text-gray-500 dark:text-gray-400">Coverage</p>
-            <p className="text-sm font-semibold text-amber-700 dark:text-amber-300">{progress}%</p>
+          <div className="rounded-lg border border-border bg-muted/40 px-3 py-2">
+            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Coverage</p>
+            <p className="text-sm font-semibold text-foreground">{progress}%</p>
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-[260px_1fr] gap-4">
         {/* Record picker */}
-        <aside className="rounded-xl border border-gray-200 dark:border-gray-800/60 bg-white/70 dark:bg-gray-900/40 p-2 space-y-1 max-h-[80vh] overflow-y-auto md:sticky md:top-20">
+        <aside className="rounded-xl border border-border bg-card p-2 space-y-1 max-h-[80vh] overflow-y-auto md:sticky md:top-20 shadow-soft">
           <div className="relative mb-1">
-            <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+            <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
             </svg>
             <input
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search records…"
-              className="w-full pl-8 pr-2 py-2 rounded-md bg-gray-100 dark:bg-gray-800/60 border border-gray-300 dark:border-gray-700/60 text-sm text-gray-800 dark:text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/30"
+              className="w-full pl-8 pr-2 py-2 rounded-md bg-muted border border-input text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/30"
             />
           </div>
           {filteredRecords.map(r => {
@@ -294,16 +294,16 @@ export default function InterviewPrepTab() {
               <button
                 key={r.record_id}
                 onClick={() => setSelectedId(r.record_id)}
-                className={`w-full text-left px-3 py-2.5 rounded-md transition-colors ${isSel ? "bg-purple-500/15 border border-purple-500/30 shadow-sm shadow-purple-500/10" : "hover:bg-gray-100/60 dark:hover:bg-gray-800/40 border border-transparent"}`}
+                className={`w-full text-left px-3 py-2.5 rounded-md transition-colors ${isSel ? "bg-primary/10 border border-primary/30 shadow-soft" : "hover:bg-accent border border-transparent"}`}
               >
-                <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{r.jd_analysis?.job_title || "Untitled"}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
+                <p className="text-sm font-medium text-foreground truncate">{r.jd_analysis?.job_title || "Untitled"}</p>
+                <p className="text-xs text-muted-foreground truncate mt-0.5">
                   {r.jd_analysis?.company && r.jd_analysis.company !== "Not specified" ? r.jd_analysis.company : "—"}
                   <span className="mx-1">·</span>
                   {formatDate(r.created_at || "")}
                 </p>
                 {hasPrep && (
-                  <span className="mt-1.5 inline-block text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 border border-emerald-500/25 font-medium">Prep ready</span>
+                  <span className="mt-1.5 inline-block text-[10px] px-1.5 py-0.5 rounded bg-success/10 text-success border border-success/25 font-medium">Prep ready</span>
                 )}
               </button>
             );
@@ -313,34 +313,34 @@ export default function InterviewPrepTab() {
         {/* Main */}
         <main className="space-y-4">
           {!selected ? (
-            <div className="rounded-xl border border-dashed border-gray-300 dark:border-gray-700 p-8 text-center text-xs text-gray-500 dark:text-gray-400">
+            <div className="rounded-xl border border-dashed border-border p-8 text-center text-xs text-muted-foreground">
               Select a tailoring record to view or generate its prep pack.
             </div>
           ) : (
             <>
               {/* Title / generate card */}
-              <div className="rounded-2xl border border-gray-200 dark:border-white/[0.07] bg-gradient-to-br from-purple-500/5 via-white/70 to-transparent dark:from-purple-500/10 dark:via-gray-900/50 dark:to-transparent p-5">
+              <div className="rounded-2xl border border-border bg-gradient-to-br from-primary/5 via-card to-card p-5 shadow-soft">
                 <div className="flex items-start justify-between gap-3 flex-wrap">
                   <div className="min-w-0">
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-purple-500 dark:text-purple-400">Prep for</p>
-                    <p className="text-xl font-semibold text-gray-900 dark:text-gray-100 mt-1 leading-snug">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">Prep for</p>
+                    <p className="font-display text-xl font-bold text-foreground mt-1 leading-snug">
                       {selected.jd_analysis?.job_title || "Untitled role"}
                       {selected.jd_analysis?.company && selected.jd_analysis.company !== "Not specified" && (
-                        <span className="text-gray-500 dark:text-gray-400 font-normal"> at {selected.jd_analysis.company}</span>
+                        <span className="text-muted-foreground font-normal"> at {selected.jd_analysis.company}</span>
                       )}
                     </p>
-                    <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-1.5 flex items-center gap-2 flex-wrap">
+                    <p className="text-[13px] text-muted-foreground mt-1.5 flex items-center gap-2 flex-wrap">
                       <span>{generatedAt ? `Generated ${formatDate(generatedAt)}` : "No prep generated yet"}</span>
                       {norm?.role_type && (
                         <>
                           <span>·</span>
-                          <span className="px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-600 dark:text-indigo-300 border border-indigo-500/25 text-[11px] font-semibold">{ROLE_LABELS[norm.role_type] || norm.role_type}</span>
+                          <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/25 text-[11px] font-semibold">{ROLE_LABELS[norm.role_type] || norm.role_type}</span>
                         </>
                       )}
                       {totalItems > 0 && (
                         <>
                           <span>·</span>
-                          <span className="text-emerald-600 dark:text-emerald-400 font-semibold">{reviewed.size}</span>
+                          <span className="text-success font-semibold">{reviewed.size}</span>
                           <span>of {totalItems} reviewed</span>
                         </>
                       )}
@@ -351,14 +351,14 @@ export default function InterviewPrepTab() {
                       <button
                         onClick={() => handleGenerate(true)}
                         disabled={generating}
-                        className="px-3.5 py-2 rounded-md text-sm font-medium text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-600 disabled:opacity-50"
+                        className="px-3.5 py-2 rounded-md text-sm font-medium text-muted-foreground border border-border hover:text-foreground hover:border-muted-foreground/40 disabled:opacity-50"
                       >{generating ? "Regenerating…" : "Regenerate"}</button>
                     )}
                     {!content && (
                       <button
                         onClick={() => handleGenerate(false)}
                         disabled={generating}
-                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 disabled:opacity-50 shadow-sm shadow-purple-500/25"
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 disabled:opacity-50 shadow-soft"
                       >{generating && <Spinner />} {generating ? "Generating prep…" : "Generate prep"}</button>
                     )}
                   </div>
@@ -366,21 +366,21 @@ export default function InterviewPrepTab() {
 
                 {totalItems > 0 && (
                   <div className="mt-4">
-                    <div className="h-1 rounded-full bg-gray-200 dark:bg-gray-800 overflow-hidden">
-                      <div className="h-full bg-gradient-to-r from-purple-500 to-emerald-500 transition-all duration-500" style={{ width: `${progress}%` }} />
+                    <div className="h-1 rounded-full bg-muted overflow-hidden">
+                      <div className="h-full bg-primary transition-all duration-500" style={{ width: `${progress}%` }} />
                     </div>
-                    <p className="text-[10px] text-gray-500 dark:text-gray-500 mt-1">{progress}% reviewed</p>
+                    <p className="text-[10px] text-muted-foreground mt-1">{progress}% reviewed</p>
                   </div>
                 )}
               </div>
 
               {!content && !generating && (
-                <div className="rounded-xl border border-dashed border-gray-300 dark:border-gray-700 p-8 text-center text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
-                  Click <b>Generate prep</b> to create an interview pack with role-adaptive questions, coding / case / system design problems, and open the AI coach.
+                <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground leading-relaxed">
+                  Click <b>Generate prep</b> to build an interview pack for this role — role-adaptive questions, coding, case and system-design problems, plus the AI coach.
                 </div>
               )}
               {generating && !content && (
-                <div className="rounded-xl border border-gray-200 dark:border-gray-800/60 p-8 text-center text-sm text-gray-500 dark:text-gray-400 flex items-center justify-center gap-2">
+                <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground flex items-center justify-center gap-2 shadow-soft">
                   <Spinner /> Generating prep — usually 15–30 seconds for a full pack.
                 </div>
               )}
@@ -388,7 +388,7 @@ export default function InterviewPrepTab() {
               {content && norm && (
                 <>
                   {/* Top-level tabs */}
-                  <div className="flex items-center gap-1 overflow-x-auto border-b border-gray-200 dark:border-gray-800/60 pb-0.5 sticky top-0 z-10 bg-white/90 dark:bg-gray-900/80 backdrop-blur-sm">
+                  <div className="flex items-center gap-1 overflow-x-auto border-b border-border pb-0.5 sticky top-0 z-10 bg-background/90 backdrop-blur-sm">
                     {TOP_TABS.map(t => {
                       const isActive = topTab === t.key;
                       return (
@@ -397,8 +397,8 @@ export default function InterviewPrepTab() {
                           onClick={() => setTopTab(t.key)}
                           className={`shrink-0 inline-flex items-center gap-2 px-4 py-2.5 rounded-t-lg text-sm font-medium transition-all border-b-2 ${
                             isActive
-                              ? "border-purple-500 text-gray-900 dark:text-gray-100 bg-purple-500/10"
-                              : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+                              ? "border-primary text-foreground bg-primary/10"
+                              : "border-transparent text-muted-foreground hover:text-foreground"
                           }`}
                         >
                           <span>{t.icon}</span>{t.label}
@@ -412,21 +412,21 @@ export default function InterviewPrepTab() {
                     {topTab === "overview" && (
                       <div className="space-y-4">
                         {norm.pitch && (
-                          <div className="rounded-xl border border-purple-500/25 bg-purple-500/5 p-5">
+                          <div className="rounded-xl border border-primary/25 bg-primary/5 p-5">
                             <div className="flex items-center gap-2 mb-2.5">
                               <span className="text-base">🎤</span>
-                              <p className="text-xs font-bold uppercase tracking-wider text-purple-600 dark:text-purple-300">Elevator pitch</p>
-                              <span className="text-xs text-gray-500 dark:text-gray-400">— open with this</span>
+                              <p className="text-xs font-bold uppercase tracking-wider text-primary">Elevator pitch</p>
+                              <span className="text-xs text-muted-foreground">— open with this</span>
                               <div className="flex-1" />
                               <CopyButton text={norm.pitch} />
                             </div>
-                            <p className="text-[15px] text-gray-800 dark:text-gray-200 leading-relaxed">{norm.pitch}</p>
+                            <p className="text-[15px] text-foreground leading-relaxed">{norm.pitch}</p>
                           </div>
                         )}
 
                         {norm.talking.length > 0 && (
                           <div>
-                            <p className="text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-gray-300 mb-2">💪 Talking points</p>
+                            <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">💪 Talking points</p>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                               {norm.talking.map((t, i) => (
                                 <BulletCard key={i} index={i} text={t} accent="purple"
@@ -445,20 +445,20 @@ export default function InterviewPrepTab() {
                             { label: "Company",      count: norm.company.length,      tab: "questions", sub: "company",    icon: "🏢" },
                             { label: "Tough Qs",     count: norm.tough.length,        tab: "questions", sub: "tough",      icon: "🔥" },
                             { label: "Coding",       count: norm.coding.length,       tab: "practical", sub: "coding",     icon: "💻" },
-                            { label: "System Design",count: norm.systemDesign.length, tab: "practical", sub: "system_design", icon: "🏗" },
-                            { label: "Case Studies", count: norm.cases.length,        tab: "practical", sub: "case_study", icon: "📊" },
+                            { label: "System design",count: norm.systemDesign.length, tab: "practical", sub: "system_design", icon: "🏗" },
+                            { label: "Case studies", count: norm.cases.length,        tab: "practical", sub: "case_study", icon: "📊" },
                             { label: "Data",         count: norm.data.length,         tab: "practical", sub: "data_challenge", icon: "🔢" },
                           ].filter(x => x.count > 0).map(x => (
                             <button
                               key={x.label}
                               onClick={() => { setTopTab(x.tab as TopTab); if (x.tab === "questions") setQSub(x.sub as QSubTab); if (x.tab === "practical") setPracticalSub(x.sub as PracticalSubTab); }}
-                              className="rounded-lg border border-gray-200 dark:border-gray-800/60 bg-white/50 dark:bg-gray-900/30 px-4 py-3 text-left hover:border-purple-500/40 hover:bg-purple-500/5 transition-colors"
+                              className="rounded-lg border border-border bg-card px-4 py-3 text-left hover:border-primary/40 hover:bg-primary/5 transition-colors"
                             >
                               <div className="flex items-center gap-1.5">
                                 <span className="text-sm">{x.icon}</span>
-                                <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">{x.label}</p>
+                                <p className="text-sm font-semibold text-foreground">{x.label}</p>
                               </div>
-                              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 tabular-nums mt-1">{x.count}</p>
+                              <p className="text-2xl font-bold text-foreground tabular-nums mt-1">{x.count}</p>
                             </button>
                           ))}
                         </div>
@@ -469,12 +469,12 @@ export default function InterviewPrepTab() {
                     {topTab === "questions" && (
                       <div className="space-y-3">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <div className="inline-flex rounded-lg bg-gray-100 dark:bg-gray-800/60 p-0.5 border border-gray-200 dark:border-gray-800">
+                          <div className="inline-flex rounded-lg bg-muted p-0.5 border border-border">
                             {Q_SUBTABS.map(s => (
                               <button
                                 key={s.key}
                                 onClick={() => setQSub(s.key)}
-                                className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 text-[13px] font-medium rounded capitalize ${qSub === s.key ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm" : "text-gray-500 dark:text-gray-400"}`}
+                                className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 text-[13px] font-medium rounded capitalize ${qSub === s.key ? "bg-background text-foreground shadow-soft" : "text-muted-foreground"}`}
                               >
                                 <span>{s.icon}</span>{s.label}
                               </button>
@@ -522,12 +522,12 @@ export default function InterviewPrepTab() {
                     {topTab === "practical" && practicalAvailable && (
                       <div className="space-y-3">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <div className="inline-flex rounded-lg bg-gray-100 dark:bg-gray-800/60 p-0.5 border border-gray-200 dark:border-gray-800">
+                          <div className="inline-flex rounded-lg bg-muted p-0.5 border border-border">
                             {PRACTICAL_SUBTABS.filter(s => practicalAvailable[s.key]).map(s => (
                               <button
                                 key={s.key}
                                 onClick={() => setPracticalSub(s.key)}
-                                className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 text-[13px] font-medium rounded ${practicalSub === s.key ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm" : "text-gray-500 dark:text-gray-400"}`}
+                                className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 text-[13px] font-medium rounded ${practicalSub === s.key ? "bg-background text-foreground shadow-soft" : "text-muted-foreground"}`}
                               >
                                 <span>{s.icon}</span>{s.label}
                               </button>
@@ -590,7 +590,7 @@ export default function InterviewPrepTab() {
                       <div className="space-y-4">
                         {norm.gaps.length > 0 && (
                           <div>
-                            <p className="text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-300 mb-2">⚠ Gaps to close</p>
+                            <p className="text-xs font-bold uppercase tracking-wider text-warning mb-2">⚠ Gaps to close</p>
                             <div className="space-y-1.5">
                               {norm.gaps.map((g, i) => (
                                 <BulletCard key={i} index={i} text={g} accent="amber"
@@ -601,7 +601,7 @@ export default function InterviewPrepTab() {
                         )}
                         {norm.asks.length > 0 && (
                           <div>
-                            <p className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-300 mb-2">❓ Questions to ask them</p>
+                            <p className="text-xs font-bold uppercase tracking-wider text-primary mb-2">❓ Questions to ask them</p>
                             <div className="space-y-1.5">
                               {norm.asks.map((a, i) => (
                                 <BulletCard key={i} index={i} text={a} accent="blue"
@@ -631,7 +631,7 @@ export default function InterviewPrepTab() {
                     )}
 
                     {/* ── Interview Pattern Coach: cross-role insights (Pillar D) ── */}
-                    {topTab === "insights" && <InterviewInsights />}
+                    {topTab === "insights" && <InterviewInsights onStartMock={() => setTopTab("mock")} />}
                   </div>
                 </>
               )}
@@ -658,7 +658,7 @@ function DifficultyFilter({
     { key: "hard", label: "Hard" },
   ];
   return (
-    <div className="inline-flex rounded-lg bg-gray-100 dark:bg-gray-800/60 p-0.5 border border-gray-200 dark:border-gray-800">
+    <div className="inline-flex rounded-lg bg-muted p-0.5 border border-border">
       {opts.map(o => {
         const active = value === o.key;
         const chip = o.key === "all" ? { cls: "" } : difficultyChip(o.key);
@@ -666,7 +666,7 @@ function DifficultyFilter({
           <button
             key={o.key}
             onClick={() => onChange(o.key)}
-            className={`px-2.5 py-1 text-xs font-medium rounded ${active ? (o.key === "all" ? "bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 shadow-sm" : `${chip.cls} border-0 shadow-sm`) : "text-gray-500 dark:text-gray-400"}`}
+            className={`px-2.5 py-1 text-xs font-medium rounded ${active ? (o.key === "all" ? "bg-background text-foreground shadow-soft" : `${chip.cls} border-0 shadow-soft`) : "text-muted-foreground"}`}
           >{o.label}</button>
         );
       })}
@@ -685,7 +685,7 @@ function GetAnotherButton({
     <button
       onClick={() => onClick(difficulty)}
       disabled={loading}
-      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 shadow-sm"
+      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium text-primary-foreground bg-primary hover:bg-primary/90 disabled:opacity-50 shadow-soft"
       title={`Generate a new ${difficulty} question`}
     >
       {loading ? <Spinner className="w-3 h-3" /> : <span>+</span>} Get another

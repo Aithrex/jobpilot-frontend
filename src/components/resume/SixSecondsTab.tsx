@@ -26,7 +26,7 @@ function heatStyle(weight: number): React.CSSProperties {
 function GazeHeatmap({ data }: { data: SixSecondsSuccess }) {
   const sections = [...(data.gaze.sections || [])].sort((a, b) => b.weight - a.weight);
   return (
-    <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+    <div className="rounded-2xl border border-border bg-card p-5 shadow-soft">
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="grid h-8 w-8 place-items-center rounded-lg bg-primary/10 text-primary">
@@ -88,11 +88,11 @@ function ListCard({
   empty: string;
 }) {
   return (
-    <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+    <div className="rounded-2xl border border-border bg-card p-5 shadow-soft">
       <h3
         className={cn(
           "mb-3 text-sm font-bold",
-          tone === "focus" ? "text-primary" : "text-amber-600 dark:text-amber-400",
+          tone === "focus" ? "text-primary" : "text-warning",
         )}
       >
         {title}
@@ -106,7 +106,7 @@ function ListCard({
               <span
                 className={cn(
                   "mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full",
-                  tone === "focus" ? "bg-primary/60" : "bg-amber-500/70",
+                  tone === "focus" ? "bg-primary/60" : "bg-warning/70",
                 )}
                 aria-hidden
               />
@@ -132,7 +132,7 @@ function ImpressionRow({ label, value }: { label: string; value?: string }) {
 function ImpressionCard({ data }: { data: SixSecondsSuccess }) {
   const imp = data.impression;
   return (
-    <div className="rounded-2xl border border-primary/20 bg-primary/[0.04] p-5 shadow-sm">
+    <div className="rounded-2xl border border-primary/20 bg-primary/[0.04] p-5 shadow-soft">
       <div className="mb-3 flex items-center gap-2 text-sm font-bold text-primary">
         <Sparkles className="h-4 w-4" /> The honest six-second read
       </div>
@@ -313,7 +313,7 @@ export default function SixSecondsTab({ onNavigate }: SixSecondsTabProps) {
           </div>
 
           {(success.gaze.pattern || success.gaze.note) && (
-            <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+            <div className="rounded-2xl border border-border bg-card p-5 shadow-soft">
               {success.gaze.pattern && (
                 <p className="text-sm font-semibold text-foreground">{success.gaze.pattern}</p>
               )}

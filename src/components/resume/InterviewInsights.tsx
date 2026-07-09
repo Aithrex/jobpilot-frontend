@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { LockBadge } from '@/components/billing/LockBadge';
 import {
   Brain, TrendingUp, Target, Sparkles, AlertTriangle, DollarSign, Loader2, Lightbulb,
+  Mic, AlertCircle,
 } from 'lucide-react';
 import type { SalaryEstimate } from '@/types/interview';
 
@@ -23,13 +24,19 @@ const DIM_LABEL: Record<string, string> = {
   technical_accuracy: 'Technical accuracy',
 };
 
+/** Score scale — meaning-coded (good / warming / weak), token-derived. */
 function scoreColor(v: number) {
-  if (v >= 80) return 'bg-emerald-500';
-  if (v >= 60) return 'bg-amber-500';
+  if (v >= 80) return 'bg-success';
+  if (v >= 60) return 'bg-warning';
   return 'bg-destructive';
 }
 
-export default function InterviewInsights() {
+interface InterviewInsightsProps {
+  /** Lets the empty state jump straight into a mock interview. */
+  onStartMock?: () => void;
+}
+
+export default function InterviewInsights({ onStartMock }: InterviewInsightsProps) {
   const ent = useEntitlements();
   const { open: openUpgrade } = useUpgrade();
   const coach = useQuery({
@@ -52,12 +59,40 @@ export default function InterviewInsights() {
       </header>
 
       {coach.isLoading ? (
-        <Skeleton className="h-56 w-full rounded-xl" />
+        <div className="space-y-4" aria-busy="true">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <Skeleton className="h-20 rounded-xl" />
+            <Skeleton className="h-20 rounded-xl" />
+            <Skeleton className="col-span-2 h-20 rounded-xl sm:col-span-1" />
+          </div>
+          <Skeleton className="h-48 w-full rounded-xl" />
+          <Skeleton className="h-40 w-full rounded-xl" />
+        </div>
+      ) : coach.isError ? (
+        <div className="flex items-start gap-2 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <div className="flex-1">
+            <p className="font-medium">Couldn't load your insights.</p>
+            <p className="text-xs opacity-80">{coach.error instanceof Error ? coach.error.message : 'Please try again.'}</p>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => coach.refetch()}>Retry</Button>
+        </div>
       ) : !coach.data || coach.data.stats.count === 0 ? (
-        <Card className="p-8 text-center text-sm text-muted-foreground">
-          Do a few mock evaluations and we'll spot the patterns in your answers across every role —
-          then tell you exactly what to drill.
-        </Card>
+        <div className="rounded-2xl border border-dashed border-primary/30 bg-gradient-to-b from-primary/5 to-transparent py-12 text-center">
+          <div className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-full bg-primary/10 text-primary">
+            <Mic className="h-5 w-5" />
+          </div>
+          <p className="text-sm font-medium">No answers to analyze yet</p>
+          <p className="mx-auto mt-1 max-w-sm text-xs text-muted-foreground">
+            Do a few mock evaluations and we'll spot the patterns in your answers across every role —
+            then tell you exactly what to drill.
+          </p>
+          {onStartMock && (
+            <Button className="mt-4 gap-1.5" size="sm" onClick={onStartMock}>
+              <Mic className="h-3.5 w-3.5" /> Start a mock interview
+            </Button>
+          )}
+        </div>
       ) : (
         <>
           {/* Summary band */}
@@ -108,12 +143,12 @@ export default function InterviewInsights() {
           {/* Recurring weak spots */}
           {(coach.data.stats.top_weak_spots?.length ?? 0) > 0 && (
             <Card className="p-4">
-              <p className="mb-3 flex items-center gap-2 text-sm font-semibold"><AlertTriangle className="h-4 w-4 text-amber-500" /> Recurring weak spots (across roles)</p>
+              <p className="mb-3 flex items-center gap-2 text-sm font-semibold"><AlertTriangle className="h-4 w-4 text-warning" /> Recurring weak spots (across roles)</p>
               <div className="flex flex-wrap gap-2">
                 {coach.data.stats.top_weak_spots!.map((w) => (
                   <Badge key={w.tag} variant="outline" className="gap-1.5">
                     {w.tag}
-                    <span className="rounded-full bg-amber-500/15 px-1.5 text-[10px] font-bold text-amber-600">×{w.count}</span>
+                    <span className="rounded-full bg-warning/15 px-1.5 text-[10px] font-bold text-warning">×{w.count}</span>
                   </Badge>
                 ))}
               </div>
@@ -133,7 +168,15 @@ export default function InterviewInsights() {
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                     <XAxis dataKey="i" tick={{ fontSize: 11 }} />
                     <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} width={28} />
-                    <Tooltip />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'hsl(var(--card))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: 8,
+                        color: 'hsl(var(--foreground))',
+                        fontSize: 12,
+                      }}
+                    />
                     <Line type="monotone" dataKey="score" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} />
                   </LineChart>
                 </ResponsiveContainer>
@@ -181,7 +224,7 @@ function SalaryWidget() {
     const res = await apiService.getSalaryEstimate(role.trim(), location ? { location } : undefined);
     setLoading(false);
     if (res.status === 403) { setErr('Daily salary lookups used up — upgrade for unlimited.'); return; }
-    if (res.error || !res.data) { setErr(res.error || 'Could not estimate'); return; }
+    if (res.error || !res.data) { setErr(res.error || "Couldn't estimate a range — try again."); return; }
     setData(res.data);
   };
 

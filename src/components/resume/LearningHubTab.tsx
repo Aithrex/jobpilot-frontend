@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import {
   GraduationCap, Sparkles, Plus, ArrowLeft, Check, CheckCircle2, Loader2,
   Trophy, Target, BookOpen, Briefcase, Brain, ExternalLink, Compass, BookMarked,
+  AlertCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -71,13 +72,16 @@ export default function LearningHubTab() {
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-4">
       <header className="space-y-1">
-        <div className="flex items-center gap-2 text-primary">
-          <GraduationCap className="h-5 w-5" />
-          <span className="text-sm font-semibold uppercase tracking-wide">Learning Hub</span>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">Grow · Learning</p>
+        <div className="flex items-center gap-2">
+          <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary/10 text-primary">
+            <GraduationCap className="h-5 w-5" />
+          </span>
+          <h2 className="font-display text-2xl font-extrabold tracking-tight">Learning Hub</h2>
         </div>
-        <h2 className="text-2xl font-bold tracking-tight">Close the gap to the role you want</h2>
-        <p className="text-sm text-muted-foreground">
-          Find your trending market edge and build it with verified proof — or get an AI study plan for any topic.
+        <p className="max-w-xl text-sm text-muted-foreground">
+          Close the gap to the role you want — find your trending market edge and build it with
+          verified proof, or get an AI study plan for any topic.
         </p>
       </header>
 
@@ -141,13 +145,28 @@ export default function LearningHubTab() {
 
       {/* Paths */}
       {pathsQuery.isLoading ? (
-        <div className="space-y-3">
+        <div className="space-y-3" aria-busy="true">
           <Skeleton className="h-24 w-full rounded-xl" />
           <Skeleton className="h-24 w-full rounded-xl" />
         </div>
+      ) : pathsQuery.isError ? (
+        <div className="flex items-start gap-2 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <div className="flex-1">
+            <p className="font-medium">Couldn't load your learning paths.</p>
+            <p className="text-xs opacity-80">{pathsQuery.error instanceof Error ? pathsQuery.error.message : 'Please try again.'}</p>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => pathsQuery.refetch()}>Retry</Button>
+        </div>
       ) : (pathsQuery.data?.length ?? 0) === 0 ? (
-        <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
-          No learning paths yet. Create your first one above.
+        <div className="rounded-xl border border-dashed border-border py-10 text-center">
+          <div className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-full bg-primary/10 text-primary">
+            <BookOpen className="h-5 w-5" />
+          </div>
+          <p className="text-sm font-medium">No learning paths yet</p>
+          <p className="mx-auto mt-1 max-w-sm text-xs text-muted-foreground">
+            Type a topic above and we'll build a week-by-week plan around your skills.
+          </p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -158,7 +177,7 @@ export default function LearningHubTab() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.04 }}
               onClick={() => setSelected(p.path_id)}
-              className="w-full rounded-xl border border-border bg-card p-4 text-left transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
+              className="w-full rounded-xl border border-border bg-card p-4 text-left transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-panel"
             >
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
@@ -233,9 +252,27 @@ function PathDetail({ pathId, onBack }: { pathId: string; onBack: () => void }) 
     setQuiz({ week, quiz: res.data });
   };
 
-  if (detail.isLoading || !detail.data) {
+  if (detail.isError) {
     return (
       <div className="mx-auto max-w-3xl space-y-4 p-4">
+        <button onClick={onBack} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="h-4 w-4" /> All paths
+        </button>
+        <div className="flex items-start gap-2 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <div className="flex-1">
+            <p className="font-medium">Couldn't load this path.</p>
+            <p className="text-xs opacity-80">{detail.error instanceof Error ? detail.error.message : 'Please try again.'}</p>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => detail.refetch()}>Retry</Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (detail.isLoading || !detail.data) {
+    return (
+      <div className="mx-auto max-w-3xl space-y-4 p-4" aria-busy="true">
         <Skeleton className="h-8 w-40" />
         <Skeleton className="h-64 w-full rounded-xl" />
       </div>
@@ -252,7 +289,7 @@ function PathDetail({ pathId, onBack }: { pathId: string; onBack: () => void }) 
       </button>
 
       <header className="space-y-1.5">
-        <h2 className="text-2xl font-bold tracking-tight">{path.title}</h2>
+        <h2 className="font-display text-2xl font-bold tracking-tight">{path.title}</h2>
         {path.summary && <p className="text-sm text-muted-foreground">{path.summary}</p>}
         <div className="flex flex-wrap items-center gap-2 pt-1">
           <Badge variant="secondary" className="gap-1"><Trophy className="h-3 w-3" /> {progress.xp_earned} XP</Badge>
@@ -333,8 +370,8 @@ function PathDetail({ pathId, onBack }: { pathId: string; onBack: () => void }) 
       </ol>
 
       {path.capstone && (
-        <Card className="border-amber-500/40 bg-amber-500/[0.04] p-4">
-          <p className="flex items-center gap-2 font-semibold"><Trophy className="h-4 w-4 text-amber-500" /> Capstone: {path.capstone.title}</p>
+        <Card className="border-warning/40 bg-warning/[0.04] p-4">
+          <p className="flex items-center gap-2 font-semibold"><Trophy className="h-4 w-4 text-warning" /> Capstone: {path.capstone.title}</p>
           <p className="mt-1 text-sm text-muted-foreground">{path.capstone.description}</p>
         </Card>
       )}
@@ -369,7 +406,7 @@ function QuizDialog({ data, onClose }: { data: { week: number; quiz: Quiz } | nu
                       key={oi}
                       onClick={() => !checked && setAnswers((a) => ({ ...a, [qi]: oi }))}
                       className={`flex w-full items-center gap-2 rounded-lg border px-3 py-2 text-left text-sm transition-colors ${
-                        correct ? 'border-green-500 bg-green-500/10' : wrong ? 'border-destructive bg-destructive/10' : picked ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/40'
+                        correct ? 'border-success bg-success/10' : wrong ? 'border-destructive bg-destructive/10' : picked ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/40'
                       }`}
                     >
                       <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full border text-xs">{String.fromCharCode(65 + oi)}</span>

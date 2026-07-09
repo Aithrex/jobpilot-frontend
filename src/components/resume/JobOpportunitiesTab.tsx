@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Bookmark, Zap, Wand2 } from 'lucide-react';
+import { Bookmark, Briefcase, Zap, Wand2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useJobSearch } from '@/hooks/useJobSearch';
 import { SavedJobsPanel } from '@/components/job-search/SavedJobsPanel';
@@ -80,41 +80,42 @@ export default function JobOpportunitiesTab() {
     <div className="space-y-6">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-1">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-purple-500 dark:text-purple-400">
-            Career search
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
+            Career · Jobs
           </p>
           <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight">
-              <span className="bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
-                Job Opportunities
-              </span>
+            <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary/10 text-primary">
+              <Briefcase className="h-5 w-5" />
+            </span>
+            <h2 className="font-display text-2xl font-extrabold tracking-tight">
+              Job Opportunities
             </h2>
-            <span className="rounded-full border border-purple-500/25 bg-gradient-to-r from-purple-600 to-indigo-600 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white shadow-sm shadow-purple-500/20">
+            <span className="rounded-full border border-primary/25 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
               Beta
             </span>
           </div>
           <p className="text-sm text-muted-foreground max-w-xl">
-            Daily Apify pipeline (LinkedIn + Workday) with resume-aware Smart Filters.
-            Apply moves a job straight into Saved with status = applied.
+            A daily pipeline of roles from LinkedIn and Workday, with smart filters built around
+            your resume. Applying moves a job straight into Saved, marked as applied.
           </p>
         </div>
-        <div className="inline-flex w-fit items-center gap-1.5 rounded-full border border-purple-500/25 bg-purple-500/10 px-3 py-1 text-xs font-medium text-purple-600 dark:text-purple-300">
+        <div className="inline-flex w-fit items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
           <Bookmark className="h-3 w-3" />
           {jobSearch.savedJobs.length} saved
         </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)} className="space-y-5">
-        <TabsList className="border border-gray-200/80 bg-white/60 dark:border-white/10 dark:bg-gray-900/40 backdrop-blur-sm">
-          <TabsTrigger value="pipeline" className="gap-1.5 data-[state=active]:bg-background data-[state=active]:text-purple-600 dark:data-[state=active]:text-purple-300">
+        <TabsList className="border border-border bg-card/60 backdrop-blur-sm">
+          <TabsTrigger value="pipeline" className="gap-1.5 data-[state=active]:bg-background data-[state=active]:text-primary">
             <Zap className="h-3.5 w-3.5" />
-            Daily Pipeline
+            Daily pipeline
           </TabsTrigger>
-          <TabsTrigger value="smart" className="gap-1.5 data-[state=active]:bg-background data-[state=active]:text-purple-600 dark:data-[state=active]:text-purple-300">
+          <TabsTrigger value="smart" className="gap-1.5 data-[state=active]:bg-background data-[state=active]:text-primary">
             <Wand2 className="h-3.5 w-3.5" />
-            Smart Filters
+            Smart filters
           </TabsTrigger>
-          <TabsTrigger value="saved" className="gap-1.5 data-[state=active]:bg-background data-[state=active]:text-purple-600 dark:data-[state=active]:text-purple-300">
+          <TabsTrigger value="saved" className="gap-1.5 data-[state=active]:bg-background data-[state=active]:text-primary">
             <Bookmark className="h-3.5 w-3.5" />
             Saved ({jobSearch.savedJobs.length})
           </TabsTrigger>
