@@ -1,6 +1,24 @@
 import { useState, useCallback, useEffect } from 'react';
 import { apiService } from '@/lib/api';
-import type { Job, SavedJob, JobSearchFilters, JobSearchOptions, BatchSearchResponse } from '@/types/jobs';
+import type { Job, SavedJob, JobSearchFilters, JobSearchOptions, BatchSearchResponse, VisaFlags, VisaFilters } from '@/types/jobs';
+
+/**
+ * Client-side visa pre-filter — lets a toggle re-shape the visible list
+ * instantly, before the authoritative backend refetch lands. Lenient by
+ * design: it only removes jobs whose flags DEFINITIVELY contradict a toggle
+ * (explicit false / clearance true), so unknown/older payloads stay visible.
+ */
+export function passesVisaFilters(job: Job, vf?: VisaFilters): boolean {
+  if (!vf) return true;
+  const f: VisaFlags | undefined = job.visa_flags;
+  const isFalse = (k: keyof VisaFlags) => f?.[k]?.value === false;
+  if (vf.sponsors_h1b && isFalse('sponsors_h1b') && !job.h1b_sponsor) return false;
+  if (vf.cap_exempt && isFalse('cap_exempt')) return false;
+  if (vf.accepts_cpt && isFalse('accepts_cpt')) return false;
+  if (vf.no_citizenship_requirement && isFalse('no_citizenship_requirement')) return false;
+  if (vf.exclude_clearance && f?.clearance_required?.value === true) return false;
+  return true;
+}
 
 const DEFAULT_QUERIES = [
   'software engineer new grad entry level h1b sponsor',
@@ -29,6 +47,7 @@ export const DEFAULT_FILTERS: JobSearchFilters = {
   source: 'all',
   include_company_careers: true,
   use_resume_recommendations: true,
+  visa_filters: {},
 };
 
 export interface BatchMeta {
@@ -88,6 +107,7 @@ export function useJobSearch() {
         include_company_careers: f.include_company_careers,
         use_resume_recommendations: f.use_resume_recommendations,
         force_refresh: options?.forceRefresh,
+        visa_filters: f.visa_filters,
       },
       (partial) => {
         let streamed = partial.jobs || [];
@@ -171,6 +191,7 @@ export function useJobSearch() {
         include_company_careers: f.include_company_careers,
         use_resume_recommendations: f.use_resume_recommendations,
         force_refresh: options?.forceRefresh,
+        visa_filters: f.visa_filters,
       },
       (partial) => {
         let streamed = partial.jobs || [];

@@ -171,6 +171,51 @@ export interface DailyPipelineResult {
   };
 }
 
+/**
+ * Visa-sponsorship signal — a calibrated, evidence-backed read of a company's
+ * H-1B track record. Attached to search results (`Job.sponsorship`) and also
+ * fetchable per-company via `apiService.getSponsorship`.
+ */
+export interface SponsorshipSignal {
+  score: number;
+  band: 'none' | 'low' | 'moderate' | 'strong';
+  headline: string;
+  summary: string;
+  approvals_5y: number;
+  lca_filings_5y: number;
+  median_wage: number;
+  data_vintage: string;
+  source: string;
+  disclaimer: string;
+}
+
+/**
+ * A single visa/eligibility fact. `value === null` means "unknown / not stated";
+ * `evidence` is the JD snippet or heuristic behind the call.
+ */
+export interface VisaFlag {
+  value: boolean | null;
+  evidence: string;
+}
+
+export interface VisaFlags {
+  sponsors_h1b?: VisaFlag;
+  cap_exempt?: VisaFlag;
+  accepts_cpt?: VisaFlag;
+  no_citizenship_requirement?: VisaFlag;
+  clearance_required?: VisaFlag;
+  e_verify?: VisaFlag;
+}
+
+/** Client-side filter toggles serialized as `visa_filters` on search calls. */
+export interface VisaFilters {
+  sponsors_h1b?: boolean;
+  cap_exempt?: boolean;
+  accepts_cpt?: boolean;
+  no_citizenship_requirement?: boolean;
+  exclude_clearance?: boolean;
+}
+
 export interface Job {
   job_id: string;
   title: string;
@@ -196,6 +241,10 @@ export interface Job {
   trust_band?: 'trusted' | 'caution' | 'high_risk';
   trust_flags?: string[];
   trust_reasons?: string[];
+  // Visa surfacing — every fresh search result carries these; older/saved
+  // payloads may omit them, so keep both optional.
+  sponsorship?: SponsorshipSignal | null;
+  visa_flags?: VisaFlags;
 }
 
 export interface JobTrustResult {
@@ -246,6 +295,8 @@ export interface JobSearchFilters {
   source: 'all' | 'linkedin' | 'workday' | 'indeed' | 'google' | 'company' | 'jobright' | 'jsearch' | 'workday_direct' | 'ats_direct';
   include_company_careers: boolean;
   use_resume_recommendations: boolean;
+  /** Visa/eligibility toggles surfaced in the Discover filter bar. */
+  visa_filters?: VisaFilters;
 }
 
 export interface JobSearchOptions {
@@ -286,6 +337,8 @@ export interface BatchSearchParams {
   include_company_careers?: boolean;
   use_resume_recommendations?: boolean;
   force_refresh?: boolean;
+  /** Visa/eligibility toggles (sponsors_h1b, cap_exempt, exclude_clearance, …). */
+  visa_filters?: VisaFilters;
 }
 
 export interface BatchSearchResponse {

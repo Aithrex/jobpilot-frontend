@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import {
   Search, Sparkles, MapPin, CalendarDays, SlidersHorizontal,
-  Briefcase, Filter, RotateCcw, Save, Globe, AlertCircle,
+  Briefcase, Filter, RotateCcw, Save, Globe, AlertCircle, ShieldCheck,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,9 +12,17 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { JobCard } from './JobCard';
-import { COMPANY_CHIPS } from '@/hooks/useJobSearch';
-import type { Job, SavedJob, JobSearchFilters, JobSearchOptions } from '@/types/jobs';
+import { COMPANY_CHIPS, passesVisaFilters } from '@/hooks/useJobSearch';
+import type { Job, SavedJob, JobSearchFilters, JobSearchOptions, VisaFilters } from '@/types/jobs';
 import type { BatchMeta } from '@/hooks/useJobSearch';
+
+const VISA_TOGGLES: { key: keyof VisaFilters; label: string }[] = [
+  { key: 'sponsors_h1b', label: 'Sponsors H-1B' },
+  { key: 'cap_exempt', label: 'Cap-exempt' },
+  { key: 'accepts_cpt', label: 'Accepts CPT' },
+  { key: 'no_citizenship_requirement', label: 'No citizenship req' },
+  { key: 'exclude_clearance', label: 'Exclude clearance' },
+];
 
 const SOURCE_LABELS: Record<string, string> = {
   linkedin: 'LinkedIn',
@@ -75,6 +83,19 @@ export function JobSearchPanel({
   useEffect(() => {
     setLocalQuery(filters.query);
   }, [filters.query]);
+
+  const visaFilters = filters.visa_filters ?? {};
+  const setVisaFilter = (key: keyof VisaFilters, value: boolean) => {
+    setFilters({ ...filters, visa_filters: { ...visaFilters, [key]: value } });
+  };
+
+  // Client-side visa pre-filter so toggles reshape the list instantly, even
+  // before the next search sends the authoritative `visa_filters` param.
+  const visibleJobs = useMemo(
+    () => jobs.filter((j) => passesVisaFilters(j, filters.visa_filters)),
+    [jobs, filters.visa_filters],
+  );
+  const hiddenByVisa = jobs.length - visibleJobs.length;
 
   const handleSearch = (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -153,7 +174,7 @@ export function JobSearchPanel({
                 {filters.date_posted === 'today' ? 'Fresh — last 24 hours' : `Last ${filters.date_posted === 'all' ? 'any time' : filters.date_posted}`}
               </h3>
               <p className="text-xs text-muted-foreground">
-                {jobs.length > 0 ? `${jobs.length} ranked matches` : 'No matches yet'}
+                {visibleJobs.length > 0 ? `${visibleJobs.length} ranked matches` : 'No matches yet'}
                 {batchMeta && batchMeta.cache_hits > 0 && (
                   <span className="ml-1 text-purple-500/80 dark:text-purple-400/80">· cached</span>
                 )}
@@ -368,6 +389,24 @@ export function JobSearchPanel({
                   onChange={v => setFilters({ ...filters, include_company_careers: v })}
                 />
               </div>
+
+              {/* Visa & eligibility */}
+              <div className="lg:col-span-4 border-t border-border/60 pt-3">
+                <Label className="mb-2 flex items-center gap-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                  <ShieldCheck className="h-3 w-3" /> Visa &amp; eligibility
+                </Label>
+                <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+                  {VISA_TOGGLES.map(({ key, label }) => (
+                    <ToggleRow
+                      key={key}
+                      id={`visa-${key}`}
+                      label={label}
+                      checked={!!visaFilters[key]}
+                      onChange={v => setVisaFilter(key, v)}
+                    />
+                  ))}
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -466,11 +505,18 @@ export function JobSearchPanel({
         </div>
       )}
 
+      {/* Visa pre-filter notice */}
+      {!loading && hiddenByVisa > 0 && (
+        <div className="rounded-lg border border-primary/25 bg-primary/[0.06] px-3 py-2 text-xs text-foreground/80">
+          Hiding {hiddenByVisa} listing{hiddenByVisa === 1 ? '' : 's'} that don't match your visa &amp; eligibility toggles.
+        </div>
+      )}
+
       {/* Results */}
-      {!loading && jobs.length > 0 && (
+      {!loading && visibleJobs.length > 0 && (
         <>
           <div className="grid gap-4 md:grid-cols-2">
-            {jobs.map(job => (
+            {visibleJobs.map(job => (
               <JobCard
                 key={job.job_id}
                 job={job}
@@ -510,7 +556,7 @@ export function JobSearchPanel({
       )}
 
       {/* Empty state */}
-      {!loading && jobs.length === 0 && hasSearched && (
+      {!loading && visibleJobs.length === 0 && hasSearched && (
         <div className="rounded-2xl border border-dashed border-purple-500/30 bg-gradient-to-b from-purple-500/5 to-transparent py-14 text-center space-y-3">
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-purple-500/15 to-indigo-500/15 text-purple-600 dark:text-purple-300">
             <Search className="h-5 w-5" />

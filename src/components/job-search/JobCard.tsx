@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   MapPin, Building2, Clock, DollarSign, Briefcase, ExternalLink,
-  BookmarkPlus, BookmarkCheck, Sparkles, Target, FileText, Wand2, ChevronDown,
+  BookmarkPlus, BookmarkCheck, Sparkles, Target, FileText, Wand2, ChevronDown, Users,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
@@ -10,6 +10,8 @@ import { Button } from '@/components/ui/button';
 import { JobAnalysisModal } from './JobAnalysisModal';
 import { ResumeTailorModal } from './ResumeTailorModal';
 import { JobTrustBadge } from './JobTrustBadge';
+import { SponsorshipBadge, VisaFlagChips } from './JobVisaSignals';
+import { ReferralModal } from './ReferralModal';
 import { apiService } from '@/lib/api';
 import type { Job } from '@/types/jobs';
 
@@ -54,6 +56,7 @@ export function JobCard({ job, saved, jobStatus, onSave, onUnsave, onQuickApply 
   const [analysisOpen, setAnalysisOpen] = useState(false);
   const [analysisAction, setAnalysisAction] = useState<'summarize' | 'missing_skills' | 'cover_letter'>('summarize');
   const [tailorOpen, setTailorOpen] = useState(false);
+  const [referralOpen, setReferralOpen] = useState(false);
   const [scanning, setScanning] = useState(false);
 
   const openAnalysis = (action: typeof analysisAction) => {
@@ -119,19 +122,22 @@ export function JobCard({ job, saved, jobStatus, onSave, onUnsave, onQuickApply 
                 <MapPin className="h-3 w-3 flex-shrink-0" />
                 <span className="truncate">{job.location}</span>
               </p>
-              {job.trust_band && (
-                <div className="mt-1.5 flex items-center gap-2">
-                  <JobTrustBadge band={job.trust_band} score={job.trust_score} reasons={job.trust_reasons} />
-                  <button
-                    type="button"
-                    onClick={runDeepScan}
-                    disabled={scanning}
-                    className="text-[10px] font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:underline disabled:opacity-50"
-                  >
-                    {scanning ? 'Scanning…' : 'Deep-scan'}
-                  </button>
-                </div>
-              )}
+              <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                {job.trust_band && (
+                  <>
+                    <JobTrustBadge band={job.trust_band} score={job.trust_score} reasons={job.trust_reasons} />
+                    <button
+                      type="button"
+                      onClick={runDeepScan}
+                      disabled={scanning}
+                      className="text-[10px] font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:underline disabled:opacity-50"
+                    >
+                      {scanning ? 'Scanning…' : 'Deep-scan'}
+                    </button>
+                  </>
+                )}
+                {job.sponsorship && <SponsorshipBadge sponsorship={job.sponsorship} />}
+              </div>
             </div>
             <MatchScoreRing score={job.match_score} />
           </div>
@@ -182,6 +188,9 @@ export function JobCard({ job, saved, jobStatus, onSave, onUnsave, onQuickApply 
               </Badge>
             )}
           </div>
+
+          {/* Visa / eligibility signals */}
+          {job.visa_flags && <VisaFlagChips flags={job.visa_flags} />}
 
           {/* Matched skills */}
           {job.matched_skills.length > 0 && (
@@ -291,6 +300,16 @@ export function JobCard({ job, saved, jobStatus, onSave, onUnsave, onQuickApply 
                 size="sm"
                 variant="ghost"
                 className="h-8 gap-1 px-2 text-[11px] text-muted-foreground hover:text-purple-600 dark:hover:text-purple-300"
+                onClick={() => setReferralOpen(true)}
+                title="Find someone who can refer you"
+              >
+                <Users className="h-3 w-3" />
+                Referral
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-8 gap-1 px-2 text-[11px] text-muted-foreground hover:text-purple-600 dark:hover:text-purple-300"
                 onClick={() => setTailorOpen(true)}
                 title="Tailor resume to this role"
               >
@@ -312,6 +331,12 @@ export function JobCard({ job, saved, jobStatus, onSave, onUnsave, onQuickApply 
       <ResumeTailorModal
         open={tailorOpen}
         onOpenChange={setTailorOpen}
+        job={job}
+      />
+
+      <ReferralModal
+        open={referralOpen}
+        onOpenChange={setReferralOpen}
         job={job}
       />
     </>

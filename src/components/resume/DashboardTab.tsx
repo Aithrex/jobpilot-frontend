@@ -11,6 +11,7 @@ import { CareerReadinessCard } from './CareerReadinessCard';
 import { CareerPath } from './CareerPath';
 import { GitHubProofCard } from './GitHubProofCard';
 import { LinkedInAuditCard } from './LinkedInAuditCard';
+import { LinkedInArchiveCard } from './LinkedInArchiveCard';
 import OptClockCard from './OptClockCard';
 import {
   Sparkles, Search, ClipboardList, GraduationCap, Bot, Flame, Send,
@@ -275,6 +276,7 @@ export default function DashboardTab({ userName, onNavigate }: DashboardTabProps
         <div className="grid gap-4 lg:grid-cols-2">
           <GitHubProofCard onLinked={load} connect={connect} reloadConnect={reloadConnect} />
           <LinkedInAuditCard connect={connect} reloadConnect={reloadConnect} />
+          <LinkedInArchiveCard />
         </div>
       </section>
 

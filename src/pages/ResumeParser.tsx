@@ -9,7 +9,7 @@ import { QuotaLimitDialog } from "@/components/quota/QuotaLimitDialog";
 import { useFeedback } from "@/components/feedback/FeedbackWidget";
 import { buildCoverLetterFilename, titleCaseName } from "@/lib/filename";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Bot, CreditCard, GraduationCap, Trophy, Users, Mic, Menu, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
+import { Bot, CreditCard, GraduationCap, Trophy, Users, Mic, Menu, PanelLeftClose, PanelLeftOpen, X, Eye, TrendingUp, Bell } from "lucide-react";
 import { ConnectedTo } from "@/components/resume/ConnectedTo";
 import MobileBottomNav from "@/components/layout/MobileBottomNav";
 import { lazy, Suspense } from "react";
@@ -44,6 +44,9 @@ const LearningHubTab = lazy(() => import("@/components/resume/LearningHubTab"));
 const EventsTab = lazy(() => import("@/components/resume/EventsTab"));
 const NetworkTab = lazy(() => import("@/components/resume/NetworkTab"));
 const VoiceGraphTab = lazy(() => import("@/components/resume/VoiceGraphTab"));
+const SixSecondsTab = lazy(() => import("@/components/resume/SixSecondsTab"));
+const PipelineTab = lazy(() => import("@/components/resume/PipelineTab"));
+const NotificationsTab = lazy(() => import("@/components/resume/NotificationsTab"));
 
 // ─── Shared Icons ───────────────────────────────────────────────────────────
 
@@ -335,6 +338,9 @@ type NavTab =
   | "events"
   | "network"
   | "voicegraph"
+  | "six-seconds"
+  | "pipeline"
+  | "notifications"
   | "billing"
   | "profile";
 
@@ -6061,6 +6067,25 @@ const NAV_ITEMS: ResumeNavItem[] = [
     hint: "Teach us how you write",
   },
   {
+    key: "six-seconds",
+    label: "Six Seconds",
+    icon: <Eye className="w-4 h-4" />,
+    badge: "New",
+    hint: "The recruiter's first-pass read",
+  },
+  {
+    key: "pipeline",
+    label: "Pipeline",
+    icon: <TrendingUp className="w-4 h-4" />,
+    hint: "Funnel, ghosts & cohort",
+  },
+  {
+    key: "notifications",
+    label: "Notifications",
+    icon: <Bell className="w-4 h-4" />,
+    hint: "Channels, events & quiet hours",
+  },
+  {
     key: "billing",
     label: "Billing",
     icon: <CreditCard className="w-4 h-4" />,
@@ -6078,10 +6103,10 @@ const NAV_SECTIONS: ResumeNavSection[] = [
   { label: "Overview", items: ["dashboard"] },
   { label: "Create", items: ["tailor", "batch"] },
   { label: "Library", items: ["my-resumes", "tailored", "applications"] },
-  { label: "Career", items: ["interview", "visa", "copilot", "jobs"] },
-  { label: "Grow", items: ["learning", "events", "network", "voicegraph"] },
+  { label: "Career", items: ["interview", "visa", "copilot", "jobs", "pipeline"] },
+  { label: "Grow", items: ["learning", "events", "network", "voicegraph", "six-seconds"] },
   { label: "Experimental", items: ["beta"] },
-  { label: "Account", items: ["billing", "profile"] },
+  { label: "Account", items: ["billing", "notifications", "profile"] },
 ];
 
 function ResumeSectionNav({
@@ -6256,6 +6281,9 @@ const VALID_NAV_TABS: readonly NavTab[] = [
   "events",
   "network",
   "voicegraph",
+  "six-seconds",
+  "pipeline",
+  "notifications",
   "billing",
   "profile",
 ] as const;
@@ -6745,6 +6773,21 @@ export default function ResumeParser() {
               {activeNav === "voicegraph" && (
                 <Suspense fallback={<div className="p-8 text-center"><div className="h-6 w-1/3 animate-pulse rounded bg-gray-200 dark:bg-white/10 mx-auto" /></div>}>
                   <VoiceGraphTab />
+                </Suspense>
+              )}
+              {activeNav === "six-seconds" && (
+                <Suspense fallback={<div className="p-8 text-center"><div className="h-6 w-1/3 animate-pulse rounded bg-gray-200 dark:bg-white/10 mx-auto" /></div>}>
+                  <SixSecondsTab onNavigate={(t) => selectNav(t as NavTab)} />
+                </Suspense>
+              )}
+              {activeNav === "pipeline" && (
+                <Suspense fallback={<div className="p-8 text-center"><div className="h-6 w-1/3 animate-pulse rounded bg-gray-200 dark:bg-white/10 mx-auto" /></div>}>
+                  <PipelineTab onNavigate={(t) => selectNav(t as NavTab)} />
+                </Suspense>
+              )}
+              {activeNav === "notifications" && (
+                <Suspense fallback={<div className="p-8 text-center"><div className="h-6 w-1/3 animate-pulse rounded bg-gray-200 dark:bg-white/10 mx-auto" /></div>}>
+                  <NotificationsTab />
                 </Suspense>
               )}
               {activeNav === "billing" && (

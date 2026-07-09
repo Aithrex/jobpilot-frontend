@@ -657,6 +657,7 @@ class ApiService {
       include_company_careers?: boolean;
       use_resume_recommendations?: boolean;
       force_refresh?: boolean;
+      visa_filters?: import("../types/jobs").VisaFilters;
     },
     onPartial?: (partial: import("../types/jobs").JobSearchResponse) => void,
   ) {
@@ -674,6 +675,16 @@ class ApiService {
     searchParams.set("include_company_careers", params.include_company_careers ? "true" : "false");
     searchParams.set("use_resume_recommendations", params.use_resume_recommendations ? "true" : "false");
     if (params.force_refresh) searchParams.set("force_refresh", "true");
+    // Serialize visa toggles as a compact JSON blob (only the truthy ones) so
+    // the backend can parse one param instead of colliding with existing names.
+    if (params.visa_filters) {
+      const active = Object.fromEntries(
+        Object.entries(params.visa_filters).filter(([, v]) => v),
+      );
+      if (Object.keys(active).length > 0) {
+        searchParams.set("visa_filters", JSON.stringify(active));
+      }
+    }
     const submitResp = await this.request<
       | { job_id: string }
       | import("../types/jobs").JobSearchResponse
@@ -959,6 +970,18 @@ class ApiService {
     return this.request<{ message: string }>(`/jobs/saved/${jobId}`, {
       method: "DELETE",
     });
+  }
+
+  /**
+   * Per-company visa-sponsorship signal. Note: every job in a `searchJobs`
+   * result already carries `job.sponsorship` (same shape), so this is only
+   * needed for company-detail views that don't come from a search.
+   */
+  async getSponsorship(company: string) {
+    return this.request<{
+      company: string;
+      sponsorship: import("../types/jobs").SponsorshipSignal | null;
+    }>(`/jobs/sponsorship?company=${encodeURIComponent(company)}`);
   }
 
   // ============================================
@@ -2336,6 +2359,189 @@ class ApiService {
 
   async disconnectGmail(): Promise<ApiResponse<{ ok: boolean }>> {
     return this.request("/resume/gmail/disconnect", { method: "POST" });
+  }
+
+  // ============================================
+  // Recruiter's Six Seconds (/api/resume/six-seconds)
+  // Async job: submit -> 202 { job_id } -> poll for the gaze/impression read.
+  // ============================================
+
+  async runSixSeconds(
+    signal?: AbortSignal,
+  ): Promise<ApiResponse<import("../types/sixSeconds").SixSecondsResult>> {
+    const submit = await this.request<{ job_id?: string }>(
+      "/resume/six-seconds",
+      { method: "POST", body: "{}" },
+      30000,
+    );
+    if (submit.error) {
+      // Forward status + payload so a 403 upgrade_required / 429 quota surfaces.
+      return { error: submit.error, status: submit.status, errorPayload: submit.errorPayload };
+    }
+    if (!submit.data?.job_id) {
+      // Backend may answer synchronously (e.g. { error: "no_resume" }).
+      return {
+        data: (submit.data ?? { error: "no_resume" }) as unknown as import("../types/sixSeconds").SixSecondsResult,
+      };
+    }
+    return this.pollJob<import("../types/sixSeconds").SixSecondsResult>(
+      submit.data.job_id,
+      120000,
+      signal,
+    );
+  }
+
+  // ============================================
+  // Pipeline Intelligence (/api/resume/pipeline/*)
+  // ============================================
+
+  async getPipelineFunnel() {
+    return this.request<import("../types/pipeline").PipelineFunnel>(
+      "/resume/pipeline/funnel",
+    );
+  }
+
+  async getPipelineGhosts() {
+    return this.request<import("../types/pipeline").PipelineGhosts>(
+      "/resume/pipeline/ghosts",
+    );
+  }
+
+  /** Mark one or more applications as ghosted (no response in a while). */
+  async markPipelineGhosts(applicationIds: string[]) {
+    return this.request<{ ok: boolean; marked: number }>(
+      "/resume/pipeline/ghosts/mark",
+      { method: "POST", body: JSON.stringify({ application_ids: applicationIds }) },
+    );
+  }
+
+  async getPipelineCohort() {
+    return this.request<import("../types/pipeline").PipelineCohort>(
+      "/resume/pipeline/cohort",
+    );
+  }
+
+  // ============================================
+  // Referrals + LinkedIn archive (/api/resume/referrals*, /linkedin-archive*)
+  // Referrals gate at Premium+ (403 upgrade_required).
+  // ============================================
+
+  async getReferrals(company: string) {
+    return this.request<import("../types/referrals").ReferralsResponse>(
+      `/resume/referrals?company=${encodeURIComponent(company)}`,
+    );
+  }
+
+  /** Draft a warm referral ask — async job returning a ready-to-send message. */
+  async draftReferralAsk(
+    referral: import("../types/referrals").Referral,
+    job: { company?: string; title?: string; job_id?: string; description?: string },
+    signal?: AbortSignal,
+  ): Promise<ApiResponse<{ message: string }>> {
+    const submit = await this.request<{ job_id: string }>(
+      "/resume/referrals/draft",
+      { method: "POST", body: JSON.stringify({ referral, job }) },
+      30000,
+    );
+    if (submit.error) {
+      return { error: submit.error, status: submit.status, errorPayload: submit.errorPayload };
+    }
+    if (!submit.data?.job_id) return { error: "Failed to start referral draft" };
+    return this.pollJob<{ message: string }>(submit.data.job_id, 120000, signal);
+  }
+
+  async uploadLinkedInArchive(
+    file: File,
+  ): Promise<ApiResponse<import("../types/referrals").LinkedInDiff>> {
+    const formData = new FormData();
+    formData.append("file", file);
+    const token = this.getToken();
+    const url = `${this.baseURL}/resume/linkedin-archive`;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    try {
+      const headers: Record<string, string> = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      const response = await fetch(url, {
+        method: "POST",
+        body: formData,
+        headers,
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        return {
+          error: data.error || `HTTP ${response.status}`,
+          status: response.status,
+          errorPayload: data,
+        };
+      }
+      return { data } as ApiResponse<import("../types/referrals").LinkedInDiff>;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      return { error: error instanceof Error ? error.message : "Upload failed" };
+    }
+  }
+
+  async getLinkedInDiff() {
+    return this.request<import("../types/referrals").LinkedInDiff>(
+      "/resume/linkedin-archive/diff",
+    );
+  }
+
+  // ============================================
+  // Notification preferences (/api/resume/notifications/*)
+  // ============================================
+
+  async getNotificationPrefs() {
+    return this.request<import("../types/notifications").NotificationPrefs>(
+      "/resume/notifications/prefs",
+    );
+  }
+
+  async updateNotificationPrefs(
+    prefs: Partial<import("../types/notifications").NotificationPrefs>,
+  ) {
+    return this.request<import("../types/notifications").NotificationPrefs>(
+      "/resume/notifications/prefs",
+      { method: "PUT", body: JSON.stringify(prefs) },
+    );
+  }
+
+  async unsubscribeNotifications() {
+    return this.request<{ ok: boolean }>(
+      "/resume/notifications/unsubscribe",
+      { method: "POST", body: "{}" },
+    );
+  }
+
+  // ============================================
+  // Mail-ingress (/api/resume/mail-ingress/*)
+  // A 404 on any of these = feature flag off → hide the surface entirely.
+  // ============================================
+
+  async provisionMailIngress() {
+    return this.request<import("../types/mailIngress").MailIngressAddress>(
+      "/resume/mail-ingress/provision",
+      { method: "POST", body: "{}" },
+    );
+  }
+
+  async getMailIngressSuggestions() {
+    return this.request<import("../types/mailIngress").MailIngressSuggestionsResponse>(
+      "/resume/mail-ingress/suggestions",
+    );
+  }
+
+  async resolveMailIngressSuggestion(
+    id: string,
+    action: import("../types/mailIngress").MailIngressAction,
+  ) {
+    return this.request<{ ok: boolean }>(
+      `/resume/mail-ingress/suggestions/${encodeURIComponent(id)}/resolve`,
+      { method: "POST", body: JSON.stringify({ action }) },
+    );
   }
 
   // ============================================
