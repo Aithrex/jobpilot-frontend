@@ -31,6 +31,8 @@
     --input: 220 16% 90%;
     --ring: 238 70% 57%;
     --radius: 0.7rem;
+    /* Editorial motion easing — calm, decisive settle (Compass §7). */
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 
     --brand-from: 243 75% 59%;         /* indigo */
     --brand-to: 199 89% 48%;           /* sky — "growth / learning" accent */
@@ -180,6 +182,35 @@
   /* Subtle elevated panel used across the workspace */
   .panel {
     @apply rounded-xl border border-border bg-card shadow-sm;
+  }
+
+  /* ── Editorial accent meshes (Compass §7) ──────────────────────────────
+     ONE saturated accent rendered as a soft, calm gradient wash over a card
+     surface. Token-based so light + dark stay coherent. Never decorative
+     noise — reserved for the dashboard hero (primary) and the OPT-priority
+     hero (warning, never alarm-red). */
+  .mesh-accent {
+    background-color: hsl(var(--card));
+    background-image:
+      radial-gradient(115% 120% at 0% 0%, hsl(var(--primary) / 0.10), transparent 55%),
+      radial-gradient(120% 120% at 100% 8%, hsl(var(--brand-to) / 0.08), transparent 58%);
+  }
+  .dark .mesh-accent {
+    background-image:
+      radial-gradient(115% 120% at 0% 0%, hsl(var(--primary) / 0.16), transparent 55%),
+      radial-gradient(120% 120% at 100% 8%, hsl(var(--brand-to) / 0.11), transparent 58%);
+  }
+
+  .mesh-warning {
+    background-color: hsl(var(--card));
+    background-image:
+      radial-gradient(115% 120% at 0% 0%, hsl(var(--warning) / 0.12), transparent 55%),
+      radial-gradient(120% 120% at 100% 8%, hsl(var(--warning) / 0.05), transparent 60%);
+  }
+  .dark .mesh-warning {
+    background-image:
+      radial-gradient(115% 120% at 0% 0%, hsl(var(--warning) / 0.18), transparent 55%),
+      radial-gradient(120% 120% at 100% 8%, hsl(var(--warning) / 0.08), transparent 60%);
   }
 
   /* Glow effect for buttons and cards */
@@ -460,6 +491,22 @@ html, body, #root {
 ::selection {
   background: hsl(var(--primary) / 0.3);
   color: hsl(var(--foreground));
+}
+
+/* ── Reduced motion (Compass §7) ───────────────────────────────────────────
+   Global safety net: when the user asks for less motion, near-instantly
+   settle every CSS animation/transition. Framer Motion is gated separately
+   in-component via useReducedMotion(); together the product is equally good
+   with motion fully off. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* Leaflet map overrides for dark theme */
