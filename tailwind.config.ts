@@ -67,6 +67,35 @@ export default {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      // ── Editorial type scale (Compass §7) ─────────────────────────────────
+      // Named steps compose with `font-display` for the Plus Jakarta look on
+      // display/heading text; body/caption stay Inter. Additive — the default
+      // xs…9xl utilities remain untouched so existing screens don't shift.
+      fontFamily: {
+        sans: ["Inter", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "sans-serif"],
+        display: ["Plus Jakarta Sans", "Inter", "sans-serif"],
+      },
+      fontSize: {
+        display: ["clamp(2rem, 4vw, 2.75rem)", { lineHeight: "1.08", letterSpacing: "-0.022em", fontWeight: "800" }],
+        title: ["1.75rem", { lineHeight: "1.15", letterSpacing: "-0.02em", fontWeight: "700" }],
+        h1: ["1.5rem", { lineHeight: "1.2", letterSpacing: "-0.018em", fontWeight: "700" }],
+        h2: ["1.25rem", { lineHeight: "1.3", letterSpacing: "-0.012em", fontWeight: "700" }],
+        h3: ["1.0625rem", { lineHeight: "1.4", letterSpacing: "-0.008em", fontWeight: "600" }],
+        body: ["0.9375rem", { lineHeight: "1.6", letterSpacing: "-0.002em" }],
+        caption: ["0.8125rem", { lineHeight: "1.45" }],
+      },
+      // Token-driven elevation scale — resolves per-theme via CSS vars so dark
+      // stays soft (no harsh black halos). Distinct names keep the default
+      // shadow-sm/md/lg/xl utilities backwards-compatible.
+      boxShadow: {
+        soft: "var(--shadow-soft)",
+        panel: "var(--shadow-panel)",
+        pop: "var(--shadow-pop)",
+        float: "var(--shadow-float)",
+      },
+      transitionTimingFunction: {
+        expo: "var(--ease-out-expo)",
+      },
       keyframes: {
         "accordion-down": {
           from: {
@@ -84,10 +113,20 @@ export default {
             height: "0",
           },
         },
+        "fade-up": {
+          from: { opacity: "0", transform: "translateY(6px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
+        "fade-in": {
+          from: { opacity: "0" },
+          to: { opacity: "1" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "fade-up": "fade-up 0.4s var(--ease-out-expo) both",
+        "fade-in": "fade-in 0.3s var(--ease-out-expo) both",
       },
     },
   },

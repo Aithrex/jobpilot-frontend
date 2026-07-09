@@ -6121,7 +6121,7 @@ function ResumeSectionNav({
   return (
     <nav
       className={`flex flex-col ${collapsed ? "items-center px-2" : "px-3"}`}
-      aria-label="Resume tailor sections"
+      aria-label="Workspace sections"
     >
       {NAV_SECTIONS.map((section, sectionIndex) => {
         const sectionItems = section.items
@@ -6131,14 +6131,18 @@ function ResumeSectionNav({
         return (
           <div
             key={section.label}
-            className={`w-full ${sectionIndex === 0 ? "" : "mt-4 pt-4 border-t border-gray-200/80 dark:border-white/[0.07]"}`}
+            className={`w-full ${sectionIndex === 0 ? "" : "mt-6"}`}
           >
-            {!collapsed && (
-              <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400 dark:text-gray-500">
-                {section.label}
-              </p>
+            {/* Editorial grouping: an overline + generous whitespace does the
+                separating work — no divider rules to add visual noise. */}
+            {collapsed ? (
+              sectionIndex !== 0 && (
+                <div className="mx-auto mb-2 h-px w-6 bg-border" aria-hidden="true" />
+              )
+            ) : (
+              <p className="overline mb-2 px-3">{section.label}</p>
             )}
-            <div className={collapsed ? "space-y-1.5" : "space-y-1"}>
+            <div className="space-y-0.5">
               {sectionItems.map((item) => {
                 const active = activeNav === item.key;
                 return (
@@ -6149,25 +6153,25 @@ function ResumeSectionNav({
                     aria-current={active ? "page" : undefined}
                     aria-label={item.badge ? `${item.label} (${item.badge})` : item.label}
                     title={collapsed ? `${item.label}${item.badge ? ` - ${item.badge}` : ""}` : undefined}
-                    className={`group relative flex w-full items-center rounded-lg text-sm font-semibold transition-all duration-200 hover:translate-x-[1px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50 ${
-                      collapsed ? "h-10 justify-center px-0" : "min-h-[2.5rem] gap-3 py-2 px-3"
+                    className={`group relative flex w-full items-center rounded-lg text-sm font-medium transition-colors duration-150 ease-expo focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-sidebar ${
+                      collapsed ? "h-10 justify-center px-0" : "min-h-[2.5rem] gap-2.5 py-1.5 px-2.5"
                     } ${
                       active
-                        ? "bg-gradient-to-r from-indigo-500/15 via-purple-500/10 to-transparent text-gray-950 shadow-sm ring-1 ring-indigo-500/20 dark:text-white"
-                        : "text-gray-500 dark:text-gray-400 hover:bg-gray-100/80 hover:text-gray-950 dark:hover:bg-white/[0.05] dark:hover:text-white"
+                        ? "bg-primary/10 font-semibold text-foreground"
+                        : "text-muted-foreground hover:bg-accent hover:text-foreground"
                     }`}
                   >
-                    {active && (
+                    {active && !collapsed && (
                       <span
-                        className="absolute inset-y-2 left-0 w-0.5 rounded-r bg-gradient-to-b from-indigo-400 to-purple-400"
+                        className="absolute inset-y-1.5 left-0 w-[3px] rounded-r-full bg-primary"
                         aria-hidden="true"
                       />
                     )}
                     <span
-                      className={`relative flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition-colors ${
+                      className={`relative flex h-7 w-7 shrink-0 items-center justify-center transition-colors ${
                         active
-                          ? "bg-white/75 text-indigo-600 shadow-sm dark:bg-white/10 dark:text-indigo-300"
-                          : "text-gray-400 dark:text-gray-500 group-hover:text-indigo-500 dark:group-hover:text-indigo-300"
+                          ? "text-primary"
+                          : "text-muted-foreground group-hover:text-foreground"
                       }`}
                     >
                       {item.icon}
@@ -6175,15 +6179,15 @@ function ResumeSectionNav({
                     {!collapsed && (
                       <>
                         <span className="min-w-0 flex-1 text-left">
-                          <span className="block truncate">{item.label}</span>
+                          <span className="block truncate leading-tight">{item.label}</span>
                           {item.hint && (
-                            <span className="mt-0.5 block truncate text-[10px] font-medium text-gray-400 dark:text-gray-500">
+                            <span className="mt-0.5 block truncate text-[11px] font-normal text-muted-foreground/80">
                               {item.hint}
                             </span>
                           )}
                         </span>
                         {item.badge && (
-                          <span className="shrink-0 rounded-full border border-indigo-500/25 bg-indigo-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-indigo-600 dark:text-indigo-300">
+                          <span className="shrink-0 rounded-full border border-primary/20 bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
                             {item.badge}
                           </span>
                         )}
@@ -6191,7 +6195,7 @@ function ResumeSectionNav({
                     )}
                     {collapsed && item.badge && (
                       <span
-                        className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-indigo-400 shadow-sm shadow-indigo-500/40"
+                        className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-primary"
                         aria-hidden="true"
                       />
                     )}
@@ -6234,7 +6238,7 @@ function SidebarAccount({
         onClick={onOpenProfile}
         title="Profile"
         aria-label="Open profile"
-        className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-lg transition-all hover:bg-gray-100 dark:hover:bg-white/[0.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50"
+        className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-lg transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <UserInitial value={displayName} className="h-8 w-8" />
       </button>
@@ -6242,22 +6246,77 @@ function SidebarAccount({
   }
 
   return (
-    <div className="border-t border-gray-200/80 p-3 dark:border-white/[0.07]">
+    <div className="border-t border-sidebar-border p-3">
       <button
         type="button"
         onClick={onOpenProfile}
-        className="flex w-full items-center gap-3 rounded-lg border border-gray-200/80 bg-gray-50/80 p-2.5 text-left transition-all hover:border-indigo-500/25 hover:bg-indigo-50/50 dark:border-white/[0.07] dark:bg-white/[0.03] dark:hover:bg-white/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50"
+        className="flex w-full items-center gap-3 rounded-lg border border-border bg-muted/40 p-2.5 text-left transition-colors hover:border-primary/30 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <UserInitial value={displayName} className="h-9 w-9 shrink-0" />
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-semibold text-gray-950 dark:text-white">
+          <span className="block truncate text-sm font-semibold text-foreground">
             {displayName}
           </span>
-          <span className="block truncate text-xs text-gray-500 dark:text-gray-400">
+          <span className="block truncate text-xs text-muted-foreground">
             {user?.email || "Profile settings"}
           </span>
         </span>
       </button>
+    </div>
+  );
+}
+
+/**
+ * Calm header context: the user's plan + remaining daily tailors, presented
+ * quietly. Quota tone is neutral by default and only shifts to the (amber)
+ * warning token when running low — never destructive red, so the surface
+ * stays encouraging rather than punitive. Renders nothing until it has data.
+ */
+function HeaderMeta({
+  user,
+  onOpenBilling,
+}: {
+  user: { plan?: string; entitlements?: { plan_label?: string } } | null;
+  onOpenBilling: () => void;
+}) {
+  const { usage } = useDailyUsage();
+
+  const rawPlan = user?.entitlements?.plan_label || user?.plan || null;
+  const planLabel = rawPlan
+    ? rawPlan.charAt(0).toUpperCase() + rawPlan.slice(1)
+    : null;
+  const low = usage ? usage.remaining <= 1 : false;
+
+  if (!planLabel && !usage) return null;
+
+  return (
+    <div className="hidden items-center gap-2 md:flex">
+      {usage && (
+        <span
+          role="status"
+          className={`hidden items-center gap-1.5 rounded-full border px-2.5 py-1 text-caption font-medium lg:inline-flex ${
+            low
+              ? "border-warning/30 bg-warning/10 text-warning"
+              : "border-border bg-muted/50 text-muted-foreground"
+          }`}
+          title={`Daily tailors — resets ${new Date(usage.resets_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`}
+        >
+          <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true" />
+          <span aria-label={`${usage.remaining} of ${usage.limit} daily tailors left`}>
+            {usage.remaining}/{usage.limit} today
+          </span>
+        </span>
+      )}
+      {planLabel && (
+        <button
+          type="button"
+          onClick={onOpenBilling}
+          title="Manage plan & billing"
+          className="inline-flex items-center rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-caption font-semibold text-primary transition-colors hover:bg-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          {planLabel}
+        </button>
+      )}
     </div>
   );
 }
@@ -6399,30 +6458,24 @@ export default function ResumeParser() {
       title="JobPilot"
       description="Your workspace for the job hunt — tailor resumes to any JD, track applications, read the market, and prep with intent."
     >
-      <div
-        className="min-h-screen bg-white dark:bg-gray-950 antialiased pb-24 lg:pb-0"
-        style={{
-          fontFamily:
-            "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-        }}
-      >
+      <div className="min-h-screen bg-background text-foreground antialiased pb-24 lg:pb-0">
         {/* Top app bar keeps identity and account actions; sections live in the sidebar. */}
-        <header className="sticky top-0 z-50 border-b border-gray-200 dark:border-white/10 bg-white/95 dark:bg-gray-950/95 backdrop-blur-xl shadow-sm shadow-black/[0.03] dark:shadow-black/20">
-          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-indigo-500/50 to-transparent" />
+        <header className="sticky top-0 z-50 border-b border-border bg-background/85 supports-[backdrop-filter]:bg-background/70 backdrop-blur-xl shadow-soft">
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" aria-hidden="true" />
           <div className="w-full px-4 sm:px-6 lg:px-5">
             <div className="h-14 flex items-center gap-3">
               <button
                 type="button"
                 onClick={() => setMobileNavOpen(true)}
                 aria-label="Open section navigation"
-                className="lg:hidden inline-flex h-9 w-9 items-center justify-center rounded-full text-gray-500 transition-all hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50"
+                className="lg:hidden inline-flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <Menu className="h-4 w-4" />
               </button>
 
               {/* Logo */}
               <a href="/" className="flex items-center gap-2.5 shrink-0" aria-label="JobPilot home">
-                <div className="brand-gradient w-8 h-8 rounded-lg flex items-center justify-center shadow-lg shadow-primary/25">
+                <div className="brand-gradient w-8 h-8 rounded-lg flex items-center justify-center shadow-soft shadow-primary/25">
                   <SparklesIcon className="w-4 h-4 text-white" />
                 </div>
                 <h1 className="font-display text-lg font-extrabold tracking-tight hidden sm:block">
@@ -6430,34 +6483,36 @@ export default function ResumeParser() {
                 </h1>
               </a>
 
-              <div className="min-w-0 flex-1 ml-4 border-l border-gray-200 dark:border-gray-800 pl-4 py-0.5">
-                <div className="flex items-center gap-1.5 text-gray-900 dark:text-gray-100">
-                  <span className="text-indigo-500 dark:text-indigo-400">
+              <div className="min-w-0 flex-1 ml-3 border-l border-border pl-3 py-0.5">
+                <div className="flex items-center gap-1.5 text-foreground">
+                  <span className="text-primary">
                     {activeNavItem.icon}
                   </span>
                   <h2 className="text-sm font-bold truncate">{activeNavItem.label}</h2>
                   {activeNavItem.badge && (
-                    <span className="ml-1 rounded-full border border-indigo-500/25 bg-indigo-500/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-indigo-600 dark:text-indigo-300">
+                    <span className="ml-1 rounded-full border border-primary/20 bg-primary/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-primary">
                       {activeNavItem.badge}
                     </span>
                   )}
                 </div>
                 {activeNavItem.hint && (
-                  <p className="mt-0.5 text-[11px] font-medium text-gray-500 dark:text-gray-400 truncate">
+                  <p className="mt-0.5 text-[11px] font-medium text-muted-foreground truncate">
                     {activeNavItem.hint}
                   </p>
                 )}
               </div>
 
               {/* Right actions */}
-              <div className="flex items-center gap-1 shrink-0">
+              <div className="flex items-center gap-2 shrink-0">
+                <HeaderMeta user={user} onOpenBilling={() => selectNav("billing")} />
+                <div className="hidden h-6 w-px bg-border md:block" aria-hidden="true" />
                 <ThemeToggle />
                 <button
                   type="button"
                   onClick={() => (window.location.href = "/")}
                   aria-label="Home"
                   title="JobPilot home"
-                  className="inline-flex items-center justify-center w-9 h-9 rounded-full text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50"
+                  className="inline-flex items-center justify-center w-9 h-9 rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <HomeIcon className="w-4 h-4" />
                 </button>
@@ -6467,7 +6522,7 @@ export default function ResumeParser() {
                     onClick={() => setUserMenuOpen((v) => !v)}
                     aria-haspopup="menu"
                     aria-expanded={userMenuOpen}
-                    className="brand-gradient inline-flex items-center justify-center w-9 h-9 rounded-full text-white text-xs font-bold ring-2 ring-primary/40 hover:ring-primary/60 hover:scale-105 transition-all"
+                    className="brand-gradient inline-flex items-center justify-center w-9 h-9 rounded-full text-white text-xs font-bold ring-2 ring-primary/30 transition-shadow hover:ring-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     {(user?.name || user?.email || "U").charAt(0).toUpperCase()}
                   </button>
@@ -6479,12 +6534,12 @@ export default function ResumeParser() {
                         className="fixed inset-0 z-10"
                         onClick={() => setUserMenuOpen(false)}
                       />
-                      <div className="absolute right-0 mt-2 w-56 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-white/10 shadow-2xl shadow-black/20 backdrop-blur-xl overflow-hidden z-20">
-                        <div className="px-4 py-3 border-b border-gray-200 dark:border-white/10">
-                          <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                      <div className="absolute right-0 mt-2 w-56 rounded-xl bg-popover text-popover-foreground border border-border shadow-pop overflow-hidden z-20">
+                        <div className="px-4 py-3 border-b border-border">
+                          <p className="text-sm font-semibold text-foreground truncate">
                             {user?.name || user?.email?.split("@")[0]}
                           </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                          <p className="text-xs text-muted-foreground truncate">
                             {user?.email}
                           </p>
                         </div>
@@ -6494,7 +6549,7 @@ export default function ResumeParser() {
                             selectNav("profile");
                             setUserMenuOpen(false);
                           }}
-                          className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
+                          className="w-full text-left px-4 py-2.5 text-sm text-foreground hover:bg-accent transition-colors focus-visible:outline-none focus-visible:bg-accent"
                         >
                           Profile settings
                         </button>
@@ -6518,7 +6573,7 @@ export default function ResumeParser() {
               <button
                 type="button"
                 aria-label="Close section navigation"
-                className="absolute inset-0 h-full w-full bg-gray-950/60 backdrop-blur-sm"
+                className="absolute inset-0 h-full w-full bg-black/50 backdrop-blur-sm"
                 onClick={() => setMobileNavOpen(false)}
               />
               <motion.aside
@@ -6526,18 +6581,18 @@ export default function ResumeParser() {
                 animate={{ x: 0 }}
                 exit={{ x: -320 }}
                 transition={{ type: "spring", stiffness: 360, damping: 34 }}
-                className="absolute left-0 top-0 flex h-full w-[min(20rem,calc(100vw-2rem))] flex-col border-r border-gray-200 bg-white shadow-2xl shadow-black/25 dark:border-white/10 dark:bg-gray-950"
+                className="absolute left-0 top-0 flex h-full w-[min(20rem,calc(100vw-2rem))] flex-col border-r border-sidebar-border bg-sidebar shadow-float"
               >
-                <div className="flex h-16 items-center justify-between border-b border-gray-200 px-4 dark:border-white/10">
+                <div className="flex h-16 items-center justify-between border-b border-sidebar-border px-4">
                   <div className="flex min-w-0 items-center gap-2.5">
-                    <div className="brand-gradient flex h-9 w-9 shrink-0 items-center justify-center rounded-lg shadow-lg shadow-primary/25">
+                    <div className="brand-gradient flex h-9 w-9 shrink-0 items-center justify-center rounded-lg shadow-soft shadow-primary/25">
                       <SparklesIcon className="h-4 w-4 text-white" />
                     </div>
                     <div className="min-w-0">
-                      <p className="font-display truncate text-sm font-extrabold text-gray-950 dark:text-white">
+                      <p className="font-display truncate text-sm font-extrabold text-foreground">
                         JobPilot
                       </p>
-                      <p className="truncate text-xs text-gray-500 dark:text-gray-400">
+                      <p className="truncate text-xs text-muted-foreground">
                         {activeNavItem.label}
                       </p>
                     </div>
@@ -6546,7 +6601,7 @@ export default function ResumeParser() {
                     type="button"
                     onClick={() => setMobileNavOpen(false)}
                     aria-label="Close section navigation"
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-full text-gray-500 transition-all hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50"
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     <X className="h-4 w-4" />
                   </button>
@@ -6568,29 +6623,25 @@ export default function ResumeParser() {
               onMouseLeave={() => {
                 if (sidebarCollapsed) setSidebarHoverExpanded(false);
               }}
-              className={`relative hidden lg:flex sticky top-14 h-[calc(100vh-3.5rem)] shrink-0 flex-col overflow-hidden border-r border-gray-200 bg-white/95 backdrop-blur-xl transition-[width] duration-300 dark:border-white/10 dark:bg-gray-950/95 ${
+              className={`relative hidden lg:flex sticky top-14 h-[calc(100vh-3.5rem)] shrink-0 flex-col overflow-hidden border-r border-sidebar-border bg-sidebar/95 backdrop-blur-xl transition-[width] duration-300 ease-expo ${
                 sidebarEffectiveCollapsed ? "w-20" : "w-[19rem]"
               }`}
             >
               <div
-                className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-indigo-500 via-purple-500 to-transparent opacity-80"
-                aria-hidden="true"
-              />
-              <div
-                className={`flex h-16 shrink-0 items-center border-b border-gray-200 dark:border-white/10 ${
+                className={`flex h-16 shrink-0 items-center border-b border-sidebar-border ${
                   sidebarEffectiveCollapsed ? "justify-center px-2" : "justify-between gap-3 px-4"
                 }`}
               >
                 {!sidebarEffectiveCollapsed && (
                   <div className="flex min-w-0 items-center gap-3">
-                    <div className="brand-gradient flex h-9 w-9 shrink-0 items-center justify-center rounded-lg shadow-lg shadow-primary/20">
+                    <div className="brand-gradient flex h-9 w-9 shrink-0 items-center justify-center rounded-lg shadow-soft shadow-primary/20">
                       <SparklesIcon className="h-4 w-4 text-white" />
                     </div>
                     <div className="min-w-0">
-                      <p className="font-display truncate text-sm font-extrabold text-gray-950 dark:text-white">
+                      <p className="font-display truncate text-sm font-extrabold text-foreground">
                         JobPilot
                       </p>
-                      <p className="truncate text-xs font-medium text-gray-500 dark:text-gray-400">
+                      <p className="truncate text-xs font-medium text-muted-foreground">
                         Workspace
                       </p>
                     </div>
@@ -6602,7 +6653,7 @@ export default function ResumeParser() {
                   aria-label={sidebarEffectiveCollapsed ? "Expand sidebar" : "Collapse sidebar"}
                   aria-expanded={!sidebarEffectiveCollapsed}
                   title={sidebarEffectiveCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-gray-500 transition-all hover:bg-gray-100 hover:text-gray-950 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50"
+                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   {sidebarEffectiveCollapsed ? (
                     <PanelLeftOpen className="h-4 w-4" />
@@ -6624,7 +6675,7 @@ export default function ResumeParser() {
                     setSidebarCollapsed(true);
                     setSidebarHoverExpanded(false);
                   }}
-                  className="absolute right-0 top-16 bottom-0 w-1.5 bg-transparent hover:bg-indigo-500/20 transition-colors"
+                  className="absolute right-0 top-16 bottom-0 w-1.5 bg-transparent hover:bg-primary/15 transition-colors"
                 />
               )}
               <div className="flex-1 overflow-y-auto py-3">

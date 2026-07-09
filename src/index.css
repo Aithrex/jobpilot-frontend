@@ -34,6 +34,15 @@
     /* Editorial motion easing — calm, decisive settle (Compass §7). */
     --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 
+    /* ── Elevation scale (Compass §7) ──────────────────────────────────────
+       Token-driven, tinted with the slate foreground (never pure black) so
+       shadows read as depth, not grime. Surfaced via tailwind boxShadow
+       (shadow-soft / -panel / -pop / -float). */
+    --shadow-soft: 0 1px 2px hsl(222 32% 12% / 0.05), 0 1px 3px hsl(222 32% 12% / 0.05);
+    --shadow-panel: 0 1px 2px hsl(222 32% 12% / 0.04), 0 6px 16px -4px hsl(222 32% 12% / 0.10);
+    --shadow-pop: 0 4px 12px -2px hsl(222 32% 12% / 0.08), 0 16px 32px -8px hsl(222 32% 12% / 0.12);
+    --shadow-float: 0 8px 24px -6px hsl(222 32% 12% / 0.14), 0 28px 56px -12px hsl(222 32% 12% / 0.16);
+
     --brand-from: 243 75% 59%;         /* indigo */
     --brand-to: 199 89% 48%;           /* sky — "growth / learning" accent */
 
@@ -74,6 +83,13 @@
 
     --brand-from: 243 84% 72%;
     --brand-to: 199 90% 60%;
+
+    /* Elevation — deeper, softer halos on dark so cards lift without a black
+       ring. Tinted toward true black since the canvas is already deep slate. */
+    --shadow-soft: 0 1px 2px hsl(0 0% 0% / 0.30), 0 1px 3px hsl(0 0% 0% / 0.22);
+    --shadow-panel: 0 1px 2px hsl(0 0% 0% / 0.30), 0 8px 20px -6px hsl(0 0% 0% / 0.45);
+    --shadow-pop: 0 6px 16px -4px hsl(0 0% 0% / 0.45), 0 20px 40px -10px hsl(0 0% 0% / 0.55);
+    --shadow-float: 0 10px 30px -8px hsl(0 0% 0% / 0.55), 0 32px 64px -16px hsl(0 0% 0% / 0.65);
 
     /* Sidebar */
     --sidebar-background: 222 24% 9%;
@@ -157,7 +173,28 @@
 
   /* Glassmorphism card style */
   .glass-card {
-    @apply bg-white/80 dark:bg-black/40 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-xl;
+    @apply bg-white/80 dark:bg-black/40 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-pop;
+  }
+
+  /* ── Editorial surfaces (Compass §7) ───────────────────────────────────
+     Calm, token-driven building blocks so every screen inherits the same
+     card language. `.surface` = flat resting panel; `.panel` adds a soft
+     lift; `.card-interactive` is the calm hover affordance. */
+  .surface {
+    @apply rounded-xl border border-border bg-card text-card-foreground;
+  }
+  .surface-muted {
+    @apply rounded-xl border border-border bg-muted/40 text-foreground;
+  }
+  .card-interactive {
+    @apply surface shadow-soft transition-[transform,box-shadow,border-color] duration-200 ease-expo;
+    @apply hover:-translate-y-0.5 hover:shadow-panel hover:border-border/80;
+  }
+
+  /* Editorial eyebrow / section label — the quiet uppercase kicker used on
+     nav group headers and card overlines. */
+  .overline {
+    @apply text-[0.6875rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground;
   }
 
   /* Gradient text helper — uses the brand gradient (indigo → sky) */
@@ -181,7 +218,7 @@
 
   /* Subtle elevated panel used across the workspace */
   .panel {
-    @apply rounded-xl border border-border bg-card shadow-sm;
+    @apply rounded-xl border border-border bg-card shadow-soft;
   }
 
   /* ── Editorial accent meshes (Compass §7) ──────────────────────────────
@@ -243,9 +280,10 @@
     scroll-margin-top: 64px;
   }
 
-  /* Card hover effects */
+  /* Card hover effects — calm editorial lift (no bounce): a 2px rise on a
+     GPU-friendly transform + token shadow, settled with the expo easing. */
   .card-hover {
-    @apply transition-all duration-300 hover:shadow-xl hover:-translate-y-1;
+    @apply transition-[transform,box-shadow] duration-200 ease-expo hover:-translate-y-0.5 hover:shadow-panel;
   }
 
   /* Premium button style — subtle, clean, no aggressive lift */

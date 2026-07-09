@@ -80,7 +80,7 @@ export default function MobileBottomNav({
     <>
       <nav
         aria-label="Primary"
-        className="fixed inset-x-0 bottom-0 z-50 lg:hidden border-t border-gray-200/80 bg-white/90 backdrop-blur-xl dark:border-white/10 dark:bg-gray-950/90 pb-[env(safe-area-inset-bottom)]"
+        className="fixed inset-x-0 bottom-0 z-50 lg:hidden border-t border-border bg-background/90 supports-[backdrop-filter]:bg-background/80 backdrop-blur-xl pb-[env(safe-area-inset-bottom)]"
       >
         <div className="mx-auto flex max-w-md items-stretch justify-around px-1">
           {primaryItems.map((item) => {
@@ -92,17 +92,26 @@ export default function MobileBottomNav({
                 onClick={() => handleSelect(item.key)}
                 aria-current={active ? "page" : undefined}
                 aria-label={item.badge ? `${item.label} (${item.badge})` : item.label}
-                className={`group relative flex min-h-[44px] min-w-[44px] flex-1 flex-col items-center justify-center gap-0.5 px-1 py-1.5 transition-colors focus-visible:outline-none ${
-                  active
-                    ? "text-primary"
-                    : "text-gray-500 dark:text-gray-400 active:text-gray-900 dark:active:text-white"
+                className={`group relative flex min-h-[44px] min-w-[44px] flex-1 flex-col items-center justify-center gap-1 px-1 pb-1.5 pt-2 transition-colors focus-visible:outline-none ${
+                  active ? "text-primary" : "text-muted-foreground active:text-foreground"
                 }`}
               >
-                <span className="relative flex h-6 w-6 items-center justify-center">
+                {/* Non-color-only active affordance: a short indicator bar. */}
+                {active && (
+                  <span
+                    className="absolute top-0 h-0.5 w-8 rounded-full bg-primary"
+                    aria-hidden="true"
+                  />
+                )}
+                <span
+                  className={`relative flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
+                    active ? "bg-primary/10" : ""
+                  }`}
+                >
                   {item.icon}
                   {item.badge && !active && (
                     <span
-                      className="absolute -right-1 -top-0.5 h-1.5 w-1.5 rounded-full bg-primary"
+                      className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-primary"
                       aria-hidden="true"
                     />
                   )}
@@ -119,13 +128,21 @@ export default function MobileBottomNav({
             onClick={() => setMoreOpen(true)}
             aria-label="More sections"
             aria-haspopup="dialog"
-            className={`group relative flex min-h-[44px] min-w-[44px] flex-1 flex-col items-center justify-center gap-0.5 px-1 py-1.5 transition-colors focus-visible:outline-none ${
-              isMoreActive
-                ? "text-primary"
-                : "text-gray-500 dark:text-gray-400 active:text-gray-900 dark:active:text-white"
+            className={`group relative flex min-h-[44px] min-w-[44px] flex-1 flex-col items-center justify-center gap-1 px-1 pb-1.5 pt-2 transition-colors focus-visible:outline-none ${
+              isMoreActive ? "text-primary" : "text-muted-foreground active:text-foreground"
             }`}
           >
-            <span className="relative flex h-6 w-6 items-center justify-center">
+            {isMoreActive && (
+              <span
+                className="absolute top-0 h-0.5 w-8 rounded-full bg-primary"
+                aria-hidden="true"
+              />
+            )}
+            <span
+              className={`relative flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
+                isMoreActive ? "bg-primary/10" : ""
+              }`}
+            >
               <MoreHorizontal className="h-5 w-5" />
             </span>
             <span className="text-[10px] font-semibold leading-none">More</span>
@@ -151,9 +168,7 @@ export default function MobileBottomNav({
 
               return (
                 <div key={section.label}>
-                  <p className="mb-2 px-1 text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400 dark:text-gray-500">
-                    {section.label}
-                  </p>
+                  <p className="overline mb-2 px-1">{section.label}</p>
                   <div className="grid grid-cols-2 gap-2">
                     {sectionItems.map((item) => {
                       const active = item.key === activeKey;
@@ -163,17 +178,17 @@ export default function MobileBottomNav({
                           type="button"
                           onClick={() => handleSelect(item.key)}
                           aria-current={active ? "page" : undefined}
-                          className={`flex min-h-[44px] items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+                          className={`flex min-h-[44px] items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                             active
-                              ? "border-primary/30 bg-primary/10 text-gray-950 dark:text-white"
-                              : "border-gray-200/80 bg-gray-50/60 text-gray-600 dark:border-white/10 dark:bg-white/[0.03] dark:text-gray-300"
+                              ? "border-primary/30 bg-primary/10 text-foreground"
+                              : "border-border bg-muted/40 text-muted-foreground active:text-foreground"
                           }`}
                         >
                           <span
                             className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
                               active
-                                ? "bg-white/80 text-primary dark:bg-white/10"
-                                : "text-gray-400 dark:text-gray-500"
+                                ? "bg-background text-primary"
+                                : "text-muted-foreground"
                             }`}
                           >
                             {item.icon}
@@ -184,13 +199,13 @@ export default function MobileBottomNav({
                                 {item.label}
                               </span>
                               {item.badge && (
-                                <span className="shrink-0 rounded-full border border-primary/25 bg-primary/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-primary">
+                                <span className="shrink-0 rounded-full border border-primary/20 bg-primary/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-primary">
                                   {item.badge}
                                 </span>
                               )}
                             </span>
                             {item.hint && (
-                              <span className="mt-0.5 block truncate text-[11px] text-gray-400 dark:text-gray-500">
+                              <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
                                 {item.hint}
                               </span>
                             )}
