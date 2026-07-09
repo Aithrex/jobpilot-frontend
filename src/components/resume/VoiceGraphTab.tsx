@@ -16,6 +16,7 @@ import {
   Lock,
   Mic,
   MicOff,
+  PenLine,
   Shuffle,
   Sparkles,
   Trash2,
@@ -126,7 +127,7 @@ function Header() {
         <Sparkles className="h-3.5 w-3.5 text-primary" />
         Voice Graph
       </div>
-      <h1 className="font-serif text-3xl font-semibold tracking-tight sm:text-4xl">
+      <h1 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">
         Teach us how you write
       </h1>
       <p className="mx-auto mt-3 max-w-prose text-base leading-relaxed text-muted-foreground">
@@ -141,11 +142,11 @@ function Header() {
 
 function LoadingState() {
   return (
-    <div className="space-y-6">
-      <div className="mx-auto h-8 w-56 animate-pulse rounded bg-gray-200 dark:bg-white/10" />
-      <div className="mx-auto h-4 w-80 max-w-full animate-pulse rounded bg-gray-200 dark:bg-white/10" />
-      <div className="h-64 animate-pulse rounded-2xl bg-gray-200 dark:bg-white/10" />
-      <div className="h-4 w-40 animate-pulse rounded bg-gray-200 dark:bg-white/10" />
+    <div className="space-y-6" role="status" aria-label="Loading your Voice Graph">
+      <div className="mx-auto h-8 w-56 animate-pulse rounded bg-muted" />
+      <div className="mx-auto h-4 w-80 max-w-full animate-pulse rounded bg-muted" />
+      <div className="h-64 animate-pulse rounded-xl bg-muted" />
+      <div className="h-4 w-40 animate-pulse rounded bg-muted" />
     </div>
   );
 }
@@ -153,7 +154,7 @@ function LoadingState() {
 function ErrorState({ onRetry }: { onRetry: () => void }) {
   return (
     <Card className="mx-auto max-w-lg p-8 text-center">
-      <h2 className="font-serif text-xl font-semibold">
+      <h2 className="font-display text-xl font-bold tracking-tight">
         We couldn&apos;t open your Voice Graph
       </h2>
       <p className="mt-2 text-sm text-muted-foreground">
@@ -172,7 +173,9 @@ function UnavailableState() {
       <div className="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-muted text-muted-foreground">
         <Sparkles className="h-5 w-5" />
       </div>
-      <h2 className="font-serif text-xl font-semibold">Your Voice is coming soon</h2>
+      <h2 className="font-display text-xl font-bold tracking-tight">
+        Your Voice Graph is coming soon
+      </h2>
       <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
         We&apos;re polishing the writing surface that learns how you sound. Check
         back shortly — it&apos;ll be worth it.
@@ -494,7 +497,7 @@ function WritingSurface({
         />
 
         {/* The writing area — deliberately minimal chrome. */}
-        <Card className="mt-4 overflow-hidden border-border/70 shadow-sm">
+        <Card className="mt-4 overflow-hidden border-border/70 shadow-soft">
           <textarea
             ref={textareaRef}
             value={text}
@@ -576,6 +579,7 @@ function WritingSurface({
       <PriorSamples
         samples={priorSamples}
         loading={samplesQuery.isLoading}
+        onStartWriting={() => textareaRef.current?.focus()}
         onDeleted={(id) => {
           if (id === sampleId) resetComposer();
           samplesQuery.refetch();
@@ -626,11 +630,11 @@ function VoiceReveal({ reduce }: { reduce: boolean }) {
 
 function RevealSkeleton({ tall }: { tall?: boolean }) {
   return (
-    <div className="space-y-4">
-      <div className="h-6 w-48 animate-pulse rounded bg-gray-200 dark:bg-white/10" />
+    <div className="space-y-4" role="status" aria-label="Loading">
+      <div className="h-6 w-48 animate-pulse rounded bg-muted" />
       <div
         className={cn(
-          "animate-pulse rounded-2xl bg-gray-200 dark:bg-white/10",
+          "animate-pulse rounded-xl bg-muted",
           tall ? "h-96" : "h-44",
         )}
       />
@@ -727,7 +731,7 @@ function PromptSpark({
   }
 
   return (
-    <div className="rounded-xl border border-border bg-muted/40 p-4">
+    <div className="surface-muted p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-2">
           <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
@@ -781,26 +785,37 @@ function PromptSpark({
 function PriorSamples({
   samples,
   loading,
+  onStartWriting,
   onDeleted,
 }: {
   samples: WritingSample[];
   loading: boolean;
+  onStartWriting: () => void;
   onDeleted: (id: string) => void;
 }) {
   return (
     <section className="mt-10">
-      <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-        Your writing so far
-      </h2>
+      <h2 className="overline mb-3">Your writing so far</h2>
       {loading ? (
-        <div className="space-y-2">
-          <div className="h-14 animate-pulse rounded-xl bg-gray-200 dark:bg-white/10" />
-          <div className="h-14 animate-pulse rounded-xl bg-gray-200 dark:bg-white/10" />
+        <div className="space-y-2" role="status" aria-label="Loading your writing">
+          <div className="h-14 animate-pulse rounded-xl bg-muted" />
+          <div className="h-14 animate-pulse rounded-xl bg-muted" />
         </div>
       ) : samples.length === 0 ? (
-        <Card className="border-dashed p-6 text-center text-sm text-muted-foreground">
-          Nothing here yet. Write your first few sentences above — even a rough
-          paragraph helps us hear you.
+        <Card className="border-dashed p-6 text-center">
+          <div className="mx-auto mb-3 flex h-9 w-9 items-center justify-center rounded-full bg-muted text-muted-foreground">
+            <PenLine className="h-4 w-4" />
+          </div>
+          <p className="mx-auto max-w-sm text-sm leading-relaxed text-muted-foreground">
+            Nothing here yet. Even a rough paragraph helps us hear you.
+          </p>
+          <button
+            type="button"
+            onClick={onStartWriting}
+            className="mt-3 text-sm font-medium text-primary underline-offset-4 hover:underline"
+          >
+            Write your first few sentences
+          </button>
         </Card>
       ) : (
         <ul className="space-y-2">
@@ -838,7 +853,7 @@ function SampleRow({
   const isReady = sample.status === "ready";
 
   return (
-    <li className="flex items-center gap-3 rounded-xl border border-border bg-card p-3">
+    <li className="surface flex items-center gap-3 p-3">
       <div className="min-w-0 flex-1">
         <p className="truncate font-serif text-sm text-foreground">
           {sample.text?.trim() || "Untitled draft"}

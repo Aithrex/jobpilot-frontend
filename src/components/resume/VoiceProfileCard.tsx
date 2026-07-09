@@ -43,7 +43,7 @@ export default function VoiceProfileCard() {
       ) : query.isError ? (
         <ErrorNote onRetry={() => query.refetch()} />
       ) : query.data == null ? (
-        <EmptyNote />
+        <EmptyNote onRefresh={() => query.refetch()} />
       ) : query.data.insufficient ? (
         <InsufficientCard profile={query.data} />
       ) : (
@@ -104,9 +104,7 @@ function ReadyCard({
         <div className="space-y-6 border-t border-border/60 px-6 py-6 sm:px-10">
           {verbs.length > 0 && (
             <div>
-              <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Verbs you reach for
-              </p>
+              <p className="overline mb-3">Verbs you reach for</p>
               <ul className="flex flex-wrap gap-2">
                 {verbs.map((v) => (
                   <li
@@ -188,12 +186,10 @@ function SectionHeading({
 }) {
   return (
     <div className="mb-5">
-      <p className="text-xs font-semibold uppercase tracking-wide text-primary">
-        {eyebrow}
-      </p>
+      <p className="overline text-primary">{eyebrow}</p>
       <h2
         id={id}
-        className="mt-1 font-serif text-2xl font-semibold tracking-tight sm:text-3xl"
+        className="mt-1 font-display text-2xl font-bold tracking-tight sm:text-3xl"
       >
         {title}
       </h2>
@@ -203,18 +199,15 @@ function SectionHeading({
 
 function ProfileSkeleton() {
   return (
-    <Card className="p-6 sm:p-10">
+    <Card className="p-6 sm:p-10" role="status" aria-label="Loading your voice profile">
       <div className="mx-auto max-w-2xl space-y-4">
-        <div className="h-7 w-full animate-pulse rounded bg-gray-200 dark:bg-white/10" />
-        <div className="h-7 w-11/12 animate-pulse rounded bg-gray-200 dark:bg-white/10" />
-        <div className="h-7 w-9/12 animate-pulse rounded bg-gray-200 dark:bg-white/10" />
+        <div className="h-7 w-full animate-pulse rounded bg-muted" />
+        <div className="h-7 w-11/12 animate-pulse rounded bg-muted" />
+        <div className="h-7 w-9/12 animate-pulse rounded bg-muted" />
       </div>
       <div className="mt-8 flex flex-wrap gap-2">
         {Array.from({ length: 6 }).map((_, i) => (
-          <div
-            key={i}
-            className="h-7 w-20 animate-pulse rounded-full bg-gray-200 dark:bg-white/10"
-          />
+          <div key={i} className="h-7 w-20 animate-pulse rounded-full bg-muted" />
         ))}
       </div>
     </Card>
@@ -234,11 +227,19 @@ function ErrorNote({ onRetry }: { onRetry: () => void }) {
   );
 }
 
-function EmptyNote() {
+function EmptyNote({ onRefresh }: { onRefresh: () => void }) {
   return (
-    <Card className="border-dashed p-6 text-center text-sm text-muted-foreground">
-      Your voice profile isn&apos;t ready yet. Finalize a writing sample and it
-      appears here.
+    <Card className="border-dashed p-6 text-center">
+      <div className="mx-auto mb-3 flex h-9 w-9 items-center justify-center rounded-full bg-muted text-muted-foreground">
+        <PenLine className="h-4 w-4" />
+      </div>
+      <p className="mx-auto max-w-sm text-sm leading-relaxed text-muted-foreground">
+        Your voice profile isn&apos;t ready yet. Finalize a writing sample and
+        it appears here.
+      </p>
+      <Button size="sm" variant="outline" className="mt-4" onClick={onRefresh}>
+        Check again
+      </Button>
     </Card>
   );
 }

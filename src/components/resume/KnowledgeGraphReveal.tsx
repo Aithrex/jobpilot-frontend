@@ -129,7 +129,7 @@ export default function KnowledgeGraphReveal() {
       ) : query.isError ? (
         <ErrorNote onRetry={() => query.refetch()} />
       ) : !graph || graph.nodes.length === 0 ? (
-        <EmptyNote />
+        <EmptyNote onRefresh={() => query.refetch()} />
       ) : (
         <GraphCanvas
           graph={graph}
@@ -328,9 +328,7 @@ function NodeDetail({
   }
   return (
     <Card className="p-4" aria-live="polite">
-      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        {node.type}
-      </p>
+      <p className="overline">{node.type}</p>
       <p className="mt-1 font-serif text-lg leading-snug text-foreground">
         {node.label}
       </p>
@@ -371,9 +369,7 @@ function Legend({
 }) {
   return (
     <Card className="p-4">
-      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        By category
-      </p>
+      <p className="overline mb-2">By category</p>
       <ul className="flex flex-wrap gap-1.5">
         {clusters.map((c) => {
           const active = activeType === c.type;
@@ -424,12 +420,10 @@ function SectionHeading({
 }) {
   return (
     <div className="mb-5">
-      <p className="text-xs font-semibold uppercase tracking-wide text-primary">
-        {eyebrow}
-      </p>
+      <p className="overline text-primary">{eyebrow}</p>
       <h2
         id={id}
-        className="mt-1 font-serif text-2xl font-semibold tracking-tight sm:text-3xl"
+        className="mt-1 font-display text-2xl font-bold tracking-tight sm:text-3xl"
       >
         {title}
       </h2>
@@ -439,11 +433,15 @@ function SectionHeading({
 
 function GraphSkeleton() {
   return (
-    <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_260px]">
-      <div className="aspect-[720/520] w-full animate-pulse rounded-lg bg-gray-200 dark:bg-white/10" />
+    <div
+      className="grid gap-4 md:grid-cols-[minmax(0,1fr)_260px]"
+      role="status"
+      aria-label="Loading your graph"
+    >
+      <div className="aspect-[720/520] w-full animate-pulse rounded-xl bg-muted" />
       <div className="space-y-4">
-        <div className="h-28 animate-pulse rounded-lg bg-gray-200 dark:bg-white/10" />
-        <div className="h-20 animate-pulse rounded-lg bg-gray-200 dark:bg-white/10" />
+        <div className="h-28 animate-pulse rounded-xl bg-muted" />
+        <div className="h-20 animate-pulse rounded-xl bg-muted" />
       </div>
     </div>
   );
@@ -462,7 +460,7 @@ function ErrorNote({ onRetry }: { onRetry: () => void }) {
   );
 }
 
-function EmptyNote() {
+function EmptyNote({ onRefresh }: { onRefresh: () => void }) {
   return (
     <Card className="border-dashed p-10 text-center">
       <div className="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-muted text-muted-foreground">
@@ -471,6 +469,9 @@ function EmptyNote() {
       <p className="mx-auto max-w-sm text-sm leading-relaxed text-muted-foreground">
         Finalize a writing sample and we&apos;ll show you your career as a shape.
       </p>
+      <Button size="sm" variant="outline" className="mt-4" onClick={onRefresh}>
+        Check again
+      </Button>
     </Card>
   );
 }

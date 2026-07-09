@@ -4,10 +4,10 @@ import type { LegitimacyBand } from '@/types/events';
 import { cn } from '@/lib/utils';
 
 const CFG: Record<LegitimacyBand, { label: string; cls: string; icon: typeof Shield }> = {
-  verified: { label: 'Verified', cls: 'bg-emerald-500/12 text-emerald-600 dark:text-emerald-400', icon: ShieldCheck },
-  credible: { label: 'Credible', cls: 'bg-blue-500/12 text-blue-600 dark:text-blue-400', icon: Shield },
-  unvetted: { label: 'Unvetted', cls: 'bg-amber-500/12 text-amber-600 dark:text-amber-400', icon: HelpCircle },
-  flagged: { label: 'Flagged', cls: 'bg-destructive/12 text-destructive', icon: AlertTriangle },
+  verified: { label: 'Verified', cls: 'bg-success/10 text-success', icon: ShieldCheck },
+  credible: { label: 'Credible', cls: 'bg-primary/10 text-primary', icon: Shield },
+  unvetted: { label: 'Unvetted', cls: 'bg-warning/10 text-warning', icon: HelpCircle },
+  flagged: { label: 'Flagged', cls: 'bg-destructive/10 text-destructive', icon: AlertTriangle },
 };
 
 export function LegitimacyBadge({

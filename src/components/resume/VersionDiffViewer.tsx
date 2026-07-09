@@ -34,22 +34,22 @@ function DiffBlock({ title, left, right }: { title: string; left: string[]; righ
   if (ops.every(o => o.kind === "same")) {
     return (
       <div>
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">{title}</p>
-        <p className="text-[11px] text-gray-400 dark:text-gray-500 italic">No changes</p>
+        <p className="overline mb-1">{title}</p>
+        <p className="text-[11px] italic text-muted-foreground">No changes</p>
       </div>
     );
   }
   return (
     <div>
-      <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">{title}</p>
+      <p className="overline mb-1">{title}</p>
       <ul className="space-y-0.5 text-[11px] leading-relaxed">
         {ops.map((o, i) => {
           const cls =
             o.kind === "add"
-              ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-l-2 border-emerald-500/50"
+              ? "border-l-2 border-success/50 bg-success/10 text-success"
               : o.kind === "del"
-              ? "bg-red-500/10 text-red-600 dark:text-red-300 line-through border-l-2 border-red-500/50"
-              : "text-gray-600 dark:text-gray-400";
+              ? "border-l-2 border-destructive/50 bg-destructive/10 text-destructive line-through"
+              : "text-muted-foreground";
           const prefix = o.kind === "add" ? "+ " : o.kind === "del" ? "− " : "  ";
           return <li key={i} className={`pl-2 pr-2 py-0.5 ${cls}`}>{prefix}{o.text}</li>;
         })}
@@ -107,32 +107,77 @@ export default function VersionDiffViewer({ record, onClose }: Props) {
   useMemo(() => { loadPair(); // eslint-disable-next-line
   }, [leftId, rightId]);
 
-  const selectCls = "px-2 py-1 rounded-md bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-xs text-gray-800 dark:text-gray-200";
+  const selectCls =
+    "px-2 py-1 rounded-md border border-input bg-background text-xs text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="w-full max-w-5xl max-h-[92vh] rounded-2xl bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 shadow-2xl flex flex-col overflow-hidden">
-        <div className="px-5 py-3 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between gap-3 flex-wrap">
+    <div
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Compare resume versions"
+    >
+      <div className="w-full max-w-5xl max-h-[92vh] rounded-2xl border border-border bg-card shadow-pop flex flex-col overflow-hidden">
+        <div className="px-5 py-3 border-b border-border flex items-center justify-between gap-3 flex-wrap">
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
+            <p className="text-sm font-semibold text-foreground truncate">
               Compare versions · {record.jd_analysis?.job_title || "Record"}
               {record.jd_analysis?.company && record.jd_analysis.company !== "Not specified" ? ` — ${record.jd_analysis.company}` : ""}
             </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            <select value={leftId} onChange={e => setLeftId(e.target.value)} className={selectCls}>
+            <select
+              value={leftId}
+              onChange={e => setLeftId(e.target.value)}
+              aria-label="Compare from version"
+              className={selectCls}
+            >
               {versions.map(v => <option key={v.version_id} value={v.version_id}>v{v.version_number} · {v.source}</option>)}
             </select>
-            <span className="text-xs text-gray-500">→</span>
-            <select value={rightId} onChange={e => setRightId(e.target.value)} className={selectCls}>
+            <span className="text-xs text-muted-foreground" aria-hidden>→</span>
+            <select
+              value={rightId}
+              onChange={e => setRightId(e.target.value)}
+              aria-label="Compare to version"
+              className={selectCls}
+            >
               {versions.map(v => <option key={v.version_id} value={v.version_id}>v{v.version_number} · {v.source}</option>)}
             </select>
-            <button onClick={onClose} className="px-2 py-1 rounded-md text-xs text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800/60">Close</button>
+            <button
+              onClick={onClose}
+              className="px-2 py-1 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              Close
+            </button>
           </div>
         </div>
         <div className="px-5 py-4 overflow-y-auto space-y-4">
-          {loading && <p className="text-xs text-gray-500 dark:text-gray-400">Loading versions…</p>}
-          {error && <p className="text-xs text-red-500">{error}</p>}
+          {loading && (
+            <div className="space-y-2" role="status" aria-label="Loading versions">
+              <div className="h-3 w-24 animate-pulse rounded bg-muted" />
+              <div className="h-3 w-full animate-pulse rounded bg-muted" />
+              <div className="h-3 w-11/12 animate-pulse rounded bg-muted" />
+              <div className="h-3 w-9/12 animate-pulse rounded bg-muted" />
+            </div>
+          )}
+          {error && !loading && (
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <p className="text-destructive">{error}</p>
+              <button
+                type="button"
+                onClick={loadPair}
+                className="font-semibold text-primary underline-offset-4 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+              >
+                Try again
+              </button>
+            </div>
+          )}
+          {!loading && versions.length === 0 && (
+            <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+              No versions to compare yet. Tailor this resume and each version
+              lands here.
+            </div>
+          )}
           {!loading && leftR && rightR && (
             <>
               {/* Summary diff */}

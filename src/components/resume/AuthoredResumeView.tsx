@@ -140,13 +140,11 @@ export default function AuthoredResumeView() {
 
       {/* Prior authored resumes */}
       <div className="mt-8">
-        <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          Resumes from your words
-        </h3>
+        <h3 className="overline mb-3">Resumes from your words</h3>
         {listQuery.isLoading ? (
-          <div className="space-y-2">
-            <div className="h-16 animate-pulse rounded-xl bg-gray-200 dark:bg-white/10" />
-            <div className="h-16 animate-pulse rounded-xl bg-gray-200 dark:bg-white/10" />
+          <div className="space-y-2" role="status" aria-label="Loading your resumes">
+            <div className="h-16 animate-pulse rounded-xl bg-muted" />
+            <div className="h-16 animate-pulse rounded-xl bg-muted" />
           </div>
         ) : listQuery.isError ? (
           <Card className="flex flex-wrap items-center justify-between gap-3 p-5">
@@ -162,9 +160,22 @@ export default function AuthoredResumeView() {
             </Button>
           </Card>
         ) : priors.length === 0 ? (
-          <Card className="border-dashed p-6 text-center text-sm text-muted-foreground">
-            Nothing built yet. When you build from your words, it&apos;ll show up
-            here.
+          <Card className="border-dashed p-6 text-center">
+            <div className="mx-auto mb-3 flex h-9 w-9 items-center justify-center rounded-full bg-muted text-muted-foreground">
+              <FileText className="h-4 w-4" />
+            </div>
+            <p className="mx-auto max-w-sm text-sm leading-relaxed text-muted-foreground">
+              Nothing built yet. Your first resume from your own words — every
+              line verbatim — will show up here.
+            </p>
+            <button
+              type="button"
+              onClick={build}
+              disabled={building}
+              className="mt-3 text-sm font-medium text-primary underline-offset-4 hover:underline disabled:opacity-60"
+            >
+              Build from my words
+            </button>
           </Card>
         ) : (
           <ul className="space-y-2">
@@ -190,7 +201,7 @@ export default function AuthoredResumeView() {
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="flex flex-wrap items-center gap-2">
-                      <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                      <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium capitalize text-primary">
                         {r.mode}
                       </span>
                       <span className="text-sm text-foreground">
@@ -234,11 +245,11 @@ function ResumeDocument({ detail }: { detail: AuthoredResumeDetail }) {
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 bg-muted/30 px-6 py-3">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
           <ShieldCheck className="h-3.5 w-3.5" />
-          raw — nothing was written by a model
+          Raw — nothing was written by a model
         </span>
         {typeof detail.voice_distance === "number" && (
           <span className="text-xs text-muted-foreground">
-            voice distance{" "}
+            Voice distance{" "}
             <span className="tabular-nums text-foreground">
               {detail.voice_distance.toFixed(2)}
             </span>
@@ -384,9 +395,7 @@ function ProvenanceLine({
           </button>
         </HoverCardTrigger>
         <HoverCardContent className="w-80">
-          <p className="text-xs font-semibold uppercase tracking-wide text-primary">
-            From your own writing
-          </p>
+          <p className="overline text-primary">From your own writing</p>
           <p className="mt-2 font-serif text-sm italic leading-relaxed text-foreground">
             &ldquo;{prov.bullet}&rdquo;
           </p>
@@ -402,11 +411,7 @@ function ProvenanceLine({
 /* ─────────────────────────── Shared bits ─────────────────────────── */
 
 function SectionLabel({ children }: { children: ReactNode }) {
-  return (
-    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-      {children}
-    </p>
-  );
+  return <p className="overline mb-2">{children}</p>;
 }
 
 function SectionHeading({
@@ -420,12 +425,10 @@ function SectionHeading({
 }) {
   return (
     <div className="mb-5">
-      <p className="text-xs font-semibold uppercase tracking-wide text-primary">
-        {eyebrow}
-      </p>
+      <p className="overline text-primary">{eyebrow}</p>
       <h2
         id={id}
-        className="mt-1 font-serif text-2xl font-semibold tracking-tight sm:text-3xl"
+        className="mt-1 font-display text-2xl font-bold tracking-tight sm:text-3xl"
       >
         {title}
       </h2>
