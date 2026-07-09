@@ -136,6 +136,7 @@ export default function SponsorFlip() {
 }
 
 function MatchRing({ value, active, className }: { value: number; active: boolean; className?: string }) {
+  const reduce = useReducedMotion();
   return (
     <div className={`relative h-10 w-10 shrink-0 ${className ?? ''}`}>
       <svg viewBox="0 0 36 36" className="h-10 w-10 -rotate-90" aria-hidden>
@@ -148,9 +149,9 @@ function MatchRing({ value, active, className }: { value: number; active: boolea
           className="fill-none stroke-primary"
           strokeWidth={3}
           strokeLinecap="round"
-          initial={{ strokeDasharray: '0 100' }}
-          animate={{ strokeDasharray: `${active ? value : 0} 100` }}
-          transition={{ duration: 1, ease: EASE }}
+          initial={{ strokeDasharray: reduce ? `${value} 100` : '0 100' }}
+          animate={{ strokeDasharray: `${reduce || active ? value : 0} 100` }}
+          transition={{ duration: reduce ? 0 : 1, ease: EASE }}
         />
       </svg>
       <span className="absolute inset-0 grid place-items-center font-display text-[10px] font-bold text-foreground">{value}</span>

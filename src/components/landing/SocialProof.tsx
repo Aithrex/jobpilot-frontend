@@ -35,7 +35,7 @@ export function SocialProof() {
     <section className="py-20 sm:py-28">
       <Container>
         <SectionHeading
-          eyebrow="Social proof"
+          eyebrow="In their words"
           title="Built for the students the system overlooks"
           subtitle="Early stories from the visa-clock job search — illustrative while we gather the real ones."
         />

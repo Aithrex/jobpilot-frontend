@@ -49,7 +49,11 @@ export function LandingNav() {
       )}
     >
       <Container className="flex h-16 items-center justify-between">
-        <Link to="/" className="flex items-center gap-2.5 font-semibold" aria-label="Aspirely home">
+        <Link
+          to="/"
+          className="flex items-center gap-2.5 rounded-lg font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          aria-label="Aspirely home"
+        >
           <span className="grid h-8 w-8 place-items-center rounded-lg bg-primary text-primary-foreground shadow-sm">
             <Compass className="h-[1.15rem] w-[1.15rem]" />
           </span>

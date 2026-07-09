@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { CalendarClock, CalendarCheck2, Flag } from 'lucide-react';
 import { DemoFrame, EASE, useDemoActive, useEntered } from './_demoKit';
 
@@ -12,6 +12,9 @@ export default function OptClockTicking() {
   const ref = useRef<HTMLDivElement>(null);
   const active = useDemoActive(ref);
   const entered = useEntered(ref);
+  const reduce = useReducedMotion();
+  // Under reduced motion, jump straight to the settled end-state (no sweep/slide).
+  const settled = reduce || entered;
 
   const [secs, setSecs] = useState(17 * 3600 + 42 * 60 + 9);
   useEffect(() => {
@@ -60,8 +63,8 @@ export default function OptClockTicking() {
               strokeLinecap="round"
               strokeDasharray={C}
               initial={{ strokeDashoffset: C }}
-              animate={{ strokeDashoffset: entered ? C * (1 - usedFrac) : C }}
-              transition={{ duration: 1.1, ease: EASE }}
+              animate={{ strokeDashoffset: settled ? C * (1 - usedFrac) : C }}
+              transition={{ duration: reduce ? 0 : 1.1, ease: EASE }}
             />
             {/* rounded endpoint marker — appears once the ring has settled */}
             <motion.circle
@@ -71,8 +74,8 @@ export default function OptClockTicking() {
               className="fill-warning stroke-card"
               strokeWidth={2}
               initial={{ opacity: 0 }}
-              animate={{ opacity: entered ? 1 : 0 }}
-              transition={{ duration: 0.35, ease: EASE, delay: entered ? 1.05 : 0 }}
+              animate={{ opacity: settled ? 1 : 0 }}
+              transition={{ duration: reduce ? 0 : 0.35, ease: EASE, delay: reduce ? 0 : entered ? 1.05 : 0 }}
             />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
@@ -102,8 +105,8 @@ export default function OptClockTicking() {
               <motion.li
                 key={d.label}
                 initial={{ opacity: 0, x: -8 }}
-                animate={{ opacity: entered ? 1 : 0, x: entered ? 0 : -8 }}
-                transition={{ duration: 0.4, ease: EASE, delay: entered ? 0.3 + i * 0.12 : 0 }}
+                animate={{ opacity: settled ? 1 : 0, x: settled ? 0 : -8 }}
+                transition={{ duration: reduce ? 0 : 0.4, ease: EASE, delay: reduce ? 0 : entered ? 0.3 + i * 0.12 : 0 }}
                 className="flex items-center justify-between rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs"
               >
                 <span className="inline-flex items-center gap-2 text-muted-foreground">

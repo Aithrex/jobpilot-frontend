@@ -172,10 +172,17 @@ export function FeatureJourney() {
             const Icon = item.icon;
             return (
               <Reveal key={item.title} delay={0.06}>
-                <div className="card-hover flex h-full flex-col rounded-2xl border border-border bg-card/60 p-5 sm:p-6">
-                  <div className="mb-4">
-                    <Eyebrow icon={Icon}>{item.title}</Eyebrow>
-                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{item.body}</p>
+                <div className="group card-hover flex h-full flex-col rounded-2xl border border-border bg-card/60 p-5 sm:p-6">
+                  <div className="mb-4 flex items-start gap-3">
+                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary transition-colors duration-200 group-hover:bg-primary/15">
+                      <Icon className="h-4 w-4" aria-hidden />
+                    </span>
+                    <div className="min-w-0">
+                      <h3 className="font-display text-base font-bold tracking-tight text-foreground sm:text-lg">
+                        {item.title}
+                      </h3>
+                      <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{item.body}</p>
+                    </div>
                   </div>
                   <div className="mt-auto">
                     <DemoMount minHeight={item.minHeight}>{item.demo}</DemoMount>
