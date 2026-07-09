@@ -376,6 +376,127 @@ class ApiService {
     );
   }
 
+  // ── §6.6 Learning loop: "Your edge" ──────────────────────────
+  // find trending gaps → adaptive plan → per-task GitHub + verify → share.
+
+  /**
+   * Surface 2–4 trending, closeable market differentiators.
+   * Async (202 → poll). May return <2 with a `note`; 404 when the feature is
+   * disabled for this account — callers should hide the whole surface then.
+   */
+  async findDifferentiators(): Promise<
+    ApiResponse<import("../types/learning").DifferentiatorsResult>
+  > {
+    const submit = await this.request<{ job_id: string }>(
+      "/resume/learning/differentiators",
+      { method: "POST", body: "{}" },
+      30000,
+    );
+    if (submit.error)
+      return { error: submit.error, status: submit.status, errorPayload: submit.errorPayload };
+    if (!submit.data?.job_id) return { error: "Could not find your edge" };
+    return this.pollJob<import("../types/learning").DifferentiatorsResult>(
+      submit.data.job_id,
+      150000,
+    );
+  }
+
+  /** Generate an adaptive practical plan for a picked differentiator + depth. */
+  async generateEdgePlan(
+    body: import("../types/learning").EdgePlanRequest,
+  ): Promise<ApiResponse<import("../types/learning").EdgePlan>> {
+    const submit = await this.request<{ job_id: string }>(
+      "/resume/learning/plan",
+      { method: "POST", body: JSON.stringify(body) },
+      30000,
+    );
+    if (submit.error)
+      return { error: submit.error, status: submit.status, errorPayload: submit.errorPayload };
+    if (!submit.data?.job_id) return { error: "Could not build your plan" };
+    return this.pollJob<import("../types/learning").EdgePlan>(submit.data.job_id, 180000);
+  }
+
+  /** Full edge path (tasks list) for reload/resume. */
+  async getEdgePath(pathId: string) {
+    return this.request<import("../types/learning").EdgePlan>(
+      `/resume/learning/paths/${encodeURIComponent(pathId)}`,
+    );
+  }
+
+  /** Create/point a GitHub repo for a task; returns repo link or push steps. */
+  async syncTaskGithub(pathId: string, taskRef: string) {
+    return this.request<import("../types/learning").EdgeGithubSync>(
+      `/resume/learning/paths/${encodeURIComponent(pathId)}/task/${encodeURIComponent(taskRef)}/github`,
+      { method: "POST", body: "{}" },
+      30000,
+    );
+  }
+
+  /** Verify a task's proof (repo / PR / URL / writeup). Async (202 → poll). */
+  async verifyTask(
+    pathId: string,
+    taskRef: string,
+    body: import("../types/learning").EdgeVerifyRequest,
+  ): Promise<ApiResponse<import("../types/learning").EdgeVerifyResult>> {
+    const submit = await this.request<{ job_id: string }>(
+      `/resume/learning/paths/${encodeURIComponent(pathId)}/task/${encodeURIComponent(taskRef)}/verify`,
+      { method: "POST", body: JSON.stringify(body) },
+      30000,
+    );
+    if (submit.error)
+      return { error: submit.error, status: submit.status, errorPayload: submit.errorPayload };
+    if (!submit.data?.job_id) return { error: "Could not start verification" };
+    return this.pollJob<import("../types/learning").EdgeVerifyResult>(
+      submit.data.job_id,
+      150000,
+    );
+  }
+
+  /**
+   * Draft a "share the win" post for a verified task. Async (202 → poll).
+   * Returns 400 `not_verified` if called before the task is verified.
+   */
+  async draftWinPost(
+    pathId: string,
+    taskRef: string,
+  ): Promise<ApiResponse<import("../types/learning").EdgePostDraft>> {
+    const submit = await this.request<{ job_id: string }>(
+      `/resume/learning/paths/${encodeURIComponent(pathId)}/task/${encodeURIComponent(taskRef)}/post`,
+      { method: "POST", body: "{}" },
+      30000,
+    );
+    if (submit.error)
+      return { error: submit.error, status: submit.status, errorPayload: submit.errorPayload };
+    if (!submit.data?.job_id) return { error: "Could not draft your post" };
+    return this.pollJob<import("../types/learning").EdgePostDraft>(
+      submit.data.job_id,
+      150000,
+    );
+  }
+
+  /**
+   * Publish a drafted win post. `manual` returns copy/open-LinkedIn info;
+   * `auto` schedules with a 30-min hold (403 `upgrade_required` unless Premium+).
+   */
+  async publishWinPost(
+    draftId: string,
+    body: { mode: "manual" | "auto"; variant_index: number },
+  ) {
+    return this.request<import("../types/learning").EdgePublishResult>(
+      `/resume/learning/posts/${encodeURIComponent(draftId)}/publish`,
+      { method: "POST", body: JSON.stringify(body) },
+      30000,
+    );
+  }
+
+  /** Cancel a scheduled (auto-held) win post before it goes out. */
+  async cancelWinPost(scheduleId: string) {
+    return this.request<{ ok: boolean; cancelled?: boolean }>(
+      `/resume/learning/posts/${encodeURIComponent(scheduleId)}/cancel`,
+      { method: "POST", body: "{}" },
+    );
+  }
+
   // ── Interview Pattern Coach + salary (Pillar D) ──────────────
   async getInterviewCoach() {
     return this.request<import("../types/interview").CoachSummary>(

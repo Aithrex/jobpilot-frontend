@@ -12,10 +12,14 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   GraduationCap, Sparkles, Plus, ArrowLeft, Check, CheckCircle2, Loader2,
-  Trophy, Target, BookOpen, Briefcase, Brain, ExternalLink,
+  Trophy, Target, BookOpen, Briefcase, Brain, ExternalLink, Compass, BookMarked,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
+import { YourEdge } from '@/components/resume/learning/YourEdge';
 import type { LearningPath, LearningProgress, ModuleCompletionResult, Quiz } from '@/types/learning';
+
+type HubMode = 'edge' | 'topics';
 
 function isUpgrade(res: { status?: number; errorPayload?: Record<string, unknown> }) {
   return res.status === 403 && res.errorPayload?.error === 'upgrade_required';
@@ -27,6 +31,9 @@ export default function LearningHubTab() {
   const [selected, setSelected] = useState<string | null>(null);
   const [topic, setTopic] = useState('');
   const [creating, setCreating] = useState(false);
+  const [mode, setMode] = useState<HubMode>('edge');
+  // Feature-flag: the "Your edge" surface hides itself on a 404 from the backend.
+  const [edgeAvailable, setEdgeAvailable] = useState(true);
 
   const pathsQuery = useQuery({
     queryKey: ['learning-paths'],
@@ -68,12 +75,47 @@ export default function LearningHubTab() {
           <GraduationCap className="h-5 w-5" />
           <span className="text-sm font-semibold uppercase tracking-wide">Learning Hub</span>
         </div>
-        <h2 className="text-2xl font-bold tracking-tight">Build any skill, end to end</h2>
+        <h2 className="text-2xl font-bold tracking-tight">Close the gap to the role you want</h2>
         <p className="text-sm text-muted-foreground">
-          Get an AI study plan for any topic — finish a module and we surface the jobs it just unlocked.
+          Find your trending market edge and build it with verified proof — or get an AI study plan for any topic.
         </p>
       </header>
 
+      {/* Mode switch: the market-driven "Your edge" loop vs. free-form topics. */}
+      {edgeAvailable && (
+        <div className="inline-flex rounded-lg border border-border p-0.5">
+          {([
+            { id: 'edge', label: 'Your edge', icon: Compass },
+            { id: 'topics', label: 'Topics', icon: BookMarked },
+          ] as const).map((t) => {
+            const Icon = t.icon;
+            return (
+              <button
+                key={t.id}
+                onClick={() => setMode(t.id)}
+                className={cn(
+                  'inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+                  mode === t.id ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground',
+                )}
+              >
+                <Icon className="h-4 w-4" /> {t.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {mode === 'edge' && edgeAvailable && (
+        <YourEdge
+          onUnavailable={() => {
+            setEdgeAvailable(false);
+            setMode('topics');
+          }}
+        />
+      )}
+
+      {mode === 'topics' && (
+        <>
       {/* Create */}
       <Card className="p-4">
         <label className="mb-2 block text-sm font-medium">What do you want to learn?</label>
@@ -133,6 +175,8 @@ export default function LearningHubTab() {
             </motion.button>
           ))}
         </div>
+      )}
+        </>
       )}
     </div>
   );
