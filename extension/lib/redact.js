@@ -1,4 +1,4 @@
-/* JobPilot Apply Assistant — PII redaction.
+/* Aspirely Apply Assistant — PII redaction.
  *
  * Used ONLY on the last-resort LLM field-disambiguation path (lib/resolver.js),
  * and ONLY before a page snippet ever leaves the browser. Everything here runs

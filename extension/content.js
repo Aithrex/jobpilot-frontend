@@ -1,4 +1,4 @@
-/* JobPilot Apply Assistant — on-page orchestrator.
+/* Aspirely Apply Assistant — on-page orchestrator.
  *
  * "Fill, Review, One Tap": autofill empty form fields from the user's résumé
  * profile (via the ATS adapter + resolver engine), then surface a shadow-DOM
@@ -118,14 +118,14 @@
   const root = document.createElement("div");
   root.id = "jobpilot-ext-root";
   root.innerHTML = `
-    <button id="jp-launch" class="jp-launch" title="JobPilot Apply Assistant">JP</button>
+    <button id="jp-launch" class="jp-launch" title="Aspirely Apply Assistant">A</button>
     <div id="jp-panel" class="jp-panel" hidden>
-      <div class="jp-head"><span class="jp-title">JobPilot Apply</span><button id="jp-close" class="jp-x" aria-label="Close">&times;</button></div>
+      <div class="jp-head"><span class="jp-title">Aspirely</span><button id="jp-close" class="jp-x" aria-label="Close">&times;</button></div>
       <div id="jp-status" class="jp-status">Checking…</div>
       <button id="jp-autofill" class="jp-btn jp-primary">Autofill this form</button>
       <button id="jp-draft" class="jp-btn">Draft an answer</button>
       <div id="jp-variants" class="jp-variants"></div>
-      <div class="jp-foot">You review &amp; submit — JobPilot never submits for you.</div>
+      <div class="jp-foot">You review &amp; submit — Aspirely never submits for you.</div>
     </div>`;
   document.documentElement.appendChild(root);
   const q = (sel) => root.querySelector(sel);
@@ -160,7 +160,7 @@
       a.href = JOBPILOT_CONFIG.WEB_APP_ORIGIN;
       a.target = "_blank";
       a.rel = "noopener";
-      a.textContent = "JobPilot app";
+      a.textContent = "Aspirely app";
       s.append(a, ", sign in, then reopen.");
     }
   }
@@ -323,7 +323,7 @@
             showReviewCard();
             flash((res && res.message) || "Couldn't auto-submit — review & submit yourself.");
           } else {
-            flash("Submitted — JobPilot clicked this site's Submit for your approved application.");
+            flash("Submitted — Aspirely clicked this site's Submit for your approved application.");
           }
         },
       });

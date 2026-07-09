@@ -1,4 +1,4 @@
-/* JobPilot Apply Assistant — Review Card (shadow-DOM overlay).
+/* Aspirely Apply Assistant — Review Card (shadow-DOM overlay).
  *
  * After an autofill, this lists every field we touched, its value, and a
  * per-field confidence, plus the questions we deliberately left for the user.
@@ -54,18 +54,18 @@
       width: 100%; padding: 7px 9px; border: 1px solid #e4e4e7; border-radius: 8px;
       font-size: 13px; color: #18181b; background: #fff;
     }
-    .jp-val:focus { outline: 2px solid #a78bfa; outline-offset: 0; border-color: #a78bfa; }
+    .jp-val:focus { outline: 2px solid #818cf8; outline-offset: 0; border-color: #818cf8; }
     .jp-val[data-conf="medium"], .jp-val[data-conf="low"] { border-color: #fcd34d; background: #fffbeb; }
     .jp-hint { font-size: 11px; color: #a1a1aa; margin-top: 4px; }
     .jp-draft { margin-top: 4px; padding: 6px 10px; font-size: 12px; font-weight: 600; cursor: pointer;
-      border: 1px solid #e4e4e7; border-radius: 8px; background: #faf5ff; color: #6d28d9; }
-    .jp-draft:hover:not(:disabled) { border-color: #7c3aed; }
+      border: 1px solid #e4e4e7; border-radius: 8px; background: #eef2ff; color: #4338ca; }
+    .jp-draft:hover:not(:disabled) { border-color: #6366f1; }
     .jp-draft:disabled { opacity: .6; cursor: default; }
     .jp-empty { font-size: 12px; color: #71717a; padding: 10px 2px; }
     .jp-ft { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 14px; border-top: 1px solid #f1f1f4; }
     .jp-note { font-size: 11px; color: #a1a1aa; line-height: 1.35; }
     .jp-done { flex: none; padding: 7px 14px; font-size: 12px; font-weight: 700; cursor: pointer;
-      border: none; border-radius: 8px; color: #fff; background: linear-gradient(135deg, #7c3aed, #4f46e5); }
+      border: none; border-radius: 8px; color: #fff; background: linear-gradient(135deg, #6366f1, #4f46e5); }
     @media (prefers-color-scheme: dark) {
       .jp-card { background: #18181b; color: #fafafa; border-color: #3f3f46; }
       .jp-hd, .jp-ft { border-color: #27272a; }
@@ -73,7 +73,7 @@
       .jp-lbl { color: #d4d4d8; }
       .jp-val { background: #27272a; color: #fafafa; border-color: #3f3f46; }
       .jp-val[data-conf="medium"], .jp-val[data-conf="low"] { background: #2a2412; border-color: #a16207; }
-      .jp-draft { background: #2e1065; color: #ddd6fe; border-color: #4c1d95; }
+      .jp-draft { background: #312e81; color: #c7d2fe; border-color: #3730a3; }
     }
   `;
 
@@ -117,7 +117,7 @@
 
     const card = el("div", "jp-card");
     card.setAttribute("role", "dialog");
-    card.setAttribute("aria-label", "JobPilot — review your autofill");
+    card.setAttribute("aria-label", "Aspirely — review your autofill");
     card.tabIndex = -1;
 
     // Header
@@ -136,7 +136,7 @@
         el(
           "div",
           "jp-alert",
-          "A CAPTCHA / bot check is on this page. JobPilot won't touch it — solve it and submit yourself."
+          "A CAPTCHA / bot check is on this page. Aspirely won't touch it — solve it and submit yourself."
         )
       );
     }
@@ -204,7 +204,7 @@
 
     // Footer
     const ft = el("div", "jp-ft");
-    ft.appendChild(el("span", "jp-note", "You submit — JobPilot never clicks Submit for you."));
+    ft.appendChild(el("span", "jp-note", "You submit — Aspirely never clicks Submit for you."));
     const doneBtn = el("button", "jp-done", "Done");
     doneBtn.type = "button";
     ft.appendChild(doneBtn);

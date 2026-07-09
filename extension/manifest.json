@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "JobPilot — Apply Assistant",
+  "name": "Aspirely — Apply Assistant",
   "version": "0.2.0",
   "description": "High-signal application autofill + résumé-grounded answers. You review, you submit — never spray-and-pray.",
   "permissions": ["storage", "activeTab", "scripting"],
@@ -19,7 +19,7 @@
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "JobPilot Apply Assistant"
+    "default_title": "Aspirely Apply Assistant"
   },
   "background": { "service_worker": "background.js" },
   "content_scripts": [

@@ -1,4 +1,4 @@
-/* JobPilot Apply Assistant — client-side rate limit + humanizing jitter.
+/* Aspirely Apply Assistant — client-side rate limit + humanizing jitter.
  *
  * Guards against the extension being used for spray-and-pray: a hard cap of
  * 40 autofills / rolling hour and 150 / rolling day, plus small randomized

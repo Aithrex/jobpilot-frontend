@@ -1,4 +1,4 @@
-/* JobPilot Apply Assistant — ATS adapter registry.
+/* Aspirely Apply Assistant — ATS adapter registry.
  *
  * Each adapter file (adapters/<ats>.js) runs as its own IIFE and pushes itself
  * onto the shared `self.__JP_ADAPTERS` array. This file exposes the detection

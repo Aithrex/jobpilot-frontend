@@ -1,4 +1,4 @@
-/* JobPilot Apply Assistant — service worker.
+/* Aspirely Apply Assistant — service worker.
  * Holds the JWT (synced from the web app or pasted), and proxies the
  * apply.py endpoints so content scripts never touch the token directly.
  */
@@ -16,10 +16,19 @@ async function apiFetch(path, options = {}) {
   if (token) headers["Authorization"] = `Bearer ${token}`;
   try {
     const res = await fetch(API + path, { ...options, headers });
+    // Graceful auth-expiry: any 401 means the stored JWT is dead. Mirror the web
+    // app's forced-logout — drop the token + cached profile so every surface
+    // (popup, on-page panel) immediately shows "signed out" instead of spinning
+    // on a token that will keep 401-ing. The user re-syncs by re-opening the app.
+    if (res.status === 401) {
+      try { await chrome.storage.local.remove(["jp_token", "jp_profile"]); } catch (_) {}
+    }
     let data = null;
     try { data = await res.json(); } catch (_) { /* non-JSON */ }
     return { ok: res.ok, status: res.status, data };
   } catch (e) {
+    // status 0 = network / CORS / backend-unreachable. Callers surface a friendly
+    // "can't reach the backend" message off this sentinel (never the raw error).
     return { ok: false, status: 0, data: { error: String(e) } };
   }
 }

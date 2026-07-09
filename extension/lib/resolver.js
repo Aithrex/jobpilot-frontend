@@ -1,4 +1,4 @@
-/* JobPilot Apply Assistant — field resolution engine.
+/* Aspirely Apply Assistant — field resolution engine.
  *
  * Turns the current page + the user's ApplicationProfile into a concrete fill
  * plan, in a strict resolution order:

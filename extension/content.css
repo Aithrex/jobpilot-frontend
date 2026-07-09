@@ -1,4 +1,4 @@
-/* JobPilot Apply Assistant — injected panel. Scoped under #jobpilot-ext-root,
+/* Aspirely Apply Assistant — injected panel. Scoped under #jobpilot-ext-root,
    high z-index, self-contained styling so it never inherits the host page. */
 #jobpilot-ext-root { all: initial; }
 #jobpilot-ext-root, #jobpilot-ext-root * {
@@ -9,8 +9,8 @@
 #jobpilot-ext-root .jp-launch {
   position: fixed; right: 18px; bottom: 18px; z-index: 2147483647;
   width: 46px; height: 46px; border-radius: 50%; border: none; cursor: pointer;
-  background: linear-gradient(135deg, #7c3aed, #4f46e5); color: #fff;
-  font-weight: 800; font-size: 14px; letter-spacing: .3px;
+  background: linear-gradient(135deg, #6366f1, #4f46e5); color: #fff;
+  font-weight: 800; font-size: 18px; letter-spacing: .3px;
   box-shadow: 0 6px 20px rgba(79,70,229,.35);
 }
 #jobpilot-ext-root .jp-launch:hover { transform: translateY(-1px); }
@@ -25,22 +25,22 @@
 #jobpilot-ext-root .jp-title { font-weight: 800; font-size: 14px; }
 #jobpilot-ext-root .jp-x { border: none; background: none; font-size: 20px; line-height: 1; cursor: pointer; color: #71717a; }
 #jobpilot-ext-root .jp-status { font-size: 12px; color: #52525b; margin-bottom: 10px; min-height: 16px; }
-#jobpilot-ext-root .jp-status a { color: #6d28d9; font-weight: 600; }
+#jobpilot-ext-root .jp-status a { color: #4338ca; font-weight: 600; }
 
 #jobpilot-ext-root .jp-btn {
   display: block; width: 100%; margin-bottom: 8px; padding: 9px 12px; border-radius: 9px;
   border: 1px solid #e4e4e7; background: #fafafa; color: #18181b; font-size: 13px; font-weight: 600; cursor: pointer;
 }
-#jobpilot-ext-root .jp-btn:hover:not(:disabled) { border-color: #a78bfa; }
+#jobpilot-ext-root .jp-btn:hover:not(:disabled) { border-color: #818cf8; }
 #jobpilot-ext-root .jp-btn:disabled { opacity: .5; cursor: not-allowed; }
-#jobpilot-ext-root .jp-primary { background: linear-gradient(135deg, #7c3aed, #4f46e5); color: #fff; border: none; }
+#jobpilot-ext-root .jp-primary { background: linear-gradient(135deg, #6366f1, #4f46e5); color: #fff; border: none; }
 
 #jobpilot-ext-root .jp-variants { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
 #jobpilot-ext-root .jp-variant {
   text-align: left; padding: 8px 10px; border-radius: 9px; border: 1px solid #e4e4e7;
   background: #fff; color: #27272a; font-size: 12px; line-height: 1.45; cursor: pointer;
 }
-#jobpilot-ext-root .jp-variant:hover { border-color: #7c3aed; background: #faf5ff; }
+#jobpilot-ext-root .jp-variant:hover { border-color: #6366f1; background: #eef2ff; }
 #jobpilot-ext-root .jp-loading { font-size: 12px; color: #71717a; padding: 6px 2px; }
 #jobpilot-ext-root .jp-err { font-size: 12px; color: #b91c1c; padding: 6px 2px; }
 #jobpilot-ext-root .jp-foot { margin-top: 10px; font-size: 11px; color: #a1a1aa; }
@@ -50,5 +50,5 @@
   #jobpilot-ext-root .jp-status { color: #a1a1aa; }
   #jobpilot-ext-root .jp-btn { background: #27272a; color: #fafafa; border-color: #3f3f46; }
   #jobpilot-ext-root .jp-variant { background: #27272a; color: #e4e4e7; border-color: #3f3f46; }
-  #jobpilot-ext-root .jp-variant:hover { background: #2e1065; }
+  #jobpilot-ext-root .jp-variant:hover { background: #312e81; }
 }

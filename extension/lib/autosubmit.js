@@ -1,4 +1,4 @@
-/* JobPilot Apply Assistant — OPT-IN auto-submit path.
+/* Aspirely Apply Assistant — OPT-IN auto-submit path.
  *
  * The shipped default is, and stays, the never-submit Review Card: the extension
  * fills every field and the USER clicks the site's own Submit. This module adds a
@@ -284,6 +284,11 @@
       const record = matchRecord(normList(p.data), url, adapter);
       if (!record) return no("no_match");
       if (record.status && String(record.status).toLowerCase() !== "approved") return no("not_approved");
+      // Honor the backend's own eligibility verdict: the pending contract marks each
+      // record `eligible` (records still inside their undo window arrive in `waiting`,
+      // not `pending`). If the server says a record is not eligible, we defer — the
+      // Review Card is the fallback. Absent flag ⇒ trust status + expiry below.
+      if (record.eligible === false) return no("not_eligible");
       if (isExpired(record)) return no("expired");
       const appId = recordId(record);
       if (!appId) return no("no_id");
@@ -381,7 +386,7 @@
     .jp-cd-sub { font-size: 12px; color: #71717a; margin: 0 0 14px; line-height: 1.4; }
     .jp-cd-num {
       font-size: 54px; font-weight: 800; line-height: 1; margin: 6px 0 4px;
-      background: linear-gradient(135deg, #7c3aed, #4f46e5); -webkit-background-clip: text; background-clip: text; color: transparent;
+      background: linear-gradient(135deg, #6366f1, #4f46e5); -webkit-background-clip: text; background-clip: text; color: transparent;
     }
     .jp-cd-hint { font-size: 12px; color: #a1a1aa; margin: 0 0 16px; }
     .jp-cd-cancel {
@@ -428,7 +433,7 @@
     const backdrop = el("div", "jp-backdrop");
     const card = el("div", "jp-cd");
     card.setAttribute("role", "alertdialog");
-    card.setAttribute("aria-label", "JobPilot is about to submit this approved application");
+    card.setAttribute("aria-label", "Aspirely is about to submit this approved application");
 
     card.appendChild(el("p", "jp-cd-ttl", "Auto-submitting this approved application"));
 
@@ -438,13 +443,13 @@
     const numEl = el("div", "jp-cd-num", String(remaining));
     numEl.setAttribute("aria-live", "assertive");
     card.appendChild(numEl);
-    card.appendChild(el("p", "jp-cd-hint", "seconds until JobPilot clicks the site's Submit"));
+    card.appendChild(el("p", "jp-cd-hint", "seconds until Aspirely clicks the site's Submit"));
 
     const cancelBtn = el("button", "jp-cd-cancel", "Cancel — let me review");
     cancelBtn.type = "button";
     card.appendChild(cancelBtn);
 
-    card.appendChild(el("p", "jp-cd-foot", "Cancel any time to return to the Review Card. JobPilot only ever clicks the site's own Submit — never a CAPTCHA."));
+    card.appendChild(el("p", "jp-cd-foot", "Cancel any time to return to the Review Card. Aspirely only ever clicks the site's own Submit — never a CAPTCHA."));
 
     backdrop.appendChild(card);
     shadow.appendChild(backdrop);

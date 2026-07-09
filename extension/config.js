@@ -1,4 +1,4 @@
-/* JobPilot extension config — EDIT for your deployment.
+/* Aspirely extension config — EDIT for your deployment.
  *
  * API_BASE       : your backend's /api base (no trailing slash).
  *                    Dev  → http://localhost:5000/api
