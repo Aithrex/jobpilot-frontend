@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Compass, Moon, Sun } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/components/theme-provider';
+import { cn } from '@/lib/utils';
 import { Container } from './_shared';
 
 function ThemeToggle() {
@@ -29,14 +30,30 @@ function ThemeToggle() {
 }
 
 export function LandingNav() {
+  // Scroll elevation: transparent-ish at the top of the page, gains a hairline
+  // border + shadow once content scrolls beneath. Border colour swaps (never
+  // appears/disappears) so the header height is stable — zero layout shift.
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   return (
-    <header className="sticky top-0 z-40 border-b border-border/70 bg-background/80 backdrop-blur-md">
+    <header
+      className={cn(
+        'sticky top-0 z-40 border-b backdrop-blur-md transition-[background-color,border-color,box-shadow] duration-200',
+        scrolled ? 'border-border/70 bg-background/80 shadow-soft' : 'border-transparent bg-background/60',
+      )}
+    >
       <Container className="flex h-16 items-center justify-between">
-        <Link to="/" className="flex items-center gap-2.5 font-semibold" aria-label="JobPilot home">
+        <Link to="/" className="flex items-center gap-2.5 font-semibold" aria-label="Aspirely home">
           <span className="grid h-8 w-8 place-items-center rounded-lg bg-primary text-primary-foreground shadow-sm">
             <Compass className="h-[1.15rem] w-[1.15rem]" />
           </span>
-          <span className="font-display text-lg tracking-tight">JobPilot</span>
+          <span className="font-display text-lg tracking-tight">Aspirely</span>
         </Link>
 
         <nav className="hidden items-center gap-1 md:flex" aria-label="Primary">

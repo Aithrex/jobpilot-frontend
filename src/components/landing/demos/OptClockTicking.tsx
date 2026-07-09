@@ -28,6 +28,11 @@ export default function OptClockTicking() {
   const C = 2 * Math.PI * R;
   const usedFrac = USED / TOTAL;
   const daysLeft = TOTAL - USED;
+  // Endpoint of the visible arc (inside the -rotate-90 svg, the circle's path
+  // starts at 3 o'clock and sweeps clockwise — same convention as the dash).
+  const endAngle = 2 * Math.PI * usedFrac;
+  const dotX = 60 + R * Math.cos(endAngle);
+  const dotY = 60 + R * Math.sin(endAngle);
 
   const DATES = [
     { icon: Flag, label: 'OPT started', date: 'Jun 1' },
@@ -58,6 +63,17 @@ export default function OptClockTicking() {
               animate={{ strokeDashoffset: entered ? C * (1 - usedFrac) : C }}
               transition={{ duration: 1.1, ease: EASE }}
             />
+            {/* rounded endpoint marker — appears once the ring has settled */}
+            <motion.circle
+              cx={dotX}
+              cy={dotY}
+              r={6.5}
+              className="fill-warning stroke-card"
+              strokeWidth={2}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: entered ? 1 : 0 }}
+              transition={{ duration: 0.35, ease: EASE, delay: entered ? 1.05 : 0 }}
+            />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <span className="font-display text-4xl font-extrabold tabular-nums text-foreground">{daysLeft}</span>
@@ -65,7 +81,15 @@ export default function OptClockTicking() {
           </div>
         </div>
 
-        <div className="inline-flex items-center gap-2 rounded-full border border-warning/30 bg-warning/10 px-3 py-1.5 font-display text-sm font-bold tabular-nums text-foreground">
+        <div className="relative inline-flex items-center gap-2 rounded-full border border-warning/30 bg-warning/10 px-3 py-1.5 font-display text-sm font-bold tabular-nums text-foreground">
+          {/* very subtle breathing glow while the clock is live */}
+          <motion.span
+            aria-hidden
+            className="pointer-events-none absolute inset-0 rounded-full shadow-md shadow-warning/20"
+            initial={{ opacity: 0 }}
+            animate={active ? { opacity: [0.2, 1, 0.2] } : { opacity: 0 }}
+            transition={active ? { duration: 4, ease: 'easeInOut', repeat: Infinity } : { duration: 0.3 }}
+          />
           <CalendarClock className="h-4 w-4 text-warning" aria-hidden />
           {hh}:{mm}:{ss}
           <span className="text-[11px] font-medium text-muted-foreground">to a fresh day</span>

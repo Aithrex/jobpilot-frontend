@@ -63,8 +63,12 @@ export function PricingTeaser() {
               <Reveal key={plan.id} delay={i * 0.06} className="h-full">
                 <div
                   className={cn(
-                    'relative flex h-full flex-col rounded-2xl border bg-card p-6 sm:p-7',
-                    plan.popular ? 'border-primary shadow-lg shadow-primary/10 ring-1 ring-primary/20' : 'border-border',
+                    'card-hover relative flex h-full flex-col rounded-2xl border bg-card p-6 sm:p-7',
+                    plan.popular
+                      ? // Quiet standing glow: shadow-xl is used (not shadow-pop) because the
+                        // var()-based kit shadows can't take a shadow-primary/* tint.
+                        'border-primary shadow-xl shadow-primary/15 ring-1 ring-primary/20 hover:shadow-primary/25'
+                      : 'border-border',
                   )}
                 >
                   {plan.popular && (

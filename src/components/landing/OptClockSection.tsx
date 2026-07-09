@@ -2,7 +2,7 @@ import { lazy, Suspense } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Container, DemoSkeleton, Eyebrow, LazyMount, Reveal } from './_shared';
+import { Container, DemoCaption, DemoSkeleton, Eyebrow, LazyMount, Parallax, Reveal } from './_shared';
 
 const OptClockTicking = lazy(() => import('./demos/OptClockTicking'));
 
@@ -18,7 +18,7 @@ export function OptClockSection() {
             The clock is real. The panic doesn&apos;t have to be.
           </h2>
           <p className="mt-4 max-w-xl text-pretty text-base leading-relaxed text-muted-foreground sm:text-lg">
-            Ninety days of unemployment on OPT is a lot to carry alone. JobPilot turns that countdown into a daily plan
+            Ninety days of unemployment on OPT is a lot to carry alone. Aspirely turns that countdown into a daily plan
             you can actually follow — the right roles, the honest résumé, the gaps to close first — so every day moves
             you closer instead of deeper into worry.
           </p>
@@ -42,11 +42,14 @@ export function OptClockSection() {
         </Reveal>
 
         <Reveal delay={0.08} className="mx-auto w-full max-w-sm lg:max-w-none">
-          <LazyMount minHeight={440}>
-            <Suspense fallback={<DemoSkeleton style={{ minHeight: 440 }} />}>
-              <OptClockTicking />
-            </Suspense>
-          </LazyMount>
+          <Parallax from={20} to={-20}>
+            <LazyMount minHeight={440}>
+              <Suspense fallback={<DemoSkeleton style={{ minHeight: 440 }} />}>
+                <OptClockTicking />
+              </Suspense>
+            </LazyMount>
+            <DemoCaption feature="OPT Clock">your 90 unemployment days and the STEM path, tracked daily.</DemoCaption>
+          </Parallax>
         </Reveal>
       </Container>
     </section>

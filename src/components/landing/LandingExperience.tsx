@@ -12,7 +12,7 @@ import { Container, Eyebrow, Reveal } from './_shared';
 import StatCounters from './demos/StatCounters';
 
 /**
- * JobPilot's public marketing landing (Compass §7) — a confident, calm,
+ * Aspirely's public marketing landing (Compass §7) — a confident, calm,
  * editorial, animated showcase of the whole product for job seekers on the visa
  * clock. Names the real pain, then hands over a plan. Semantic tokens only;
  * designed for both themes and mobile-first to 360px; every animated demo is

@@ -6,11 +6,14 @@ export function LandingFooter() {
   return (
     <footer className="border-t border-border">
       <Container className="flex flex-col items-center justify-between gap-4 py-8 text-sm text-muted-foreground sm:flex-row">
-        <div className="flex items-center gap-2 font-semibold text-foreground">
-          <span className="grid h-6 w-6 place-items-center rounded-md bg-primary text-primary-foreground">
-            <Compass className="h-3.5 w-3.5" />
-          </span>
-          JobPilot <span className="font-normal text-muted-foreground">by Aithrex</span>
+        <div className="flex flex-col items-center gap-1.5 sm:items-start">
+          <div className="flex items-center gap-2 font-semibold text-foreground">
+            <span className="grid h-6 w-6 place-items-center rounded-md bg-primary text-primary-foreground">
+              <Compass className="h-3.5 w-3.5" />
+            </span>
+            Aspirely <span className="font-normal text-muted-foreground">by Aithrex</span>
+          </div>
+          <p className="text-xs text-muted-foreground">The honest career platform for the visa clock.</p>
         </div>
         <nav className="flex items-center gap-5" aria-label="Footer">
           <a href="#how-it-works" className="transition-colors hover:text-foreground">

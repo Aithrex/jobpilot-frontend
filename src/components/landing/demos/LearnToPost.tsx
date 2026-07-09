@@ -1,13 +1,21 @@
-import { type ReactNode, useRef } from 'react';
+import { useRef } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Target, CalendarDays, Github, Linkedin, Check, ChevronRight, ThumbsUp } from 'lucide-react';
-import { DemoFrame, EASE, StatValue, useEntered } from './_demoKit';
+import { DemoFrame, EASE, StatValue, useDemoActive, useEntered } from './_demoKit';
+
+// Ambient loop (s): a highlight travels left→right across the four stages so
+// the pipeline reads as a flow — gap → plan → proof → post — every ~5s.
+const LOOP = 5;
+const CARD_GLOW = 1.3;
+const CHEVRON_GLOW = 0.9;
+const STAGGER = 0.55;
 
 /** The signature loop: a market gap becomes a short plan, verified GitHub proof,
  *  and an auto-drafted post — so learning turns into a public, credible signal. */
 export default function LearnToPost() {
   const ref = useRef<HTMLDivElement>(null);
   const entered = useEntered(ref);
+  const active = useDemoActive(ref);
   const reduce = useReducedMotion();
   const show = reduce || entered;
 
@@ -84,8 +92,20 @@ export default function LearnToPost() {
                 initial={{ opacity: reduce ? 1 : 0, y: reduce ? 0 : 10 }}
                 animate={{ opacity: show ? 1 : 0, y: show ? 0 : 10 }}
                 transition={{ duration: reduce ? 0 : 0.45, ease: EASE, delay: reduce ? 0 : i * 0.22 }}
-                className="flex flex-col gap-2 rounded-xl border border-border bg-card/60 p-3"
+                className="relative flex flex-col gap-2 rounded-xl border border-border bg-card/60 p-3"
               >
+                {/* travelling highlight: ring + soft shadow brighten as the flow passes */}
+                <motion.span
+                  aria-hidden
+                  className="pointer-events-none absolute inset-0 rounded-xl ring-1 ring-primary/40 shadow-md shadow-primary/10"
+                  initial={{ opacity: 0 }}
+                  animate={active ? { opacity: [0, 1, 0] } : { opacity: 0 }}
+                  transition={
+                    active
+                      ? { duration: CARD_GLOW, ease: 'easeInOut', repeat: Infinity, repeatDelay: LOOP - CARD_GLOW, delay: 0.8 + i * STAGGER }
+                      : { duration: 0.2 }
+                  }
+                />
                 <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                   <Icon className="h-3.5 w-3.5 text-primary" aria-hidden />
                   {s.head}
@@ -94,7 +114,22 @@ export default function LearnToPost() {
               </motion.div>
               {i < stages.length - 1 && (
                 <div className="hidden items-center justify-center sm:flex" aria-hidden>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  <span className="relative block h-4 w-4">
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    {/* primary copy fades in as the highlight passes through */}
+                    <motion.span
+                      className="absolute inset-0"
+                      initial={{ opacity: 0 }}
+                      animate={active ? { opacity: [0, 1, 0] } : { opacity: 0 }}
+                      transition={
+                        active
+                          ? { duration: CHEVRON_GLOW, ease: 'easeInOut', repeat: Infinity, repeatDelay: LOOP - CHEVRON_GLOW, delay: 1.15 + i * STAGGER }
+                          : { duration: 0.2 }
+                      }
+                    >
+                      <ChevronRight className="h-4 w-4 text-primary" />
+                    </motion.span>
+                  </span>
                 </div>
               )}
             </div>

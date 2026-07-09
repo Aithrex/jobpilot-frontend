@@ -3,6 +3,23 @@ import { motion } from 'framer-motion';
 import { Eye } from 'lucide-react';
 import { DemoFrame, EASE, useDemoActive } from './_demoKit';
 
+// One 6s gaze cycle. `reveal` is the fraction of the cycle at which the sweep
+// reaches each hotspot — the heat only appears once the eye has landed there,
+// then everything fades at cycle end and the pass re-runs.
+const SWEEP = {
+  left: ['30%', '66%', '26%', '46%', '24%', '24%'],
+  top: ['15%', '17%', '46%', '46%', '72%', '72%'],
+  opacity: [0.2, 0.75, 0.7, 0.6, 0.5, 0],
+  times: [0, 0.22, 0.45, 0.65, 0.82, 1],
+};
+
+const HOTSPOTS = [
+  { left: '30%', top: '15%', size: 88, reveal: 0.03 },
+  { left: '62%', top: '17%', size: 64, reveal: 0.22 },
+  { left: '26%', top: '46%', size: 72, reveal: 0.45 },
+  { left: '24%', top: '72%', size: 60, reveal: 0.82 },
+];
+
 /** The recruiter's six seconds: a gaze heatmap sweeps a résumé in an F-pattern,
  *  showing what actually gets read. Static heat hotspots remain under reduced motion. */
 export default function GazeHeatmap() {
@@ -19,14 +36,6 @@ export default function GazeHeatmap() {
     const id = window.setInterval(() => setSecs((s) => (s <= 1 ? 6 : s - 1)), 1000);
     return () => clearInterval(id);
   }, [active]);
-
-  // Persistent hotspots that summarise where the eye lands (F-pattern).
-  const HOTSPOTS = [
-    { left: '30%', top: '15%', size: 88 },
-    { left: '62%', top: '17%', size: 64 },
-    { left: '26%', top: '46%', size: 72 },
-    { left: '24%', top: '72%', size: 60 },
-  ];
 
   return (
     <DemoFrame>
@@ -64,13 +73,26 @@ export default function GazeHeatmap() {
             </div>
           </div>
 
-          {/* persistent hotspots */}
+          {/* hotspots — each fades in only once the sweep reaches it; all fade
+              at cycle end. Static (all visible) when inactive or reduced-motion. */}
           {HOTSPOTS.map((h, i) => (
-            <span
+            <motion.span
               key={i}
               aria-hidden
               className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 rounded-full bg-warning/25 blur-lg"
               style={{ left: h.left, top: h.top, width: h.size, height: h.size }}
+              initial={false}
+              animate={active ? { opacity: [0, 0, 1, 1, 0] } : { opacity: 1 }}
+              transition={
+                active
+                  ? {
+                      duration: 6,
+                      times: [0, h.reveal, Math.min(h.reveal + 0.06, 0.93), 0.94, 1],
+                      repeat: Infinity,
+                      ease: 'easeInOut',
+                    }
+                  : { duration: 0.3, ease: EASE }
+              }
             />
           ))}
 
@@ -81,16 +103,12 @@ export default function GazeHeatmap() {
             initial={{ left: '30%', top: '15%', opacity: 0 }}
             animate={
               active
-                ? {
-                    left: ['30%', '66%', '26%', '46%', '24%'],
-                    top: ['15%', '17%', '46%', '46%', '72%'],
-                    opacity: [0.2, 0.75, 0.7, 0.6, 0.45],
-                  }
+                ? { left: SWEEP.left, top: SWEEP.top, opacity: SWEEP.opacity }
                 : { opacity: 0 }
             }
             transition={
               active
-                ? { duration: 6, times: [0, 0.25, 0.5, 0.75, 1], repeat: Infinity, ease: 'easeInOut' }
+                ? { duration: 6, times: SWEEP.times, repeat: Infinity, ease: 'easeInOut' }
                 : { duration: 0.3, ease: EASE }
             }
           />

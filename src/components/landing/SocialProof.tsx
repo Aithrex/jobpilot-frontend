@@ -37,14 +37,14 @@ export function SocialProof() {
         <SectionHeading
           eyebrow="Social proof"
           title="Built for the students the system overlooks"
-          subtitle="Early stories from job seekers on the visa clock. (Illustrative while we gather real ones.)"
+          subtitle="Early stories from the visa-clock job search — illustrative while we gather the real ones."
         />
 
         <div className="mt-14 grid gap-4 md:grid-cols-3">
           {QUOTES.map((q, i) => (
             <Reveal key={q.name} delay={i * 0.06}>
-              <figure className="flex h-full flex-col rounded-2xl border border-border bg-card p-6 shadow-sm">
-                <Quote className="h-5 w-5 text-primary" aria-hidden />
+              <figure className="group card-hover flex h-full flex-col rounded-2xl border border-border bg-card p-6 shadow-sm">
+                <Quote className="h-5 w-5 text-primary/60 transition-colors group-hover:text-primary" aria-hidden />
                 <blockquote className="mt-4 flex-1 text-pretty leading-relaxed text-foreground">{q.quote}</blockquote>
                 <figcaption className="mt-6 flex items-center gap-3 border-t border-border pt-4">
                   <span
@@ -66,7 +66,7 @@ export function SocialProof() {
         <Reveal delay={0.1} className="mt-6">
           <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-border bg-border md:grid-cols-4">
             {STATS.map((s) => (
-              <div key={s.label} className="bg-card p-6 text-center">
+              <div key={s.label} className="bg-card p-6 text-center transition-colors hover:bg-muted/40">
                 <dt className="font-display text-3xl font-extrabold tracking-tight text-foreground">{s.value}</dt>
                 <dd className="mt-1 text-sm text-muted-foreground">{s.label}</dd>
               </div>

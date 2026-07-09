@@ -1,7 +1,13 @@
 import { useRef } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { User, GraduationCap, Building2, UserCheck } from 'lucide-react';
-import { DemoFrame, EASE, useEntered } from './_demoKit';
+import { DemoFrame, EASE, useDemoActive, useEntered } from './_demoKit';
+
+// Ambient loop (s): a dot travels You → Alex → Hiring mgr, pausing at Alex;
+// the "Warm intro found" banner pulses once as it lands. Period = 3.5s.
+const DOT_TRAVEL = 2.4;
+const DOT_DELAY = 1.3; // clears the one-shot entrance first
+const LOOP = 3.5;
 
 const PATH = [
   { x: 12, y: 34, icon: User, label: 'You', sub: 'MS · CS', primary: true },
@@ -17,6 +23,7 @@ const FAINT = [
 export default function ReferralFinder() {
   const ref = useRef<HTMLDivElement>(null);
   const entered = useEntered(ref);
+  const active = useDemoActive(ref);
   const reduce = useReducedMotion();
   const show = reduce || entered;
 
@@ -56,6 +63,22 @@ export default function ReferralFinder() {
               initial={{ pathLength: reduce ? 1 : 0 }}
               animate={{ pathLength: show ? 1 : 0 }}
               transition={{ duration: reduce ? 0 : 0.5, ease: EASE, delay: reduce ? 0 : 0.7 }}
+            />
+            {/* travelling dot along the warm path (non-scaling stroke keeps it
+                round despite preserveAspectRatio="none") */}
+            <motion.circle
+              cy={34}
+              r={0.5}
+              className="fill-primary stroke-primary"
+              strokeWidth={6}
+              vectorEffect="non-scaling-stroke"
+              initial={{ opacity: 0, cx: 12 }}
+              animate={active ? { cx: [12, 50, 50, 88], opacity: [0, 1, 1, 1, 1, 0] } : { opacity: 0 }}
+              transition={
+                active
+                  ? { duration: DOT_TRAVEL, delay: DOT_DELAY, repeat: Infinity, repeatDelay: LOOP - DOT_TRAVEL, ease: 'easeInOut' }
+                  : { duration: 0.2 }
+              }
             />
           </svg>
 
@@ -101,12 +124,20 @@ export default function ReferralFinder() {
           })}
         </div>
 
-        <div className="mt-1 flex items-center gap-2 rounded-lg border border-primary/25 bg-primary/5 px-3 py-2">
+        <motion.div
+          className="mt-1 flex items-center gap-2 rounded-lg border border-primary/25 bg-primary/5 px-3 py-2"
+          animate={active ? { scale: [1, 1.015, 1] } : { scale: 1 }}
+          transition={
+            active
+              ? { duration: 0.7, ease: 'easeInOut', delay: DOT_DELAY + DOT_TRAVEL - 0.3, repeat: Infinity, repeatDelay: LOOP - 0.7 }
+              : { duration: 0.2 }
+          }
+        >
           <UserCheck className="h-4 w-4 shrink-0 text-primary" aria-hidden />
           <p className="text-xs text-foreground">
             <span className="font-semibold">Warm intro found</span> — Alex can introduce you (2nd degree).
           </p>
-        </div>
+        </motion.div>
       </div>
     </DemoFrame>
   );

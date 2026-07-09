@@ -1,5 +1,13 @@
-import { type ReactNode, type CSSProperties, useRef } from 'react';
-import { motion, useReducedMotion, useInView } from 'framer-motion';
+import { type ReactNode, type CSSProperties, type PointerEvent as ReactPointerEvent, useRef } from 'react';
+import {
+  motion,
+  useReducedMotion,
+  useInView,
+  useScroll,
+  useTransform,
+  useMotionValue,
+  useSpring,
+} from 'framer-motion';
 import { type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -96,6 +104,120 @@ export function SectionHeading({
       </h2>
       {subtitle && <p className="mt-4 text-pretty text-base leading-relaxed text-muted-foreground sm:text-lg">{subtitle}</p>}
     </div>
+  );
+}
+
+/**
+ * Scroll-linked drift for layered depth: the child translates gently from
+ * `from` → `to` px as the element crosses the viewport. Pure transform (no
+ * layout, GPU-composited); renders static under prefers-reduced-motion.
+ */
+export function Parallax({
+  children,
+  className,
+  from = 26,
+  to = -26,
+}: {
+  children: ReactNode;
+  className?: string;
+  from?: number;
+  to?: number;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const reduce = useReducedMotion();
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] });
+  const y = useTransform(scrollYProgress, [0, 1], [from, to]);
+  return (
+    <motion.div ref={ref} className={className} style={reduce ? undefined : { y }}>
+      {children}
+    </motion.div>
+  );
+}
+
+/**
+ * Pointer-tracked 3D tilt for showcase cards — a quiet, springy few degrees,
+ * mouse-only (ignores touch) and fully inert under prefers-reduced-motion.
+ */
+export function TiltCard({
+  children,
+  className,
+  max = 5,
+}: {
+  children: ReactNode;
+  className?: string;
+  max?: number;
+}) {
+  const reduce = useReducedMotion();
+  const rx = useMotionValue(0);
+  const ry = useMotionValue(0);
+  const springRx = useSpring(rx, { stiffness: 130, damping: 18, mass: 0.5 });
+  const springRy = useSpring(ry, { stiffness: 130, damping: 18, mass: 0.5 });
+
+  if (reduce) return <div className={className}>{children}</div>;
+
+  const onMove = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (e.pointerType !== 'mouse') return;
+    const r = e.currentTarget.getBoundingClientRect();
+    const px = (e.clientX - r.left) / r.width - 0.5;
+    const py = (e.clientY - r.top) / r.height - 0.5;
+    ry.set(px * max);
+    rx.set(-py * max);
+  };
+  const reset = () => {
+    rx.set(0);
+    ry.set(0);
+  };
+
+  return (
+    <motion.div
+      className={className}
+      onPointerMove={onMove}
+      onPointerLeave={reset}
+      style={{ rotateX: springRx, rotateY: springRy, transformPerspective: 900, transformStyle: 'preserve-3d' }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+/**
+ * Ambient drifting light — soft brand-tinted blobs that breathe behind a
+ * section. CSS-keyframe driven (transform-only), play-state gated so it is
+ * paused off-screen and fully static under prefers-reduced-motion.
+ */
+export function Aurora({ className }: { className?: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { margin: '15% 0px' } as unknown as Parameters<typeof useInView>[1]);
+  const reduce = useReducedMotion();
+  const playState = inView && !reduce ? 'running' : 'paused';
+  return (
+    <div ref={ref} aria-hidden className={cn('pointer-events-none absolute inset-0 -z-10 overflow-hidden', className)}>
+      <span className="aurora-blob aurora-blob-a" style={{ animationPlayState: playState }} />
+      <span className="aurora-blob aurora-blob-b" style={{ animationPlayState: playState }} />
+      <span className="aurora-blob aurora-blob-c" style={{ animationPlayState: playState }} />
+    </div>
+  );
+}
+
+/**
+ * One-line caption under a feature demo: names the feature, states the
+ * promise — so the demo explains itself without the surrounding copy.
+ */
+export function DemoCaption({
+  feature,
+  children,
+  className,
+}: {
+  feature: string;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <p className={cn('mx-auto mt-4 max-w-md text-center text-[13px] leading-relaxed text-muted-foreground', className)}>
+      <span className="font-semibold text-foreground">{feature}</span>
+      <span aria-hidden> · </span>
+      {children}
+    </p>
   );
 }
 

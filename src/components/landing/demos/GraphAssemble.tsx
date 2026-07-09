@@ -1,7 +1,7 @@
 import { type ReactNode, useRef } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Trophy, FlaskConical, Briefcase, Code2, GraduationCap, FileText, User } from 'lucide-react';
-import { DemoFrame, EASE, useEntered } from './_demoKit';
+import { DemoFrame, EASE, useDemoActive, useEntered } from './_demoKit';
 
 interface GNode {
   x: number; // % position
@@ -23,10 +23,20 @@ const NODES: GNode[] = [
   { x: 50, y: 88, dx: 0, dy: 56, icon: FileText, label: 'Résumé' },
 ];
 
+// Ambient story loop (s): evidence pulses flow inward to "You", then one pulse
+// carries on out to the Résumé node, which blooms — the graph writes the résumé.
+const CYCLE = 4.5;
+const EVIDENCE_DUR = 1.1;
+const RESUME_DUR = 0.9;
+const GLOW_DUR = 1;
+const RESUME_DELAY = 2.5;
+const GLOW_DELAY = 3.3;
+
 /** Career-as-a-structure: scattered evidence nodes fly in and settle into a
  *  graph wired to your résumé — the basis for an authored, never-fabricated CV. */
 export default function GraphAssemble() {
   const ref = useRef<HTMLDivElement>(null);
+  const active = useDemoActive(ref);
   const entered = useEntered(ref);
   const reduce = useReducedMotion();
   const settled = reduce || entered;
@@ -56,6 +66,39 @@ export default function GraphAssemble() {
               transition={{ duration: reduce ? 0 : 0.7, ease: EASE, delay: reduce ? 0 : 0.15 + i * 0.06 }}
             />
           ))}
+
+          {/* travelling pulses: evidence flows in, the résumé edge flows out */}
+          {NODES.filter((n) => !n.primary).map((n, i) => {
+            const isResume = n.label === 'Résumé';
+            return (
+              <motion.circle
+                key={`pulse-${n.label}`}
+                r={1.6}
+                className="fill-primary"
+                initial={{ opacity: 0, cx: isResume ? 50 : n.x, cy: isResume ? 50 : n.y }}
+                animate={
+                  active
+                    ? {
+                        cx: isResume ? [50, n.x] : [n.x, 50],
+                        cy: isResume ? [50, n.y] : [n.y, 50],
+                        opacity: [0, 1, 1, 0],
+                      }
+                    : { opacity: 0 }
+                }
+                transition={
+                  active
+                    ? {
+                        duration: isResume ? RESUME_DUR : EVIDENCE_DUR,
+                        delay: isResume ? RESUME_DELAY : 0.4 + i * 0.25,
+                        repeat: Infinity,
+                        repeatDelay: CYCLE - (isResume ? RESUME_DUR : EVIDENCE_DUR),
+                        ease: 'easeInOut',
+                      }
+                    : { duration: 0.2 }
+                }
+              />
+            );
+          })}
         </svg>
 
         {/* nodes */}
@@ -68,9 +111,24 @@ export default function GraphAssemble() {
                 animate={{ x: settled ? 0 : n.dx, y: settled ? 0 : n.dy, opacity: settled ? 1 : 0, scale: settled ? 1 : 0.9 }}
                 transition={{ duration: reduce ? 0 : 0.7, ease: EASE, delay: reduce ? 0 : 0.05 + i * 0.07 }}
               >
-                <NodePill icon={Icon} primary={n.primary}>
-                  {n.label}
-                </NodePill>
+                <div className="relative">
+                  {n.label === 'Résumé' && (
+                    <motion.span
+                      aria-hidden
+                      className="pointer-events-none absolute -inset-1 -z-10 rounded-full bg-primary/25 blur-md"
+                      initial={{ opacity: 0 }}
+                      animate={active ? { opacity: [0, 1, 0] } : { opacity: 0 }}
+                      transition={
+                        active
+                          ? { duration: GLOW_DUR, delay: GLOW_DELAY, repeat: Infinity, repeatDelay: CYCLE - GLOW_DUR, ease: 'easeInOut' }
+                          : { duration: 0.2 }
+                      }
+                    />
+                  )}
+                  <NodePill icon={Icon} primary={n.primary}>
+                    {n.label}
+                  </NodePill>
+                </div>
               </motion.div>
             </div>
           );

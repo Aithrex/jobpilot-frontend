@@ -1,7 +1,7 @@
 import { type ReactNode, useRef } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { ShieldCheck, Check, Send, Gauge } from 'lucide-react';
-import { DemoFrame, EASE, StatValue, useEntered } from './_demoKit';
+import { DemoFrame, EASE, StatValue, useDemoActive, useEntered } from './_demoKit';
 
 const CHANGES = [
   { text: 'Surfaced your React perf work — from PR #482', traced: true },
@@ -9,17 +9,22 @@ const CHANGES = [
   { text: 'Kept every fact exactly as you wrote it', traced: true },
 ];
 
+// Ambient loop period (s): a soft highlight sweeps the checklist rows and the
+// 90-second bar takes a slow glow breath, every ~4s while on-screen.
+const LOOP = 4;
+
 /** The apply-in-90s Review Card: the browser extension proposes honest, traceable
  *  edits; a time-drop infographic contrasts 25 minutes by hand with 90 seconds. */
 export default function ApplySpeed() {
   const ref = useRef<HTMLDivElement>(null);
   const entered = useEntered(ref);
-  const reduce = useReducedMotion();
+  const active = useDemoActive(ref);
+  const reduce = useReducedMotion() ?? false;
   const show = reduce || entered;
 
   return (
     <DemoFrame>
-      <div ref={ref} role="img" aria-label="JobPilot's browser extension Review Card proposing honest, traceable résumé edits, and a chart showing apply time dropping from 25 minutes to 90 seconds.">
+      <div ref={ref} role="img" aria-label="Aspirely's browser extension Review Card proposing honest, traceable résumé edits, and a chart showing apply time dropping from 25 minutes to 90 seconds.">
         {/* extension review card */}
         <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
           <div className="flex items-center justify-between">
@@ -27,7 +32,7 @@ export default function ApplySpeed() {
               <span className="grid h-5 w-5 place-items-center rounded-md bg-primary/10 text-primary">
                 <Gauge className="h-3 w-3" aria-hidden />
               </span>
-              JobPilot · Review
+              Aspirely · Review
             </span>
             <span className="rounded-full border border-success/25 bg-success/10 px-2 py-0.5 text-[11px] font-semibold text-foreground">
               ATS 92
@@ -41,8 +46,20 @@ export default function ApplySpeed() {
                 initial={{ opacity: reduce ? 1 : 0, x: reduce ? 0 : -8 }}
                 animate={{ opacity: show ? 1 : 0, x: show ? 0 : -8 }}
                 transition={{ duration: reduce ? 0 : 0.4, ease: EASE, delay: reduce ? 0 : 0.1 + i * 0.15 }}
-                className="flex items-start gap-2 text-xs text-foreground"
+                className="relative flex items-start gap-2 text-xs text-foreground"
               >
+                {/* periodic re-emphasis: a tint sweeps down the rows while active */}
+                <motion.span
+                  aria-hidden
+                  className="pointer-events-none absolute -inset-x-1.5 -inset-y-1 rounded-md bg-primary/10"
+                  initial={{ opacity: 0 }}
+                  animate={active ? { opacity: [0, 0.7, 0] } : { opacity: 0 }}
+                  transition={
+                    active
+                      ? { duration: 1.1, times: [0, 0.35, 1], ease: 'easeInOut', repeat: Infinity, repeatDelay: LOOP - 1.1, delay: 1.2 + i * 0.3 }
+                      : { duration: 0.2 }
+                  }
+                />
                 <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
                 <span className="flex-1">{c.text}</span>
                 {c.traced && (
@@ -64,7 +81,7 @@ export default function ApplySpeed() {
           <TimeBar label="By hand" widthPct={100} tone="muted" show={show} reduce={reduce}>
             <StatValue to={25} suffix=" min" />
           </TimeBar>
-          <TimeBar label="JobPilot" widthPct={12} tone="primary" show={show} reduce={reduce} delay={0.25}>
+          <TimeBar label="Aspirely" widthPct={12} tone="primary" show={show} reduce={reduce} delay={0.25} breathe={active}>
             <StatValue to={90} suffix="s" />
           </TimeBar>
         </div>
@@ -80,6 +97,7 @@ function TimeBar({
   show,
   reduce,
   delay = 0,
+  breathe = false,
   children,
 }: {
   label: string;
@@ -88,25 +106,43 @@ function TimeBar({
   show: boolean;
   reduce: boolean;
   delay?: number;
+  breathe?: boolean;
   children: ReactNode;
 }) {
   return (
     <div className="flex items-center gap-3">
       <span className="w-16 shrink-0 text-xs font-medium text-muted-foreground">{label}</span>
-      <div className="relative h-8 flex-1 overflow-hidden rounded-lg bg-muted/40">
-        <motion.div
-          className={`h-full rounded-lg ${tone === 'primary' ? 'bg-primary' : 'bg-muted ring-1 ring-inset ring-border'}`}
-          initial={{ width: reduce ? `${widthPct}%` : '0%' }}
-          animate={{ width: show ? `${widthPct}%` : '0%' }}
-          transition={{ duration: reduce ? 0 : 0.8, ease: EASE, delay: reduce ? 0 : delay }}
-        />
-        <span
-          className={`absolute inset-y-0 right-2.5 flex items-center whitespace-nowrap font-display text-xs font-bold ${
-            tone === 'primary' ? 'text-primary' : 'text-foreground'
-          }`}
-        >
-          {children}
-        </span>
+      <div className="relative h-8 flex-1">
+        {/* gentle glow breath behind the filled bar, gated on `breathe` */}
+        {tone === 'primary' && (
+          <motion.span
+            aria-hidden
+            className="pointer-events-none absolute -inset-y-1 -left-1 rounded-lg bg-primary/25 blur-md"
+            style={{ width: `calc(${widthPct}% + 8px)` }}
+            initial={{ opacity: 0 }}
+            animate={breathe ? { opacity: [0, 1, 0] } : { opacity: 0 }}
+            transition={
+              breathe
+                ? { duration: 1.8, ease: 'easeInOut', repeat: Infinity, repeatDelay: LOOP - 1.8, delay: 1.5 }
+                : { duration: 0.3 }
+            }
+          />
+        )}
+        <div className="relative h-full overflow-hidden rounded-lg bg-muted/40">
+          <motion.div
+            className={`h-full rounded-lg ${tone === 'primary' ? 'bg-primary' : 'bg-muted ring-1 ring-inset ring-border'}`}
+            initial={{ width: reduce ? `${widthPct}%` : '0%' }}
+            animate={{ width: show ? `${widthPct}%` : '0%' }}
+            transition={{ duration: reduce ? 0 : 0.8, ease: EASE, delay: reduce ? 0 : delay }}
+          />
+          <span
+            className={`absolute inset-y-0 right-2.5 flex items-center whitespace-nowrap font-display text-xs font-bold ${
+              tone === 'primary' ? 'text-primary' : 'text-foreground'
+            }`}
+          >
+            {children}
+          </span>
+        </div>
       </div>
     </div>
   );

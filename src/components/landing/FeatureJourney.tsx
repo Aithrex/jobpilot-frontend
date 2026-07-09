@@ -5,7 +5,7 @@ import {
   Check, ArrowRight, type LucideIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Container, DemoSkeleton, Eyebrow, LazyMount, Reveal, SectionHeading } from './_shared';
+import { Container, DemoCaption, DemoSkeleton, Eyebrow, LazyMount, Parallax, Reveal, SectionHeading } from './_shared';
 
 // Demos are code-split and mounted only near the viewport (see LazyMount).
 const SponsorFlip = lazy(() => import('./demos/SponsorFlip'));
@@ -25,6 +25,8 @@ interface RowDef {
   points: string[];
   minHeight: number;
   demo: ReactNode;
+  /** One-line caption under the demo: feature name · promise. */
+  caption: { feature: string; promise: string };
 }
 
 const ROWS: RowDef[] = [
@@ -36,6 +38,7 @@ const ROWS: RowDef[] = [
     points: ['Verified H-1B history per employer', 'Visa filters: cap-exempt, OPT/CPT, STEM', 'Ranked by real fit, not keywords'],
     minHeight: 300,
     demo: <SponsorFlip />,
+    caption: { feature: 'Sponsorship intel', promise: 'every badge is backed by public H-1B filings, not guesses.' },
   },
   {
     icon: Send,
@@ -45,6 +48,7 @@ const ROWS: RowDef[] = [
     points: ['Per-job tailoring: 25 min → 90 sec', 'Every edit traces back to your work', 'Auto-tracked the moment you apply'],
     minHeight: 330,
     demo: <ApplySpeed />,
+    caption: { feature: '90-second apply', promise: 'tailored, ATS-scored, and reviewed by you before anything sends.' },
   },
   {
     icon: MessageSquare,
@@ -54,15 +58,17 @@ const ROWS: RowDef[] = [
     points: ['A calm daily shortlist, not a firehose', 'One-tap approve from your phone', 'Nothing sends without your yes'],
     minHeight: 470,
     demo: <PhoneDigest />,
+    caption: { feature: 'WhatsApp digest', promise: 'your morning shortlist, approved with one reply.' },
   },
   {
     icon: Waypoints,
     eyebrow: 'Voice Graph',
     title: 'A résumé authored from your real work',
-    body: 'JobPilot maps your projects, internships, and wins into a living graph, then writes from it. Every bullet is wired to real evidence — nothing is fabricated.',
+    body: 'Aspirely maps your projects, internships, and wins into a living graph, then writes from it. Every bullet is wired to real evidence — nothing is fabricated.',
     points: ['Your career as a connected structure', 'Claims linked to sources you can defend', 'Never invents titles, metrics, or employers'],
     minHeight: 300,
     demo: <GraphAssemble />,
+    caption: { feature: 'Voice Graph', promise: 'a résumé authored from your real evidence — never invented.' },
   },
   {
     icon: Eye,
@@ -72,6 +78,7 @@ const ROWS: RowDef[] = [
     points: ['See what actually gets read', 'Front-load your strongest proof', 'Fixes the top third, keeps the facts'],
     minHeight: 360,
     demo: <GazeHeatmap />,
+    caption: { feature: "Recruiter's six seconds", promise: 'your top third, rebuilt for the first scan.' },
   },
   {
     icon: GraduationCap,
@@ -81,6 +88,7 @@ const ROWS: RowDef[] = [
     points: ['Focused 7-day plans, not 40-hour courses', 'Verified GitHub proof, not claims', 'Auto-drafted posts that pull recruiters in'],
     minHeight: 220,
     demo: <LearnToPost />,
+    caption: { feature: 'Your edge', promise: 'gap → 7-day plan → verified proof → a post recruiters see.' },
   },
 ];
 
@@ -110,7 +118,11 @@ function FeatureRow({ row, reverse }: { row: RowDef; reverse: boolean }) {
         </ul>
       </Reveal>
       <Reveal delay={0.08} className={reverse ? 'lg:order-1' : ''}>
-        <DemoMount minHeight={row.minHeight}>{row.demo}</DemoMount>
+        {/* Alternating drift depth (18px vs 26px) gives adjacent rows layered parallax. */}
+        <Parallax from={reverse ? 26 : 18} to={reverse ? -26 : -18}>
+          <DemoMount minHeight={row.minHeight}>{row.demo}</DemoMount>
+          <DemoCaption feature={row.caption.feature}>{row.caption.promise}</DemoCaption>
+        </Parallax>
       </Reveal>
     </div>
   );
@@ -123,6 +135,7 @@ const LOOP = [
     body: 'We surface the alumni and 2nd-degree connections most likely to refer you — and draft the ask.',
     minHeight: 300,
     demo: <ReferralFinder />,
+    caption: { feature: 'Referral Finder', promise: 'the warm path into each company, with the ask drafted.' },
   },
   {
     icon: LayoutList,
@@ -130,6 +143,7 @@ const LOOP = [
     body: 'From matched to offer, your whole search is tracked automatically — so you always know the next move.',
     minHeight: 300,
     demo: <PipelineFunnel />,
+    caption: { feature: 'Pipeline', promise: 'every application tracked from matched to offer.' },
   },
 ];
 
@@ -158,13 +172,14 @@ export function FeatureJourney() {
             const Icon = item.icon;
             return (
               <Reveal key={item.title} delay={0.06}>
-                <div className="flex h-full flex-col rounded-2xl border border-border bg-card/60 p-5 sm:p-6">
+                <div className="card-hover flex h-full flex-col rounded-2xl border border-border bg-card/60 p-5 sm:p-6">
                   <div className="mb-4">
                     <Eyebrow icon={Icon}>{item.title}</Eyebrow>
                     <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{item.body}</p>
                   </div>
                   <div className="mt-auto">
                     <DemoMount minHeight={item.minHeight}>{item.demo}</DemoMount>
+                    <DemoCaption feature={item.caption.feature}>{item.caption.promise}</DemoCaption>
                   </div>
                 </div>
               </Reveal>
