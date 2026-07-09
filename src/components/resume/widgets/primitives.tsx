@@ -6,7 +6,7 @@
  */
 import type { ReactNode } from 'react';
 import type { LucideIcon } from 'lucide-react';
-import { ArrowUpRight, ArrowRight } from 'lucide-react';
+import { ArrowUpRight, ArrowRight, CloudOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export type Tone = 'default' | 'primary' | 'warning' | 'success';
@@ -60,7 +60,7 @@ export function WidgetCard({
   return (
     <section
       className={cn(
-        'flex h-full flex-col rounded-xl border bg-card p-4 shadow-sm sm:p-5',
+        'card-hover flex h-full flex-col rounded-xl border bg-card p-4 shadow-soft sm:p-5',
         accent ? TONE_FRAME[tone] : 'border-border',
         className,
       )}
@@ -124,6 +124,31 @@ export function WidgetEmpty({
   );
 }
 
+/**
+ * A quiet inline failure state — "Couldn't load — Retry". Used when a widget's
+ * ctx slice failed to fetch, so we never show a lying empty state instead.
+ */
+export function WidgetError({ label = "Couldn't load", onRetry }: { label?: string; onRetry?: () => void }) {
+  return (
+    <div className="flex flex-1 items-center gap-1.5 py-1 text-xs text-muted-foreground">
+      <CloudOff className="h-3.5 w-3.5 shrink-0 text-warning" />
+      <span>{label}</span>
+      {onRetry && (
+        <>
+          <span aria-hidden="true">—</span>
+          <button
+            type="button"
+            onClick={onRetry}
+            className="rounded font-semibold text-primary transition-colors hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          >
+            Retry
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
+
 /** A thin, precise progress bar (never a game meter). */
 export function Bar({ pct, tone = 'primary', className }: { pct: number; tone?: Tone; className?: string }) {
   const fill: Record<Tone, string> = {
@@ -178,7 +203,7 @@ export function Stat({ value, label, tone = 'default' }: { value: ReactNode; lab
 /** Skeleton that mirrors the widget shell so nothing shifts when data lands. */
 export function WidgetSkeleton({ span = 1, lines = 3 }: { span?: 1 | 2 | 3; lines?: number }) {
   return (
-    <div className={cn('rounded-xl border border-border bg-card p-4 shadow-sm sm:p-5', spanClass(span))}>
+    <div className={cn('rounded-xl border border-border bg-card p-4 shadow-soft sm:p-5', spanClass(span))}>
       <div className="mb-4 flex items-center gap-2.5">
         <div className="h-8 w-8 shrink-0 animate-pulse rounded-lg bg-muted" />
         <div className="h-3 w-28 animate-pulse rounded bg-muted" />

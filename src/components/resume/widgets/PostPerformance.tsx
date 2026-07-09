@@ -4,7 +4,7 @@
  */
 import { PenLine } from 'lucide-react';
 import type { Widget } from './types';
-import { WidgetCard, WidgetEmpty, Stat } from './primitives';
+import { WidgetCard, WidgetEmpty, WidgetError, Stat } from './primitives';
 
 export const postPerformanceWidget: Widget = {
   key: 'post-performance',
@@ -22,10 +22,12 @@ export const postPerformanceWidget: Widget = {
 
     return (
       <WidgetCard icon={PenLine} title="Your posts" eyebrow="Build presence" onOpen={() => ctx.navigate('network')}>
-        {posts.length === 0 ? (
+        {ctx.errors.posts && posts.length === 0 ? (
+          <WidgetError label="Couldn't load your drafts" onRetry={ctx.retry} />
+        ) : posts.length === 0 ? (
           <WidgetEmpty
             title="Turn a win into a post"
-            body="Shipped a project or placed in an event? JobPilot drafts a LinkedIn post in your voice."
+            body="Shipped a project or placed at an event? Aspirely drafts the LinkedIn post in your voice."
             ctaLabel="Draft a post"
             onCta={() => ctx.navigate('network')}
           />

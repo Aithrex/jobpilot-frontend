@@ -5,7 +5,7 @@
  */
 import { Send, ArrowUpRight } from 'lucide-react';
 import type { Widget } from './types';
-import { WidgetCard, WidgetEmpty } from './primitives';
+import { WidgetCard, WidgetEmpty, WidgetError } from './primitives';
 import { readyToSubmit } from './selectors';
 
 export const readyToSubmitWidget: Widget = {
@@ -35,10 +35,12 @@ export const readyToSubmitWidget: Widget = {
           ) : undefined
         }
       >
-        {queue.length === 0 ? (
+        {ctx.errors.savedJobs && ctx.savedJobs.length === 0 ? (
+          <WidgetError label="Couldn't load your queue" onRetry={ctx.retry} />
+        ) : queue.length === 0 ? (
           <WidgetEmpty
-            title="Nothing queued yet"
-            body="Save roles you want to apply to and they'll line up here, ready to send."
+            title="Your send-ready queue lives here"
+            body="Save a role you want and it lines up here, ready to submit in one sitting."
             ctaLabel="Browse jobs"
             onCta={() => ctx.navigate('jobs')}
           />

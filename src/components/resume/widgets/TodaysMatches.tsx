@@ -5,7 +5,7 @@
  */
 import { Compass, Building2, ShieldCheck } from 'lucide-react';
 import type { Widget } from './types';
-import { WidgetCard, WidgetEmpty, MetaChip } from './primitives';
+import { WidgetCard, WidgetEmpty, WidgetError, MetaChip } from './primitives';
 import { scoredMatches, isVisaUser } from './selectors';
 
 function bandTone(band?: string): 'success' | 'primary' | 'default' {
@@ -29,10 +29,12 @@ export const todaysMatchesWidget: Widget = {
     const onVisa = isVisaUser(ctx);
     return (
       <WidgetCard icon={Compass} title="Your top matches" eyebrow="Roles for you" onOpen={() => ctx.navigate('jobs')}>
-        {matches.length === 0 ? (
+        {ctx.errors.savedJobs && ctx.savedJobs.length === 0 ? (
+          <WidgetError label="Couldn't load your matches" onRetry={ctx.retry} />
+        ) : matches.length === 0 ? (
           <WidgetEmpty
-            title="No matches scored yet"
-            body="Run a search and JobPilot scores every role against your resume — fit, skills, and sponsorship."
+            title="Your best-fit roles will rank here"
+            body="Run one search and Aspirely scores every role against your resume — fit, skills, and sponsorship."
             ctaLabel="Search jobs"
             onCta={() => ctx.navigate('jobs')}
           />

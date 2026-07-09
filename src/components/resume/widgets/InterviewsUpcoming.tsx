@@ -5,7 +5,7 @@
  */
 import { Mic, Target } from 'lucide-react';
 import type { Widget } from './types';
-import { WidgetCard, WidgetEmpty, Stat } from './primitives';
+import { WidgetCard, WidgetEmpty, WidgetError, Stat } from './primitives';
 
 export const interviewsUpcomingWidget: Widget = {
   key: 'interviews-upcoming',
@@ -49,10 +49,12 @@ export const interviewsUpcomingWidget: Widget = {
     // Otherwise show readiness from past mock answers, or invite the first one.
     return (
       <WidgetCard icon={Mic} title="Interview readiness" eyebrow="Practice" onOpen={() => ctx.navigate('interview')}>
-        {(iv?.attempts ?? 0) === 0 ? (
+        {ctx.errors.overview && !o ? (
+          <WidgetError label="Couldn't load your practice stats" onRetry={ctx.retry} />
+        ) : (iv?.attempts ?? 0) === 0 ? (
           <WidgetEmpty
-            title="Find your patterns before it counts"
-            body="Run a mock answer and JobPilot scores it and points you at your weakest spot."
+            title="Your answer scores show up here"
+            body="Run one mock answer and Aspirely scores it and shows the exact spot to drill next."
             ctaLabel="Run a mock"
             onCta={() => ctx.navigate('interview')}
           />

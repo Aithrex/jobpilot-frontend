@@ -6,7 +6,7 @@
  */
 import { ShieldCheck } from 'lucide-react';
 import type { Widget } from './types';
-import { WidgetCard, WidgetEmpty, Stat } from './primitives';
+import { WidgetCard, WidgetEmpty, WidgetError, Stat } from './primitives';
 import { isVisaUser, strongSponsors } from './selectors';
 
 export const sponsorshipWidget: Widget = {
@@ -25,10 +25,12 @@ export const sponsorshipWidget: Widget = {
 
     return (
       <WidgetCard icon={ShieldCheck} title="Sponsorship" eyebrow="Can they hire you" tone="success" onOpen={() => ctx.navigate('jobs')}>
-        {withData.length === 0 ? (
+        {ctx.errors.savedJobs && ctx.savedJobs.length === 0 ? (
+          <WidgetError label="Couldn't load sponsorship data" onRetry={ctx.retry} />
+        ) : withData.length === 0 ? (
           <WidgetEmpty
             title="Know who sponsors before you apply"
-            body="Search roles and JobPilot attaches each company's real H-1B track record."
+            body="Search roles and Aspirely attaches each company's real H-1B track record — approvals, not guesses."
             ctaLabel="Find sponsor-friendly roles"
             onCta={() => ctx.navigate('jobs')}
           />

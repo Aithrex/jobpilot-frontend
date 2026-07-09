@@ -34,7 +34,7 @@ import { HeroAction } from './widgets/HeroAction';
 import { WIDGETS } from './widgets/registry';
 import { spanClass, WidgetSkeleton } from './widgets/primitives';
 import { EASE, clamp01 } from './widgets/types';
-import type { ActivityPhase, DashboardCtx, NavKey, StreakData } from './widgets/types';
+import type { ActivityPhase, DashboardCtx, NavKey, SliceErrors, StreakData } from './widgets/types';
 
 interface DashboardTabProps {
   userName?: string | null;
@@ -46,6 +46,16 @@ function greeting(): string {
   if (h < 12) return 'Good morning';
   if (h < 18) return 'Good afternoon';
   return 'Good evening';
+}
+
+const NO_ERRORS: SliceErrors = {
+  overview: false, streak: false, trends: false, connect: false,
+  funnel: false, savedJobs: false, posts: false,
+};
+
+/** Did this settled fetch actually carry data? (Rejections were caught to `{error}`.) */
+function ok(r: object): boolean {
+  return 'data' in r && !!(r as { data?: unknown }).data;
 }
 
 export default function DashboardTab({ userName, onNavigate }: DashboardTabProps) {
@@ -61,6 +71,7 @@ export default function DashboardTab({ userName, onNavigate }: DashboardTabProps
   const [funnel, setFunnel] = useState<PipelineFunnel | null>(null);
   const [savedJobs, setSavedJobs] = useState<SavedJob[]>([]);
   const [posts, setPosts] = useState<PostDraft[]>([]);
+  const [errors, setErrors] = useState<SliceErrors>(NO_ERRORS);
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
@@ -91,6 +102,15 @@ export default function DashboardTab({ userName, onNavigate }: DashboardTabProps
     if ('data' in pfR && pfR.data && Array.isArray((pfR.data as PipelineFunnel).stages)) setFunnel(pfR.data as PipelineFunnel);
     if ('data' in sjR && sjR.data) setSavedJobs((sjR.data.jobs as SavedJob[]) || []);
     if ('data' in psR && psR.data) setPosts((psR.data.posts as PostDraft[]) || []);
+    setErrors({
+      overview: !ok(ovR),
+      streak: !ok(stR),
+      trends: !ok(trR),
+      connect: !ok(cnR),
+      funnel: !ok(pfR),
+      savedJobs: !ok(sjR),
+      posts: !ok(psR),
+    });
     setLoading(false);
   };
 
@@ -107,7 +127,7 @@ export default function DashboardTab({ userName, onNavigate }: DashboardTabProps
     }
   };
 
-  useEffect(() => { void load(); /* eslint-disable-next-line */ }, []);
+  useEffect(() => { void load(); }, []);
 
   // After OAuth the backend redirects to /app?connected=<p> | ?connect_error=<r>.
   // Surface a toast, then strip the param so a refresh doesn't re-fire it.
@@ -141,9 +161,10 @@ export default function DashboardTab({ userName, onNavigate }: DashboardTabProps
   // ── The single argument to every scorer + renderer.
   const ctx: DashboardCtx = {
     loading, overview, readiness, streak, optClock, optError, funnel, savedJobs, posts,
-    trends, phase, userName: name,
+    trends, connect, errors, phase, userName: name,
     navigate: (t) => onNavigate(t),
     reloadOptClock,
+    retry: () => void load(),
   };
 
   // ── Rank the catalog. Hidden widgets (relevance <= 0) drop out entirely.
@@ -214,7 +235,7 @@ export default function DashboardTab({ userName, onNavigate }: DashboardTabProps
 function DashboardSkeleton() {
   return (
     <div className="space-y-6 sm:space-y-8" aria-hidden="true">
-      <div className="h-40 animate-pulse rounded-2xl border border-border bg-card shadow-sm sm:h-36" />
+      <div className="h-40 animate-pulse rounded-2xl border border-border bg-card shadow-soft sm:h-36" />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <WidgetSkeleton span={3} lines={2} />
         <WidgetSkeleton span={2} lines={4} />

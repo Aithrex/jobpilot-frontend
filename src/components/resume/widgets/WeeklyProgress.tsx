@@ -5,7 +5,7 @@
  */
 import { Activity, Flame } from 'lucide-react';
 import type { Widget } from './types';
-import { WidgetCard, WidgetEmpty, Stat, Bar } from './primitives';
+import { WidgetCard, WidgetEmpty, WidgetError, Stat, Bar } from './primitives';
 
 export const weeklyProgressWidget: Widget = {
   key: 'weekly-progress',
@@ -40,7 +40,9 @@ export const weeklyProgressWidget: Widget = {
           ) : undefined
         }
       >
-        {!anyActivity ? (
+        {ctx.errors.streak && !streak ? (
+          <WidgetError label="Couldn't load your momentum" onRetry={ctx.retry} />
+        ) : !anyActivity ? (
           <WidgetEmpty
             title="Start a streak today"
             body="One application or one tailored resume gets your momentum going."

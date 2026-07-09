@@ -9,7 +9,7 @@
  */
 import type { ReactNode } from 'react';
 import type { DashboardOverview } from '@/types/overview';
-import type { CareerReadiness } from '@/types/career';
+import type { CareerReadiness, ConnectStatus } from '@/types/career';
 import type { OptClock } from '@/types/visa';
 import type { PipelineFunnel } from '@/types/pipeline';
 import type { SavedJob } from '@/types/jobs';
@@ -20,7 +20,7 @@ import type { TechChronicleItem } from '@/types/techChronicle';
 export type NavKey =
   | 'tailor' | 'batch' | 'jobs' | 'my-resumes' | 'tailored'
   | 'applications' | 'interview' | 'visa' | 'beta' | 'copilot' | 'profile'
-  | 'learning' | 'events' | 'network' | 'billing';
+  | 'learning' | 'events' | 'network' | 'billing' | 'six-seconds';
 
 export interface StreakData {
   current_streak: number;
@@ -38,6 +38,21 @@ export interface StreakData {
  */
 export type ActivityPhase = 'new' | 'exploring' | 'applying' | 'interviewing';
 
+/**
+ * Per-slice fetch failures. `true` = that fetch failed this load, so a widget
+ * with no data for the slice should show a quiet retry, never a lying empty
+ * state. (The OPT clock keeps its dedicated `optError` — its card owns it.)
+ */
+export interface SliceErrors {
+  overview: boolean;
+  streak: boolean;
+  trends: boolean;
+  connect: boolean;
+  funnel: boolean;
+  savedJobs: boolean;
+  posts: boolean;
+}
+
 /** Everything the frontend knows — the single argument to every scorer. */
 export interface DashboardCtx {
   /** True during the very first fetch (no data yet). */
@@ -51,12 +66,18 @@ export interface DashboardCtx {
   savedJobs: SavedJob[];
   posts: PostDraft[];
   trends: TechChronicleItem[];
+  /** GitHub/LinkedIn link status — null until loaded (or if the fetch failed). */
+  connect: ConnectStatus | null;
+  /** Which ctx slices failed to fetch this load. */
+  errors: SliceErrors;
   phase: ActivityPhase;
   userName: string;
   /** Deep-link into a workspace tab. */
   navigate: (tab: NavKey) => void;
   /** Re-fetch just the OPT clock (used by the OPT widget after an edit). */
   reloadOptClock: () => void;
+  /** Re-fetch everything — the retry behind WidgetError. */
+  retry: () => void;
 }
 
 /**

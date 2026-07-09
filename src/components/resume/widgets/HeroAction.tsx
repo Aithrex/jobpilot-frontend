@@ -12,13 +12,13 @@
  */
 import { motion, useReducedMotion } from 'framer-motion';
 import type { LucideIcon } from 'lucide-react';
-import { ArrowRight, Target, CalendarClock, Send, Sparkles, Upload, Compass } from 'lucide-react';
+import { ArrowRight, CalendarClock, Send, Sparkles, Upload, Compass } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { DashboardCtx, NavKey } from './types';
 import { EASE } from './types';
 import type { Tone } from './primitives';
 import { MetaChip } from './primitives';
-import { topMatch, readyToSubmit, isVisaUser, hasBaseResume } from './selectors';
+import { readyToSubmit, isVisaUser, hasBaseResume } from './selectors';
 
 interface HeroMeta {
   label: string;
@@ -51,7 +51,6 @@ function plural(n: number, one: string, many: string): string {
 export function pickHeroAction(ctx: DashboardCtx): HeroActionModel {
   const clock = ctx.optClock;
   const queue = readyToSubmit(ctx);
-  const match = topMatch(ctx);
   const onVisa = isVisaUser(ctx);
 
   // 1) OPT runway is genuinely urgent → protect it. Calm, precise, amber.
@@ -75,12 +74,17 @@ export function pickHeroAction(ctx: DashboardCtx): HeroActionModel {
     };
   }
 
-  // 2) A strong, specific match exists → apply to it. The example hero.
-  if (match) {
-    const j = match.job_data;
+  // 2) A ready-to-submit queue → clearing it beats browsing for more. Lead
+  //    with the strongest queued match so the ask stays personal ("They
+  //    sponsored 63 H-1Bs" beats "3 queued"), never administrative.
+  if (queue.length > 0) {
+    const best = [...queue].sort(
+      (a, b) => (b.job_data?.match_score || 0) - (a.job_data?.match_score || 0),
+    )[0];
+    const j = best.job_data;
     const score = Math.round(j.match_score || 0);
     const sponsor = j.sponsorship;
-    const meta: HeroMeta[] = [];
+    const meta: HeroMeta[] = [{ label: `${queue.length} queued`, tone: 'primary' }];
     if (score > 0) meta.push({ label: `${score}% match`, tone: 'primary' });
     if (onVisa && sponsor && (sponsor.band === 'strong' || sponsor.band === 'moderate')) {
       meta.push({
@@ -88,59 +92,61 @@ export function pickHeroAction(ctx: DashboardCtx): HeroActionModel {
         tone: 'success',
       });
     }
-    if (j.posted_text) meta.push({ label: j.posted_text, tone: 'default' });
     const matched = (j.matched_skills || []).length;
     const detail =
       onVisa && sponsor && sponsor.summary
         ? sponsor.summary
         : matched > 0
-          ? `${matched} of your skills line up with what they're hiring for.`
-          : 'One of your strongest saved matches — worth an application today.';
-    return {
-      key: 'top-match',
-      tone: 'primary',
-      icon: Target,
-      eyebrow: 'Top match for you',
-      title: `Apply to ${j.company}${j.title ? ` — ${j.title}` : ''}`,
-      detail,
-      meta,
-      ctaLabel: 'Open & apply',
-      onCta: () => {
-        if (j.apply_link) window.open(j.apply_link, '_blank', 'noopener,noreferrer');
-        else ctx.navigate('jobs');
-      },
-      secondaryLabel: 'See all matches',
-      onSecondary: () => ctx.navigate('jobs'),
-    };
-  }
-
-  // 3) A ready-to-submit queue but no scored match surfaced → clear the queue.
-  if (queue.length > 0) {
+          ? `${matched} of your skills line up with what ${j.company} is hiring for. Submitting today keeps your pipeline warm.`
+          : "You've already done the hard part — submitting today is the fastest way to move your pipeline.";
     return {
       key: 'ready-to-submit',
       tone: 'primary',
       icon: Send,
       eyebrow: 'Ready to submit',
-      title: `${queue.length} ${plural(queue.length, 'application is', 'applications are')} ready to send`,
-      detail: "You've saved these — submitting today keeps your momentum and your pipeline warm.",
-      meta: [{ label: `${queue.length} queued`, tone: 'primary' }],
+      title:
+        queue.length === 1
+          ? `Send your application to ${j.company}`
+          : `${queue.length} applications are ready — start with ${j.company}`,
+      detail,
+      meta,
       ctaLabel: 'Review & submit',
       onCta: () => ctx.navigate('applications'),
+      secondaryLabel: 'See all matches',
+      onSecondary: () => ctx.navigate('jobs'),
     };
   }
 
-  // 4) Brand-new user with no resume → the highest-leverage first step.
+  // 3) Brand-new user with no resume → the highest-leverage first step.
   if (!hasBaseResume(ctx)) {
     return {
       key: 'upload-resume',
       tone: 'primary',
       icon: Upload,
       eyebrow: 'Start here',
-      title: 'Add your resume to unlock JobPilot',
+      title: 'Add your resume to unlock Aspirely',
       detail: 'Everything — matches, tailoring, your readiness score, and your OPT clock — builds on your resume. It takes a minute.',
       meta: [],
       ctaLabel: 'Add your resume',
       onCta: () => ctx.navigate('tailor'),
+      secondaryLabel: 'Set your target role',
+      onSecondary: () => ctx.navigate('profile'),
+    };
+  }
+
+  // 4) Resume in place but nothing saved yet → every downstream signal
+  //    (matches, gaps, sponsorship) starves without a first search. Steer there.
+  if (ctx.savedJobs.length === 0) {
+    return {
+      key: 'find-roles',
+      tone: 'primary',
+      icon: Sparkles,
+      eyebrow: 'Next move',
+      title: 'Your resume is in — now find where it lands',
+      detail: 'Run one search and Aspirely scores every role against your resume — fit, skills, and sponsorship. Save the good ones and your matches build from there.',
+      meta: [],
+      ctaLabel: 'Search jobs',
+      onCta: () => ctx.navigate('jobs'),
       secondaryLabel: 'Set your target role',
       onSecondary: () => ctx.navigate('profile'),
     };
@@ -162,14 +168,14 @@ export function pickHeroAction(ctx: DashboardCtx): HeroActionModel {
     };
   }
 
-  // 6) Nothing yet → invite the first search.
+  // 6) Saved roles exist but nothing scored or queued → invite a fresh search.
   return {
     key: 'first-search',
     tone: 'primary',
     icon: Sparkles,
     eyebrow: 'Get started',
     title: 'Find roles that actually fit you',
-    detail: 'Run your first search and JobPilot will start scoring matches, sponsorship, and skill gaps for you.',
+    detail: 'Search and Aspirely scores each role for fit, skills, and sponsorship — your strongest matches surface right here.',
     meta: [],
     ctaLabel: 'Search jobs',
     onCta: () => ctx.navigate('jobs'),
@@ -190,7 +196,7 @@ export function HeroAction({ ctx }: { ctx: DashboardCtx }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: EASE }}
       className={cn(
-        'relative overflow-hidden rounded-2xl border p-6 shadow-sm sm:p-7',
+        'relative overflow-hidden rounded-2xl border p-6 shadow-soft sm:p-7',
         warning ? 'mesh-warning border-warning/40 border-l-2 border-l-warning' : 'mesh-accent border-primary/20',
       )}
     >

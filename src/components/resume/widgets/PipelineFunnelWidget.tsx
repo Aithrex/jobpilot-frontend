@@ -5,7 +5,7 @@
  */
 import { GitCommitVertical } from 'lucide-react';
 import type { Widget } from './types';
-import { WidgetCard, WidgetEmpty, Bar } from './primitives';
+import { WidgetCard, WidgetEmpty, WidgetError, Bar } from './primitives';
 
 export const pipelineFunnelWidget: Widget = {
   key: 'pipeline-funnel',
@@ -44,7 +44,9 @@ export const pipelineFunnelWidget: Widget = {
           ) : undefined
         }
       >
-        {total === 0 ? (
+        {ctx.errors.funnel && !funnel ? (
+          <WidgetError label="Couldn't load your pipeline" onRetry={ctx.retry} />
+        ) : total === 0 ? (
           <WidgetEmpty
             title="Your pipeline starts with one application"
             body="Tailor a resume to a role and it'll flow through here — applied, interviewing, offer."

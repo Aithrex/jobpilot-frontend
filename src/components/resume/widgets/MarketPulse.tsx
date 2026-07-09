@@ -6,7 +6,7 @@
 import { TrendingUp } from 'lucide-react';
 import type { TechNewsItem } from '@/types/techChronicle';
 import type { Widget } from './types';
-import { WidgetCard } from './primitives';
+import { WidgetCard, WidgetEmpty, WidgetError } from './primitives';
 
 export const marketPulseWidget: Widget = {
   key: 'market-pulse',
@@ -22,13 +22,15 @@ export const marketPulseWidget: Widget = {
         onOpen={() => ctx.navigate('beta')}
         openLabel="More"
       >
-        {items.length === 0 ? (
-          <div className="flex flex-1 flex-col justify-center gap-2">
-            <p className="text-sm font-medium text-foreground/90">Fresh trends are on the way</p>
-            <p className="text-xs leading-relaxed text-muted-foreground">
-              JobPilot pulls signal from your field and drops the highlights here.
-            </p>
-          </div>
+        {ctx.errors.trends && items.length === 0 ? (
+          <WidgetError label="Couldn't load market signal" onRetry={ctx.retry} />
+        ) : items.length === 0 ? (
+          <WidgetEmpty
+            title="Know what's moving in your field"
+            body="Aspirely gathers hiring and tech signal for your target role and drops the highlights here."
+            ctaLabel="Browse the latest"
+            onCta={() => ctx.navigate('beta')}
+          />
         ) : (
           <ul className="flex flex-1 flex-col divide-y divide-border/60">
             {items.map((item) => {

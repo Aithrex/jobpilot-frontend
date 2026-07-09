@@ -4,7 +4,7 @@
  */
 import { GraduationCap } from 'lucide-react';
 import type { Widget } from './types';
-import { WidgetCard, WidgetEmpty, Bar } from './primitives';
+import { WidgetCard, WidgetEmpty, WidgetError, Bar } from './primitives';
 
 export const learningTodayWidget: Widget = {
   key: 'learning-today',
@@ -38,7 +38,9 @@ export const learningTodayWidget: Widget = {
           ) : undefined
         }
       >
-        {inProgress.length > 0 ? (
+        {ctx.errors.overview && !ctx.overview ? (
+          <WidgetError label="Couldn't load your paths" onRetry={ctx.retry} />
+        ) : inProgress.length > 0 ? (
           <div className="flex flex-1 flex-col justify-center gap-3">
             {inProgress.slice(0, 2).map((p) => (
               <button

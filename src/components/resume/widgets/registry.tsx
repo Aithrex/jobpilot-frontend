@@ -21,6 +21,8 @@ import { sponsorshipWidget } from './SponsorshipWidget';
 import { postPerformanceWidget } from './PostPerformance';
 import { weeklyProgressWidget } from './WeeklyProgress';
 import { marketPulseWidget } from './MarketPulse';
+import { sixSecondsWidget } from './SixSecondsWidget';
+import { referralsWidget } from './ReferralsWidget';
 
 /** OPT clock — jumps to the top and shifts to warning language when urgent. */
 const optClockWidget: Widget = {
@@ -92,4 +94,6 @@ export const WIDGETS: Widget[] = [
   postPerformanceWidget,
   weeklyProgressWidget,
   marketPulseWidget,
+  sixSecondsWidget,
+  referralsWidget,
 ];

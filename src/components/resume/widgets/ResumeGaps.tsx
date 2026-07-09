@@ -5,7 +5,7 @@
  */
 import { ScanSearch } from 'lucide-react';
 import type { Widget } from './types';
-import { WidgetCard, WidgetEmpty } from './primitives';
+import { WidgetCard, WidgetEmpty, WidgetError } from './primitives';
 import { hasBaseResume } from './selectors';
 
 export const resumeGapsWidget: Widget = {
@@ -23,17 +23,19 @@ export const resumeGapsWidget: Widget = {
 
     return (
       <WidgetCard icon={ScanSearch} title="Resume gaps" eyebrow="Close the distance" onOpen={() => ctx.navigate('tailor')}>
-        {!hasResume ? (
+        {ctx.errors.overview && !ctx.overview ? (
+          <WidgetError label="Couldn't load your gaps" onRetry={ctx.retry} />
+        ) : !hasResume ? (
           <WidgetEmpty
             title="See your gaps the moment you add a resume"
-            body="JobPilot compares your resume to the market and shows exactly what's missing."
+            body="Aspirely compares your resume against the roles you're targeting and lists exactly what's missing."
             ctaLabel="Add your resume"
             onCta={() => ctx.navigate('tailor')}
           />
         ) : gaps.length === 0 ? (
           <WidgetEmpty
             title="No standout gaps right now"
-            body="Save a few target roles and JobPilot surfaces the skills they most want."
+            body="Save a few target roles and Aspirely surfaces the skills they ask for most."
             ctaLabel="Find roles"
             onCta={() => ctx.navigate('jobs')}
           />
