@@ -70,8 +70,8 @@ export function ForgotPasswordDialog({ open, onClose, initialEmail = '' }: Forgo
 
         {sent ? (
           <div className="space-y-4 py-4">
-            <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
-              <CheckCircle2 className="h-5 w-5" />
+            <div className="flex items-center gap-2 text-success">
+              <CheckCircle2 className="h-5 w-5" aria-hidden />
               <p className="text-sm font-medium">Request received</p>
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed">
@@ -104,7 +104,7 @@ export function ForgotPasswordDialog({ open, onClose, initialEmail = '' }: Forgo
               />
             </div>
             {error && (
-              <p className="text-xs text-rose-500">{error}</p>
+              <p className="text-xs text-destructive" role="alert">{error}</p>
             )}
             <div className="flex justify-end gap-2">
               <Button

@@ -114,7 +114,7 @@ export function SocialAuthButtons({ verb = 'Continue with' }: Props) {
           <span className="w-full border-t border-border" />
         </div>
         <div className="relative flex justify-center">
-          <span className="bg-card px-2 text-xs uppercase tracking-wide text-muted-foreground">or with email</span>
+          <span className="bg-background px-2 text-xs uppercase tracking-wide text-muted-foreground">or with email</span>
         </div>
       </div>
     </div>
