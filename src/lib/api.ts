@@ -553,6 +553,14 @@ class ApiService {
     }>("/resume/visa/timeline", { method: "GET" });
   }
 
+  /** OPT Clock — the calm unemployment-days runway payload (no polling). */
+  async optClock() {
+    return this.request<import("../types/visa").OptClock>(
+      "/resume/opt-clock",
+      { method: "GET" },
+    );
+  }
+
   async getMorningBrief() {
     return this.request<{
       ok: boolean;

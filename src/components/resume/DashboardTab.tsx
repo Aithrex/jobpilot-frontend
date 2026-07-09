@@ -5,11 +5,13 @@ import { apiService } from '@/lib/api';
 import type { TechChronicleItem } from '@/types/techChronicle';
 import type { DashboardOverview } from '@/types/overview';
 import type { CareerReadiness, ConnectStatus } from '@/types/career';
+import type { OptClock } from '@/types/visa';
 import { RecommendedForYou } from './RecommendedForYou';
 import { CareerReadinessCard } from './CareerReadinessCard';
 import { CareerPath } from './CareerPath';
 import { GitHubProofCard } from './GitHubProofCard';
 import { LinkedInAuditCard } from './LinkedInAuditCard';
+import OptClockCard from './OptClockCard';
 import {
   Sparkles, Search, ClipboardList, GraduationCap, Bot, Flame, Send,
   TrendingUp, ArrowRight, ArrowUpRight, RefreshCw, Briefcase, Trophy, Mic,
@@ -120,17 +122,20 @@ export default function DashboardTab({ userName, onNavigate }: DashboardTabProps
   const [brief, setBrief] = useState<{ headline: string; lines: string[] } | null>(null);
   const [trends, setTrends] = useState<TechChronicleItem[]>([]);
   const [connect, setConnect] = useState<ConnectStatus | null>(null);
+  const [optClock, setOptClock] = useState<OptClock | null>(null);
+  const [optError, setOptError] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
     setLoading(true);
-    const [ovR, crR, stR, brR, trR, cnR] = await Promise.all([
+    const [ovR, crR, stR, brR, trR, cnR, ocR] = await Promise.all([
       apiService.getOverview().catch(() => ({ error: 'x' } as const)),
       apiService.getCareerReadiness().catch(() => ({ error: 'x' } as const)),
       apiService.getApplicationStreak().catch(() => ({ error: 'x' } as const)),
       apiService.getMorningBrief().catch(() => ({ error: 'x' } as const)),
       apiService.getTechChronicle('all').catch(() => ({ error: 'x' } as const)),
       apiService.getConnectStatus().catch(() => ({ error: 'x' } as const)),
+      apiService.optClock().catch(() => ({ error: 'x' } as const)),
     ]);
     if ('data' in ovR && ovR.data) setOverview(ovR.data as DashboardOverview);
     // Guard against the backend's {} error-fallback — only accept a real score.
@@ -144,7 +149,15 @@ export default function DashboardTab({ userName, onNavigate }: DashboardTabProps
     if ('data' in cnR && cnR.data && (cnR.data as ConnectStatus).github && (cnR.data as ConnectStatus).linkedin) {
       setConnect(cnR.data as ConnectStatus);
     }
+    if ('data' in ocR && ocR.data) { setOptClock(ocR.data as OptClock); setOptError(false); }
+    else setOptError(true);
     setLoading(false);
+  };
+
+  const reloadOptClock = async () => {
+    const r = await apiService.optClock().catch(() => ({ error: 'x' } as const));
+    if ('data' in r && r.data) { setOptClock(r.data as OptClock); setOptError(false); }
+    else setOptError(true);
   };
 
   const reloadConnect = async () => {
@@ -184,8 +197,25 @@ export default function DashboardTab({ userName, onNavigate }: DashboardTabProps
     return iv.avg_score ?? null;
   }, [iv]);
 
+  // The OPT Clock jumps to the very top only when the runway is genuinely
+  // urgent (< ~20 days). Otherwise it sits as a prominent-but-calm card
+  // under career readiness. Rendered in exactly one place either way.
+  const optUrgent = optClock?.status_band === 'urgent';
+  const optClockNode = (
+    <OptClockCard
+      clock={optClock}
+      loading={loading}
+      error={optError}
+      onOpenVisa={() => onNavigate('visa')}
+      onRefresh={reloadOptClock}
+    />
+  );
+
   return (
     <div className="space-y-6">
+      {/* OPT Clock — promoted above everything when the runway is urgent */}
+      {optUrgent && optClockNode}
+
       {/* Greeting */}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
@@ -205,6 +235,9 @@ export default function DashboardTab({ userName, onNavigate }: DashboardTabProps
       {readiness?.build_plan && readiness.build_plan.length > 0 && (
         <CareerPath steps={readiness.build_plan} onNavigate={(t) => onNavigate(t as NavKey)} />
       )}
+
+      {/* OPT Clock — calm, prominent placement when not urgent */}
+      {!optUrgent && optClockNode}
 
       {/* Hero stats — each links into its surface */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
