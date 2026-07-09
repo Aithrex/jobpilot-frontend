@@ -141,6 +141,9 @@ export default function BatchTailor() {
   const [jdEntries, setJdEntries] = useState<JDEntry[]>([{ id: nextId(), title: '', text: '' }]);
   const [batchJobs, setBatchJobs] = useState<BatchJob[]>(() => readPersistedBatch(userEmail) ?? []);
   const [submitting, setSubmitting] = useState(false);
+  /** Inline (non-quota) submission error — rendered under the actions row so
+   *  the failure and its retry live next to the button that caused it. */
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const { usage: dailyUsage, loading: usageLoading, refresh: refreshUsage, applyUsage } = useDailyUsage();
   const [quotaDialog, setQuotaDialog] = useState<(DailyUsage & { requested?: number }) | null>(null);
@@ -195,11 +198,11 @@ export default function BatchTailor() {
       const failedN = incoming.filter((e) => e.fetchFailed).length;
       if (failedN > 0) {
         toast.warning(
-          `${incoming.length} jobs loaded — ${failedN} JD${failedN > 1 ? 's' : ''} need a manual paste before "Submit" enables them.`,
+          `${incoming.length} jobs loaded — ${failedN} JD${failedN > 1 ? 's' : ''} need a manual paste before they can be tailored.`,
           { duration: 8000 },
         );
       } else {
-        toast.success(`${incoming.length} jobs loaded from Daily Pipeline — click Submit to tailor all.`);
+        toast.success(`${incoming.length} jobs loaded from the Daily Pipeline — hit "Tailor all" when you're ready.`);
       }
     } catch (e) {
       // Bad JSON or storage error — ignore, the empty default form still works.
@@ -221,6 +224,7 @@ export default function BatchTailor() {
     if (validEntries.length === 0) return;
 
     setSubmitting(true);
+    setSubmitError(null);
     const resp = await apiService.batchTailor(
       validEntries.map(e => ({
         text: e.text.trim(),
@@ -237,7 +241,8 @@ export default function BatchTailor() {
         setQuotaDialog({ ...u, requested: validEntries.length });
         return;
       }
-      toast.error('Batch submission failed', { description: resp.error });
+      setSubmitError(resp.error);
+      toast.error("Couldn't submit the batch", { description: resp.error });
       return;
     }
     if (!resp.data?.jobs) return;
@@ -450,34 +455,35 @@ export default function BatchTailor() {
 
   return (
     <div className="space-y-5">
+      {/* Tab header — same editorial pattern as the other workspace tabs. */}
+      <div className="space-y-1">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">Create · Batch Tailor</p>
+        <h2 className="font-display text-2xl font-extrabold tracking-tight">Batch Tailor</h2>
+        <p className="max-w-xl text-sm text-muted-foreground">
+          Add up to {BATCH_TAILOR_MAX} job descriptions and tailor your resume to each in one run —
+          every edit stays honest and traceable. You can also tick rows on the Daily Pipeline and send
+          them here in one shot.
+        </p>
+      </div>
+
       {/* Input phase */}
       {batchJobs.length === 0 && (
         <>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center shrink-0">
-              <span className="text-xs font-bold text-white">{jdEntries.length}</span>
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">Batch Tailor</p>
-              <p className="text-xs text-gray-400 dark:text-gray-500">Add up to {BATCH_TAILOR_MAX} job descriptions and tailor your resume to all of them at once. You can also tick rows on the Daily Pipeline and send them here in one shot.</p>
-            </div>
-          </div>
-
           <div className="space-y-3">
             {jdEntries.map((entry, i) => (
               <div
                 key={entry.id}
-                className={`rounded-xl border overflow-hidden ${
+                className={`rounded-xl border overflow-hidden shadow-soft ${
                   entry.fetchFailed && !entry.text.trim()
-                    ? 'border-amber-400/60 bg-amber-50/60 dark:border-amber-500/40 dark:bg-amber-500/[0.06]'
-                    : 'border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/80'
+                    ? 'border-warning/50 bg-warning/[0.06]'
+                    : 'border-border bg-card'
                 }`}
               >
-                <div className="px-4 py-2.5 flex items-center justify-between border-b border-gray-200 dark:border-gray-800/60">
-                  <span className="text-xs font-semibold text-gray-400 dark:text-gray-500">Job Description {i + 1}</span>
+                <div className="px-4 py-2.5 flex items-center justify-between border-b border-border">
+                  <span className="text-xs font-semibold text-muted-foreground">Job description {i + 1}</span>
                   <div className="flex items-center gap-2">
                     {entry.fetchFailed && !entry.text.trim() && (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-700 dark:text-amber-400">
+                      <span className="inline-flex items-center gap-1 text-[10px] font-medium text-warning">
                         ⚠ JD not auto-fetched — paste below
                       </span>
                     )}
@@ -486,15 +492,16 @@ export default function BatchTailor() {
                         href={entry.sourceUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-[10px] text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 underline"
+                        className="text-[10px] text-primary underline underline-offset-2 hover:text-primary/80"
                         title="Open the source posting in a new tab"
                       >
-                        open posting ↗
+                        Open posting ↗
                       </a>
                     )}
                     {jdEntries.length > 1 && (
                       <button type="button" onClick={() => removeEntry(entry.id)}
-                        className="p-1 text-gray-400 dark:text-gray-600 hover:text-red-400 rounded transition-colors">
+                        aria-label={`Remove job description ${i + 1}`}
+                        className="p-1 text-muted-foreground hover:text-destructive rounded transition-colors">
                         <TrashIcon className="w-3.5 h-3.5" />
                       </button>
                     )}
@@ -502,16 +509,16 @@ export default function BatchTailor() {
                 </div>
                 <div className="p-4 space-y-2">
                   <input
-                    className="w-full px-3 py-2 rounded-lg bg-white dark:bg-gray-800/60 border border-gray-300 dark:border-gray-700/60 text-sm text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500/30 transition-all"
+                    className="w-full px-3 py-2 rounded-lg bg-background border border-input text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/30 transition-all"
                     placeholder="Job title (optional, e.g. Senior Cloud Engineer at AWS)"
                     value={entry.title}
                     onChange={e => updateEntry(entry.id, 'title', e.target.value)}
                   />
                   <textarea
-                    className={`w-full px-3 py-2 rounded-lg bg-white dark:bg-gray-800/60 border text-sm text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600 leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-purple-500/30 transition-all ${
+                    className={`w-full px-3 py-2 rounded-lg bg-background border text-sm text-foreground placeholder:text-muted-foreground leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-ring/30 transition-all ${
                       entry.fetchFailed && !entry.text.trim()
-                        ? 'border-amber-400/70 dark:border-amber-500/50'
-                        : 'border-gray-300 dark:border-gray-700/60'
+                        ? 'border-warning/60'
+                        : 'border-input'
                     }`}
                     rows={4}
                     placeholder={
@@ -528,11 +535,11 @@ export default function BatchTailor() {
             ))}
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             {jdEntries.length < BATCH_TAILOR_MAX && (
               <button type="button" onClick={addEntry}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-purple-600 dark:text-purple-400 border border-purple-500/30 hover:bg-purple-500/10 hover:text-purple-700 hover:border-purple-400 dark:hover:bg-purple-500/20 dark:hover:text-purple-300 dark:hover:border-purple-400/50 transition-all duration-200">
-                <PlusIcon className="w-4 h-4" />Add Job Description
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-primary border border-primary/30 hover:bg-primary/10 hover:border-primary/50 transition-all duration-200">
+                <PlusIcon className="w-4 h-4" />Add job description
               </button>
             )}
             <button type="button"
@@ -544,34 +551,47 @@ export default function BatchTailor() {
                 handleSubmit();
               }}
               disabled={!canSubmit || submitting}
-              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 disabled:from-gray-200 disabled:to-gray-200 disabled:text-gray-400 dark:disabled:from-gray-800 dark:disabled:to-gray-800 dark:disabled:text-gray-600 disabled:cursor-not-allowed shadow-lg shadow-purple-500/25 disabled:shadow-none transition-all duration-200">
+              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed shadow-soft disabled:shadow-none transition-all duration-200">
               {submitting ? (
-                <><span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />Submitting...</>
+                <><span className="animate-spin rounded-full h-4 w-4 border-2 border-current border-t-transparent" />Submitting…</>
               ) : dailyUsage?.remaining === 0 ? (
                 <>Daily limit reached — see options</>
               ) : (
-                <>Tailor All ({jdEntries.filter(e => e.text.trim().length > 50).length})</>
+                <>Tailor all ({jdEntries.filter(e => e.text.trim().length > 50).length})</>
               )}
             </button>
             <DailyUsageBadge usage={dailyUsage} loading={usageLoading} className="ml-auto" />
           </div>
+          {submitError && (
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+              <p className="min-w-0">Couldn't submit the batch — {submitError}</p>
+              <button
+                type="button"
+                onClick={handleSubmit}
+                disabled={!canSubmit || submitting}
+                className="text-xs font-semibold underline underline-offset-2 hover:opacity-80 disabled:opacity-60"
+              >
+                Try again
+              </button>
+            </div>
+          )}
           {dailyUsage?.remaining === 0 && (
-            <div className="rounded-xl border border-amber-400/40 bg-amber-50 dark:bg-amber-500/10 px-4 py-3">
+            <div className="rounded-xl border border-warning/40 bg-warning/10 px-4 py-3">
               <div className="flex items-start gap-3">
-                <span className="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-200/60 dark:bg-amber-400/20 text-amber-700 dark:text-amber-300 text-xs font-bold">!</span>
+                <span className="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-warning/20 text-warning text-xs font-bold">!</span>
                 <div className="flex-1 text-sm">
-                  <p className="font-semibold text-amber-900 dark:text-amber-200">
+                  <p className="font-semibold text-warning">
                     Daily limit reached — {dailyUsage.limit} of {dailyUsage.limit} used
                   </p>
-                  <p className="mt-1 text-xs text-amber-800/80 dark:text-amber-200/80 leading-relaxed">
-                    I cap tailoring at {dailyUsage.limit} per UTC day so the AI stays free for
-                    everyone. Counter resets at midnight UTC. Need more for an active
+                  <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+                    Tailoring is capped at {dailyUsage.limit} per UTC day so the AI stays fast and
+                    free for everyone. The counter resets at midnight UTC. Need more for an active
                     job-hunt push?
                   </p>
                   <button
                     type="button"
                     onClick={() => setQuotaDialog(dailyUsage)}
-                    className="mt-2 text-xs font-semibold text-amber-900 dark:text-amber-200 underline underline-offset-2 hover:text-amber-700 dark:hover:text-amber-100"
+                    className="mt-2 text-xs font-semibold text-warning underline underline-offset-2 hover:opacity-80"
                   >
                     Request more →
                   </button>
@@ -587,19 +607,26 @@ export default function BatchTailor() {
         <>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-                Batch Results {isRunning && <span className="text-xs font-normal text-gray-400 dark:text-gray-500">({completedCount} of {totalCount} complete)</span>}
+              <p className="font-display text-sm font-bold text-foreground">
+                Batch results {isRunning && <span className="font-sans text-xs font-normal text-muted-foreground">({completedCount} of {totalCount} complete)</span>}
               </p>
               {isRunning && (
-                <div className="mt-2 h-1.5 rounded-full bg-gray-200 dark:bg-gray-800 overflow-hidden w-48">
-                  <div className="h-full rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 transition-all duration-500" style={{ width: `${totalCount ? (completedCount / totalCount) * 100 : 0}%` }} />
+                <div
+                  className="mt-2 h-1.5 w-48 overflow-hidden rounded-full bg-muted"
+                  role="progressbar"
+                  aria-label="Batch tailoring progress"
+                  aria-valuemin={0}
+                  aria-valuemax={totalCount}
+                  aria-valuenow={completedCount}
+                >
+                  <div className="h-full rounded-full bg-primary transition-all duration-500" style={{ width: `${totalCount ? (completedCount / totalCount) * 100 : 0}%` }} />
                 </div>
               )}
             </div>
             {!isRunning && (
               <button type="button" onClick={() => { setBatchJobs([]); setJdEntries([{ id: nextId(), title: '', text: '' }]); }}
-                className="text-xs text-purple-400 hover:text-purple-300 transition-colors">
-                Start New Batch
+                className="text-xs font-medium text-primary hover:text-primary/80 transition-colors">
+                Start new batch
               </button>
             )}
           </div>
@@ -607,23 +634,23 @@ export default function BatchTailor() {
           <div className="space-y-2">
             {batchJobs.map(job => (
               <div key={job.jobId} className={`rounded-xl border px-5 py-4 transition-all ${
-                job.status === 'completed' ? 'border-emerald-500/20 bg-emerald-500/5' :
-                job.status === 'failed' ? 'border-red-500/20 bg-red-500/5' :
-                'border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/80'
+                job.status === 'completed' ? 'border-success/30 bg-success/[0.05]' :
+                job.status === 'failed' ? 'border-destructive/30 bg-destructive/[0.05]' :
+                'border-border bg-card'
               }`}>
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0 flex-1">
-                    {job.status === 'completed' && <CheckIcon className="w-5 h-5 text-emerald-400 shrink-0" />}
-                    {job.status === 'failed' && <XIcon className="w-5 h-5 text-red-400 shrink-0" />}
+                    {job.status === 'completed' && <CheckIcon className="w-5 h-5 text-success shrink-0" />}
+                    {job.status === 'failed' && <XIcon className="w-5 h-5 text-destructive shrink-0" />}
                     {(job.status === 'processing' || job.status === 'queued') && (
-                      <span className="w-5 h-5 rounded-full border-2 border-purple-400 border-t-transparent animate-spin shrink-0" />
+                      <span className="w-5 h-5 rounded-full border-2 border-primary border-t-transparent animate-spin shrink-0" role="status" aria-label="Tailoring" />
                     )}
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{job.title}</p>
-                      <p className="text-xs text-gray-400 dark:text-gray-500">
+                      <p className="text-sm font-medium text-foreground truncate">{job.title}</p>
+                      <p className={`text-xs ${job.status === 'failed' ? 'text-destructive' : 'text-muted-foreground'}`}>
                         {job.status === 'completed' ? 'Ready' :
-                         job.status === 'failed' ? (job.error || 'Failed') :
-                         job.status === 'processing' ? 'Tailoring...' : 'Queued'}
+                         job.status === 'failed' ? (job.error || 'Tailoring failed — start a new batch to try this role again.') :
+                         job.status === 'processing' ? 'Tailoring…' : 'Queued'}
                       </p>
                     </div>
                   </div>
@@ -634,23 +661,23 @@ export default function BatchTailor() {
                           href={job.sourceUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 hover:bg-emerald-500/20 transition-all"
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium text-success bg-success/10 border border-success/30 hover:bg-success/15 transition-all"
                           title="Open the original posting to apply"
                         >
                           Apply ↗
                         </a>
                       )}
                       <button onClick={() => handleDownload(job, 'pdf')}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 transition-all">
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium text-primary-foreground bg-primary hover:bg-primary/90 transition-all">
                         <DownloadIcon className="w-3.5 h-3.5" />PDF
                       </button>
                       <button onClick={() => handleDownload(job, 'docx')}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-600 transition-all">
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium text-foreground bg-muted border border-border hover:bg-muted/70 transition-all">
                         <DownloadIcon className="w-3.5 h-3.5" />DOCX
                       </button>
                       <button
                         onClick={() => handleOpenInEditor(job)}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium text-purple-700 dark:text-purple-300 bg-purple-500/10 border border-purple-500/30 hover:bg-purple-500/20 transition-all"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium text-primary bg-primary/10 border border-primary/30 hover:bg-primary/15 transition-all"
                         title="Open the tailored resume in a new tab — edit / regenerate without leaving this batch"
                       >
                         Edit ↗
@@ -659,30 +686,30 @@ export default function BatchTailor() {
                   )}
                 </div>
 
-                {/* Secondary actions: cover letter + ATS score (lazy — Gemini
+                {/* Secondary actions: cover letter + ATS score (lazy — model
                     calls are expensive, so we only generate on click). Each
                     button stays compact until clicked, then expands inline. */}
                 {job.status === 'completed' && (
-                  <div className="mt-2.5 flex flex-wrap items-center gap-2 border-t border-emerald-500/15 pt-2.5">
+                  <div className="mt-2.5 flex flex-wrap items-center gap-2 border-t border-border/60 pt-2.5">
                     {/* Cover letter */}
                     {(!job.coverLetter || job.coverLetter.status === 'idle') && (
                       <button
                         onClick={() => handleGenerateCoverLetter(job)}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium text-indigo-700 dark:text-indigo-300 bg-indigo-500/10 border border-indigo-500/30 hover:bg-indigo-500/20 transition-all"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium text-primary bg-primary/10 border border-primary/30 hover:bg-primary/15 transition-all"
                       >
                         ✍ Cover letter
                       </button>
                     )}
                     {job.coverLetter?.status === 'generating' && (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium text-indigo-700 dark:text-indigo-300 bg-indigo-500/5 border border-indigo-500/20">
-                        <span className="inline-block h-3 w-3 rounded-full border-2 border-indigo-500/60 border-t-transparent animate-spin" />
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium text-primary bg-primary/5 border border-primary/20">
+                        <span className="inline-block h-3 w-3 rounded-full border-2 border-primary/60 border-t-transparent animate-spin" />
                         Writing cover letter…
                       </span>
                     )}
                     {job.coverLetter?.status === 'done' && (
                       <button
                         onClick={() => handleDownloadCoverLetter(job)}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium text-emerald-700 dark:text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 hover:bg-emerald-500/25 transition-all"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium text-success bg-success/10 border border-success/30 hover:bg-success/15 transition-all"
                         title="Download cover letter as .txt"
                       >
                         <DownloadIcon className="w-3 h-3" /> Cover letter ready
@@ -691,7 +718,7 @@ export default function BatchTailor() {
                     {job.coverLetter?.status === 'failed' && (
                       <button
                         onClick={() => handleGenerateCoverLetter(job)}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium text-rose-700 dark:text-rose-300 bg-rose-500/10 border border-rose-500/30 hover:bg-rose-500/20 transition-all"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium text-destructive bg-destructive/10 border border-destructive/30 hover:bg-destructive/15 transition-all"
                       >
                         ✗ Retry cover letter
                       </button>
@@ -701,14 +728,14 @@ export default function BatchTailor() {
                     {(!job.atsScores || job.atsScores.status === 'idle') && (
                       <button
                         onClick={() => handleGenerateAts(job)}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium text-purple-700 dark:text-purple-300 bg-purple-500/10 border border-purple-500/30 hover:bg-purple-500/20 transition-all"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium text-primary bg-primary/10 border border-primary/30 hover:bg-primary/15 transition-all"
                       >
                         ⓘ ATS score
                       </button>
                     )}
                     {job.atsScores?.status === 'generating' && (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium text-purple-700 dark:text-purple-300 bg-purple-500/5 border border-purple-500/20">
-                        <span className="inline-block h-3 w-3 rounded-full border-2 border-purple-500/60 border-t-transparent animate-spin" />
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium text-primary bg-primary/5 border border-primary/20">
+                        <span className="inline-block h-3 w-3 rounded-full border-2 border-primary/60 border-t-transparent animate-spin" />
                         Scoring…
                       </span>
                     )}
@@ -716,10 +743,10 @@ export default function BatchTailor() {
                       <span
                         className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold border ${
                           (job.atsScores.data.overall ?? 0) >= 80
-                            ? 'text-emerald-700 dark:text-emerald-300 bg-emerald-500/15 border-emerald-500/30'
+                            ? 'text-success bg-success/10 border-success/30'
                             : (job.atsScores.data.overall ?? 0) >= 60
-                            ? 'text-amber-700 dark:text-amber-300 bg-amber-500/15 border-amber-500/30'
-                            : 'text-rose-700 dark:text-rose-300 bg-rose-500/15 border-rose-500/30'
+                            ? 'text-warning bg-warning/10 border-warning/30'
+                            : 'text-destructive bg-destructive/10 border-destructive/30'
                         }`}
                         title={`ATS overall · keyword ${job.atsScores.data.keyword_match ?? '?'}% · format ${job.atsScores.data.format_score ?? '?'}%`}
                       >
@@ -729,16 +756,16 @@ export default function BatchTailor() {
                     {job.atsScores?.status === 'failed' && (
                       <button
                         onClick={() => handleGenerateAts(job)}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium text-rose-700 dark:text-rose-300 bg-rose-500/10 border border-rose-500/30 hover:bg-rose-500/20 transition-all"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium text-destructive bg-destructive/10 border border-destructive/30 hover:bg-destructive/15 transition-all"
                       >
-                        ✗ Retry ATS
+                        ✗ Retry ATS score
                       </button>
                     )}
                   </div>
                 )}
 
                 {job.status === 'completed' && job.result?.tailored_resume?.ats_keyword_audit?.required_missing?.length ? (
-                  <p className="mt-2 text-[11px] leading-snug text-amber-700 dark:text-amber-400">
+                  <p className="mt-2 text-[11px] leading-snug text-warning">
                     ⚠ {job.result.tailored_resume.ats_keyword_audit.required_missing.length} required JD keyword
                     {job.result.tailored_resume.ats_keyword_audit.required_missing.length === 1 ? '' : 's'} not in resume:{' '}
                     <span className="font-mono text-[10.5px]">
@@ -757,17 +784,17 @@ export default function BatchTailor() {
                   && job.result?.record_id
                   && !job.applicationStatus
                   && (
-                  <div className="mt-3 rounded-lg border border-emerald-500/30 bg-gradient-to-r from-emerald-500/[0.04] to-teal-500/[0.04] px-3 py-2.5">
+                  <div className="mt-3 rounded-lg border border-success/30 bg-success/[0.04] px-3 py-2.5">
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="text-xs font-medium text-emerald-700 dark:text-emerald-300">
-                        Did you actually apply to <b>{job.title}</b>?
+                      <p className="text-xs font-medium text-success">
+                        Did you apply to <b>{job.title}</b>?
                       </p>
                       <div className="flex items-center gap-1.5">
                         <button
                           type="button"
                           onClick={() => handleConfirmApplied(job)}
                           disabled={job.confirming}
-                          className="inline-flex items-center gap-1 rounded-md bg-gradient-to-r from-emerald-600 to-teal-600 px-2.5 py-1 text-[11px] font-semibold text-white hover:opacity-90 disabled:opacity-60"
+                          className="inline-flex items-center gap-1 rounded-md border border-success/40 bg-success/15 px-2.5 py-1 text-[11px] font-semibold text-success hover:bg-success/25 disabled:opacity-60"
                         >
                           ✓ I applied
                         </button>
@@ -775,7 +802,7 @@ export default function BatchTailor() {
                           type="button"
                           onClick={() => handleConfirmNotYet(job, 'Not yet')}
                           disabled={job.confirming}
-                          className="inline-flex items-center gap-1 rounded-md border border-gray-300 dark:border-white/15 bg-white dark:bg-gray-800 px-2.5 py-1 text-[11px] font-medium text-gray-700 dark:text-gray-200 hover:border-gray-400 disabled:opacity-60"
+                          className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-muted disabled:opacity-60"
                         >
                           Not yet
                         </button>
@@ -783,19 +810,19 @@ export default function BatchTailor() {
                           type="button"
                           onClick={() => handleConfirmNotYet(job, 'Dismiss')}
                           disabled={job.confirming}
-                          className="inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-[11px] font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 disabled:opacity-60"
+                          className="inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-[11px] font-medium text-muted-foreground hover:text-foreground disabled:opacity-60"
                         >
                           Dismiss
                         </button>
                       </div>
                     </div>
-                    <p className="mt-1 text-[10px] text-emerald-700/70 dark:text-emerald-300/70">
-                      "I applied" syncs to Daily Pipeline + Applications board + ticks today's streak.
+                    <p className="mt-1 text-[10px] text-muted-foreground">
+                      "I applied" syncs the Daily Pipeline, your Applications board, and today's streak.
                     </p>
                   </div>
                 )}
                 {job.applicationStatus === 'applied' && (
-                  <p className="mt-2 inline-flex items-center gap-1.5 rounded-md bg-emerald-500/10 px-2 py-1 text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
+                  <p className="mt-2 inline-flex items-center gap-1.5 rounded-md bg-success/10 px-2 py-1 text-[11px] font-medium text-success">
                     ✓ Marked applied — synced everywhere
                   </p>
                 )}

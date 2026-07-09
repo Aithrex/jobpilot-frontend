@@ -23,12 +23,12 @@ function pct(v?: number): number {
 function FunnelCard({ funnel }: { funnel: PipelineFunnel }) {
   const max = Math.max(1, ...funnel.stages.map((s) => s.count));
   return (
-    <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+    <div className="rounded-2xl border border-border bg-card p-5 shadow-soft">
       <div className="mb-4 flex items-center gap-2">
         <span className="grid h-8 w-8 place-items-center rounded-lg bg-primary/10 text-primary">
           <TrendingUp className="h-4 w-4" />
         </span>
-        <h3 className="text-sm font-bold">Your funnel</h3>
+        <h3 className="font-display text-sm font-bold">Your funnel</h3>
       </div>
 
       <div className="space-y-2.5">
@@ -89,12 +89,12 @@ function GhostsCard({
   onNavigate?: (tab: string) => void;
 }) {
   return (
-    <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+    <div className="rounded-2xl border border-border bg-card p-5 shadow-soft">
       <div className="mb-4 flex items-center gap-2">
         <span className="grid h-8 w-8 place-items-center rounded-lg bg-muted-foreground/10 text-muted-foreground">
           <Ghost className="h-4 w-4" />
         </span>
-        <h3 className="text-sm font-bold">Likely ghosted</h3>
+        <h3 className="font-display text-sm font-bold">Likely ghosted</h3>
       </div>
 
       {ghosts.length === 0 ? (
@@ -144,12 +144,12 @@ function GhostsCard({
 function CohortCard({ cohort }: { cohort: PipelineCohort }) {
   const insufficient = cohort.insufficient || cohort.cohort_callback_rate == null;
   return (
-    <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+    <div className="rounded-2xl border border-border bg-card p-5 shadow-soft">
       <div className="mb-4 flex items-center gap-2">
-        <span className="grid h-8 w-8 place-items-center rounded-lg bg-indigo-500/10 text-indigo-500">
+        <span className="grid h-8 w-8 place-items-center rounded-lg bg-primary/10 text-primary">
           <Users className="h-4 w-4" />
         </span>
-        <h3 className="text-sm font-bold">How you compare</h3>
+        <h3 className="font-display text-sm font-bold">How you compare</h3>
       </div>
 
       {insufficient ? (

@@ -1,25 +1,32 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import {
+  CircleOff, ClipboardList, Ghost, LayoutGrid, List, MessagesSquare, Pencil,
+  PenLine, Search, Send, Trophy, X, Zap,
+} from "lucide-react";
 import { apiService } from "@/lib/api";
 import type { ApplicationStatus, TailoringRecord } from "@/types/resume";
 import { formatDate } from "@/components/resume/ResumeDashboard";
 import GmailIntegration from "@/components/resume/GmailIntegration";
 
 // ─── Column config ────────────────────────────────────────────────────────
+// Status hues stay meaning-coded but resolve through the semantic token set:
+// primary (in motion), --brand-to (interviewing), success (offer),
+// destructive (rejected), warning (ghosted), muted (inactive).
 const COLUMNS: {
   key: ApplicationStatus;
   label: string;
   dot: string;      // accent color class for the vertical rail
   chip: string;     // pill colour used on cards
-  icon: string;
+  icon: React.ReactNode;
 }[] = [
-  { key: "draft",         label: "Draft",        dot: "bg-gray-400",     chip: "bg-gray-500/15 text-gray-600 dark:text-gray-300 border-gray-500/25",             icon: "✎" },
-  { key: "applied",       label: "Applied",      dot: "bg-purple-400",   chip: "bg-purple-500/15 text-purple-600 dark:text-purple-300 border-purple-500/25",     icon: "✉" },
-  { key: "interviewing",  label: "Interviewing", dot: "bg-blue-400",     chip: "bg-blue-500/15 text-blue-600 dark:text-blue-300 border-blue-500/25",             icon: "💬" },
-  { key: "offer",         label: "Offer",        dot: "bg-emerald-400",  chip: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 border-emerald-500/25", icon: "🎉" },
-  { key: "rejected",      label: "Rejected",     dot: "bg-red-400",      chip: "bg-red-500/15 text-red-600 dark:text-red-300 border-red-500/25",                 icon: "✕" },
-  { key: "ghosted",       label: "Ghosted",      dot: "bg-amber-400",    chip: "bg-amber-500/15 text-amber-600 dark:text-amber-300 border-amber-500/25",         icon: "👻" },
-  { key: "withdrawn",     label: "Withdrawn",    dot: "bg-gray-300",     chip: "bg-gray-400/15 text-gray-500 dark:text-gray-400 border-gray-400/25",             icon: "⏻" },
+  { key: "draft",         label: "Draft",        dot: "bg-muted-foreground/50",           chip: "bg-muted text-muted-foreground border-border",                                                            icon: <PenLine className="h-3 w-3" /> },
+  { key: "applied",       label: "Applied",      dot: "bg-primary",                       chip: "bg-primary/10 text-primary border-primary/25",                                                            icon: <Send className="h-3 w-3" /> },
+  { key: "interviewing",  label: "Interviewing", dot: "bg-[hsl(var(--brand-to))]",        chip: "bg-[hsl(var(--brand-to)/0.12)] text-[hsl(var(--brand-to))] border-[hsl(var(--brand-to)/0.3)]",            icon: <MessagesSquare className="h-3 w-3" /> },
+  { key: "offer",         label: "Offer",        dot: "bg-success",                       chip: "bg-success/10 text-success border-success/25",                                                            icon: <Trophy className="h-3 w-3" /> },
+  { key: "rejected",      label: "Rejected",     dot: "bg-destructive/70",                chip: "bg-destructive/10 text-destructive border-destructive/25",                                                icon: <X className="h-3 w-3" /> },
+  { key: "ghosted",       label: "Ghosted",      dot: "bg-warning",                       chip: "bg-warning/10 text-warning border-warning/25",                                                            icon: <Ghost className="h-3 w-3" /> },
+  { key: "withdrawn",     label: "Withdrawn",    dot: "bg-muted-foreground/30",           chip: "bg-muted/60 text-muted-foreground border-border",                                                         icon: <CircleOff className="h-3 w-3" /> },
 ];
 
 const STATUS_LOOKUP: Record<string, typeof COLUMNS[number]> = COLUMNS.reduce(
@@ -63,34 +70,18 @@ function initials(name?: string): string {
   if (!name || name === "Not specified") return "·";
   return name.split(/\s+/).slice(0, 2).map(w => w[0]).join("").toUpperCase();
 }
-function companyTint(name?: string): string {
-  // Deterministic subtle gradient based on company name so every logo is unique
-  const palettes = [
-    "from-purple-500/80 to-indigo-500/80",
-    "from-blue-500/80 to-cyan-500/80",
-    "from-emerald-500/80 to-teal-500/80",
-    "from-amber-500/80 to-orange-500/80",
-    "from-rose-500/80 to-pink-500/80",
-    "from-fuchsia-500/80 to-purple-500/80",
-    "from-sky-500/80 to-blue-500/80",
-    "from-lime-500/80 to-emerald-500/80",
-  ];
-  if (!name) return palettes[0];
-  let h = 0;
-  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) | 0;
-  return palettes[Math.abs(h) % palettes.length];
-}
+
+/** Calm token-driven avatar chip for company initials — one accent, not a
+ *  per-company rainbow, so cards inherit the workspace's single-accent rule. */
+const avatarCls = "bg-primary/10 text-primary";
 
 // ─── Metric card ──────────────────────────────────────────────────────────
-function Metric({ label, value, accent, icon }: { label: string; value: number | string; accent: string; icon?: React.ReactNode }) {
+function Metric({ label, value, accent }: { label: string; value: number | string; accent: string }) {
   return (
-    <div className="relative rounded-xl border border-gray-200 dark:border-white/[0.07] bg-white/60 dark:bg-gray-900/40 backdrop-blur-sm px-4 py-3 overflow-hidden">
+    <div className="relative rounded-xl border border-border bg-card px-4 py-3 overflow-hidden shadow-soft">
       <div className={`absolute inset-y-0 left-0 w-1 ${accent}`} />
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">{label}</p>
-        {icon && <span className="text-sm opacity-60">{icon}</span>}
-      </div>
-      <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mt-1 tabular-nums">{value}</p>
+      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
+      <p className="font-display text-2xl font-semibold text-foreground mt-1 tabular-nums">{value}</p>
     </div>
   );
 }
@@ -181,7 +172,7 @@ export default function ApplicationsTab() {
     setSavingId(id);
     const resp = await apiService.updateApplication(id, { status });
     setSavingId(null);
-    if (resp.error) { toast.error("Failed to update status"); return; }
+    if (resp.error) { toast.error("Couldn't update status"); return; }
     updateRecord(id, r => ({ ...r, application: { ...(r.application || {}), ...resp.data!.application } }));
     refreshFunnel();
     if (status === "rejected") {
@@ -215,7 +206,7 @@ export default function ApplicationsTab() {
         ...r,
         application: { ...(r.application || {}), status: prev },
       }));
-      toast.error('Failed to move card — reverted.');
+      toast.error("Couldn't move the card — reverted.");
       return;
     }
     updateRecord(id, (r) => ({
@@ -233,7 +224,7 @@ export default function ApplicationsTab() {
     setSavingId(id);
     const resp = await apiService.updateApplication(id, patch);
     setSavingId(null);
-    if (resp.error) { toast.error("Failed to save"); return; }
+    if (resp.error) { toast.error("Couldn't save changes"); return; }
     updateRecord(id, r => ({ ...r, application: { ...(r.application || {}), ...resp.data!.application } }));
     toast.success("Saved");
   }, [updateRecord]);
@@ -302,27 +293,27 @@ export default function ApplicationsTab() {
       <div className="space-y-4">
         {/* Active loading indicator — spinner + descriptive text so users
             understand the tab is working rather than frozen. */}
-        <div className="flex items-center gap-3 rounded-xl border border-purple-500/20 bg-gradient-to-r from-purple-500/[0.06] to-indigo-500/[0.04] px-4 py-3">
+        <div className="flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/[0.05] px-4 py-3">
           <span
-            className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-purple-500 border-t-transparent"
+            className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent"
             role="status"
             aria-label="Loading"
           />
           <div className="min-w-0">
-            <p className="text-xs font-semibold text-gray-800 dark:text-gray-100">Loading your applications…</p>
-            <p className="text-[11px] text-gray-500 dark:text-gray-400">Pulling tailored records, funnel analytics, and follow-up nudges.</p>
+            <p className="text-xs font-semibold text-foreground">Loading your applications…</p>
+            <p className="text-[11px] text-muted-foreground">Pulling tailored records, funnel analytics, and follow-up nudges.</p>
           </div>
         </div>
         {/* Skeleton placeholders — sized to roughly match the real layout so
             the layout doesn't jump when the data arrives. */}
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="h-[68px] rounded-xl bg-gray-100/50 dark:bg-gray-800/40 animate-pulse" />
+            <div key={i} className="h-[68px] rounded-xl bg-muted/60 animate-pulse" />
           ))}
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-3">
           {Array.from({ length: 7 }).map((_, i) => (
-            <div key={i} className="h-56 rounded-xl bg-gray-100/40 dark:bg-gray-800/30 animate-pulse" />
+            <div key={i} className="h-56 rounded-xl bg-muted/40 animate-pulse" />
           ))}
         </div>
       </div>
@@ -330,13 +321,14 @@ export default function ApplicationsTab() {
   }
   if (records.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-gray-300 dark:border-gray-700 bg-gradient-to-b from-purple-500/5 to-transparent p-12 text-center">
-        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-500 text-white flex items-center justify-center mx-auto mb-3 text-2xl shadow-lg shadow-purple-500/30">
-          📋
+      <div className="rounded-2xl border border-dashed border-border p-12 text-center">
+        <div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mx-auto mb-3">
+          <ClipboardList className="h-6 w-6" />
         </div>
-        <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">No applications yet</p>
-        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-sm mx-auto">
-          Tailor a resume and every session lands here as a draft. Track it to offer — no more guessing which company you're in which stage with.
+        <p className="font-display text-sm font-semibold text-foreground">No applications yet</p>
+        <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
+          Tailor a resume and it lands here as a draft — then track every role from applied to offer,
+          with no guessing which stage you're in.
         </p>
       </div>
     );
@@ -346,35 +338,35 @@ export default function ApplicationsTab() {
     <div className="space-y-5">
       {/* Header */}
       <div className="flex items-start justify-between gap-3 flex-wrap">
-        <div>
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Applications</h2>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+        <div className="space-y-1">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">Library · Applications</p>
+          <h2 className="font-display text-2xl font-extrabold tracking-tight">Applications</h2>
+          <p className="max-w-xl text-sm text-muted-foreground">
             Your pipeline — every role from first tailor to offer, tracked in one place.
           </p>
         </div>
         <div className="flex items-center gap-2">
           <div className="relative">
-            <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
-            </svg>
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" aria-hidden />
             <input
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search role, company, recruiter…"
-              className="pl-8 pr-3 py-1.5 w-[260px] rounded-lg bg-white/80 dark:bg-gray-900/40 border border-gray-300 dark:border-gray-700/60 text-xs text-gray-800 dark:text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/30"
+              aria-label="Search applications"
+              className="pl-8 pr-3 py-1.5 w-full max-w-[260px] rounded-lg bg-card border border-input text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/30"
             />
           </div>
-          <div className="inline-flex rounded-lg bg-gray-100 dark:bg-gray-800/60 p-0.5 border border-gray-200 dark:border-gray-800">
+          <div className="inline-flex rounded-lg bg-muted p-0.5 border border-border">
             {([
-              { key: "kanban" as const, label: "Kanban", icon: "▤" },
-              { key: "list" as const, label: "List", icon: "☰" },
+              { key: "kanban" as const, label: "Kanban", icon: <LayoutGrid className="h-3 w-3" /> },
+              { key: "list" as const, label: "List", icon: <List className="h-3 w-3" /> },
             ]).map(v => (
               <button
                 key={v.key}
                 onClick={() => setView(v.key)}
-                className={`px-2.5 py-1 text-[11px] font-medium rounded-md flex items-center gap-1 transition-all ${view === v.key ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm" : "text-gray-500 dark:text-gray-400"}`}
+                className={`px-2.5 py-1 text-[11px] font-medium rounded-md flex items-center gap-1 transition-all ${view === v.key ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
               >
-                <span>{v.icon}</span>{v.label}
+                {v.icon}{v.label}
               </button>
             ))}
           </div>
@@ -385,61 +377,60 @@ export default function ApplicationsTab() {
 
       {/* Metric row */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
-        <Metric label="Total" value={metrics.total} accent="bg-gradient-to-b from-purple-500 to-indigo-500" icon="📊" />
-        <Metric label="Active" value={metrics.active} accent="bg-gradient-to-b from-purple-400 to-purple-600" icon="🔵" />
-        <Metric label="Interviewing" value={metrics.interviewing} accent="bg-gradient-to-b from-blue-500 to-cyan-500" icon="💬" />
-        <Metric label="Offers" value={metrics.offers} accent="bg-gradient-to-b from-emerald-500 to-teal-500" icon="🎉" />
+        <Metric label="Total" value={metrics.total} accent="bg-primary" />
+        <Metric label="Active" value={metrics.active} accent="bg-primary/60" />
+        <Metric label="Interviewing" value={metrics.interviewing} accent="bg-[hsl(var(--brand-to))]" />
+        <Metric label="Offers" value={metrics.offers} accent="bg-success" />
         <Metric
           label="Response rate"
           value={metrics.respRate !== null ? `${metrics.respRate}%` : "—"}
-          accent="bg-gradient-to-b from-amber-500 to-orange-500"
-          icon="📈"
+          accent="bg-muted-foreground/50"
         />
       </div>
 
       {funnelLoading && !funnel && (
-        <div className="flex items-center gap-2 rounded-2xl border border-indigo-500/15 bg-indigo-500/[0.03] px-3 py-2 text-[11px] text-indigo-700 dark:text-indigo-300">
-          <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" aria-hidden />
+        <div className="flex items-center gap-2 rounded-2xl border border-primary/15 bg-primary/[0.03] px-3 py-2 text-[11px] text-primary">
+          <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-primary border-t-transparent" aria-hidden />
           <span>Crunching funnel intelligence and stale-application nudges…</span>
         </div>
       )}
 
       {funnel && (
-        <div className="rounded-2xl border border-indigo-500/20 bg-indigo-500/[0.04] p-3">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-300 mb-2">Funnel intelligence</p>
+        <div className="rounded-2xl border border-primary/20 bg-primary/[0.04] p-3">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary mb-2">Funnel intelligence</p>
           <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-6 text-xs">
             {["draft", "applied", "interviewing", "offer", "rejected", "ghosted"].map((k) => (
-              <div key={k} className="rounded-lg border border-indigo-500/15 bg-white/70 px-2 py-1.5 dark:bg-gray-900/50">
-                <p className="text-gray-500 dark:text-gray-400 capitalize">{k}</p>
-                <p className="font-semibold text-gray-900 dark:text-white">{funnel.counts[k] ?? 0}</p>
+              <div key={k} className="rounded-lg border border-primary/15 bg-card/70 px-2 py-1.5">
+                <p className="text-muted-foreground capitalize">{k}</p>
+                <p className="font-semibold text-foreground tabular-nums">{funnel.counts[k] ?? 0}</p>
               </div>
             ))}
           </div>
-          {funnel.insight && <p className="mt-2 text-xs text-gray-600 dark:text-gray-300">{funnel.insight.insight}</p>}
+          {funnel.insight && <p className="mt-2 text-xs text-muted-foreground">{funnel.insight.insight}</p>}
         </div>
       )}
 
       {/* Upcoming banner */}
       {metrics.upcoming.length > 0 && (
-        <div className="rounded-2xl border border-amber-500/30 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent p-3.5">
+        <div className="rounded-2xl border border-warning/30 bg-gradient-to-r from-warning/10 via-warning/5 to-transparent p-3.5">
           <div className="flex items-center gap-2 mb-2">
-            <div className="w-6 h-6 rounded-lg bg-amber-500/20 flex items-center justify-center">⚡</div>
-            <p className="text-[11px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-300">
+            <div className="w-6 h-6 rounded-lg bg-warning/15 text-warning flex items-center justify-center"><Zap className="h-3.5 w-3.5" /></div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-warning">
               Next actions · {metrics.upcoming.length}
             </p>
           </div>
           <div className="flex gap-2 flex-wrap">
             {metrics.upcoming.map(({ r, d }) => (
-              <div key={r.record_id} className="inline-flex items-center gap-2 px-2.5 py-1 rounded-lg bg-white/70 dark:bg-gray-900/50 border border-amber-500/25 text-[11px]">
-                <span className={`w-1.5 h-1.5 rounded-full ${d! < 0 ? "bg-red-500" : d! <= 2 ? "bg-amber-500" : "bg-gray-400"}`} />
-                <span className="font-medium text-gray-800 dark:text-gray-200">{r.jd_analysis?.job_title || "Untitled"}</span>
+              <div key={r.record_id} className="inline-flex items-center gap-2 px-2.5 py-1 rounded-lg bg-card/70 border border-warning/25 text-[11px]">
+                <span className={`w-1.5 h-1.5 rounded-full ${d! < 0 ? "bg-destructive" : d! <= 2 ? "bg-warning" : "bg-muted-foreground/50"}`} />
+                <span className="font-medium text-foreground">{r.jd_analysis?.job_title || "Untitled"}</span>
                 {r.jd_analysis?.company && r.jd_analysis.company !== "Not specified" && (
-                  <span className="text-gray-500 dark:text-gray-400">· {r.jd_analysis.company}</span>
+                  <span className="text-muted-foreground">· {r.jd_analysis.company}</span>
                 )}
-                <span className={`font-semibold ${d! < 0 ? "text-red-500" : d! <= 2 ? "text-amber-600 dark:text-amber-400" : "text-gray-500"}`}>
+                <span className={`font-semibold ${d! < 0 ? "text-destructive" : d! <= 2 ? "text-warning" : "text-muted-foreground"}`}>
                   {relDate(r.application?.next_action_date)}
                 </span>
-                {r.application?.next_action_note && <span className="text-gray-500 dark:text-gray-400 italic">· {r.application.next_action_note}</span>}
+                {r.application?.next_action_note && <span className="text-muted-foreground italic">· {r.application.next_action_note}</span>}
               </div>
             ))}
           </div>
@@ -447,16 +438,16 @@ export default function ApplicationsTab() {
       )}
 
       {staleApps.length > 0 && (
-        <div className="rounded-2xl border border-rose-500/25 bg-rose-500/[0.04] p-3">
+        <div className="rounded-2xl border border-warning/30 bg-warning/[0.05] p-3">
           <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-rose-700 dark:text-rose-300">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-warning">
               Needs follow-up · {staleApps.length}
             </p>
             {staleApps.length > 4 && (
               <button
                 type="button"
                 onClick={() => setStaleShowAll((v) => !v)}
-                className="text-[11px] text-rose-700 dark:text-rose-300 underline-offset-2 hover:underline"
+                className="text-[11px] text-warning underline-offset-2 hover:underline"
               >
                 {staleShowAll ? 'Show fewer' : `Show all ${staleApps.length}`}
               </button>
@@ -464,11 +455,11 @@ export default function ApplicationsTab() {
           </div>
           <div className="space-y-2">
             {(staleShowAll ? staleApps : staleApps.slice(0, 4)).map((s) => (
-              <div key={s.record_id} className="rounded-lg border border-rose-500/15 bg-white/70 p-2 dark:bg-gray-900/50">
+              <div key={s.record_id} className="rounded-lg border border-warning/20 bg-card/70 p-2">
                 <div className="flex flex-wrap items-center gap-2 justify-between">
-                  <p className="text-xs font-semibold text-gray-900 dark:text-white">
+                  <p className="text-xs font-semibold text-foreground">
                     {s.job_title} {s.company ? `· ${s.company}` : ""}
-                    <span className="ml-2 inline-flex items-center rounded-full bg-rose-500/15 px-1.5 py-0.5 text-[10px] font-medium text-rose-700 dark:text-rose-300">
+                    <span className="ml-2 inline-flex items-center rounded-full bg-warning/10 px-1.5 py-0.5 text-[10px] font-medium text-warning">
                       {s.days_stale}d silent
                     </span>
                   </p>
@@ -481,7 +472,7 @@ export default function ApplicationsTab() {
                           setFollowups((prev) => ({ ...prev, [s.record_id]: { subject: r.data!.followup.subject, message: r.data!.followup.message } }));
                         }
                       }}
-                      className="rounded bg-rose-500/10 px-2 py-1 text-[11px] font-semibold text-rose-700 dark:text-rose-300"
+                      className="rounded bg-warning/10 px-2 py-1 text-[11px] font-semibold text-warning hover:bg-warning/15 transition-colors"
                     >
                       Draft follow-up
                     </button>
@@ -498,7 +489,7 @@ export default function ApplicationsTab() {
                           return next;
                         });
                       }}
-                      className="rounded border border-rose-500/20 px-2 py-1 text-[11px] font-medium text-rose-700/80 dark:text-rose-300/80 hover:bg-rose-500/5"
+                      className="rounded border border-warning/25 px-2 py-1 text-[11px] font-medium text-warning/80 hover:bg-warning/5 transition-colors"
                       title="Hide this follow-up nudge until the application status changes again"
                     >
                       Dismiss
@@ -506,10 +497,10 @@ export default function ApplicationsTab() {
                   </div>
                 </div>
                 {followups[s.record_id] && (
-                  <div className="mt-2 space-y-2 rounded border border-gray-200/80 p-2 text-xs dark:border-white/10">
-                    <p className="font-semibold text-gray-800 dark:text-gray-200">{followups[s.record_id].subject}</p>
-                    <p className="whitespace-pre-wrap text-gray-600 dark:text-gray-300">{followups[s.record_id].message}</p>
-                    <div className="flex flex-wrap items-center justify-end gap-1.5 border-t border-gray-200/60 dark:border-white/[0.06] pt-2">
+                  <div className="mt-2 space-y-2 rounded border border-border/80 p-2 text-xs">
+                    <p className="font-semibold text-foreground">{followups[s.record_id].subject}</p>
+                    <p className="whitespace-pre-wrap text-muted-foreground">{followups[s.record_id].message}</p>
+                    <div className="flex flex-wrap items-center justify-end gap-1.5 border-t border-border/60 pt-2">
                       <button
                         type="button"
                         onClick={() => {
@@ -519,7 +510,7 @@ export default function ApplicationsTab() {
                             .then(() => toast.success('Copied — paste into your email'))
                             .catch(() => toast.error('Clipboard blocked'));
                         }}
-                        className="rounded border border-gray-300 dark:border-white/15 bg-white dark:bg-gray-800 px-2 py-1 text-[11px] text-gray-700 dark:text-gray-200 hover:border-gray-400 transition-colors"
+                        className="rounded border border-border bg-card px-2 py-1 text-[11px] text-foreground hover:bg-muted transition-colors"
                       >
                         Copy
                       </button>
@@ -534,7 +525,7 @@ export default function ApplicationsTab() {
                           params.set('body', f.message);
                           window.open(`https://mail.google.com/mail/?${params.toString()}`, '_blank', 'noopener,noreferrer');
                         }}
-                        className="rounded bg-gradient-to-r from-rose-600 to-pink-600 px-2 py-1 text-[11px] font-semibold text-white hover:opacity-90"
+                        className="rounded bg-primary px-2 py-1 text-[11px] font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
                       >
                         Open in Gmail ↗
                       </button>
@@ -548,20 +539,20 @@ export default function ApplicationsTab() {
       )}
 
       {reframe && (
-        <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.05] p-4">
-          <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-200">{reframe.acknowledgement}</p>
-          <p className="mt-1 text-xs text-gray-600 dark:text-gray-300">{reframe.what_went_right}</p>
-          <ul className="mt-2 list-disc ml-5 text-xs text-gray-600 dark:text-gray-300">
+        <div className="rounded-2xl border border-success/25 bg-success/[0.05] p-4">
+          <p className="text-sm font-semibold text-success">{reframe.acknowledgement}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{reframe.what_went_right}</p>
+          <ul className="mt-2 list-disc ml-5 text-xs text-muted-foreground">
             {reframe.next_actions?.map((a, idx) => <li key={idx}>{a}</li>)}
           </ul>
-          <p className="mt-2 text-xs font-medium text-emerald-700 dark:text-emerald-300">{reframe.silver_lining}</p>
+          <p className="mt-2 text-xs font-medium text-success">{reframe.silver_lining}</p>
         </div>
       )}
 
       {/* Pipeline */}
       {view === "kanban" ? (
         <>
-          <p className="text-[11px] italic text-gray-500 dark:text-gray-400">
+          <p className="text-[11px] italic text-muted-foreground">
             Tip: drag a card between columns to update its status.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-3">
@@ -576,19 +567,19 @@ export default function ApplicationsTab() {
                   if (e.currentTarget === e.target) setDragOverCol((c) => (c === col.key ? null : c));
                 }}
                 onDrop={(e) => { e.preventDefault(); handleDrop(col.key); }}
-                className={`relative rounded-xl border overflow-hidden backdrop-blur-sm transition-all ${
+                className={`relative rounded-xl border overflow-hidden transition-all ${
                   isDragOver
-                    ? 'border-purple-500/60 bg-purple-500/10 ring-2 ring-purple-500/40 scale-[1.01]'
-                    : 'border-gray-200 dark:border-white/[0.07] bg-white/40 dark:bg-gray-900/30'
+                    ? 'border-primary/60 bg-primary/10 ring-2 ring-primary/40 scale-[1.01]'
+                    : 'border-border bg-card/60'
                 }`}
               >
                 <div className={`absolute inset-y-0 left-0 w-0.5 ${col.dot}`} />
-                <div className="px-3 py-2.5 border-b border-gray-200 dark:border-gray-800/60 flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs">{col.icon}</span>
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-gray-700 dark:text-gray-200">{col.label}</span>
+                <div className="px-3 py-2.5 border-b border-border flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-muted-foreground">
+                    {col.icon}
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-foreground/80">{col.label}</span>
                   </div>
-                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 tabular-nums">
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground tabular-nums">
                     {list.length}
                   </span>
                 </div>
@@ -619,8 +610,8 @@ export default function ApplicationsTab() {
                   ))}
                   {list.length === 0 && (
                     <div className="py-6 text-center">
-                      <p className="text-[10px] text-gray-400 dark:text-gray-600 italic">
-                        {isDragOver ? 'Drop here' : 'Nothing here'}
+                      <p className="text-[10px] text-muted-foreground/70 italic">
+                        {isDragOver ? 'Drop here' : 'Nothing here yet'}
                       </p>
                     </div>
                   )}
@@ -631,9 +622,9 @@ export default function ApplicationsTab() {
           </div>
         </>
       ) : (
-        <div className="rounded-2xl border border-gray-200 dark:border-white/[0.07] bg-white/60 dark:bg-gray-900/40 backdrop-blur-sm overflow-hidden shadow-sm">
+        <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-soft">
           <table className="w-full text-xs">
-            <thead className="bg-gray-50 dark:bg-gray-800/40 text-gray-600 dark:text-gray-400 uppercase text-[10px] tracking-wider">
+            <thead className="bg-muted/50 text-muted-foreground uppercase text-[10px] tracking-wider">
               <tr>
                 <th className="text-left px-4 py-3 font-semibold">Company / Role</th>
                 <th className="text-left px-3 py-3 font-semibold">Status</th>
@@ -651,15 +642,15 @@ export default function ApplicationsTab() {
                 const ats = r.ats_scores?.overall;
                 const d = daysUntil(r.application?.next_action_date);
                 return (
-                  <tr key={r.record_id} className="border-t border-gray-200 dark:border-gray-800/60 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
+                  <tr key={r.record_id} className="border-t border-border hover:bg-muted/40 transition-colors">
                     <td className="px-4 py-2.5">
                       <div className="flex items-center gap-2.5 min-w-0">
-                        <div className={`w-8 h-8 shrink-0 rounded-lg bg-gradient-to-br ${companyTint(co)} text-white text-[11px] font-bold flex items-center justify-center shadow-sm`}>
+                        <div className={`w-8 h-8 shrink-0 rounded-lg ${avatarCls} text-[11px] font-bold flex items-center justify-center`}>
                           {initials(co) || initials(r.jd_analysis?.job_title)}
                         </div>
                         <div className="min-w-0">
-                          <p className="text-[12px] font-medium text-gray-800 dark:text-gray-200 truncate">{r.jd_analysis?.job_title || "—"}</p>
-                          <p className="text-[10px] text-gray-500 dark:text-gray-400 truncate">{co || "—"}</p>
+                          <p className="text-[12px] font-medium text-foreground truncate">{r.jd_analysis?.job_title || "—"}</p>
+                          <p className="text-[10px] text-muted-foreground truncate">{co || "—"}</p>
                         </div>
                       </div>
                     </td>
@@ -673,21 +664,21 @@ export default function ApplicationsTab() {
                         {COLUMNS.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
                       </select>
                     </td>
-                    <td className="px-3 py-2.5 text-gray-600 dark:text-gray-400 text-[11px]">{r.application?.applied_at ? formatDate(r.application.applied_at) : "—"}</td>
+                    <td className="px-3 py-2.5 text-muted-foreground text-[11px]">{r.application?.applied_at ? formatDate(r.application.applied_at) : "—"}</td>
                     <td className="px-3 py-2.5 text-[11px]">
                       {r.application?.next_action_date ? (
-                        <span className={`${d! < 0 ? "text-red-500 font-semibold" : d !== null && d <= 2 ? "text-amber-600 dark:text-amber-400 font-semibold" : "text-gray-600 dark:text-gray-400"}`}>
+                        <span className={`${d! < 0 ? "text-destructive font-semibold" : d !== null && d <= 2 ? "text-warning font-semibold" : "text-muted-foreground"}`}>
                           {relDate(r.application.next_action_date)}
-                          {r.application.next_action_note && <span className="text-gray-500 dark:text-gray-500"> · {r.application.next_action_note}</span>}
+                          {r.application.next_action_note && <span className="text-muted-foreground"> · {r.application.next_action_note}</span>}
                         </span>
                       ) : "—"}
                     </td>
-                    <td className="px-3 py-2.5 text-gray-600 dark:text-gray-400 text-[11px] truncate max-w-[160px]">
+                    <td className="px-3 py-2.5 text-muted-foreground text-[11px] truncate max-w-[160px]">
                       {r.application?.recruiter_name || "—"}
                     </td>
                     <td className="px-3 py-2.5 text-[11px]">
                       {ats !== undefined ? (
-                        <span className={`tabular-nums font-semibold ${ats >= 80 ? "text-emerald-500" : ats >= 60 ? "text-amber-500" : "text-red-500"}`}>
+                        <span className={`tabular-nums font-semibold ${ats >= 80 ? "text-success" : ats >= 60 ? "text-warning" : "text-destructive"}`}>
                           {ats}
                         </span>
                       ) : "—"}
@@ -744,12 +735,12 @@ function ApplicationCard({
 
   return (
     <div
-      className={`group relative rounded-lg border bg-white dark:bg-gray-900/60 transition-all overflow-hidden ${
+      className={`group relative rounded-lg border bg-card transition-all overflow-hidden ${
         overdue
-          ? "border-red-500/40 shadow-sm shadow-red-500/10"
+          ? "border-destructive/40 shadow-soft"
           : urgent
-          ? "border-amber-500/40 shadow-sm shadow-amber-500/10"
-          : "border-gray-200 dark:border-gray-800/60 hover:border-purple-500/30 hover:shadow-sm"
+          ? "border-warning/40 shadow-soft"
+          : "border-border hover:border-primary/30 hover:shadow-soft"
       }`}
     >
       {/* Left accent rail */}
@@ -758,34 +749,35 @@ function ApplicationCard({
       <div className="pl-2.5 pr-2 py-2 space-y-1.5">
         {/* Top row: company avatar + title */}
         <div className="flex items-start gap-2">
-          <div className={`w-7 h-7 shrink-0 rounded-md bg-gradient-to-br ${companyTint(company || title)} text-white text-[10px] font-bold flex items-center justify-center shadow-sm`}>
+          <div className={`w-7 h-7 shrink-0 rounded-md ${avatarCls} text-[10px] font-bold flex items-center justify-center`}>
             {initials(company || title)}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-semibold text-gray-800 dark:text-gray-200 truncate leading-snug">{title}</p>
-            {company && <p className="text-[10px] text-gray-500 dark:text-gray-400 truncate">{company}</p>}
+            <p className="text-[11px] font-semibold text-foreground truncate leading-snug">{title}</p>
+            {company && <p className="text-[10px] text-muted-foreground truncate">{company}</p>}
           </div>
           <button
             onClick={onToggleEdit}
-            className="shrink-0 w-5 h-5 rounded text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 text-[11px] leading-none"
+            className="shrink-0 flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted"
             title={isEditing ? "Close" : "Edit"}
-          >{isEditing ? "×" : "✎"}</button>
+            aria-label={isEditing ? "Close editor" : "Edit application"}
+          >{isEditing ? <X className="h-3 w-3" /> : <Pencil className="h-3 w-3" />}</button>
         </div>
 
         {/* Meta row */}
         <div className="flex items-center gap-2 flex-wrap">
           {ats !== undefined && (
-            <span className={`text-[10px] font-semibold tabular-nums ${ats >= 80 ? "text-emerald-500" : ats >= 60 ? "text-amber-500" : "text-red-500"}`}>
+            <span className={`text-[10px] font-semibold tabular-nums ${ats >= 80 ? "text-success" : ats >= 60 ? "text-warning" : "text-destructive"}`}>
               ATS {ats}
             </span>
           )}
           {d !== null && (
-            <span className={`text-[10px] font-medium ${overdue ? "text-red-500 font-bold" : urgent ? "text-amber-600 dark:text-amber-400" : "text-gray-500 dark:text-gray-400"}`}>
+            <span className={`text-[10px] font-medium ${overdue ? "text-destructive font-bold" : urgent ? "text-warning" : "text-muted-foreground"}`}>
               {overdue && "⚠ "}{relDate(app.next_action_date)}
             </span>
           )}
           {app.next_action_note && (
-            <span className="text-[10px] text-gray-500 dark:text-gray-400 italic truncate max-w-[120px]">· {app.next_action_note}</span>
+            <span className="text-[10px] text-muted-foreground italic truncate max-w-[120px]">· {app.next_action_note}</span>
           )}
         </div>
 
@@ -801,29 +793,29 @@ function ApplicationCard({
 
         {/* Expanded editor */}
         {isEditing && (
-          <div className="pt-2 mt-1 space-y-1.5 border-t border-gray-200 dark:border-gray-800/60">
+          <div className="pt-2 mt-1 space-y-1.5 border-t border-border">
             <div className="grid grid-cols-1 gap-1.5">
               <input placeholder="Recruiter name" value={recruiterName} onChange={e => setRecruiterName(e.target.value)}
-                     className="w-full text-[10px] px-2 py-1.5 rounded-md bg-gray-50 dark:bg-gray-800/60 border border-gray-300 dark:border-gray-700 focus:outline-none focus:ring-1 focus:ring-purple-500/30" />
+                     className="w-full text-[10px] px-2 py-1.5 rounded-md bg-muted/40 border border-input focus:outline-none focus:ring-1 focus:ring-ring/30" />
               <input placeholder="Recruiter email" value={recruiterEmail} onChange={e => setRecruiterEmail(e.target.value)}
-                     className="w-full text-[10px] px-2 py-1.5 rounded-md bg-gray-50 dark:bg-gray-800/60 border border-gray-300 dark:border-gray-700 focus:outline-none focus:ring-1 focus:ring-purple-500/30" />
+                     className="w-full text-[10px] px-2 py-1.5 rounded-md bg-muted/40 border border-input focus:outline-none focus:ring-1 focus:ring-ring/30" />
               <input placeholder="Job URL" value={jobUrl} onChange={e => setJobUrl(e.target.value)}
-                     className="w-full text-[10px] px-2 py-1.5 rounded-md bg-gray-50 dark:bg-gray-800/60 border border-gray-300 dark:border-gray-700 focus:outline-none focus:ring-1 focus:ring-purple-500/30" />
+                     className="w-full text-[10px] px-2 py-1.5 rounded-md bg-muted/40 border border-input focus:outline-none focus:ring-1 focus:ring-ring/30" />
               <div className="grid grid-cols-2 gap-1.5">
                 <input type="date" value={nextDate} onChange={e => setNextDate(e.target.value)}
-                       className="text-[10px] px-2 py-1.5 rounded-md bg-gray-50 dark:bg-gray-800/60 border border-gray-300 dark:border-gray-700" />
+                       className="text-[10px] px-2 py-1.5 rounded-md bg-muted/40 border border-input" />
                 <input placeholder="Action" value={nextNote} onChange={e => setNextNote(e.target.value)}
-                       className="text-[10px] px-2 py-1.5 rounded-md bg-gray-50 dark:bg-gray-800/60 border border-gray-300 dark:border-gray-700" />
+                       className="text-[10px] px-2 py-1.5 rounded-md bg-muted/40 border border-input" />
               </div>
               <textarea placeholder="Notes" value={notes} onChange={e => setNotes(e.target.value)} rows={2}
-                     className="w-full text-[10px] px-2 py-1.5 rounded-md bg-gray-50 dark:bg-gray-800/60 border border-gray-300 dark:border-gray-700 resize-none focus:outline-none focus:ring-1 focus:ring-purple-500/30" />
+                     className="w-full text-[10px] px-2 py-1.5 rounded-md bg-muted/40 border border-input resize-none focus:outline-none focus:ring-1 focus:ring-ring/30" />
             </div>
             <div className="flex gap-1.5 justify-end pt-1">
               <button onClick={onToggleEdit}
-                      className="text-[10px] px-2 py-0.5 rounded text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">Cancel</button>
+                      className="text-[10px] px-2 py-0.5 rounded text-muted-foreground hover:text-foreground">Cancel</button>
               <button onClick={save} disabled={saving}
-                      className="text-[10px] px-2.5 py-0.5 rounded bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-medium disabled:opacity-50 shadow-sm">
-                {saving ? "…" : "Save"}
+                      className="text-[10px] px-2.5 py-0.5 rounded bg-primary hover:bg-primary/90 text-primary-foreground font-medium disabled:opacity-50 shadow-soft">
+                {saving ? "Saving…" : "Save"}
               </button>
             </div>
           </div>

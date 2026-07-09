@@ -31,20 +31,20 @@ function EyeIcon({ className = 'w-4 h-4' }: { className?: string }) {
 }
 
 // ─── Shared input styling ──────────────────────────────────────────────────
-const inputCls = "w-full px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-800/60 border border-gray-300 dark:border-gray-700/60 text-sm text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500/30 transition-all";
+const inputCls = "w-full px-3 py-2 rounded-lg bg-muted/50 border border-input text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/30 focus:border-ring/30 transition-all";
 const textareaCls = `${inputCls} resize-none leading-relaxed`;
-const labelCls = "block text-[11px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-500 mb-1.5";
+const labelCls = "block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5";
 const sectionHeaderCls = "flex items-center gap-3 mb-3";
-const sectionTitleCls = "text-xs font-bold uppercase tracking-widest text-purple-400/80";
-const addBtnCls = "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-purple-400 border border-purple-500/20 hover:bg-purple-500/10 transition-all";
-const removeBtnCls = "p-1 rounded-md text-gray-400 dark:text-gray-600 hover:text-red-400 hover:bg-red-500/10 transition-all disabled:opacity-30 disabled:cursor-not-allowed";
+const sectionTitleCls = "text-[11px] font-semibold uppercase tracking-[0.14em] text-primary/80";
+const addBtnCls = "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-primary border border-primary/25 hover:bg-primary/10 transition-all";
+const removeBtnCls = "p-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all disabled:opacity-30 disabled:cursor-not-allowed";
 
 // ─── Section Header ────────────────────────────────────────────────────────
 function SectionHeader({ title, children }: { title: string; children?: React.ReactNode }) {
   return (
     <div className={sectionHeaderCls}>
       <h3 className={sectionTitleCls}>{title}</h3>
-      <div className="flex-1 h-px bg-gray-200 dark:bg-gray-800" />
+      <div className="flex-1 h-px bg-border" />
       {children}
     </div>
   );
@@ -56,16 +56,16 @@ function CollapsibleSection({ title, defaultOpen = true, children, actions }: {
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="rounded-lg border border-gray-200 dark:border-gray-800/60 bg-gray-50 dark:bg-gray-900/40">
+    <div className="rounded-xl border border-border bg-card shadow-soft">
       <button type="button" onClick={() => setOpen(!open)}
-        className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-800/20 transition-colors rounded-t-lg">
+        className="w-full px-4 py-3 flex items-center justify-between hover:bg-muted/50 transition-colors rounded-t-xl">
         <span className={sectionTitleCls}>{title}</span>
         <div className="flex items-center gap-2">
           {actions && <div onClick={e => e.stopPropagation()}>{actions}</div>}
-          {open ? <ChevronUpIcon className="w-3.5 h-3.5 text-gray-500 dark:text-gray-500" /> : <ChevronDownIcon className="w-3.5 h-3.5 text-gray-500 dark:text-gray-500" />}
+          {open ? <ChevronUpIcon className="w-3.5 h-3.5 text-muted-foreground" /> : <ChevronDownIcon className="w-3.5 h-3.5 text-muted-foreground" />}
         </div>
       </button>
-      {open && <div className="px-4 pb-4 space-y-3 border-t border-gray-200 dark:border-gray-800/40 pt-3">{children}</div>}
+      {open && <div className="px-4 pb-4 space-y-3 border-t border-border/60 pt-3">{children}</div>}
     </div>
   );
 }
@@ -73,14 +73,14 @@ function CollapsibleSection({ title, defaultOpen = true, children, actions }: {
 // ─── Live Preview (right pane) ─────────────────────────────────────────────
 function LivePreview({ resume }: { resume: TailoredFullResume }) {
   const ST = ({ children }: { children: React.ReactNode }) => (
-    <div className="flex items-center gap-2 mb-2"><h3 className="text-xs font-bold uppercase tracking-widest text-purple-400/70">{children}</h3><div className="flex-1 h-px bg-gray-200 dark:bg-gray-800/60" /></div>
+    <div className="flex items-center gap-2 mb-2"><h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary/70">{children}</h3><div className="flex-1 h-px bg-border/60" /></div>
   );
   return (
     <div className="text-xs leading-relaxed">
       {/* Contact header */}
-      <div className="text-center mb-3 pb-2 border-b border-gray-200 dark:border-gray-800/60">
-        <h2 className="text-base font-bold text-gray-900 dark:text-gray-100 tracking-wide">{titleCaseName(resume.contact?.name || '') || 'Your Name'}</h2>
-        <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1">
+      <div className="text-center mb-3 pb-2 border-b border-border/60">
+        <h2 className="text-base font-bold text-foreground tracking-wide">{titleCaseName(resume.contact?.name || '') || 'Your Name'}</h2>
+        <p className="text-[11px] text-muted-foreground mt-1">
           {[resume.contact?.phone, resume.contact?.email, resume.contact?.linkedin, resume.contact?.github]
             .filter(Boolean).join('  |  ')}
         </p>
@@ -88,7 +88,7 @@ function LivePreview({ resume }: { resume: TailoredFullResume }) {
 
       <div className="space-y-2.5">
         {resume.summary && (
-          <div><ST>Summary</ST><p className="text-gray-700 dark:text-gray-300">{resume.summary}</p></div>
+          <div><ST>Summary</ST><p className="text-foreground/80">{resume.summary}</p></div>
         )}
 
         {resume.experience?.length > 0 && (
@@ -98,16 +98,16 @@ function LivePreview({ resume }: { resume: TailoredFullResume }) {
                 <div key={i}>
                   <div className="flex justify-between items-start gap-2">
                     <div>
-                      <span className="font-semibold text-gray-800 dark:text-gray-200">{exp.company}</span>
-                      {exp.location ? <span className="text-gray-500 dark:text-gray-500">, {exp.location}</span> : null}
-                      {exp.title && <span className="text-gray-500 dark:text-gray-400 italic"> &mdash; {exp.title}</span>}
+                      <span className="font-semibold text-foreground">{exp.company}</span>
+                      {exp.location ? <span className="text-muted-foreground">, {exp.location}</span> : null}
+                      {exp.title && <span className="text-muted-foreground italic"> &mdash; {exp.title}</span>}
                     </div>
-                    <span className="text-[11px] text-gray-500 dark:text-gray-500 whitespace-nowrap shrink-0">{exp.dates}</span>
+                    <span className="text-[11px] text-muted-foreground whitespace-nowrap shrink-0">{exp.dates}</span>
                   </div>
                   <ul className="mt-1 space-y-0.5 ml-3">
                     {exp.bullets?.map((b, j) => (
-                      <li key={j} className="text-gray-500 dark:text-gray-400 flex gap-1.5">
-                        <span className="text-purple-500/40 shrink-0">&bull;</span><span>{b}</span>
+                      <li key={j} className="text-muted-foreground flex gap-1.5">
+                        <span className="text-primary/40 shrink-0">&bull;</span><span>{b}</span>
                       </li>
                     ))}
                   </ul>
@@ -123,14 +123,14 @@ function LivePreview({ resume }: { resume: TailoredFullResume }) {
               {resume.projects.map((p, i) => (
                 <div key={i}>
                   <div className="flex justify-between items-start gap-2">
-                    <span className="font-semibold text-gray-800 dark:text-gray-200">{p.name}</span>
-                    {p.dates && <span className="text-[11px] text-gray-500 dark:text-gray-500 whitespace-nowrap shrink-0">{p.dates}</span>}
+                    <span className="font-semibold text-foreground">{p.name}</span>
+                    {p.dates && <span className="text-[11px] text-muted-foreground whitespace-nowrap shrink-0">{p.dates}</span>}
                   </div>
-                  {p.tech && <p className="text-[11px] text-gray-500 dark:text-gray-500 italic">{p.tech}</p>}
+                  {p.tech && <p className="text-[11px] text-muted-foreground italic">{p.tech}</p>}
                   <ul className="mt-0.5 space-y-0.5 ml-3">
                     {p.bullets?.map((b, j) => (
-                      <li key={j} className="text-gray-500 dark:text-gray-400 flex gap-1.5">
-                        <span className="text-purple-500/40 shrink-0">&bull;</span><span>{b}</span>
+                      <li key={j} className="text-muted-foreground flex gap-1.5">
+                        <span className="text-primary/40 shrink-0">&bull;</span><span>{b}</span>
                       </li>
                     ))}
                   </ul>
@@ -145,8 +145,8 @@ function LivePreview({ resume }: { resume: TailoredFullResume }) {
             <div className="space-y-1">
               {Object.entries(resume.skills).map(([c, s]) => (
                 <div key={c}>
-                  <span className="font-semibold text-gray-700 dark:text-gray-300">{c}: </span>
-                  <span className="text-gray-500 dark:text-gray-400">{Array.isArray(s) ? s.join(', ') : String(s)}</span>
+                  <span className="font-semibold text-foreground/90">{c}: </span>
+                  <span className="text-muted-foreground">{Array.isArray(s) ? s.join(', ') : String(s)}</span>
                 </div>
               ))}
             </div>
@@ -159,11 +159,11 @@ function LivePreview({ resume }: { resume: TailoredFullResume }) {
               {resume.education.map((edu, i) => (
                 <div key={i} className="flex justify-between items-start gap-2">
                   <div>
-                    <span className="font-semibold text-gray-700 dark:text-gray-300">{edu.institution}</span>
-                    {edu.degree && <span className="text-gray-500 dark:text-gray-400"> &mdash; {edu.degree}</span>}
-                    {edu.gpa && <span className="text-gray-500 dark:text-gray-500"> (GPA: {edu.gpa})</span>}
+                    <span className="font-semibold text-foreground/90">{edu.institution}</span>
+                    {edu.degree && <span className="text-muted-foreground"> &mdash; {edu.degree}</span>}
+                    {edu.gpa && <span className="text-muted-foreground"> (GPA: {edu.gpa})</span>}
                   </div>
-                  <span className="text-[11px] text-gray-500 dark:text-gray-500 whitespace-nowrap shrink-0">{edu.dates}</span>
+                  <span className="text-[11px] text-muted-foreground whitespace-nowrap shrink-0">{edu.dates}</span>
                 </div>
               ))}
             </div>
@@ -429,7 +429,7 @@ export default function ResumeEditor({ resume: initialResume, jdAnalysis, record
       {/* Contact */}
       <CollapsibleSection title="Contact">
         <div className="grid grid-cols-2 gap-3">
-          <div><label className={labelCls}>Full Name</label><input className={inputCls} value={resume.contact?.name || ''} onChange={e => updateContact('name', e.target.value)} placeholder="John Doe" /></div>
+          <div><label className={labelCls}>Full name</label><input className={inputCls} value={resume.contact?.name || ''} onChange={e => updateContact('name', e.target.value)} placeholder="John Doe" /></div>
           <div><label className={labelCls}>Email</label><input className={inputCls} value={resume.contact?.email || ''} onChange={e => updateContact('email', e.target.value)} placeholder="john@email.com" /></div>
           <div><label className={labelCls}>Phone</label><input className={inputCls} value={resume.contact?.phone || ''} onChange={e => updateContact('phone', e.target.value)} placeholder="(123) 456-7890" /></div>
           <div><label className={labelCls}>LinkedIn</label><input className={inputCls} value={resume.contact?.linkedin || ''} onChange={e => updateContact('linkedin', e.target.value)} placeholder="linkedin.com/in/..." /></div>
@@ -445,9 +445,9 @@ export default function ResumeEditor({ resume: initialResume, jdAnalysis, record
       {/* Experience */}
       <CollapsibleSection title="Experience" actions={<button type="button" className={addBtnCls} onClick={addExperience}><PlusIcon className="w-3 h-3" />Add</button>}>
         {resume.experience?.map((exp, i) => (
-          <div key={i} className="rounded-lg border border-gray-200 dark:border-gray-800/40 bg-gray-50/50 dark:bg-gray-900/30 p-3 space-y-2">
+          <div key={i} className="rounded-lg border border-border/70 bg-muted/30 p-3 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">{exp.company || exp.title || `Experience ${i + 1}`}</span>
+              <span className="text-xs font-semibold text-foreground/90">{exp.company || exp.title || `Experience ${i + 1}`}</span>
               <div className="flex items-center gap-0.5">
                 <button type="button" className={removeBtnCls} disabled={i === 0} onClick={() => moveItem('experience', i, i - 1)}><ChevronUpIcon className="w-3.5 h-3.5" /></button>
                 <button type="button" className={removeBtnCls} disabled={i === resume.experience.length - 1} onClick={() => moveItem('experience', i, i + 1)}><ChevronDownIcon className="w-3.5 h-3.5" /></button>
@@ -455,7 +455,7 @@ export default function ResumeEditor({ resume: initialResume, jdAnalysis, record
               </div>
             </div>
             <div className="grid grid-cols-2 gap-2">
-              <div><label className={labelCls}>Job Title</label><input className={inputCls} value={exp.title} onChange={e => updateExperience(i, 'title', e.target.value)} /></div>
+              <div><label className={labelCls}>Job title</label><input className={inputCls} value={exp.title} onChange={e => updateExperience(i, 'title', e.target.value)} /></div>
               <div><label className={labelCls}>Company</label><input className={inputCls} value={exp.company} onChange={e => updateExperience(i, 'company', e.target.value)} /></div>
               <div><label className={labelCls}>Location</label><input className={inputCls} value={exp.location} onChange={e => updateExperience(i, 'location', e.target.value)} /></div>
               <div><label className={labelCls}>Dates</label><input className={inputCls} value={exp.dates} onChange={e => updateExperience(i, 'dates', e.target.value)} /></div>
@@ -463,17 +463,17 @@ export default function ResumeEditor({ resume: initialResume, jdAnalysis, record
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className={labelCls}>Bullets</label>
-                <button type="button" className="text-[11px] text-purple-400 hover:text-purple-300" onClick={() => addBullet('experience', i)}>+ Add bullet</button>
+                <button type="button" className="text-[11px] text-primary hover:text-primary/80" onClick={() => addBullet('experience', i)}>+ Add bullet</button>
               </div>
               <div className="space-y-1.5">
                 {exp.bullets?.map((bullet, j) => (
                   <div key={j} className="flex gap-1.5 items-start">
-                    <span className="text-purple-500/40 mt-2.5 shrink-0 text-xs">&bull;</span>
+                    <span className="text-primary/40 mt-2.5 shrink-0 text-xs">&bull;</span>
                     <textarea className={`${textareaCls} text-xs`} rows={2} value={bullet} onChange={e => updateBullet('experience', i, j, e.target.value)} />
                     <button type="button" title="AI Rewrite" disabled={rewritingBullet !== null}
-                      className={`${removeBtnCls} mt-1.5 ${rewritingBullet === `experience-${i}-${j}` ? 'animate-spin' : ''} hover:!text-purple-400`}
+                      className={`${removeBtnCls} mt-1.5 ${rewritingBullet === `experience-${i}-${j}` ? 'animate-spin' : ''} hover:!text-primary`}
                       onClick={() => handleRewriteBullet('experience', i, j)}>
-                      {rewritingBullet === `experience-${i}-${j}` ? <span className="w-3 h-3 rounded-full border-2 border-purple-400 border-t-transparent animate-spin" /> : <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" /></svg>}
+                      {rewritingBullet === `experience-${i}-${j}` ? <span className="w-3 h-3 rounded-full border-2 border-primary border-t-transparent animate-spin" /> : <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" /></svg>}
                     </button>
                     <button type="button" className={`${removeBtnCls} mt-1.5`} onClick={() => removeBullet('experience', i, j)}><TrashIcon className="w-3 h-3" /></button>
                   </div>
@@ -487,9 +487,9 @@ export default function ResumeEditor({ resume: initialResume, jdAnalysis, record
       {/* Projects */}
       <CollapsibleSection title="Projects" actions={<button type="button" className={addBtnCls} onClick={addProject}><PlusIcon className="w-3 h-3" />Add</button>}>
         {resume.projects?.map((proj, i) => (
-          <div key={i} className="rounded-lg border border-gray-200 dark:border-gray-800/40 bg-gray-50/50 dark:bg-gray-900/30 p-3 space-y-2">
+          <div key={i} className="rounded-lg border border-border/70 bg-muted/30 p-3 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">{proj.name || `Project ${i + 1}`}</span>
+              <span className="text-xs font-semibold text-foreground/90">{proj.name || `Project ${i + 1}`}</span>
               <div className="flex items-center gap-0.5">
                 <button type="button" className={removeBtnCls} disabled={i === 0} onClick={() => moveItem('projects', i, i - 1)}><ChevronUpIcon className="w-3.5 h-3.5" /></button>
                 <button type="button" className={removeBtnCls} disabled={i === resume.projects.length - 1} onClick={() => moveItem('projects', i, i + 1)}><ChevronDownIcon className="w-3.5 h-3.5" /></button>
@@ -504,17 +504,17 @@ export default function ResumeEditor({ resume: initialResume, jdAnalysis, record
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className={labelCls}>Bullets</label>
-                <button type="button" className="text-[11px] text-purple-400 hover:text-purple-300" onClick={() => addBullet('projects', i)}>+ Add bullet</button>
+                <button type="button" className="text-[11px] text-primary hover:text-primary/80" onClick={() => addBullet('projects', i)}>+ Add bullet</button>
               </div>
               <div className="space-y-1.5">
                 {proj.bullets?.map((bullet, j) => (
                   <div key={j} className="flex gap-1.5 items-start">
-                    <span className="text-purple-500/40 mt-2.5 shrink-0 text-xs">&bull;</span>
+                    <span className="text-primary/40 mt-2.5 shrink-0 text-xs">&bull;</span>
                     <textarea className={`${textareaCls} text-xs`} rows={2} value={bullet} onChange={e => updateBullet('projects', i, j, e.target.value)} />
                     <button type="button" title="AI Rewrite" disabled={rewritingBullet !== null}
-                      className={`${removeBtnCls} mt-1.5 hover:!text-purple-400`}
+                      className={`${removeBtnCls} mt-1.5 hover:!text-primary`}
                       onClick={() => handleRewriteBullet('projects', i, j)}>
-                      {rewritingBullet === `projects-${i}-${j}` ? <span className="w-3 h-3 rounded-full border-2 border-purple-400 border-t-transparent animate-spin" /> : <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" /></svg>}
+                      {rewritingBullet === `projects-${i}-${j}` ? <span className="w-3 h-3 rounded-full border-2 border-primary border-t-transparent animate-spin" /> : <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" /></svg>}
                     </button>
                     <button type="button" className={`${removeBtnCls} mt-1.5`} onClick={() => removeBullet('projects', i, j)}><TrashIcon className="w-3 h-3" /></button>
                   </div>
@@ -526,9 +526,9 @@ export default function ResumeEditor({ resume: initialResume, jdAnalysis, record
       </CollapsibleSection>
 
       {/* Skills */}
-      <CollapsibleSection title="Skills" actions={<button type="button" className={addBtnCls} onClick={addSkillCategory}><PlusIcon className="w-3 h-3" />Add Category</button>}>
+      <CollapsibleSection title="Skills" actions={<button type="button" className={addBtnCls} onClick={addSkillCategory}><PlusIcon className="w-3 h-3" />Add category</button>}>
         {Object.entries(resume.skills || {}).map(([category, skills]) => (
-          <div key={category} className="rounded-lg border border-gray-200 dark:border-gray-800/40 bg-gray-50/50 dark:bg-gray-900/30 p-3 space-y-2">
+          <div key={category} className="rounded-lg border border-border/70 bg-muted/30 p-3 space-y-2">
             <div className="flex items-center gap-2">
               <input className={`${inputCls} text-xs font-semibold`} defaultValue={category}
                 onBlur={e => { if (e.target.value && e.target.value !== category) updateSkillCategory(category, e.target.value); }}
@@ -542,7 +542,7 @@ export default function ResumeEditor({ resume: initialResume, jdAnalysis, record
                 onChange={e => updateSkills(category, e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
                 placeholder="Skill1, Skill2, Skill3..."
               />
-              <p className="text-[11px] text-gray-600 mt-1">Comma-separated skills</p>
+              <p className="text-[11px] text-muted-foreground mt-1">Comma-separated skills</p>
             </div>
           </div>
         ))}
@@ -551,9 +551,9 @@ export default function ResumeEditor({ resume: initialResume, jdAnalysis, record
       {/* Education */}
       <CollapsibleSection title="Education" actions={<button type="button" className={addBtnCls} onClick={addEducation}><PlusIcon className="w-3 h-3" />Add</button>}>
         {resume.education?.map((edu, i) => (
-          <div key={i} className="rounded-lg border border-gray-200 dark:border-gray-800/40 bg-gray-50/50 dark:bg-gray-900/30 p-3 space-y-2">
+          <div key={i} className="rounded-lg border border-border/70 bg-muted/30 p-3 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">{edu.institution || `Education ${i + 1}`}</span>
+              <span className="text-xs font-semibold text-foreground/90">{edu.institution || `Education ${i + 1}`}</span>
               <div className="flex items-center gap-0.5">
                 <button type="button" className={removeBtnCls} disabled={i === 0} onClick={() => moveItem('education', i, i - 1)}><ChevronUpIcon className="w-3.5 h-3.5" /></button>
                 <button type="button" className={removeBtnCls} disabled={i === resume.education.length - 1} onClick={() => moveItem('education', i, i + 1)}><ChevronDownIcon className="w-3.5 h-3.5" /></button>
@@ -576,7 +576,7 @@ export default function ResumeEditor({ resume: initialResume, jdAnalysis, record
 
   const previewPanel = (
     <div className="p-4 overflow-y-auto h-full">
-      <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-white/[0.02] p-5">
+      <div className="rounded-xl border border-border bg-card p-5 shadow-soft">
         <LivePreview resume={resume} />
       </div>
     </div>
@@ -585,54 +585,54 @@ export default function ResumeEditor({ resume: initialResume, jdAnalysis, record
   return (
     <div className="space-y-0">
       {/* Toolbar */}
-      <div className="sticky top-0 z-10 bg-white/95 dark:bg-gray-950/95 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800/60 px-4 py-3">
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border px-4 py-3">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3">
             <button type="button" onClick={handleBack}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800/60 transition-all">
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-all">
               <ArrowLeftIcon className="w-4 h-4" />Back
             </button>
-            <div className="h-5 w-px bg-gray-200 dark:bg-gray-800" />
+            <div className="h-5 w-px bg-border" />
             <div className="flex items-center gap-2">
-              <PencilIcon className="w-4 h-4 text-purple-400" />
-              <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">Resume Editor</span>
+              <PencilIcon className="w-4 h-4 text-primary" />
+              <span className="font-display text-sm font-semibold text-foreground">Resume Editor</span>
             </div>
-            {isModified && <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">Modified</span>}
+            {isModified && <span className="text-[11px] px-2 py-0.5 rounded-full bg-warning/10 text-warning border border-warning/25">Modified</span>}
           </div>
 
           <div className="flex items-center gap-2">
             {/* View mode toggle */}
-            <div className="inline-flex rounded-lg bg-gray-200 dark:bg-gray-800/60 p-0.5 border border-gray-200 dark:border-gray-800">
+            <div className="inline-flex rounded-lg bg-muted p-0.5 border border-border">
               {[
                 { key: 'split' as const, label: 'Split' },
                 { key: 'edit' as const, label: 'Edit' },
                 { key: 'preview' as const, label: 'Preview' },
               ].map(v => (
                 <button key={v.key} type="button" onClick={() => setView(v.key)}
-                  className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${v.key === 'split' ? 'hidden md:inline-block' : ''} ${view === v.key ? 'bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200' : 'text-gray-500 dark:text-gray-500 hover:text-gray-900 dark:hover:text-gray-300'}`}>
+                  className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${v.key === 'split' ? 'hidden md:inline-block' : ''} ${view === v.key ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
                   {v.label}
                 </button>
               ))}
             </div>
 
-            <div className="h-5 w-px bg-gray-200 dark:bg-gray-800" />
+            <div className="h-5 w-px bg-border" />
 
             {isModified && (
               <button type="button" onClick={handleReset}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-500 dark:text-gray-400 border border-gray-300 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-600 hover:text-gray-700 dark:hover:text-gray-300 transition-all">
+                className="px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground border border-border hover:text-foreground hover:bg-muted transition-all">
                 Reset
               </button>
             )}
 
             <button type="button" onClick={() => handleDownload('pdf')} disabled={downloading !== null}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 disabled:from-gray-700 disabled:to-gray-700 disabled:text-gray-500 dark:text-gray-500 disabled:cursor-not-allowed shadow-lg shadow-purple-500/25 disabled:shadow-none transition-all duration-200">
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed shadow-soft disabled:shadow-none transition-all duration-200">
               <DocumentArrowDownIcon className="w-4 h-4" />
-              {downloading === 'pdf' ? 'Generating...' : 'Download PDF'}
+              {downloading === 'pdf' ? 'Generating…' : 'Download PDF'}
             </button>
             <button type="button" onClick={() => handleDownload('docx')} disabled={downloading !== null}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-600 hover:text-gray-900 dark:hover:text-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200">
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-foreground bg-muted border border-border hover:bg-muted/70 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200">
               <DocumentArrowDownIcon className="w-3.5 h-3.5" />
-              {downloading === 'docx' ? '...' : 'DOCX'}
+              {downloading === 'docx' ? '…' : 'DOCX'}
             </button>
           </div>
         </div>
@@ -642,7 +642,7 @@ export default function ResumeEditor({ resume: initialResume, jdAnalysis, record
       <div className="h-[calc(100vh-3.5rem)]">
         {view === 'split' && (
           <div className="flex flex-col md:flex-row h-full">
-            <div className="w-full md:w-1/2 h-1/2 md:h-full border-b md:border-b-0 md:border-r border-gray-200 dark:border-gray-800/60 overflow-y-auto">
+            <div className="w-full md:w-1/2 h-1/2 md:h-full border-b md:border-b-0 md:border-r border-border overflow-y-auto">
               {editorPanel}
             </div>
             <div className="w-full md:w-1/2 h-1/2 md:h-full overflow-y-auto">
