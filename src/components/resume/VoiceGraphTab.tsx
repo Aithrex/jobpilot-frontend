@@ -198,7 +198,7 @@ const CONSENT_POINTS: { title: string; body: string }[] = [
   },
   {
     title: "You're in control",
-    body: "Turn it off anytime and we delete all of it.",
+    body: "Turn it off anytime: we delete your writing, voice profile, and graph. Resumes you already made stay yours to keep or delete.",
   },
 ];
 
@@ -915,7 +915,7 @@ function ConsentFooter({ onRevoked }: { onRevoked: () => void }) {
       return;
     }
     toast.success("Voice Graph turned off", {
-      description: "Your writing has been deleted.",
+      description: "Your writing, voice profile, and graph are deleted. Resumes you already made are kept as your files.",
     });
     setConfirming(false);
     onRevoked();
