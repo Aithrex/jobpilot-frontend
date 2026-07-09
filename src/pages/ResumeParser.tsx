@@ -9,7 +9,7 @@ import { QuotaLimitDialog } from "@/components/quota/QuotaLimitDialog";
 import { useFeedback } from "@/components/feedback/FeedbackWidget";
 import { buildCoverLetterFilename, titleCaseName } from "@/lib/filename";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Bot, CreditCard, GraduationCap, Trophy, Users, Menu, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
+import { Bot, CreditCard, GraduationCap, Trophy, Users, Mic, Menu, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
 import { ConnectedTo } from "@/components/resume/ConnectedTo";
 import MobileBottomNav from "@/components/layout/MobileBottomNav";
 import { lazy, Suspense } from "react";
@@ -43,6 +43,7 @@ const BillingTab = lazy(() => import("@/components/billing/BillingTab"));
 const LearningHubTab = lazy(() => import("@/components/resume/LearningHubTab"));
 const EventsTab = lazy(() => import("@/components/resume/EventsTab"));
 const NetworkTab = lazy(() => import("@/components/resume/NetworkTab"));
+const VoiceGraphTab = lazy(() => import("@/components/resume/VoiceGraphTab"));
 
 // ─── Shared Icons ───────────────────────────────────────────────────────────
 
@@ -333,6 +334,7 @@ type NavTab =
   | "learning"
   | "events"
   | "network"
+  | "voicegraph"
   | "billing"
   | "profile";
 
@@ -6053,6 +6055,12 @@ const NAV_ITEMS: ResumeNavItem[] = [
     hint: "Draft posts about your wins",
   },
   {
+    key: "voicegraph",
+    label: "Your Voice",
+    icon: <Mic className="w-4 h-4" />,
+    hint: "Teach us how you write",
+  },
+  {
     key: "billing",
     label: "Billing",
     icon: <CreditCard className="w-4 h-4" />,
@@ -6071,7 +6079,7 @@ const NAV_SECTIONS: ResumeNavSection[] = [
   { label: "Create", items: ["tailor", "batch"] },
   { label: "Library", items: ["my-resumes", "tailored", "applications"] },
   { label: "Career", items: ["interview", "visa", "copilot", "jobs"] },
-  { label: "Grow", items: ["learning", "events", "network"] },
+  { label: "Grow", items: ["learning", "events", "network", "voicegraph"] },
   { label: "Experimental", items: ["beta"] },
   { label: "Account", items: ["billing", "profile"] },
 ];
@@ -6247,6 +6255,7 @@ const VALID_NAV_TABS: readonly NavTab[] = [
   "learning",
   "events",
   "network",
+  "voicegraph",
   "billing",
   "profile",
 ] as const;
@@ -6731,6 +6740,11 @@ export default function ResumeParser() {
               {activeNav === "network" && (
                 <Suspense fallback={<div className="p-8 text-center"><div className="h-6 w-1/3 animate-pulse rounded bg-gray-200 dark:bg-white/10 mx-auto" /></div>}>
                   <NetworkTab />
+                </Suspense>
+              )}
+              {activeNav === "voicegraph" && (
+                <Suspense fallback={<div className="p-8 text-center"><div className="h-6 w-1/3 animate-pulse rounded bg-gray-200 dark:bg-white/10 mx-auto" /></div>}>
+                  <VoiceGraphTab />
                 </Suspense>
               )}
               {activeNav === "billing" && (

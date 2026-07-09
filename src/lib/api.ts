@@ -2127,6 +2127,70 @@ class ApiService {
   }
 
   // ============================================
+  // Voice Graph — writing-capture surface (/api/resume/voice-graph)
+  // Simple JSON request/response (NOT the async job pattern).
+  // ============================================
+
+  async voiceGraphStatus() {
+    // 404 here means the feature flag is off — the caller treats a 404
+    // status as "feature unavailable" and renders a soft placeholder.
+    return this.request<import("../types/voicegraph").VoiceGraphStatus>(
+      "/resume/voice-graph/status",
+    );
+  }
+
+  async voiceGraphPrompts() {
+    return this.request<{ prompts: import("../types/voicegraph").WritingPrompt[] }>(
+      "/resume/voice-graph/prompts",
+    );
+  }
+
+  async grantVoiceConsent() {
+    return this.request<import("../types/voicegraph").VoiceConsent>(
+      "/resume/voice-graph/consent",
+      { method: "POST" },
+    );
+  }
+
+  async revokeVoiceConsent() {
+    return this.request<import("../types/voicegraph").VoiceConsent>(
+      "/resume/voice-graph/consent",
+      { method: "DELETE" },
+    );
+  }
+
+  async saveWritingSample(
+    payload: import("../types/voicegraph").SaveSamplePayload,
+  ): Promise<ApiResponse<import("../types/voicegraph").WritingSample>> {
+    // request() already forwards { status, errorPayload } on a non-2xx, so a
+    // 403 upgrade_required / consent_required surfaces to the caller intact
+    // (mirrors tailorResumeWithJDText) — no re-wrapping needed here.
+    return this.request<import("../types/voicegraph").WritingSample>(
+      "/resume/voice-graph/samples",
+      { method: "POST", body: JSON.stringify(payload) },
+    );
+  }
+
+  async listWritingSamples() {
+    return this.request<{ samples: import("../types/voicegraph").WritingSample[] }>(
+      "/resume/voice-graph/samples",
+    );
+  }
+
+  async getWritingSample(id: string) {
+    return this.request<import("../types/voicegraph").WritingSample>(
+      `/resume/voice-graph/samples/${encodeURIComponent(id)}`,
+    );
+  }
+
+  async deleteWritingSample(id: string) {
+    return this.request<{ ok: boolean }>(
+      `/resume/voice-graph/samples/${encodeURIComponent(id)}`,
+      { method: "DELETE" },
+    );
+  }
+
+  // ============================================
   // Gmail integration — auto-update application status from inbox
   // ============================================
 
