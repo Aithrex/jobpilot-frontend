@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "JobPilot — Apply Assistant",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "High-signal application autofill + résumé-grounded answers. You review, you submit — never spray-and-pray.",
   "permissions": ["storage", "activeTab", "scripting"],
   "host_permissions": [
@@ -13,7 +13,9 @@
     "https://*.icims.com/*",
     "https://*.ashbyhq.com/*",
     "https://jobs.ashbyhq.com/*",
-    "https://*.smartrecruiters.com/*"
+    "https://*.smartrecruiters.com/*",
+    "https://apply.workable.com/*",
+    "https://*.workable.com/*"
   ],
   "action": {
     "default_popup": "popup.html",
@@ -30,9 +32,26 @@
         "https://*.icims.com/*",
         "https://*.ashbyhq.com/*",
         "https://jobs.ashbyhq.com/*",
-        "https://*.smartrecruiters.com/*"
+        "https://*.smartrecruiters.com/*",
+        "https://apply.workable.com/*",
+        "https://*.workable.com/*"
       ],
-      "js": ["config.js", "content.js"],
+      "js": [
+        "config.js",
+        "lib/redact.js",
+        "lib/ratelimit.js",
+        "adapters/greenhouse.js",
+        "adapters/lever.js",
+        "adapters/ashby.js",
+        "adapters/workday.js",
+        "adapters/workable.js",
+        "adapters/smartrecruiters.js",
+        "adapters/generic.js",
+        "adapters/index.js",
+        "lib/resolver.js",
+        "lib/reviewcard.js",
+        "content.js"
+      ],
       "css": ["content.css"],
       "run_at": "document_idle"
     },

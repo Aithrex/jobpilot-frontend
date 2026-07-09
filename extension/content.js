@@ -1,12 +1,28 @@
-/* JobPilot Apply Assistant — on-page panel.
- * Autofill empty form fields from the user's résumé profile, and draft
- * résumé-grounded answers to open-ended questions. Never submits anything.
+/* JobPilot Apply Assistant — on-page orchestrator.
+ *
+ * "Fill, Review, One Tap": autofill empty form fields from the user's résumé
+ * profile (via the ATS adapter + resolver engine), then surface a shadow-DOM
+ * Review Card so the user checks every value and drafts open-ended answers —
+ * before making the ONE tap that is always theirs: the employer's Submit button.
+ *
+ * Engine pieces (all loaded before this file — see manifest content_scripts):
+ *   config.js        → self.JOBPILOT_CONFIG
+ *   lib/redact.js    → self.JPRedact
+ *   lib/ratelimit.js → self.JPRateLimit
+ *   adapters/*.js    → self.__JP_ADAPTERS  (+ adapters/index.js → self.JPAdapters)
+ *   lib/resolver.js  → self.JPResolver
+ *   lib/reviewcard.js→ self.JPReviewCard
+ *
+ * This script NEVER submits: no element.click() on submit buttons, no
+ * form.submit(), no synthetic submit/Enter dispatch. It only writes field
+ * values and drafts answers, all reviewable and reversible by the user.
  */
 (function () {
   if (window.__jobpilotInjected) return;
   window.__jobpilotInjected = true;
 
   const send = (msg) => new Promise((res) => chrome.runtime.sendMessage(msg, res));
+  const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
 
   // Track the last text field the user touched (clicking our panel steals focus).
   let lastField = null;
@@ -21,6 +37,8 @@
     true
   );
 
+  // Kept local for the focus-based Draft flow (below). The autofill path uses
+  // JPResolver.setValue.
   function setNativeValue(el, value) {
     try {
       const proto = el.tagName === "TEXTAREA" ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
@@ -30,56 +48,6 @@
     }
     el.dispatchEvent(new Event("input", { bubbles: true }));
     el.dispatchEvent(new Event("change", { bubbles: true }));
-  }
-
-  function fieldText(el) {
-    const parts = [el.name, el.id, el.getAttribute("autocomplete"), el.getAttribute("aria-label"), el.placeholder, el.type];
-    if (el.id) {
-      try {
-        const lab = document.querySelector(`label[for="${CSS.escape(el.id)}"]`);
-        if (lab) parts.push(lab.innerText);
-      } catch (_) {}
-    }
-    if (el.labels && el.labels.length) parts.push(el.labels[0].innerText);
-    return parts.filter(Boolean).join(" ").toLowerCase();
-  }
-
-  function autofill(profile) {
-    if (!profile || !profile.personal) return 0;
-    const p = profile.personal;
-    const l = profile.links || {};
-    const name = (p.name || "").trim();
-    const sp = name.split(/\s+/);
-    const first = sp[0] || "";
-    const last = sp.length > 1 ? sp.slice(1).join(" ") : "";
-    const rules = [
-      [/first.?name|given.?name|legal.?first/, first],
-      [/last.?name|surname|family.?name|legal.?last/, last],
-      [/full.?name|^name$|your.?name|legal.?name|preferred.?name/, name],
-      [/e-?mail/, p.email],
-      [/phone|mobile|telephone|^tel$/, p.phone],
-      [/linkedin/, l.linkedin],
-      [/github/, l.github],
-      [/portfolio|personal.?(web)?site|website|^url$/, l.portfolio],
-      [/city|current.?location|^location$|town/, p.location],
-    ];
-    let filled = 0;
-    document.querySelectorAll("input, textarea").forEach((el) => {
-      const type = (el.type || "").toLowerCase();
-      if (["hidden", "password", "file", "submit", "button", "checkbox", "radio"].includes(type)) return;
-      if (el.disabled || el.readOnly) return;
-      if (el.value && el.value.trim()) return; // never overwrite what the user typed
-      const t = fieldText(el);
-      if (!t) return;
-      for (const [re, val] of rules) {
-        if (val && re.test(t)) {
-          setNativeValue(el, String(val));
-          filled++;
-          break;
-        }
-      }
-    });
-    return filled;
   }
 
   function questionFor(el) {
@@ -103,7 +71,43 @@
     return (el.placeholder || "").trim();
   }
 
-  // ---- panel UI ----
+  // Detect (but never solve/bypass) common bot-check widgets so we can hand
+  // control back to the user instead of tripping detection.
+  function detectCaptcha() {
+    const selectors = [
+      'iframe[src*="recaptcha"]',
+      'iframe[src*="hcaptcha"]',
+      'iframe[src*="challenges.cloudflare.com"]',
+      'iframe[title*="captcha" i]',
+      ".g-recaptcha",
+      ".h-captcha",
+      ".cf-turnstile",
+      "[data-sitekey]",
+      "#cf-challenge-running",
+    ];
+    for (const s of selectors) {
+      try {
+        if (document.querySelector(s)) return true;
+      } catch (_) {}
+    }
+    return false;
+  }
+
+  function noteForConfidence(conf) {
+    if (conf === "medium") return "Guessed from the field label — double-check.";
+    if (conf === "low") return "AI-matched — double-check.";
+    return "";
+  }
+
+  function safeEssays(adapter) {
+    try {
+      return (adapter && typeof adapter.essayQuestions === "function" && adapter.essayQuestions()) || [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  // ---- panel UI (unchanged launcher; the Review Card is the isolated overlay) ----
   const root = document.createElement("div");
   root.id = "jobpilot-ext-root";
   root.innerHTML = `
@@ -128,7 +132,6 @@
 
   function flash(msg) {
     const s = q("#jp-status");
-    const prev = s.dataset.base || s.textContent;
     s.textContent = msg;
     clearTimeout(s._t);
     s._t = setTimeout(() => refreshStatus(), 2600);
@@ -155,7 +158,21 @@
     }
   }
 
+  // ---- Autofill: resolve → fill (with jitter) → Review Card ----
   q("#jp-autofill").addEventListener("click", async () => {
+    if (!self.JPResolver || !self.JPReviewCard || !self.JPRateLimit || !self.JPAdapters) {
+      flash("Engine not ready — reload the page and try again.");
+      return;
+    }
+
+    // Client-side rate limit (anti spray-and-pray).
+    const gate = await self.JPRateLimit.check();
+    if (!gate.allowed) {
+      flash(gate.reason || "Rate limit reached — take a break.");
+      return;
+    }
+
+    // Profile (sync on demand).
     let r = await send({ type: "GET_PROFILE" });
     if (!r || !r.profile) {
       flash("Syncing your profile…");
@@ -165,10 +182,100 @@
       flash((r && r.error) || "Couldn't load your profile");
       return;
     }
-    const n = autofill(r.profile);
-    flash(n ? `Filled ${n} field${n === 1 ? "" : "s"} — review before submitting` : "No matching empty fields found");
+    const profile = r.profile;
+
+    const captcha = detectCaptcha();
+    const adapter = self.JPAdapters.detect(location.href, document);
+    flash(adapter && adapter.id !== "generic" ? `Reading ${adapter.id} form…` : "Reading this form…");
+
+    let plan = [];
+    let sensitive = [];
+    try {
+      const out = await self.JPResolver.resolve(profile, adapter, {});
+      plan = out.plan || [];
+      sensitive = out.sensitive || [];
+    } catch (e) {
+      flash("Couldn't read this form.");
+      return;
+    }
+
+    const rows = [];
+    const elById = new Map();
+    const usedEls = new Set();
+    let idc = 0;
+
+    // Fill each planned field with a small humanizing delay.
+    for (const item of plan) {
+      await sleep(self.JPRateLimit.jitter(40, 160));
+      const ok = self.JPResolver.setValue(item.el, item.value);
+      if (!ok) continue;
+      const id = "f" + idc++;
+      elById.set(id, item.el);
+      usedEls.add(item.el);
+      rows.push({
+        id,
+        kind: "field",
+        label: item.label,
+        value: item.value,
+        confidence: item.confidence,
+        note: noteForConfidence(item.confidence),
+      });
+    }
+
+    // Sensitive fields — surfaced, never auto-answered.
+    for (const s of sensitive) {
+      usedEls.add(s.el);
+      rows.push({
+        id: "s" + idc++,
+        kind: "sensitive",
+        label: s.label,
+        note: "We never auto-answer eligibility, EEO, pay or DOB questions — that's yours.",
+      });
+    }
+
+    // Open-ended questions — offer a résumé-grounded draft (user edits & submits).
+    const essayById = new Map();
+    for (const eq of safeEssays(adapter)) {
+      if (!eq || !eq.el || usedEls.has(eq.el)) continue;
+      const id = "e" + idc++;
+      essayById.set(id, eq);
+      usedEls.add(eq.el);
+      rows.push({ id, kind: "essay", label: eq.label || "Open-ended question" });
+    }
+
+    if (plan.length) await self.JPRateLimit.record();
+
+    const cardApi = self.JPReviewCard.open(rows, {
+      captcha,
+      onEdit: (id, val) => {
+        const target = elById.get(id) || (essayById.get(id) && essayById.get(id).el);
+        if (target) self.JPResolver.setValue(target, val);
+      },
+      onDraft: async (id) => {
+        const eq = essayById.get(id);
+        if (!eq) return;
+        const res = await send({ type: "GENERATE_ANSWER", payload: { question: eq.label } });
+        if (!res || !res.ok || !res.data || !Array.isArray(res.data.variants) || !res.data.variants.length) {
+          cardApi.setRow(id, { note: (res && res.data && (res.data.message || res.data.error)) || "Couldn't draft — try the panel's Draft button." });
+          return;
+        }
+        const first = res.data.variants[0];
+        const ans = (first && (first.answer || (typeof first === "string" ? first : ""))) || "";
+        if (!ans) {
+          cardApi.setRow(id, { note: "No answer returned — try again." });
+          return;
+        }
+        self.JPResolver.setValue(eq.el, ans);
+        elById.set(id, eq.el); // now inline-editable through onEdit
+        cardApi.setRow(id, { kind: "field", value: ans, confidence: "low", note: "AI draft inserted — make it yours before submitting." });
+      },
+    });
+
+    if (captcha) flash("CAPTCHA detected — you solve it & submit.");
+    else flash(plan.length ? `Filled ${plan.length} field${plan.length === 1 ? "" : "s"} — review below` : "Nothing to autofill — see review");
   });
 
+  // ---- Draft an answer (focus-based; preserves the original flow) ----
   q("#jp-draft").addEventListener("click", async () => {
     const field = lastField && document.contains(lastField) ? lastField : null;
     if (!field) return flash("Click into a question box first, then Draft.");

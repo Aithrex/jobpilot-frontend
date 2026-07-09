@@ -52,10 +52,16 @@ function mergeVault(saved, profile) {
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   (async () => {
     try {
-      switch (msg && msg.type) {
+      // Validate the envelope before dispatch (both ends validate).
+      if (!msg || typeof msg.type !== "string") {
+        sendResponse({ ok: false, error: "invalid message" });
+        return;
+      }
+      switch (msg.type) {
         case "SET_TOKEN": {
-          if (msg.token) await chrome.storage.local.set({ jp_token: msg.token });
-          sendResponse({ ok: !!msg.token });
+          const token = typeof msg.token === "string" ? msg.token.trim() : "";
+          if (token) await chrome.storage.local.set({ jp_token: token });
+          sendResponse({ ok: !!token });
           break;
         }
         case "CLEAR": {
@@ -86,9 +92,37 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
           break;
         }
         case "GENERATE_ANSWER": {
+          const payload = msg.payload || {};
+          if (typeof payload.question !== "string" || !payload.question.trim()) {
+            sendResponse({ ok: false, error: "question is required" });
+            break;
+          }
           const r = await apiFetch("/apply/answer", {
             method: "POST",
-            body: JSON.stringify(msg.payload || {}),
+            body: JSON.stringify(payload),
+          });
+          sendResponse({ ok: r.ok, status: r.status, data: r.data });
+          break;
+        }
+        case "DISAMBIGUATE_FIELD": {
+          // Last-resort LLM field mapping. OFF unless the operator opts in AND a
+          // backend field-map endpoint is configured. Content already redacts the
+          // label (lib/redact.js) before it reaches here; we validate + clamp,
+          // then proxy. No such endpoint ships by default — this no-ops safely.
+          const cfg = JOBPILOT_CONFIG || {};
+          if (!cfg.LLM_FIELD_DISAMBIGUATION || !cfg.FIELD_MAP_PATH) {
+            sendResponse({ ok: false, error: "disabled" });
+            break;
+          }
+          const payload = msg.payload || {};
+          if (typeof payload.label !== "string" || !payload.label.trim() || !Array.isArray(payload.candidates)) {
+            sendResponse({ ok: false, error: "invalid payload" });
+            break;
+          }
+          const candidates = payload.candidates.filter((c) => typeof c === "string").slice(0, 20);
+          const r = await apiFetch(cfg.FIELD_MAP_PATH, {
+            method: "POST",
+            body: JSON.stringify({ label: payload.label.slice(0, 1200), candidates }),
           });
           sendResponse({ ok: r.ok, status: r.status, data: r.data });
           break;
