@@ -71,8 +71,8 @@ export default function Login() {
 
   return (
     <AuthShell
-      title="Sign in to JobPilot"
-      subtitle="Pick up your job hunt right where you left off."
+      title="Sign in to Aspirely"
+      subtitle="Welcome back — your plan is right where you left it."
       banner={
         sessionExpired && !error ? (
           <AuthNotice variant="info">

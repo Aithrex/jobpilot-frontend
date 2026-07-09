@@ -60,7 +60,7 @@ export default function ResetPassword() {
   return (
     <AuthShell
       title="Set a new password"
-      subtitle="Choose a strong password. You'll sign in fresh once it's saved."
+      subtitle="Choose a strong password — you'll sign in fresh once it's saved."
       footer={
         <Link to="/login" className="font-semibold text-primary hover:underline">
           Back to sign in

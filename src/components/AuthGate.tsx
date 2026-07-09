@@ -209,13 +209,13 @@ export default function AuthGate({ children, description }: AuthGateProps) {
 
   const heading =
     step === 'login' ? 'Welcome back'
-    : step === 'register' ? 'Create your account'
-    : 'Sign in or create your account';
+    : step === 'register' ? 'Create your Aspirely account'
+    : 'Continue to Aspirely';
 
   const subtitle =
-    step === 'login' ? 'Enter your password to continue.'
-    : step === 'register' ? "You're new here — let's get you set up."
-    : (description || 'Enter your email to continue to your workspace.');
+    step === 'login' ? 'Enter your password — your plan is right where you left it.'
+    : step === 'register' ? "You're new here — let's set up your plan."
+    : (description || "Enter your email — we'll find your account or start a new one.");
 
   const stepMotion = {
     initial: { opacity: 0, x: reduce ? 0 : 14 },
@@ -426,6 +426,9 @@ export default function AuthGate({ children, description }: AuthGateProps) {
                       {SECTOR_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
                     </select>
                   </div>
+                  <p className="text-xs text-muted-foreground sm:col-span-2">
+                    Used to rank roles for your field — you can change these later.
+                  </p>
                 </div>
 
                 <Button type="submit" size="lg" className="w-full" disabled={submitting}>

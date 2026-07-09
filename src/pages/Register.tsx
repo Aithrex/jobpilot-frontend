@@ -70,7 +70,7 @@ export default function Register() {
         navigate('/login');
         return;
       }
-      toast.success('Account created — welcome to JobPilot!');
+      toast.success('Account created — welcome to Aspirely!');
       navigate('/app');
     } catch {
       setError('An unexpected error occurred. Please try again.');
@@ -81,8 +81,8 @@ export default function Register() {
 
   return (
     <AuthShell
-      title="Create your JobPilot account"
-      subtitle="Free to start. Your workspace is ready in seconds."
+      title="Create your Aspirely account"
+      subtitle="Free to start — your plan takes shape in minutes."
       footer={
         <>
           Already have an account?{' '}
@@ -134,6 +134,9 @@ export default function Register() {
               <option key={r} value={r}>{r}</option>
             ))}
           </select>
+          <p className="text-xs text-muted-foreground">
+            Used to rank roles for your field — you can change it later.
+          </p>
         </div>
 
         <div className="space-y-2">
@@ -181,7 +184,7 @@ export default function Register() {
         </Button>
 
         <p className="text-center text-xs text-muted-foreground">
-          By continuing you agree to use JobPilot responsibly.
+          By continuing you agree to use Aspirely responsibly.
         </p>
       </form>
     </AuthShell>
