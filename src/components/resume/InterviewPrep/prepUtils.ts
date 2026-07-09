@@ -10,7 +10,7 @@ import type {
 } from "@/types/resume";
 
 // ─── Defensive parsers ─────────────────────────────────────────────────────
-// Gemini occasionally returns list fields as JSON-encoded strings. These
+// The model occasionally returns list fields as JSON-encoded strings. These
 // helpers recover from that so the UI never renders raw JSON tokens.
 
 export function sanitize(s: string): string {
@@ -209,13 +209,14 @@ export function normalize(content: InterviewPrepContent | null): NormalizedPrep 
 }
 
 // ─── Difficulty styling ────────────────────────────────────────────────────
+// Meaning-coded on semantic tokens: easy=success, medium=warning, hard=destructive.
 export function difficultyChip(d?: QDifficulty | string) {
   const key = typeof d === "string" ? d.toLowerCase() : d;
   switch (key) {
-    case "easy":   return { label: "Easy",   cls: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 border-emerald-500/25" };
-    case "medium": return { label: "Medium", cls: "bg-amber-500/15 text-amber-600 dark:text-amber-300 border-amber-500/25" };
-    case "hard":   return { label: "Hard",   cls: "bg-red-500/15 text-red-600 dark:text-red-300 border-red-500/25" };
-    default:       return { label: "—",      cls: "bg-gray-500/15 text-gray-500 dark:text-gray-400 border-gray-500/25" };
+    case "easy":   return { label: "Easy",   cls: "bg-success/15 text-success border-success/25" };
+    case "medium": return { label: "Medium", cls: "bg-warning/15 text-warning border-warning/25" };
+    case "hard":   return { label: "Hard",   cls: "bg-destructive/15 text-destructive border-destructive/25" };
+    default:       return { label: "—",      cls: "bg-muted text-muted-foreground border-border" };
   }
 }
 

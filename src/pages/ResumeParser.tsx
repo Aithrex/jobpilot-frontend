@@ -1904,35 +1904,38 @@ interface TailoringRecord {
 type SortKey = "newest" | "oldest" | "ats";
 
 const sourceBadge: Record<TailoringVersion["source"], { label: string; cls: string }> = {
-  initial: { label: "Initial", cls: "bg-purple-500/15 text-purple-600 dark:text-purple-300 border-purple-500/25" },
-  regenerated: { label: "Regenerated", cls: "bg-blue-500/15 text-blue-600 dark:text-blue-300 border-blue-500/25" },
-  edited: { label: "Edited", cls: "bg-amber-500/15 text-amber-600 dark:text-amber-300 border-amber-500/25" },
+  initial: { label: "Initial", cls: "bg-primary/10 text-primary border-primary/25" },
+  regenerated: { label: "Regenerated", cls: "bg-[hsl(var(--brand-to)/0.12)] text-[hsl(var(--brand-to))] border-[hsl(var(--brand-to)/0.25)]" },
+  edited: { label: "Edited", cls: "bg-warning/10 text-warning border-warning/25" },
 };
 
 function atsColor(score?: number): string {
-  if (score === undefined || score === null) return "text-gray-400";
-  if (score >= 80) return "text-emerald-500";
-  if (score >= 60) return "text-amber-500";
-  return "text-red-500";
+  if (score === undefined || score === null) return "text-muted-foreground";
+  if (score >= 80) return "text-success";
+  if (score >= 60) return "text-warning";
+  return "text-destructive";
 }
 
 function FilterInput({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="flex flex-col gap-1 min-w-0">
-      <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">{label}</span>
+      <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</span>
       {children}
     </label>
   );
 }
 
+// Status tones match ApplicationsTab's kanban columns so a status reads the
+// same everywhere: draft/withdrawn=muted, applied=primary,
+// interviewing=brand-to, offer=success, rejected=destructive, ghosted=warning.
 const STATUS_CHIP: Record<string, { label: string; cls: string }> = {
-  draft:        { label: "Draft",        cls: "bg-gray-500/15 text-gray-600 dark:text-gray-300 border-gray-500/25" },
-  applied:      { label: "Applied",      cls: "bg-purple-500/15 text-purple-600 dark:text-purple-300 border-purple-500/25" },
-  interviewing: { label: "Interviewing", cls: "bg-blue-500/15 text-blue-600 dark:text-blue-300 border-blue-500/25" },
-  offer:        { label: "Offer",        cls: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 border-emerald-500/25" },
-  rejected:     { label: "Rejected",     cls: "bg-red-500/15 text-red-600 dark:text-red-300 border-red-500/25" },
-  ghosted:      { label: "Ghosted",      cls: "bg-amber-500/15 text-amber-600 dark:text-amber-300 border-amber-500/25" },
-  withdrawn:    { label: "Withdrawn",    cls: "bg-gray-400/15 text-gray-500 dark:text-gray-400 border-gray-400/25" },
+  draft:        { label: "Draft",        cls: "bg-muted text-muted-foreground border-border" },
+  applied:      { label: "Applied",      cls: "bg-primary/10 text-primary border-primary/25" },
+  interviewing: { label: "Interviewing", cls: "bg-[hsl(var(--brand-to)/0.12)] text-[hsl(var(--brand-to))] border-[hsl(var(--brand-to)/0.25)]" },
+  offer:        { label: "Offer",        cls: "bg-success/10 text-success border-success/25" },
+  rejected:     { label: "Rejected",     cls: "bg-destructive/10 text-destructive border-destructive/25" },
+  ghosted:      { label: "Ghosted",      cls: "bg-warning/10 text-warning border-warning/25" },
+  withdrawn:    { label: "Withdrawn",    cls: "bg-muted text-muted-foreground border-border" },
 };
 
 function TailoredResumesTab() {

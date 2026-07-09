@@ -78,18 +78,18 @@ export default function CoachChat({
   };
 
   return (
-    <div className="rounded-xl border border-gray-200 dark:border-gray-800/60 bg-white/60 dark:bg-gray-900/40 flex flex-col h-full overflow-hidden">
+    <div className="rounded-xl border border-border bg-card/60 shadow-soft flex flex-col h-full overflow-hidden">
       {/* Header */}
-      <div className="shrink-0 px-4 py-3 border-b border-gray-200 dark:border-gray-800/60 flex items-center justify-between">
+      <div className="shrink-0 px-4 py-3 border-b border-border flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-purple-500 to-indigo-500 text-white flex items-center justify-center text-base shadow-sm">🧑‍🏫</div>
+          <div className="w-9 h-9 rounded-lg brand-gradient text-white flex items-center justify-center text-base shadow-soft">🧑‍🏫</div>
           <div>
-            <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">AI Interview Coach</p>
-            <p className="text-[12px] text-gray-500 dark:text-gray-400">Grounded in this JD + your resume · remembers the full conversation</p>
+            <p className="text-sm font-semibold text-foreground">AI interview coach</p>
+            <p className="text-[12px] text-muted-foreground">Grounded in this JD + your resume · remembers the full conversation</p>
           </div>
         </div>
         {messages.length > 0 && (
-          <button onClick={reset} className="text-xs px-2.5 py-1 rounded text-gray-500 dark:text-gray-400 hover:text-red-500 hover:bg-red-500/10">
+          <button onClick={reset} className="text-xs px-2.5 py-1 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10">
             Reset
           </button>
         )}
@@ -97,10 +97,10 @@ export default function CoachChat({
 
       {/* Scroller */}
       <div ref={scrollerRef} className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-4">
-        {loading && <p className="text-sm text-gray-500 dark:text-gray-400">Loading history…</p>}
+        {loading && <p className="text-sm text-muted-foreground">Loading history…</p>}
         {!loading && messages.length === 0 && (
           <div className="space-y-3">
-            <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+            <p className="text-sm text-muted-foreground leading-relaxed">
               Ask anything grounded in your resume and this JD. Your coach remembers the conversation.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -108,9 +108,9 @@ export default function CoachChat({
                 <button
                   key={i}
                   onClick={() => send(s)}
-                  className="text-left px-3 py-2.5 rounded-lg text-[13px] bg-gray-50 dark:bg-gray-900/40 border border-gray-200 dark:border-gray-800/60 hover:border-purple-500/40 hover:bg-purple-500/5 text-gray-700 dark:text-gray-300 leading-snug"
+                  className="text-left px-3 py-2.5 rounded-lg text-[13px] bg-muted/40 border border-border hover:border-primary/40 hover:bg-primary/5 text-foreground/90 leading-snug"
                 >
-                  <span className="text-purple-500 mr-1.5">✨</span>{s}
+                  <span className="text-primary mr-1.5">✨</span>{s}
                 </button>
               ))}
             </div>
@@ -119,24 +119,24 @@ export default function CoachChat({
         {messages.map((m, i) => (
           <div key={i} className={`flex gap-2.5 ${m.role === "user" ? "justify-end" : "justify-start"}`}>
             {m.role === "assistant" && (
-              <div className="shrink-0 w-8 h-8 rounded-md bg-gradient-to-br from-purple-500 to-indigo-500 text-white text-xs flex items-center justify-center">🧑‍🏫</div>
+              <div className="shrink-0 w-8 h-8 rounded-md brand-gradient text-white text-xs flex items-center justify-center">🧑‍🏫</div>
             )}
             <div className={`max-w-[85%] rounded-xl px-3.5 py-2.5 text-[14px] leading-relaxed whitespace-pre-wrap ${
               m.role === "user"
-                ? "bg-purple-600 text-white rounded-br-sm"
-                : "bg-gray-100 dark:bg-gray-800/70 text-gray-800 dark:text-gray-200 rounded-bl-sm border border-gray-200 dark:border-gray-800/60"
+                ? "bg-primary text-primary-foreground rounded-br-sm"
+                : "bg-muted text-foreground rounded-bl-sm border border-border"
             }`}>
               {m.content}
             </div>
             {m.role === "user" && (
-              <div className="shrink-0 w-8 h-8 rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-[11px] flex items-center justify-center font-semibold">You</div>
+              <div className="shrink-0 w-8 h-8 rounded-md bg-secondary text-secondary-foreground text-[11px] flex items-center justify-center font-semibold">You</div>
             )}
           </div>
         ))}
         {sending && (
           <div className="flex gap-2 items-center">
-            <div className="shrink-0 w-8 h-8 rounded-md bg-gradient-to-br from-purple-500 to-indigo-500 text-white text-xs flex items-center justify-center">🧑‍🏫</div>
-            <div className="rounded-xl bg-gray-100 dark:bg-gray-800/70 px-3.5 py-2.5 text-[13px] text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-800/60 inline-flex items-center gap-1.5">
+            <div className="shrink-0 w-8 h-8 rounded-md brand-gradient text-white text-xs flex items-center justify-center">🧑‍🏫</div>
+            <div className="rounded-xl bg-muted px-3.5 py-2.5 text-[13px] text-muted-foreground border border-border inline-flex items-center gap-1.5">
               <Spinner className="w-3.5 h-3.5" /> thinking…
             </div>
           </div>
@@ -144,7 +144,7 @@ export default function CoachChat({
       </div>
 
       {/* Composer — sticky at the bottom of the chat panel */}
-      <div className="shrink-0 border-t border-gray-200 dark:border-gray-800/60 px-3 py-3 bg-white dark:bg-gray-900/80 backdrop-blur-sm">
+      <div className="shrink-0 border-t border-border px-3 py-3 bg-card/95 backdrop-blur-sm">
         <div className="flex items-end gap-2">
           <textarea
             value={input}
@@ -154,12 +154,12 @@ export default function CoachChat({
             }}
             rows={Math.min(5, Math.max(2, input.split("\n").length))}
             placeholder="Ask your coach anything… (Enter to send, Shift+Enter for newline)"
-            className="flex-1 resize-none text-sm leading-relaxed px-3.5 py-2.5 rounded-lg bg-gray-50 dark:bg-gray-800/60 border border-gray-300 dark:border-gray-700/60 focus:outline-none focus:ring-2 focus:ring-purple-500/30 text-gray-800 dark:text-gray-200 placeholder-gray-400"
+            className="flex-1 resize-none text-sm leading-relaxed px-3.5 py-2.5 rounded-lg bg-muted/40 border border-input focus:outline-none focus:ring-2 focus:ring-ring/30 text-foreground placeholder:text-muted-foreground"
           />
           <button
             onClick={() => send()}
             disabled={!input.trim() || sending}
-            className="shrink-0 inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 disabled:opacity-50 shadow-sm shadow-purple-500/25"
+            className="shrink-0 inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 disabled:opacity-50 shadow-soft"
           >
             {sending ? <Spinner /> : (
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
