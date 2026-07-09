@@ -6455,7 +6455,7 @@ export default function ResumeParser() {
 
   return (
     <AuthGate
-      title="JobPilot"
+      title="Aspirely"
       description="Your workspace for the job hunt — tailor resumes to any JD, track applications, read the market, and prep with intent."
     >
       <div className="min-h-screen bg-background text-foreground antialiased pb-24 lg:pb-0">
@@ -6474,12 +6474,12 @@ export default function ResumeParser() {
               </button>
 
               {/* Logo */}
-              <a href="/" className="flex items-center gap-2.5 shrink-0" aria-label="JobPilot home">
+              <a href="/" className="flex items-center gap-2.5 shrink-0" aria-label="Aspirely home">
                 <div className="brand-gradient w-8 h-8 rounded-lg flex items-center justify-center shadow-soft shadow-primary/25">
                   <SparklesIcon className="w-4 h-4 text-white" />
                 </div>
                 <h1 className="font-display text-lg font-extrabold tracking-tight hidden sm:block">
-                  JobPilot
+                  Aspirely
                 </h1>
               </a>
 
@@ -6511,7 +6511,7 @@ export default function ResumeParser() {
                   type="button"
                   onClick={() => (window.location.href = "/")}
                   aria-label="Home"
-                  title="JobPilot home"
+                  title="Aspirely home"
                   className="inline-flex items-center justify-center w-9 h-9 rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <HomeIcon className="w-4 h-4" />
@@ -6590,7 +6590,7 @@ export default function ResumeParser() {
                     </div>
                     <div className="min-w-0">
                       <p className="font-display truncate text-sm font-extrabold text-foreground">
-                        JobPilot
+                        Aspirely
                       </p>
                       <p className="truncate text-xs text-muted-foreground">
                         {activeNavItem.label}
@@ -6639,7 +6639,7 @@ export default function ResumeParser() {
                     </div>
                     <div className="min-w-0">
                       <p className="font-display truncate text-sm font-extrabold text-foreground">
-                        JobPilot
+                        Aspirely
                       </p>
                       <p className="truncate text-xs font-medium text-muted-foreground">
                         Workspace

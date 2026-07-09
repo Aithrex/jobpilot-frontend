@@ -76,7 +76,7 @@ export function ShareWinDialog({ open, onClose, pathId, task }: ShareWinDialogPr
       openUpgrade({
         feature: 'auto_post',
         title: 'Auto-post to LinkedIn',
-        description: 'Auto-publishing is a Premium+ perk. Upgrade to have JobPilot post for you.',
+        description: 'Auto-publishing is a Premium+ perk. Upgrade to have Aspirely post for you.',
         highlight: 'premium_plus',
       });
       return;

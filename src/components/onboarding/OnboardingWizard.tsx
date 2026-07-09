@@ -269,7 +269,7 @@ export default function OnboardingWizard() {
       return;
     }
     clearOnboardingState();
-    toast.success("You're all set — welcome to JobPilot!");
+    toast.success("You're all set — welcome to Aspirely!");
     navigate('/app', { replace: true });
   };
 
@@ -379,7 +379,7 @@ function ResumeStep({ state, defaults, onPick, onDropFile, onRetry, onSkip, onCo
     <div className="px-5 pb-6 pt-5 sm:px-6">
       <div className="flex items-center gap-2 text-primary">
         <Sparkles className="h-5 w-5" />
-        <span className="text-xs font-semibold uppercase tracking-wide">Welcome to JobPilot</span>
+        <span className="text-xs font-semibold uppercase tracking-wide">Welcome to Aspirely</span>
       </div>
       <h2 className="mt-1.5 text-xl font-bold tracking-tight">Upload your resume — we'll do the rest</h2>
       <p className="mt-1 text-sm text-muted-foreground">
@@ -478,7 +478,7 @@ function LinkedInStep({ connected, name, checking, connecting, onConnect, onBack
       </div>
       <h2 className="mt-1.5 text-xl font-bold tracking-tight">Bring your network along</h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        Connecting LinkedIn lets JobPilot audit your profile and share wins on your behalf — always with your review. Optional, and you can do it anytime.
+        Connecting LinkedIn lets Aspirely audit your profile and share wins on your behalf — always with your review. Optional, and you can do it anytime.
       </p>
 
       <div className="mt-4 min-h-[180px]">
