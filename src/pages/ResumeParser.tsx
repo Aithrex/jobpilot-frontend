@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef, Fragment } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { apiService } from "@/lib/api";
 import AuthGate from "@/components/AuthGate";
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,9 +9,17 @@ import { QuotaLimitDialog } from "@/components/quota/QuotaLimitDialog";
 import { useFeedback } from "@/components/feedback/FeedbackWidget";
 import { buildCoverLetterFilename, titleCaseName } from "@/lib/filename";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Bot, Building2, CreditCard, GraduationCap, Trophy, Users, Mic, Menu, PanelLeftClose, PanelLeftOpen, X, Eye, TrendingUp, Bell, ShieldCheck, Home, Compass, PenTool, Send, Sprout, MessageSquarePlus } from "lucide-react";
+import { Bot, Building2, CreditCard, GraduationCap, Trophy, Users, Mic, Menu, PanelLeftClose, PanelLeftOpen, X, Eye, TrendingUp, Bell, ShieldCheck, Home, Compass, PenTool, Send, Sprout, MessageSquarePlus, ChevronRight, Search } from "lucide-react";
 import { ConnectedTo } from "@/components/resume/ConnectedTo";
 import MobileBottomNav from "@/components/layout/MobileBottomNav";
+import {
+  CommandDialog,
+  CommandInput,
+  CommandList,
+  CommandEmpty,
+  CommandGroup,
+  CommandItem,
+} from "@/components/ui/command";
 import { lazy, Suspense } from "react";
 import { toast } from "sonner";
 import ResumeDashboard, {
@@ -6168,10 +6176,24 @@ function roomForTab(tab: NavTab): NavRoom | undefined {
   return ROOMS.find((room) => room.tabs.includes(tab));
 }
 
+// Resolve a room's leaf items (label/icon/badge/hint) from NAV_ITEMS in order.
+function roomItemsFor(room: NavRoom): ResumeNavItem[] {
+  return room.tabs
+    .map((key) => NAV_ITEMS.find((item) => item.key === key))
+    .filter((item): item is ResumeNavItem => Boolean(item));
+}
+
 /**
- * Left rail: the 5 rooms only (no sub-items). Selecting a room jumps to its
- * default sub-tab (`tabs[0]`). The in-page sub-tab strip (RoomSubTabs) handles
- * navigation *within* a room.
+ * Left rail: an expandable, grouped navigation. Each of the 5 rooms is a group
+ * header; its sub-items (from NAV_ITEMS) list indented beneath it. The room that
+ * owns the active tab is expanded by default; headers behave as an accordion
+ * (click to open/close, one at a time). Selecting an item calls
+ * onSelect(item.key). Every feature is therefore visible and reachable in ≤1-2
+ * clicks from one place — no separate in-content sub-tab strip.
+ *
+ * Collapsed (icon-only) mode keeps the rail narrow: each room icon jumps to its
+ * default tab, and hovering the rail expands it back to the full grouped list
+ * (revealing every item — the flyout equivalent).
  */
 function ResumeSectionNav({
   activeNav,
@@ -6182,52 +6204,126 @@ function ResumeSectionNav({
   collapsed?: boolean;
   onSelect: (tab: NavTab) => void;
 }) {
+  const reduceMotion = useReducedMotion();
   const activeRoomKey = roomForTab(activeNav)?.key;
+  // Accordion state: a single open group, defaulting to (and following) the room
+  // that owns the active tab. Users can still open a different group to browse.
+  const [expandedRoom, setExpandedRoom] = useState<string | null>(activeRoomKey ?? null);
+  useEffect(() => {
+    if (activeRoomKey) setExpandedRoom(activeRoomKey);
+  }, [activeRoomKey]);
 
-  return (
-    <nav
-      className={`flex flex-col gap-1 ${collapsed ? "items-center px-2" : "px-3"}`}
-      aria-label="Workspace rooms"
-    >
-      {ROOMS.map((room) => {
-        const active = room.key === activeRoomKey;
-        return (
-          <button
-            key={room.key}
-            type="button"
-            onClick={() => onSelect(room.tabs[0])}
-            aria-current={active ? "page" : undefined}
-            aria-label={room.label}
-            title={collapsed ? room.label : undefined}
-            className={`group relative flex w-full items-center rounded-lg text-sm font-semibold transition-colors duration-150 ease-expo focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-sidebar ${
-              collapsed ? "h-11 justify-center px-0" : "min-h-[2.75rem] gap-3 py-2 px-3"
-            } ${
-              active
-                ? "bg-primary/10 text-foreground"
-                : "text-muted-foreground hover:bg-accent hover:text-foreground"
-            }`}
-          >
-            {active && !collapsed && (
-              <span
-                className="absolute inset-y-2 left-0 w-[3px] rounded-r-full bg-primary"
-                aria-hidden="true"
-              />
-            )}
-            <span
-              className={`relative flex h-7 w-7 shrink-0 items-center justify-center transition-colors ${
+  if (collapsed) {
+    return (
+      <nav className="flex flex-col items-center gap-1 px-2" aria-label="Workspace navigation">
+        {ROOMS.map((room) => {
+          const active = room.key === activeRoomKey;
+          return (
+            <button
+              key={room.key}
+              type="button"
+              onClick={() => onSelect(room.tabs[0])}
+              aria-current={active ? "page" : undefined}
+              aria-label={room.label}
+              title={room.label}
+              className={`group relative flex h-11 w-11 items-center justify-center rounded-lg transition-colors duration-150 ease-expo focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-sidebar ${
                 active
-                  ? "text-primary"
-                  : "text-muted-foreground group-hover:text-foreground"
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:bg-accent hover:text-foreground"
               }`}
             >
               {room.icon}
-            </span>
-            {!collapsed && (
-              <span className="min-w-0 flex-1 truncate text-left leading-tight">
-                {room.label}
+            </button>
+          );
+        })}
+      </nav>
+    );
+  }
+
+  return (
+    <nav className="flex flex-col gap-0.5 px-3" aria-label="Workspace navigation">
+      {ROOMS.map((room) => {
+        const isActiveRoom = room.key === activeRoomKey;
+        const expanded = expandedRoom === room.key;
+        const items = roomItemsFor(room);
+        return (
+          <div key={room.key}>
+            <button
+              type="button"
+              onClick={() => setExpandedRoom((cur) => (cur === room.key ? null : room.key))}
+              aria-expanded={expanded}
+              className={`group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-semibold transition-colors duration-150 ease-expo focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-sidebar ${
+                isActiveRoom ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <span
+                className={`flex h-7 w-7 shrink-0 items-center justify-center transition-colors ${
+                  isActiveRoom ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
+                }`}
+              >
+                {room.icon}
               </span>
-            )}
-          </button>
+              <span className="min-w-0 flex-1 truncate text-left leading-tight">{room.label}</span>
+              <ChevronRight
+                className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ease-expo ${
+                  expanded ? "rotate-90" : ""
+                }`}
+                aria-hidden="true"
+              />
+            </button>
+
+            <AnimatePresence initial={false}>
+              {expanded && (
+                <motion.div
+                  initial={reduceMotion ? false : { height: 0, opacity: 0 }}
+                  animate={reduceMotion ? {} : { height: "auto", opacity: 1 }}
+                  exit={reduceMotion ? {} : { height: 0, opacity: 0 }}
+                  transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                  className="overflow-hidden"
+                >
+                  <ul className="ml-[1.55rem] flex flex-col gap-0.5 border-l border-sidebar-border pb-1 pl-2 pt-0.5">
+                    {items.map((item) => {
+                      const active = activeNav === item.key;
+                      return (
+                        <li key={item.key} className="list-none">
+                          <button
+                            type="button"
+                            onClick={() => onSelect(item.key)}
+                            aria-current={active ? "page" : undefined}
+                            className={`group relative flex w-full items-center gap-2.5 rounded-control px-2.5 py-2 text-sm transition-colors duration-150 ease-expo focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                              active
+                                ? "bg-primary/10 font-semibold text-foreground"
+                                : "font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
+                            }`}
+                          >
+                            {active && (
+                              <span
+                                className="absolute inset-y-1.5 -left-[calc(0.5rem+1px)] w-[2px] rounded-full bg-primary"
+                                aria-hidden="true"
+                              />
+                            )}
+                            <span
+                              className={`shrink-0 transition-colors ${
+                                active ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
+                              }`}
+                            >
+                              {item.icon}
+                            </span>
+                            <span className="min-w-0 flex-1 truncate text-left leading-tight">{item.label}</span>
+                            {item.badge && (
+                              <span className="shrink-0 rounded-full border border-primary/20 bg-primary/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-primary">
+                                {item.badge}
+                              </span>
+                            )}
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         );
       })}
     </nav>
@@ -6235,71 +6331,78 @@ function ResumeSectionNav({
 }
 
 /**
- * In-page secondary sub-tab strip. Renders only when the active room has more
- * than one tab (Home shows nothing). Uses each leaf tab's existing label / icon
- * / badge from NAV_ITEMS. Horizontally scrollable at narrow widths.
+ * Command palette (⌘K / Ctrl+K): jump to ANY feature by name instantly, grouped
+ * by room. This is the power-user discoverability layer that complements the
+ * always-visible grouped sidebar. Rendered as a dialog (cmdk over Radix Dialog).
  */
-function RoomSubTabs({
-  activeNav,
+function CommandPalette({
+  open,
+  onOpenChange,
   onSelect,
 }: {
-  activeNav: NavTab;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   onSelect: (tab: NavTab) => void;
 }) {
-  const room = roomForTab(activeNav);
-  if (!room || room.tabs.length <= 1) return null;
-
-  const items = room.tabs
-    .map((key) => NAV_ITEMS.find((item) => item.key === key))
-    .filter((item): item is ResumeNavItem => Boolean(item));
+  const go = (tab: NavTab) => {
+    onSelect(tab);
+    onOpenChange(false);
+  };
+  const settingsItems = SETTINGS_MENU.map((key) =>
+    NAV_ITEMS.find((item) => item.key === key),
+  ).filter((item): item is ResumeNavItem => Boolean(item));
 
   return (
-    <div
-      role="tablist"
-      aria-label={`${room.label} sections`}
-      className="hide-scrollbar mb-5 flex min-w-0 items-center gap-1 overflow-x-auto border-b border-border"
-    >
-      {items.map((item) => {
-        const active = activeNav === item.key;
-        return (
-          <button
-            key={item.key}
-            type="button"
-            role="tab"
-            aria-selected={active}
-            aria-current={active ? "page" : undefined}
-            onClick={() => onSelect(item.key)}
-            className={`group relative inline-flex shrink-0 items-center gap-2 rounded-t-control px-3 py-2.5 text-sm font-medium transition-colors duration-150 ease-expo focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-              active
-                ? "text-foreground"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <span
-              className={`shrink-0 transition-colors ${
-                active ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
-              }`}
-            >
-              {item.icon}
-            </span>
-            <span className="whitespace-nowrap">{item.label}</span>
-            {item.badge && (
-              <span className="shrink-0 rounded-full border border-primary/20 bg-primary/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-primary">
-                {item.badge}
-              </span>
-            )}
-            {active && (
-              <motion.span
-                layoutId="room-subtab-underline"
-                className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-primary"
-                transition={{ type: "spring", stiffness: 400, damping: 34 }}
-                aria-hidden="true"
-              />
-            )}
-          </button>
-        );
-      })}
-    </div>
+    <CommandDialog open={open} onOpenChange={onOpenChange}>
+      <CommandInput placeholder="Search features — jump to any tool…" />
+      <CommandList>
+        <CommandEmpty>No matching features.</CommandEmpty>
+        {ROOMS.map((room) => {
+          const items = roomItemsFor(room);
+          if (items.length === 0) return null;
+          return (
+            <CommandGroup key={room.key} heading={room.label}>
+              {items.map((item) => (
+                <CommandItem
+                  key={item.key}
+                  value={`${room.label} ${item.label} ${item.hint ?? ""}`}
+                  onSelect={() => go(item.key)}
+                  className="gap-2.5"
+                >
+                  <span className="text-muted-foreground">{item.icon}</span>
+                  <span className="truncate">{item.label}</span>
+                  {item.badge && (
+                    <span className="rounded-full border border-primary/20 bg-primary/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-primary">
+                      {item.badge}
+                    </span>
+                  )}
+                  {item.hint && (
+                    <span className="ml-auto hidden max-w-[45%] truncate text-xs text-muted-foreground sm:inline">
+                      {item.hint}
+                    </span>
+                  )}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          );
+        })}
+        {settingsItems.length > 0 && (
+          <CommandGroup heading="Settings">
+            {settingsItems.map((item) => (
+              <CommandItem
+                key={item.key}
+                value={`Settings ${item.label} ${item.hint ?? ""}`}
+                onSelect={() => go(item.key)}
+                className="gap-2.5"
+              >
+                <span className="text-muted-foreground">{item.icon}</span>
+                <span className="truncate">{item.label}</span>
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        )}
+      </CommandList>
+    </CommandDialog>
   );
 }
 
@@ -6458,6 +6561,7 @@ export default function ResumeParser() {
   const [activeNav, setActiveNav] = useState<NavTab>(() => readTabFromUrl() ?? "dashboard");
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
   const [sidebarHoverExpanded, setSidebarHoverExpanded] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     if (typeof window === "undefined") return false;
@@ -6468,6 +6572,7 @@ export default function ResumeParser() {
     () => NAV_ITEMS.find((item) => item.key === activeNav) ?? NAV_ITEMS[0],
     [activeNav],
   );
+  const activeRoomLabel = useMemo(() => roomForTab(activeNav)?.label ?? null, [activeNav]);
 
   const selectNav = useCallback((tab: NavTab) => {
     setActiveNav(tab);
@@ -6512,6 +6617,18 @@ export default function ResumeParser() {
       window.removeEventListener('jobpilot:navigate', toTab as EventListener);
     };
   }, [selectNav]);
+
+  // ⌘K / Ctrl+K toggles the command palette from anywhere in the workspace.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setPaletteOpen((open) => !open);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   useEffect(() => {
     void apiService.recordCareerCopilotTab(activeNav).catch(() => {});
@@ -6581,6 +6698,14 @@ export default function ResumeParser() {
 
               <div className="min-w-0 flex-1 ml-3 border-l border-border pl-3 py-0.5">
                 <div className="flex items-center gap-1.5 text-foreground">
+                  {activeRoomLabel && (
+                    <span className="hidden items-center gap-1.5 sm:flex">
+                      <span className="text-xs font-medium text-muted-foreground">
+                        {activeRoomLabel}
+                      </span>
+                      <ChevronRight className="h-3 w-3 text-muted-foreground/50" aria-hidden="true" />
+                    </span>
+                  )}
                   <span className="text-primary">
                     {activeNavItem.icon}
                   </span>
@@ -6600,6 +6725,19 @@ export default function ResumeParser() {
 
               {/* Right actions */}
               <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setPaletteOpen(true)}
+                  aria-label="Search features"
+                  title="Search features (⌘K)"
+                  className="inline-flex h-9 items-center gap-2 rounded-control border border-border bg-muted/40 px-2.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <Search className="h-4 w-4" />
+                  <span className="hidden text-sm lg:inline">Search</span>
+                  <kbd className="hidden rounded border border-border bg-background px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground lg:inline">
+                    ⌘K
+                  </kbd>
+                </button>
                 <HeaderMeta user={user} onOpenBilling={() => selectNav("billing")} />
                 <div className="hidden h-6 w-px bg-border md:block" aria-hidden="true" />
                 <ThemeToggle />
@@ -6833,9 +6971,9 @@ export default function ResumeParser() {
 
             <main className="min-w-0 flex-1 px-4 py-6 sm:px-6 lg:px-8">
               <div className="mx-auto max-w-[1500px]">
-              {/* Secondary sub-tab strip: switch between the sibling tabs of the
-                  active room (hidden on single-tab rooms like Home). */}
-              <RoomSubTabs activeNav={activeNav} onSelect={selectNav} />
+              {/* Navigation lives entirely in the grouped sidebar + ⌘K palette —
+                  no in-content sub-tab strip. The header shows the room ›
+                  feature breadcrumb for context. */}
               {/* Cross-link tissue: contextual related-feature shortcuts for
                   the active tab (no-op on tabs with their own rich linking). */}
               <ConnectedTo from={activeNav} />
@@ -7032,6 +7170,9 @@ export default function ResumeParser() {
           activeKey={activeNav}
           onSelect={(key) => selectNav(key as NavTab)}
         />
+
+        {/* Power-user jump-to-anything palette (⌘K / Ctrl+K), grouped by room. */}
+        <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} onSelect={selectNav} />
 
         <style>{`
           .hide-scrollbar::-webkit-scrollbar { display: none; }
