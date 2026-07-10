@@ -10,7 +10,7 @@ import {
 /**
  * Structural shapes mirroring ResumeParser's nav config. We intentionally keep
  * these generic (string keys) so this component stays decoupled from the
- * ResumeParser `NavTab` union — ResumeParser passes its real items/sections in,
+ * ResumeParser `NavTab` union — ResumeParser passes its real items/rooms in,
  * so labels/icons remain a single source of truth there.
  */
 export type MobileNavItem = {
@@ -21,60 +21,47 @@ export type MobileNavItem = {
   hint?: string;
 };
 
-export type MobileNavSection = {
+/**
+ * A top-level "room": the primary bottom-bar destination. Its `tabs` are the
+ * leaf keys that live inside it; `tabs[0]` is the room's default sub-tab and the
+ * grouped "More" sheet lists all of them (looked up from `items`).
+ */
+export type MobileNavRoom = {
+  key: string;
   label: string;
-  items: string[];
+  icon: React.ReactNode;
+  tabs: string[];
 };
 
 type MobileBottomNavProps = {
-  /** Full nav item list (same array the sidebar renders). */
+  /** Full leaf-item list — the source of truth for labels/icons in the sheet. */
   items: MobileNavItem[];
-  /** Optional grouping; used to organize the "More" sheet. */
-  sections?: MobileNavSection[];
-  /** Currently active tab key. */
+  /** The 5 rooms shown as the primary bottom-bar destinations. */
+  rooms: MobileNavRoom[];
+  /** Currently active leaf tab key. */
   activeKey: string;
-  /** Called when the user taps any nav entry. */
+  /** Called when the user taps any nav entry (a room default or a leaf tab). */
   onSelect: (key: string) => void;
-  /**
-   * Keys to surface as the primary (always-visible) bottom-bar items. The
-   * component picks the first 4 that actually exist in `items`.
-   */
-  primaryKeys?: string[];
 };
-
-const DEFAULT_PRIMARY_KEYS = ["dashboard", "jobs", "tailor", "interview"];
 
 export default function MobileBottomNav({
   items,
-  sections,
+  rooms,
   activeKey,
   onSelect,
-  primaryKeys = DEFAULT_PRIMARY_KEYS,
 }: MobileBottomNavProps) {
   const [moreOpen, setMoreOpen] = useState(false);
 
   const byKey = new Map(items.map((item) => [item.key, item]));
-
-  // Resolve up to 4 primary items that actually exist, in the requested order.
-  const primaryItems = primaryKeys
-    .map((key) => byKey.get(key))
-    .filter((item): item is MobileNavItem => Boolean(item))
-    .slice(0, 4);
 
   const handleSelect = (key: string) => {
     onSelect(key);
     setMoreOpen(false);
   };
 
-  const isMoreActive =
-    !primaryItems.some((item) => item.key === activeKey);
-
-  // Build the grouped list for the "More" sheet. Fall back to a single flat
-  // group when no sections are provided.
-  const resolvedSections: MobileNavSection[] =
-    sections && sections.length > 0
-      ? sections
-      : [{ label: "All", items: items.map((item) => item.key) }];
+  // The active room = the one whose tabs contains the active leaf key. Configure
+  // surfaces (billing/profile/…) belong to no room, so nothing highlights then.
+  const activeRoomKey = rooms.find((room) => room.tabs.includes(activeKey))?.key;
 
   return (
     <>
@@ -83,15 +70,15 @@ export default function MobileBottomNav({
         className="fixed inset-x-0 bottom-0 z-50 lg:hidden border-t border-border bg-background/90 supports-[backdrop-filter]:bg-background/80 backdrop-blur-xl pb-[env(safe-area-inset-bottom)]"
       >
         <div className="mx-auto flex max-w-md items-stretch justify-around px-1">
-          {primaryItems.map((item) => {
-            const active = item.key === activeKey;
+          {rooms.map((room) => {
+            const active = room.key === activeRoomKey;
             return (
               <button
-                key={item.key}
+                key={room.key}
                 type="button"
-                onClick={() => handleSelect(item.key)}
+                onClick={() => handleSelect(room.tabs[0])}
                 aria-current={active ? "page" : undefined}
-                aria-label={item.badge ? `${item.label} (${item.badge})` : item.label}
+                aria-label={room.label}
                 className={`group relative flex min-h-[44px] min-w-[44px] flex-1 flex-col items-center justify-center gap-1 px-1 pb-1.5 pt-2 transition-colors focus-visible:outline-none ${
                   active ? "text-primary" : "text-muted-foreground active:text-foreground"
                 }`}
@@ -108,16 +95,10 @@ export default function MobileBottomNav({
                     active ? "bg-primary/10" : ""
                   }`}
                 >
-                  {item.icon}
-                  {item.badge && !active && (
-                    <span
-                      className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-primary"
-                      aria-hidden="true"
-                    />
-                  )}
+                  {room.icon}
                 </span>
                 <span className="max-w-full truncate text-[10px] font-semibold leading-none">
-                  {item.label}
+                  {room.label}
                 </span>
               </button>
             );
@@ -126,23 +107,11 @@ export default function MobileBottomNav({
           <button
             type="button"
             onClick={() => setMoreOpen(true)}
-            aria-label="More sections"
+            aria-label="Browse all sections"
             aria-haspopup="dialog"
-            className={`group relative flex min-h-[44px] min-w-[44px] flex-1 flex-col items-center justify-center gap-1 px-1 pb-1.5 pt-2 transition-colors focus-visible:outline-none ${
-              isMoreActive ? "text-primary" : "text-muted-foreground active:text-foreground"
-            }`}
+            className="group relative flex min-h-[44px] min-w-[44px] flex-1 flex-col items-center justify-center gap-1 px-1 pb-1.5 pt-2 text-muted-foreground transition-colors focus-visible:outline-none active:text-foreground"
           >
-            {isMoreActive && (
-              <span
-                className="absolute top-0 h-0.5 w-8 rounded-full bg-primary"
-                aria-hidden="true"
-              />
-            )}
-            <span
-              className={`relative flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
-                isMoreActive ? "bg-primary/10" : ""
-              }`}
-            >
+            <span className="relative flex h-8 w-8 items-center justify-center rounded-full transition-colors">
               <MoreHorizontal className="h-5 w-5" />
             </span>
             <span className="text-[10px] font-semibold leading-none">More</span>
@@ -160,17 +129,22 @@ export default function MobileBottomNav({
           </SheetHeader>
 
           <div className="mt-4 space-y-5">
-            {resolvedSections.map((section) => {
-              const sectionItems = section.items
+            {rooms.map((room) => {
+              const roomItems = room.tabs
                 .map((key) => byKey.get(key))
                 .filter((item): item is MobileNavItem => Boolean(item));
-              if (sectionItems.length === 0) return null;
+              if (roomItems.length === 0) return null;
 
               return (
-                <div key={section.label}>
-                  <p className="overline mb-2 px-1">{section.label}</p>
+                <div key={room.key}>
+                  <p className="overline mb-2 flex items-center gap-1.5 px-1">
+                    <span className="text-muted-foreground" aria-hidden="true">
+                      {room.icon}
+                    </span>
+                    {room.label}
+                  </p>
                   <div className="grid grid-cols-2 gap-2">
-                    {sectionItems.map((item) => {
+                    {roomItems.map((item) => {
                       const active = item.key === activeKey;
                       return (
                         <button

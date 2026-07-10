@@ -9,7 +9,7 @@ import { QuotaLimitDialog } from "@/components/quota/QuotaLimitDialog";
 import { useFeedback } from "@/components/feedback/FeedbackWidget";
 import { buildCoverLetterFilename, titleCaseName } from "@/lib/filename";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Bot, Building2, CreditCard, GraduationCap, Trophy, Users, Mic, Menu, PanelLeftClose, PanelLeftOpen, X, Eye, TrendingUp, Bell, ShieldCheck } from "lucide-react";
+import { Bot, Building2, CreditCard, GraduationCap, Trophy, Users, Mic, Menu, PanelLeftClose, PanelLeftOpen, X, Eye, TrendingUp, Bell, ShieldCheck, Home, Compass, PenTool, Send, Sprout, MessageSquarePlus } from "lucide-react";
 import { ConnectedTo } from "@/components/resume/ConnectedTo";
 import MobileBottomNav from "@/components/layout/MobileBottomNav";
 import { lazy, Suspense } from "react";
@@ -5974,9 +5974,18 @@ type ResumeNavItem = {
   hint?: string;
 };
 
-type ResumeNavSection = {
+/**
+ * Top-level "rooms" — the 5 destinations shown on the left rail and the mobile
+ * bottom bar. Every leaf `NavTab` that lives on the rail maps into exactly one
+ * room; the room's own `tabs[0]` is its default sub-tab. Configure surfaces
+ * (billing/notifications/profile/beta) intentionally live in the header user
+ * menu, not in any room, so they never appear on the rail.
+ */
+type NavRoom = {
+  key: string;
   label: string;
-  items: NavTab[];
+  icon: React.ReactNode;
+  tabs: NavTab[];
 };
 
 const NAV_ITEMS: ResumeNavItem[] = [
@@ -6120,16 +6129,50 @@ const NAV_ITEMS: ResumeNavItem[] = [
   },
 ];
 
-const NAV_SECTIONS: ResumeNavSection[] = [
-  { label: "Overview", items: ["dashboard"] },
-  { label: "Create", items: ["tailor", "batch"] },
-  { label: "Library", items: ["my-resumes", "tailored", "applications"] },
-  { label: "Career", items: ["interview", "visa", "copilot", "jobs", "career-portals", "auto-apply", "pipeline"] },
-  { label: "Grow", items: ["learning", "events", "network", "voicegraph", "six-seconds"] },
-  { label: "Experimental", items: ["beta"] },
-  { label: "Account", items: ["billing", "notifications", "profile"] },
+const ROOMS: NavRoom[] = [
+  { key: "home", label: "Home", icon: <Home className="w-4 h-4" />, tabs: ["dashboard"] },
+  {
+    key: "discover",
+    label: "Discover",
+    icon: <Compass className="w-4 h-4" />,
+    tabs: ["jobs", "career-portals", "visa"],
+  },
+  {
+    key: "craft",
+    label: "Craft",
+    icon: <PenTool className="w-4 h-4" />,
+    tabs: ["tailor", "batch", "my-resumes", "tailored", "six-seconds", "voicegraph"],
+  },
+  {
+    key: "apply",
+    label: "Apply",
+    icon: <Send className="w-4 h-4" />,
+    tabs: ["applications", "auto-apply", "pipeline"],
+  },
+  {
+    key: "grow",
+    label: "Grow",
+    icon: <Sprout className="w-4 h-4" />,
+    tabs: ["learning", "network", "events", "interview", "copilot"],
+  },
 ];
 
+// Configure surfaces, surfaced in the header user menu (not the rail). Each key
+// still routes through selectNav to its unchanged leaf render.
+const SETTINGS_MENU: NavTab[] = ["billing", "notifications", "profile", "beta"];
+
+// The active room = the one whose `tabs` contains the current leaf tab. Configure
+// surfaces (billing/notifications/profile/beta) belong to no room, so this returns
+// undefined for them and the rail shows nothing highlighted — by design.
+function roomForTab(tab: NavTab): NavRoom | undefined {
+  return ROOMS.find((room) => room.tabs.includes(tab));
+}
+
+/**
+ * Left rail: the 5 rooms only (no sub-items). Selecting a room jumps to its
+ * default sub-tab (`tabs[0]`). The in-page sub-tab strip (RoomSubTabs) handles
+ * navigation *within* a room.
+ */
 function ResumeSectionNav({
   activeNav,
   collapsed = false,
@@ -6139,95 +6182,124 @@ function ResumeSectionNav({
   collapsed?: boolean;
   onSelect: (tab: NavTab) => void;
 }) {
+  const activeRoomKey = roomForTab(activeNav)?.key;
+
   return (
     <nav
-      className={`flex flex-col ${collapsed ? "items-center px-2" : "px-3"}`}
-      aria-label="Workspace sections"
+      className={`flex flex-col gap-1 ${collapsed ? "items-center px-2" : "px-3"}`}
+      aria-label="Workspace rooms"
     >
-      {NAV_SECTIONS.map((section, sectionIndex) => {
-        const sectionItems = section.items
-          .map((key) => NAV_ITEMS.find((item) => item.key === key))
-          .filter((item): item is ResumeNavItem => Boolean(item));
-
+      {ROOMS.map((room) => {
+        const active = room.key === activeRoomKey;
         return (
-          <div
-            key={section.label}
-            className={`w-full ${sectionIndex === 0 ? "" : "mt-6"}`}
+          <button
+            key={room.key}
+            type="button"
+            onClick={() => onSelect(room.tabs[0])}
+            aria-current={active ? "page" : undefined}
+            aria-label={room.label}
+            title={collapsed ? room.label : undefined}
+            className={`group relative flex w-full items-center rounded-lg text-sm font-semibold transition-colors duration-150 ease-expo focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-sidebar ${
+              collapsed ? "h-11 justify-center px-0" : "min-h-[2.75rem] gap-3 py-2 px-3"
+            } ${
+              active
+                ? "bg-primary/10 text-foreground"
+                : "text-muted-foreground hover:bg-accent hover:text-foreground"
+            }`}
           >
-            {/* Editorial grouping: an overline + generous whitespace does the
-                separating work — no divider rules to add visual noise. */}
-            {collapsed ? (
-              sectionIndex !== 0 && (
-                <div className="mx-auto mb-2 h-px w-6 bg-border" aria-hidden="true" />
-              )
-            ) : (
-              <p className="overline mb-2 px-3">{section.label}</p>
+            {active && !collapsed && (
+              <span
+                className="absolute inset-y-2 left-0 w-[3px] rounded-r-full bg-primary"
+                aria-hidden="true"
+              />
             )}
-            <div className="space-y-0.5">
-              {sectionItems.map((item) => {
-                const active = activeNav === item.key;
-                return (
-                  <button
-                    key={item.key}
-                    type="button"
-                    onClick={() => onSelect(item.key)}
-                    aria-current={active ? "page" : undefined}
-                    aria-label={item.badge ? `${item.label} (${item.badge})` : item.label}
-                    title={collapsed ? `${item.label}${item.badge ? ` - ${item.badge}` : ""}` : undefined}
-                    className={`group relative flex w-full items-center rounded-lg text-sm font-medium transition-colors duration-150 ease-expo focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-sidebar ${
-                      collapsed ? "h-10 justify-center px-0" : "min-h-[2.5rem] gap-2.5 py-1.5 px-2.5"
-                    } ${
-                      active
-                        ? "bg-primary/10 font-semibold text-foreground"
-                        : "text-muted-foreground hover:bg-accent hover:text-foreground"
-                    }`}
-                  >
-                    {active && !collapsed && (
-                      <span
-                        className="absolute inset-y-1.5 left-0 w-[3px] rounded-r-full bg-primary"
-                        aria-hidden="true"
-                      />
-                    )}
-                    <span
-                      className={`relative flex h-7 w-7 shrink-0 items-center justify-center transition-colors ${
-                        active
-                          ? "text-primary"
-                          : "text-muted-foreground group-hover:text-foreground"
-                      }`}
-                    >
-                      {item.icon}
-                    </span>
-                    {!collapsed && (
-                      <>
-                        <span className="min-w-0 flex-1 text-left">
-                          <span className="block truncate leading-tight">{item.label}</span>
-                          {item.hint && (
-                            <span className="mt-0.5 block truncate text-[11px] font-normal text-muted-foreground/80">
-                              {item.hint}
-                            </span>
-                          )}
-                        </span>
-                        {item.badge && (
-                          <span className="shrink-0 rounded-full border border-primary/20 bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
-                            {item.badge}
-                          </span>
-                        )}
-                      </>
-                    )}
-                    {collapsed && item.badge && (
-                      <span
-                        className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-primary"
-                        aria-hidden="true"
-                      />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+            <span
+              className={`relative flex h-7 w-7 shrink-0 items-center justify-center transition-colors ${
+                active
+                  ? "text-primary"
+                  : "text-muted-foreground group-hover:text-foreground"
+              }`}
+            >
+              {room.icon}
+            </span>
+            {!collapsed && (
+              <span className="min-w-0 flex-1 truncate text-left leading-tight">
+                {room.label}
+              </span>
+            )}
+          </button>
         );
       })}
     </nav>
+  );
+}
+
+/**
+ * In-page secondary sub-tab strip. Renders only when the active room has more
+ * than one tab (Home shows nothing). Uses each leaf tab's existing label / icon
+ * / badge from NAV_ITEMS. Horizontally scrollable at narrow widths.
+ */
+function RoomSubTabs({
+  activeNav,
+  onSelect,
+}: {
+  activeNav: NavTab;
+  onSelect: (tab: NavTab) => void;
+}) {
+  const room = roomForTab(activeNav);
+  if (!room || room.tabs.length <= 1) return null;
+
+  const items = room.tabs
+    .map((key) => NAV_ITEMS.find((item) => item.key === key))
+    .filter((item): item is ResumeNavItem => Boolean(item));
+
+  return (
+    <div
+      role="tablist"
+      aria-label={`${room.label} sections`}
+      className="hide-scrollbar mb-5 flex min-w-0 items-center gap-1 overflow-x-auto border-b border-border"
+    >
+      {items.map((item) => {
+        const active = activeNav === item.key;
+        return (
+          <button
+            key={item.key}
+            type="button"
+            role="tab"
+            aria-selected={active}
+            aria-current={active ? "page" : undefined}
+            onClick={() => onSelect(item.key)}
+            className={`group relative inline-flex shrink-0 items-center gap-2 rounded-t-control px-3 py-2.5 text-sm font-medium transition-colors duration-150 ease-expo focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+              active
+                ? "text-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <span
+              className={`shrink-0 transition-colors ${
+                active ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
+              }`}
+            >
+              {item.icon}
+            </span>
+            <span className="whitespace-nowrap">{item.label}</span>
+            {item.badge && (
+              <span className="shrink-0 rounded-full border border-primary/20 bg-primary/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-primary">
+                {item.badge}
+              </span>
+            )}
+            {active && (
+              <motion.span
+                layoutId="room-subtab-underline"
+                className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-primary"
+                transition={{ type: "spring", stiffness: 400, damping: 34 }}
+                aria-hidden="true"
+              />
+            )}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
@@ -6379,6 +6451,7 @@ function readTabFromUrl(): NavTab | null {
 
 export default function ResumeParser() {
   const { user } = useAuth();
+  const feedback = useFeedback();
   // Seed from ?tab= so refresh / OAuth-callback redirects (e.g.
   // /resume-parser?tab=applications&gmail=linked) actually land on the
   // expected tab instead of falling back to "tailor" with a stale URL.
@@ -6557,7 +6630,10 @@ export default function ResumeParser() {
                         className="fixed inset-0 z-10"
                         onClick={() => setUserMenuOpen(false)}
                       />
-                      <div className="absolute right-0 mt-2 w-56 rounded-xl bg-popover text-popover-foreground border border-border shadow-pop overflow-hidden z-20">
+                      <div
+                        role="menu"
+                        className="absolute right-0 mt-2 w-60 rounded-xl bg-popover text-popover-foreground border border-border shadow-pop overflow-hidden z-20"
+                      >
                         <div className="px-4 py-3 border-b border-border">
                           <p className="text-sm font-semibold text-foreground truncate">
                             {user?.name || user?.email?.split("@")[0]}
@@ -6566,16 +6642,56 @@ export default function ResumeParser() {
                             {user?.email}
                           </p>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            selectNav("profile");
-                            setUserMenuOpen(false);
-                          }}
-                          className="w-full text-left px-4 py-2.5 text-sm text-foreground hover:bg-accent transition-colors focus-visible:outline-none focus-visible:bg-accent"
-                        >
-                          Profile settings
-                        </button>
+                        {/* Settings group: Configure surfaces live here now, off
+                            the rail. Each still routes to its own leaf render. */}
+                        <div className="py-1">
+                          <p className="overline px-4 pb-1 pt-2">Settings</p>
+                          {SETTINGS_MENU.map((key) => {
+                            const item = NAV_ITEMS.find((i) => i.key === key);
+                            if (!item) return null;
+                            const active = activeNav === key;
+                            return (
+                              <button
+                                key={key}
+                                type="button"
+                                role="menuitem"
+                                aria-current={active ? "page" : undefined}
+                                onClick={() => selectNav(key)}
+                                className={`flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm transition-colors focus-visible:outline-none focus-visible:bg-accent ${
+                                  active
+                                    ? "bg-primary/10 text-foreground"
+                                    : "text-foreground hover:bg-accent"
+                                }`}
+                              >
+                                <span className={`shrink-0 ${active ? "text-primary" : "text-muted-foreground"}`}>
+                                  {item.icon}
+                                </span>
+                                <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                                {item.badge && (
+                                  <span className="shrink-0 rounded-full border border-primary/20 bg-primary/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-primary">
+                                    {item.badge}
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                        <div className="border-t border-border py-1">
+                          <button
+                            type="button"
+                            role="menuitem"
+                            onClick={() => {
+                              setUserMenuOpen(false);
+                              feedback.open();
+                            }}
+                            className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:bg-accent"
+                          >
+                            <span className="shrink-0 text-muted-foreground">
+                              <MessageSquarePlus className="w-4 h-4" />
+                            </span>
+                            <span className="min-w-0 flex-1 truncate">Feedback</span>
+                          </button>
+                        </div>
                       </div>
                     </>
                   )}
@@ -6717,6 +6833,9 @@ export default function ResumeParser() {
 
             <main className="min-w-0 flex-1 px-4 py-6 sm:px-6 lg:px-8">
               <div className="mx-auto max-w-[1500px]">
+              {/* Secondary sub-tab strip: switch between the sibling tabs of the
+                  active room (hidden on single-tab rooms like Home). */}
+              <RoomSubTabs activeNav={activeNav} onSelect={selectNav} />
               {/* Cross-link tissue: contextual related-feature shortcuts for
                   the active tab (no-op on tabs with their own rich linking). */}
               <ConnectedTo from={activeNav} />
@@ -6909,10 +7028,9 @@ export default function ResumeParser() {
         {/* Instagram-style bottom nav for mobile/tablet; desktop uses the sidebar. */}
         <MobileBottomNav
           items={NAV_ITEMS}
-          sections={NAV_SECTIONS}
+          rooms={ROOMS}
           activeKey={activeNav}
           onSelect={(key) => selectNav(key as NavTab)}
-          primaryKeys={["dashboard", "jobs", "tailor", "interview"]}
         />
 
         <style>{`
