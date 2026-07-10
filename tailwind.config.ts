@@ -66,6 +66,9 @@ export default {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+        // Redesign two-radius system: one for controls, one for containers.
+        control: "8px",
+        container: "16px",
       },
       // ── Editorial type scale (Compass §7) ─────────────────────────────────
       // Named steps compose with `font-display` for the Plus Jakarta look on

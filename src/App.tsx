@@ -8,13 +8,16 @@ import { ThemeProvider } from './components/theme-provider';
 import { AuthProvider } from './contexts/AuthContext';
 import { FeedbackProvider } from './components/feedback/FeedbackWidget';
 import { UpgradeModalProvider } from './components/billing/UpgradeModalProvider';
-import OnboardingWizard from './components/onboarding/OnboardingWizard';
 import Landing from './pages/Landing';
-import Login from './pages/Login';
-import Register from './pages/Register';
 import NotFound from './pages/NotFound';
 
 // Workspace + heavier routes are lazy-loaded so the public landing stays light.
+// Landing is kept eager (it's the LCP content on `/`); everything else — auth
+// pages, onboarding, workspace — splits into its own chunk so the marketing
+// route ships a lean bundle.
+const Login = lazy(() => import('./pages/Login'));
+const Register = lazy(() => import('./pages/Register'));
+const OnboardingWizard = lazy(() => import('./components/onboarding/OnboardingWizard'));
 const ResumeParser = lazy(() => import('./pages/ResumeParser'));
 const AdminPortal = lazy(() => import('./pages/AdminPortal'));
 const GmailCallback = lazy(() => import('./pages/GmailCallback'));
@@ -43,8 +46,8 @@ function AppContent() {
         <Routes>
           {/* Public */}
           <Route path="/" element={<Landing />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+          <Route path="/login" element={<Suspense fallback={<RouteLoadingFallback />}><Login /></Suspense>} />
+          <Route path="/register" element={<Suspense fallback={<RouteLoadingFallback />}><Register /></Suspense>} />
 
           {/* Product workspace (AuthGate handles the sign-in wall). The
               OnboardingWizard self-gates to authed users who haven't onboarded. */}
