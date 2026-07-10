@@ -5,7 +5,8 @@ import { toast } from 'sonner';
 
 type Provider = 'google' | 'github' | 'linkedin' | 'microsoft' | 'apple';
 
-const ORDER: Provider[] = ['google', 'github', 'linkedin', 'microsoft', 'apple'];
+/** Google is always presented as the primary option; the rest stay gated. */
+const SECONDARY_ORDER: Provider[] = ['github', 'linkedin', 'microsoft', 'apple'];
 const LABEL: Record<Provider, string> = {
   google: 'Google',
   github: 'GitHub',
@@ -62,6 +63,7 @@ interface Props {
 }
 
 export function SocialAuthButtons({ verb = 'Continue with' }: Props) {
+  // `null` = we haven't heard back yet (unknown), array = the configured set.
   const [providers, setProviders] = useState<Provider[] | null>(null);
   const [pending, setPending] = useState<Provider | null>(null);
 
@@ -70,51 +72,100 @@ export function SocialAuthButtons({ verb = 'Continue with' }: Props) {
     apiService.getOAuthProviders().then((res) => {
       if (!alive) return;
       const list = (res.data?.providers || []).filter((p): p is Provider =>
-        (ORDER as string[]).includes(p),
+        (['google', ...SECONDARY_ORDER] as string[]).includes(p),
       );
-      setProviders(ORDER.filter((p) => list.includes(p)));
+      setProviders(list);
     });
     return () => {
       alive = false;
     };
   }, []);
 
-  const onClick = async (provider: Provider) => {
+  // Google is configured only if the backend advertised it. `null` (still
+  // loading) is treated as "attempt it" — the flow surfaces any real error.
+  const googleConfigured = providers === null ? null : providers.includes('google');
+  const others = providers ? SECONDARY_ORDER.filter((p) => providers.includes(p)) : [];
+
+  const startProvider = async (provider: Provider) => {
     setPending(provider);
     const res = await apiService.beginSocialAuth(provider, { redirect: true });
+    // On success the browser is already navigating to the provider.
+    return res;
+  };
+
+  const onGoogle = async () => {
+    // Not configured yet → be honest, never fake success or throw a scary error.
+    if (googleConfigured === false) {
+      toast.info('Google sign-in is being set up', {
+        description: 'It’s almost ready — continue with your email for now.',
+      });
+      return;
+    }
+    const res = await startProvider('google');
+    if (res.error) {
+      setPending(null);
+      toast.info('Google sign-in is being set up', {
+        description: res.error || 'It’s almost ready — continue with your email for now.',
+      });
+    }
+  };
+
+  const onOther = async (provider: Provider) => {
+    const res = await startProvider(provider);
     if (res.error) {
       setPending(null);
       toast.error('Could not start sign-in', { description: res.error });
     }
-    // On success the browser is already navigating to the provider.
   };
 
-  // Render nothing until we know, and nothing if no providers are configured —
-  // so dev environments without OAuth keys just show the email form.
-  if (!providers || providers.length === 0) return null;
+  const busy = pending !== null;
 
   return (
-    <div className="space-y-2.5">
-      <div className="grid gap-2.5">
-        {providers.map((p) => (
-          <button
-            key={p}
-            type="button"
-            onClick={() => onClick(p)}
-            disabled={pending !== null}
-            className="inline-flex h-11 w-full items-center justify-center gap-2.5 rounded-xl border border-border bg-background px-4 text-sm font-medium shadow-sm transition-colors hover:bg-accent disabled:opacity-60"
-          >
-            {pending === p ? <Loader2 className="h-4 w-4 animate-spin" /> : <BrandIcon provider={p} />}
-            <span>{verb} {LABEL[p]}</span>
-          </button>
-        ))}
-      </div>
-      <div className="relative py-1">
-        <div className="absolute inset-0 flex items-center">
+    <div className="space-y-4">
+      {/* PRIMARY — Google is always the obvious first choice. */}
+      <button
+        type="button"
+        onClick={onGoogle}
+        disabled={busy}
+        aria-busy={pending === 'google'}
+        className="inline-flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-border bg-background px-4 text-sm font-semibold text-foreground shadow-soft transition-colors hover:border-primary/40 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-60"
+      >
+        {pending === 'google' ? (
+          <Loader2 className="h-[18px] w-[18px] animate-spin" aria-hidden />
+        ) : (
+          <BrandIcon provider="google" />
+        )}
+        <span>{verb} Google</span>
+      </button>
+
+      {/* SECONDARY — only the providers the backend actually advertises. */}
+      {others.length > 0 && (
+        <div className="grid gap-2.5">
+          {others.map((p) => (
+            <button
+              key={p}
+              type="button"
+              onClick={() => onOther(p)}
+              disabled={busy}
+              aria-busy={pending === p}
+              className="inline-flex h-10 w-full items-center justify-center gap-2.5 rounded-xl border border-border bg-background px-4 text-sm font-medium text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-60"
+            >
+              {pending === p ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <BrandIcon provider={p} />}
+              <span>{verb} {LABEL[p]}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Divider into the email form below. */}
+      <div className="relative py-0.5">
+        <div className="absolute inset-0 flex items-center" aria-hidden>
           <span className="w-full border-t border-border" />
         </div>
         <div className="relative flex justify-center">
-          <span className="bg-background px-2 text-xs uppercase tracking-wide text-muted-foreground">or with email</span>
+          <span className="bg-background px-2 text-xs uppercase tracking-wide text-muted-foreground">
+            or continue with email
+          </span>
         </div>
       </div>
     </div>
