@@ -3,13 +3,14 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Container, EASE } from './_shared';
-import { SignalResolve } from './SignalResolve';
+import { HeroShortlist } from './HeroShortlist';
 
 /**
  * Hero — above the fold. One headline (≤6 words), one subline (≤12), one
- * primary CTA and one secondary text link, beside the interactive Signal
- * Resolve signature. No third element. Reserves the signature's aspect ratio so
- * the page never shifts as it mounts (CLS≈0).
+ * primary CTA and one secondary text link, beside the HeroShortlist signature —
+ * a literal job-feed panel that funnels 1,240 listings down to 3 that fit.
+ * No third element. Reserves the signature's height so the page never shifts as
+ * it mounts (CLS≈0).
  */
 export function Hero() {
   const reduce = useReducedMotion();
@@ -61,7 +62,7 @@ export function Hero() {
 
         {/* signature */}
         <motion.div {...enter(0.16)} className="mx-auto w-full max-w-xl">
-          <SignalResolve />
+          <HeroShortlist />
         </motion.div>
       </Container>
     </section>
