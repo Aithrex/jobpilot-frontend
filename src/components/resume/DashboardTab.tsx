@@ -30,23 +30,18 @@ import { GitHubProofCard } from './GitHubProofCard';
 import { LinkedInAuditCard } from './LinkedInAuditCard';
 import { LinkedInArchiveCard } from './LinkedInArchiveCard';
 
-import { HeroAction } from './widgets/HeroAction';
+import { DirectiveBlock } from './DirectiveBlock';
+import { ActivitySpine, type SpineNode } from './ActivitySpine';
 import AutoApplyEntryCard from '@/components/autoSubmit/AutoApplyEntryCard';
 import { WIDGETS } from './widgets/registry';
 import { spanClass, WidgetSkeleton } from './widgets/primitives';
+import { scoredMatches } from './widgets/selectors';
 import { EASE, clamp01 } from './widgets/types';
 import type { ActivityPhase, DashboardCtx, NavKey, SliceErrors, StreakData } from './widgets/types';
 
 interface DashboardTabProps {
   userName?: string | null;
   onNavigate: (tab: NavKey) => void;
-}
-
-function greeting(): string {
-  const h = new Date().getHours();
-  if (h < 12) return 'Good morning';
-  if (h < 18) return 'Good afternoon';
-  return 'Good evening';
 }
 
 const NO_ERRORS: SliceErrors = {
@@ -168,6 +163,26 @@ export default function DashboardTab({ userName, onNavigate }: DashboardTabProps
     retry: () => void load(),
   };
 
+  // ── The activity spine's four nodes — every count is real ctx data, honest
+  //    zeros included. `scanned` = roles saved/scored into the workspace,
+  //    `matched` = those carrying a match score, `applied` = applications sent,
+  //    `responded` = employers who moved you forward (interviewing + offers).
+  const stageCount = (k: string) => funnel?.stages.find((s) => s.key === k)?.count ?? 0;
+  const applied =
+    overview?.applications.total ??
+    (funnel ? stageCount('applied') : undefined) ??
+    streak?.total_applications ??
+    0;
+  const responded = overview
+    ? overview.applications.interviewing + overview.applications.offers
+    : stageCount('interview') + stageCount('offer');
+  const spineNodes: SpineNode[] = [
+    { key: 'scanned', label: 'Scanned', value: overview?.jobs.saved ?? savedJobs.length },
+    { key: 'matched', label: 'Matched', value: scoredMatches(ctx).length },
+    { key: 'applied', label: 'Applied', value: applied },
+    { key: 'responded', label: 'Responded', value: responded },
+  ];
+
   // ── Rank the catalog. Hidden widgets (relevance <= 0) drop out entirely.
   const scored = WIDGETS
     .map((w) => ({ w, score: clamp01(w.relevance(ctx)) }))
@@ -178,16 +193,12 @@ export default function DashboardTab({ userName, onNavigate }: DashboardTabProps
 
   return (
     <div className="space-y-6 sm:space-y-8">
-      {/* Greeting */}
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="font-display text-2xl font-extrabold tracking-tight">{greeting()}, {name}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Here's the one thing worth doing next — and where everything stands.</p>
-        </div>
+      {/* Utility row — refresh only. The directive below is the opener. */}
+      <div className="flex justify-end">
         <button
           onClick={() => void load()}
           disabled={loading}
-          className="inline-flex min-h-[36px] items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-50"
+          className="inline-flex min-h-[36px] items-center gap-1.5 rounded-control border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-50"
         >
           <RefreshCw className={cn('h-3.5 w-3.5', loading && 'animate-spin')} /> Refresh
         </button>
@@ -197,26 +208,37 @@ export default function DashboardTab({ userName, onNavigate }: DashboardTabProps
         <DashboardSkeleton />
       ) : (
         <>
-          {/* The one recommended action */}
-          <HeroAction ctx={ctx} />
+          {/* 1. The directive — concrete roles worth applying to today (or, when
+                there are none yet, the ranker's single best next step). */}
+          <DirectiveBlock ctx={ctx} />
 
-          {/* Auto-Apply entry point — self-hides when the feature is unavailable */}
-          <AutoApplyEntryCard onOpen={() => onNavigate('auto-apply')} />
+          {/* 2. The activity spine — scanned → matched → applied → responded. */}
+          <ActivitySpine nodes={spineNodes} />
 
-          {/* The generated, relevance-ranked widget grid */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 [grid-auto-flow:dense]">
-            {scored.map(({ w }, i) => (
-              <motion.div
-                key={w.key}
-                className={cn(spanClass(w.span?.(ctx) ?? 1), '[&>*]:h-full')}
-                initial={reduce ? false : { opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.35, ease: EASE, delay: reduce ? 0 : Math.min(i * 0.03, 0.24) }}
-              >
-                {w.render(ctx)}
-              </motion.div>
-            ))}
-          </div>
+          {/* 3. Everything else, one level deeper. */}
+          <section className="space-y-4">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              More insights
+            </h2>
+
+            {/* Auto-Apply entry point — self-hides when the feature is unavailable */}
+            <AutoApplyEntryCard onOpen={() => onNavigate('auto-apply')} />
+
+            {/* The generated, relevance-ranked widget grid */}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 [grid-auto-flow:dense]">
+              {scored.map(({ w }, i) => (
+                <motion.div
+                  key={w.key}
+                  className={cn(spanClass(w.span?.(ctx) ?? 1), '[&>*]:h-full')}
+                  initial={reduce ? false : { opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.35, ease: EASE, delay: reduce ? 0 : Math.min(i * 0.03, 0.24) }}
+                >
+                  {w.render(ctx)}
+                </motion.div>
+              ))}
+            </div>
+          </section>
 
           {/* Build your presence — proof that recognizes the building (kept surface) */}
           <section>
@@ -239,7 +261,8 @@ export default function DashboardTab({ userName, onNavigate }: DashboardTabProps
 function DashboardSkeleton() {
   return (
     <div className="space-y-6 sm:space-y-8" aria-hidden="true">
-      <div className="h-40 animate-pulse rounded-2xl border border-border bg-card shadow-soft sm:h-36" />
+      <div className="h-52 animate-pulse rounded-container border border-border bg-card shadow-soft sm:h-44" />
+      <div className="h-24 animate-pulse rounded-container border border-border bg-card shadow-soft" />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <WidgetSkeleton span={3} lines={2} />
         <WidgetSkeleton span={2} lines={4} />
