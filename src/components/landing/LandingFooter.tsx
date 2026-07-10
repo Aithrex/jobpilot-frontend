@@ -20,7 +20,7 @@ export function LandingFooter() {
           <Link to="/login" className="rounded-control transition-colors hover:text-foreground">
             Sign in
           </Link>
-          <Link to="/applypilot/privacy" className="rounded-control transition-colors hover:text-foreground">
+          <Link to="/privacy" className="rounded-control transition-colors hover:text-foreground">
             Privacy
           </Link>
         </nav>
