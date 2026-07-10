@@ -25,6 +25,7 @@ const AuthCallback = lazy(() => import('./pages/AuthCallback'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const ApplyPilotPrivacy = lazy(() => import('./pages/ApplyPilotPrivacy'));
 const Privacy = lazy(() => import('./pages/Privacy'));
+const Terms = lazy(() => import('./pages/Terms'));
 
 const queryClient = new QueryClient();
 
@@ -69,6 +70,7 @@ function AppContent() {
           <Route path="/oauth/gmail/callback" element={<Suspense fallback={<RouteLoadingFallback />}><GmailCallback /></Suspense>} />
           <Route path="/reset-password" element={<Suspense fallback={<RouteLoadingFallback />}><ResetPassword /></Suspense>} />
           <Route path="/privacy" element={<Suspense fallback={<RouteLoadingFallback />}><Privacy /></Suspense>} />
+          <Route path="/terms" element={<Suspense fallback={<RouteLoadingFallback />}><Terms /></Suspense>} />
           <Route path="/applypilot/privacy" element={<Suspense fallback={<RouteLoadingFallback />}><ApplyPilotPrivacy /></Suspense>} />
 
           {/* Legacy redirects → product-first paths */}

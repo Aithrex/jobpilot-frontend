@@ -67,6 +67,34 @@ export default function Privacy() {
           <p>Disconnecting an integration removes our stored access tokens for it.</p>
         </Section>
 
+        <Section title="Google user data & Limited Use">
+          <p>
+            When you connect Gmail, Aspirely requests <strong>read-only</strong> access
+            (<code>gmail.readonly</code>) for the sole purpose of detecting job-application-related
+            emails and surfacing application status updates to you inside the app.
+          </p>
+          <p>
+            Aspirely's use and transfer to any other app of information received from Google APIs
+            will adhere to the{' '}
+            <a
+              className="text-primary hover:underline"
+              href="https://developers.google.com/terms/api-services-user-data-policy"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Google API Services User Data Policy
+            </a>
+            , including the Limited Use requirements. Specifically, Aspirely does not:
+          </p>
+          <ul className="list-disc space-y-1 pl-6">
+            <li>transfer or sell your Gmail data to third parties for advertising, resale, or any unrelated purpose;</li>
+            <li>use your Gmail data for advertising;</li>
+            <li>allow humans to read your Gmail data, except with your explicit consent for specific messages, to comply with applicable law, for security purposes (e.g. investigating abuse), or where the data has been aggregated and anonymized;</li>
+            <li>use your Gmail data to train generalized or third-party AI/ML models.</li>
+          </ul>
+          <p>You can disconnect Gmail at any time, which deletes our stored Google tokens for your account.</p>
+        </Section>
+
         <Section title="How your information is shared">
           <p>We share data only with the service providers that make Aspirely work, under confidentiality obligations:</p>
           <ul className="list-disc space-y-1 pl-6">

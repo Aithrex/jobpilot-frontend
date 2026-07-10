@@ -23,6 +23,9 @@ export function LandingFooter() {
           <Link to="/privacy" className="rounded-control transition-colors hover:text-foreground">
             Privacy
           </Link>
+          <Link to="/terms" className="rounded-control transition-colors hover:text-foreground">
+            Terms
+          </Link>
         </nav>
         <p className="tabular-nums">© {new Date().getFullYear()} Aithrex</p>
       </Container>
