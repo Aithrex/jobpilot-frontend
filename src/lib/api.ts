@@ -346,6 +346,18 @@ class ApiService {
     );
   }
 
+  /**
+   * Cross-user market TREND signal: learning topics ranked by market demand ×
+   * user gap × learnability (tilted by the user's real application outcomes).
+   * Deterministic backend read — no async job. May return empty `items` with a
+   * `note` when there isn't enough cross-user signal for the role yet.
+   */
+  async getLearningTrends(window = 90) {
+    return this.request<import("../types/learning").LearningTrendsResult>(
+      `/resume/learning/trends?window=${encodeURIComponent(window)}`,
+    );
+  }
+
   async getLearningPath(pathId: string) {
     return this.request<{
       path: import("../types/learning").LearningPath;
@@ -2905,10 +2917,17 @@ class ApiService {
     );
   }
 
-  async updateAutoSubmitSettings(enabled: boolean) {
+  async updateAutoSubmitSettings(enabled: boolean, autonomyThreshold?: number) {
     return this.request<import("../types/autoSubmit").AutoSubmitSettings>(
       "/apply/auto-submit/settings",
-      { method: "PUT", body: JSON.stringify({ enabled }) },
+      {
+        method: "PUT",
+        body: JSON.stringify(
+          autonomyThreshold === undefined
+            ? { enabled }
+            : { enabled, autonomy_threshold: autonomyThreshold },
+        ),
+      },
     );
   }
 
@@ -2933,6 +2952,17 @@ class ApiService {
   async getAutoSubmitPending() {
     return this.request<import("../types/autoSubmit").AutoSubmitPending>(
       "/apply/auto-submit/pending",
+    );
+  }
+
+  /**
+   * Unified "Today" inbox — one backend-composed feed of everything that may
+   * need the user today (approvals, auto-submit hand-offs, inbox suggestions,
+   * "did you apply?" nudges). Newest-first, capped at 50 server-side.
+   */
+  async getTodayInbox() {
+    return this.request<import("../types/todayInbox").TodayInbox>(
+      "/apply/today-inbox",
     );
   }
 

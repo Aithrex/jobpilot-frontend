@@ -57,6 +57,50 @@ export interface ModuleCompletionResult {
   xp_earned: number;
 }
 
+// ── Cross-user market TREND signal ──────────────────────────────
+// GET /resume/learning/trends?window=90 → trend_signal_service.trending_for_user.
+// Deterministic (no LLM): market demand × user gap × learnability, tilted by the
+// user's real application outcomes. Numbers are COUNTED backend-side.
+
+/** One trending learning topic ranked against the cross-user JD market. */
+export interface LearningTrend {
+  /** The skill/topic (already cleared the integrity reject vocabulary). */
+  skill: string;
+  /** Share of in-window role JDs (across all users) that ask for it, 0..1. */
+  market_pct: number;
+  /** Distinct JDs (in-window, cross-user) that asked for it. */
+  market_count: number;
+  /** Whether the user already demonstrates this skill. */
+  user_has: boolean;
+  /** Deterministic learnability weight, 0..1 (concrete tools rank above broad fields). */
+  learnability: number;
+  /** How many of the user's rejected/ghosted JDs wanted this skill. */
+  outcome_pressure: number;
+  /** Composite ranking score = market_pct × gap × learnability × (1 + outcome boost). */
+  score: number;
+  /** Topic string the UI POSTs to /learning/plan to build a plan. */
+  plan_topic: string;
+  /** Saved jobs whose JD calls for this skill (bounded to 5). */
+  unlocked: UnlockedJob[];
+  /** Convenience count of `unlocked`. */
+  unlocks_jobs: number;
+}
+
+export interface LearningTrendsResult {
+  /** Normalized role family the trends were computed for. */
+  role: string;
+  /** Trailing-day window (30 or 90). */
+  window: number;
+  /** JD sample size for this role/window. */
+  market_size: number;
+  /** True when we fell back to the generic 'other' bucket for lack of role signal. */
+  degraded: boolean;
+  items: LearningTrend[];
+  /** Present (with empty items) when there isn't enough cross-user signal yet. */
+  note?: string;
+  generated_at: string;
+}
+
 export interface QuizQuestion {
   question: string;
   options: string[];

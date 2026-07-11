@@ -8,6 +8,12 @@
 
 export interface AutoSubmitSettings {
   auto_submit_enabled: boolean;
+  /**
+   * Confidence floor (0–1) above which JobPilot may auto-submit an application
+   * without a manual review. Anything below is held for one-tap approval.
+   * Defaults server-side (0.90) when the account hasn't set it explicitly.
+   */
+  autonomy_threshold?: number;
   updated_at?: string | null;
 }
 

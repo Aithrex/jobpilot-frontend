@@ -18,6 +18,7 @@ import {
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { YourEdge } from '@/components/resume/learning/YourEdge';
+import { MarketTrends } from '@/components/resume/learning/MarketTrends';
 import type { LearningPath, LearningProgress, ModuleCompletionResult, Quiz } from '@/types/learning';
 
 type HubMode = 'edge' | 'topics';
@@ -85,6 +86,9 @@ export default function LearningHubTab() {
           verified proof, or get an AI study plan for any topic.
         </p>
       </header>
+
+      {/* Cross-user market trend signal — what the whole corpus is asking for. */}
+      <MarketTrends onPlanCreated={(pathId) => setSelected(pathId)} />
 
       {/* Mode switch: the market-driven "Your edge" loop vs. free-form topics. */}
       {edgeAvailable && (

@@ -10,6 +10,8 @@ import { FeedbackProvider } from './components/feedback/FeedbackWidget';
 import { UpgradeModalProvider } from './components/billing/UpgradeModalProvider';
 import Landing from './pages/Landing';
 import NotFound from './pages/NotFound';
+import { WorkspaceFallbackCard } from '@/app-shell/WorkspaceFallbackCard';
+import { FileCheck2, FolderOpen, Wand2 } from 'lucide-react';
 
 // Workspace + heavier routes are lazy-loaded so the public landing stays light.
 // Landing is kept eager (it's the LCP content on `/`); everything else — auth
@@ -26,6 +28,42 @@ const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const ApplyPilotPrivacy = lazy(() => import('./pages/ApplyPilotPrivacy'));
 const Privacy = lazy(() => import('./pages/Privacy'));
 const Terms = lazy(() => import('./pages/Terms'));
+
+// New app shell (`/next/*`) — the migrated main app. Coexists with the
+// ResumeParser monolith at `/app` during the strangler-fig migration; AppShell
+// self-gates on AuthContext and redirects to /login without a session.
+const AppShell = lazy(() => import('@/app-shell/AppShell'));
+const TodayPage = lazy(() => import('@/app-shell/pages/TodayPage'));
+const ApplicationsTab = lazy(() => import('@/components/resume/ApplicationsTab'));
+const GrowPage = lazy(() => import('@/app-shell/pages/GrowPage'));
+const DiscoverPage = lazy(() => import('@/app-shell/pages/DiscoverPage'));
+const CraftPage = lazy(() => import('@/app-shell/pages/CraftPage'));
+const SettingsPage = lazy(() => import('@/app-shell/pages/SettingsPage'));
+
+// Grow + Discover mount existing standalone tab components as deep-linkable
+// nested sections under their destination layout — the monolith is untouched.
+const LearningHubTab = lazy(() => import('@/components/resume/LearningHubTab'));
+const NetworkTab = lazy(() => import('@/components/resume/NetworkTab'));
+const EventsTab = lazy(() => import('@/components/resume/EventsTab'));
+const InterviewPrepTab = lazy(() => import('@/components/resume/InterviewPrepTab'));
+const CareerCopilotTab = lazy(() => import('@/components/resume/CareerCopilotTab'));
+const JobOpportunitiesTab = lazy(() => import('@/components/resume/JobOpportunitiesTab'));
+const CareerPortalsTab = lazy(() => import('@/components/resume/CareerPortalsTab'));
+const VisaTimelineTab = lazy(() => import('@/components/visa/VisaTimelineTab'));
+
+// Craft mounts the standalone (prop-less) résumé tools directly as nested
+// sections. The monolith-embedded tools (Tailor / My Resumes / Tailored) render
+// an "Open in workspace" fallback instead of being risky-extracted.
+const BatchTailor = lazy(() => import('@/components/resume/BatchTailor'));
+const SixSecondsTab = lazy(() => import('@/components/resume/SixSecondsTab'));
+const VoiceGraphTab = lazy(() => import('@/components/resume/VoiceGraphTab'));
+
+// Settings hub sections.
+const ProfilePanel = lazy(() => import('@/app-shell/settings/ProfilePanel'));
+const IntegrationsPanel = lazy(() => import('@/app-shell/settings/IntegrationsPanel'));
+const AutonomyPanel = lazy(() => import('@/app-shell/settings/AutonomyPanel'));
+const BillingTab = lazy(() => import('@/components/billing/BillingTab'));
+const NotificationsTab = lazy(() => import('@/components/resume/NotificationsTab'));
 
 const queryClient = new QueryClient();
 
@@ -62,6 +100,85 @@ function AppContent() {
               </Suspense>
             }
           />
+
+          {/* New app shell — isolated from the /app monolith. AppShell wraps
+              its lazy children in its own Suspense, so nested routes render the
+              lazy page directly. Deep-linkable (e.g. /next/applications). */}
+          <Route
+            path="/next"
+            element={
+              <Suspense fallback={<RouteLoadingFallback />}>
+                <AppShell />
+              </Suspense>
+            }
+          >
+            <Route index element={<Navigate to="today" replace />} />
+            <Route path="today" element={<TodayPage />} />
+            <Route path="applications" element={<ApplicationsTab />} />
+            <Route path="grow" element={<GrowPage />}>
+              <Route index element={<Navigate to="learning" replace />} />
+              <Route path="learning" element={<LearningHubTab />} />
+              <Route path="network" element={<NetworkTab />} />
+              <Route path="events" element={<EventsTab />} />
+              <Route path="interview" element={<InterviewPrepTab />} />
+              <Route path="copilot" element={<CareerCopilotTab />} />
+            </Route>
+            <Route path="discover" element={<DiscoverPage />}>
+              <Route index element={<Navigate to="jobs" replace />} />
+              <Route path="jobs" element={<JobOpportunitiesTab />} />
+              <Route path="portals" element={<CareerPortalsTab />} />
+              <Route path="visa" element={<VisaTimelineTab />} />
+            </Route>
+            <Route path="craft" element={<CraftPage />}>
+              {/* Land on Batch — a working, mounted tool — rather than the
+                  Tailor fallback card, for a more useful default. */}
+              <Route index element={<Navigate to="batch" replace />} />
+              <Route
+                path="tailor"
+                element={
+                  <WorkspaceFallbackCard
+                    icon={Wand2}
+                    title="Tailor a résumé"
+                    description="Tailor your résumé to a single job description with ATS scoring."
+                    to="/app?tab=tailor"
+                  />
+                }
+              />
+              <Route path="batch" element={<BatchTailor />} />
+              <Route
+                path="my-resumes"
+                element={
+                  <WorkspaceFallbackCard
+                    icon={FolderOpen}
+                    title="My résumés"
+                    description="Manage your base résumés and versions."
+                    to="/app?tab=my-resumes"
+                  />
+                }
+              />
+              <Route
+                path="tailored"
+                element={
+                  <WorkspaceFallbackCard
+                    icon={FileCheck2}
+                    title="Tailored résumés"
+                    description="Browse and re-download every résumé you've tailored."
+                    to="/app?tab=tailored"
+                  />
+                }
+              />
+              <Route path="six-seconds" element={<SixSecondsTab />} />
+              <Route path="voicegraph" element={<VoiceGraphTab />} />
+            </Route>
+            <Route path="settings" element={<SettingsPage />}>
+              <Route index element={<Navigate to="profile" replace />} />
+              <Route path="profile" element={<ProfilePanel />} />
+              <Route path="integrations" element={<IntegrationsPanel />} />
+              <Route path="autonomy" element={<AutonomyPanel />} />
+              <Route path="billing" element={<BillingTab />} />
+              <Route path="notifications" element={<NotificationsTab />} />
+            </Route>
+          </Route>
 
           {/* Utility routes */}
           <Route path="/admin" element={<Suspense fallback={<RouteLoadingFallback />}><AdminPortal /></Suspense>} />

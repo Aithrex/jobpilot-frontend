@@ -27,7 +27,10 @@ interface ApiResp<T> {
 
 interface AutoSubmitApi {
   getAutoSubmitSettings(): Promise<ApiResp<AutoSubmitSettings>>;
-  updateAutoSubmitSettings(enabled: boolean): Promise<ApiResp<AutoSubmitSettings>>;
+  updateAutoSubmitSettings(
+    enabled: boolean,
+    autonomyThreshold?: number,
+  ): Promise<ApiResp<AutoSubmitSettings>>;
   approveAutoSubmit(
     body: AutoSubmitApproveBody,
   ): Promise<ApiResp<AutoSubmitApproveResult>>;
@@ -124,6 +127,32 @@ export function useAutoSubmit() {
     [qc],
   );
 
+  /**
+   * Persist the opt-in flag and/or the confidence threshold together. Used by
+   * the Autonomy settings panel where both controls live side by side.
+   */
+  const saveSettings = useCallback(
+    async (next: {
+      enabled: boolean;
+      autonomyThreshold?: number;
+    }): Promise<boolean> => {
+      setSavingSettings(true);
+      const res = await api.updateAutoSubmitSettings(
+        next.enabled,
+        next.autonomyThreshold,
+      );
+      setSavingSettings(false);
+      if (res.error || !res.data) return false;
+      qc.setQueryData<SettingsState>(SETTINGS_KEY, {
+        unavailable: false,
+        settings: res.data,
+      });
+      qc.invalidateQueries({ queryKey: PENDING_KEY });
+      return true;
+    },
+    [qc],
+  );
+
   const approve = useCallback(
     async (body: AutoSubmitApproveBody): Promise<ApproveOutcome> => {
       const res = await api.approveAutoSubmit(body);
@@ -177,6 +206,7 @@ export function useAutoSubmit() {
     settingsError: settingsQuery.isError,
     savingSettings,
     setEnabled,
+    saveSettings,
 
     pending: pendingQuery.data?.pending ?? [],
     waiting: pendingQuery.data?.waiting ?? [],

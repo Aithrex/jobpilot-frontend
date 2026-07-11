@@ -1,0 +1,90 @@
+import { Suspense, useCallback, useState } from "react";
+import { Navigate, Outlet } from "react-router-dom";
+import { Loader2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { Sidebar } from "./Sidebar";
+import { TopBar } from "./TopBar";
+import { MobileNav } from "./MobileNav";
+
+const SIDEBAR_COLLAPSED_KEY = "appShellSidebarCollapsed";
+
+function FullScreenLoader() {
+  return (
+    <div
+      className="flex min-h-screen items-center justify-center bg-background text-muted-foreground"
+      aria-live="polite"
+    >
+      <div className="flex items-center gap-2">
+        <Loader2 className="h-5 w-5 animate-spin text-primary" aria-hidden="true" />
+        <span className="text-sm">Loading your workspace…</span>
+      </div>
+    </div>
+  );
+}
+
+function OutletFallback() {
+  return (
+    <div className="flex min-h-[50vh] items-center justify-center text-muted-foreground" aria-live="polite">
+      <Loader2 className="h-5 w-5 animate-spin text-primary" aria-hidden="true" />
+    </div>
+  );
+}
+
+/**
+ * Isolated shell for the migrated app (`/next/*`). Coexists with the
+ * ResumeParser monolith at `/app` during the strangler-fig migration.
+ *
+ * Auth is gated the same way the monolith gates via AuthContext: while the
+ * profile is verifying we show a loader; with no valid session we redirect to
+ * `/login` (the monolith renders an in-place wall — here the task calls for a
+ * redirect so deep links land on a real sign-in page and bounce back).
+ */
+export default function AppShell() {
+  const { isAuthenticated, isLoading } = useAuth();
+  const [collapsed, setCollapsed] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "true";
+  });
+
+  const toggleCollapsed = useCallback(() => {
+    setCollapsed((prev) => {
+      const next = !prev;
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(next));
+      }
+      return next;
+    });
+  }, []);
+
+  if (isLoading) return <FullScreenLoader />;
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+
+  return (
+    <div className="min-h-screen bg-background text-foreground antialiased">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-primary-foreground focus:shadow-pop focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+      >
+        Skip to content
+      </a>
+
+      <div className="flex">
+        <Sidebar collapsed={collapsed} onToggleCollapse={toggleCollapsed} />
+
+        <div className="flex min-w-0 flex-1 flex-col">
+          <TopBar />
+
+          <main id="main-content" className="flex-1 pb-24 lg:pb-0">
+            <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
+              <Suspense fallback={<OutletFallback />}>
+                <Outlet />
+              </Suspense>
+            </div>
+          </main>
+        </div>
+      </div>
+
+      <MobileNav />
+    </div>
+  );
+}
