@@ -12,7 +12,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { apiService } from "@/lib/api";
-import { useAuth } from "@/contexts/AuthContext";
 
 // ── Context so anywhere in the app can call openFeedback({type, prefill}) ──
 
@@ -55,7 +54,6 @@ const TYPE_PLACEHOLDERS: Record<FeedbackType, string> = {
 };
 
 export function FeedbackProvider({ children }: { children: ReactNode }) {
-  const { isAuthenticated } = useAuth();
   const [open, setOpen] = useState(false);
   const [type, setType] = useState<FeedbackType>("general");
   const [message, setMessage] = useState("");
@@ -91,21 +89,10 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
   return (
     <FeedbackContext.Provider value={value}>
       {children}
-      {/* Floating launcher — vertically rotated tab on the LEFT edge so it
-          never collides with the ResumeParser workspace's bottom-right sticky
-          action bar. Vertically centered → always within thumb reach. */}
-      {isAuthenticated && (
-        <button
-          type="button"
-          onClick={() => handleOpen()}
-          className="fixed left-0 top-1/2 -translate-y-1/2 z-30 group inline-flex items-center gap-1.5 rounded-r-lg bg-gradient-to-br from-indigo-500 via-purple-500 to-fuchsia-500 px-2.5 py-3 text-[11px] font-semibold uppercase tracking-wider text-white shadow-lg shadow-purple-900/30 hover:shadow-purple-900/50 hover:px-3.5 active:scale-95 transition-all"
-          style={{ writingMode: 'vertical-rl', transform: 'translateY(-50%) rotate(180deg)' }}
-          aria-label="Send feedback"
-        >
-          <ChatBubbleIcon />
-          <span>Feedback</span>
-        </button>
-      )}
+      {/* Floating "Feedback" launcher removed for now (per request) — hidden on
+          every page. The dialog below stays reachable via useFeedback().open()
+          for programmatic flows (e.g. the quota-bump request), so nothing else
+          breaks. Restore the launcher button here to bring it back. */}
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-lg">
@@ -167,25 +154,6 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
         </DialogContent>
       </Dialog>
     </FeedbackContext.Provider>
-  );
-}
-
-function ChatBubbleIcon() {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="opacity-90 group-hover:opacity-100"
-    >
-      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-    </svg>
   );
 }
 
