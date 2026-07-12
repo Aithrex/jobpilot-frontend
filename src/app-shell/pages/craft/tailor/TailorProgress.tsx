@@ -1,0 +1,150 @@
+/**
+ * TailorProgress — the live 4-phase progress card shown in the left preview
+ * column while a tailoring job runs.
+ *
+ * Presentational: the real backend phase drives which visual step is active;
+ * inside the `tailoring` phase we sub-step by the elapsed-seconds hint only.
+ * Done = success, active = primary + pulse, pending = muted.
+ */
+import { Check } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import type { TailorPhase } from './types';
+
+const STEPS = [
+  {
+    key: 'analyze',
+    label: 'Extract job requirements',
+    hint: 'Pulling skills, responsibilities, and ATS keywords',
+  },
+  {
+    key: 'tailor',
+    label: 'Tailor resume content',
+    hint: 'Rewriting bullets and summary to match the role',
+  },
+  {
+    key: 'augment',
+    label: 'Optimize keywords & impact',
+    hint: 'Injecting metrics, filling gaps, hardening for ATS',
+  },
+  {
+    key: 'render',
+    label: 'Finalize and format',
+    hint: 'Preparing PDF and DOCX output',
+  },
+];
+
+/**
+ * Map the real phase (+ elapsed hint once tailoring is confirmed) to the active
+ * visual step index. `submitting`/`extracting` pin step 0; `tailoring` advances
+ * 1 → 2 → 3 by elapsed thresholds.
+ */
+function activeStep(phase: TailorPhase, elapsedSeconds: number): number {
+  if (phase === 'submitting' || phase === 'extracting') return 0;
+  // phase === 'tailoring'
+  if (elapsedSeconds < 25) return 1;
+  if (elapsedSeconds < 55) return 2;
+  return 3;
+}
+
+export function TailorProgress({
+  phase,
+  elapsedSeconds,
+  onCancel,
+}: {
+  phase: TailorPhase;
+  elapsedSeconds: number;
+  onCancel: () => void;
+}) {
+  const current = activeStep(phase, elapsedSeconds);
+
+  return (
+    <div className="px-6 sm:px-8 py-8 sm:py-10 min-h-[480px] flex flex-col">
+      <div className="flex items-start justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="relative w-10 h-10">
+            <div className="absolute inset-0 rounded-full border-2 border-muted" />
+            <div className="absolute inset-0 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+          </div>
+          <div>
+            <p className="text-[15px] font-semibold text-foreground">
+              Tailoring your resume
+            </p>
+            <p className="text-[11px] text-muted-foreground">
+              {elapsedSeconds >= 90
+                ? 'Taking longer than expected'
+                : 'Usually takes 30–60 seconds'}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          {elapsedSeconds > 0 && (
+            <span className="text-[11px] text-muted-foreground tabular-nums font-medium">
+              {elapsedSeconds}s
+            </span>
+          )}
+          {elapsedSeconds >= 90 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onCancel}
+              className="h-auto px-2.5 py-1 text-[11px] hover:border-destructive/60 hover:text-destructive"
+            >
+              Cancel
+            </Button>
+          )}
+        </div>
+      </div>
+
+      <ol className="space-y-3 flex-1">
+        {STEPS.map((step, i) => {
+          const status = i < current ? 'done' : i === current ? 'active' : 'pending';
+          return (
+            <li key={step.key} className="flex items-start gap-3">
+              <div
+                className={cn(
+                  'shrink-0 mt-0.5 w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300',
+                  status === 'done' && 'bg-success/15 text-success ring-1 ring-success/40',
+                  status === 'active' &&
+                    'bg-primary/15 text-primary ring-2 ring-primary/40 animate-pulse',
+                  status === 'pending' &&
+                    'bg-muted text-muted-foreground ring-1 ring-border',
+                )}
+              >
+                {status === 'done' ? (
+                  <Check className="w-3.5 h-3.5" aria-hidden="true" />
+                ) : status === 'active' ? (
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                ) : (
+                  <span className="w-1 h-1 rounded-full bg-current" />
+                )}
+              </div>
+              <div className="min-w-0 flex-1 pt-0.5">
+                <p
+                  className={cn(
+                    'text-[14px] font-medium transition-colors',
+                    status === 'done' && 'text-success',
+                    status === 'active' && 'text-foreground',
+                    status === 'pending' && 'text-muted-foreground',
+                  )}
+                >
+                  {step.label}
+                </p>
+                {status === 'active' && (
+                  <>
+                    <p className="text-[12px] text-muted-foreground mt-0.5">
+                      {step.hint}
+                    </p>
+                    <div className="mt-2 h-1 rounded-full bg-muted overflow-hidden">
+                      <div className="h-full w-1/2 rounded-full brand-gradient animate-pulse" />
+                    </div>
+                  </>
+                )}
+              </div>
+            </li>
+          );
+        })}
+      </ol>
+    </div>
+  );
+}

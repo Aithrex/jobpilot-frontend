@@ -115,6 +115,12 @@ export interface ResumeStatus {
   parsed_at?: string;
 }
 
+// ─── Async job status ─────────────────────────────────────────────────────
+// The lifecycle of a `resume_jobs` document, polled via GET /api/resume/job/<id>.
+// Backend writes: "queued"/"processing" while running, then terminal
+// "completed" (with `result`) or "failed" (with `error`/`error_code`).
+export type JobStatus = "queued" | "processing" | "completed" | "failed";
+
 // ─── Tailoring record + versioning types ──────────────────────────────────
 export type VersionSource = "initial" | "regenerated" | "edited";
 

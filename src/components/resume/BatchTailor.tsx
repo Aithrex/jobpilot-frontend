@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { Plus, Trash2, CheckCircle2, XCircle, Download } from 'lucide-react';
 import { apiService } from '@/lib/api';
 import { toast } from 'sonner';
 import type { TailoredFullResume, JDAnalysis, ATSScores } from '@/types/resume';
@@ -6,8 +7,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useDailyUsage, DailyUsage } from '@/hooks/useDailyUsage';
 import { DailyUsageBadge } from '@/components/quota/DailyUsageBadge';
 import { QuotaLimitDialog } from '@/components/quota/QuotaLimitDialog';
+import { useUpgrade } from '@/components/billing/UpgradeModalProvider';
 import { useFeedback } from '@/components/feedback/FeedbackWidget';
 import { buildCoverLetterFilename } from '@/lib/filename';
+import { stageBatchHandoff } from '@/lib/craftHandoff';
 
 interface JDEntry {
   id: string;
@@ -58,22 +61,6 @@ interface BatchJob {
   applicationStatus?: 'interested' | 'applied' | 'dismissed';
   /** True while a PATCH is in flight from one of the three buttons. */
   confirming?: boolean;
-}
-
-function PlusIcon({ className = 'w-4 h-4' }: { className?: string }) {
-  return (<svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>);
-}
-function TrashIcon({ className = 'w-4 h-4' }: { className?: string }) {
-  return (<svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>);
-}
-function CheckIcon({ className = 'w-4 h-4' }: { className?: string }) {
-  return (<svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>);
-}
-function XIcon({ className = 'w-4 h-4' }: { className?: string }) {
-  return (<svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>);
-}
-function DownloadIcon({ className = 'w-4 h-4' }: { className?: string }) {
-  return (<svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m.75 12l3 3m0 0l3-3m-3 3v-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>);
 }
 
 let idCounter = 0;
@@ -148,6 +135,7 @@ export default function BatchTailor() {
   const { usage: dailyUsage, loading: usageLoading, refresh: refreshUsage, applyUsage } = useDailyUsage();
   const [quotaDialog, setQuotaDialog] = useState<(DailyUsage & { requested?: number }) | null>(null);
   const feedback = useFeedback();
+  const upgrade = useUpgrade();
 
   // Persist on every batchJobs change so refresh / tab close survive.
   useEffect(() => {
@@ -239,6 +227,17 @@ export default function BatchTailor() {
         const u = (resp.errorPayload as any).usage as DailyUsage & { requested?: number };
         applyUsage(u);
         setQuotaDialog({ ...u, requested: validEntries.length });
+        return;
+      }
+      // Batch tailoring is a gated feature on the free tier — a 403
+      // upgrade_required opens the plan chooser rather than surfacing a raw
+      // error (safe no-op if we're mounted outside the UpgradeModalProvider).
+      if (resp.status === 403) {
+        upgrade.open({
+          feature: 'batch_tailor',
+          title: 'Unlock batch tailoring',
+          description: 'Tailor your resume to many job descriptions in one run — upgrade to enable batch tailoring.',
+        });
         return;
       }
       setSubmitError(resp.error);
@@ -359,24 +358,17 @@ export default function BatchTailor() {
   const handleOpenInEditor = useCallback((job: BatchJob) => {
     if (!job.result) return;
     // Cross-tab handoff via localStorage (sessionStorage is per-tab so we
-    // can't read it from the new window). Key is the batch job_id so a user
-    // can open multiple results in parallel windows without collisions.
-    try {
-      localStorage.setItem(
-        `batch_handoff_${job.jobId}`,
-        JSON.stringify({
-          tailored_resume: job.result.tailored_resume,
-          jd_analysis: job.result.jd_analysis,
-          title: job.title,
-          source_url: job.sourceUrl || '',
-          saved_at: Date.now(),
-        }),
-      );
-    } catch {
-      toast.error('Browser storage full — close some tabs and try again.');
-      return;
-    }
-    const url = `${window.location.origin}/?tab=tailor&load_batch=${encodeURIComponent(job.jobId)}`;
+    // can't read it from the new window). stageBatchHandoff writes the payload
+    // keyed by the batch job_id so a user can open multiple results in parallel
+    // windows without collisions; the new tab reads it via consumeBatchHandoff.
+    stageBatchHandoff(job.jobId, {
+      tailored_resume: job.result.tailored_resume,
+      jd_analysis: job.result.jd_analysis,
+      title: job.title,
+      source_url: job.sourceUrl || '',
+    });
+    // Open the app-shell Tailor route (not the legacy /?tab=tailor entry).
+    const url = `${window.location.origin}/next/craft/tailor?load_batch=${encodeURIComponent(job.jobId)}`;
     window.open(url, '_blank', 'noopener,noreferrer');
   }, []);
 
@@ -502,7 +494,7 @@ export default function BatchTailor() {
                       <button type="button" onClick={() => removeEntry(entry.id)}
                         aria-label={`Remove job description ${i + 1}`}
                         className="p-1 text-muted-foreground hover:text-destructive rounded transition-colors">
-                        <TrashIcon className="w-3.5 h-3.5" />
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     )}
                   </div>
@@ -539,7 +531,7 @@ export default function BatchTailor() {
             {jdEntries.length < BATCH_TAILOR_MAX && (
               <button type="button" onClick={addEntry}
                 className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-primary border border-primary/30 hover:bg-primary/10 hover:border-primary/50 transition-all duration-200">
-                <PlusIcon className="w-4 h-4" />Add job description
+                <Plus className="w-4 h-4" />Add job description
               </button>
             )}
             <button type="button"
@@ -640,8 +632,8 @@ export default function BatchTailor() {
               }`}>
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0 flex-1">
-                    {job.status === 'completed' && <CheckIcon className="w-5 h-5 text-success shrink-0" />}
-                    {job.status === 'failed' && <XIcon className="w-5 h-5 text-destructive shrink-0" />}
+                    {job.status === 'completed' && <CheckCircle2 className="w-5 h-5 text-success shrink-0" />}
+                    {job.status === 'failed' && <XCircle className="w-5 h-5 text-destructive shrink-0" />}
                     {(job.status === 'processing' || job.status === 'queued') && (
                       <span className="w-5 h-5 rounded-full border-2 border-primary border-t-transparent animate-spin shrink-0" role="status" aria-label="Tailoring" />
                     )}
@@ -669,11 +661,11 @@ export default function BatchTailor() {
                       )}
                       <button onClick={() => handleDownload(job, 'pdf')}
                         className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium text-primary-foreground bg-primary hover:bg-primary/90 transition-all">
-                        <DownloadIcon className="w-3.5 h-3.5" />PDF
+                        <Download className="w-3.5 h-3.5" />PDF
                       </button>
                       <button onClick={() => handleDownload(job, 'docx')}
                         className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium text-foreground bg-muted border border-border hover:bg-muted/70 transition-all">
-                        <DownloadIcon className="w-3.5 h-3.5" />DOCX
+                        <Download className="w-3.5 h-3.5" />DOCX
                       </button>
                       <button
                         onClick={() => handleOpenInEditor(job)}
@@ -712,7 +704,7 @@ export default function BatchTailor() {
                         className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium text-success bg-success/10 border border-success/30 hover:bg-success/15 transition-all"
                         title="Download cover letter as .txt"
                       >
-                        <DownloadIcon className="w-3 h-3" /> Cover letter ready
+                        <Download className="w-3 h-3" /> Cover letter ready
                       </button>
                     )}
                     {job.coverLetter?.status === 'failed' && (
