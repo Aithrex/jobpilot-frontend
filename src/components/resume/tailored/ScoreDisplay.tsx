@@ -6,6 +6,11 @@
  * visuals from one source. These are pure presentational components (score in →
  * bar/ring/parseability card out) with no data fetching.
  */
+import type {
+  PdfParseabilityChecks,
+  VendorCompatEntry,
+  CheckStatus,
+} from "@/types/resume";
 
 // ─── Score bar ───────────────────────────────────────────────────────────────
 export function ScoreBar({
@@ -130,7 +135,7 @@ export function PDFParseabilityCard({
   warnings,
 }: {
   score: number;
-  checks: Record<string, unknown>;
+  checks: PdfParseabilityChecks;
   warnings: string[];
 }) {
   const tone =
@@ -179,7 +184,7 @@ export function PDFParseabilityCard({
         <Row
           label="Single page"
           ok={!!checks.single_page}
-          detail={`${checks.page_count ?? "?"} page${(checks.page_count as number) === 1 ? "" : "s"}`}
+          detail={`${checks.page_count ?? "?"} page${checks.page_count === 1 ? "" : "s"}`}
         />
         <Row label="Name extracts cleanly" ok={!!checks.contact_name_found} />
         <Row label="Email extracts cleanly" ok={!!checks.contact_email_found} />
@@ -187,8 +192,8 @@ export function PDFParseabilityCard({
         <Row label="Contact at top of page" ok={!!checks.contact_at_top} />
         <Row
           label="All sections found"
-          ok={Array.isArray(checks.sections_missing) && (checks.sections_missing as unknown[]).length === 0}
-          detail={`${(checks.sections_found as string[])?.length || 0}/4`}
+          ok={Array.isArray(checks.sections_missing) && checks.sections_missing.length === 0}
+          detail={`${checks.sections_found?.length || 0}/4`}
         />
         <Row label="Section order correct" ok={!!checks.sections_in_order} />
         <Row
@@ -204,7 +209,7 @@ export function PDFParseabilityCard({
         <Row label="No glyph corruption" ok={!!checks.no_glyph_corruption} />
         <Row
           label="No word-join issues"
-          ok={!checks.word_join_issues || (checks.word_join_issues as unknown[]).length === 0}
+          ok={!checks.word_join_issues || checks.word_join_issues.length === 0}
         />
       </div>
       {warnings.length > 0 && (
@@ -216,6 +221,61 @@ export function PDFParseabilityCard({
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── Vendor parse-compat checklist ──────────────────────────────────────────
+// v2 replacement for the fake per-vendor "scanner scores": each vendor gets a
+// deterministic pass/warn/fail checklist derived from the real PDF round-trip.
+const STATUS_TONE: Record<CheckStatus, { dot: string; text: string; label: string }> = {
+  pass: {
+    dot: "bg-emerald-500",
+    text: "text-emerald-700 dark:text-emerald-300",
+    label: "Pass",
+  },
+  warn: {
+    dot: "bg-amber-500",
+    text: "text-amber-700 dark:text-amber-300",
+    label: "Check",
+  },
+  fail: {
+    dot: "bg-rose-500",
+    text: "text-rose-700 dark:text-rose-300",
+    label: "Fail",
+  },
+};
+
+export function VendorChecklistCard({
+  vendor,
+  entry,
+}: {
+  vendor: string;
+  entry: VendorCompatEntry;
+}) {
+  const tone = STATUS_TONE[entry.status] ?? STATUS_TONE.warn;
+  return (
+    <div className="rounded-xl border border-gray-200 dark:border-white/[0.07] bg-white/60 dark:bg-gray-900/40 p-3.5">
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-xs font-semibold text-gray-800 dark:text-gray-200">
+          {vendor}
+        </p>
+        <span className={`inline-flex items-center gap-1.5 text-[11px] font-semibold ${tone.text}`}>
+          <span className={`h-1.5 w-1.5 rounded-full ${tone.dot}`} />
+          {tone.label}
+        </span>
+      </div>
+      <ul className="space-y-1">
+        {entry.checks.map((chk) => {
+          const rowTone = STATUS_TONE[chk.status] ?? STATUS_TONE.warn;
+          return (
+            <li key={chk.id} className="flex items-start gap-1.5 text-[11px] leading-snug">
+              <span className={`mt-1 h-1 w-1 shrink-0 rounded-full ${rowTone.dot}`} />
+              <span className="text-gray-600 dark:text-gray-400">{chk.label}</span>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }

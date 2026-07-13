@@ -36,7 +36,7 @@ const PRESET_GRADIENTS: Record<string, string> = {
   security: 'from-red-500 to-rose-500',
 };
 
-// Module-level cache so switching tabs doesn't burn another Gemini call.
+// Module-level cache so switching tabs doesn't burn another LLM call.
 // 24-hour TTL — resume content rarely changes; "Regenerate" busts it manually.
 const SUGGEST_TTL_MS = 24 * 60 * 60 * 1000;
 const SUGGEST_STORAGE_KEY = 'smart_filters_suggestions_v1';

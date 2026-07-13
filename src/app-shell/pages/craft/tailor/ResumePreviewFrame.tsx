@@ -29,26 +29,29 @@ import type {
   VersionEntry,
 } from './types';
 
-const SEGMENTS: { key: PreviewMode; label: string; active: string }[] = [
-  {
-    key: 'tailored',
+const SEGMENT_STYLES: Record<PreviewMode, { label: string; active: string }> = {
+  tailored: {
     label: 'Tailored',
     active: 'bg-primary/20 text-primary ring-1 ring-primary/30 shadow-soft',
   },
-  {
-    key: 'previous',
-    label: 'Original',
+  base: {
+    label: 'Base',
     active: 'bg-card text-foreground ring-1 ring-border shadow-soft',
   },
-  {
-    key: 'diff',
+  previous: {
+    label: 'Previous',
+    active: 'bg-card text-foreground ring-1 ring-border shadow-soft',
+  },
+  diff: {
     label: 'Diff',
     active: 'bg-warning/15 text-warning ring-1 ring-warning/30 shadow-soft',
   },
-];
+};
 
 export interface ResumePreviewFrameProps {
   result: TailorPipelineResult | null;
+  /** The user's parsed base resume — enables Base view + diff-vs-base. */
+  baseResume: TailoredFullResume | null;
   previousResume: TailoredFullResume | null;
   regenView: PreviewMode;
   onRegenViewChange: (v: PreviewMode) => void;
@@ -56,12 +59,15 @@ export interface ResumePreviewFrameProps {
   onRestoreVersion: (v: VersionEntry) => void;
   onRevert: () => void;
   phase: TailorPhase | null;
+  /** Real backend progress percent (from job.result.progress), null = unknown. */
+  pct: number | null;
   elapsedSeconds: number;
   onCancel: () => void;
 }
 
 export function ResumePreviewFrame({
   result,
+  baseResume,
   previousResume,
   regenView,
   onRegenViewChange,
@@ -69,6 +75,7 @@ export function ResumePreviewFrame({
   onRestoreVersion,
   onRevert,
   phase,
+  pct,
   elapsedSeconds,
   onCancel,
 }: ResumePreviewFrameProps) {
@@ -108,28 +115,38 @@ export function ResumePreviewFrame({
           <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
             {statusLabel}
           </p>
-          {previousResume && (
+          {result && (baseResume || previousResume) && (
             <div
               role="tablist"
               aria-label="Resume version"
               className="inline-flex rounded-control bg-muted p-0.5 border border-border"
             >
-              {SEGMENTS.map((t) => (
-                <button
-                  key={t.key}
-                  role="tab"
-                  aria-selected={regenView === t.key}
-                  onClick={() => onRegenViewChange(t.key)}
-                  className={cn(
-                    'relative px-3 py-1 rounded-[6px] text-[11px] font-semibold transition-all',
-                    regenView === t.key
-                      ? t.active
-                      : 'text-muted-foreground hover:text-foreground',
-                  )}
-                >
-                  {t.label}
-                </button>
-              ))}
+              {(
+                [
+                  'tailored',
+                  ...(baseResume ? (['base'] as const) : []),
+                  ...(previousResume ? (['previous'] as const) : []),
+                  'diff',
+                ] as PreviewMode[]
+              ).map((key) => {
+                const t = SEGMENT_STYLES[key];
+                return (
+                  <button
+                    key={key}
+                    role="tab"
+                    aria-selected={regenView === key}
+                    onClick={() => onRegenViewChange(key)}
+                    className={cn(
+                      'relative px-3 py-1 rounded-[6px] text-[11px] font-semibold transition-all',
+                      regenView === key
+                        ? t.active
+                        : 'text-muted-foreground hover:text-foreground',
+                    )}
+                  >
+                    {t.label}
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
@@ -167,9 +184,18 @@ export function ResumePreviewFrame({
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
             >
-              {previousResume && regenView === 'diff' ? (
-                <ResumeDiffView prev={previousResume} curr={result.tailored_resume} />
-              ) : previousResume && regenView === 'previous' ? (
+              {regenView === 'diff' && (previousResume || baseResume) ? (
+                // Previous-version diff when a regeneration exists; otherwise
+                // diff against the user's BASE resume ("what did tailoring
+                // change vs what I actually have").
+                <ResumeDiffView
+                  prev={(previousResume ?? baseResume)!}
+                  curr={result.tailored_resume}
+                  prevLabel={previousResume ? 'previous version' : 'your base resume'}
+                />
+              ) : regenView === 'base' && baseResume ? (
+                <ResumePreview resume={baseResume} />
+              ) : regenView === 'previous' && previousResume ? (
                 <ResumePreview resume={previousResume} />
               ) : (
                 <ResumePreview resume={result.tailored_resume} />
@@ -179,6 +205,7 @@ export function ResumePreviewFrame({
         ) : phase !== null ? (
           <TailorProgress
             phase={phase}
+            pct={pct}
             elapsedSeconds={elapsedSeconds}
             onCancel={onCancel}
           />

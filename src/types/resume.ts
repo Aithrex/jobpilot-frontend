@@ -50,6 +50,9 @@ export interface TailoredFullResume {
   projects: ResumeProject[];
   target_role?: string;
   ats_keyword_audit?: ATSKeywordAudit;
+  /** Claim-verification sidecar (backend attaches post-tailor; absent on
+   * older records = "not verified yet"). See ResumeVerification. */
+  verification?: ResumeVerification;
 }
 
 export interface JDAnalysis {
@@ -66,6 +69,8 @@ export interface JDAnalysis {
   keywords: string[];
 }
 
+/** @deprecated v1 LLM-simulated per-vendor scores — v2 backends emit
+ * `vendor_compat` checklists instead. Present only on stored v1 records. */
 export interface ATSScannerScores {
   workday: number;
   greenhouse: number;
@@ -75,6 +80,7 @@ export interface ATSScannerScores {
   smartrecruiters: number;
 }
 
+/** @deprecated v1 pseudo-signal — removed in v2. */
 export interface AIScreenerScores {
   overall: number;
   relevance: number;
@@ -82,8 +88,78 @@ export interface AIScreenerScores {
   culture_fit: number;
 }
 
+export type AtsVendor =
+  | "workday"
+  | "greenhouse"
+  | "lever"
+  | "icims"
+  | "taleo"
+  | "smartrecruiters";
+
+export type CheckStatus = "pass" | "warn" | "fail";
+
+export interface VendorCheckItem {
+  id: string;
+  label: string;
+  status: CheckStatus;
+}
+
+export interface VendorCompatEntry {
+  status: CheckStatus;
+  checks: VendorCheckItem[];
+}
+
+/** Real pypdf round-trip checks (first-class in v2 — no more untyped casts). */
+export interface PdfParseabilityChecks {
+  extraction_ok?: boolean;
+  single_page?: boolean;
+  page_count?: number;
+  contact_name_found?: boolean;
+  contact_email_found?: boolean;
+  contact_phone_found?: boolean;
+  contact_at_top?: boolean;
+  sections_found?: string[];
+  sections_missing?: string[];
+  sections_in_order?: boolean;
+  skills_keywords_found?: number;
+  skills_keywords_total?: number;
+  experience_dates_parseable?: number;
+  experience_dates_total?: number;
+  no_glyph_corruption?: boolean;
+  word_join_issues?: string[];
+}
+
+export interface MissingKeywordsClassified {
+  skills: string[];
+  logistics: string[];
+  compliance: string[];
+}
+
+/**
+ * ATS scores — a union of the stored v1 shape and the honest v2 rubric.
+ * v2 (schema_version === 2): 100% deterministic overall (hard_skill_match
+ * 30% / title_alignment 15% / quantified_impact 15% / REAL ats_parseability
+ * 15% / section_completeness 10% / recency_relevance 8% / readability 7%),
+ * per-vendor parse-compat CHECKLISTS instead of fake scanner scores, and
+ * legacy alias keys (keyword_match = hard_skill_match, format_score =
+ * ats_parseability, …) so v1 readers keep working. Old records stored in
+ * `tailoring_records` keep the v1 shape forever — branch with `isAtsV2()`
+ * from `@/lib/atsScores`.
+ */
 export interface ATSScores {
+  schema_version?: number; // 2 on honest-rubric backends; absent on v1
   overall: number;
+  // ── v2 rubric dimensions (absent on v1 records) ──
+  hard_skill_match?: number;
+  title_alignment?: number;
+  quantified_impact?: number;
+  ats_parseability?: number;
+  recency_relevance?: number;
+  readability?: number;
+  vendor_compat?: Partial<Record<AtsVendor, VendorCompatEntry>>;
+  found_keywords?: string[];
+  render_error?: string;
+  // ── shared / legacy-alias keys (always present) ──
   keyword_match: number;
   keyword_frequency: number;
   skills_alignment: number;
@@ -92,11 +168,42 @@ export interface ATSScores {
   bullet_quality: number;
   format_score: number;
   section_completeness: number;
-  scanners: ATSScannerScores;
-  ai_screener: AIScreenerScores;
   suggestions: string[];
   missing_keywords: string[];
   strengths: string[];
+  // ── v1-only (optional; v2 backends stop emitting) ──
+  scanners?: ATSScannerScores;
+  ai_screener?: AIScreenerScores;
+  // ── loose extras attached post-validation ──
+  missing_keywords_classified?: MissingKeywordsClassified;
+  ai_review_available?: boolean;
+  pdf_parseable_score?: number;
+  pdf_parseable_checks?: PdfParseabilityChecks;
+  pdf_parseable_warnings?: string[];
+}
+
+// ─── Claim verification sidecar (rides inside tailored_resume) ────────────
+export type BulletVerdict = "SUPPORTED" | "PARTIAL" | "UNSUPPORTED" | "UNVERIFIED";
+export type FactSource = "resume" | "linkedin" | "github" | "user";
+
+export interface VerificationItem {
+  /** Verbatim text at verification time — re-anchor key after edits. */
+  text: string;
+  verdict: BulletVerdict;
+  evidence_fact_ids: string[];
+  /** Human-readable fact lines backing this bullet (resolved sheet refs). */
+  evidence_display?: string[];
+  flags: string[]; // e.g. "ungrounded_metric", "unsupported_product"
+  unsupported_claim: string;
+}
+
+export interface ResumeVerification {
+  status: "ok" | "degraded" | "skipped";
+  model?: string;
+  reason?: string;
+  counts: { supported: number; partial: number; unsupported: number; unverified: number };
+  /** Keyed by structural address: experience.{i}.bullets.{j} | summary.s{k} | projects.{i}.bullets.{j} */
+  items: Record<string, VerificationItem>;
 }
 
 export interface TailorPipelineResult {
@@ -121,6 +228,23 @@ export interface ResumeStatus {
 // "completed" (with `result`) or "failed" (with `error`/`error_code`).
 export type JobStatus = "queued" | "processing" | "completed" | "failed";
 
+// Honest sub-phase the backend writes into `job.result.progress` while a
+// tailor job is processing (update_job_progress). Drives the real stepper —
+// no elapsed-time guessing. `verifying` arrives once the claim-verification
+// pass ships; the UI treats unknown phases as "keep current step".
+export type BackendTailorPhase =
+  | "extracting_jd"
+  | "tailoring"
+  | "augmenting"
+  | "verifying"
+  | "finalizing";
+
+export interface TailorJobProgress {
+  phase: BackendTailorPhase;
+  pct?: number;
+  updated_at?: string;
+}
+
 // ─── Tailoring record + versioning types ──────────────────────────────────
 export type VersionSource = "initial" | "regenerated" | "edited";
 
@@ -131,7 +255,9 @@ export interface TailoringVersion {
   parent_version_id?: string | null;
   content_hash: string;
   created_at: string;
-  ats_scores?: { overall?: number } | null;
+  /** Lists rely only on `overall`; full ATSScores rides along when the API
+   * returns whole documents. Use atsOverall() from @/lib/atsScores. */
+  ats_scores?: ATSScores | { overall?: number; schema_version?: number } | null;
   user_feedback?: string | null;
   tailored_resume?: TailoredFullResume;
   files?: Record<

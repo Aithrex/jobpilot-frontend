@@ -196,7 +196,7 @@ const LEGACY_STORAGE_KEY = 'daily_pipeline_state_v2';
 // stale linkedinKws / workdayTitles / customRoles that were derived from an
 // older profiler. We preserve everything else (snoozes, mutes, counters,
 // applied ids) — only the resume-derived filters get invalidated.
-// v3: new resume-driven title synthesizer (Gemini Pro reads actual resume
+// v3: new resume-driven title synthesizer (Claude PRO reads actual resume
 // content) replaces the static per-intent seed lists.
 // v4 (May 2026): force re-fetch after defaults were made domain-neutral
 // and the silent-catch failure mode was replaced with a loud CTA. Existing

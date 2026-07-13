@@ -1312,13 +1312,18 @@ class ApiService {
   async tailorResumeWithJDText(
     jobDescription: string,
     signal?: AbortSignal,
-    // Optional real-progress hook — receives the backend job status on every
-    // poll tick so the Tailor UI can drive an honest phase indicator.
+    // Optional real-progress hooks — onStatus receives the backend job status
+    // on every poll tick; onProgress receives the honest sub-phase marker the
+    // backend writes into job.result.progress at each real pipeline stage.
     onStatus?: (status: import("../types/resume").JobStatus) => void,
+    onProgress?: (p: import("../types/resume").TailorJobProgress) => void,
   ): Promise<
     ApiResponse<{
       jd_analysis: import("../types/resume").JDAnalysis;
       tailored_resume: import("../types/resume").TailoredFullResume;
+      // Post-backfill base resume (present on new backends) — enables
+      // diff-vs-base without a second round-trip.
+      base_resume?: import("../types/resume").TailoredFullResume;
     }>
   > {
     const submitResp = await this.request<{ job_id: string }>(
@@ -1345,7 +1350,21 @@ class ApiService {
     return this.pollJob<{
       jd_analysis: import("../types/resume").JDAnalysis;
       tailored_resume: import("../types/resume").TailoredFullResume;
-    }>(submitResp.data.job_id, 120000, signal, undefined, onStatus);
+      base_resume?: import("../types/resume").TailoredFullResume;
+    }>(
+      submitResp.data.job_id,
+      120000,
+      signal,
+      // While processing, the only partial the tailor job writes is the
+      // progress marker — forward it when present.
+      (partial) => {
+        const p = (
+          partial as { progress?: import("../types/resume").TailorJobProgress }
+        ).progress;
+        if (p?.phase && onProgress) onProgress(p);
+      },
+      onStatus,
+    );
   }
 
   async regenerateResume(

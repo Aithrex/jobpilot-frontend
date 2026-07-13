@@ -2,11 +2,12 @@
  * Inspector tab chrome (Tailor right column).
  *
  * Presentational shell — owns only the active-tab selection contract (lifted to
- * props). Builds the 4-tab bar (JD / ATS / Regenerate / Cover) on shadcn Tabs,
- * with score/status affordances, and renders caller-supplied panels as content.
+ * props). Builds the 5-tab bar (JD / Review / ATS / Regenerate / Cover) on
+ * shadcn Tabs, with score/status affordances, and renders caller-supplied
+ * panels as content.
  */
 import type { ReactNode } from 'react';
-import { ClipboardList, Search, RotateCw, Sparkles } from 'lucide-react';
+import { ClipboardList, Search, RotateCw, Sparkles, ShieldAlert } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -20,9 +21,16 @@ interface InspectorTabsProps {
   hasResult: boolean;
   atsScore: number | null;
   atsLoading: boolean;
+  /** Score no longer matches the edited resume. */
+  atsStale?: boolean;
+  /** Unresolved flagged claims (UNSUPPORTED + PARTIAL without a decision). */
+  reviewPendingCount?: number;
+  /** True when any unresolved flag is UNSUPPORTED (destructive tint). */
+  reviewHasUnsupported?: boolean;
   coverLetterReady: boolean;
   coverLetterLoading: boolean;
   jdPanel: ReactNode;
+  reviewPanel?: ReactNode;
   atsPanel: ReactNode;
   regeneratePanel: ReactNode;
   coverPanel: ReactNode;
@@ -37,9 +45,13 @@ export function InspectorTabs({
   hasResult,
   atsScore,
   atsLoading,
+  atsStale = false,
+  reviewPendingCount = 0,
+  reviewHasUnsupported = false,
   coverLetterReady,
   coverLetterLoading,
   jdPanel,
+  reviewPanel,
   atsPanel,
   regeneratePanel,
   coverPanel,
@@ -57,17 +69,44 @@ export function InspectorTabs({
           <span className="hidden sm:inline">Job Description</span>
         </TabsTrigger>
 
+        {reviewPanel && (
+          <TabsTrigger value="review" disabled={!hasResult} className={triggerCls}>
+            <ShieldAlert className="h-4 w-4 shrink-0" />
+            <span className="hidden sm:inline">Review</span>
+            {reviewPendingCount > 0 && (
+              <span
+                className={cn(
+                  'ml-0.5 inline-flex min-w-[16px] items-center justify-center rounded-full px-1 text-[10px] font-bold tabular-nums',
+                  reviewHasUnsupported
+                    ? 'bg-destructive/15 text-destructive'
+                    : 'bg-warning/15 text-warning',
+                )}
+              >
+                {reviewPendingCount}
+              </span>
+            )}
+          </TabsTrigger>
+        )}
+
         <TabsTrigger value="ats" disabled={!hasResult} className={triggerCls}>
           <Search className="h-4 w-4 shrink-0" />
           <span className="hidden sm:inline">ATS Score</span>
           {atsScore != null ? (
-            <span
-              className={cn(
-                'ml-0.5 text-[10px] font-bold tabular-nums',
-                scoreTone(atsScore).text,
+            <span className="ml-0.5 inline-flex items-center gap-1">
+              <span
+                className={cn(
+                  'text-[10px] font-bold tabular-nums',
+                  scoreTone(atsScore).text,
+                )}
+              >
+                {atsScore}
+              </span>
+              {atsStale && (
+                <span
+                  title="Edited since scored"
+                  className="h-1.5 w-1.5 animate-pulse rounded-full bg-warning"
+                />
               )}
-            >
-              {atsScore}
             </span>
           ) : atsLoading ? (
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-warning" />
@@ -104,6 +143,14 @@ export function InspectorTabs({
       >
         {jdPanel}
       </TabsContent>
+      {reviewPanel && (
+        <TabsContent
+          value="review"
+          className="mt-0 rounded-container border border-border bg-card shadow-soft"
+        >
+          {reviewPanel}
+        </TabsContent>
+      )}
       <TabsContent
         value="ats"
         className="mt-0 rounded-container border border-border bg-card shadow-soft"

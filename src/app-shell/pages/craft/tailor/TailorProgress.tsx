@@ -1,9 +1,11 @@
 /**
- * TailorProgress — the live 4-phase progress card shown in the left preview
- * column while a tailoring job runs.
+ * TailorProgress — the live progress card shown in the left preview column
+ * while a tailoring job runs.
  *
- * Presentational: the real backend phase drives which visual step is active;
- * inside the `tailoring` phase we sub-step by the elapsed-seconds hint only.
+ * Presentational and HONEST: every step transition is driven by a real
+ * backend phase marker (job.result.progress) — there is no elapsed-time
+ * guessing. If an older backend never emits markers, the card truthfully
+ * sits on the step the status floor implies.
  * Done = success, active = primary + pulse, pending = muted.
  */
 import { Check } from 'lucide-react';
@@ -11,52 +13,63 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { TailorPhase } from './types';
 
-const STEPS = [
+const STEPS: Array<{
+  key: string;
+  phases: TailorPhase[];
+  label: string;
+  hint: string;
+}> = [
   {
-    key: 'analyze',
+    key: 'extract',
+    phases: ['submitting', 'queued', 'extracting_jd'],
     label: 'Extract job requirements',
     hint: 'Pulling skills, responsibilities, and ATS keywords',
   },
   {
     key: 'tailor',
+    phases: ['tailoring'],
     label: 'Tailor resume content',
     hint: 'Rewriting bullets and summary to match the role',
   },
   {
     key: 'augment',
+    phases: ['augmenting'],
     label: 'Optimize keywords & impact',
-    hint: 'Injecting metrics, filling gaps, hardening for ATS',
+    hint: 'Strengthening bullets and hardening for ATS',
   },
   {
-    key: 'render',
+    key: 'verify',
+    phases: ['verifying'],
+    label: 'Verify claims against your resume',
+    hint: 'Checking every bullet is grounded in your real history',
+  },
+  {
+    key: 'finalize',
+    phases: ['finalizing'],
     label: 'Finalize and format',
-    hint: 'Preparing PDF and DOCX output',
+    hint: 'Keyword audit and final cleanup',
   },
 ];
 
-/**
- * Map the real phase (+ elapsed hint once tailoring is confirmed) to the active
- * visual step index. `submitting`/`extracting` pin step 0; `tailoring` advances
- * 1 → 2 → 3 by elapsed thresholds.
- */
-function activeStep(phase: TailorPhase, elapsedSeconds: number): number {
-  if (phase === 'submitting' || phase === 'extracting') return 0;
-  // phase === 'tailoring'
-  if (elapsedSeconds < 25) return 1;
-  if (elapsedSeconds < 55) return 2;
-  return 3;
+/** Map the real backend phase to the active visual step index. */
+function activeStep(phase: TailorPhase): number {
+  const i = STEPS.findIndex((s) => s.phases.includes(phase));
+  return i === -1 ? 0 : i;
 }
 
 export function TailorProgress({
   phase,
+  pct,
   elapsedSeconds,
   onCancel,
 }: {
   phase: TailorPhase;
+  /** Real backend progress percent, null when the backend hasn't reported one. */
+  pct: number | null;
   elapsedSeconds: number;
   onCancel: () => void;
 }) {
-  const current = activeStep(phase, elapsedSeconds);
+  const current = activeStep(phase);
 
   return (
     <div className="px-6 sm:px-8 py-8 sm:py-10 min-h-[480px] flex flex-col">
@@ -136,7 +149,14 @@ export function TailorProgress({
                       {step.hint}
                     </p>
                     <div className="mt-2 h-1 rounded-full bg-muted overflow-hidden">
-                      <div className="h-full w-1/2 rounded-full brand-gradient animate-pulse" />
+                      {pct !== null ? (
+                        <div
+                          className="h-full rounded-full brand-gradient transition-[width] duration-700"
+                          style={{ width: `${Math.max(4, Math.min(100, pct))}%` }}
+                        />
+                      ) : (
+                        <div className="h-full w-1/2 rounded-full brand-gradient animate-pulse" />
+                      )}
                     </div>
                   </>
                 )}

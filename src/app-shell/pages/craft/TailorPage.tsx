@@ -60,6 +60,17 @@ import type {
   TailorPhase,
   VersionEntry,
 } from './tailor/types';
+import { PHASE_ORDER } from './tailor/types';
+import type { ReviewDecision } from './tailor/types';
+import { ReviewPanel } from './tailor/ReviewPanel';
+import {
+  replaceBulletText,
+  removeBulletAt,
+  addSkillToCategory,
+  inferSkillCategory,
+} from '@/lib/resumeMutations';
+import { resolveAnchor } from '@/lib/reviewAnchors';
+import { similarity, bestMatch } from '@/lib/textDiff';
 import { ProgressStepper } from './tailor/ProgressStepper';
 import { NudgeBar } from './tailor/NudgeBar';
 import { ResumePreviewFrame } from './tailor/ResumePreviewFrame';
@@ -88,13 +99,24 @@ export default function TailorPage() {
   const [pendingJobUrl, setPendingJobUrl] = useState('');
   const [retryingJdFetch, setRetryingJdFetch] = useState(false);
 
-  // Real tailoring phase — null = idle. Drives TailorProgress from backend
-  // job status via pollJob's onStatus, not a wall-clock timer.
+  // Real tailoring phase — null = idle. Driven by backend job status +
+  // the honest progress markers the backend writes at each pipeline stage.
   const [phase, setPhase] = useState<TailorPhase | null>(null);
+  const [tailorPct, setTailorPct] = useState<number | null>(null);
   const [tailorError, setTailorError] = useState('');
   const [result, setResult] = useState<TailorPipelineResult | null>(null);
   const [atsLoading, setAtsLoading] = useState(false);
   const [tailorElapsed, setTailorElapsed] = useState(0);
+
+  // The parsed BASE resume (arrives with the tailor result) — powers the
+  // Base preview segment, diff-vs-base, and "Restore original" in review.
+  const [baseResume, setBaseResume] = useState<TailoredFullResume | null>(null);
+  // Per-claim review decisions (keyed by structural address).
+  const [reviewDecisions, setReviewDecisions] = useState<
+    Record<string, ReviewDecision>
+  >({});
+  // The displayed ATS score no longer matches the edited resume.
+  const [scoreStale, setScoreStale] = useState(false);
 
   const tailorAbortRef = useRef<AbortController | null>(null);
   const atsAbortRef = useRef<AbortController | null>(null);
@@ -345,7 +367,12 @@ export default function TailorPage() {
             if (r.data?.ats_scores) {
               setResult((p) => (p ? { ...p, ats_scores: r.data!.ats_scores } : p));
               updateRecordATS(r.data.ats_scores);
-              setInspectorTab('ats');
+              setScoreStale(false);
+              // Flagged claims outrank the score: send the user to review
+              // first when anything UNSUPPORTED is waiting on them.
+              const unsupported =
+                result.tailored_resume.verification?.counts.unsupported ?? 0;
+              setInspectorTab(unsupported > 0 ? 'review' : 'ats');
             }
           })
           .catch(() => setAtsLoading(false));
@@ -362,6 +389,7 @@ export default function TailorPage() {
     tailorAbortRef.current = ctrl;
 
     setPhase('submitting');
+    setTailorPct(null);
     setTailorError('');
     setResult(null);
     setTailorElapsed(0);
@@ -371,16 +399,35 @@ export default function TailorPage() {
       if (tailorTimerRef.current) clearInterval(tailorTimerRef.current);
       tailorTimerRef.current = null;
       setPhase(null);
+      setTailorPct(null);
       setTailorElapsed(0);
     };
 
+    // Monotonic phase advance — polls can arrive out of order or skip fast
+    // phases entirely; never step backwards, ignore unknown phase strings
+    // (forward-compat with newer backends).
+    const advancePhase = (next: TailorPhase) => {
+      const order = PHASE_ORDER[next];
+      if (order === undefined) return;
+      setPhase((prev) =>
+        prev === null || order >= (PHASE_ORDER[prev] ?? 0) ? next : prev,
+      );
+    };
+
     // Combined extract-jd + tailor in ONE backend job. onStatus reports the
-    // real queued→processing transition so TailorProgress reflects reality.
+    // real queued→processing transition; onProgress delivers the honest
+    // per-stage markers (extracting_jd → tailoring → augmenting → …).
     const combined = await apiService.tailorResumeWithJDText(
       jdText.trim(),
       ctrl.signal,
       (status) => {
-        setPhase(status === 'queued' ? 'extracting' : 'tailoring');
+        // Floor: even if an older backend never writes progress markers,
+        // "processing" honestly means the JD extraction has started.
+        advancePhase(status === 'queued' ? 'queued' : 'extracting_jd');
+      },
+      (p) => {
+        advancePhase(p.phase);
+        if (typeof p.pct === 'number') setTailorPct(p.pct);
       },
     );
 
@@ -423,6 +470,9 @@ export default function TailorPage() {
     const analysis = combined.data.jd_analysis;
     const tailoredResume = combined.data.tailored_resume;
     setResult({ jd_analysis: analysis, tailored_resume: tailoredResume });
+    if (combined.data.base_resume) setBaseResume(combined.data.base_resume);
+    setReviewDecisions({});
+    setScoreStale(false);
     setVersions([
       {
         id: `v1-${Date.now()}`,
@@ -626,29 +676,126 @@ export default function TailorPage() {
     }
   }, [coverLetter, result]);
 
-  /* ── Version + keyword + new-session helpers ─────────────────────────────── */
-  const handleAddKeyword = useCallback((kw: string) => {
-    setResult((prev) => {
-      if (!prev) return prev;
-      const next = { ...prev.tailored_resume };
-      const skills = { ...(next.skills || {}) };
-      const cats = Object.keys(skills);
-      const targetCat = cats.includes('Technical Skills')
-        ? 'Technical Skills'
-        : cats.includes('Skills')
-          ? 'Skills'
-          : cats[0] || 'Skills';
-      const existing = Array.isArray(skills[targetCat])
-        ? [...(skills[targetCat] as string[])]
-        : [];
-      if (!existing.some((s) => s.toLowerCase() === kw.toLowerCase())) existing.push(kw);
-      skills[targetCat] = existing;
-      next.skills = skills;
-      return { ...prev, tailored_resume: next };
-    });
-    setAddedKeywords((prev) => new Set(prev).add(kw));
-    toast.success(`Added "${kw}" to your skills`);
+  /* ── Claim review (human-in-the-loop) + score staleness ──────────────────── */
+
+  // Apply an immutable mutation to the working resume and mark the score
+  // stale — the displayed ATS numbers describe the pre-edit document.
+  const mutateResume = useCallback(
+    (fn: (r: TailoredFullResume) => TailoredFullResume) => {
+      setResult((prev) =>
+        prev ? { ...prev, tailored_resume: fn(prev.tailored_resume) } : prev,
+      );
+      setScoreStale(true);
+    },
+    [],
+  );
+
+  const decideReview = useCallback((address: string, decision: ReviewDecision) => {
+    setReviewDecisions((prev) => ({ ...prev, [address]: decision }));
   }, []);
+
+  const handleReviewAccept = useCallback(
+    (address: string) => decideReview(address, 'accepted'),
+    [decideReview],
+  );
+
+  const handleReviewRemove = useCallback(
+    (address: string) => {
+      const item = result?.tailored_resume.verification?.items[address];
+      if (!item || !result) return;
+      const anchor = resolveAnchor(result.tailored_resume, address, item.text);
+      if (!anchor) {
+        // Text no longer exists — the user already rewrote it themselves.
+        decideReview(address, 'edited');
+        return;
+      }
+      mutateResume((r) =>
+        removeBulletAt(r, anchor.section, anchor.itemIndex, anchor.bulletIndex),
+      );
+      decideReview(address, 'removed');
+      toast.success('Bullet removed');
+    },
+    [result, mutateResume, decideReview],
+  );
+
+  const handleReviewRestore = useCallback(
+    (address: string) => {
+      const item = result?.tailored_resume.verification?.items[address];
+      if (!item || !result || !baseResume) return;
+      const anchor = resolveAnchor(result.tailored_resume, address, item.text);
+      if (!anchor) {
+        decideReview(address, 'edited');
+        return;
+      }
+      // Nearest original bullet from the SAME section of the base resume.
+      const candidates = (baseResume[anchor.section] || []).flatMap(
+        (entry) => entry.bullets || [],
+      );
+      const original = bestMatch(item.text, candidates, 0.35);
+      if (original) {
+        mutateResume((r) =>
+          replaceBulletText(
+            r, anchor.section, anchor.itemIndex, anchor.bulletIndex, original,
+          ),
+        );
+        decideReview(address, 'restored');
+        toast.success('Restored your original wording');
+      } else {
+        mutateResume((r) =>
+          removeBulletAt(r, anchor.section, anchor.itemIndex, anchor.bulletIndex),
+        );
+        decideReview(address, 'removed');
+        toast.success('No matching original — bullet removed');
+      }
+    },
+    [result, baseResume, mutateResume, decideReview],
+  );
+
+  const handleReviewEdit = useCallback(
+    (address: string, text: string) => {
+      const item = result?.tailored_resume.verification?.items[address];
+      if (!item || !result || !text.trim()) return;
+      const anchor = resolveAnchor(result.tailored_resume, address, item.text);
+      if (!anchor) {
+        decideReview(address, 'edited');
+        return;
+      }
+      mutateResume((r) =>
+        replaceBulletText(
+          r, anchor.section, anchor.itemIndex, anchor.bulletIndex, text.trim(),
+        ),
+      );
+      decideReview(address, 'edited');
+    },
+    [result, mutateResume, decideReview],
+  );
+
+  // Manual re-score (scores are paid render+LLM jobs — never automatic on
+  // every edit). Clearing ats_scores re-arms the auto-score effect.
+  const handleRescore = useCallback(() => {
+    if (atsLoading) return;
+    setResult((prev) => (prev ? { ...prev, ats_scores: undefined } : prev));
+    atsAutoTriggered.current = false;
+    setScoreStale(false);
+  }, [atsLoading]);
+
+  /* ── Version + keyword + new-session helpers ─────────────────────────────── */
+  const handleAddKeyword = useCallback(
+    (kw: string) => {
+      setResult((prev) => {
+        if (!prev) return prev;
+        const category = inferSkillCategory(prev.tailored_resume, kw, similarity);
+        return {
+          ...prev,
+          tailored_resume: addSkillToCategory(prev.tailored_resume, category, kw),
+        };
+      });
+      setScoreStale(true);
+      setAddedKeywords((prev) => new Set(prev).add(kw));
+      toast.success(`Added "${kw}" to your skills`);
+    },
+    [],
+  );
 
   const handleRestoreVersion = useCallback((version: VersionEntry) => {
     setResult((prev) =>
@@ -656,6 +803,8 @@ export default function TailorPage() {
     );
     setPreviousResume(null);
     setRegenView('tailored');
+    setReviewDecisions({});
+    setScoreStale(false);
     atsAutoTriggered.current = false;
     toast.success(`Restored "${version.label}"`);
   }, []);
@@ -667,6 +816,8 @@ export default function TailorPage() {
     );
     setPreviousResume(null);
     setRegenView('tailored');
+    setReviewDecisions({});
+    setScoreStale(false);
     atsAutoTriggered.current = false;
     toast.success('Reverted to previous version');
   }, [previousResume]);
@@ -691,6 +842,8 @@ export default function TailorPage() {
     setDownloadMenuOpen(false);
     setVersions([]);
     setDismissedNudges(new Set());
+    setReviewDecisions({});
+    setScoreStale(false);
     recordIdRef.current = null;
     atsAutoTriggered.current = false;
   }, []);
@@ -739,6 +892,18 @@ export default function TailorPage() {
   const currentStep: 1 | 2 | 3 = result ? 3 : jdText.trim().length > 20 ? 2 : 1;
   const tailoring = phase !== null;
 
+  // Flagged claims still waiting on a user decision (drives the Review badge).
+  const verificationItems = result?.tailored_resume.verification?.items ?? {};
+  const pendingFlagged = Object.entries(verificationItems).filter(
+    ([addr, item]) =>
+      (item.verdict === 'UNSUPPORTED' || item.verdict === 'PARTIAL') &&
+      !reviewDecisions[addr],
+  );
+  const reviewPendingCount = pendingFlagged.length;
+  const reviewHasUnsupported = pendingFlagged.some(
+    ([, item]) => item.verdict === 'UNSUPPORTED',
+  );
+
   return (
     <div className="space-y-5">
       <StreakWidget />
@@ -775,6 +940,7 @@ export default function TailorPage() {
         <section className="min-w-0 lg:sticky lg:top-24 lg:self-start" aria-label="Resume preview">
           <ResumePreviewFrame
             result={result}
+            baseResume={baseResume}
             previousResume={previousResume}
             regenView={regenView}
             onRegenViewChange={setRegenView}
@@ -782,6 +948,7 @@ export default function TailorPage() {
             onRestoreVersion={handleRestoreVersion}
             onRevert={handleRevert}
             phase={phase}
+            pct={tailorPct}
             elapsedSeconds={tailorElapsed}
             onCancel={handleCancel}
           />
@@ -794,6 +961,9 @@ export default function TailorPage() {
             hasResult={!!result}
             atsScore={result?.ats_scores?.overall ?? null}
             atsLoading={atsLoading}
+            atsStale={scoreStale}
+            reviewPendingCount={reviewPendingCount}
+            reviewHasUnsupported={reviewHasUnsupported}
             coverLetterReady={!!coverLetter}
             coverLetterLoading={coverLetterLoading}
             jdPanel={
@@ -811,11 +981,25 @@ export default function TailorPage() {
                 usageLoading={usageLoading}
               />
             }
+            reviewPanel={
+              <ReviewPanel
+                resume={result?.tailored_resume ?? null}
+                decisions={reviewDecisions}
+                hasBaseResume={!!baseResume}
+                onAccept={handleReviewAccept}
+                onRestore={handleReviewRestore}
+                onRemove={handleReviewRemove}
+                onEdit={handleReviewEdit}
+              />
+            }
             atsPanel={
               <AtsScorePanel
                 scores={result?.ats_scores ?? null}
                 onAddKeyword={handleAddKeyword}
                 addedKeywords={addedKeywords}
+                stale={scoreStale}
+                onRescore={handleRescore}
+                rescoring={atsLoading}
               />
             }
             regeneratePanel={
