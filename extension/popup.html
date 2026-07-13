@@ -137,6 +137,28 @@
 
       <div class="killrow">
         <div class="txt">
+          <div class="lbl">Auto-fill when a form is detected</div>
+          <div class="desc">Fills applications the moment you open them — no clicking needed. Only empty fields; sensitive questions stay yours.</div>
+        </div>
+        <label class="switch" title="Auto-fill detected application forms">
+          <input type="checkbox" id="flow_autofill" aria-label="Auto-fill when a form is detected" />
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="killrow">
+        <div class="txt">
+          <div class="lbl">Auto-continue steps</div>
+          <div class="desc">On multi-step forms (e.g. Workday), clicks the site's Next/Continue once a step is complete — after a countdown you can cancel. Never clicks Submit.</div>
+        </div>
+        <label class="switch" title="Auto-click Next/Continue on completed steps">
+          <input type="checkbox" id="flow_autoadvance" aria-label="Auto-continue steps" />
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="killrow">
+        <div class="txt">
           <div class="lbl">Allow auto-submit on this device</div>
           <div class="desc" id="killdesc">Off = review-only (default). When on, Aspirely may auto-submit only applications you approved in the app — after a countdown you can cancel. Never touches CAPTCHAs.</div>
         </div>
@@ -160,7 +182,7 @@
 
       <div class="foot">
         <a id="openapp" href="#" target="_blank" rel="noopener">Open the Aspirely app ↗</a>
-        <span class="ver">v0.2.0</span>
+        <span class="ver">v0.3.1</span>
       </div>
     </div>
     <script src="config.js"></script>

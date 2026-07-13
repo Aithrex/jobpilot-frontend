@@ -1,25 +1,25 @@
 {
   "manifest_version": 3,
   "name": "Aspirely — Apply Assistant",
-  "version": "0.2.0",
+  "version": "0.3.1",
   "description": "High-signal application autofill + résumé-grounded answers. You review, you submit — never spray-and-pray.",
-  "permissions": ["storage", "activeTab", "scripting"],
-  "host_permissions": [
-    "http://localhost:5000/*",
-    "https://*.myworkdayjobs.com/*",
-    "https://boards.greenhouse.io/*",
-    "https://job-boards.greenhouse.io/*",
-    "https://jobs.lever.co/*",
-    "https://*.icims.com/*",
-    "https://*.ashbyhq.com/*",
-    "https://jobs.ashbyhq.com/*",
-    "https://*.smartrecruiters.com/*",
-    "https://apply.workable.com/*",
-    "https://*.workable.com/*"
-  ],
+  "permissions": ["storage"],
+  "host_permissions": ["https://aspirely.me/*"],
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Aspirely Apply Assistant"
+    "default_title": "Aspirely Apply Assistant",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
   },
   "background": { "service_worker": "background.js" },
   "content_scripts": [
@@ -40,6 +40,7 @@
         "config.js",
         "lib/redact.js",
         "lib/ratelimit.js",
+        "lib/widgets.js",
         "adapters/greenhouse.js",
         "adapters/lever.js",
         "adapters/ashby.js",
@@ -51,13 +52,15 @@
         "lib/resolver.js",
         "lib/reviewcard.js",
         "lib/autosubmit.js",
+        "lib/flowmode.js",
         "content.js"
       ],
       "css": ["content.css"],
-      "run_at": "document_idle"
+      "run_at": "document_idle",
+      "all_frames": true
     },
     {
-      "matches": ["http://localhost:5173/*"],
+      "matches": ["https://aspirely.me/*", "https://www.aspirely.me/*"],
       "js": ["config.js", "tokensync.js"],
       "run_at": "document_idle"
     }

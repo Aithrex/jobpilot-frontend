@@ -16,6 +16,17 @@ dependencies**. The folder loads as-is. The backend already exists
   Workable forms — only into empty fields, never overwriting what you've typed.
   Other ATSes (e.g. iCIMS) are handled best-effort by the generic semantic
   matcher, so expect more amber-confidence fields there.
+- **Flow Mode (default ON)** — hands-free assist: the moment you open an
+  application (or a wizard advances to a new step — Workday, iCIMS, …), the
+  extension detects the form and fills it automatically, showing a compact
+  status HUD (top-right: progress, "Review fills", "Pause auto"). On multi-step
+  forms, once a step has **nothing left that only you can answer** (required
+  dropdowns, EEO questions, uploads, essays), it clicks the site's own
+  **Next / Continue** after a 3s countdown you can cancel — and tells you
+  exactly how many required items still need you when it can't. It **never
+  clicks Submit / Apply**: the final submit stays your click (or the separately
+  gated opt-in auto-submit below). Both behaviors are toggleable in the popup
+  ("Auto-fill when a form is detected", "Auto-continue steps").
 - **Review Card**: after autofill, an isolated (closed shadow-DOM) overlay lists
   every field it filled, the value, and a per-field confidence — green
   (deterministic), amber (guessed / AI-matched, verify), red (do it yourself).
@@ -69,14 +80,30 @@ review-only — no error, no spinner.
    (not shipped — coordinate the contract with the backend first). The page snippet
    is **PII-redacted** (`lib/redact.js`) before anything leaves the browser.
 
-Sensitive / EEO / work-authorization / salary / date-of-birth fields are **never**
-auto-answered — they're surfaced in the Review Card for you to answer yourself.
+Sensitive / EEO / salary / date-of-birth fields are **never** auto-answered —
+they're surfaced in the Review Card for you to answer yourself. The one carve-out:
+**work-authorization prompts** are answered from the **visa profile you explicitly
+declared in the Aspirely app** (never a guessed default), flagged low-confidence
+in the Review Card for you to double-check.
+
+On Workday, a **deep-fill pass** (`lib/widgets.js` + the adapter's `postFill`)
+also handles the widgets that aren't plain inputs: prompt dropdowns (degree,
+phone device type), type-to-search lists (skills, school, field of study), and
+per-row education/experience fields (GPA, job title, company, location) — using
+interaction machinery ported from **ApplyPilot**
+(`github.com/Siddardha-23/applypilot`), where it was validated against real
+Workday tenants (real mouse-event option selection, Enter-committed typeaheads,
+label-based row matching, never overriding pre-filled values).
 
 ## Install (unpacked — the normal path)
-1. Edit `config.js` → set `API_BASE` (and `WEB_APP_ORIGIN`) for your environment.
-   - Dev: `API_BASE: "http://localhost:5000/api"`, `WEB_APP_ORIGIN: "http://localhost:5173"`.
-   - For **prod**, also add your API origin to `host_permissions` and your web-app
-     origin to the second `content_scripts.matches` block in `manifest.json`.
+1. `config.js` ships pointing at **production** (`https://aspirely.me`), so a plain
+   install works out of the box. For local dev, edit it to
+   `API_BASE: "http://localhost:5000/api"`, `WEB_APP_ORIGIN: "http://localhost:5173"`
+   **and** re-add the dev origins to `manifest.json` (they are deliberately absent
+   from the shipped manifest — the store rejects unused permissions):
+   `"http://localhost:5000/*"` under `host_permissions`, and
+   `"http://localhost:5173/*"` in the second `content_scripts.matches` block.
+   Don't ship those in a store build.
 2. Open Chrome → `chrome://extensions`.
 3. Toggle **Developer mode** on (top-right).
 4. Click **Load unpacked** and select this `extension/` folder.
@@ -104,11 +131,17 @@ single file. It is **not** a build step.
 - **macOS / Linux / Git Bash:** `cd extension && ./package.sh` →
   `dist/aspirely-extension-<version>.zip`.
 - **Windows PowerShell:**
-  `Compress-Archive -Path manifest.json,config.js,background.js,content.js,content.css,popup.html,popup.js,tokensync.js,adapters,lib -DestinationPath dist\aspirely-extension.zip`
+  `Compress-Archive -Path manifest.json,config.js,background.js,content.js,content.css,popup.html,popup.js,tokensync.js,adapters,lib,icons -DestinationPath dist\aspirely-extension.zip`
 
 ## Files
-- `manifest.json` — MV3 manifest (minimal permissions: `storage`, `activeTab`,
-  `scripting`; per-ATS `host_permissions`; content-script matches + load order)
+- `manifest.json` — MV3 manifest. Permissions are the audited minimum the code
+  actually calls (a CWS automated review rejects any requested-but-unused
+  permission — ApplyPilot was rejected for exactly this with `scripting`):
+  `storage` only, plus `host_permissions` for the Aspirely API (`aspirely.me`)
+  — content-script injection on the ATS domains is granted by
+  `content_scripts.matches` alone and needs no host_permissions, and nothing
+  uses `chrome.scripting`/`activeTab`/`tabs`. If you add a feature that calls a
+  new `chrome.*` API, add its permission then — never pre-emptively.
 - `config.js` — your API base + web-app origin + LLM-disambiguation toggle (edit this)
 - `background.js` — service worker: token storage + API proxy (`/apply/profile`,
   `/apply/answer`, gated `field-map`, `/apply/auto-submit/*`); validates every message
@@ -121,21 +154,33 @@ single file. It is **not** a build step.
 - `lib/reviewcard.js` — the shadow-DOM Review Card overlay
 - `lib/autosubmit.js` — opt-in auto-submit: the three gates, submit-button finder,
   cancellable countdown overlay, and one-shot submit + report
+- `lib/widgets.js` — ATS widget interaction machinery (ported from ApplyPilot):
+  real-click option selection, prompt dropdowns, Enter-committed typeaheads,
+  label-based per-row text fills — pure mechanics; adapters decide the mapping
+- `lib/flowmode.js` — Flow Mode primitives: the two popup toggles
+  (`jp_flow_autofill` / `jp_flow_autoadvance`, absent = ON), the Next/Continue
+  button finder (adapter hints + allowlist text scan, hard blocklist on
+  submit/apply/sign-in), and the step-blocker counter (required-empty fields,
+  unchosen comboboxes, validation errors) that gates auto-advance
 - `lib/redact.js` — PII redaction (only used on the opt-in LLM path)
-- `lib/ratelimit.js` — client-side fill cap + humanizing jitter
+- `lib/ratelimit.js` — client-side fill cap + humanizing jitter (Flow Mode
+  counts one fill event per application, not per wizard step)
 - `tokensync.js` — auto-syncs the JWT from the web app
 - `popup.html` / `popup.js` — connection status, profile sync, kill switch, manual token
 - `package.sh` — optional zip helper (no build system)
 
 > Content scripts are declared in strict load order (config → libs → adapters →
-> resolver → **review card → autosubmit** → content). They can't be ES modules, so each
+> resolver → **review card → autosubmit → flowmode** → content). They can't be ES modules, so each
 > file attaches to the isolated-world global (`self.JP*` / `self.__JP_ADAPTERS`) — the
 > same pattern as `config.js`. None of this is visible to the host page's `window`.
 
 ## Notes
-- No icons are bundled (Chrome shows a default). To brand the toolbar, drop
-  `icons/icon16.png`, `icon48.png`, `icon128.png` and add an `"icons"` key to the
-  manifest.
+- Icons (`icons/icon{16,32,48,128}.png`, indigo check) are bundled and wired in
+  the manifest — required for a Chrome Web Store listing.
+- Content scripts run in **all frames** (`all_frames: true`) because several
+  boards embed the real form in an iframe (e.g. Greenhouse embeds — a fix
+  validated in ApplyPilot). Subframes fill silently; the panel, HUD, Review
+  Card, auto-advance and auto-submit all live in the top frame only.
 - Add more ATS: drop an `adapters/<ats>.js` (implement `match/fields/essayQuestions`,
   push onto `self.__JP_ADAPTERS`), then extend `host_permissions`,
   `content_scripts.matches`, and the `content_scripts.js` load list. No adapter is

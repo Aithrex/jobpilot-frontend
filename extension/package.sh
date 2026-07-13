@@ -20,7 +20,7 @@ rm -f "$OUT"
 zip -r -X "$OUT" \
   manifest.json config.js background.js content.js content.css \
   popup.html popup.js tokensync.js \
-  adapters lib \
+  adapters lib icons \
   -x '*/.DS_Store' >/dev/null
 
 echo "Packaged → $OUT"

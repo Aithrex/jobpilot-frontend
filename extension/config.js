@@ -1,13 +1,16 @@
-/* Aspirely extension config — EDIT for your deployment.
+/* Aspirely extension config — defaults are PRODUCTION (aspirely.me) so a store
+ * install works out of the box.
  *
- * API_BASE       : your backend's /api base (no trailing slash).
+ * API_BASE       : the backend's /api base (no trailing slash).
+ *                    Prod → https://aspirely.me/api  (CloudFront → API Gateway,
+ *                    same-origin /api — see jobpilot-frontend/infra)
  *                    Dev  → http://localhost:5000/api
- *                    Prod → https://<your-app-domain>/api
- *                  For prod you must ALSO add that origin to host_permissions
- *                  AND the web-app origin to the second content_scripts.matches
- *                  block in manifest.json (so the token auto-syncs there).
  * WEB_APP_ORIGIN : where the web app runs (the token-sync script reads the JWT
- *                  from its localStorage). Dev → http://localhost:5173
+ *                  from its localStorage).
+ *                    Prod → https://aspirely.me · Dev → http://localhost:5173
+ *                  Both prod and localhost origins are declared in manifest.json
+ *                  (host_permissions + the tokensync content-script matches), so
+ *                  switching environments only means editing THIS file.
  *
  * LLM_FIELD_DISAMBIGUATION : opt-in, OFF by default. When true (and FIELD_MAP_PATH
  *                  is set), the resolver may, as a LAST resort, ask the backend to
@@ -20,8 +23,8 @@
  *                  "/apply/field-map". Only used when LLM_FIELD_DISAMBIGUATION.
  */
 const JOBPILOT_CONFIG = {
-  API_BASE: "http://localhost:5000/api",
-  WEB_APP_ORIGIN: "http://localhost:5173",
+  API_BASE: "https://aspirely.me/api",
+  WEB_APP_ORIGIN: "https://aspirely.me",
   LLM_FIELD_DISAMBIGUATION: false,
   FIELD_MAP_PATH: "/apply/field-map",
 };

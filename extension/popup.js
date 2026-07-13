@@ -126,5 +126,31 @@ $("autosubmit").addEventListener("change", async () => {
   }
 });
 
+/* Flow Mode toggles. Stored in chrome.storage.local; ABSENT = ON (hands-free is
+ * the default), only an explicit false disables — matching lib/flowmode.js.
+ * jp_flow_autofill    — auto-fill forms on detection
+ * jp_flow_autoadvance — auto-click Next/Continue on completed steps (never Submit) */
+const FLOW_KEYS = { flow_autofill: "jp_flow_autofill", flow_autoadvance: "jp_flow_autoadvance" };
+
+async function loadFlow() {
+  try {
+    const bag = await chrome.storage.local.get(Object.values(FLOW_KEYS));
+    for (const [id, key] of Object.entries(FLOW_KEYS)) $(id).checked = bag[key] !== false;
+  } catch (_) {
+    for (const id of Object.keys(FLOW_KEYS)) $(id).checked = false;
+  }
+}
+
+for (const [id, key] of Object.entries(FLOW_KEYS)) {
+  $(id).addEventListener("change", async () => {
+    try {
+      await chrome.storage.local.set({ [key]: !!$(id).checked });
+    } catch (_) {
+      $(id).checked = false; // storage unavailable — flow mode stays manual (fail safe)
+    }
+  });
+}
+
 loadKill();
+loadFlow();
 refresh();
