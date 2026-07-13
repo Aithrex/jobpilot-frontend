@@ -71,7 +71,7 @@ export function ReachOutModal({ open, onClose, rec }: ReachOutModalProps) {
     setError(null);
     generate(rec, tone);
     // tone change handled via the explicit regenerate button so we don't
-    // burn a Gemini call every time the user toggles the chip.
+    // burn an LLM call every time the user toggles the chip.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, rec?.url, rec?.title, rec?.company]);
 

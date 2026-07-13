@@ -1188,6 +1188,11 @@ class ApiService {
     maxWaitMs = 120000,
     signal?: AbortSignal,
     onPartial?: (partial: T) => void,
+    // Fires on every poll tick with the raw backend job status (queued →
+    // processing → completed/failed) so callers can drive a REAL progress
+    // indicator instead of a wall-clock guess. Additive/optional — existing
+    // callers are unaffected.
+    onStatus?: (status: import("../types/resume").JobStatus) => void,
   ): Promise<ApiResponse<T>> {
     const pollInterval = 2000;
     const startTime = Date.now();
@@ -1198,7 +1203,7 @@ class ApiService {
       if (signal?.aborted) return { error: "Cancelled" };
 
       const resp = await this.request<{
-        status: string;
+        status: import("../types/resume").JobStatus;
         result?: T;
         error?: string;
         error_code?: string;
@@ -1217,6 +1222,17 @@ class ApiService {
       consecutiveErrors = 0;
       const job = resp.data;
       if (!job) return { error: "Job not found" };
+
+      // Report the real backend status before terminal-state handling so the
+      // caller sees queued/processing transitions live. Never let a callback
+      // error abort polling.
+      if (onStatus) {
+        try {
+          onStatus(job.status);
+        } catch {
+          /* callback errors must never abort polling */
+        }
+      }
 
       if (job.status === "completed" && job.result) {
         return { data: job.result as unknown as T };
@@ -1246,6 +1262,7 @@ class ApiService {
 
   async extractJD(
     jobDescription: string,
+    signal?: AbortSignal,
   ): Promise<
     ApiResponse<{ jd_analysis: import("../types/resume").JDAnalysis }>
   > {
@@ -1262,6 +1279,8 @@ class ApiService {
 
     return this.pollJob<{ jd_analysis: import("../types/resume").JDAnalysis }>(
       submitResp.data.job_id,
+      120000,
+      signal,
     );
   }
 
@@ -1293,10 +1312,18 @@ class ApiService {
   async tailorResumeWithJDText(
     jobDescription: string,
     signal?: AbortSignal,
+    // Optional real-progress hooks — onStatus receives the backend job status
+    // on every poll tick; onProgress receives the honest sub-phase marker the
+    // backend writes into job.result.progress at each real pipeline stage.
+    onStatus?: (status: import("../types/resume").JobStatus) => void,
+    onProgress?: (p: import("../types/resume").TailorJobProgress) => void,
   ): Promise<
     ApiResponse<{
       jd_analysis: import("../types/resume").JDAnalysis;
       tailored_resume: import("../types/resume").TailoredFullResume;
+      // Post-backfill base resume (present on new backends) — enables
+      // diff-vs-base without a second round-trip.
+      base_resume?: import("../types/resume").TailoredFullResume;
     }>
   > {
     const submitResp = await this.request<{ job_id: string }>(
@@ -1309,9 +1336,9 @@ class ApiService {
     );
     if (submitResp.error) {
       // Forward status + errorPayload so callers can detect 429
-      // daily_quota_exceeded and surface the quota dialog. Previously
-      // we only forwarded the error string, silently dropping the
-      // structured payload — quota dialog never fired.
+      // daily_quota_exceeded (and 403 upgrade_required) and surface the
+      // right dialog. Previously we only forwarded the error string,
+      // silently dropping the structured payload — quota dialog never fired.
       return {
         error: submitResp.error,
         status: submitResp.status,
@@ -1323,7 +1350,21 @@ class ApiService {
     return this.pollJob<{
       jd_analysis: import("../types/resume").JDAnalysis;
       tailored_resume: import("../types/resume").TailoredFullResume;
-    }>(submitResp.data.job_id, 120000, signal);
+      base_resume?: import("../types/resume").TailoredFullResume;
+    }>(
+      submitResp.data.job_id,
+      120000,
+      signal,
+      // While processing, the only partial the tailor job writes is the
+      // progress marker — forward it when present.
+      (partial) => {
+        const p = (
+          partial as { progress?: import("../types/resume").TailorJobProgress }
+        ).progress;
+        if (p?.phase && onProgress) onProgress(p);
+      },
+      onStatus,
+    );
   }
 
   async regenerateResume(
@@ -1439,7 +1480,9 @@ class ApiService {
     return this.request("/resume/generated");
   }
 
-  async listTailoringRecords(): Promise<ApiResponse<{ records: any[] }>> {
+  async listTailoringRecords(): Promise<
+    ApiResponse<{ records: import("../types/resume").TailoringRecord[] }>
+  > {
     return this.request("/resume/tailoring-records");
   }
 
@@ -1492,7 +1535,15 @@ class ApiService {
       },
       30000,
     );
-    if (submitResp.error) return { error: submitResp.error };
+    if (submitResp.error) {
+      // Forward status + errorPayload so the caller can surface the upgrade
+      // modal on 403 upgrade_required (cover letter is a gated feature).
+      return {
+        error: submitResp.error,
+        status: submitResp.status,
+        errorPayload: submitResp.errorPayload,
+      };
+    }
     if (!submitResp.data?.job_id) return { error: "Failed to submit job" };
 
     return this.pollJob<{ cover_letter: string }>(
@@ -1541,9 +1592,13 @@ class ApiService {
 
   async pollJobStatus<T>(
     jobId: string,
-  ): Promise<ApiResponse<T & { status: string }>> {
+  ): Promise<ApiResponse<T & { status: import("../types/resume").JobStatus }>> {
     const resp = await this.request<
-      T & { status: string; error?: string; error_code?: string }
+      T & {
+        status: import("../types/resume").JobStatus;
+        error?: string;
+        error_code?: string;
+      }
     >(`/resume/job/${jobId}`);
     if (resp.data?.error_code === "LLM_RETRIES_EXHAUSTED") {
       notifyLLMRetriesExhausted();
@@ -1687,7 +1742,9 @@ class ApiService {
 
   async getTailoringRecord(
     recordId: string,
-  ): Promise<ApiResponse<{ record: any }>> {
+  ): Promise<
+    ApiResponse<{ record: import("../types/resume").TailoringRecord }>
+  > {
     return this.request(`/resume/tailoring-records/${recordId}`);
   }
 
@@ -1722,7 +1779,9 @@ class ApiService {
       /** Clears the "Did you apply?" prompt set on batch-tailored items. */
       batch_confirmation_pending?: boolean;
     },
-  ): Promise<ApiResponse<{ application: any }>> {
+  ): Promise<
+    ApiResponse<{ application: import("../types/resume").ApplicationInfo }>
+  > {
     return this.request(
       `/resume/tailoring-records/${recordId}/application`,
       {

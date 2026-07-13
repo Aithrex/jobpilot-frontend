@@ -10,8 +10,6 @@ import { FeedbackProvider } from './components/feedback/FeedbackWidget';
 import { UpgradeModalProvider } from './components/billing/UpgradeModalProvider';
 import Landing from './pages/Landing';
 import NotFound from './pages/NotFound';
-import { WorkspaceFallbackCard } from '@/app-shell/WorkspaceFallbackCard';
-import { FileCheck2, FolderOpen, Wand2 } from 'lucide-react';
 
 // Workspace + heavier routes are lazy-loaded so the public landing stays light.
 // Landing is kept eager (it's the LCP content on `/`); everything else — auth
@@ -51,9 +49,12 @@ const JobOpportunitiesTab = lazy(() => import('@/components/resume/JobOpportunit
 const CareerPortalsTab = lazy(() => import('@/components/resume/CareerPortalsTab'));
 const VisaTimelineTab = lazy(() => import('@/components/visa/VisaTimelineTab'));
 
-// Craft mounts the standalone (prop-less) résumé tools directly as nested
-// sections. The monolith-embedded tools (Tailor / My Resumes / Tailored) render
-// an "Open in workspace" fallback instead of being risky-extracted.
+// Craft mounts the résumé tools directly as nested sections. Tailor / My
+// Resumes / Tailored are extracted into the app shell; Batch / Six Seconds /
+// Voice are standalone components. No fallback cards remain — migration complete.
+const TailorPage = lazy(() => import('@/app-shell/pages/craft/TailorPage'));
+const MyResumesPage = lazy(() => import('@/app-shell/pages/craft/MyResumesPage'));
+const TailoredPage = lazy(() => import('@/app-shell/pages/craft/TailoredPage'));
 const BatchTailor = lazy(() => import('@/components/resume/BatchTailor'));
 const SixSecondsTab = lazy(() => import('@/components/resume/SixSecondsTab'));
 const VoiceGraphTab = lazy(() => import('@/components/resume/VoiceGraphTab'));
@@ -130,43 +131,12 @@ function AppContent() {
               <Route path="visa" element={<VisaTimelineTab />} />
             </Route>
             <Route path="craft" element={<CraftPage />}>
-              {/* Land on Batch — a working, mounted tool — rather than the
-                  Tailor fallback card, for a more useful default. */}
-              <Route index element={<Navigate to="batch" replace />} />
-              <Route
-                path="tailor"
-                element={
-                  <WorkspaceFallbackCard
-                    icon={Wand2}
-                    title="Tailor a résumé"
-                    description="Tailor your résumé to a single job description with ATS scoring."
-                    to="/app?tab=tailor"
-                  />
-                }
-              />
+              {/* Land on Tailor — the flagship tool — as the Craft default. */}
+              <Route index element={<Navigate to="tailor" replace />} />
+              <Route path="tailor" element={<TailorPage />} />
               <Route path="batch" element={<BatchTailor />} />
-              <Route
-                path="my-resumes"
-                element={
-                  <WorkspaceFallbackCard
-                    icon={FolderOpen}
-                    title="My résumés"
-                    description="Manage your base résumés and versions."
-                    to="/app?tab=my-resumes"
-                  />
-                }
-              />
-              <Route
-                path="tailored"
-                element={
-                  <WorkspaceFallbackCard
-                    icon={FileCheck2}
-                    title="Tailored résumés"
-                    description="Browse and re-download every résumé you've tailored."
-                    to="/app?tab=tailored"
-                  />
-                }
-              />
+              <Route path="my-resumes" element={<MyResumesPage />} />
+              <Route path="tailored" element={<TailoredPage />} />
               <Route path="six-seconds" element={<SixSecondsTab />} />
               <Route path="voicegraph" element={<VoiceGraphTab />} />
             </Route>
