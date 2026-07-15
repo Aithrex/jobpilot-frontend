@@ -9,7 +9,15 @@ import { QuotaLimitDialog } from "@/components/quota/QuotaLimitDialog";
 import { useFeedback } from "@/components/feedback/FeedbackWidget";
 import { buildCoverLetterFilename, titleCaseName } from "@/lib/filename";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Bot, Building2, CreditCard, GraduationCap, Trophy, Users, Mic, Menu, PanelLeftClose, PanelLeftOpen, X, Eye, TrendingUp, Bell, ShieldCheck, Home, Compass, PenTool, Send, Sprout, MessageSquarePlus, ChevronRight, Search } from "lucide-react";
+import { Bot, Building2, CreditCard, GraduationCap, Trophy, Users, Mic, Menu, PanelLeftClose, PanelLeftOpen, X, Eye, TrendingUp, Bell, ShieldCheck, Home, Compass, PenTool, Send, Sprout, MessageSquarePlus, ChevronRight, Search, Settings, LogOut } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ConnectedTo } from "@/components/resume/ConnectedTo";
 import MobileBottomNav from "@/components/layout/MobileBottomNav";
 import {
@@ -4344,39 +4352,71 @@ function SidebarAccount({
   user: { name?: string | null; email?: string | null } | null;
   onOpenProfile: () => void;
 }) {
+  const { logout } = useAuth();
   const displayName = user?.name || user?.email?.split("@")[0] || "Profile";
+
+  const menuContent = (
+    <DropdownMenuContent align="end" side="top" className="w-56">
+      <DropdownMenuLabel className="min-w-0">
+        <p className="truncate text-sm font-semibold text-foreground">{displayName}</p>
+        {user?.email && <p className="truncate text-xs font-normal text-muted-foreground">{user.email}</p>}
+      </DropdownMenuLabel>
+      <DropdownMenuSeparator />
+      <DropdownMenuItem onSelect={onOpenProfile} className="cursor-pointer">
+        <Settings className="mr-2 h-4 w-4" aria-hidden="true" />
+        Profile & Settings
+      </DropdownMenuItem>
+      <DropdownMenuSeparator />
+      <DropdownMenuItem
+        onSelect={() => logout()}
+        className="cursor-pointer text-destructive focus:text-destructive"
+      >
+        <LogOut className="mr-2 h-4 w-4" aria-hidden="true" />
+        Sign out
+      </DropdownMenuItem>
+    </DropdownMenuContent>
+  );
 
   if (collapsed) {
     return (
-      <button
-        type="button"
-        onClick={onOpenProfile}
-        title="Profile"
-        aria-label="Open profile"
-        className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-lg transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      >
-        <UserInitial value={displayName} className="h-8 w-8" />
-      </button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            title="Profile"
+            aria-label="Open profile menu"
+            className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-lg transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <UserInitial value={displayName} className="h-8 w-8" />
+          </button>
+        </DropdownMenuTrigger>
+        {menuContent}
+      </DropdownMenu>
     );
   }
 
   return (
     <div className="border-t border-sidebar-border p-3">
-      <button
-        type="button"
-        onClick={onOpenProfile}
-        className="flex w-full items-center gap-3 rounded-lg border border-border bg-muted/40 p-2.5 text-left transition-colors hover:border-primary/30 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      >
-        <UserInitial value={displayName} className="h-9 w-9 shrink-0" />
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-semibold text-foreground">
-            {displayName}
-          </span>
-          <span className="block truncate text-xs text-muted-foreground">
-            {user?.email || "Profile settings"}
-          </span>
-        </span>
-      </button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            aria-label="Open profile menu"
+            className="flex w-full items-center gap-3 rounded-lg border border-border bg-muted/40 p-2.5 text-left transition-colors hover:border-primary/30 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <UserInitial value={displayName} className="h-9 w-9 shrink-0" />
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-sm font-semibold text-foreground">
+                {displayName}
+              </span>
+              <span className="block truncate text-xs text-muted-foreground">
+                {user?.email || "Profile settings"}
+              </span>
+            </span>
+          </button>
+        </DropdownMenuTrigger>
+        {menuContent}
+      </DropdownMenu>
     </div>
   );
 }
@@ -4472,7 +4512,7 @@ function readTabFromUrl(): NavTab | null {
 }
 
 export default function ResumeParser() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const feedback = useFeedback();
   // Seed from ?tab= so refresh / OAuth-callback redirects (e.g.
   // /resume-parser?tab=applications&gmail=linked) actually land on the
@@ -4747,6 +4787,22 @@ export default function ResumeParser() {
                               <MessageSquarePlus className="w-4 h-4" />
                             </span>
                             <span className="min-w-0 flex-1 truncate">Feedback</span>
+                          </button>
+                        </div>
+                        <div className="border-t border-border py-1">
+                          <button
+                            type="button"
+                            role="menuitem"
+                            onClick={() => {
+                              setUserMenuOpen(false);
+                              logout();
+                            }}
+                            className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-destructive transition-colors hover:bg-accent focus-visible:outline-none focus-visible:bg-accent"
+                          >
+                            <span className="shrink-0 text-destructive">
+                              <LogOut className="w-4 h-4" />
+                            </span>
+                            <span className="min-w-0 flex-1 truncate">Sign out</span>
                           </button>
                         </div>
                       </div>
