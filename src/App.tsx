@@ -5,7 +5,9 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { ThemeProvider } from './components/theme-provider';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { isGuestOnboardingEnabled } from './lib/guest';
+import { apiService } from './lib/api';
 import { FeedbackProvider } from './components/feedback/FeedbackWidget';
 import { UpgradeModalProvider } from './components/billing/UpgradeModalProvider';
 import Landing from './pages/Landing';
@@ -17,6 +19,7 @@ import NotFound from './pages/NotFound';
 // route ships a lean bundle.
 const Login = lazy(() => import('./pages/Login'));
 const Register = lazy(() => import('./pages/Register'));
+const Start = lazy(() => import('./pages/Start'));
 const OnboardingWizard = lazy(() => import('./components/onboarding/OnboardingWizard'));
 const ResumeParser = lazy(() => import('./pages/ResumeParser'));
 const AdminPortal = lazy(() => import('./pages/AdminPortal'));
@@ -79,6 +82,24 @@ function RouteLoadingFallback() {
   );
 }
 
+/**
+ * Root landing gate: signed-out visitors go to the guest onboarding flow at
+ * /start (when the feature is enabled — build flag AND no runtime 503/404
+ * marker); everyone else gets the marketing landing. Deep links to /login,
+ * /register, /privacy, /terms etc. are untouched.
+ */
+function RootRoute() {
+  const { isAuthenticated, isLoading } = useAuth();
+  // No stored token = definitively signed out — redirect without waiting for
+  // the profile check (avoids a flash of the heavy landing page). With a
+  // token present, wait for verification; signed-in users keep the landing.
+  const signedOut = !isAuthenticated && (!isLoading || !apiService.getToken());
+  if (signedOut && isGuestOnboardingEnabled()) {
+    return <Navigate to="/start" replace />;
+  }
+  return <Landing />;
+}
+
 function AppContent() {
   return (
     <>
@@ -86,7 +107,10 @@ function AppContent() {
       <BrowserRouter>
         <Routes>
           {/* Public */}
-          <Route path="/" element={<Landing />} />
+          <Route path="/" element={<RootRoute />} />
+          {/* Guest onboarding (Start self-gates: authed users → /app; feature
+              off → back to the login-first landing). */}
+          <Route path="/start" element={<Suspense fallback={<RouteLoadingFallback />}><Start /></Suspense>} />
           <Route path="/login" element={<Suspense fallback={<RouteLoadingFallback />}><Login /></Suspense>} />
           <Route path="/register" element={<Suspense fallback={<RouteLoadingFallback />}><Register /></Suspense>} />
 

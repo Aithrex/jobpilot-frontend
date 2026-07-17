@@ -82,9 +82,13 @@ class ApiService {
     endpoint: string,
     options: RequestInit = {},
     timeoutMs?: number,
+    // skipAuth: guest endpoints are unauthenticated BY DESIGN — never attach
+    // the Bearer token on them (guest failures are 429/503, never 401; a
+    // stale token must not be able to trip the 401 force-logout path there).
+    reqOpts?: { skipAuth?: boolean },
   ): Promise<ApiResponse<T>> {
     const url = `${this.baseURL}${endpoint}`;
-    const token = this.getToken();
+    const token = reqOpts?.skipAuth ? null : this.getToken();
 
     const headers: HeadersInit = {
       "Content-Type": "application/json",
@@ -758,6 +762,171 @@ class ApiService {
   }
 
   // ============================================
+  // Guest onboarding (/api/resume/guest/*, /api/jobs/guest/*)
+  //
+  // Contract: jobpilot-backend/docs/specs/guest-onboarding.md (v1).
+  // These endpoints are unauthenticated BY DESIGN (skipAuth) — guest failures
+  // are 429/503, NEVER 401, and a 429 with { quota_exhausted: true } is a
+  // signup CTA, not an error. The ONE exception is guestClaim, which is
+  // JWT'd (it moves guest work into the freshly-authenticated account).
+  // Rides existing edge routes (/api/resume/*, /api/jobs/*) — no new prefix.
+  // ============================================
+
+  /**
+   * Kick off guest resume parsing: multipart file (pdf/docx, ≤5MB) +
+   * fingerprint_hash (+ optional pre-existing guest_id).
+   * → 202 { guest_id, job_id }; caller polls guestJobPoll.
+   */
+  async guestOnboard(
+    file: File,
+    fingerprintHash: string,
+    guestId?: string,
+  ): Promise<ApiResponse<import("../types/guest").GuestOnboardSubmit>> {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("fingerprint_hash", fingerprintHash);
+    if (guestId) formData.append("guest_id", guestId);
+    const url = `${this.baseURL}/resume/guest/onboard`;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    try {
+      // Deliberately NO Authorization header — guest capability endpoint.
+      const response = await fetch(url, {
+        method: "POST",
+        body: formData,
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        return {
+          error: data.error || data.message || `HTTP ${response.status}`,
+          status: response.status,
+          errorPayload: data,
+        };
+      }
+      return { data, status: response.status };
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error instanceof Error && error.name === "AbortError") {
+        return { error: "Upload timed out. Please try again." };
+      }
+      return {
+        error: error instanceof Error ? error.message : "Upload failed",
+      };
+    }
+  }
+
+  /**
+   * Poll a guest-scoped async job (parse or tailor) — reuses the pollJob
+   * machinery against GET /resume/guest/job/<id>?guest_id= (no JWT). The
+   * backend mirrors the /resume/job/<id> response shape by contract.
+   */
+  async guestJobPoll<T>(
+    jobId: string,
+    guestId: string,
+    maxWaitMs = 180000,
+    signal?: AbortSignal,
+    onStatus?: (status: import("../types/resume").JobStatus) => void,
+  ): Promise<ApiResponse<T>> {
+    return this.pollJob<T>(jobId, maxWaitMs, signal, undefined, onStatus, {
+      endpoint: (id) =>
+        `/resume/guest/job/${encodeURIComponent(id)}?guest_id=${encodeURIComponent(guestId)}`,
+      skipAuth: true,
+    });
+  }
+
+  /**
+   * GET /resume/guest/session — session lookup + soft identity recognition.
+   * With an unknown guest_id but a matching fingerprint cluster the backend
+   * answers { recognized: true, recognized_name } → "Welcome back" CTA.
+   */
+  async guestSession(guestId?: string, fingerprintHash?: string) {
+    const params = new URLSearchParams();
+    if (guestId) params.set("guest_id", guestId);
+    if (fingerprintHash) params.set("fingerprint_hash", fingerprintHash);
+    return this.request<import("../types/guest").GuestSession>(
+      `/resume/guest/session?${params.toString()}`,
+      {},
+      undefined,
+      { skipAuth: true },
+    );
+  }
+
+  /**
+   * POST /resume/guest/tailor → 202 { job_id }; caller polls guestJobPoll.
+   * 429 + { quota_exhausted: true } when the guest's lifetime free tailors
+   * are used up (or the global daily circuit breaker trips) — signup CTA.
+   */
+  async guestTailor(payload: {
+    guest_id: string;
+    job: { title: string; company: string; url?: string };
+  }) {
+    // The 202 carries the server-confirmed quota numbers (tailors_used /
+    // tailors_limit) — callers update the meter from it immediately; the
+    // completed job result does NOT repeat them.
+    return this.request<import("../types/guest").GuestTailorSubmit>(
+      "/resume/guest/tailor",
+      { method: "POST", body: JSON.stringify(payload) },
+      30000,
+      { skipAuth: true },
+    );
+  }
+
+  /**
+   * POST /resume/guest/claim — JWT REQUIRED (the only authed guest call).
+   * Moves the guest session's resume + tailors into the current account.
+   * Idempotent server-side (claimed guard; carry-in happens once).
+   */
+  async guestClaim(guestId: string) {
+    return this.request<import("../types/guest").GuestClaimResult>(
+      "/resume/guest/claim",
+      { method: "POST", body: JSON.stringify({ guest_id: guestId }) },
+      30000,
+    );
+  }
+
+  /**
+   * POST /jobs/guest/matches — direct-source job matching against the parsed
+   * guest resume. High-confidence only (score ≥ admin knob, capped, sorted
+   * desc). ASYNC on cache miss: 202 { job_id } → poll the guest job route
+   * until the matches result lands; same-day repeat calls answer 200 with the
+   * cached result directly ({ cached: true }). Scanning can take a while —
+   * callers should show staged progress, not a bare spinner.
+   */
+  async guestMatches(
+    guestId: string,
+    signal?: AbortSignal,
+    onStatus?: (status: import("../types/resume").JobStatus) => void,
+  ): Promise<ApiResponse<import("../types/guest").GuestMatchesResult>> {
+    const submit = await this.request<
+      import("../types/guest").GuestMatchesResult | { job_id: string }
+    >(
+      "/jobs/guest/matches",
+      { method: "POST", body: JSON.stringify({ guest_id: guestId }) },
+      30000,
+      { skipAuth: true },
+    );
+    if (submit.error) {
+      return {
+        error: submit.error,
+        status: submit.status,
+        errorPayload: submit.errorPayload,
+      };
+    }
+    if ("job_id" in (submit.data || {})) {
+      return this.guestJobPoll<import("../types/guest").GuestMatchesResult>(
+        (submit.data as { job_id: string }).job_id,
+        guestId,
+        300000,
+        signal,
+        onStatus,
+      );
+    }
+    return submit as ApiResponse<import("../types/guest").GuestMatchesResult>;
+  }
+
+  // ============================================
   // Health check
   // ============================================
 
@@ -1193,6 +1362,10 @@ class ApiService {
     // indicator instead of a wall-clock guess. Additive/optional — existing
     // callers are unaffected.
     onStatus?: (status: import("../types/resume").JobStatus) => void,
+    // Guest onboarding reuses this exact machinery against the guest-scoped
+    // job route (no JWT). Default stays the authed /resume/job/<id> endpoint;
+    // existing callers are unaffected.
+    pollOpts?: { endpoint?: (jobId: string) => string; skipAuth?: boolean },
   ): Promise<ApiResponse<T>> {
     const pollInterval = 2000;
     const startTime = Date.now();
@@ -1207,7 +1380,12 @@ class ApiService {
         result?: T;
         error?: string;
         error_code?: string;
-      }>(`/resume/job/${jobId}`, {}, 30000);
+      }>(
+        pollOpts?.endpoint ? pollOpts.endpoint(jobId) : `/resume/job/${jobId}`,
+        {},
+        30000,
+        pollOpts?.skipAuth ? { skipAuth: true } : undefined,
+      );
 
       if (resp.error) {
         consecutiveErrors++;
