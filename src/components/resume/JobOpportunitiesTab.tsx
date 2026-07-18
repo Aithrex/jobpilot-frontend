@@ -3,7 +3,7 @@ import { Bookmark, Briefcase, Zap, Wand2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useJobSearch } from '@/hooks/useJobSearch';
 import { SavedJobsPanel } from '@/components/job-search/SavedJobsPanel';
-import { DailyPipelinePanel } from '@/components/job-search/DailyPipelinePanel';
+// import { DailyPipelinePanel } from '@/components/job-search/DailyPipelinePanel';  // APIFY DISABLED (temporary)
 import { SmartFiltersPanel, type SmartFilterApplyMode } from '@/components/job-search/SmartFiltersPanel';
 import type { SmartFilterSuggestions } from '@/types/jobs';
 
@@ -14,7 +14,10 @@ export interface PendingFilterPayload {
 
 export default function JobOpportunitiesTab() {
   const jobSearch = useJobSearch();
-  const [activeTab, setActiveTab] = useState<'pipeline' | 'smart' | 'saved'>('pipeline');
+  // --- APIFY DISABLED (temporary): default to 'saved' since the Apify-driven
+  // 'pipeline' and 'smart' tabs are commented out below. Restore to 'pipeline'
+  // when re-enabling. ---
+  const [activeTab, setActiveTab] = useState<'pipeline' | 'smart' | 'saved'>('saved');
   const [pendingSuggestions, setPendingSuggestions] =
     useState<PendingFilterPayload | null>(null);
 
@@ -108,6 +111,7 @@ export default function JobOpportunitiesTab() {
 
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)} className="space-y-5">
         <TabsList className="border border-border bg-card/60 backdrop-blur-sm">
+          {/* --- APIFY DISABLED (temporary): Apify daily-pipeline tab + its smart-filter config tab hidden. Restore to re-enable. ---
           <TabsTrigger value="pipeline" className="gap-1.5 data-[state=active]:bg-background data-[state=active]:text-primary">
             <Zap className="h-3.5 w-3.5" />
             Daily pipeline
@@ -116,12 +120,14 @@ export default function JobOpportunitiesTab() {
             <Wand2 className="h-3.5 w-3.5" />
             Smart filters
           </TabsTrigger>
+          --- APIFY DISABLED (temporary) --- */}
           <TabsTrigger value="saved" className="gap-1.5 data-[state=active]:bg-background data-[state=active]:text-primary">
             <Bookmark className="h-3.5 w-3.5" />
             Saved ({jobSearch.savedJobs.length})
           </TabsTrigger>
         </TabsList>
 
+        {/* --- APIFY DISABLED (temporary): daily-pipeline + smart-filters panels hidden. Restore to re-enable. ---
         <TabsContent value="pipeline">
           <DailyPipelinePanel
             pendingSuggestions={pendingSuggestions}
@@ -133,6 +139,7 @@ export default function JobOpportunitiesTab() {
         <TabsContent value="smart">
           <SmartFiltersPanel onApply={handleApplySuggestions} />
         </TabsContent>
+        --- APIFY DISABLED (temporary) --- */}
 
         <TabsContent value="saved">
           <SavedJobsPanel

@@ -1029,6 +1029,8 @@ class ApiService {
     return submitResp as ApiResponse<import("../types/jobs").BatchSearchResponse>;
   }
 
+  /* --- APIFY DISABLED (temporary): BYO Apify-key API calls turned off.
+     Restore this block to re-enable.
   async getApifyKey() {
     return this.request<import("../types/jobs").ApifyKeyStatus>(
       "/jobs/apify-key",
@@ -1052,6 +1054,7 @@ class ApiService {
       { method: "DELETE" },
     );
   }
+  --- APIFY DISABLED (temporary) --- */
 
   async suggestPipelineFilters() {
     return this.request<{ suggestions: import("../types/jobs").SmartFilterSuggestions }>(

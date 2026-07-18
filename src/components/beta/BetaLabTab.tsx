@@ -344,6 +344,7 @@ export default function BetaLabTab() {
         </Card>
 
         {/* ─── #7 Recruiter scrape (stub) ────────────────────────────── */}
+        {/* --- APIFY DISABLED (temporary): Apify recruiter-scrape stub card hidden. Restore to re-enable. ---
         <StubCard
           icon={<Globe className="h-4 w-4 text-rose-500" />}
           title="LinkedIn Recruiter Auto-Discover"
@@ -351,6 +352,7 @@ export default function BetaLabTab() {
           eta="2 weeks"
           onNotify={() => notify('LinkedIn auto-discover')}
         />
+        --- APIFY DISABLED (temporary) --- */}
 
         {/* ─── #9 Co-applicant (stub) ────────────────────────────────── */}
         <StubCard

@@ -7,7 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import type { ConnectStatus } from "@/types/career";
 import GmailIntegration from "@/components/resume/GmailIntegration";
-import { ApifyKeyCard } from "@/components/job-search/ApifyKeyCard";
+// import { ApifyKeyCard } from "@/components/job-search/ApifyKeyCard";  // APIFY DISABLED (temporary)
 
 type Provider = "github" | "linkedin";
 
@@ -188,7 +188,7 @@ export default function IntegrationsPanel() {
         )}
       </section>
 
-      {/* Personal Apify key */}
+      {/* --- APIFY DISABLED (temporary): BYO Apify key card hidden. Restore to re-enable. ---
       <section className="space-y-3">
         <SectionHeading
           title="Job search"
@@ -196,6 +196,7 @@ export default function IntegrationsPanel() {
         />
         <ApifyKeyCard />
       </section>
+      --- APIFY DISABLED (temporary) --- */}
     </div>
   );
 }

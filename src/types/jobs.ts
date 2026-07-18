@@ -71,11 +71,12 @@ export interface PipelinePreset {
   updated_at?: string;
 }
 
-export interface ApifyKeyStatus {
-  has_key: boolean;
-  masked?: string;
-  updated_at?: string | null;
-}
+// --- APIFY DISABLED (temporary): restore to re-enable the BYO Apify-key UI. ---
+// export interface ApifyKeyStatus {
+//   has_key: boolean;
+//   masked?: string;
+//   updated_at?: string | null;
+// }
 
 export interface SmartFilterIntent {
   primary: string;
@@ -123,7 +124,7 @@ export interface DailyPipelineResult {
   past_days: number;
   cutoff: string;
   credits_exhausted?: boolean;
-  used_user_apify_key?: boolean;
+  // used_user_apify_key?: boolean;  // APIFY DISABLED (temporary)
   raw_counts: {
     linkedin: number;
     workday: number;

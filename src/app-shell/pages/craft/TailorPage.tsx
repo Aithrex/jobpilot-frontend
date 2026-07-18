@@ -907,7 +907,7 @@ export default function TailorPage() {
   return (
     <div className="space-y-5">
       <StreakWidget />
-      <SmartFiltersInline />
+      {/* APIFY DISABLED (temporary): <SmartFiltersInline /> feeds the hidden Apify pipeline. Restore to re-enable. */}
 
       <ProgressStepper currentStep={currentStep} />
 

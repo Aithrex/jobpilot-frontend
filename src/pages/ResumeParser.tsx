@@ -2028,7 +2028,7 @@ function TailorTab() {
     >
       <StreakWidget />
 
-      <SmartFiltersInline />
+      {/* APIFY DISABLED (temporary): <SmartFiltersInline /> feeds the hidden Apify pipeline. Restore to re-enable. */}
 
       {/* Horizontal progress stepper */}
       <div className="rounded-2xl border border-gray-200 dark:border-white/[0.07] bg-white/60 dark:bg-gray-900/40 backdrop-blur-sm px-4 sm:px-8 py-4 shadow-sm">

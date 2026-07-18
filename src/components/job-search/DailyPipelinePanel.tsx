@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ChipsInput } from './ChipsInput';
-import { ApifyKeyCard } from './ApifyKeyCard';
+// import { ApifyKeyCard } from './ApifyKeyCard';  // APIFY DISABLED (temporary)
 import { ReachOutModal } from './ReachOutModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiService } from '@/lib/api';
@@ -1062,9 +1062,11 @@ export function DailyPipelinePanel({
   const [matchScores, setMatchScores] = useState<Record<string, MatchScore>>({});
   const [matchScoresLoading, setMatchScoresLoading] = useState(false);
   const [matchScoresHasResume, setMatchScoresHasResume] = useState<boolean>(true);
+  // --- APIFY DISABLED (temporary): BYO Apify-key card state removed. Restore
+  // the line below to re-enable. ---
   // Bumped each time we want to pop the Apify key card open (e.g. after a
   // credit-exhausted run). The card only reacts when this value changes.
-  const [apifyForceOpen, setApifyForceOpen] = useState<number | undefined>(undefined);
+  // const [apifyForceOpen, setApifyForceOpen] = useState<number | undefined>(undefined);
   const prefilledRef = useRef<boolean>(persisted?.prefilledFromResume ?? false);
 
   // Persist
@@ -1363,7 +1365,7 @@ export function DailyPipelinePanel({
       setOpenedIds((prev) => prev.filter((id) => liveIds.has(id)));
     } catch { /* best effort */ }
     if (resp.data.credits_exhausted) {
-      setApifyForceOpen(Date.now());
+      // setApifyForceOpen(Date.now());  // APIFY DISABLED (temporary)
       toast.error(
         'Apify credits are exhausted. Update your API key to keep running the pipeline.',
         { duration: 8000 },
@@ -2024,7 +2026,7 @@ export function DailyPipelinePanel({
   return (
     <div className="space-y-6">
       {/* BYO Apify key */}
-      <ApifyKeyCard forceOpenSignal={apifyForceOpen} />
+      {/* APIFY DISABLED (temporary): <ApifyKeyCard forceOpenSignal={apifyForceOpen} /> */}
 
       {/* Hero / config */}
       <Card className="overflow-hidden border-gray-200/80 dark:border-white/[0.08] bg-white/90 dark:bg-gray-900/50 bg-gradient-to-br from-purple-500/5 via-transparent to-indigo-500/5 dark:from-transparent dark:via-transparent dark:to-transparent">
@@ -2564,7 +2566,7 @@ export function DailyPipelinePanel({
                 </div>
                 <Button
                   size="sm"
-                  onClick={() => setApifyForceOpen(Date.now())}
+                  onClick={() => { /* APIFY DISABLED (temporary) */ }}
                   className="gap-1.5 bg-gradient-to-r from-red-500 to-rose-500 text-white hover:opacity-90"
                 >
                   <Sparkles className="h-3.5 w-3.5" />
