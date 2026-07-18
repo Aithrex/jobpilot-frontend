@@ -1,13 +1,12 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { CalendarClock, MapPin, Minus, ShieldCheck } from 'lucide-react';
+import { ShieldAlert, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
-  CountUp,
   DemoStage,
   IllustrativeTag,
   MOTION,
   Monogram,
-  Panel,
   SegButton,
   SegGroup,
   StepIn,
@@ -16,200 +15,339 @@ import {
 } from './_kit';
 
 /**
- * Sponsorship intelligence — Vision: never waste an application on a company
- * that won't sponsor you. A job card reveals HONEST, public-data-shaped H-1B
- * facts (sponsor volume · approval rate · fiscal year), and a calm, never
- * punitive "no recent filings" state for the rest — tied to the OPT clock so
- * the urgency is real. Numbers are labelled illustrative (shaped from public
- * DOL H-1B disclosure data), never a fabricated measured claim.
+ * Sponsorship intelligence — an EVIDENCE PANEL in two acts.
+ *
+ * Act 1 (the mechanic): a feed of four postings is swept by a scan beam and
+ * resolves live — two earn DOL-shaped sponsor badges (filings + approval),
+ * one flips gray "no filings" and strikes through, one flips red GHOST
+ * POSTING (47 days stale, reposted 6x) and takes the scam-shield stamp.
+ *
+ * Act 2 (the payoff): a comparative strip fades up in the reserved verdict
+ * zone — APPLYING BLIND (a bar leaking red/gray, "1 in 3: ghost") vs WITH
+ * ASPIRELY (a solid indigo-to-emerald bar, "0 wasted").
+ *
+ * Deterministic: constant data, fixed step durations, no randomness. The loop
+ * is in-view gated, pauses on hover/focus, and under reduced motion parks on
+ * the composed end state (resolved feed + payoff). Company facts are labelled
+ * illustrative; every color is a semantic token.
  */
 
-type Company = {
-  name: string;
+type Verdict = 'sponsor' | 'none' | 'ghost';
+
+type Posting = {
+  company: string;
   role: string;
-  location: string;
-  match: number;
-  sponsors: boolean;
-  // sponsor facts (illustrative, public-data shape)
-  approvals?: number;
-  approvalRate?: number;
-  // OPT urgency
-  optDays: number;
+  verdict: Verdict;
+  filings?: number;
+  approval?: number;
+  /** the loop step at which this row resolves */
+  resolveAt: number;
 };
 
-const COMPANIES: Company[] = [
-  {
-    name: 'Meridian Labs',
-    role: 'Senior Backend Engineer',
-    location: 'San Francisco, CA',
-    match: 94,
-    sponsors: true,
-    approvals: 1240,
-    approvalRate: 92,
-    optDays: 214,
-  },
-  {
-    name: 'Northwind Retail',
-    role: 'Data Analyst',
-    location: 'Austin, TX',
-    match: 86,
-    sponsors: false,
-    optDays: 214,
-  },
+const POSTINGS: Posting[] = [
+  { company: 'Meridian Labs', role: 'Backend Engineer', verdict: 'sponsor', filings: 214, approval: 92, resolveAt: 1 },
+  { company: 'Northwind Retail', role: 'Data Analyst', verdict: 'none', resolveAt: 2 },
+  { company: 'Cobalt Health', role: 'Data Engineer', verdict: 'sponsor', filings: 87, approval: 89, resolveAt: 2 },
+  { company: 'Apex Talent Group', role: 'Software Engineer', verdict: 'ghost', resolveAt: 3 },
 ];
 
-const OPT_TOTAL = 365; // F-1 OPT window (days) — illustrative frame for the clock
+/** Step at which the comparative payoff takes over the verdict zone. */
+const PAYOFF = 4;
+/** Fixed per-step dwell (ms) — the whole loop runs about 9 seconds. */
+const DURS = [1500, 1100, 1200, 1800, 3600];
 
-function MatchRing({ value }: { value: number }) {
-  const r = 15;
-  const c = 2 * Math.PI * r;
+/** Left meter: applications leaking to ghosts (red) and non-sponsors (gray). */
+const LEAK: { tone: 'gray' | 'red'; drains: boolean }[] = [
+  { tone: 'gray', drains: false },
+  { tone: 'red', drains: true },
+  { tone: 'gray', drains: true },
+  { tone: 'gray', drains: false },
+  { tone: 'red', drains: true },
+  { tone: 'gray', drains: true },
+];
+/** Right meter: every application lands — indigo into emerald. */
+const LAND: ('primary' | 'success')[] = ['primary', 'primary', 'primary', 'primary', 'success', 'success'];
+
+function VerdictBadge({ row, resolved, reduce }: { row: Posting; resolved: boolean; reduce: boolean }) {
+  if (!resolved) {
+    return (
+      <span className="font-mono text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/70">
+        Scanning
+      </span>
+    );
+  }
+  if (row.verdict === 'sponsor') {
+    return (
+      <StepIn show reduce={reduce} y={4}>
+        <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-success/30 bg-success/10 px-2 py-1 font-mono text-[9px] font-bold uppercase tracking-wide text-success">
+          <ShieldCheck className="h-3 w-3 shrink-0" aria-hidden />
+          H1B<span className="hidden sm:inline"> · {row.filings} filings</span> · {row.approval}% approval
+        </span>
+      </StepIn>
+    );
+  }
+  if (row.verdict === 'none') {
+    return (
+      <StepIn show reduce={reduce} y={4}>
+        <span className="inline-flex items-center whitespace-nowrap rounded-full border border-border bg-muted/60 px-2 py-1 font-mono text-[9px] font-bold uppercase tracking-wide text-muted-foreground">
+          No filings
+        </span>
+      </StepIn>
+    );
+  }
   return (
-    <div className="relative grid h-11 w-11 place-items-center">
-      <svg viewBox="0 0 40 40" className="h-11 w-11 -rotate-90">
-        <circle cx="20" cy="20" r={r} fill="none" strokeWidth={3.5} className="stroke-muted" />
-        <motion.circle
-          cx="20"
-          cy="20"
-          r={r}
-          fill="none"
-          strokeWidth={3.5}
-          strokeLinecap="round"
-          className="stroke-primary"
-          strokeDasharray={c}
-          initial={false}
-          animate={{ strokeDashoffset: c - (value / 100) * c }}
-          transition={{ duration: MOTION.settle, ease: MOTION.ease }}
-        />
-      </svg>
-      <span className="absolute font-display text-[11px] font-bold tabular-nums text-foreground">{value}</span>
-    </div>
+    <StepIn show reduce={reduce} y={4}>
+      <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-destructive/30 bg-destructive/10 px-2 py-1 font-mono text-[9px] font-bold uppercase tracking-wide text-destructive">
+        <ShieldAlert className="h-3 w-3 shrink-0" aria-hidden />
+        Ghost posting
+      </span>
+    </StepIn>
+  );
+}
+
+function FeedRow({ row, step, reduce }: { row: Posting; step: number; reduce: boolean }) {
+  const resolved = step >= row.resolveAt;
+  const payoff = step >= PAYOFF;
+  const dimmed = resolved && row.verdict !== 'sponsor';
+  return (
+    <motion.div
+      initial={false}
+      animate={{ opacity: dimmed ? (payoff ? 0.45 : 0.6) : 1 }}
+      transition={{ duration: reduce ? 0 : MOTION.settle, ease: MOTION.ease }}
+      className={cn(
+        'relative flex h-[42px] items-center gap-2.5 rounded-control border px-2.5',
+        resolved && row.verdict === 'sponsor'
+          ? 'border-success/25 bg-success/[0.05]'
+          : resolved && row.verdict === 'ghost'
+            ? 'border-destructive/25 bg-destructive/[0.04]'
+            : 'border-border bg-card',
+      )}
+    >
+      <Monogram name={row.company} className="h-7 w-7 rounded-[6px] text-[12px]" />
+      <div className="min-w-0 flex-1 leading-tight">
+        <p
+          className={cn(
+            'truncate text-[12.5px] font-semibold text-foreground',
+            resolved && row.verdict === 'none' && 'line-through decoration-muted-foreground/70',
+          )}
+        >
+          {row.company}
+        </p>
+        {resolved && row.verdict === 'ghost' ? (
+          <p className="truncate font-mono text-[9px] font-bold uppercase tracking-wide text-destructive">
+            47 days stale · reposted 6x
+          </p>
+        ) : (
+          <p className="truncate text-[10.5px] text-muted-foreground">{row.role}</p>
+        )}
+      </div>
+      <VerdictBadge row={row} resolved={resolved} reduce={reduce} />
+
+      {/* scam-shield stamp on the ghost row */}
+      {resolved && row.verdict === 'ghost' && (
+        <motion.span
+          aria-hidden
+          style={{ left: '38%', x: '-50%' }}
+          initial={reduce ? false : { opacity: 0, scale: 1.6, rotate: -14 }}
+          animate={{ opacity: 1, scale: 1, rotate: -7 }}
+          transition={{ duration: reduce ? 0 : MOTION.micro, delay: reduce ? 0 : 0.55, ease: MOTION.ease }}
+          className="pointer-events-none absolute inline-flex items-center gap-1 rounded-[4px] border-2 border-destructive/60 bg-card/85 px-1.5 py-0.5 font-mono text-[8px] font-bold uppercase tracking-[0.2em] text-destructive"
+        >
+          <ShieldAlert className="h-2.5 w-2.5" aria-hidden /> Shielded
+        </motion.span>
+      )}
+    </motion.div>
+  );
+}
+
+function TallyStat({ n, label, tone }: { n: number; label: string; tone: 'success' | 'muted' | 'destructive' }) {
+  return (
+    <span className="inline-flex items-baseline gap-1.5 font-mono uppercase">
+      <span
+        className={cn(
+          'text-[15px] font-bold tabular-nums',
+          tone === 'success' && 'text-success',
+          tone === 'muted' && 'text-muted-foreground',
+          tone === 'destructive' && 'text-destructive',
+        )}
+      >
+        {n}
+      </span>
+      <span className="text-[9px] font-semibold tracking-widest text-muted-foreground">{label}</span>
+    </span>
   );
 }
 
 export function SponsorshipDemo() {
   const { ref, active, reduce } = useDemoInView<HTMLDivElement>();
-  // rest on the sponsor (step 0) under reduced motion — the honest H-1B facts
-  // are the point of this demo.
-  const { step, set } = useDemoLoop(COMPANIES.length, { active, reduce, durations: 3400, restAt: 0 });
-  const c = COMPANIES[step];
-  const optPct = Math.round(((OPT_TOTAL - c.optDays) / OPT_TOTAL) * 100);
+  // Pause the timeline while the pointer or keyboard focus is on the demo.
+  const [held, setHeld] = useState(false);
+  const running = active && !held;
+  const { step, set } = useDemoLoop(DURS.length, { active: running, reduce, durations: DURS });
+  const payoffOn = step >= PAYOFF;
 
-  const label = c.sponsors
-    ? `Job card for ${c.role} at ${c.name}: ${c.match} percent match, verified H-1B sponsor with about ${c.approvals} approvals and ${c.approvalRate} percent approval rate in fiscal year 2024 (illustrative, public data), with ${c.optDays} days left on the OPT clock.`
-    : `Job card for ${c.role} at ${c.name}: ${c.match} percent match, no recent H-1B filings found. Aspirely will flag it if that changes.`;
+  const counts = {
+    verified: POSTINGS.filter((r) => r.verdict === 'sponsor' && step >= r.resolveAt).length,
+    none: POSTINGS.filter((r) => r.verdict === 'none' && step >= r.resolveAt).length,
+    ghost: POSTINGS.filter((r) => r.verdict === 'ghost' && step >= r.resolveAt).length,
+  };
+
+  const label =
+    'Live scan of four job postings. Two resolve as verified H1B sponsors with filing counts and approval rates, one shows no filings and is struck through, and one is caught by the scam shield as a ghost posting, 47 days stale and reposted six times. A comparison follows: applying blind leaks applications to ghosts and non sponsors, roughly one in three postings is a ghost, while with Aspirely every application lands on a verified sponsor and zero are wasted. Figures are illustrative, shaped from public DOL data.';
 
   return (
-    <div ref={ref}>
-      <DemoStage label={label} reserve={356} className="p-4 sm:p-5">
-        {/* ambient scan sweep — the single loop element */}
-        {!reduce && (
-          <motion.div
-            aria-hidden
-            className="pointer-events-none absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-transparent via-primary/[0.06] to-transparent"
-            initial={{ x: '-40%' }}
-            animate={active ? { x: ['-40%', '340%'] } : { x: '-40%' }}
-            transition={{ duration: 3.4, ease: 'easeInOut', repeat: Infinity, repeatDelay: 0 }}
-            key={step}
-          />
-        )}
-
-        <div className="relative flex h-full flex-col">
-          {/* header */}
-          <div className="flex items-start gap-3">
-            <Monogram name={c.name} />
-            <div className="min-w-0 flex-1">
-              <p className="truncate font-display text-h3 font-bold text-foreground">{c.name}</p>
-              <p className="truncate text-caption text-muted-foreground">{c.role}</p>
-            </div>
-            <MatchRing value={c.match} />
-          </div>
-
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/40 px-2 py-0.5 text-[11px] text-muted-foreground">
-              <MapPin className="h-3 w-3" aria-hidden /> {c.location}
-            </span>
-            <span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/40 px-2 py-0.5 text-[11px] text-muted-foreground">
-              <CalendarClock className="h-3 w-3" aria-hidden /> New today
-            </span>
-          </div>
-
-          {/* verdict — fixed min-height so swapping states never shifts layout */}
-          <Panel
-            className={cn(
-              'mt-3 flex min-h-[104px] flex-col justify-center gap-1.5 p-3.5',
-              c.sponsors ? 'border-success/30 bg-success/[0.06]' : 'bg-muted/30',
-            )}
-          >
-            <div className="flex items-center gap-2">
-              {c.sponsors ? (
-                <ShieldCheck className="h-4 w-4 shrink-0 text-success" aria-hidden />
-              ) : (
-                <Minus className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
-              )}
-              <span className="text-body font-semibold text-foreground">
-                {c.sponsors ? 'Verified H-1B sponsor' : 'No recent H-1B filings'}
-              </span>
-            </div>
-
-            {c.sponsors ? (
-              <StepIn show reduce={reduce} className="pl-6">
-                <p className="text-caption text-foreground">
-                  <span className="font-display font-bold text-foreground">
-                    ~
-                    <CountUp key={`ap-${step}`} target={c.approvals!} run={active} reduce={reduce} dur={800} />
-                  </span>{' '}
-                  approvals ·{' '}
-                  <span className="font-display font-bold text-foreground">
-                    <CountUp
-                      key={`rt-${step}`}
-                      target={c.approvalRate!}
-                      run={active}
-                      reduce={reduce}
-                      dur={800}
-                      format={(n) => `${n}%`}
-                    />
-                  </span>{' '}
-                  approval · <span className="tabular-nums">FY24</span>
-                </p>
-                <div className="mt-1.5">
-                  <IllustrativeTag>Illustrative · public DOL data</IllustrativeTag>
-                </div>
-              </StepIn>
-            ) : (
-              <p className="pl-6 text-caption text-muted-foreground">
-                We&apos;ll flag this role the moment sponsorship signals appear. No wasted application.
-              </p>
-            )}
-          </Panel>
-
-          {/* OPT clock — real urgency, calm (warning, never alarm-red) */}
-          <div className="mt-auto pt-3">
-            <div className="flex items-center justify-between text-[11px]">
-              <span className="font-medium text-foreground">OPT clock</span>
-              <span className="tabular-nums text-muted-foreground">
-                {c.optDays} of {OPT_TOTAL} days left
-              </span>
-            </div>
-            <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-              <motion.div
-                className="h-full rounded-full bg-warning"
-                initial={false}
-                animate={{ width: `${optPct}%` }}
-                transition={{ duration: MOTION.settle, ease: MOTION.ease }}
+    <div
+      ref={ref}
+      onMouseEnter={() => setHeld(true)}
+      onMouseLeave={() => setHeld(false)}
+      onFocusCapture={() => setHeld(true)}
+      onBlurCapture={() => setHeld(false)}
+    >
+      <DemoStage label={label} reserve={356} className="p-4">
+        <div className="flex h-full flex-col">
+          {/* header — scan status + the OPT clock urgency chip */}
+          <div className="flex h-5 items-center justify-between">
+            <span className="inline-flex items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+              <motion.span
+                aria-hidden
+                className="h-1.5 w-1.5 rounded-full bg-success"
+                animate={running && !payoffOn ? { opacity: [1, 0.3, 1] } : { opacity: 1 }}
+                transition={{ duration: 1.4, repeat: running && !payoffOn ? Infinity : 0, ease: 'easeInOut' }}
               />
+              <span className="hidden sm:inline">Sponsor&nbsp;</span>Scan
+            </span>
+            <span className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-warning/40 bg-warning/10 px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider text-foreground">
+                <motion.span
+                  aria-hidden
+                  className="h-1.5 w-1.5 rounded-full bg-warning"
+                  animate={running ? { opacity: [1, 0.35, 1] } : { opacity: 1 }}
+                  transition={{ duration: 1, repeat: running ? Infinity : 0, ease: 'easeInOut' }}
+                />
+                OPT · 214 days
+              </span>
+              <IllustrativeTag className="px-1.5 text-[9px]">Illustrative</IllustrativeTag>
+            </span>
+          </div>
+
+          {/* Act 1 — the feed, swept by the scan beam */}
+          <div className="relative mt-2.5 h-[186px] overflow-hidden">
+            {!reduce && running && !payoffOn && (
+              <motion.div
+                aria-hidden
+                className="pointer-events-none absolute inset-x-0 top-0 z-10 h-9 bg-gradient-to-b from-transparent via-primary/[0.08] to-transparent"
+                initial={{ y: -36 }}
+                animate={{ y: [-36, 186] }}
+                transition={{ duration: 1.5, ease: 'easeInOut', repeat: Infinity, repeatDelay: 0.35 }}
+              />
+            )}
+            <div className="flex flex-col gap-1.5">
+              {POSTINGS.map((row) => (
+                <FeedRow key={row.company} row={row} step={step} reduce={reduce} />
+              ))}
             </div>
+          </div>
+
+          {/* verdict zone — fixed height, so Act 2 never shifts layout */}
+          <div className="relative mt-2.5 h-[96px]">
+            {/* Act 1 tally */}
+            <motion.div
+              initial={false}
+              animate={{ opacity: payoffOn ? 0 : 1, y: payoffOn && !reduce ? -8 : 0 }}
+              transition={{ duration: reduce ? 0 : MOTION.settle, ease: MOTION.ease }}
+              className="absolute inset-0 flex items-center justify-center gap-4 rounded-control border border-dashed border-border sm:gap-6"
+            >
+              <TallyStat n={counts.verified} label="Verified" tone="success" />
+              <TallyStat n={counts.none} label="No filings" tone="muted" />
+              <TallyStat n={counts.ghost} label="Ghost" tone="destructive" />
+            </motion.div>
+
+            {/* Act 2 — the comparative payoff */}
+            <motion.div
+              initial={false}
+              animate={{ opacity: payoffOn ? 1 : 0, y: payoffOn || reduce ? 0 : 10 }}
+              transition={{ duration: reduce ? 0 : MOTION.settle, ease: MOTION.ease }}
+              className="absolute inset-0 grid grid-cols-2 gap-2"
+            >
+              {/* applying blind — the bar leaks */}
+              <div className="flex flex-col justify-between rounded-control border border-border bg-muted/30 p-2.5">
+                <p className="font-mono text-[8.5px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                  Applying blind
+                </p>
+                <div className="flex gap-1" aria-hidden>
+                  {LEAK.map((seg, i) => (
+                    <motion.span
+                      key={i}
+                      initial={false}
+                      animate={{ opacity: payoffOn && seg.drains ? 0.25 : 1 }}
+                      transition={{
+                        duration: reduce ? 0 : MOTION.micro,
+                        delay: reduce ? 0 : 0.35 + i * 0.09,
+                        ease: MOTION.ease,
+                      }}
+                      className={cn(
+                        'h-1.5 flex-1 rounded-full',
+                        seg.tone === 'red' ? 'bg-destructive/70' : 'bg-muted-foreground/40',
+                      )}
+                    />
+                  ))}
+                </div>
+                <div className="leading-tight">
+                  <p className="font-mono text-[12px] font-bold uppercase tracking-tight text-foreground sm:text-[13px]">
+                    1 in 3: ghost
+                  </p>
+                  <p className="font-mono text-[8px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                    Applications leak
+                  </p>
+                </div>
+              </div>
+
+              {/* with Aspirely — every application lands */}
+              <div className="flex flex-col justify-between rounded-control border border-primary/25 bg-primary/[0.04] p-2.5">
+                <p className="font-mono text-[8.5px] font-bold uppercase tracking-[0.18em] text-primary">
+                  With Aspirely
+                </p>
+                <div className="flex gap-1" aria-hidden>
+                  {LAND.map((tone, i) => (
+                    <motion.span
+                      key={i}
+                      initial={false}
+                      animate={{ scaleX: payoffOn || reduce ? 1 : 0 }}
+                      transition={{
+                        duration: reduce ? 0 : MOTION.micro,
+                        delay: reduce ? 0 : 0.35 + i * 0.09,
+                        ease: MOTION.ease,
+                      }}
+                      className={cn(
+                        'h-1.5 flex-1 origin-left rounded-full',
+                        tone === 'success' ? 'bg-success' : 'bg-primary',
+                      )}
+                    />
+                  ))}
+                </div>
+                <div className="leading-tight">
+                  <p className="font-mono text-[12px] font-bold uppercase tracking-tight text-foreground sm:text-[13px]">
+                    0 wasted
+                  </p>
+                  <p className="font-mono text-[8px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                    Verified sponsors only
+                  </p>
+                </div>
+              </div>
+            </motion.div>
           </div>
         </div>
       </DemoStage>
 
-      {/* real, keyboard-operable controls */}
+      {/* real, keyboard-operable act controls */}
       <div className="mt-3 flex items-center justify-center">
-        <SegGroup label="Preview a company">
-          {COMPANIES.map((co, i) => (
-            <SegButton key={co.name} active={step === i} onClick={() => set(i)}>
-              {co.name}
-            </SegButton>
-          ))}
+        <SegGroup label="Choose an act">
+          <SegButton active={!payoffOn} onClick={() => set(0)}>
+            Live scan
+          </SegButton>
+          <SegButton active={payoffOn} onClick={() => set(PAYOFF)}>
+            The payoff
+          </SegButton>
         </SegGroup>
       </div>
     </div>

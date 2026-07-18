@@ -1,5 +1,5 @@
 import { lazy, type CSSProperties } from 'react';
-import { ShieldCheck, Smartphone, Sparkles, Target } from 'lucide-react';
+import { CalendarClock, ShieldCheck, Smartphone, Sparkles, Target } from 'lucide-react';
 import { LandingNav } from './LandingNav';
 import { Hero } from './Hero';
 import { PitchSection } from './pitch/PitchSection';
@@ -10,15 +10,19 @@ import { IntegrityBand } from './IntegrityBand';
 import { Pricing } from './Pricing';
 import { CloseCTA } from './CloseCTA';
 import { LandingFooter } from './LandingFooter';
+import { JourneyStepper } from './_shared';
 
 /**
  * Aspirely's public landing — a LIGHT, professional, product-first job
  * platform page. The opening SHOWS the product working (the hero's live
- * matching-jobs panel), then the animated feature demos carry the rest:
+ * matching-jobs panel); then the feature area reads as a numbered JOURNEY —
+ * five chapters under a sticky stepper that tracks scroll:
  *
  *   Hero (light, with the live jobs panel) · Pitch · Vision & Mission
- *   1 · Sponsorship intelligence   2 · One-tap apply, from WhatsApp
- *   3 · Become the candidate       4 · The growth loop (+ Track)
+ *   [Journey stepper: 01 Find · 02 Apply · 03 Craft · 04 Grow · 05 Track]
+ *   01 FIND  sponsorship intelligence     02 APPLY  one-tap from WhatsApp
+ *   03 CRAFT resume tailoring             04 GROW   the growth loop
+ *   05 TRACK pipeline board + the clock (new)
  *   Constellation (the full breadth) · Integrity · Pricing · Close
  *
  * Every demo composes the shared motion kit (demos/_kit.tsx): one timing/easing
@@ -33,7 +37,7 @@ const SponsorshipDemo = lazy(() => import('./demos/SponsorshipDemo'));
 const WhatsAppApplyDemo = lazy(() => import('./demos/WhatsAppApplyDemo'));
 const TailorDemo = lazy(() => import('./demos/TailorDemo'));
 const GrowthLoopDemo = lazy(() => import('./demos/GrowthLoopDemo'));
-const TrackStrip = lazy(() => import('./demos/GrowthLoopDemo').then((m) => ({ default: m.TrackStrip })));
+const TrackDemo = lazy(() => import('./demos/TrackDemo'));
 
 /**
  * The landing's LIGHT surface — one deliberate professional look in BOTH app
@@ -96,94 +100,129 @@ export default function LandingExperience() {
 
         <VisionMission />
 
-        {/* 1 · Sponsorship intelligence */}
-        <FeatureSection
-          id="sponsorship"
-          index="01"
-          pain="Your OPT clock runs while you apply blind"
-          eyebrow="Sponsorship intelligence"
-          eyebrowIcon={ShieldCheck}
-          title={
-            <>
-              Never waste an application on a company that won&apos;t{' '}
-              <span className="text-primary">sponsor you</span>.
-            </>
-          }
-          subtitle="Honest H-1B facts on every role before you spend one application."
-          demo={<SponsorshipDemo />}
-          reserve={404}
-          caption={{
-            feature: 'Sponsorship intelligence',
-            promise: 'know who actually sponsors before you spend a single application.',
-          }}
-        />
+        {/* ── The journey — five numbered chapters under a sticky stepper.
+            The wrapper div scopes the sticky stepper to the chapters, so it
+            releases naturally once the journey ends. Chapter ids double as
+            the stepper's scroll anchors (legacy ids kept for old links). */}
+        <div>
+          <JourneyStepper />
 
-        {/* 2 · One-tap apply, from WhatsApp */}
-        <FeatureSection
-          id="one-tap-apply"
-          index="02"
-          pain="Mass applying gets you flagged and ignored"
-          eyebrow="One-tap apply"
-          eyebrowIcon={Smartphone}
-          title={
-            <>
-              Wake up to matched jobs. Approve with <span className="text-primary">one tap</span>.
-            </>
-          }
-          subtitle="Five vetted roles on WhatsApp each morning. You approve every apply."
-          demo={<WhatsAppApplyDemo />}
-          reserve={488}
-          flip
-          caption={{
-            feature: 'One-tap apply, even from WhatsApp',
-            promise: 'approve on your phone, finish in your own browser. Nothing runs at volume.',
-          }}
-        />
+          {/* 01 FIND · Sponsorship intelligence */}
+          <FeatureSection
+            id="sponsorship"
+            index="01"
+            chapter="01 FIND"
+            pain="Your OPT clock runs while you apply blind"
+            eyebrow="Sponsorship intelligence"
+            eyebrowIcon={ShieldCheck}
+            title={
+              <>
+                Never waste an application on a company that won&apos;t{' '}
+                <span className="text-primary">sponsor you</span>.
+              </>
+            }
+            subtitle="Honest H-1B facts on every role before you spend one application."
+            demo={<SponsorshipDemo />}
+            reserve={404}
+            caption={{
+              feature: 'Sponsorship intelligence',
+              promise: 'know who actually sponsors before you spend a single application.',
+            }}
+          />
 
-        {/* 3 · Become the candidate they pick */}
-        <FeatureSection
-          id="tailoring"
-          index="03"
-          pain="Recruiters give your resume six seconds"
-          eyebrow="Resume tailoring"
-          eyebrowIcon={Target}
-          title={
-            <>
-              Become the candidate they <span className="text-primary">pick</span>.
-            </>
-          }
-          subtitle="Authored to the JD, built to survive the six second scan."
-          demo={<TailorDemo />}
-          reserve={512}
-          caption={{
-            feature: 'Become the candidate they pick',
-            promise: 'authored to the role, built to survive the 6-second scan.',
-          }}
-        />
+          {/* 02 APPLY · One-tap apply, from WhatsApp */}
+          <FeatureSection
+            id="one-tap-apply"
+            index="02"
+            chapter="02 APPLY"
+            pain="Mass applying gets you flagged and ignored"
+            eyebrow="One-tap apply"
+            eyebrowIcon={Smartphone}
+            title={
+              <>
+                Wake up to matched jobs. Approve with <span className="text-primary">one tap</span>.
+              </>
+            }
+            subtitle="Five vetted roles on WhatsApp each morning. You approve every apply."
+            demo={<WhatsAppApplyDemo />}
+            reserve={488}
+            flip
+            caption={{
+              feature: 'One-tap apply, even from WhatsApp',
+              promise: 'approve on your phone, finish in your own browser. Nothing runs at volume.',
+            }}
+          />
 
-        {/* 4 · The growth loop — the signature differentiator (prominent) + Track */}
-        <FeatureSection
-          id="growth-loop"
-          index="04"
-          pain="Everyone else has your exact resume"
-          eyebrow="The growth loop"
-          eyebrowIcon={Sparkles}
-          title={
-            <>
-              Aspirely <span className="text-primary">compounds</span> your edge.
-            </>
-          }
-          subtitle="Learn, ship verified proof, post, repeat. Your edge compounds."
-          demo={<GrowthLoopDemo />}
-          reserve={440}
-          prominent
-          caption={{
-            feature: 'The growth loop',
-            promise: 'a compounding, GitHub-verified edge that keeps opening doors.',
-          }}
-        >
-          <TrackStrip />
-        </FeatureSection>
+          {/* 03 CRAFT · Become the candidate they pick */}
+          <FeatureSection
+            id="tailoring"
+            index="03"
+            chapter="03 CRAFT"
+            pain="Recruiters give your resume six seconds"
+            eyebrow="Resume tailoring"
+            eyebrowIcon={Target}
+            title={
+              <>
+                Become the candidate they <span className="text-primary">pick</span>.
+              </>
+            }
+            subtitle="Authored to the JD, built to survive the six second scan."
+            demo={<TailorDemo />}
+            reserve={512}
+            caption={{
+              feature: 'Become the candidate they pick',
+              promise: 'authored to the role, built to survive the 6-second scan.',
+            }}
+          />
+
+          {/* 04 GROW · The growth loop — the signature differentiator (prominent).
+              Tracking moved to its own chapter (05), so no TrackStrip here. */}
+          <FeatureSection
+            id="growth-loop"
+            index="04"
+            chapter="04 GROW"
+            pain="Everyone else has your exact resume"
+            eyebrow="The growth loop"
+            eyebrowIcon={Sparkles}
+            title={
+              <>
+                Aspirely <span className="text-primary">compounds</span> your edge.
+              </>
+            }
+            subtitle="Learn, ship verified proof, post, repeat. Your edge compounds."
+            demo={<GrowthLoopDemo />}
+            reserve={440}
+            prominent
+            caption={{
+              feature: 'The growth loop',
+              promise: 'a compounding, GitHub-verified edge that keeps opening doors.',
+            }}
+          />
+
+          {/* 05 TRACK · Pipeline and the clock — replies auto-file to one board,
+              the visa clock stays visible. */}
+          <FeatureSection
+            id="track"
+            index="05"
+            chapter="05 TRACK"
+            pain="Replies get lost and deadlines sneak up"
+            eyebrow="Pipeline and the clock"
+            eyebrowIcon={CalendarClock}
+            title={
+              <>
+                One board catches <span className="text-primary">every reply</span>.
+              </>
+            }
+            subtitle="Invites file themselves. Your visa clock stays in sight."
+            demo={<TrackDemo />}
+            reserve={356}
+            flip
+            caption={{
+              feature: 'Pipeline and the clock',
+              promise: 'replies auto-file to your board and the visa clock stays visible.',
+            }}
+          />
+        </div>
 
         {/* The full breadth — supporting features as a constellation of nodes */}
         <FeatureConstellation />

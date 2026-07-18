@@ -1,4 +1,12 @@
-import { type ReactNode, type CSSProperties, type PointerEvent as ReactPointerEvent, useRef } from 'react';
+import {
+  Fragment,
+  type ReactNode,
+  type CSSProperties,
+  type PointerEvent as ReactPointerEvent,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import {
   motion,
   useReducedMotion,
@@ -125,6 +133,152 @@ export function SectionHeading({
       </h2>
       {subtitle && <p className="mt-4 text-pretty text-base leading-relaxed text-muted-foreground sm:text-lg">{subtitle}</p>}
     </div>
+  );
+}
+
+// ── The product journey stepper ──────────────────────────────────────────────
+
+export interface JourneyStep {
+  /** mono step number, e.g. "01" */
+  number: string;
+  /** 1-word label, e.g. "Find" */
+  label: string;
+  /** id of the chapter section this step tracks + scrolls to */
+  target: string;
+}
+
+/** The five journey chapters (JourneyStepper's default). Targets reuse the
+ *  legacy section ids (old #sponsorship links keep working) plus the new
+ *  #track chapter. Module-private: pass `steps` to override. */
+const JOURNEY_STEPS: JourneyStep[] = [
+  { number: '01', label: 'Find', target: 'sponsorship' },
+  { number: '02', label: 'Apply', target: 'one-tap-apply' },
+  { number: '03', label: 'Craft', target: 'tailoring' },
+  { number: '04', label: 'Grow', target: 'growth-loop' },
+  { number: '05', label: 'Track', target: 'track' },
+];
+
+/** Hairline connector between step pills. `done` = solid indigo; `current` =
+ *  a calm looping indigo fill flowing toward the next step (static hairline
+ *  under reduced motion). */
+function JourneyConnector({ done, current, reduce }: { done: boolean; current: boolean; reduce: boolean }) {
+  return (
+    <span aria-hidden className="relative h-px w-3 shrink-0 overflow-hidden bg-border sm:w-6 lg:w-10">
+      {done && <span className="absolute inset-0 bg-primary" />}
+      {current && !reduce && (
+        <motion.span
+          className="absolute inset-y-0 left-0 w-full origin-left bg-primary/70"
+          initial={{ scaleX: 0 }}
+          animate={{ scaleX: [0, 1] }}
+          transition={{ duration: 2.2, ease: 'easeInOut', repeat: Infinity, repeatDelay: 0.5 }}
+        />
+      )}
+    </span>
+  );
+}
+
+/**
+ * Sticky numbered journey stepper for the feature chapters — sits just below
+ * the fixed nav (top-16, fixed h-14 so it never shifts layout) and tracks
+ * scroll via one IntersectionObserver over the five chapter sections. The
+ * active pill is indigo-filled; passed connectors fill solid; the connector
+ * ahead of the active step animates. Click smooth-scrolls to the chapter
+ * (instant under reduced motion). Horizontally scrollable on mobile, with the
+ * active pill auto-centered. Before any observer fires, step 1 is active.
+ */
+export function JourneyStepper({ steps = JOURNEY_STEPS, className }: { steps?: JourneyStep[]; className?: string }) {
+  const reduce = !!useReducedMotion();
+  const [active, setActive] = useState(0);
+  const listRef = useRef<HTMLDivElement>(null);
+  const btnRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  // One observer, a thin band just above the viewport middle: whichever
+  // chapter crosses it becomes the active step (works in both directions).
+  useEffect(() => {
+    const els = steps
+      .map((s) => document.getElementById(s.target))
+      .filter((el): el is HTMLElement => el !== null);
+    if (els.length === 0 || typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          const i = steps.findIndex((s) => s.target === entry.target.id);
+          if (i >= 0) setActive(i);
+        }
+      },
+      { rootMargin: '-40% 0px -55% 0px', threshold: 0 },
+    );
+    els.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, [steps]);
+
+  // Keep the active pill in view on the mobile strip (no-op when not scrollable).
+  useEffect(() => {
+    const list = listRef.current;
+    const btn = btnRefs.current[active];
+    if (!list || !btn || list.scrollWidth <= list.clientWidth) return;
+    list.scrollTo({
+      left: btn.offsetLeft - list.clientWidth / 2 + btn.clientWidth / 2,
+      behavior: reduce ? 'auto' : 'smooth',
+    });
+  }, [active, reduce]);
+
+  const go = (i: number) => {
+    setActive(i);
+    document.getElementById(steps[i].target)?.scrollIntoView({
+      behavior: reduce ? 'auto' : 'smooth',
+      block: 'start',
+    });
+  };
+
+  return (
+    <nav
+      aria-label="Product journey"
+      className={cn(
+        'sticky top-16 z-30 h-14 border-b border-border bg-background/95 backdrop-blur-md',
+        className,
+      )}
+    >
+      <Container className="h-full">
+        <div ref={listRef} className="scrollbar-hide relative flex h-full items-center gap-1.5 overflow-x-auto sm:gap-2">
+          {steps.map((s, i) => {
+            const isActive = i === active;
+            const isDone = i < active;
+            return (
+              <Fragment key={s.target}>
+                {i > 0 && <JourneyConnector done={i <= active} current={i === active + 1} reduce={reduce} />}
+                <button
+                  ref={(el) => {
+                    btnRefs.current[i] = el;
+                  }}
+                  type="button"
+                  onClick={() => go(i)}
+                  aria-current={isActive ? 'step' : undefined}
+                  className={cn(
+                    'inline-flex h-11 shrink-0 items-center gap-2 rounded-full border px-3.5 transition-colors sm:px-4',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                    isActive
+                      ? 'border-primary bg-primary text-primary-foreground'
+                      : 'border-border bg-card text-muted-foreground hover:border-input hover:text-foreground',
+                  )}
+                >
+                  <span
+                    className={cn(
+                      'font-mono text-[10px] font-bold tabular-nums tracking-[0.12em]',
+                      isActive ? 'text-primary-foreground/85' : isDone ? 'text-primary' : undefined,
+                    )}
+                  >
+                    {s.number}
+                  </span>
+                  <span className="text-[13px] font-medium">{s.label}</span>
+                </button>
+              </Fragment>
+            );
+          })}
+        </div>
+      </Container>
+    </nav>
   );
 }
 

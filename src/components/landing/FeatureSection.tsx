@@ -18,6 +18,12 @@ import { Container, DemoCaption, DemoSkeleton, Eyebrow, LazyMount, Reveal } from
 export interface FeatureSectionProps {
   id: string;
   index: string;
+  /**
+   * Journey chapter marker (e.g. "01 FIND") — a big quiet mono line at the
+   * section top, aligned with the sticky JourneyStepper. Also deepens the
+   * scroll anchor offset so jumps clear nav + stepper.
+   */
+  chapter?: string;
   /** One-line pain statement, set above the eyebrow in warm mono caps. */
   pain?: string;
   eyebrow: string;
@@ -37,6 +43,19 @@ export interface FeatureSectionProps {
   /** optional extra content below the demo (e.g. the Track strip) */
   children?: ReactNode;
   className?: string;
+}
+
+/** Big, quiet chapter marker — mono caps with wide tracking. Decorative
+ *  (aria-hidden): the stepper + heading already carry the structure for AT. */
+function ChapterMarker({ children }: { children: string }) {
+  return (
+    <p
+      aria-hidden
+      className="select-none font-mono text-sm font-semibold uppercase tracking-[0.3em] text-muted-foreground sm:text-base"
+    >
+      {children}
+    </p>
+  );
 }
 
 function Copy({
@@ -94,6 +113,7 @@ function Media({ reserve, caption, demo }: Pick<FeatureSectionProps, 'reserve' |
 export function FeatureSection({
   id,
   index,
+  chapter,
   pain,
   eyebrow,
   eyebrowIcon,
@@ -115,8 +135,13 @@ export function FeatureSection({
 
   if (prominent) {
     return (
-      <section id={id} className={cn('scroll-mt-16 py-20 sm:py-28', band, className)}>
+      <section id={id} className={cn(chapter ? 'scroll-mt-32' : 'scroll-mt-16', 'py-20 sm:py-28', band, className)}>
         <Container>
+          {chapter && (
+            <Reveal className="mb-10 sm:mb-12">
+              <ChapterMarker>{chapter}</ChapterMarker>
+            </Reveal>
+          )}
           <Reveal>
             <Copy index={index} pain={pain} eyebrow={eyebrow} eyebrowIcon={eyebrowIcon} title={title} subtitle={subtitle} center />
           </Reveal>
@@ -134,7 +159,14 @@ export function FeatureSection({
   }
 
   return (
-    <section id={id} className={cn('scroll-mt-16 py-16 sm:py-24', band, className)}>
+    <section id={id} className={cn(chapter ? 'scroll-mt-32' : 'scroll-mt-16', 'py-16 sm:py-24', band, className)}>
+      {chapter && (
+        <Container className="mb-10 sm:mb-12">
+          <Reveal>
+            <ChapterMarker>{chapter}</ChapterMarker>
+          </Reveal>
+        </Container>
+      )}
       {/* The demo carries the story: it takes the wider column (3/5) on desktop,
           on whichever side `flip` puts it. */}
       <Container

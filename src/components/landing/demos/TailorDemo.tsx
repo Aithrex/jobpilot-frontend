@@ -1,129 +1,222 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Check, Eye, PenLine } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Check, Eye, FileText, ShieldCheck } from 'lucide-react';
 import {
-  CountUp,
   DemoStage,
+  IllustrativeTag,
   MOTION,
+  Panel,
   ReplayButton,
-  SegButton,
-  SegGroup,
   StepIn,
   useDemoInView,
   useDemoLoop,
 } from './_kit';
 
 /**
- * Become the candidate they pick — Vision: the strongest HONEST version of you
- * for each role. JD keywords lock into your resume and the ATS score rises,
- * then the recruiter's 6-second gaze sweeps it in an F-pattern and settles on
- * the lines that earn the read. Every insertion is authored from your history —
- * the "Authored" mark makes clear nothing is fabricated.
+ * CRAFT evidence panel — tailoring as a live simulation, three acts:
+ *   1 MECHANIC   JD requirement chips fly across and lock into resume lines
+ *                while the ATS ring climbs 58 -> 94.
+ *   2 INTEGRITY  a fifth claim ("6 yrs Java") tries to enter; the
+ *                IntegrityGuard shield blocks it — "NOT IN YOUR HISTORY" —
+ *                and the ledger reads 0 FABRICATED CLAIMS.
+ *   3 PAYOFF     the recruiter's six-second scan sweeps the page (6.0 -> 0);
+ *                the tailored resume survives it, the generic one is struck.
+ * Deterministic ~10s loop, in-view gated, pauses on hover/focus; reduced
+ * motion parks on the composed end state. All data fictional.
  */
 
-const KEYWORDS = ['Kubernetes', 'Go', 'gRPC', 'PostgreSQL', 'Observability'];
-const ATS_BEFORE = 61;
-const ATS_AFTER = 89;
+// keyword + rendered text width (px in the 240x300 resume viewBox)
+const KW = [
+  { t: 'Kubernetes', w: 56 },
+  { t: 'Terraform', w: 50 },
+  { t: 'CI/CD', w: 30 },
+  { t: 'Python', w: 36 },
+] as const;
+const ATS_BEFORE = 58;
+const ATS_AFTER = 94;
+const LAND = 0.42; // seconds between keyword landings
+const ATS_R = 14;
+const ATS_C = 2 * Math.PI * ATS_R;
+// before(hold) -> tailor -> guard -> sweep -> verdict  (~10.0s)
+const STEP_MS = [1200, 2400, 2200, 2400, 1800];
 
-// F-pattern gaze path over the resume viewBox (0 0 240 300)
-const GAZE_X = [46, 188, 46, 172, 46, 60];
-const GAZE_Y = [40, 40, 100, 100, 172, 100];
-
-function useCountdown(from: number, run: boolean, reduce: boolean, dur = 6000) {
-  const [n, setN] = useState(reduce ? 0 : from);
+/** Climb from -> to on cubic ease when `run` flips true; exact under reduce. */
+function useClimb(from: number, to: number, run: boolean, reduce: boolean, dur = 1900) {
+  const [v, setV] = useState(reduce ? to : from);
   useEffect(() => {
-    if (reduce || !run) {
-      setN(reduce ? 0 : from);
+    if (reduce) {
+      setV(to);
+      return;
+    }
+    if (!run) {
+      setV(from);
       return;
     }
     let raf = 0;
     const t0 = performance.now();
     const tick = (t: number) => {
       const p = Math.min(1, (t - t0) / dur);
-      setN(Math.ceil(from * (1 - p)));
+      const e = 1 - Math.pow(1 - p, 3);
+      setV(Math.round(from + (to - from) * e));
       if (p < 1) raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [from, run, reduce, dur]);
-  return n;
+  }, [from, to, run, reduce, dur]);
+  return v;
 }
 
-function ResumeDoc({ tailored, gazing, reduce, active }: { tailored: boolean; gazing: boolean; reduce: boolean; active: boolean }) {
-  // bullet rows; indices 0 & 2 receive keyword insertions (highlighted)
-  const bullets = [0, 1, 2, 3];
-  const hot = [0, 2]; // highlighted bullet indices
+/** 6.0s -> 0.0 countdown in tenths, synced to the gaze sweep. */
+function useGazeTenths(run: boolean, reduce: boolean, dur = 2200) {
+  const [t, setT] = useState(reduce ? 0 : 60);
+  useEffect(() => {
+    if (reduce) {
+      setT(0);
+      return;
+    }
+    if (!run) {
+      setT(60);
+      return;
+    }
+    let raf = 0;
+    const t0 = performance.now();
+    const tick = (now: number) => {
+      const p = Math.min(1, (now - t0) / dur);
+      setT(Math.round(60 * (1 - p)));
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [run, reduce, dur]);
+  return (t / 10).toFixed(1);
+}
+
+// ── The resume page (scales with its panel via viewBox) ──────────────────────
+function ResumePage({ tailored, sweeping, reduce }: { tailored: boolean; sweeping: boolean; reduce: boolean }) {
   return (
     <svg viewBox="0 0 240 300" className="h-full w-full" role="presentation" aria-hidden>
       <defs>
-        <radialGradient id="gaze-heat" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.45" />
-          <stop offset="55%" stopColor="hsl(var(--primary))" stopOpacity="0.16" />
+        <radialGradient id="tailor-heat" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.4" />
+          <stop offset="60%" stopColor="hsl(var(--primary))" stopOpacity="0.14" />
           <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0" />
         </radialGradient>
       </defs>
 
       {/* page */}
-      <rect x="12" y="10" width="216" height="280" rx="10" className="fill-card stroke-border" strokeWidth="1.5" />
+      <rect x="10" y="8" width="220" height="284" rx="10" className="fill-card stroke-border" strokeWidth="1.5" />
 
-      {/* name + title */}
+      {/* name + contact */}
       <motion.rect
-        x="28"
-        y="28"
-        height="11"
+        x="26"
+        y="26"
+        width="112"
+        height="10"
         rx="3"
         className={tailored ? 'fill-primary' : 'fill-muted-foreground'}
         initial={false}
-        animate={{ width: 118, opacity: tailored ? 1 : 0.5 }}
-        transition={{ duration: MOTION.settle, ease: MOTION.ease }}
+        animate={{ opacity: tailored ? 1 : 0.55 }}
+        transition={{ duration: reduce ? 0 : MOTION.settle, ease: MOTION.ease }}
       />
-      <rect x="28" y="46" width="86" height="6" rx="3" className="fill-muted-foreground" opacity="0.4" />
+      <rect x="26" y="43" width="80" height="5" rx="2.5" className="fill-muted-foreground" opacity="0.35" />
 
-      {/* section header */}
-      <rect x="28" y="72" width="60" height="6" rx="3" className="fill-muted-foreground" opacity="0.6" />
-
-      {/* bullets */}
-      {bullets.map((b, i) => {
-        const y = 92 + i * 22;
-        const isHot = hot.includes(i) && tailored;
+      {/* skills — the four lines the chips lock into */}
+      <text x="26" y="74" className="fill-muted-foreground font-mono text-[8px] font-semibold" style={{ letterSpacing: 1.5 }}>
+        SKILLS
+      </text>
+      {KW.map((k, i) => {
+        const y = 86 + i * 24;
+        const delay = reduce ? 0 : i * LAND;
         return (
-          <g key={b}>
-            <circle cx="32" cy={y + 3} r="2" className={isHot ? 'fill-primary' : 'fill-muted-foreground'} opacity={isHot ? 1 : 0.5} />
+          <g key={k.t}>
+            <circle
+              cx="30"
+              cy={y + 4}
+              r="2"
+              className={tailored ? 'fill-primary' : 'fill-muted-foreground'}
+              opacity={tailored ? 1 : 0.45}
+            />
+            {/* generic line, rewritten away */}
             <motion.rect
-              x="40"
+              x="38"
               y={y}
-              height="6"
-              rx="3"
-              className={isHot ? 'fill-primary' : 'fill-muted-foreground'}
+              width="152"
+              height="7"
+              rx="3.5"
+              className="fill-muted-foreground"
               initial={false}
-              animate={{ width: i % 2 === 0 ? 168 : 140, opacity: isHot ? 0.9 : 0.4 }}
-              transition={{ duration: MOTION.settle, ease: MOTION.ease, delay: reduce ? 0 : i * 0.06 }}
+              animate={{ opacity: tailored ? 0 : 0.4 }}
+              transition={{ duration: reduce ? 0 : MOTION.micro, ease: MOTION.ease, delay }}
+            />
+            {/* rewritten line: keyword locks in + rest of the sentence */}
+            <motion.g
+              initial={false}
+              animate={tailored ? { opacity: 1, x: 0 } : { opacity: 0, x: reduce ? 0 : -12 }}
+              transition={{ duration: reduce ? 0 : MOTION.settle, ease: MOTION.ease, delay }}
+            >
+              <text x="38" y={y + 7} className="fill-foreground text-[9px] font-bold">
+                {k.t}
+              </text>
+              <rect x={38 + k.w + 6} y={y + 1} width={158 - k.w} height="6" rx="3" className="fill-muted-foreground" opacity="0.4" />
+            </motion.g>
+            {/* lock flash */}
+            <motion.rect
+              x="24"
+              y={y - 4}
+              width="194"
+              height="16"
+              rx="4"
+              className="fill-primary"
+              initial={false}
+              animate={tailored && !reduce ? { opacity: [0, 0.16, 0] } : { opacity: 0 }}
+              transition={{ duration: 0.7, times: [0, 0.35, 1], delay }}
             />
           </g>
         );
       })}
 
-      {/* second section */}
-      <rect x="28" y="196" width="52" height="6" rx="3" className="fill-muted-foreground" opacity="0.6" />
-      {[0, 1].map((i) => (
-        <rect key={i} x="40" y={214 + i * 20} width={i === 0 ? 160 : 120} height="6" rx="3" className="fill-muted-foreground" opacity="0.35" />
-      ))}
+      {/* impact — where the gaze settles */}
+      <text x="26" y="202" className="fill-muted-foreground font-mono text-[8px] font-semibold" style={{ letterSpacing: 1.5 }}>
+        IMPACT
+      </text>
+      <motion.rect
+        x="38"
+        y="212"
+        width="164"
+        height="7"
+        rx="3.5"
+        className="fill-muted-foreground"
+        initial={false}
+        animate={{ opacity: tailored ? 0 : 0.4 }}
+        transition={{ duration: reduce ? 0 : MOTION.micro, ease: MOTION.ease, delay: reduce ? 0 : 4 * LAND }}
+      />
+      <motion.g
+        initial={false}
+        animate={tailored ? { opacity: 1, x: 0 } : { opacity: 0, x: reduce ? 0 : -12 }}
+        transition={{ duration: reduce ? 0 : MOTION.settle, ease: MOTION.ease, delay: reduce ? 0 : 4 * LAND }}
+      >
+        <text x="38" y="219" className="fill-foreground text-[9px] font-bold">
+          Cut deploy time 43%
+        </text>
+        <rect x="140" y="213" width="62" height="6" rx="3" className="fill-muted-foreground" opacity="0.4" />
+      </motion.g>
+      <rect x="38" y="236" width="130" height="6" rx="3" className="fill-muted-foreground" opacity="0.3" />
+      <rect x="38" y="256" width="150" height="6" rx="3" className="fill-muted-foreground" opacity="0.22" />
 
-      {/* recruiter's gaze heatmap */}
+      {/* the six-second gaze: name -> skills -> impact */}
       {reduce ? (
         <>
-          <circle cx="60" cy="40" r="34" fill="url(#gaze-heat)" />
-          <circle cx="70" cy="100" r="30" fill="url(#gaze-heat)" />
+          <circle cx="70" cy="30" r="30" fill="url(#tailor-heat)" />
+          <circle cx="84" cy="218" r="26" fill="url(#tailor-heat)" />
         </>
       ) : (
-        gazing && (
+        sweeping && (
           <motion.circle
-            r="30"
-            fill="url(#gaze-heat)"
-            initial={{ cx: GAZE_X[0], cy: GAZE_Y[0], opacity: 0 }}
-            animate={active ? { cx: GAZE_X, cy: GAZE_Y, opacity: [0, 1, 1, 1, 1, 1] } : {}}
-            transition={{ duration: 6, ease: 'easeInOut', times: [0, 0.2, 0.4, 0.6, 0.8, 1] }}
+            r="32"
+            fill="url(#tailor-heat)"
+            initial={{ cx: 50, cy: 30, opacity: 0 }}
+            animate={{ cx: [50, 180, 60, 160, 84], cy: [30, 30, 112, 112, 218], opacity: [0, 1, 1, 1, 1] }}
+            transition={{ duration: 2.2, ease: 'easeInOut', times: [0, 0.25, 0.5, 0.72, 1] }}
           />
         )
       )}
@@ -132,136 +225,177 @@ function ResumeDoc({ tailored, gazing, reduce, active }: { tailored: boolean; ga
 }
 
 export function TailorDemo() {
-  const { ref, active, reduce } = useDemoInView<HTMLDivElement>();
-  // 0 = before/raw · 1 = tailored · 2 = gaze sweep
-  const { step, set, replay } = useDemoLoop(3, { active, reduce, durations: [2600, 2800, 6600] });
+  const { ref, inView, reduce } = useDemoInView<HTMLDivElement>();
+  const [held, setHeld] = useState(false);
+  const active = inView && !reduce && !held;
+  const { step, replay } = useDemoLoop(STEP_MS.length, { active, reduce, durations: STEP_MS });
+
   const tailored = step >= 1;
-  const gazing = step >= 2;
-  const ats = tailored ? ATS_AFTER : ATS_BEFORE;
-  const secs = useCountdown(6, active && gazing, reduce);
+  const guarded = step >= 2;
+  const sweeping = step >= 3;
+  const verdict = step >= 4;
 
-  const label = `Resume tailored to a job description: ${KEYWORDS.length} authored keywords lock in and the ATS match score rises from ${ATS_BEFORE} to ${ATS_AFTER}, then a recruiter's 6-second gaze sweeps the page and settles on the name and top achievement.`;
+  const ats = useClimb(ATS_BEFORE, ATS_AFTER, tailored, reduce);
+  const atsTarget = tailored ? ATS_AFTER : ATS_BEFORE;
+  const tenths = useGazeTenths(step === 3, reduce);
+  const secsLabel = reduce || verdict ? '0.0' : step === 3 ? tenths : '6.0';
 
-  const ringR = 26;
-  const ringC = 2 * Math.PI * ringR;
+  const label = `Live tailoring simulation: four job description requirements (Kubernetes, Terraform, CI/CD, Python) lock into resume lines and the ATS match climbs from ${ATS_BEFORE} to ${ATS_AFTER}. A fifth claim, 6 yrs Java, is blocked by IntegrityGuard because it is not in your history; the ledger shows 0 fabricated claims. A recruiter's six second scan then sweeps the page: the tailored resume survives the scan while the generic resume is skipped. Illustrative data.`;
 
   return (
-    <div ref={ref}>
-      <DemoStage label={label} reserve={400} className="p-4 sm:p-5">
-        <div className="grid h-full grid-cols-[1.05fr_1fr] gap-3 sm:gap-4">
-          {/* resume + gaze */}
-          <div className="relative overflow-hidden rounded-control border border-border bg-muted/20 p-1">
-            <ResumeDoc tailored={tailored} gazing={gazing} reduce={reduce} active={active} />
-            {/* gaze label */}
-            <div className="absolute inset-x-2 bottom-2 flex items-center justify-between rounded-[7px] bg-background/85 px-2 py-1 backdrop-blur-sm">
-              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-foreground">
-                <Eye className="h-3 w-3 text-primary" aria-hidden /> Recruiter gaze
+    <div
+      ref={ref}
+      onPointerEnter={() => setHeld(true)}
+      onPointerLeave={() => setHeld(false)}
+      onFocusCapture={() => setHeld(true)}
+      onBlurCapture={() => setHeld(false)}
+    >
+      <DemoStage label={label} reserve={452} className="p-4">
+        <div className="flex h-full flex-col gap-3">
+          <div className="grid min-h-0 flex-1 grid-cols-[0.92fr_1.08fr] gap-3">
+            {/* JD side — the source of every claim */}
+            <Panel className="flex min-h-0 flex-col overflow-hidden p-3">
+              <span className="inline-flex items-center gap-1.5 font-mono text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+                <FileText className="h-3 w-3" aria-hidden /> Job description
               </span>
-              <span className="font-display text-[11px] font-bold tabular-nums text-primary">
-                {reduce ? '6s' : `${gazing ? secs : 6}s`}
-              </span>
-            </div>
-          </div>
+              <p className="mt-1 font-display text-[13px] font-bold leading-tight text-foreground">Platform Engineer</p>
+              <p className="mt-2.5 font-mono text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Requirements</p>
+              <ul className="mt-1.5 space-y-1.5">
+                {KW.map((k, i) => (
+                  <motion.li
+                    key={k.t}
+                    initial={false}
+                    animate={tailored ? { x: 10, opacity: 0.6 } : { x: 0, opacity: 1 }}
+                    transition={{ duration: reduce ? 0 : MOTION.settle, ease: MOTION.ease, delay: reduce ? 0 : i * LAND }}
+                    className="flex items-center justify-between rounded-control border border-primary/30 bg-primary/[0.07] px-2 py-1"
+                  >
+                    <span className="text-[11px] font-medium text-foreground">{k.t}</span>
+                    <motion.span
+                      initial={false}
+                      animate={{ opacity: tailored ? 1 : 0 }}
+                      transition={{ duration: reduce ? 0 : MOTION.micro, delay: reduce ? 0 : i * LAND + 0.2 }}
+                      className="grid h-3.5 w-3.5 place-items-center rounded-full bg-primary text-primary-foreground"
+                      aria-hidden
+                    >
+                      <Check className="h-2.5 w-2.5" strokeWidth={3} />
+                    </motion.span>
+                  </motion.li>
+                ))}
+              </ul>
 
-          {/* ATS + keywords */}
-          <div className="flex flex-col">
-            {/* ATS ring */}
-            <div className="flex items-center gap-3">
-              <div className="relative grid h-[68px] w-[68px] shrink-0 place-items-center">
-                <svg viewBox="0 0 68 68" className="h-[68px] w-[68px] -rotate-90">
-                  <circle cx="34" cy="34" r={ringR} fill="none" strokeWidth="5" className="stroke-muted" />
+              {/* Act 2 — IntegrityGuard intercepts the fabricated claim */}
+              <motion.div
+                initial={false}
+                animate={{ opacity: guarded ? 1 : 0 }}
+                transition={{ duration: reduce ? 0 : MOTION.settle, ease: MOTION.ease }}
+                className="mt-auto border-t border-border pt-2"
+              >
+                <div className="flex items-center gap-1.5">
+                  <motion.span
+                    initial={false}
+                    animate={guarded && !reduce ? { x: [0, 14, 8] } : { x: reduce ? 8 : 0 }}
+                    transition={{ duration: 0.55, times: [0, 0.6, 1], ease: MOTION.ease, delay: reduce ? 0 : 0.15 }}
+                    className="inline-flex items-center rounded-control border border-destructive/40 bg-destructive/[0.06] px-2 py-1 text-[11px] font-medium text-destructive"
+                  >
+                    6 yrs Java
+                  </motion.span>
+                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-success/40 bg-success/10 text-success">
+                    <ShieldCheck className="h-4 w-4" aria-hidden />
+                  </span>
+                  <motion.span
+                    initial={false}
+                    animate={
+                      guarded
+                        ? { opacity: 1, scale: 1, rotate: -3 }
+                        : { opacity: 0, scale: reduce ? 1 : 1.3, rotate: -3 }
+                    }
+                    transition={{ duration: reduce ? 0 : MOTION.micro, ease: MOTION.ease, delay: reduce ? 0 : 0.6 }}
+                    className="ml-auto rounded border-2 border-destructive px-1.5 py-0.5 text-right leading-none"
+                  >
+                    <span className="block font-mono text-[9px] font-bold uppercase tracking-wider text-destructive">Blocked</span>
+                    <span className="mt-0.5 block font-mono text-[7px] font-semibold uppercase tracking-wide text-destructive">
+                      Not in your history
+                    </span>
+                  </motion.span>
+                </div>
+                <motion.p
+                  initial={false}
+                  animate={{ opacity: guarded ? 1 : 0 }}
+                  transition={{ duration: reduce ? 0 : MOTION.micro, delay: reduce ? 0 : 1.1 }}
+                  className="mt-1.5 inline-flex items-center gap-1 font-mono text-[9px] font-bold uppercase tracking-wider text-success"
+                >
+                  <Check className="h-3 w-3" strokeWidth={3} aria-hidden /> 0 fabricated claims
+                </motion.p>
+              </motion.div>
+            </Panel>
+
+            {/* Resume side — where the proof lands */}
+            <Panel className="relative min-h-0 overflow-hidden bg-muted/20 p-1">
+              <ResumePage tailored={tailored} sweeping={sweeping} reduce={reduce} />
+
+              {/* ATS ring, climbing as keywords land */}
+              <div className="absolute right-2 top-2 flex items-center gap-2 rounded-control border border-border bg-background/90 px-2 py-1.5 backdrop-blur-sm">
+                <svg viewBox="0 0 36 36" className="h-8 w-8 -rotate-90" aria-hidden>
+                  <circle cx="18" cy="18" r={ATS_R} fill="none" strokeWidth="3.5" className="stroke-muted" />
                   <motion.circle
-                    cx="34"
-                    cy="34"
-                    r={ringR}
+                    cx="18"
+                    cy="18"
+                    r={ATS_R}
                     fill="none"
-                    strokeWidth="5"
+                    strokeWidth="3.5"
                     strokeLinecap="round"
                     className="stroke-primary"
-                    strokeDasharray={ringC}
+                    strokeDasharray={ATS_C}
                     initial={false}
-                    animate={{ strokeDashoffset: ringC - (ats / 100) * ringC }}
-                    transition={{ duration: 0.9, ease: MOTION.ease }}
+                    animate={{ strokeDashoffset: ATS_C * (1 - atsTarget / 100) }}
+                    transition={{ duration: reduce ? 0 : 1.7, ease: MOTION.ease }}
                   />
                 </svg>
-                <div className="absolute text-center leading-none">
-                  <CountUp
-                    key={`ats-${tailored}`}
-                    target={ats}
-                    run={active}
-                    reduce={reduce}
-                    dur={900}
-                    className="font-display text-lg font-bold text-foreground"
-                  />
+                <div className="leading-none">
+                  <p className="font-mono text-sm font-bold tabular-nums text-foreground">{ats}</p>
+                  <p className="mt-0.5 font-mono text-[8px] font-semibold uppercase tracking-wider text-muted-foreground">ATS</p>
                 </div>
               </div>
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">ATS match</p>
-                <p className="text-caption text-foreground">
-                  {tailored ? (
-                    <span className="text-success">+{ATS_AFTER - ATS_BEFORE} to the JD</span>
-                  ) : (
-                    'raw resume vs JD'
-                  )}
-                </p>
+
+              {/* the six-second timer */}
+              <div className="absolute inset-x-2 bottom-2 flex items-center justify-between rounded-control border border-border bg-background/90 px-2 py-1 backdrop-blur-sm">
+                <span className="inline-flex items-center gap-1 font-mono text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  <Eye className="h-3 w-3 text-primary" aria-hidden /> Recruiter scan
+                </span>
+                <span className="font-mono text-[11px] font-bold tabular-nums text-foreground">{secsLabel}s</span>
+              </div>
+            </Panel>
+          </div>
+
+          {/* Act 3 payoff — tailored survives, generic is struck */}
+          <StepIn show={verdict} reduce={reduce} className="shrink-0">
+            <div className="grid h-[56px] grid-cols-2 gap-3">
+              <div className="flex items-center gap-2 rounded-control border border-success/40 bg-success/[0.06] px-3">
+                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-success text-success-foreground" aria-hidden>
+                  <Check className="h-3.5 w-3.5" strokeWidth={3} />
+                </span>
+                <div className="leading-tight">
+                  <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-success">Survives the scan</p>
+                  <p className="text-[10px] text-muted-foreground">Tailored, every claim yours</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 rounded-control border border-border bg-muted/30 px-3 opacity-70">
+                <FileText className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+                <div className="leading-tight">
+                  <p className="font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground line-through">
+                    Generic resume
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">Skipped at 6s</p>
+                </div>
               </div>
             </div>
-
-            {/* keyword lock-in */}
-            <p className="mt-4 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-              <PenLine className="h-3 w-3" aria-hidden /> JD keywords
-            </p>
-            <ul className="mt-2 flex flex-wrap gap-1.5">
-              {KEYWORDS.map((k, i) => {
-                const locked = tailored;
-                return (
-                  <li key={k}>
-                    <StepIn show delay={locked ? 0.08 * i : 0} reduce={reduce}>
-                      <span
-                        className={cn(
-                          'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium transition-colors',
-                          locked
-                            ? 'border-primary/40 bg-primary/10 text-foreground'
-                            : 'border-dashed border-border bg-muted/30 text-muted-foreground',
-                        )}
-                      >
-                        <span
-                          className={cn(
-                            'grid h-3 w-3 place-items-center rounded-full transition-colors',
-                            locked ? 'bg-primary text-primary-foreground' : 'bg-transparent text-transparent',
-                          )}
-                          aria-hidden
-                        >
-                          <Check className="h-2 w-2" strokeWidth={3.5} />
-                        </span>
-                        {k}
-                      </span>
-                    </StepIn>
-                  </li>
-                );
-              })}
-            </ul>
-
-            <div className="mt-auto flex items-center gap-1.5 rounded-control border border-primary/25 bg-primary/[0.05] px-2.5 py-1.5">
-              <PenLine className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
-              <p className="text-[11px] leading-snug text-foreground">
-                Authored from your history, <span className="font-semibold">never fabricated</span>.
-              </p>
-            </div>
-          </div>
+          </StepIn>
         </div>
       </DemoStage>
 
       <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
-        <SegGroup label="Resume state">
-          <SegButton active={!tailored} onClick={() => set(0)}>
-            Before
-          </SegButton>
-          <SegButton active={tailored} onClick={() => set(1)}>
-            After
-          </SegButton>
-        </SegGroup>
-        <ReplayButton onClick={() => (tailored ? set(2) : replay())} label="Replay gaze" />
+        <IllustrativeTag>Illustrative resume</IllustrativeTag>
+        <ReplayButton onClick={replay} />
       </div>
     </div>
   );
