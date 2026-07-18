@@ -1,7 +1,9 @@
 import { NavLink } from "react-router-dom";
 import { PanelLeftClose, PanelLeftOpen, Sparkles } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
+import { initials } from "./initials";
 import { NAV_ITEMS, NAV_SECONDARY, navHref, type NavItem } from "./nav.config";
 
 interface SidebarProps {
@@ -83,7 +85,59 @@ export function Sidebar({ collapsed, onToggleCollapse }: SidebarProps) {
           {!collapsed && <span>Collapse</span>}
         </button>
       </div>
+
+      {/* Account */}
+      <AccountRow collapsed={collapsed} />
     </aside>
+  );
+}
+
+/** Signed-in affordance pinned to the foot of the rail — links to Settings › Profile. */
+function AccountRow({ collapsed }: { collapsed: boolean }) {
+  const { user } = useAuth();
+  const name = user?.name;
+  const email = user?.email;
+
+  const row = (
+    <NavLink
+      to={`${navHref("settings")}/profile`}
+      aria-label="Account settings"
+      className={cn(
+        "flex min-h-[44px] items-center gap-3 rounded-lg px-2 outline-none transition-colors",
+        "hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar active:bg-sidebar-accent/80",
+        collapsed && "justify-center px-0",
+      )}
+    >
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sidebar-primary/10 text-xs font-bold text-sidebar-primary">
+        {initials(name, email)}
+      </span>
+      {!collapsed && (
+        <span className="min-w-0">
+          <span className="block truncate text-sm font-medium text-sidebar-foreground">
+            {name || email || "Your account"}
+          </span>
+          {name && email ? (
+            <span className="block truncate text-xs text-sidebar-foreground/60">{email}</span>
+          ) : null}
+        </span>
+      )}
+    </NavLink>
+  );
+
+  return (
+    <div className="border-t border-sidebar-border p-2">
+      {collapsed ? (
+        <Tooltip delayDuration={200}>
+          <TooltipTrigger asChild>{row}</TooltipTrigger>
+          <TooltipContent side="right">
+            <span className="block font-medium">{name || "Your account"}</span>
+            {email ? <span className="block text-xs text-muted-foreground">{email}</span> : null}
+          </TooltipContent>
+        </Tooltip>
+      ) : (
+        row
+      )}
+    </div>
   );
 }
 
@@ -123,11 +177,14 @@ function SidebarLink({ item, collapsed }: { item: NavItem; collapsed: boolean })
 
   if (!collapsed) return link;
 
-  // Collapsed rail: surface the label as a side tooltip.
+  // Collapsed rail: surface the label (and its one-line promise) as a side tooltip.
   return (
     <Tooltip delayDuration={200}>
       <TooltipTrigger asChild>{link}</TooltipTrigger>
-      <TooltipContent side="right">{label}</TooltipContent>
+      <TooltipContent side="right">
+        <span className="block font-medium">{label}</span>
+        <span className="block text-xs text-muted-foreground">{item.hint}</span>
+      </TooltipContent>
     </Tooltip>
   );
 }

@@ -63,7 +63,8 @@ const KIND_ICON: Record<TodayInboxKind, LucideIcon> = {
   did_you_apply: CircleHelp,
 };
 
-const WORKSPACE_HREF = '/app';
+/** "Find roles" lands on Discover › Jobs — the shell's own job search. */
+const FIND_ROLES_HREF = '/next/discover/jobs';
 
 /** Absolute http(s) links leave the SPA; everything else is an in-app route. */
 function isExternal(href: string): boolean {
@@ -230,7 +231,7 @@ export function HeroPanel({ model, onRetry }: { model: HeroModel; onRetry: () =>
           <div className="shrink-0">
             <button
               type="button"
-              onClick={() => go(WORKSPACE_HREF)}
+              onClick={() => go(FIND_ROLES_HREF)}
               className="inline-flex min-h-11 items-center gap-2 rounded-control bg-primary px-5 text-body font-semibold text-primary-foreground shadow-soft transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
               Find roles

@@ -76,7 +76,6 @@ export function ApplicationTrend({
   return (
     <PanelCard>
       <ZoneHeading
-        overline="What's changing"
         title="Applications, last 30 days"
         hint={
           state === 'ready' && windowTotal > 0
@@ -186,7 +185,7 @@ export function ConversionFunnel({
 
   return (
     <PanelCard>
-      <ZoneHeading overline="What's changing" title="Where applications stand" />
+      <ZoneHeading title="Where applications stand" />
 
       {state === 'loading' ? (
         <div className="space-y-4">

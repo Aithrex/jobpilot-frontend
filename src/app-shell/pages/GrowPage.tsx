@@ -33,10 +33,10 @@ export default function GrowPage() {
     <div className="flex flex-col gap-6">
       <header>
         <p className="overline mb-1">Grow</p>
-        <h1 className="font-display text-2xl font-bold tracking-tight text-foreground">
+        <h1 className="text-title font-display text-foreground">
           Build skills &amp; momentum
         </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className="mt-1 text-caption text-muted-foreground">
           Learning paths, networking, events, and interview prep in one place.
         </p>
       </header>

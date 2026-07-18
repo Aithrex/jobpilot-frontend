@@ -36,10 +36,10 @@ export default function CraftPage() {
     <div className="flex flex-col gap-6">
       <header>
         <p className="overline mb-1">Craft</p>
-        <h1 className="font-display text-2xl font-bold tracking-tight text-foreground">
+        <h1 className="text-title font-display text-foreground">
           Shape your story
         </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className="mt-1 text-caption text-muted-foreground">
           Tailor résumés to a role, batch-tailor a pipeline, and pressure-test
           how you read.
         </p>

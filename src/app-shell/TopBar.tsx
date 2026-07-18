@@ -1,6 +1,5 @@
-import { NavLink } from "react-router-dom";
-import { LogOut, Moon, Search, Settings, Sun } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Link, useLocation } from "react-router-dom";
+import { ExternalLink, LogOut, Moon, Settings, Sparkles, Sun } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,22 +10,19 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useTheme } from "@/components/theme-provider";
 import { useAuth } from "@/contexts/AuthContext";
-import { navHref } from "./nav.config";
-
-function initials(name?: string, email?: string): string {
-  const source = (name && name.trim()) || email || "";
-  if (!source) return "?";
-  const parts = source.split(/[\s@.]+/).filter(Boolean);
-  return parts.slice(0, 2).map((p) => p[0]).join("").toUpperCase() || "?";
-}
+import { initials } from "./initials";
+import { NAV_ALL, navHref } from "./nav.config";
 
 /**
- * Global top bar (64px): a search stub, a theme toggle wired to the existing
- * ThemeProvider, and a user menu. Rendered as the page `<header>` landmark.
+ * Global top bar (64px): current-destination context on the left (plus the
+ * brand mark below `lg`, where the Sidebar is hidden), then a theme toggle and
+ * the account menu. Rendered as the page `<header>` landmark. No dead
+ * affordances — every control here does something today.
  */
 export function TopBar() {
   const { theme, setTheme } = useTheme();
   const { user, logout } = useAuth();
+  const { pathname } = useLocation();
 
   const isDark =
     theme === "dark" ||
@@ -37,23 +33,38 @@ export function TopBar() {
   const email = user?.email;
   const name = user?.name;
 
+  // Current top-level destination — drives the page-context readout.
+  const current = NAV_ALL.find((item) => {
+    const href = navHref(item.to);
+    return pathname === href || pathname.startsWith(`${href}/`);
+  });
+
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-background/85 px-4 backdrop-blur-xl supports-[backdrop-filter]:bg-background/70 sm:px-6">
-      {/* Search stub */}
-      <div className="relative min-w-0 flex-1 sm:max-w-md">
-        <Search
-          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-          aria-hidden="true"
-        />
-        <Input
-          type="search"
-          placeholder="Search…"
-          aria-label="Global search"
-          className="h-10 pl-9"
-        />
+      {/* Brand mark for small viewports (the Sidebar carries it ≥lg) */}
+      <Link
+        to={navHref("today")}
+        aria-label="Aspirely home"
+        className="rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background lg:hidden"
+      >
+        <span className="brand-gradient flex h-8 w-8 items-center justify-center rounded-lg shadow-soft">
+          <Sparkles className="h-4 w-4 text-white" aria-hidden="true" />
+        </span>
+      </Link>
+
+      {/* Page context */}
+      <div className="min-w-0 flex-1">
+        <p className="truncate font-display text-body font-semibold leading-tight text-foreground">
+          {current?.label ?? "Aspirely"}
+        </p>
+        {current?.hint ? (
+          <p className="hidden truncate text-caption leading-tight text-muted-foreground sm:block">
+            {current.hint}
+          </p>
+        ) : null}
       </div>
 
-      <div className="ml-auto flex items-center gap-1.5">
+      <div className="flex items-center gap-1.5">
         {/* Theme toggle */}
         <button
           type="button"
@@ -84,10 +95,16 @@ export function TopBar() {
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <NavLink to={navHref("settings")} className="cursor-pointer">
+              <Link to={navHref("settings")} className="cursor-pointer">
                 <Settings className="mr-2 h-4 w-4" aria-hidden="true" />
                 Settings
-              </NavLink>
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link to="/app" className="cursor-pointer">
+                <ExternalLink className="mr-2 h-4 w-4" aria-hidden="true" />
+                Classic workspace
+              </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem

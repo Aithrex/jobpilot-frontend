@@ -35,7 +35,8 @@ export function ZoneHeading({
   hint,
   action,
 }: {
-  overline: string;
+  /** Optional eyebrow — reserve it for headings that need extra framing. */
+  overline?: string;
   title: string;
   hint?: string;
   action?: ReactNode;
@@ -43,9 +44,7 @@ export function ZoneHeading({
   return (
     <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
       <div className="space-y-1">
-        <p className="text-[0.6875rem] font-semibold uppercase leading-none tracking-[0.06em] text-muted-foreground">
-          {overline}
-        </p>
+        {overline ? <p className="overline leading-none">{overline}</p> : null}
         <h2 className="text-h2 font-display text-foreground">{title}</h2>
         {hint ? <p className="text-caption text-muted-foreground">{hint}</p> : null}
       </div>

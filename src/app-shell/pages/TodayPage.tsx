@@ -13,6 +13,7 @@
  * themes and at mobile widths.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 import { RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { apiService } from '@/lib/api';
@@ -53,8 +54,12 @@ function greeting(): string {
   return 'Good evening';
 }
 
+/** Entrance easing shared with HeroPanel — a calm, decelerating rise. */
+const RISE_EASE: [number, number, number, number] = [0.16, 1, 0.3, 1];
+
 export default function TodayPage({ userName }: TodayPageProps = {}) {
   const { user } = useAuth();
+  const reduceMotion = useReducedMotion();
   const [overview, setOverview] = useState<DashboardOverview | null>(null);
   const [readiness, setReadiness] = useState<CareerReadiness | null>(null);
   const [streak, setStreak] = useState<StreakData | null>(null);
@@ -136,14 +141,23 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
   const panelState = (isErr: boolean): 'loading' | 'error' | 'ready' =>
     firstLoad && loading ? 'loading' : isErr ? 'error' : 'ready';
 
+  /**
+   * Staggered entrance, top to bottom — opacity + a small rise only, so
+   * nothing reflows. Skeletons occupy the same slots, so there is zero layout
+   * shift when data lands. Disabled entirely under prefers-reduced-motion.
+   */
+  const rise = (order: number) => ({
+    initial: reduceMotion ? false : ({ opacity: 0, y: 8 } as const),
+    animate: { opacity: 1, y: 0 },
+    transition: { duration: 0.3, delay: order * 0.06, ease: RISE_EASE },
+  });
+
   return (
     <div className="space-y-8">
       {/* Page header */}
-      <header className="flex flex-wrap items-end justify-between gap-3">
+      <motion.header {...rise(0)} className="flex flex-wrap items-end justify-between gap-3">
         <div className="space-y-1">
-          <p className="text-[0.6875rem] font-semibold uppercase leading-none tracking-[0.06em] text-muted-foreground">
-            Today
-          </p>
+          <p className="overline leading-none">Today</p>
           <h1 className="text-title font-display text-foreground">
             {greeting()}, {name}
           </h1>
@@ -165,10 +179,10 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
           <RefreshCw className={cn('h-3.5 w-3.5', loading && 'animate-spin')} aria-hidden="true" />
           Refresh
         </button>
-      </header>
+      </motion.header>
 
       {/* Zone A — Are we OK? */}
-      <section aria-label="Today's status" className="space-y-4">
+      <motion.section {...rise(1)} aria-label="Today's status" className="space-y-4">
         <HeroPanel model={hero} onRetry={() => void load()} />
         <KpiRow
           loading={firstLoad && loading}
@@ -177,10 +191,10 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
           streak={streak}
           funnel={funnel}
         />
-      </section>
+      </motion.section>
 
       {/* Zone B — What's changing? */}
-      <section aria-label="Trends" className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <motion.section {...rise(2)} aria-label="Trends" className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <ApplicationTrend
             state={panelState(err.streak)}
@@ -195,16 +209,16 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
             onRetry={() => void load()}
           />
         </div>
-      </section>
+      </motion.section>
 
       {/* Zone C — Why? */}
-      <section aria-label="Recent roles">
+      <motion.section {...rise(3)} aria-label="Recent roles">
         <RecentActivityPanel
           state={panelState(err.saved)}
           jobs={savedJobs}
           onRetry={() => void load()}
         />
-      </section>
+      </motion.section>
     </div>
   );
 }

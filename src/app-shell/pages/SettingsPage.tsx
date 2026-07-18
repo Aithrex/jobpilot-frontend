@@ -34,10 +34,10 @@ export default function SettingsPage() {
     <div className="flex flex-col gap-6">
       <header>
         <p className="overline mb-1">Settings</p>
-        <h1 className="font-display text-2xl font-bold tracking-tight text-foreground">
+        <h1 className="text-title font-display text-foreground">
           Account &amp; preferences
         </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className="mt-1 text-caption text-muted-foreground">
           Your identity, connected tools, autonomy, billing, and notifications —
           all in one place.
         </p>
