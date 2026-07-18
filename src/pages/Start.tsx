@@ -6,6 +6,7 @@ import {
   AlertCircle,
   ArrowLeft,
   BadgeCheck,
+  Check,
   Download,
   ExternalLink,
   FileText,
@@ -116,6 +117,62 @@ function isUnavailable(status?: number): boolean {
 }
 
 // ── Small presentational pieces ──────────────────────────────────
+
+const FLOW_STEPS = ['Upload', 'Matches', 'Tailor'] as const;
+
+/** Compact three-step rail so guests always know where they are in the flow
+ *  (on the hero it previews the journey). Purely presentational — state is
+ *  conveyed by number/check + label, never colour alone. */
+function StepRail({ step, className }: { step: Step; className?: string }) {
+  const current = step === 'tailor' ? 2 : step === 'matches' ? 1 : 0;
+  return (
+    <ol
+      aria-label={`Progress: step ${current + 1} of ${FLOW_STEPS.length}`}
+      className={cn('flex items-center justify-center', className)}
+    >
+      {FLOW_STEPS.map((label, i) => {
+        const isDone = i < current;
+        const isActive = i === current;
+        return (
+          <li key={label} className="flex items-center">
+            {i > 0 && (
+              <span
+                aria-hidden
+                className={cn(
+                  'mx-1.5 h-px w-4 transition-colors sm:mx-2 sm:w-8',
+                  isDone || isActive ? 'bg-primary/40' : 'bg-border',
+                )}
+              />
+            )}
+            <span
+              aria-current={isActive ? 'step' : undefined}
+              className={cn(
+                'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors',
+                isActive
+                  ? 'border-primary/40 bg-primary/10 text-primary'
+                  : isDone
+                    ? 'border-success/30 bg-success/10 text-success'
+                    : 'border-border text-muted-foreground',
+              )}
+            >
+              {isDone ? (
+                <>
+                  <Check className="h-3 w-3" strokeWidth={3} aria-hidden />
+                  <span className="sr-only">Done: </span>
+                </>
+              ) : (
+                <span className="tabular-nums" aria-hidden>
+                  {i + 1}.
+                </span>
+              )}
+              {label}
+            </span>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
 
 function TailorQuota({
   used,
@@ -721,6 +778,8 @@ export default function Start() {
       </header>
 
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 sm:py-12">
+        <StepRail step={step} className="mb-8 sm:mb-10" />
+
         {/* Welcome-back recognition (soft — guests may continue below).
             Also shown right after parsing, when the parse job's `guest`
             block recognizes a returning person. */}

@@ -23,6 +23,11 @@ export default function Register() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [role, setRole] = useState('');
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<{
+    email?: string;
+    password?: string;
+    confirm?: string;
+  }>({});
   const [isLoading, setIsLoading] = useState(false);
   const emailRef = useRef<HTMLInputElement | null>(null);
   const { register, login, isAuthenticated } = useAuth();
@@ -38,23 +43,29 @@ export default function Register() {
   }, []);
 
   const passwordsMatch = confirmPassword.length > 0 && password === confirmPassword;
+  // Live mismatch feedback merges with the on-submit field error so the same
+  // message never renders twice.
+  const confirmError =
+    fieldErrors.confirm ??
+    (confirmPassword.length > 0 && !passwordsMatch ? 'Passwords do not match.' : undefined);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    // Inline, per-field validation (the checklist mirrors the backend's
+    // password policy); the notice banner stays reserved for server responses.
+    const fe: { email?: string; password?: string; confirm?: string } = {};
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setError('Please enter a valid email address.');
-      return;
+      fe.email = 'Please enter a valid email address.';
     }
-    // Mirror the backend's password policy for instant feedback.
     if (!isPasswordValid(password)) {
-      setError('Password must be 8+ characters with upper- and lower-case letters, a number, and a symbol.');
-      return;
+      fe.password = "Your password doesn't meet all the requirements above yet.";
     }
     if (password !== confirmPassword) {
-      setError('Passwords do not match.');
-      return;
+      fe.confirm = 'Passwords do not match.';
     }
+    setFieldErrors(fe);
+    if (fe.email || fe.password || fe.confirm) return;
     setIsLoading(true);
     try {
       const result = await register(email, password, role || undefined);
@@ -106,8 +117,12 @@ export default function Register() {
             id="email"
             type="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              if (fieldErrors.email) setFieldErrors((f) => ({ ...f, email: undefined }));
+            }}
             placeholder="you@example.com"
+            className="h-11"
             autoComplete="email"
             autoCapitalize="off"
             spellCheck={false}
@@ -115,7 +130,14 @@ export default function Register() {
             enterKeyHint="next"
             required
             disabled={isLoading}
+            aria-invalid={fieldErrors.email ? true : undefined}
+            aria-describedby={fieldErrors.email ? 'email-error' : undefined}
           />
+          {fieldErrors.email && (
+            <p id="email-error" className="text-xs text-destructive" role="alert">
+              {fieldErrors.email}
+            </p>
+          )}
         </div>
 
         <div className="space-y-2">
@@ -127,7 +149,7 @@ export default function Register() {
             value={role}
             onChange={(e) => setRole(e.target.value)}
             disabled={isLoading}
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex h-11 w-full cursor-pointer rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <option value="">Select a role…</option>
             {ROLE_OPTIONS.map((r) => (
@@ -144,38 +166,58 @@ export default function Register() {
           <PasswordInput
             id="password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              if (fieldErrors.password || fieldErrors.confirm) {
+                setFieldErrors((f) => ({ ...f, password: undefined, confirm: undefined }));
+              }
+            }}
             placeholder="Create a strong password"
+            className="h-11"
             autoComplete="new-password"
             enterKeyHint="next"
+            capsLockWarning
             required
             disabled={isLoading}
+            aria-invalid={fieldErrors.password ? true : undefined}
+            aria-describedby={fieldErrors.password ? 'password-error' : undefined}
           />
           <PasswordChecklist password={password} className="pt-1" />
+          {fieldErrors.password && (
+            <p id="password-error" className="text-xs text-destructive" role="alert">
+              {fieldErrors.password}
+            </p>
+          )}
         </div>
 
         <div className="space-y-2">
           <Label htmlFor="confirm">Confirm password</Label>
-          <div className="relative">
-            <Input
-              id="confirm"
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Re-enter your password"
-              className="pr-10"
-              autoComplete="new-password"
-              enterKeyHint="go"
-              required
-              disabled={isLoading}
-            />
-            {passwordsMatch && (
-              <Check className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-success" aria-hidden />
-            )}
-          </div>
-          {confirmPassword.length > 0 && !passwordsMatch && (
-            <p className="text-xs text-destructive" role="alert">Passwords do not match</p>
-          )}
+          <PasswordInput
+            id="confirm"
+            value={confirmPassword}
+            onChange={(e) => {
+              setConfirmPassword(e.target.value);
+              if (fieldErrors.confirm) setFieldErrors((f) => ({ ...f, confirm: undefined }));
+            }}
+            placeholder="Re-enter your password"
+            className="h-11"
+            autoComplete="new-password"
+            enterKeyHint="go"
+            required
+            disabled={isLoading}
+            aria-invalid={confirmError ? true : undefined}
+            aria-describedby={confirmError ? 'confirm-error' : undefined}
+          />
+          {confirmError ? (
+            <p id="confirm-error" className="text-xs text-destructive" role="alert">
+              {confirmError}
+            </p>
+          ) : passwordsMatch ? (
+            <p className="inline-flex items-center gap-1.5 text-xs text-success" role="status">
+              <Check className="h-3.5 w-3.5" aria-hidden />
+              Passwords match
+            </p>
+          ) : null}
         </div>
 
         <Button type="submit" size="lg" className="w-full" disabled={isLoading}>

@@ -16,6 +16,7 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
   const [isLoading, setIsLoading] = useState(false);
   const [forgotOpen, setForgotOpen] = useState(false);
   const [sessionExpired, setSessionExpired] = useState(false);
@@ -47,10 +48,13 @@ export default function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    if (!email.trim() || !password.trim()) {
-      setError('Please enter your email and password.');
-      return;
-    }
+    // Inline, per-field validation — the notice banner stays reserved for
+    // server responses (400/409/429 — never a 401 here).
+    const fe: { email?: string; password?: string } = {};
+    if (!email.trim()) fe.email = 'Enter your email to sign in.';
+    if (!password.trim()) fe.password = 'Enter your password.';
+    setFieldErrors(fe);
+    if (fe.email || fe.password) return;
     setIsLoading(true);
     try {
       const result = await login(email, password);
@@ -103,8 +107,12 @@ export default function Login() {
             id="email"
             type="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              if (fieldErrors.email) setFieldErrors((f) => ({ ...f, email: undefined }));
+            }}
             placeholder="you@example.com"
+            className="h-11"
             autoComplete="username"
             autoCapitalize="off"
             spellCheck={false}
@@ -112,16 +120,25 @@ export default function Login() {
             enterKeyHint="next"
             required
             disabled={isLoading}
+            aria-invalid={fieldErrors.email ? true : undefined}
+            aria-describedby={fieldErrors.email ? 'email-error' : undefined}
           />
+          {fieldErrors.email && (
+            <p id="email-error" className="text-xs text-destructive" role="alert">
+              {fieldErrors.email}
+            </p>
+          )}
         </div>
 
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <Label htmlFor="password">Password</Label>
+            {/* Negative margins keep the row's visual rhythm while the padded
+                hit area reaches ~44px for touch. */}
             <button
               type="button"
               onClick={() => setForgotOpen(true)}
-              className="rounded text-xs font-medium text-muted-foreground transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background"
+              className="-mx-2 -my-3.5 rounded px-2 py-3.5 text-xs font-medium text-muted-foreground transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background"
             >
               Forgot password?
             </button>
@@ -129,14 +146,25 @@ export default function Login() {
           <PasswordInput
             id="password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              if (fieldErrors.password) setFieldErrors((f) => ({ ...f, password: undefined }));
+            }}
             placeholder="Enter your password"
+            className="h-11"
             autoComplete="current-password"
             enterKeyHint="go"
             capsLockWarning
             required
             disabled={isLoading}
+            aria-invalid={fieldErrors.password ? true : undefined}
+            aria-describedby={fieldErrors.password ? 'password-error' : undefined}
           />
+          {fieldErrors.password && (
+            <p id="password-error" className="text-xs text-destructive" role="alert">
+              {fieldErrors.password}
+            </p>
+          )}
         </div>
 
         <Button type="submit" size="lg" className="w-full" disabled={isLoading}>

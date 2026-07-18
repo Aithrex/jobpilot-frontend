@@ -68,9 +68,18 @@ export default function ResetPassword() {
       }
     >
       {done ? (
-        <AuthNotice variant="success">
-          Password updated. Redirecting you to sign in…
-        </AuthNotice>
+        <div className="space-y-4">
+          <AuthNotice variant="success">
+            Password updated. Redirecting you to sign in…
+          </AuthNotice>
+          <Button
+            size="lg"
+            className="w-full"
+            onClick={() => navigate('/login', { replace: true })}
+          >
+            Continue to sign in
+          </Button>
+        </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-5" noValidate>
           {error && <AuthNotice variant={errorVariant(error)}>{error}</AuthNotice>}
@@ -82,6 +91,7 @@ export default function ResetPassword() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Create a strong password"
+              className="h-11"
               autoComplete="new-password"
               enterKeyHint="next"
               capsLockWarning
@@ -98,13 +108,18 @@ export default function ResetPassword() {
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
               placeholder="Re-enter your new password"
+              className="h-11"
               autoComplete="new-password"
               enterKeyHint="go"
               required
               disabled={submitting || !token}
+              aria-invalid={confirm.length > 0 && !passwordsMatch ? true : undefined}
+              aria-describedby={confirm.length > 0 && !passwordsMatch ? 'confirm-error' : undefined}
             />
             {confirm.length > 0 && !passwordsMatch && (
-              <p className="text-xs text-destructive" role="alert">Passwords do not match</p>
+              <p id="confirm-error" className="text-xs text-destructive" role="alert">
+                Passwords do not match
+              </p>
             )}
           </div>
 
