@@ -5,22 +5,47 @@ import * as THREE from 'three';
 import { cn } from '@/lib/utils';
 
 /**
- * SignalField — the landing hero's WebGL layer ("signal from noise").
- * ~6000 GPU points open as a chaotic scatter (the job-search doom loop:
- * ghost jobs, spam, fabricated claims) and, over ~3.5s, resolve into five
- * milestone clusters climbing lower-left → upper-right — a career path.
- * ~15% of points stay behind as faint background stars. All morphing,
+ * SignalField - the landing hero's WebGL layer ("signal from noise").
+ * GPU points open as a chaotic scatter and, over ~3.5s, resolve into five
+ * milestone clusters climbing lower-left to upper-right - a career path.
+ * A share of points stays behind as faint background stars. All morphing,
  * breathing, twinkle, and pointer repulsion runs in the vertex shader; the
  * CPU only eases a handful of uniforms per frame.
+ *
+ * Variants:
+ *   dark  - the original additive-blended night field (near-white highlights).
+ *   light - a quiet indigo drift for the light landing: normal blending (no
+ *           additive glare on white), low alpha, roughly half the points.
  *
  * Perf contract: renders only while on-screen AND the tab is foreground
  * (frameloop 'never' otherwise), dpr capped at 1.75 and dropped to 1 by
  * PerformanceMonitor on sustained decline. The canvas is pointer-events-none
- * (hero copy/CTAs stay clickable) — pointer position is read from window
+ * (hero copy/CTAs stay clickable) - pointer position is read from window
  * moves tested against the wrapper's rect instead.
  */
 
-const COUNT = 6000;
+export type FieldVariant = 'light' | 'dark';
+
+const VARIANTS: Record<
+  FieldVariant,
+  { count: number; colorA: string; colorB: string; alpha: number; blending: THREE.Blending }
+> = {
+  dark: {
+    count: 6000,
+    colorA: '#4F63E7', // deep indigo scatter
+    colorB: '#E8ECFF', // near-white once ordered
+    alpha: 1,
+    blending: THREE.AdditiveBlending,
+  },
+  light: {
+    count: 3200,
+    colorA: '#93A5EE', // soft indigo scatter (barely-there on white)
+    colorB: '#4F63E7', // brand indigo once ordered
+    alpha: 0.5, // peak sprite alpha ~0.36 - a wash, never noise
+    blending: THREE.NormalBlending,
+  },
+};
+
 const STAR_RATIO = 0.15; // fraction that never joins the path (faint stars)
 const INTRO_SECONDS = 3.5;
 
@@ -28,7 +53,7 @@ const INTRO_SECONDS = 3.5;
 const FIELD_W = 17.5;
 const FIELD_H = 10;
 
-/** Milestone cluster centers — a gently accelerating rise, left → right. */
+/** Milestone cluster centers - a gently accelerating rise, left to right. */
 const MILESTONES: Array<[number, number, number]> = [
   [-6.4, -2.5, 0],
   [-3.3, -1.7, 0.2],
@@ -37,7 +62,7 @@ const MILESTONES: Array<[number, number, number]> = [
   [6.4, 2.7, 0],
 ];
 
-/** Box–Muller gaussian, clamped so no point flies far outside its cluster. */
+/** Box-Muller gaussian, clamped so no point flies far outside its cluster. */
 function gaussian(): number {
   const u = Math.max(Math.random(), 1e-6);
   const v = Math.random();
@@ -46,16 +71,16 @@ function gaussian(): number {
 
 /**
  * Builds the three per-point attributes:
- *   position (aScattered) — random cloud in a wide, shallow band-shaped box
- *   aOrdered             — constellation target (cluster blob / path / star)
- *   aSeed                — [stagger, size+twinkle+hue, isStar]
+ *   position (aScattered) - random cloud in a wide, shallow band-shaped box
+ *   aOrdered             - constellation target (cluster blob / path / star)
+ *   aSeed                - [stagger, size+twinkle+hue, isStar]
  */
-function buildField() {
-  const scattered = new Float32Array(COUNT * 3);
-  const ordered = new Float32Array(COUNT * 3);
-  const seeds = new Float32Array(COUNT * 3);
+function buildField(count: number) {
+  const scattered = new Float32Array(count * 3);
+  const ordered = new Float32Array(count * 3);
+  const seeds = new Float32Array(count * 3);
 
-  for (let i = 0; i < COUNT; i++) {
+  for (let i = 0; i < count; i++) {
     const o = i * 3;
 
     const sx = (Math.random() - 0.5) * FIELD_W;
@@ -71,7 +96,7 @@ function buildField() {
     seeds[o + 2] = isStar ? 1 : 0;
 
     if (isStar) {
-      // Stars never travel — their ordered target mirrors the scatter.
+      // Stars never travel - their ordered target mirrors the scatter.
       ordered[o] = sx;
       ordered[o + 1] = sy;
       ordered[o + 2] = sz;
@@ -112,7 +137,7 @@ const VERTEX = /* glsl */ `
   varying float vStar;
 
   void main() {
-    // Staggered resolve — each point departs on its own beat, so the field
+    // Staggered resolve - each point departs on its own beat, so the field
     // settles as a wave rather than a lockstep morph. Stars never travel.
     float t = clamp(uProgress * 1.9 - aSeed.x * 0.9, 0.0, 1.0);
     t = t * t * (3.0 - 2.0 * t);
@@ -148,20 +173,21 @@ const VERTEX = /* glsl */ `
 const FRAGMENT = /* glsl */ `
   uniform vec3 uColorA;
   uniform vec3 uColorB;
+  uniform float uAlpha;
   varying float vTravel;
   varying float vSeed;
   varying float vStar;
 
   void main() {
-    // Soft round sprite — discard the corners, feather the rim.
+    // Soft round sprite - discard the corners, feather the rim.
     vec2 c = gl_PointCoord - 0.5;
     float r = length(c);
     if (r > 0.5) discard;
     float soft = smoothstep(0.5, 0.06, r);
 
-    // Deep indigo → near-white as points join the ordered constellation.
+    // Colour resolves A -> B as points join the ordered constellation.
     vec3 color = mix(uColorA, uColorB, clamp(vTravel * 0.5 + vSeed * 0.35, 0.0, 1.0));
-    float alpha = (0.30 + 0.42 * vTravel) * (1.0 - vStar * 0.62);
+    float alpha = (0.30 + 0.42 * vTravel) * (1.0 - vStar * 0.62) * uAlpha;
     gl_FragColor = vec4(color, soft * alpha);
   }
 `;
@@ -174,7 +200,7 @@ interface PointerState {
   active: number;
 }
 
-/** Minimal structural types for the (untyped — see three-shim.d.ts) three
+/** Minimal structural types for the (untyped - see three-shim.d.ts) three
  *  objects we mutate from JS. */
 interface Vec3Like {
   x: number;
@@ -186,10 +212,12 @@ interface GroupLike {
   scale: Vec3Like;
 }
 
-function FieldPoints({ pointer }: { pointer: MutableRefObject<PointerState> }) {
+function FieldPoints({ pointer, variant }: { pointer: MutableRefObject<PointerState>; variant: FieldVariant }) {
   const groupRef = useRef<GroupLike | null>(null);
   const born = useMemo(() => performance.now(), []);
-  const field = useMemo(buildField, []);
+  // `variant` never changes at runtime (each band mounts one look), so these
+  // memos effectively build once.
+  const field = useMemo(() => buildField(VARIANTS[variant].count), [variant]);
   const uniforms = useMemo(
     () => ({
       uTime: { value: 0 },
@@ -197,13 +225,14 @@ function FieldPoints({ pointer }: { pointer: MutableRefObject<PointerState> }) {
       uPush: { value: 0 },
       uPointer: { value: new THREE.Vector3(999, 999, 0) },
       uPixelRatio: { value: 1 },
-      uColorA: { value: new THREE.Color('#4F63E7') },
-      uColorB: { value: new THREE.Color('#E8ECFF') },
+      uAlpha: { value: VARIANTS[variant].alpha },
+      uColorA: { value: new THREE.Color(VARIANTS[variant].colorA) },
+      uColorB: { value: new THREE.Color(VARIANTS[variant].colorB) },
     }),
-    [],
+    [variant],
   );
   // Constructor-args form (memoized so r3f never reconstructs the material on
-  // parent re-renders — reconstruction would recompile the shader).
+  // parent re-renders - reconstruction would recompile the shader).
   const materialArgs = useMemo(
     () => [
       {
@@ -212,15 +241,15 @@ function FieldPoints({ pointer }: { pointer: MutableRefObject<PointerState> }) {
         fragmentShader: FRAGMENT,
         transparent: true,
         depthWrite: false,
-        blending: THREE.AdditiveBlending,
+        blending: VARIANTS[variant].blending,
       },
     ],
-    [uniforms],
+    [uniforms, variant],
   );
 
   useFrame((state, delta) => {
-    // Intro: cubic ease-out 0→1 over ~3.5s from mount, then a permanent slow
-    // sine micro-oscillation (0.97–1.0) so the field never fully freezes.
+    // Intro: cubic ease-out 0->1 over ~3.5s from mount, then a permanent slow
+    // sine micro-oscillation (0.97-1.0) so the field never fully freezes.
     const elapsed = (performance.now() - born) / 1000;
     if (elapsed < INTRO_SECONDS) {
       const x = elapsed / INTRO_SECONDS;
@@ -244,7 +273,7 @@ function FieldPoints({ pointer }: { pointer: MutableRefObject<PointerState> }) {
     if (p.active > 0) {
       const wx = (p.x * vp.width) / 2 / sx;
       const wy = (p.y * vp.height) / 2 / sy;
-      const k = Math.min(1, delta * 6); // trailing ease → ripple, not snap
+      const k = Math.min(1, delta * 6); // trailing ease -> ripple, not snap
       // First contact: jump straight to the pointer so the push never sweeps
       // in from the previous resting spot.
       if (uniforms.uPush.value < 0.01) target.set(wx, wy, 0);
@@ -255,7 +284,7 @@ function FieldPoints({ pointer }: { pointer: MutableRefObject<PointerState> }) {
 
   return (
     <group ref={groupRef}>
-      {/* Positions are shader-driven, so the static bounds lie — never cull. */}
+      {/* Positions are shader-driven, so the static bounds lie - never cull. */}
       <points frustumCulled={false}>
         <bufferGeometry>
           <bufferAttribute attach="attributes-position" args={[field.scattered, 3]} />
@@ -270,9 +299,10 @@ function FieldPoints({ pointer }: { pointer: MutableRefObject<PointerState> }) {
 
 interface SignalFieldProps {
   className?: string;
+  variant?: FieldVariant;
 }
 
-export default function SignalField({ className }: SignalFieldProps) {
+export default function SignalField({ className, variant = 'dark' }: SignalFieldProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const pointer = useRef<PointerState>({ x: 0, y: 0, active: 0 });
   const [inView, setInView] = useState(true);
@@ -294,7 +324,7 @@ export default function SignalField({ className }: SignalFieldProps) {
     };
   }, []);
 
-  // Pointer over the band, tracked at window level — the canvas itself is
+  // Pointer over the band, tracked at window level - the canvas itself is
   // pointer-events-none so the hero copy and CTAs stay fully interactive.
   useEffect(() => {
     const onMove = (e: PointerEvent) => {
@@ -335,7 +365,7 @@ export default function SignalField({ className }: SignalFieldProps) {
         className={cn('transition-opacity duration-1000', painted ? 'opacity-100' : 'opacity-0')}
       >
         <PerformanceMonitor onDecline={() => setDpr(1)}>
-          <FieldPoints pointer={pointer} />
+          <FieldPoints pointer={pointer} variant={variant} />
         </PerformanceMonitor>
       </Canvas>
     </div>

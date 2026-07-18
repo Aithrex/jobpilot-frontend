@@ -4,16 +4,22 @@ import { cn } from '@/lib/utils';
 import { Container, DemoCaption, DemoSkeleton, Eyebrow, LazyMount, Reveal } from './_shared';
 
 /**
- * The shared frame for a feature section. Copy on one side, the animated demo
- * on the other (alternating), or a centered "prominent" layout for the
- * showpiece. The demo is code-split AND in-view-gated (LazyMount → Suspense) so
- * heavy animation never downloads or runs off-screen, and `reserve` pins the
- * media height so mounting never shifts layout (CLS ≈ 0).
+ * The shared frame for a feature section, tuned for the light professional
+ * surface: the animated demo is the dominant element (the wider column), the
+ * copy column stays tight, and each section can open with a one-line PAIN
+ * statement (warm mono caps) that the title then resolves. Sections alternate
+ * white / near-white bands (derived from the numeric `index`) for rhythm.
+ *
+ * The demo is code-split AND in-view-gated (LazyMount → Suspense) so heavy
+ * animation never downloads or runs off-screen, and `reserve` pins the media
+ * height so mounting never shifts layout (CLS ≈ 0).
  */
 
 export interface FeatureSectionProps {
   id: string;
   index: string;
+  /** One-line pain statement, set above the eyebrow in warm mono caps. */
+  pain?: string;
   eyebrow: string;
   eyebrowIcon?: LucideIcon;
   title: ReactNode;
@@ -35,34 +41,35 @@ export interface FeatureSectionProps {
 
 function Copy({
   index,
+  pain,
   eyebrow,
   eyebrowIcon,
   title,
   subtitle,
   center,
-}: Pick<FeatureSectionProps, 'index' | 'eyebrow' | 'eyebrowIcon' | 'title' | 'subtitle'> & { center?: boolean }) {
+}: Pick<FeatureSectionProps, 'index' | 'pain' | 'eyebrow' | 'eyebrowIcon' | 'title' | 'subtitle'> & {
+  center?: boolean;
+}) {
   return (
-    // `isolate` keeps the -z-10 ghost numeral behind this block's own content
-    // while it still composites above the page's night background.
-    <div className={cn('relative isolate', center ? 'mx-auto max-w-2xl text-center' : 'max-w-md')}>
-      {/* Oversized ghost numeral — a faint mono figure behind the copy */}
-      <span
-        aria-hidden
-        className={cn(
-          'pointer-events-none absolute -z-10 select-none font-mono text-[6.5rem] font-bold leading-none text-primary/[0.07] sm:text-[8.5rem]',
-          center ? '-top-14 left-1/2 -translate-x-1/2 sm:-top-20' : '-top-12 -left-1 sm:-top-16',
-        )}
-      >
-        {index}
-      </span>
+    <div className={cn(center ? 'mx-auto max-w-2xl text-center' : 'max-w-md lg:max-w-sm')}>
+      {pain && (
+        <p
+          className={cn(
+            'mb-3 font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-warning',
+            center && 'text-center',
+          )}
+        >
+          {pain}
+        </p>
+      )}
       <div className={cn('flex items-center gap-3', center && 'justify-center')}>
-        <span className="font-mono text-sm font-bold tabular-nums text-primary/70">{index}</span>
+        <span className="font-mono text-sm font-bold tabular-nums text-primary/80">{index}</span>
         <Eyebrow icon={eyebrowIcon}>{eyebrow}</Eyebrow>
       </div>
       <h2 className="mt-4 font-display text-3xl font-bold leading-[1.14] tracking-tight text-foreground sm:text-4xl">
         {title}
       </h2>
-      <p className="mt-4 text-pretty text-base leading-relaxed text-muted-foreground sm:text-lg">{subtitle}</p>
+      <p className="mt-4 text-pretty text-base leading-relaxed text-muted-foreground">{subtitle}</p>
     </div>
   );
 }
@@ -70,11 +77,11 @@ function Copy({
 function Media({ reserve, caption, demo }: Pick<FeatureSectionProps, 'reserve' | 'caption' | 'demo'>) {
   return (
     <div className="relative isolate">
-      {/* Soft indigo radial glow lifting the demo panel off the night surface */}
+      {/* Faint indigo wash lifting the demo panel off the white surface */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -inset-10 -z-10"
-        style={{ background: 'radial-gradient(ellipse 68% 62% at 50% 45%, hsl(var(--primary) / 0.11), transparent 70%)' }}
+        className="pointer-events-none absolute -inset-8 -z-10"
+        style={{ background: 'radial-gradient(ellipse 68% 62% at 50% 45%, hsl(var(--primary) / 0.06), transparent 70%)' }}
       />
       <LazyMount minHeight={reserve}>
         <Suspense fallback={<DemoSkeleton style={{ minHeight: reserve }} />}>{demo}</Suspense>
@@ -87,6 +94,7 @@ function Media({ reserve, caption, demo }: Pick<FeatureSectionProps, 'reserve' |
 export function FeatureSection({
   id,
   index,
+  pain,
   eyebrow,
   eyebrowIcon,
   title,
@@ -99,12 +107,18 @@ export function FeatureSection({
   children,
   className,
 }: FeatureSectionProps) {
+  // Alternating white / near-white bands, derived from the numeric index so
+  // the rhythm holds without touching the call sites.
+  const n = Number.parseInt(index, 10);
+  const banded = Number.isFinite(n) && n % 2 === 0;
+  const band = banded && 'border-y border-border bg-muted/50';
+
   if (prominent) {
     return (
-      <section id={id} className={cn('scroll-mt-16 py-20 sm:py-28', className)}>
+      <section id={id} className={cn('scroll-mt-16 py-20 sm:py-28', band, className)}>
         <Container>
           <Reveal>
-            <Copy index={index} eyebrow={eyebrow} eyebrowIcon={eyebrowIcon} title={title} subtitle={subtitle} center />
+            <Copy index={index} pain={pain} eyebrow={eyebrow} eyebrowIcon={eyebrowIcon} title={title} subtitle={subtitle} center />
           </Reveal>
           <Reveal delay={0.06} className="mx-auto mt-12 max-w-3xl">
             <Media reserve={reserve} caption={caption} demo={demo} />
@@ -120,10 +134,17 @@ export function FeatureSection({
   }
 
   return (
-    <section id={id} className={cn('scroll-mt-16 py-16 sm:py-24', className)}>
-      <Container className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
+    <section id={id} className={cn('scroll-mt-16 py-16 sm:py-24', band, className)}>
+      {/* The demo carries the story: it takes the wider column (3/5) on desktop,
+          on whichever side `flip` puts it. */}
+      <Container
+        className={cn(
+          'grid items-center gap-10 lg:gap-14',
+          flip ? 'lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]' : 'lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]',
+        )}
+      >
         <Reveal className={cn('order-1', flip && 'lg:order-2')}>
-          <Copy index={index} eyebrow={eyebrow} eyebrowIcon={eyebrowIcon} title={title} subtitle={subtitle} />
+          <Copy index={index} pain={pain} eyebrow={eyebrow} eyebrowIcon={eyebrowIcon} title={title} subtitle={subtitle} />
         </Reveal>
         <Reveal delay={0.06} className={cn('order-2', flip && 'lg:order-1')}>
           <Media reserve={reserve} caption={caption} demo={demo} />

@@ -10,19 +10,22 @@ import {
   ShieldAlert,
   Timer,
 } from 'lucide-react';
+import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { Container, Reveal, SectionHeading } from './_shared';
+import { Container, EASE, Reveal, SectionHeading } from './_shared';
 
 /**
- * "Everything in one instrument" — the platform's supporting features composed
- * as a constellation on the night surface: eight luminous card-nodes joined by
- * static hairline SVG edges (aria-hidden), echoing the hero's SignalField and
- * the CloseCTA's constellation echo. Light DOM only: no timers, no lazy
- * mounting, zero layout shift (the lg canvas height is fixed; below lg the
- * nodes collapse to a plain 1/2-col grid and the edges hide). Cards are
- * non-interactive; hover is a decorative glow-lift (opacity + transform,
- * disabled under prefers-reduced-motion). Copy states only real capabilities.
+ * "Everything in one instrument" — the platform's supporting features as a
+ * clean light feature grid (the old night constellation's SVG edge-field read
+ * as noise on white, so the edges are gone and the grid is tight instead).
+ * Cards: white, hairline border, soft shadow, indigo icon tile, gentle hover
+ * lift. Three cards carry a tiny visual accent so the grid is scannable
+ * without reading: a pulsing shield halo (scam), a drawn progress ring
+ * (readiness), and a ticking amber dot (the OPT clock) — all subtle and fully
+ * inert under prefers-reduced-motion. Copy states only real capabilities.
  */
+
+type Accent = 'shield' | 'ring' | 'clock';
 
 interface Node {
   icon: LucideIcon;
@@ -31,8 +34,7 @@ interface Node {
   tag: string;
   title: string;
   promise: string;
-  /** Literal Tailwind classes anchoring the card on the lg canvas. */
-  pos: string;
+  accent?: Accent;
 }
 
 const NODES: Node[] = [
@@ -42,7 +44,7 @@ const NODES: Node[] = [
     tag: 'Shield',
     title: 'Scam and ghost-job shield',
     promise: 'Every posting gets a legitimacy score before you spend a minute on it.',
-    pos: 'lg:left-[2%] lg:top-[4%]',
+    accent: 'shield',
   },
   {
     icon: Gauge,
@@ -50,7 +52,7 @@ const NODES: Node[] = [
     tag: 'Readiness',
     title: 'Career Readiness Score',
     promise: 'One honest number for where you stand, with a guided path to raise it.',
-    pos: 'lg:left-[35.5%] lg:top-0',
+    accent: 'ring',
   },
   {
     icon: Github,
@@ -58,7 +60,6 @@ const NODES: Node[] = [
     tag: 'Proof',
     title: 'GitHub proof of skill',
     promise: 'Your public repos read as verified evidence, not claims.',
-    pos: 'lg:left-[69%] lg:top-[6%]',
   },
   {
     icon: Linkedin,
@@ -66,7 +67,6 @@ const NODES: Node[] = [
     tag: 'Audit',
     title: 'LinkedIn self-audit',
     promise: 'Your profile, checked against your resume, gap by gap.',
-    pos: 'lg:left-[18%] lg:top-[36%]',
   },
   {
     icon: MessagesSquare,
@@ -74,7 +74,6 @@ const NODES: Node[] = [
     tag: 'Prep',
     title: 'Real-skill interview prep',
     promise: 'Mock interviews and coaching that build ability, never cheat in the room.',
-    pos: 'lg:left-[53%] lg:top-[33%]',
   },
   {
     icon: Timer,
@@ -82,7 +81,7 @@ const NODES: Node[] = [
     tag: 'Clock',
     title: 'The OPT clock',
     promise: 'Your 90-day unemployment window, tracked, so deadlines never surprise you.',
-    pos: 'lg:left-[2%] lg:top-[68%]',
+    accent: 'clock',
   },
   {
     icon: KanbanSquare,
@@ -90,7 +89,6 @@ const NODES: Node[] = [
     tag: 'Pipeline',
     title: 'Application pipeline',
     promise: 'Every application in one ledger. No double applies, no lost threads.',
-    pos: 'lg:left-[35.5%] lg:top-[72%]',
   },
   {
     icon: Layers,
@@ -98,105 +96,78 @@ const NODES: Node[] = [
     tag: 'Tailor',
     title: 'Cover letters, batch tailored',
     promise: 'Authored variants for every role, written from your real history.',
-    pos: 'lg:left-[69%] lg:top-[66%]',
   },
 ];
 
-/** Node centres in the 100x100 edge-field space (~card centres on the lg canvas). */
-const CENTERS: Array<[number, number]> = [
-  [16.5, 15],
-  [50, 11],
-  [83.5, 17],
-  [32.5, 47],
-  [67.5, 44],
-  [16.5, 79],
-  [50, 83],
-  [83.5, 77],
-];
+/** The indigo icon tile, with the card's optional tiny animated accent. */
+function IconTile({ icon: Icon, accent }: { icon: LucideIcon; accent?: Accent }) {
+  const reduce = useReducedMotion();
 
-/** Index pairs joined by hairline edges (the CloseCTA echo's grammar). */
-const EDGES: Array<[number, number]> = [
-  [0, 1], [1, 2], [0, 3], [1, 4], [2, 4], [3, 4], [3, 5], [3, 6], [4, 7], [5, 6], [6, 7],
-];
+  if (accent === 'ring') {
+    // A drawn progress ring around a circular tile — draws once in view,
+    // rests fully drawn under reduced motion.
+    return (
+      <span className="relative grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary/10 text-primary">
+        <Icon className="h-4 w-4" aria-hidden />
+        <svg aria-hidden viewBox="0 0 40 40" className="absolute inset-0 h-full w-full -rotate-90">
+          <circle cx="20" cy="20" r="18.5" fill="none" stroke="hsl(var(--primary) / 0.15)" strokeWidth="2.5" />
+          <motion.circle
+            cx="20"
+            cy="20"
+            r="18.5"
+            fill="none"
+            stroke="hsl(var(--primary))"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            initial={{ pathLength: reduce ? 0.72 : 0 }}
+            whileInView={{ pathLength: 0.72 }}
+            viewport={{ once: true, margin: '-40px' }}
+            transition={{ duration: reduce ? 0 : 0.9, ease: EASE, delay: 0.2 }}
+          />
+        </svg>
+      </span>
+    );
+  }
 
-/** Sparse static stars behind the field — CSS-only, VisionMission's language. */
-const STARS =
-  'radial-gradient(1.5px 1.5px at 8% 30%, hsl(var(--primary) / 0.35), transparent 70%), ' +
-  'radial-gradient(2px 2px at 27% 88%, hsl(var(--primary) / 0.30), transparent 70%), ' +
-  'radial-gradient(1.5px 1.5px at 49% 55%, hsl(var(--primary) / 0.30), transparent 70%), ' +
-  'radial-gradient(2px 2px at 66% 10%, hsl(var(--primary) / 0.35), transparent 70%), ' +
-  'radial-gradient(1.5px 1.5px at 93% 42%, hsl(var(--primary) / 0.35), transparent 70%)';
-
-/**
- * The connective tissue: static hairline edges between card-nodes, drawn in a
- * percentage coordinate space that stretches with the lg canvas. Desktop only
- * (the stacked grid below lg hides it); purely decorative.
- */
-function EdgeField() {
   return (
-    <svg
-      aria-hidden
-      viewBox="0 0 100 100"
-      preserveAspectRatio="none"
-      className="pointer-events-none absolute inset-0 hidden h-full w-full lg:block"
-    >
-      {EDGES.map(([a, b]) => (
-        <line
-          key={`${a}-${b}`}
-          x1={CENTERS[a][0]}
-          y1={CENTERS[a][1]}
-          x2={CENTERS[b][0]}
-          y2={CENTERS[b][1]}
-          stroke="hsl(var(--primary))"
-          strokeOpacity="0.16"
-          strokeWidth="1"
-          vectorEffect="non-scaling-stroke"
-        />
-      ))}
-    </svg>
+    <span className="relative grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+      {/* Pulsing halo (shield) — an opacity-only breathe, off under reduced motion */}
+      {accent === 'shield' && (
+        <span aria-hidden className="absolute inset-0 rounded-lg bg-primary/10 motion-safe:animate-pulse" />
+      )}
+      <Icon className="relative h-4 w-4" aria-hidden />
+      {/* Ticking dot (the OPT clock) — a quiet amber blink, off under reduced motion */}
+      {accent === 'clock' && (
+        <span aria-hidden className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-warning motion-safe:animate-pulse" />
+      )}
+    </span>
   );
 }
 
-function NodeCard({ icon: Icon, index, tag, title, promise }: Node) {
+function NodeCard({ icon, index, tag, title, promise, accent }: Node) {
   return (
     <div
-      className="group relative flex h-full flex-col rounded-2xl border border-border bg-card/70 p-5 transition-[border-color,transform] duration-200 ease-out hover:-translate-y-1 hover:border-primary/40 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+      className={cn(
+        'group flex h-full flex-col rounded-2xl border border-border bg-card p-5 shadow-soft',
+        'transition-[border-color,transform,box-shadow] duration-200 ease-out hover:-translate-y-1 hover:border-primary/30 hover:shadow-panel',
+        'motion-reduce:transition-none motion-reduce:hover:translate-y-0',
+      )}
     >
-      {/* Hover glow — opacity-only, sitting behind the card's content */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -inset-px rounded-2xl opacity-0 transition-opacity duration-200 group-hover:opacity-100"
-        style={{
-          background: 'radial-gradient(120% 100% at 50% 0%, hsl(var(--primary) / 0.12), transparent 72%)',
-          boxShadow: '0 12px 40px -12px hsl(var(--primary) / 0.35)',
-        }}
-      />
-      <div className="relative flex items-center justify-between gap-3">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/[0.06] text-primary">
-          <Icon className="h-4 w-4" aria-hidden />
-        </span>
-        <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-primary/70">
+      <div className="flex items-center justify-between gap-3">
+        <IconTile icon={icon} accent={accent} />
+        <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
           {index} · {tag}
         </span>
       </div>
-      <h3 className="relative mt-4 text-[15px] font-semibold leading-snug text-foreground">{title}</h3>
-      <p className="relative mt-1.5 text-[13px] leading-relaxed text-muted-foreground">{promise}</p>
+      <h3 className="mt-4 text-[15px] font-semibold leading-snug text-foreground">{title}</h3>
+      <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">{promise}</p>
     </div>
   );
 }
 
 export function FeatureConstellation() {
   return (
-    <section id="everything" aria-label="Everything in one instrument" className="relative isolate overflow-hidden py-20 sm:py-28">
-      {/* Soft indigo glow anchoring the field */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10"
-        style={{ background: 'radial-gradient(ellipse 70% 60% at 50% 48%, hsl(var(--primary) / 0.09), transparent 70%)' }}
-      />
-      {/* Sparse static stars — the SignalField, at rest */}
-      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10" style={{ backgroundImage: STARS }} />
-
+    <section id="everything" aria-label="Everything in one instrument" className="scroll-mt-16 py-20 sm:py-28">
       <Container>
         <Reveal>
           <SectionHeading
@@ -207,22 +178,19 @@ export function FeatureConstellation() {
                 Everything the search demands, <span className="text-primary">in one place</span>.
               </>
             }
-            subtitle="The four pillars carry the weight. These keep the rest of the search honest, on time, and in one ledger."
+            subtitle="The four pillars carry the weight. These keep the rest honest, on time, and in one ledger."
           />
         </Reveal>
 
-        <div className="relative mt-12 sm:mt-16">
-          <EdgeField />
-          <ul className="grid list-none grid-cols-1 gap-4 sm:grid-cols-2 lg:block lg:h-[720px]">
-            {NODES.map((node, i) => (
-              <li key={node.index} className={cn('lg:absolute lg:w-[29%]', node.pos)}>
-                <Reveal className="h-full" delay={i * 0.04} y={14}>
-                  <NodeCard {...node} />
-                </Reveal>
-              </li>
-            ))}
-          </ul>
-        </div>
+        <ul className="mt-12 grid list-none grid-cols-1 gap-4 sm:mt-16 sm:grid-cols-2 lg:grid-cols-4">
+          {NODES.map((node, i) => (
+            <li key={node.index}>
+              <Reveal className="h-full" delay={i * 0.04} y={14}>
+                <NodeCard {...node} />
+              </Reveal>
+            </li>
+          ))}
+        </ul>
       </Container>
     </section>
   );

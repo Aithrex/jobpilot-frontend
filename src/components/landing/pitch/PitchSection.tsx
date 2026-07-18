@@ -5,14 +5,15 @@ import { cn } from '@/lib/utils';
 import { Container, Reveal, SectionHeading } from '../_shared';
 import { BEATS, PITCH_TOTAL, beatDuration, formatTime, sceneAt } from './pitchScript';
 import { usePitchClock } from './usePitchClock';
-import { CountdownChip, FOCUS_DARK, MonoTag, SceneCard } from './_pitchKit';
+import { CountdownChip, FOCUS_DARK, MonoTag, STAGE_BG, SceneCard } from './_pitchKit';
 
 /**
  * "Aspirely in 60 seconds" — a cinematic, code-built, auto-advancing AND
  * scrubbable product tour. The hero's pitch CTA anchors here (#pitch).
  *
  * Architecture:
- *   · The stage is a self-contained dark film frame (dark in both themes).
+ *   · The stage is a dark "screen" inside a light bezel (tokens), so the
+ *     player reads like a video embed on the light landing in both themes.
  *   · usePitchClock drives a 60s rAF accumulator; it runs only while playing,
  *     in view, and with the document visible — so it pauses off-screen.
  *   · Scenes are pure functions of local progress, so play, seek, and the
@@ -31,34 +32,65 @@ const PitchScenes = lazy(() => import('./PitchScenes'));
 type InViewOptions = Parameters<typeof useInView>[1];
 
 // ── The film frame ───────────────────────────────────────────────────────────
+// A light bezel around a dark screen: like a video embed, the player reads
+// naturally as a dark surface, while the bezel (semantic tokens) sits on the
+// light page with a soft, non-glowing shadow.
 function StageFrame({ frameRef, children }: { frameRef?: Ref<HTMLDivElement>; children: ReactNode }) {
   return (
     <div
       ref={frameRef}
       className={cn(
-        'relative flex w-full flex-col overflow-hidden rounded-3xl border border-white/10 bg-[#0A0D1E]',
-        'aspect-[3/4] min-h-[460px] sm:aspect-[16/10] sm:min-h-0',
-        'shadow-[0_30px_90px_-30px_rgba(10,13,30,0.85),0_0_70px_-24px_rgba(99,102,241,0.35)]',
+        'rounded-[1.9rem] border border-border bg-card p-1.5 sm:p-2',
+        'shadow-[0_24px_70px_-32px_rgba(15,23,42,0.3)]',
       )}
     >
-      {/* soft top glow — the projector beam */}
       <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(90%_60%_at_50%_0%,rgba(99,102,241,0.14),transparent_60%)]"
-      />
-      {children}
+        className={cn(
+          'relative flex w-full flex-col overflow-hidden rounded-[1.45rem]',
+          STAGE_BG,
+          'aspect-[3/4] min-h-[460px] sm:aspect-[16/10] sm:min-h-0',
+        )}
+      >
+        {/* soft top glow — the projector beam */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(90%_60%_at_50%_0%,rgba(99,102,241,0.14),transparent_60%)]"
+        />
+        {children}
+      </div>
     </div>
   );
 }
 
 // ── Poster (renders immediately — NOT part of the lazy scenes chunk) ─────────
+// Scene 1 at rest: the OPT clock, the flagged pile of identical applications,
+// and the sourced stat that opens the film.
+function PosterFlaggedStack() {
+  return (
+    <div className="relative h-16 w-[7.5rem] shrink-0">
+      {['left-0 top-3 -rotate-6', 'left-5 top-1 rotate-1', 'left-10 top-0 rotate-6'].map((pos) => (
+        <div key={pos} className={cn('absolute h-12 w-20 rounded-lg border border-white/10 bg-white/[0.06]', pos)}>
+          <div className="mx-2.5 mt-2.5 h-1 w-9 rounded-full bg-white/15" />
+          <div className="mx-2.5 mt-1.5 h-1 w-12 rounded-full bg-white/10" />
+          <div className="mx-2.5 mt-1.5 h-1 w-10 rounded-full bg-white/10" />
+        </div>
+      ))}
+      <span className="absolute right-0 top-4 -rotate-6 rounded border border-red-400/60 bg-red-400/10 px-1.5 py-0.5 font-mono text-[8px] font-bold uppercase tracking-[0.14em] text-red-300">
+        Flagged
+      </span>
+    </div>
+  );
+}
+
 function PosterStill() {
   // Content hugs the top and bottom edges so the centered play affordance
   // never overlaps it.
   return (
-    <div aria-hidden className="absolute inset-0 flex flex-col items-center justify-between p-6 sm:p-8">
-      <CountdownChip days={90} />
-      <span />
+    <div aria-hidden className="absolute inset-0 flex flex-col justify-between p-5 sm:p-8">
+      <div className="flex items-start justify-between gap-4">
+        <CountdownChip days={68} />
+        <PosterFlaggedStack />
+      </div>
       <div className="flex w-full flex-col items-center gap-3">
         <SceneCard className="w-full max-w-sm p-3.5 opacity-80">
           <MonoTag className="text-white/50">Sourced stat</MonoTag>

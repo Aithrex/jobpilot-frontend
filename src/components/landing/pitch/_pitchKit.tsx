@@ -30,10 +30,17 @@ export const EMERALD = '#6EE7B7';
 export const AMBER = '#FCD34D';
 export const RED = '#F87171';
 
+/** A lifted night surface for opaque in-scene UI cards (stacked papers, popovers). */
+export const STAGE_CARD = '#141A36';
+
 export type Rgb = [number, number, number];
 export const INK_RGB: Rgb = [232, 236, 255];
 export const INDIGO_LIGHT_RGB: Rgb = [139, 155, 244];
 export const RED_RGB: Rgb = [248, 113, 113];
+export const EMERALD_RGB: Rgb = [110, 231, 183];
+export const AMBER_RGB: Rgb = [252, 211, 77];
+/** Muted slate for "generic/free data" chips and honest gray states. */
+export const SLATE_RGB: Rgb = [148, 163, 184];
 
 export const rgba = (c: Rgb, a: number) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
 /** Linear color blend a -> b by t, as an rgba() string. */

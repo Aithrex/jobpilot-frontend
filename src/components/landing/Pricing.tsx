@@ -79,9 +79,9 @@ function PlanCard({ plan, index }: { plan: Plan; index: number }) {
       className={cn(
         'relative flex flex-col rounded-container border bg-card p-6 shadow-soft',
         // the one indigo-accented recommended tier: a lifted border + a quiet
-        // token-driven glow so it reads as the signal on the night surface
+        // token-driven glow so it reads as the signal on the light surface
         plan.featured
-          ? 'border-primary/60 shadow-[0_8px_48px_-12px_hsl(var(--primary)/0.35)] lg:-mt-3 lg:pb-8'
+          ? 'border-primary/50 shadow-[0_8px_32px_-12px_hsl(var(--primary)/0.25)] lg:-mt-3 lg:pb-8'
           : 'border-border',
       )}
       initial={reduce ? { opacity: 0 } : { opacity: 0, y: 18 }}
@@ -139,12 +139,12 @@ function PlanCard({ plan, index }: { plan: Plan; index: number }) {
 
 export function Pricing() {
   return (
-    <section id="pricing" className="relative isolate scroll-mt-16 overflow-hidden border-t border-border bg-card/30 py-20 sm:py-28">
-      {/* Faint indigo glow behind the recommended (centre) tier */}
+    <section id="pricing" className="relative isolate scroll-mt-16 overflow-hidden border-t border-border py-20 sm:py-28">
+      {/* Faint indigo wash behind the recommended (centre) tier */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 -z-10"
-        style={{ background: 'radial-gradient(ellipse 42% 48% at 50% 58%, hsl(var(--primary) / 0.08), transparent 70%)' }}
+        style={{ background: 'radial-gradient(ellipse 42% 48% at 50% 58%, hsl(var(--primary) / 0.05), transparent 70%)' }}
       />
       <Container>
         <div className="mx-auto max-w-2xl text-center">
@@ -152,9 +152,8 @@ export function Pricing() {
           <h2 className="mt-4 font-display text-3xl font-bold leading-[1.12] tracking-tight text-foreground sm:text-4xl">
             Start free. Upgrade when it&apos;s working.
           </h2>
-          <p className="mt-4 text-pretty text-base leading-relaxed text-muted-foreground sm:text-lg">
-            Billing isn&apos;t live yet. Start free today, move up the moment you&apos;re ready. No card, no countdown,
-            no fake urgency.
+          <p className="mt-4 text-pretty text-base leading-relaxed text-muted-foreground">
+            Billing isn&apos;t live yet. No card, no countdown, no fake urgency.
           </p>
         </div>
 
@@ -166,7 +165,7 @@ export function Pricing() {
 
         <p className="mx-auto mt-8 max-w-xl text-center text-[12px] text-muted-foreground">
           <span className="font-semibold text-foreground">*</span> Effectively unlimited. Generous fair-use soft caps
-          keep the platform fast for everyone. Honest limits, no surprises.
+          keep the platform fast for everyone.
         </p>
       </Container>
     </section>

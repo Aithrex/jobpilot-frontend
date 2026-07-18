@@ -68,7 +68,8 @@ export function Reveal({ children, className, delay = 0, y = 22, immediate = fal
   );
 }
 
-/** Section kicker — mono, echoing the hero's chip typography. */
+/** Section kicker — mono caps, indigo on the light surface (`--primary` is the
+ *  AA indigo on the default light token set). */
 export function Eyebrow({ children, icon: Icon, className }: { children: ReactNode; icon?: LucideIcon; className?: string }) {
   return (
     <span
@@ -84,15 +85,15 @@ export function Eyebrow({ children, icon: Icon, className }: { children: ReactNo
 }
 
 /**
- * The hero's mono chip, as a shared atom for the sections below it. White-alpha
- * inks are stable here because the whole landing is a forced-dark surface
- * (LandingExperience) — this chip never renders on a light background.
+ * The landing's mono chip — a quiet light-surface pill (hairline border on a
+ * soft muted fill), fully token-driven so it holds on white and near-white
+ * bands alike.
  */
 export function MonoChip({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.06] px-3.5 py-1.5 font-mono text-[11px] uppercase tracking-[0.18em] text-slate-300',
+        'inline-flex items-center gap-2 rounded-full border border-border bg-muted/60 px-3.5 py-1.5 font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground',
         className,
       )}
     >
@@ -202,7 +203,9 @@ export function TiltCard({
 
 /**
  * Ambient drifting light — soft brand-tinted blobs that breathe behind a
- * section. CSS-keyframe driven (transform-only), play-state gated so it is
+ * section. On the light surface they read as pastel indigo/sky washes (the
+ * aurora-blob styles in index.css are token-driven, so they adapt without a
+ * dark scope). CSS-keyframe driven (transform-only), play-state gated so it is
  * paused off-screen and fully static under prefers-reduced-motion.
  */
 export function Aurora({ className }: { className?: string }) {
