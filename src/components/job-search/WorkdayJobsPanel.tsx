@@ -110,12 +110,30 @@ const INDUSTRY_LABELS: Record<string, string> = {
   other: 'Other',
 };
 
+// The MNC catalog (/api/jobs/mnc) groups companies by SECTOR, a different
+// taxonomy from the Workday / career-pages industry keys — so it gets its
+// own label map (note `fintech` / `consulting` collide across taxonomies
+// with different display names).
+const MNC_SECTOR_LABELS: Record<string, string> = {
+  big_tech: 'Big Tech / FAANG+',
+  semiconductors: 'Semiconductors',
+  enterprise_software: 'Enterprise Software',
+  fintech: 'Fintech & Payments',
+  finance_banking: 'Banking & Finance',
+  healthcare_pharma: 'Healthcare & Pharma',
+  consulting: 'Consulting',
+  retail_consumer: 'Retail & Consumer',
+  automotive_aerospace: 'Automotive & Aerospace',
+  media_entertainment: 'Media & Entertainment',
+};
+
 // Panel setup persists per browser so reopening the tab restores titles and
 // filters instantly — the resume fetch only refreshes the Reset defaults.
-// The Workday and career-pages variants each keep their own saved setup.
+// The Workday, career-pages and MNC variants each keep their own saved setup.
 const PREFS_KEYS: Record<CareerPortalVariant, string> = {
   workday: 'workday_jobs_prefs_v1',
   careers: 'career_pages_prefs_v1',
+  mncs: 'mnc_jobs_prefs_v1',
 };
 
 interface WorkdayPrefs {
@@ -210,8 +228,10 @@ interface WorkdayJobsPanelProps {
   unsaveJob: (jobId: string) => void | Promise<unknown>;
   quickApply: (job: Job) => void | Promise<unknown>;
   /** 'workday' (default) scans the Workday tenant catalog; 'careers' scans
-   *  companies' own career sites (Greenhouse/Lever/Ashby/…). Same engine,
-   *  filters and scoring — different catalog, endpoints and saved setup. */
+   *  companies' own career sites (Greenhouse/Lever/Ashby/…); 'mncs' scans a
+   *  curated FAANG+ / Fortune-500 MNC board catalog grouped by sector. Same
+   *  engine, filters and scoring — different catalog, endpoints and saved
+   *  setup. */
   variant?: CareerPortalVariant;
 }
 
@@ -220,6 +240,8 @@ export function WorkdayJobsPanel({
   variant = 'workday',
 }: WorkdayJobsPanelProps) {
   const isCareers = variant === 'careers';
+  const isMncs = variant === 'mncs';
+  const industryLabels = isMncs ? MNC_SECTOR_LABELS : INDUSTRY_LABELS;
   const prefsKey = PREFS_KEYS[variant];
   const upgrade = useUpgrade();
   // ── Controls (hydrated from saved prefs so nothing reloads every visit) ──
@@ -283,7 +305,11 @@ export function WorkdayJobsPanel({
     void (async () => {
       setCatalogLoading(true);
       const [cat, resume] = await Promise.all([
-        isCareers ? apiService.getCareerPagesCatalog() : apiService.getWorkdayCatalog(),
+        isMncs
+          ? apiService.getMncCatalog()
+          : isCareers
+            ? apiService.getCareerPagesCatalog()
+            : apiService.getWorkdayCatalog(),
         apiService.getResume(),
       ]);
       if (cancelled) return;
@@ -306,16 +332,18 @@ export function WorkdayJobsPanel({
     return () => {
       cancelled = true;
     };
-  }, [isCareers, prefs]);
+  }, [isCareers, isMncs, prefs]);
 
   const runSearch = useCallback(async (forceRefresh = false) => {
     setLoading(true);
     setError(null);
     setGated(false);
     setProgress(null);
-    const search = isCareers
-      ? apiService.searchCareerPagesJobs.bind(apiService)
-      : apiService.searchWorkdayJobs.bind(apiService);
+    const search = isMncs
+      ? apiService.searchMncJobs.bind(apiService)
+      : isCareers
+        ? apiService.searchCareerPagesJobs.bind(apiService)
+        : apiService.searchWorkdayJobs.bind(apiService);
     const resp = await search(
       {
         titles,
@@ -363,7 +391,7 @@ export function WorkdayJobsPanel({
       return;
     }
     if (resp.data) setResult(resp.data);
-  }, [titles, industries, location, remoteOnly, isCareers, upgrade]);
+  }, [titles, industries, location, remoteOnly, isCareers, isMncs, upgrade]);
 
   // Smart-suggest resume-derived titles (same LLM synthesizer the Daily
   // Pipeline's Smart Filters use).
@@ -486,7 +514,7 @@ export function WorkdayJobsPanel({
       .reduce((n, i) => n + i.count, 0);
   }, [catalog, industries]);
 
-  const fallbackSource = isCareers ? 'career page' : 'workday';
+  const fallbackSource = isMncs ? 'mnc' : isCareers ? 'career page' : 'workday';
 
   /** One grid cell: honest sponsorship / feasibility notes above the card. */
   const renderJob = (job: WorkdayJob) => (
@@ -538,7 +566,7 @@ export function WorkdayJobsPanel({
               placeholder="e.g. Backend Engineer, Data Engineer…"
               defaultValues={resumeTitles.length ? resumeTitles.slice(0, 40) : undefined}
               accentClass="border-primary/30 bg-primary/10 text-primary"
-              helperText={`The first 4 core title families drive the ${isCareers ? 'career-site scan' : 'Workday search'}; every title participates in ranking. Your set is saved automatically.`}
+              helperText={`The first 4 core title families drive the ${isMncs ? 'MNC board scan' : isCareers ? 'career-site scan' : 'Workday search'}; every title participates in ranking. Your set is saved automatically.`}
               emptyState="Add a role title, or upload a résumé to prefill."
             />
             <Button
@@ -578,7 +606,7 @@ export function WorkdayJobsPanel({
                         : 'border-border text-muted-foreground hover:border-primary/30 hover:text-primary',
                     )}
                   >
-                    {INDUSTRY_LABELS[ind.key] ?? ind.key}
+                    {industryLabels[ind.key] ?? ind.key}
                     <span className="ml-1 tabular-nums opacity-60">{ind.count}</span>
                   </button>
                 );
@@ -623,7 +651,7 @@ export function WorkdayJobsPanel({
                 className="gap-1.5"
               >
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Rocket className="h-4 w-4" />}
-                {loading ? 'Scanning…' : isCareers ? 'Search career sites' : 'Search Workday'}
+                {loading ? 'Scanning…' : isMncs ? 'Search MNC boards' : isCareers ? 'Search career sites' : 'Search Workday'}
               </Button>
               {result && (
                 <Button
@@ -649,9 +677,11 @@ export function WorkdayJobsPanel({
                     ? 'Fetching full descriptions for top matches — refining skill scores…'
                     : progress
                       ? `Scanned ${progress.tenants_done} of ${progress.tenants_total} companies — ${progress.jobs_found} postings so far (matches stream in below)`
-                      : isCareers
-                        ? 'Querying company career pages directly — Greenhouse, Lever, Ashby and more. No scraping, no credits.'
-                        : 'Querying Workday career sites directly. No scraping, no credits.'}
+                      : isMncs
+                        ? 'Querying curated FAANG+ / Fortune-500 MNC career boards directly. No scraping, no credits.'
+                        : isCareers
+                          ? 'Querying company career pages directly — Greenhouse, Lever, Ashby and more. No scraping, no credits.'
+                          : 'Querying Workday career sites directly. No scraping, no credits.'}
                 </span>
               </div>
               <Progress
@@ -873,10 +903,10 @@ export function WorkdayJobsPanel({
                     <Badge variant="outline" className="text-[10px] tabular-nums">{jobs.length}</Badge>
                     {jobs[0]?.industry && (
                       <span className="text-[10px] font-normal text-muted-foreground">
-                        {INDUSTRY_LABELS[jobs[0].industry] ?? jobs[0].industry}
+                        {industryLabels[jobs[0].industry] ?? jobs[0].industry}
                       </span>
                     )}
-                    {isCareers && jobs[0]?.ats && (
+                    {(isCareers || isMncs) && jobs[0]?.ats && (
                       <span className="rounded-full border border-border bg-muted/40 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide text-muted-foreground">
                         {jobs[0].ats}
                       </span>
@@ -915,12 +945,14 @@ export function WorkdayJobsPanel({
             <Building2 className="h-5 w-5" aria-hidden />
           </div>
           <p className="text-sm font-medium text-foreground">
-            Search {catalogTotal ? `${catalogTotal} ` : ''}{isCareers ? 'company career pages' : 'Workday career sites'} directly
+            Search {catalogTotal ? `${catalogTotal} ` : ''}{isMncs ? 'MNC & Big Tech career boards' : isCareers ? 'company career pages' : 'Workday career sites'} directly
           </p>
           <p className="mx-auto mt-1 max-w-md text-xs text-muted-foreground">
-            {isCareers
-              ? 'The non-Workday universe — companies hosting jobs on their own career pages via Greenhouse, Lever, Ashby, SmartRecruiters, Workable and Recruitee. Public JSON APIs; nothing scraped.'
-              : "Most large enterprises hire through Workday. This queries each company's public careers API directly — fast, free, and fresh."}{' '}
+            {isMncs
+              ? 'A curated FAANG+ / Fortune-500 MNC universe — Big Tech, semiconductors, banking, consulting and more, queried straight from each company’s official board and ranked by fit against your résumé.'
+              : isCareers
+                ? 'The non-Workday universe — companies hosting jobs on their own career pages via Greenhouse, Lever, Ashby, SmartRecruiters, Workable and Recruitee. Public JSON APIs; nothing scraped.'
+                : "Most large enterprises hire through Workday. This queries each company's public careers API directly — fast, free, and fresh."}{' '}
             Defaults to roles posted in the last 3 days; the full 30-day window loads in one scan.
           </p>
           <Button
@@ -929,7 +961,7 @@ export function WorkdayJobsPanel({
             onClick={() => void runSearch(false)}
           >
             <Rocket className="h-3.5 w-3.5" aria-hidden />
-            {isCareers ? 'Search career sites' : 'Search Workday'}
+            {isMncs ? 'Search MNC boards' : isCareers ? 'Search career sites' : 'Search Workday'}
           </Button>
         </div>
       )}

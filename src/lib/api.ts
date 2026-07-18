@@ -3142,6 +3142,43 @@ class ApiService {
   }
 
   // ============================================
+  // Career portals — curated MNC / Big Tech boards (/api/jobs/mnc)
+  // Same shapes as career-pages; catalog `key`s are SECTOR keys.
+  // ============================================
+
+  async getMncCatalog() {
+    return this.request<import("../types/jobs").WorkdayCatalog>(
+      "/jobs/mnc/catalog",
+      { method: "GET" },
+    );
+  }
+
+  async searchMncJobs(
+    params: import("../types/jobs").WorkdayJobsParams,
+    onPartial?: (partial: import("../types/jobs").WorkdayJobsResult) => void,
+  ): Promise<ApiResponse<import("../types/jobs").WorkdayJobsResult>> {
+    const submitResp = await this.request<{ job_id: string }>(
+      "/jobs/mnc/search",
+      {
+        method: "POST",
+        body: JSON.stringify(params),
+      },
+      30000,
+    );
+    if (submitResp.error) {
+      // Forward status + payload so a 403 upgrade_required / 429 quota surfaces.
+      return { error: submitResp.error, status: submitResp.status, errorPayload: submitResp.errorPayload };
+    }
+    if (!submitResp.data?.job_id) return { error: "Failed to start MNC search" };
+    return this.pollJob<import("../types/jobs").WorkdayJobsResult>(
+      submitResp.data.job_id,
+      900000,
+      undefined,
+      onPartial,
+    );
+  }
+
+  // ============================================
   // Auto-Apply (opt-in auto-submit) — /api/apply/auto-submit
   // Rides the existing ANY /api/apply/{proxy+} edge route (no new Terraform).
   // All endpoints 404 when AUTO_SUBMIT_ENABLED is off; callers treat 404 as

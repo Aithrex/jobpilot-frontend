@@ -356,10 +356,11 @@ export interface BatchSearchResponse {
 }
 
 // ── Career portals (direct Workday + career-page ATS fan-out) ──────────────
-// Same engine behind two catalogs: /api/jobs/workday (enterprise Workday
-// tenants) and /api/jobs/career-pages (Greenhouse / Lever / Ashby / …).
+// Same engine behind three catalogs: /api/jobs/workday (enterprise Workday
+// tenants), /api/jobs/career-pages (Greenhouse / Lever / Ashby / …) and
+// /api/jobs/mnc (curated FAANG+ / Fortune-500 MNC boards, keyed by sector).
 
-export type CareerPortalVariant = 'workday' | 'careers';
+export type CareerPortalVariant = 'workday' | 'careers' | 'mncs';
 
 export type WorkdayRecency = 'today' | '24h' | '3d' | '7d' | '30d';
 
@@ -393,8 +394,11 @@ export interface WorkdayJob {
   tenant: string;
   industry: string;
   /** Career-pages rows: which ATS hosts this posting (greenhouse, lever,
-   *  ashby, smartrecruiters, workable, recruitee). Absent on Workday rows. */
+   *  ashby, smartrecruiters, workable, recruitee). Absent on Workday rows.
+   *  MNC rows may also carry workday, amazon, eightfold, phenom, aggregator. */
   ats?: string;
+  /** MNC rows: curated sector key (big_tech, semiconductors, fintech, …). */
+  sector?: string;
   /** Whole days since posting (0 = today). null/undefined = unknown. */
   days_ago?: number | null;
   logo?: string;
