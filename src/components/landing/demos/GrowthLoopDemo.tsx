@@ -191,7 +191,7 @@ function Plan({ reduce, active }: { reduce: boolean; active: boolean }) {
             </StepIn>
           ))}
         </div>
-        <p className="mt-2.5 text-[11px] text-muted-foreground">One focused task a day — Kafka, start to shipped.</p>
+        <p className="mt-2.5 text-[11px] text-muted-foreground">One focused task a day: Kafka, start to shipped.</p>
       </Panel>
     </div>
   );
@@ -240,7 +240,7 @@ function Reach({ reduce, active }: { reduce: boolean; active: boolean }) {
       <CardHead icon={TrendingUp} kicker="Reach" title="Auto-drafted, your voice" />
       <Panel className="mt-3 flex-1 p-3">
         <p className="line-clamp-2 text-[11.5px] leading-snug text-foreground">
-          &ldquo;Shipped a Kafka consumer group that cut lag 40% — here&apos;s what I learned about back-pressure…&rdquo;
+          &ldquo;Shipped a Kafka consumer group that cut lag 40%. Here&apos;s what I learned about back-pressure…&rdquo;
         </p>
         <div className="mt-2 flex items-end gap-3">
           {/* rising sparkline */}
@@ -284,7 +284,7 @@ const PIPE = [
 export function TrackStrip() {
   const { ref, active, reduce } = useDemoInView<HTMLDivElement>();
   const label =
-    'Track: an application pipeline funnel — 24 applied, 8 screens, 3 onsites, 1 offer (illustrative) — alongside 2 warm referral introductions.';
+    'Track: an application pipeline funnel with 24 applied, 8 screens, 3 onsites, 1 offer (illustrative), alongside 2 warm referral introductions.';
   return (
     <div ref={ref}>
       <DemoStage label={label} reserve={132} className="flex items-center gap-4 p-4 sm:gap-6 sm:p-5">
@@ -328,7 +328,7 @@ export function GrowthLoopDemo() {
   const { ref, active, reduce } = useDemoInView<HTMLDivElement>();
   const { step, set } = useDemoLoop(4, { active, reduce, durations: 3000 });
 
-  const label = `Aspirely's growth loop, showing station ${step + 1} of 4: find your edge, a 7-day plan, GitHub-verified proof-of-work, and an auto-drafted LinkedIn post whose impressions rise — then the next topic. Learn, verify, post, reach — compounding.`;
+  const label = `Aspirely's growth loop, showing station ${step + 1} of 4: find your edge, a 7-day plan, GitHub-verified proof-of-work, and an auto-drafted LinkedIn post whose impressions rise. Then the next topic. Learn, verify, post, reach. Compounding.`;
 
   return (
     <div ref={ref}>

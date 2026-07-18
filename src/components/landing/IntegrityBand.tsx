@@ -15,7 +15,7 @@ export function IntegrityBand() {
             <ShieldCheck className="h-5 w-5 shrink-0 text-primary" aria-hidden />
             <p className="text-pretty text-caption text-foreground sm:text-body">
               <span className="font-semibold">Authored, never fabricated.</span>{' '}
-              <span className="text-muted-foreground">Sponsorship you can trust — every number labelled honestly.</span>
+              <span className="text-muted-foreground">Sponsorship you can trust. Every number labelled honestly.</span>
             </p>
           </div>
         </Reveal>

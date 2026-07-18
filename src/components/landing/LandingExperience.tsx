@@ -2,6 +2,7 @@ import { lazy } from 'react';
 import { ShieldCheck, Smartphone, Sparkles, Target } from 'lucide-react';
 import { LandingNav } from './LandingNav';
 import { Hero } from './Hero';
+import { PitchSection } from './pitch/PitchSection';
 import { VisionMission } from './VisionMission';
 import { FeatureSection } from './FeatureSection';
 import { IntegrityBand } from './IntegrityBand';
@@ -39,6 +40,12 @@ export default function LandingExperience() {
       <LandingNav />
       <main>
         <Hero />
+
+        {/* The 60-second pitch cinema — the hero's pitch CTA anchors to #pitch.
+            Statically imported so its poster renders immediately near the fold;
+            the heavy scenes are code-split inside (PitchScenes). */}
+        <PitchSection />
+
         <VisionMission />
 
         {/* 1 · Sponsorship intelligence */}
@@ -53,7 +60,7 @@ export default function LandingExperience() {
               <span className="text-primary">sponsor you</span>.
             </>
           }
-          subtitle="Every role carries honest H-1B facts — sponsor volume, approval rate, fiscal year — with a calm, clear state for the ones that don't. Because your OPT clock is already running."
+          subtitle="Every role carries honest H-1B facts: sponsor volume, approval rate, fiscal year. The ones that don't sponsor say so plainly. Because your OPT clock is already running."
           demo={<SponsorshipDemo />}
           reserve={404}
           caption={{
@@ -73,13 +80,13 @@ export default function LandingExperience() {
               Wake up to matched jobs. Approve with <span className="text-primary">one tap</span>.
             </>
           }
-          subtitle="A morning digest lands on WhatsApp — role, match, sponsorship. Tap approve, and Aspirely's extension autofills the application (your authored answers included) and submits it for you."
+          subtitle="A morning digest lands on WhatsApp with five vetted roles, five max. You approve each one, the extension fills the form in your own browser with your authored answers, and you hit submit."
           demo={<WhatsAppApplyDemo />}
           reserve={488}
           flip
           caption={{
             feature: 'One-tap apply, even from WhatsApp',
-            promise: 'approve on your phone; Aspirely applies and submits for you.',
+            promise: 'approve on your phone, finish in your own browser. Nothing runs at volume.',
           }}
         />
 
@@ -94,7 +101,7 @@ export default function LandingExperience() {
               Become the candidate they <span className="text-primary">pick</span>.
             </>
           }
-          subtitle="Keywords from the JD lock into your resume and the ATS score climbs — then the recruiter's 6-second gaze shows exactly what earns the read. The strongest honest version of you, authored from your history."
+          subtitle="Keywords from the JD lock into your resume and the ATS score climbs. Then the recruiter's 6-second gaze shows exactly what earns the read. The strongest honest version of you, authored from your history."
           demo={<TailorDemo />}
           reserve={512}
           caption={{
@@ -114,7 +121,7 @@ export default function LandingExperience() {
               Aspirely <span className="text-primary">compounds</span> your edge.
             </>
           }
-          subtitle="Find what sets you apart, follow a 7-day plan, ship a GitHub-verified proof-of-work, then post it — impressions rise, and the next topic begins. Learn → verify → post → reach: the loop no one else runs. Your pipeline stays tracked the whole way."
+          subtitle="Find what sets you apart, follow a 7-day plan, ship a GitHub-verified proof-of-work, then post it. Impressions rise, and the next topic begins. Learn, verify, post, reach: the loop no one else runs. Your pipeline stays tracked the whole way."
           demo={<GrowthLoopDemo />}
           reserve={440}
           prominent

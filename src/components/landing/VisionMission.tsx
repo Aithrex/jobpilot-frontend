@@ -57,7 +57,7 @@ export function VisionMission() {
       <Container className="flex flex-col gap-14 sm:gap-16">
         <Statement
           eyebrow="Vision"
-          fragments={['A job hunt', 'you can trust —', 'every match real,', 'every claim your own.']}
+          fragments={['A job hunt', 'you can trust:', 'every match real,', 'every claim your own.']}
         />
         <Statement
           eyebrow="Mission"
@@ -67,7 +67,7 @@ export function VisionMission() {
             <span key="fit" className="text-primary">
               fit
             </span>,
-            '— so your last months',
+            'so that your last months',
             'on a visa count.',
           ]}
         />

@@ -48,15 +48,15 @@ type Job = {
 };
 
 const JOBS: Job[] = [
-  { company: 'Stripe', role: 'Backend Engineer', location: 'San Francisco, CA', salary: '$130K–$170K', match: 94, markClass: 'text-chart-4' },
-  { company: 'Nvidia', role: 'ML Engineer', location: 'Santa Clara, CA', salary: '$140K–$185K', match: 91, markClass: 'text-chart-2' },
-  { company: 'Databricks', role: 'Data Engineer', location: 'Seattle, WA', salary: '$125K–$165K', match: 89, markClass: 'text-chart-6' },
-  { company: 'Ramp', role: 'Platform Engineer', location: 'New York, NY', salary: '$120K–$160K', match: 87, markClass: 'text-chart-3' },
-  { company: 'Atlassian', role: 'Software Engineer', location: 'Remote (US)', salary: '$115K–$150K', match: 85, markClass: 'text-chart-1' },
+  { company: 'Stripe', role: 'Backend Engineer', location: 'San Francisco, CA', salary: '$130K-$170K', match: 94, markClass: 'text-chart-4' },
+  { company: 'Nvidia', role: 'ML Engineer', location: 'Santa Clara, CA', salary: '$140K-$185K', match: 91, markClass: 'text-chart-2' },
+  { company: 'Databricks', role: 'Data Engineer', location: 'Seattle, WA', salary: '$125K-$165K', match: 89, markClass: 'text-chart-6' },
+  { company: 'Ramp', role: 'Platform Engineer', location: 'New York, NY', salary: '$120K-$160K', match: 87, markClass: 'text-chart-3' },
+  { company: 'Atlassian', role: 'Software Engineer', location: 'Remote (US)', salary: '$115K-$150K', match: 85, markClass: 'text-chart-1' },
 ];
 
 const CHIPS: Array<{ label: string; icon: LucideIcon }> = [
-  { label: 'Your résumé', icon: FileText },
+  { label: 'Your resume', icon: FileText },
   { label: 'Sponsors H-1B', icon: ShieldCheck },
   { label: 'New-grad', icon: GraduationCap },
   { label: 'Remote-ok', icon: Globe },
@@ -151,7 +151,7 @@ export function HeroShortlist({ className }: { className?: string }) {
   const { step } = useDemoLoop(JOBS.length, { active, reduce, durations: 3200 });
 
   const label =
-    'Illustration of the Aspirely job feed: 1,248 listings checked, 5 fit you, re-verified this morning, filtered by your résumé, H-1B sponsors, new-grad and remote-friendly roles — ' +
+    'Illustration of the Aspirely job feed: 1,248 listings checked, 5 fit you, re-verified this morning, filtered by your resume, H-1B sponsors, new-grad and remote-friendly roles: ' +
     JOBS.map((j) => `${j.role} at ${j.company}, ${j.match} percent match, verified H-1B sponsor, ${j.location}, ${j.salary}`).join('; ') +
     '. Footer: approve on WhatsApp and Aspirely applies for you. Illustrative example.';
 
@@ -225,7 +225,7 @@ export function HeroShortlist({ className }: { className?: string }) {
         <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 border-t border-border bg-muted/30 px-3.5 py-2.5">
           <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
             <Smartphone className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
-            Approve on WhatsApp — Aspirely applies for you
+            Approve on WhatsApp. Aspirely applies for you
           </span>
           <span className="inline-flex items-center gap-1 rounded-full border border-success/30 bg-success/10 px-2 py-0.5 text-[10px] font-semibold text-success">
             <BadgeCheck className="h-3 w-3" aria-hidden />

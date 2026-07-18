@@ -31,7 +31,7 @@ const JOBS: Job[] = [
 ];
 const LEAD = JOBS[0];
 const WHY_ANSWER =
-  'Your payments platform scales to millions of merchants — I ship high-throughput Go services and want to own that reliability.';
+  'Your payments platform scales to millions of merchants. I ship high-throughput Go services and want to own that reliability.';
 
 function useTypewriter(text: string, run: boolean, reduce: boolean, cps = 46) {
   const [n, setN] = useState(reduce ? text.length : 0);
@@ -112,7 +112,7 @@ function ChatScreen({
         <StepIn show={step >= 0} reduce={reduce} className="max-w-[85%] self-start">
           <div className="rounded-container rounded-tl-sm border border-border bg-card px-3 py-2 shadow-soft">
             <p className="text-[12.5px] leading-snug text-foreground">
-              Good morning, Aditya — 3 roles that fit <span className="font-semibold">and</span> sponsor you:
+              Good morning, Aditya. 3 roles that fit <span className="font-semibold">and</span> sponsor you:
             </p>
           </div>
         </StepIn>
@@ -189,7 +189,7 @@ function ExtScreen({ step, reduce, active }: { step: number; reduce: boolean; ac
 
       <div className="flex-1 space-y-2.5 overflow-hidden px-3 py-3">
         <p className="text-[12px] font-semibold text-foreground">
-          Autofilling · {LEAD.company} — {LEAD.role}
+          Autofilling · {LEAD.company} · {LEAD.role}
         </p>
 
         <div className="grid grid-cols-2 gap-2">
@@ -230,7 +230,7 @@ function ExtScreen({ step, reduce, active }: { step: number; reduce: boolean; ac
               </p>
             ) : (
               <>
-                <p className="text-[11px] text-muted-foreground">Reviewed — nothing fabricated</p>
+                <p className="text-[11px] text-muted-foreground">Reviewed. Nothing fabricated</p>
                 <span className="rounded-[6px] bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground">
                   Submit application
                 </span>
@@ -251,7 +251,7 @@ export function WhatsAppApplyDemo() {
   const screen = step <= 2 ? 'chat' : 'ext';
 
   const label =
-    'A WhatsApp morning digest lists three matched, sponsorship-verified roles; the user taps Approve all, and Aspirely’s browser extension autofills the application — including an authored "why this company" answer — and submits it.';
+    'A WhatsApp morning digest lists three matched, sponsorship-verified roles; the user taps Approve all, and Aspirely’s browser extension autofills the application, including an authored "why this company" answer, and submits it.';
 
   // reduced motion: one static frame that still tells the whole story —
   // the full WhatsApp digest (approved) plus the resolved "submitted" outcome.
@@ -282,7 +282,7 @@ export function WhatsAppApplyDemo() {
       <span className="sr-only" aria-live="polite">
         {screen === 'chat'
           ? step >= 2
-            ? 'WhatsApp digest ready — approve to apply.'
+            ? 'WhatsApp digest ready. Approve to apply.'
             : 'A WhatsApp morning digest is arriving.'
           : step >= 4
             ? 'Application submitted; two more queued.'

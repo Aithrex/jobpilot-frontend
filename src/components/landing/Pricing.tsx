@@ -50,7 +50,7 @@ const PLANS: Plan[] = [
       { label: '100 apply-answers / day', included: true },
       { label: '50 auto-submits / day', included: true },
       { label: '10 authored resumes / month', included: true },
-      { label: 'Batch tailoring — up to 10 at once', included: true },
+      { label: 'Batch tailoring, up to 10 at once', included: true },
       { label: 'The full growth loop', included: true },
     ],
     cta: 'Upgrade anytime',
@@ -64,7 +64,7 @@ const PLANS: Plan[] = [
       { label: 'Unlimited resume tailoring*', included: true },
       { label: 'Unlimited apply-answers*', included: true },
       { label: 'Unlimited auto-submit*', included: true },
-      { label: 'Batch tailoring — up to 25 at once', included: true },
+      { label: 'Batch tailoring, up to 25 at once', included: true },
       { label: 'Every feature, priority processing', included: true },
       { label: 'Everything in Premium', included: true },
     ],
@@ -143,7 +143,7 @@ export function Pricing() {
             Start free. Upgrade when it&apos;s working.
           </h2>
           <p className="mt-4 text-pretty text-base leading-relaxed text-muted-foreground sm:text-lg">
-            Billing isn&apos;t live yet — start free today, move up the moment you&apos;re ready. No card, no countdown,
+            Billing isn&apos;t live yet. Start free today, move up the moment you&apos;re ready. No card, no countdown,
             no fake urgency.
           </p>
         </div>
@@ -155,7 +155,7 @@ export function Pricing() {
         </div>
 
         <p className="mx-auto mt-8 max-w-xl text-center text-[12px] text-muted-foreground">
-          <span className="font-semibold text-foreground">*</span> Effectively unlimited — generous fair-use soft caps
+          <span className="font-semibold text-foreground">*</span> Effectively unlimited. Generous fair-use soft caps
           keep the platform fast for everyone. Honest limits, no surprises.
         </p>
       </Container>

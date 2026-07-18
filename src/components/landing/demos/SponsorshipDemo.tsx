@@ -96,7 +96,7 @@ export function SponsorshipDemo() {
 
   const label = c.sponsors
     ? `Job card for ${c.role} at ${c.name}: ${c.match} percent match, verified H-1B sponsor with about ${c.approvals} approvals and ${c.approvalRate} percent approval rate in fiscal year 2024 (illustrative, public data), with ${c.optDays} days left on the OPT clock.`
-    : `Job card for ${c.role} at ${c.name}: ${c.match} percent match, no recent H-1B filings found — Aspirely will flag it if that changes.`;
+    : `Job card for ${c.role} at ${c.name}: ${c.match} percent match, no recent H-1B filings found. Aspirely will flag it if that changes.`;
 
   return (
     <div ref={ref}>
@@ -177,7 +177,7 @@ export function SponsorshipDemo() {
               </StepIn>
             ) : (
               <p className="pl-6 text-caption text-muted-foreground">
-                We&apos;ll flag this role the moment sponsorship signals appear — no wasted application.
+                We&apos;ll flag this role the moment sponsorship signals appear. No wasted application.
               </p>
             )}
           </Panel>

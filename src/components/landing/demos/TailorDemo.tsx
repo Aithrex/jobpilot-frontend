@@ -245,7 +245,7 @@ export function TailorDemo() {
             <div className="mt-auto flex items-center gap-1.5 rounded-control border border-primary/25 bg-primary/[0.05] px-2.5 py-1.5">
               <PenLine className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
               <p className="text-[11px] leading-snug text-foreground">
-                Authored from your history — <span className="font-semibold">never fabricated</span>.
+                Authored from your history, <span className="font-semibold">never fabricated</span>.
               </p>
             </div>
           </div>

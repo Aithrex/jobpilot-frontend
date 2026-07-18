@@ -25,7 +25,7 @@ export function CloseCTA() {
             Make your last months count.
           </h2>
           <p className="mx-auto mt-3 max-w-sm text-body text-muted-foreground">
-            Free to start, no card — begin with the roles that actually sponsor.
+            Free to start, no card. Begin with the roles that actually sponsor.
           </p>
           <div className="mt-8 flex justify-center">
             <Button asChild size="lg" className="w-full rounded-control sm:w-auto">
