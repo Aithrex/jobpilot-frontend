@@ -1,10 +1,11 @@
-import { lazy } from 'react';
+import { lazy, type CSSProperties } from 'react';
 import { ShieldCheck, Smartphone, Sparkles, Target } from 'lucide-react';
 import { LandingNav } from './LandingNav';
 import { Hero } from './Hero';
 import { PitchSection } from './pitch/PitchSection';
 import { VisionMission } from './VisionMission';
 import { FeatureSection } from './FeatureSection';
+import { FeatureConstellation } from './FeatureConstellation';
 import { IntegrityBand } from './IntegrityBand';
 import { Pricing } from './Pricing';
 import { CloseCTA } from './CloseCTA';
@@ -18,7 +19,7 @@ import { LandingFooter } from './LandingFooter';
  *   Hero (Signal Resolve) · Vision & Mission
  *   1 · Sponsorship intelligence   2 · One-tap apply, from WhatsApp
  *   3 · Become the candidate       4 · The growth loop (+ Track)
- *   Integrity · Pricing · Close
+ *   Constellation (the full breadth) · Integrity · Pricing · Close
  *
  * Every demo composes the shared motion kit (demos/_kit.tsx): one timing/easing
  * language, in-view-gated with a single ambient loop, code-split + lazy so
@@ -34,9 +35,28 @@ const TailorDemo = lazy(() => import('./demos/TailorDemo'));
 const GrowthLoopDemo = lazy(() => import('./demos/GrowthLoopDemo'));
 const TrackStrip = lazy(() => import('./demos/GrowthLoopDemo').then((m) => ({ default: m.TrackStrip })));
 
+/**
+ * The landing's "night signal" surface — ONE continuous cinematic look in BOTH
+ * app themes. The `dark` class on the page root activates the app's dark token
+ * set locally (class-based theming), and these HSL-triple overrides re-tune
+ * that set from slate to the hero's night-indigo (#0A0D1E) family, so every
+ * token-driven section and demo below renders its dark variant on the same
+ * canvas the hero fades into. Values are HSL triples matching src/index.css.
+ */
+const NIGHT_SURFACE = {
+  '--background': '231 50% 8%', // #0A0D1E — the hero band's exact night indigo
+  '--card': '230 40% 13%', // lifted night panel
+  '--popover': '230 40% 13%',
+  '--muted': '230 34% 16%',
+  '--accent': '230 34% 16%',
+  '--secondary': '230 34% 16%',
+  '--border': '231 28% 22%', // hairlines on night
+  '--input': '231 28% 22%',
+} as CSSProperties;
+
 export default function LandingExperience() {
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="dark min-h-screen bg-background text-foreground" style={NIGHT_SURFACE}>
       <LandingNav />
       <main>
         <Hero />
@@ -132,6 +152,9 @@ export default function LandingExperience() {
         >
           <TrackStrip />
         </FeatureSection>
+
+        {/* The full breadth — supporting features as a constellation of nodes */}
+        <FeatureConstellation />
 
         <IntegrityBand />
         <Pricing />

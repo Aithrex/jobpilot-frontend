@@ -42,9 +42,21 @@ function Copy({
   center,
 }: Pick<FeatureSectionProps, 'index' | 'eyebrow' | 'eyebrowIcon' | 'title' | 'subtitle'> & { center?: boolean }) {
   return (
-    <div className={cn(center ? 'mx-auto max-w-2xl text-center' : 'max-w-md')}>
+    // `isolate` keeps the -z-10 ghost numeral behind this block's own content
+    // while it still composites above the page's night background.
+    <div className={cn('relative isolate', center ? 'mx-auto max-w-2xl text-center' : 'max-w-md')}>
+      {/* Oversized ghost numeral — a faint mono figure behind the copy */}
+      <span
+        aria-hidden
+        className={cn(
+          'pointer-events-none absolute -z-10 select-none font-mono text-[6.5rem] font-bold leading-none text-primary/[0.07] sm:text-[8.5rem]',
+          center ? '-top-14 left-1/2 -translate-x-1/2 sm:-top-20' : '-top-12 -left-1 sm:-top-16',
+        )}
+      >
+        {index}
+      </span>
       <div className={cn('flex items-center gap-3', center && 'justify-center')}>
-        <span className="font-display text-sm font-bold tabular-nums text-primary/70">{index}</span>
+        <span className="font-mono text-sm font-bold tabular-nums text-primary/70">{index}</span>
         <Eyebrow icon={eyebrowIcon}>{eyebrow}</Eyebrow>
       </div>
       <h2 className="mt-4 font-display text-3xl font-bold leading-[1.14] tracking-tight text-foreground sm:text-4xl">
@@ -57,7 +69,13 @@ function Copy({
 
 function Media({ reserve, caption, demo }: Pick<FeatureSectionProps, 'reserve' | 'caption' | 'demo'>) {
   return (
-    <div>
+    <div className="relative isolate">
+      {/* Soft indigo radial glow lifting the demo panel off the night surface */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -inset-10 -z-10"
+        style={{ background: 'radial-gradient(ellipse 68% 62% at 50% 45%, hsl(var(--primary) / 0.11), transparent 70%)' }}
+      />
       <LazyMount minHeight={reserve}>
         <Suspense fallback={<DemoSkeleton style={{ minHeight: reserve }} />}>{demo}</Suspense>
       </LazyMount>

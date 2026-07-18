@@ -53,16 +53,21 @@ function StageFrame({ frameRef, children }: { frameRef?: Ref<HTMLDivElement>; ch
 
 // ── Poster (renders immediately — NOT part of the lazy scenes chunk) ─────────
 function PosterStill() {
+  // Content hugs the top and bottom edges so the centered play affordance
+  // never overlaps it.
   return (
-    <div aria-hidden className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6">
+    <div aria-hidden className="absolute inset-0 flex flex-col items-center justify-between p-6 sm:p-8">
       <CountdownChip days={90} />
-      <SceneCard className="w-full max-w-sm p-3.5 opacity-80">
-        <MonoTag className="text-white/50">Sourced stat</MonoTag>
-        <p className="mt-1.5 text-[13px] leading-snug text-white/85">
-          100+ apps a day: about 39% less likely to get a positive response.
-        </p>
-      </SceneCard>
-      <MonoTag className="text-white/40">7 chapters · 60 seconds · no audio</MonoTag>
+      <span />
+      <div className="flex w-full flex-col items-center gap-3">
+        <SceneCard className="w-full max-w-sm p-3.5 opacity-80">
+          <MonoTag className="text-white/50">Sourced stat</MonoTag>
+          <p className="mt-1.5 text-[13px] leading-snug text-white/85">
+            100+ apps a day: about 39% less likely to get a positive response.
+          </p>
+        </SceneCard>
+        <MonoTag className="text-white/40">7 chapters · 60 seconds · no audio</MonoTag>
+      </div>
     </div>
   );
 }

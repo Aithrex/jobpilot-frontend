@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowRight, Check, Minus, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Container, EASE, Eyebrow, startHref } from './_shared';
+import { Container, EASE, MonoChip, startHref } from './_shared';
 
 /**
  * Pricing — the three real plans from the backend entitlements
@@ -78,7 +78,11 @@ function PlanCard({ plan, index }: { plan: Plan; index: number }) {
     <motion.div
       className={cn(
         'relative flex flex-col rounded-container border bg-card p-6 shadow-soft',
-        plan.featured ? 'border-primary/50 shadow-panel lg:-mt-3 lg:pb-8' : 'border-border',
+        // the one indigo-accented recommended tier: a lifted border + a quiet
+        // token-driven glow so it reads as the signal on the night surface
+        plan.featured
+          ? 'border-primary/60 shadow-[0_8px_48px_-12px_hsl(var(--primary)/0.35)] lg:-mt-3 lg:pb-8'
+          : 'border-border',
       )}
       initial={reduce ? { opacity: 0 } : { opacity: 0, y: 18 }}
       whileInView={{ opacity: 1, y: 0 }}
@@ -135,10 +139,16 @@ function PlanCard({ plan, index }: { plan: Plan; index: number }) {
 
 export function Pricing() {
   return (
-    <section id="pricing" className="scroll-mt-16 border-t border-border bg-card/40 py-20 sm:py-28">
+    <section id="pricing" className="relative isolate scroll-mt-16 overflow-hidden border-t border-border bg-card/30 py-20 sm:py-28">
+      {/* Faint indigo glow behind the recommended (centre) tier */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 -z-10"
+        style={{ background: 'radial-gradient(ellipse 42% 48% at 50% 58%, hsl(var(--primary) / 0.08), transparent 70%)' }}
+      />
       <Container>
         <div className="mx-auto max-w-2xl text-center">
-          <Eyebrow>Pricing</Eyebrow>
+          <MonoChip>Pricing</MonoChip>
           <h2 className="mt-4 font-display text-3xl font-bold leading-[1.12] tracking-tight text-foreground sm:text-4xl">
             Start free. Upgrade when it&apos;s working.
           </h2>
