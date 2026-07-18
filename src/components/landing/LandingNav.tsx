@@ -29,10 +29,18 @@ function ThemeToggle() {
   );
 }
 
+/** In-page anchors to real sections only — no invented pages. */
+const NAV_LINKS = [
+  { label: 'How it works', href: '#sponsorship' },
+  { label: 'Growth loop', href: '#growth-loop' },
+  { label: 'Pricing', href: '#pricing' },
+];
+
 /**
- * Slim landing header — logo, theme toggle, and the single primary action
- * ("Get started"). Border colour swaps on scroll (never appears/disappears) so
- * the header height is stable — zero layout shift.
+ * Slim landing header — logo, real section anchors (desktop), theme toggle,
+ * sign-in, and the single primary action (same outcome verb as the hero:
+ * "Find my matches"). Border colour swaps on scroll (never appears/disappears)
+ * so the header height is stable — zero layout shift.
  */
 export function LandingNav() {
   const [scrolled, setScrolled] = useState(false);
@@ -62,13 +70,25 @@ export function LandingNav() {
           <span className="font-display text-lg tracking-tight">Aspirely</span>
         </Link>
 
+        <nav aria-label="Landing sections" className="hidden items-center gap-1 md:flex">
+          {NAV_LINKS.map(({ label, href }) => (
+            <a
+              key={href}
+              href={href}
+              className="rounded-control px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            >
+              {label}
+            </a>
+          ))}
+        </nav>
+
         <div className="flex items-center gap-1.5">
           <ThemeToggle />
           <Button asChild variant="ghost" size="sm" className="hidden text-muted-foreground hover:text-foreground sm:inline-flex">
             <Link to="/login">Sign in</Link>
           </Button>
-          <Button asChild size="sm" className="rounded-control">
-            <Link to="/register">Get started</Link>
+          <Button asChild className="h-11 rounded-full px-5">
+            <Link to="/register">Find my matches</Link>
           </Button>
         </div>
       </Container>

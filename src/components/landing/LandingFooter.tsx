@@ -14,8 +14,11 @@ export function LandingFooter() {
           Aspirely <span className="font-normal text-muted-foreground">by Aithrex</span>
         </div>
         <nav className="flex items-center gap-5" aria-label="Footer">
-          <a href="#how-it-works" className="rounded-control transition-colors hover:text-foreground">
+          <a href="#sponsorship" className="rounded-control transition-colors hover:text-foreground">
             How it works
+          </a>
+          <a href="#pricing" className="rounded-control transition-colors hover:text-foreground">
+            Pricing
           </a>
           <Link to="/login" className="rounded-control transition-colors hover:text-foreground">
             Sign in

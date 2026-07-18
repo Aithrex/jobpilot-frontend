@@ -1,17 +1,29 @@
 import { Link } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, BadgeCheck, CreditCard, Lock, Play, ShieldCheck, type LucideIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Container, EASE } from './_shared';
+import { Aurora, Container, EASE } from './_shared';
 import { HeroShortlist } from './HeroShortlist';
 
 /**
- * Hero — above the fold. One headline (≤6 words), one subline (≤12), one
- * primary CTA and one secondary text link, beside the HeroShortlist signature —
- * a literal job-feed panel that funnels 1,240 listings down to 3 that fit.
- * No third element. Reserves the signature's height so the page never shifts as
- * it mounts (CLS≈0).
+ * Hero — above the fold. Conversion principles (benefit headline, urgency
+ * subtext, outcome CTA, trust signals, proof-of-product panel) applied under
+ * the brand's integrity rule (no fabricated stats, press logos, or ratings):
+ *
+ *   verified-sponsorship badge → big benefit headline (key phrase in primary)
+ *   → urgency subtext → "Find my matches" + "See how it works" (smooth-scrolls
+ *   to the first demo) → an honest trust row → the realistic job panel.
+ *
+ * Background is a premium, clean layer stack: faint masked grid + slow aurora
+ * wash — both token-driven, both static under prefers-reduced-motion.
  */
+
+const TRUST: Array<{ icon: LucideIcon; label: string }> = [
+  { icon: ShieldCheck, label: 'Sponsorship signals from public H-1B filings' },
+  { icon: CreditCard, label: 'Free to start — no card' },
+  { icon: Lock, label: 'Your data stays yours' },
+];
+
 export function Hero() {
   const reduce = useReducedMotion();
   const enter = (delay: number) =>
@@ -24,44 +36,71 @@ export function Hero() {
         };
 
   return (
-    <section className="relative">
-      <Container className="grid items-center gap-10 pb-16 pt-14 sm:pt-20 lg:grid-cols-[0.95fr_1.05fr] lg:gap-14 lg:pb-24">
+    <section className="relative overflow-hidden">
+      {/* Layered premium background — grid dissolves under a radial mask,
+          aurora drifts behind it (paused off-screen / reduced motion). */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 bg-grid-faint" />
+      <Aurora />
+
+      <Container className="grid items-center gap-12 pb-16 pt-14 sm:pt-20 lg:grid-cols-[1.02fr_0.98fr] lg:gap-14 lg:pb-24">
         {/* copy */}
-        <div className="max-w-xl text-center lg:text-left">
-          <motion.h1
-            {...enter(0.04)}
-            className="font-display text-4xl font-extrabold leading-[1.06] tracking-tight text-foreground sm:text-5xl lg:text-[3.25rem]"
+        <div className="mx-auto max-w-xl text-center lg:mx-0 lg:text-left">
+          <motion.p
+            {...enter(0)}
+            className="inline-flex items-center gap-1.5 rounded-full border border-success/30 bg-success/10 px-3 py-1.5 text-xs font-semibold text-success"
           >
-            Cut the noise. <span className="text-primary">Find the fit.</span>
+            <BadgeCheck className="h-3.5 w-3.5" aria-hidden />
+            H-1B sponsorship, checked against public filings
+          </motion.p>
+
+          <motion.h1
+            {...enter(0.05)}
+            className="mt-5 text-balance font-display text-[2.6rem] font-extrabold leading-[1.05] tracking-[-0.03em] text-foreground sm:text-5xl lg:text-6xl"
+          >
+            Find jobs that <span className="text-primary">actually sponsor</span> you.
           </motion.h1>
 
           <motion.p
-            {...enter(0.12)}
-            className="mx-auto mt-5 max-w-md text-body text-lg leading-relaxed text-muted-foreground lg:mx-0"
+            {...enter(0.11)}
+            className="mx-auto mt-5 max-w-md text-pretty text-lg leading-relaxed text-muted-foreground lg:mx-0"
           >
-            Sponsorship-verified matches and tailored applications, before your visa clock runs out.
+            Real companies with real H-1B filing records, matched to your résumé — so your OPT clock
+            stops burning on roles that were never going to sponsor.
           </motion.p>
 
           <motion.div
-            {...enter(0.2)}
-            className="mt-8 flex flex-col items-center gap-x-6 gap-y-3 sm:flex-row lg:justify-start"
+            {...enter(0.18)}
+            className="mt-8 flex flex-col items-center gap-3 sm:flex-row lg:justify-start"
           >
-            <Button asChild size="lg" className="w-full rounded-control sm:w-auto">
+            <Button asChild size="lg" className="w-full rounded-control shadow-panel sm:w-auto">
               <Link to="/register">
-                Get started <ArrowRight className="h-4 w-4" />
+                Find my matches <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
-            <Link
-              to="/login"
-              className="rounded-control px-1 py-1 text-sm font-medium text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-            >
-              Sign in
-            </Link>
+            <Button asChild size="lg" variant="outline" className="w-full rounded-control sm:w-auto">
+              <a href="#sponsorship">
+                <Play className="h-4 w-4" /> See how it works
+              </a>
+            </Button>
           </motion.div>
+
+          {/* Honest trust row — real product facts, never invented social proof */}
+          <motion.ul
+            {...enter(0.26)}
+            className="mt-8 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 lg:justify-start"
+            aria-label="Why you can trust Aspirely"
+          >
+            {TRUST.map(({ icon: Icon, label }) => (
+              <li key={label} className="inline-flex items-center gap-1.5 text-[13px] font-medium text-muted-foreground">
+                <Icon className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
+                {label}
+              </li>
+            ))}
+          </motion.ul>
         </div>
 
-        {/* signature */}
-        <motion.div {...enter(0.16)} className="mx-auto w-full max-w-xl">
+        {/* signature — the realistic job panel */}
+        <motion.div {...enter(0.15)} className="mx-auto w-full max-w-xl">
           <HeroShortlist />
         </motion.div>
       </Container>

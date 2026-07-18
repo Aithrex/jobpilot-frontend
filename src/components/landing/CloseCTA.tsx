@@ -6,8 +6,8 @@ import { Container, EASE } from './_shared';
 
 /**
  * Close — a single, calm call to action. The CTA wording is IDENTICAL to the
- * hero primary ("Get started" → /register) so the whole page resolves to one
- * decision.
+ * hero primary ("Find my matches" → /register) so the whole page resolves to
+ * one decision.
  */
 export function CloseCTA() {
   const reduce = useReducedMotion();
@@ -25,12 +25,12 @@ export function CloseCTA() {
             Make your last months count.
           </h2>
           <p className="mx-auto mt-3 max-w-sm text-body text-muted-foreground">
-            Start with the roles that actually fit.
+            Free to start, no card — begin with the roles that actually sponsor.
           </p>
           <div className="mt-8 flex justify-center">
             <Button asChild size="lg" className="w-full rounded-control sm:w-auto">
               <Link to="/register">
-                Get started <ArrowRight className="h-4 w-4" />
+                Find my matches <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
           </div>

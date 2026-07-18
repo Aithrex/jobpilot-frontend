@@ -143,8 +143,8 @@ export function Pricing() {
             Start free. Upgrade when it&apos;s working.
           </h2>
           <p className="mt-4 text-pretty text-base leading-relaxed text-muted-foreground sm:text-lg">
-            Billing isn&apos;t live yet — create a free account today and move up the moment you&apos;re ready. No card, no
-            countdown.
+            Billing isn&apos;t live yet — start free today, move up the moment you&apos;re ready. No card, no countdown,
+            no fake urgency.
           </p>
         </div>
 

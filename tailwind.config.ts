@@ -35,6 +35,20 @@ export default {
         },
         success: "hsl(var(--success))",
         warning: "hsl(var(--warning))",
+        // Categorical palette (src/index.css --chart-*) — data-viz AND the
+        // landing's decorative brand logomarks. Values are full hex tokens,
+        // so no hsl() bridge (opacity modifiers unsupported — pair with
+        // neutral surfaces instead).
+        chart: {
+          "1": "var(--chart-1)",
+          "2": "var(--chart-2)",
+          "3": "var(--chart-3)",
+          "4": "var(--chart-4)",
+          "5": "var(--chart-5)",
+          "6": "var(--chart-6)",
+          "7": "var(--chart-7)",
+          "8": "var(--chart-8)",
+        },
         muted: {
           DEFAULT: "hsl(var(--muted))",
           foreground: "hsl(var(--muted-foreground))",
