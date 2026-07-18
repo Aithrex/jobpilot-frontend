@@ -26,7 +26,7 @@ export default function Login() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (isAuthenticated) navigate('/app', { replace: true });
+    if (isAuthenticated) navigate('/next/today', { replace: true });
   }, [isAuthenticated, navigate]);
 
   useEffect(() => {
@@ -64,7 +64,7 @@ export default function Login() {
       } else {
         setSessionExpired(false);
         toast.success('Welcome back!');
-        navigate('/app');
+        navigate('/next/today');
       }
     } catch {
       setError('An unexpected error occurred. Please try again.');

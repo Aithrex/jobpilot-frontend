@@ -34,7 +34,7 @@ export default function Register() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (isAuthenticated) navigate('/app', { replace: true });
+    if (isAuthenticated) navigate('/next/today', { replace: true });
   }, [isAuthenticated, navigate]);
 
   useEffect(() => {
@@ -82,7 +82,7 @@ export default function Register() {
         return;
       }
       toast.success('Account created — welcome to Aspirely!');
-      navigate('/app');
+      navigate('/next/today');
     } catch {
       setError('An unexpected error occurred. Please try again.');
     } finally {

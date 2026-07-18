@@ -60,7 +60,7 @@ export default function AuthCallback() {
         window.setTimeout(() => navigate('/login', { replace: true }), 2200);
       } else {
         toast.success('Signed in');
-        navigate('/app', { replace: true });
+        navigate('/next/today', { replace: true });
       }
     });
   }, [hydrateFromToken, navigate]);

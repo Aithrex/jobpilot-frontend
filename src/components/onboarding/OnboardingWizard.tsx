@@ -270,7 +270,7 @@ export default function OnboardingWizard() {
     }
     clearOnboardingState();
     toast.success("You're all set — welcome to Aspirely!");
-    navigate('/app', { replace: true });
+    navigate('/next/today', { replace: true });
   };
 
   const handleOpenChange = (open: boolean) => {
