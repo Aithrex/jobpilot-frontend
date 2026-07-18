@@ -47,7 +47,7 @@ export function ForgotPasswordDialog({ open, onClose, initialEmail = '' }: Forgo
         setSent(true);
       }
     } catch {
-      setError('Network issue — try again in a moment.');
+      setError('Network issue. Try again in a moment.');
     } finally {
       setSubmitting(false);
     }
@@ -63,7 +63,7 @@ export function ForgotPasswordDialog({ open, onClose, initialEmail = '' }: Forgo
           </DialogTitle>
           <DialogDescription className="text-xs">
             Enter the email you registered with. We'll send a reset link if it
-            matches an account — for privacy we don't disclose whether an
+            matches an account. For privacy we don't disclose whether an
             address is registered.
           </DialogDescription>
         </DialogHeader>

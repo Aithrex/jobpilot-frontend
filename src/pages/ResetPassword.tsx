@@ -48,10 +48,10 @@ export default function ResetPassword() {
         return;
       }
       setDone(true);
-      toast.success('Password updated — redirecting to sign in.');
+      toast.success('Password saved. Redirecting to sign in.');
       setTimeout(() => navigate('/login', { replace: true }), 1800);
     } catch {
-      setError('Network error — please try again.');
+      setError('Network error. Check your connection and try again.');
     } finally {
       setSubmitting(false);
     }
@@ -60,9 +60,12 @@ export default function ResetPassword() {
   return (
     <AuthShell
       title="Set a new password"
-      subtitle="Choose a strong password — you'll sign in fresh once it's saved."
+      subtitle="Choose a strong password. You will sign in fresh once it is saved."
       footer={
-        <Link to="/login" className="font-semibold text-primary hover:underline">
+        <Link
+          to="/login"
+          className="inline-flex min-h-11 items-center rounded px-2 font-semibold text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        >
           Back to sign in
         </Link>
       }
@@ -70,7 +73,7 @@ export default function ResetPassword() {
       {done ? (
         <div className="space-y-4">
           <AuthNotice variant="success">
-            Password updated. Redirecting you to sign in…
+            Password saved. Redirecting you to sign in…
           </AuthNotice>
           <Button
             size="lg"
@@ -81,52 +84,56 @@ export default function ResetPassword() {
           </Button>
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-5" noValidate>
-          {error && <AuthNotice variant={errorVariant(error)}>{error}</AuthNotice>}
+        <form onSubmit={handleSubmit} noValidate>
+          <div className="space-y-5">
+            <div className="space-y-2">
+              <Label htmlFor="new-password">New password</Label>
+              <PasswordInput
+                id="new-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Create a strong password"
+                className="h-11"
+                autoComplete="new-password"
+                enterKeyHint="next"
+                capsLockWarning
+                required
+                disabled={submitting || !token}
+              />
+              <PasswordChecklist password={password} className="pt-1" />
+            </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="new-password">New password</Label>
-            <PasswordInput
-              id="new-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Create a strong password"
-              className="h-11"
-              autoComplete="new-password"
-              enterKeyHint="next"
-              capsLockWarning
-              required
-              disabled={submitting || !token}
-            />
-            <PasswordChecklist password={password} className="pt-1" />
+            <div className="space-y-2">
+              <Label htmlFor="confirm-password">Confirm password</Label>
+              <PasswordInput
+                id="confirm-password"
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
+                placeholder="Re-enter your new password"
+                className="h-11"
+                autoComplete="new-password"
+                enterKeyHint="go"
+                required
+                disabled={submitting || !token}
+                aria-invalid={confirm.length > 0 && !passwordsMatch ? true : undefined}
+                aria-describedby={
+                  confirm.length > 0 && !passwordsMatch ? 'confirm-error' : undefined
+                }
+              />
+              {confirm.length > 0 && !passwordsMatch && (
+                <p id="confirm-error" className="text-xs text-destructive" role="alert">
+                  Passwords do not match. Re-enter the same password in both fields.
+                </p>
+              )}
+            </div>
+
+            {error && <AuthNotice variant={errorVariant(error)}>{error}</AuthNotice>}
+
+            <Button type="submit" size="lg" className="w-full" disabled={!canSubmit}>
+              {submitting && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
+              {submitting ? 'Saving…' : 'Save new password'}
+            </Button>
           </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="confirm-password">Confirm password</Label>
-            <PasswordInput
-              id="confirm-password"
-              value={confirm}
-              onChange={(e) => setConfirm(e.target.value)}
-              placeholder="Re-enter your new password"
-              className="h-11"
-              autoComplete="new-password"
-              enterKeyHint="go"
-              required
-              disabled={submitting || !token}
-              aria-invalid={confirm.length > 0 && !passwordsMatch ? true : undefined}
-              aria-describedby={confirm.length > 0 && !passwordsMatch ? 'confirm-error' : undefined}
-            />
-            {confirm.length > 0 && !passwordsMatch && (
-              <p id="confirm-error" className="text-xs text-destructive" role="alert">
-                Passwords do not match
-              </p>
-            )}
-          </div>
-
-          <Button type="submit" size="lg" className="w-full" disabled={!canSubmit}>
-            {submitting && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
-            {submitting ? 'Updating…' : 'Update password'}
-          </Button>
         </form>
       )}
     </AuthShell>

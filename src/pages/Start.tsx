@@ -71,13 +71,13 @@ const PARSE_STAGES = [
   'Uploading your resume…',
   'Reading the document…',
   'Extracting your experience and skills…',
-  'Building your profile — almost done…',
+  'Building your profile. Almost done…',
 ];
 
 const TAILOR_STAGES = [
   'Reading the job description…',
   'Mapping it against your real experience…',
-  'Rewriting with integrity checks — nothing invented…',
+  'Rewriting with integrity checks. Nothing invented…',
   'Polishing and scoring keyword coverage…',
 ];
 
@@ -87,7 +87,7 @@ const MATCHES_STAGES = [
   'Scanning live openings on Workday, Greenhouse, Lever, and Ashby…',
   'Scoring each role against your resume…',
   'Keeping only the strong matches…',
-  'Ranking your best fits — a first scan takes a minute or two…',
+  'Ranking your best fits. A first scan takes a minute or two…',
 ];
 
 // Editorial easing shared with the landing (_shared.tsx EASE) — a confident
@@ -352,7 +352,7 @@ function TailoredPreview({ resume }: { resume: TailoredFullResume }) {
                 <div key={`${exp.company}-${i}`}>
                   <p className="text-sm font-medium">
                     {exp.title} · <span className="text-muted-foreground">{exp.company}</span>
-                    {exp.dates ? <span className="text-muted-foreground"> — {exp.dates}</span> : null}
+                    {exp.dates ? <span className="text-muted-foreground"> · {exp.dates}</span> : null}
                   </p>
                   <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-muted-foreground">
                     {(exp.bullets || []).map((b, j) => (
@@ -403,7 +403,7 @@ function tailoredToText(tr: TailoredFullResume): string {
   if (tr.experience?.length) {
     lines.push('', 'EXPERIENCE');
     for (const exp of tr.experience) {
-      lines.push(`${exp.title} — ${exp.company}${exp.dates ? ` (${exp.dates})` : ''}`);
+      lines.push(`${exp.title} - ${exp.company}${exp.dates ? ` (${exp.dates})` : ''}`);
       for (const b of exp.bullets || []) lines.push(`  • ${b}`);
     }
   }
@@ -417,7 +417,7 @@ function tailoredToText(tr: TailoredFullResume): string {
   if (tr.education?.length) {
     lines.push('', 'EDUCATION');
     for (const e of tr.education) {
-      lines.push(`${e.degree} — ${e.institution}${e.dates ? ` (${e.dates})` : ''}`);
+      lines.push(`${e.degree} - ${e.institution}${e.dates ? ` (${e.dates})` : ''}`);
     }
   }
   if (tr.certifications?.length) {
@@ -552,7 +552,7 @@ export default function Start() {
           return;
         }
         setMatchesState('error');
-        setMatchesError('High demand right now — give it a few minutes and try again.');
+        setMatchesError('High demand right now. Give it a few minutes and try again.');
         return;
       }
       if (resp.error || !resp.data) {
@@ -573,7 +573,7 @@ export default function Start() {
         return;
       }
       if (file.size > MAX_FILE_BYTES) {
-        toast.error('That file is over 5 MB — please upload a smaller resume.');
+        toast.error('That file is over 5 MB. Please upload a smaller resume.');
         return;
       }
       fileRef.current = file;
@@ -598,7 +598,7 @@ export default function Start() {
             setParseCapacity(true);
           } else {
             setParseError(
-              "We've hit the guest upload limit from your network for now. Create a free account to continue right away — it takes a minute.",
+              "We've hit the guest upload limit from your network for now. Create a free account to continue right away. It takes a minute.",
             );
           }
         } else {
@@ -688,12 +688,12 @@ export default function Start() {
             // Platform-wide daily circuit breaker — not this guest's fault.
             setTailorCta({
               title: 'Guest tailoring is at capacity today.',
-              body: 'Create a free account to keep going right now — your resume and matches come with you.',
+              body: 'Create a free account to keep going right now. Your resume and matches come with you.',
             });
           } else {
             if (typeof payload.tailors_used !== 'number') setTailorsUsed(tailorsLimit);
             setTailorCta({
-              title: `You've used all ${payload.tailors_limit ?? tailorsLimit} free tailors — nice work.`,
+              title: `You've used all ${payload.tailors_limit ?? tailorsLimit} free tailors. Nice work.`,
               body: 'Free accounts get 5 fresh tailors every day, and everything you made here carries over automatically.',
             });
           }
@@ -735,7 +735,7 @@ export default function Start() {
       </div>
     );
   }
-  if (isAuthenticated) return <Navigate to="/app" replace />;
+  if (isAuthenticated) return <Navigate to="/next/today" replace />;
   if (!isGuestOnboardingEnabled()) return <Navigate to="/" replace />;
 
   // Recognition is driven by the `recognized` flag alone — a fingerprint-only
@@ -760,7 +760,7 @@ export default function Start() {
             Aspirely
           </Link>
           <span className="hidden text-xs text-muted-foreground md:inline">
-            Guest preview — create a free account to save your work
+            Guest preview. Create a free account to save your work
           </span>
           <div className="ml-auto flex items-center gap-2 sm:gap-3">
             <TailorQuota used={tailorsUsed} limit={tailorsLimit} className="hidden sm:block" />
@@ -795,11 +795,11 @@ export default function Start() {
               <p className="flex-1 text-sm">
                 {recognizedName ? (
                   <>
-                    Welcome back, <span className="font-semibold">{recognizedName}</span> — sign in
+                    Welcome back, <span className="font-semibold">{recognizedName}</span>. Sign in
                     to pick up where you left off.
                   </>
                 ) : (
-                  <>Welcome back — sign in to pick up where you left off.</>
+                  <>Welcome back. Sign in to pick up where you left off.</>
                 )}
               </p>
               <Button asChild size="sm" className="shrink-0">
@@ -809,7 +809,7 @@ export default function Start() {
             <p className="px-1 text-xs text-muted-foreground">
               Or keep going as a guest below
               {remaining > 0
-                ? ` — you have ${remaining} free tailor${remaining === 1 ? '' : 's'} left.`
+                ? `. You have ${remaining} free tailor${remaining === 1 ? '' : 's'} left.`
                 : '.'}
             </p>
           </motion.div>
@@ -822,11 +822,11 @@ export default function Start() {
               <div className="mx-auto max-w-2xl text-center">
                 <h1 className="text-balance text-3xl font-extrabold tracking-tight sm:text-4xl">
                   Upload your resume.{' '}
-                  <span className="text-primary">See today's best-matched jobs</span> — free.
+                  <span className="text-primary">See today's best-matched jobs</span>, free.
                 </h1>
                 <p className="mx-auto mt-4 max-w-xl text-pretty text-muted-foreground sm:text-lg">
                   No account needed. We match your resume against live openings on real company
-                  career sites, then tailor it for the roles you pick — {tailorsLimit} free
+                  career sites, then tailor it for the roles you pick, with {tailorsLimit} free
                   tailors included.
                 </p>
               </div>
@@ -861,7 +861,7 @@ export default function Start() {
               <div
                 role="button"
                 tabIndex={0}
-                aria-label="Upload your resume — PDF or DOCX, up to 5 MB"
+                aria-label="Upload your resume: PDF or DOCX, up to 5 MB"
                 onClick={() => inputRef.current?.click()}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
@@ -898,7 +898,7 @@ export default function Start() {
                 <input
                   ref={inputRef}
                   type="file"
-                  aria-label="Resume file — PDF or DOCX, up to 5 MB"
+                  aria-label="Resume file: PDF or DOCX, up to 5 MB"
                   tabIndex={-1}
                   accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                   className="hidden"
@@ -913,15 +913,15 @@ export default function Start() {
               <ul className="mx-auto mt-8 grid max-w-2xl gap-3 text-sm text-muted-foreground sm:grid-cols-3">
                 <li className="flex items-center gap-2">
                   <Target className="h-4 w-4 shrink-0 text-primary" aria-hidden />
-                  Only strong matches — no volume padding
+                  Only strong matches, no volume padding
                 </li>
                 <li className="flex items-center gap-2">
                   <BadgeCheck className="h-4 w-4 shrink-0 text-primary" aria-hidden />
-                  Integrity-checked tailoring — nothing invented
+                  Integrity-checked tailoring, nothing invented
                 </li>
                 <li className="flex items-center gap-2">
                   <Lock className="h-4 w-4 shrink-0 text-primary" aria-hidden />
-                  Free — no card, no account needed
+                  Free, no card, no account needed
                 </li>
               </ul>
             </motion.section>
@@ -942,7 +942,7 @@ export default function Start() {
                 {parseCapacity ? (
                   <SignupCta
                     title="We've hit today's free-scan limit"
-                    body="Guest uploads are maxed out for today. Create a free account to continue right now — it's free and takes about a minute, and there's no daily guest cap."
+                    body="Guest uploads are maxed out for today. Create a free account to continue right now. It's free and takes about a minute, and there's no daily guest cap."
                   />
                 ) : parseError ? (
                   <ErrorCard title="We hit a snag reading your resume" body={parseError}>
@@ -969,8 +969,8 @@ export default function Start() {
                         stage={parseStage}
                         hint={
                           parseStatus === 'processing'
-                            ? 'Working — usually under a minute.'
-                            : 'Queued — starting now.'
+                            ? 'Working. Usually under a minute.'
+                            : 'Queued. Starting now.'
                         }
                       />
                       <div className="space-y-3">
@@ -1002,7 +1002,7 @@ export default function Start() {
                 </h2>
                 <p className="mt-1 text-sm text-muted-foreground">
                   Scored against live openings from company career sites. We only show roles that
-                  clear our match bar — fewer, accurate results beat volume.
+                  clear our match bar. Fewer, accurate results beat volume.
                 </p>
                 <p className="sr-only" role="status">
                   {matchesState === 'ready'
@@ -1016,7 +1016,7 @@ export default function Start() {
               {remaining === 0 && (
                 <div className="mb-6">
                   <SignupCta
-                    title={`You've used all ${tailorsLimit} free tailors — nice work.`}
+                    title={`You've used all ${tailorsLimit} free tailors. Nice work.`}
                     body="Free accounts get 5 fresh tailors every day, and your resume, matches, and tailored versions carry over automatically."
                   />
                 </div>
@@ -1026,7 +1026,7 @@ export default function Start() {
                 <div className="space-y-4" aria-live="polite" aria-busy="true">
                   <WorkingHeader
                     stage={matchesStage}
-                    hint="First scan of the day takes a minute or two — repeat visits are instant."
+                    hint="First scan of the day takes a minute or two. Repeat visits are instant."
                   />
                   <div className="grid gap-4 md:grid-cols-2">
                     {[0, 1, 2, 3].map((i) => (
@@ -1050,7 +1050,7 @@ export default function Start() {
               {matchesState === 'capacity' && (
                 <SignupCta
                   title="We're at capacity for guest matches today"
-                  body="Matching is maxed out for guests right now. Create a free account to keep going — it's free, your resume comes with you, and there's no daily guest cap."
+                  body="Matching is maxed out for guests right now. Create a free account to keep going. It's free, your resume comes with you, and there's no daily guest cap."
                 />
               )}
 
@@ -1075,7 +1075,7 @@ export default function Start() {
                     </span>
                     <p className="font-semibold">No strong matches today</p>
                     <p className="mx-auto max-w-md text-sm text-muted-foreground">
-                      Nothing cleared our match bar today — we'd rather show you zero than pad the
+                      Nothing cleared our match bar today. We'd rather show you zero than pad the
                       list. Check back tomorrow, or create a free account to scan more sources
                       with your own filters.
                     </p>
@@ -1157,14 +1157,14 @@ export default function Start() {
                               <Button
                                 className="mt-auto"
                                 onClick={() => void handleTailor(job)}
-                                aria-label={`Tailor my resume for ${job.title} at ${job.company} — ${remaining} of ${tailorsLimit} free tailors left`}
+                                aria-label={`Tailor my resume for ${job.title} at ${job.company}: ${remaining} of ${tailorsLimit} free tailors left`}
                               >
                                 <Wand2 className="h-4 w-4" aria-hidden />
-                                Tailor my resume — free ({remaining} left)
+                                Tailor my resume, free ({remaining} left)
                               </Button>
                             ) : (
                               <Button asChild variant="outline" className="mt-auto">
-                                <Link to="/register">Sign up to keep tailoring — free</Link>
+                                <Link to="/register">Sign up to keep tailoring, free</Link>
                               </Button>
                             )}
                           </CardContent>
@@ -1203,7 +1203,7 @@ export default function Start() {
                   </h2>
                   <p className="mt-0.5 text-sm text-muted-foreground" role="status">
                     {tailorState === 'done'
-                      ? 'Your tailored resume is ready — every line traces back to your real experience.'
+                      ? 'Your tailored resume is ready. Every line traces back to your real experience.'
                       : 'Tailoring your resume for this role.'}
                   </p>
                 </div>
@@ -1214,7 +1214,7 @@ export default function Start() {
                   <CardContent className="space-y-6 p-6 sm:p-8" aria-live="polite">
                     <WorkingHeader
                       stage={tailorStage}
-                      hint="Usually one to two minutes. Every line is checked against your real experience — nothing invented."
+                      hint="Usually one to two minutes. Every line is checked against your real experience. Nothing invented."
                     />
                     <div className="space-y-3">
                       <Skeleton className="h-4 w-2/5" />
@@ -1268,18 +1268,18 @@ export default function Start() {
                       Want the polished PDF/DOCX?{' '}
                       <Link to="/register" className="font-medium text-primary hover:underline">
                         Create a free account
-                      </Link>{' '}
-                      — this tailor is saved to it automatically.
+                      </Link>
+                      . This tailor is saved to it automatically.
                     </p>
                   </div>
 
                   <TailoredPreview resume={tailored.tailored_resume} />
 
                   <SignupCta
-                    title="Save your work — and get 5 free tailors every day."
+                    title="Save your work, and get 5 free tailors every day."
                     body={`Your resume, today's matches, and this tailored version all carry into your free account${
                       remaining > 0
-                        ? ` — and you still have ${remaining} free tailor${remaining === 1 ? '' : 's'} left as a guest.`
+                        ? `, and you still have ${remaining} free tailor${remaining === 1 ? '' : 's'} left as a guest.`
                         : '.'
                     }`}
                   />
@@ -1298,7 +1298,7 @@ export default function Start() {
           <div className="flex items-center justify-between gap-3">
             <TailorQuota used={tailorsUsed} limit={tailorsLimit} className="w-32 shrink-0" />
             <Button asChild className="h-11">
-              <Link to="/register">Save my work — free</Link>
+              <Link to="/register">Save my work. Free</Link>
             </Button>
           </div>
         </div>

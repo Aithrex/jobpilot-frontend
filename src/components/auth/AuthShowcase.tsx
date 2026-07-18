@@ -41,7 +41,7 @@ const OPT_LEFT = 78;
 const OPT_TOTAL = 90;
 
 const BEATS = [
-  { feature: 'Sponsorship-honest matching', promise: 'Real H-1B data from public filings — never a guess.' },
+  { feature: 'Sponsorship-honest matching', promise: 'Real H-1B data from public filings. Never a guess.' },
   { feature: 'The OPT clock, handled', promise: 'Your visa deadline becomes this week’s plan.' },
   { feature: 'Authored, never fabricated', promise: 'Every claim traces back to your real work.' },
 ] as const;
@@ -126,7 +126,7 @@ function SceneHeader({ label, reduce }: { label: string; reduce: boolean }) {
 function SponsorScene({ reduce }: SceneProps) {
   return (
     <div className="flex h-full flex-col justify-center gap-3">
-      <SceneHeader label="Matched to your résumé" reduce={reduce} />
+      <SceneHeader label="Matched to your resume" reduce={reduce} />
       <In i={1} reduce={reduce}>
         <Panel className="flex items-center gap-3 p-3.5 shadow-soft">
           <Monogram name="Vantage" />
@@ -162,7 +162,7 @@ function OptScene({ reduce }: SceneProps) {
               <CountUp target={OPT_LEFT} run reduce={reduce} format={(n) => `${n}`} /> days left{' '}
               <span className="font-medium text-muted-foreground">of {OPT_TOTAL}</span>
             </p>
-            <p className="mt-0.5 text-xs text-muted-foreground">Counted for you — turned into this week’s plan.</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">Counted for you. Turned into this week’s plan.</p>
             <div className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
               <ArrowRight className="h-3 w-3" aria-hidden />3 tasks queued this week
             </div>
@@ -174,7 +174,7 @@ function OptScene({ reduce }: SceneProps) {
 }
 
 /* Beat 3 — authored, never fabricated */
-const CHAIN = ['your work', 'your résumé', 'this claim'] as const;
+const CHAIN = ['your work', 'your resume', 'this claim'] as const;
 function AuthoredScene({ reduce }: SceneProps) {
   return (
     <div className="flex h-full flex-col justify-center gap-3">
@@ -202,7 +202,7 @@ function AuthoredScene({ reduce }: SceneProps) {
           </div>
           <div className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
             <Sparkles className="h-3 w-3 text-primary" aria-hidden />
-            Traceable end to end — nothing invented
+            Traceable end to end. Nothing invented
           </div>
         </Panel>
       </In>

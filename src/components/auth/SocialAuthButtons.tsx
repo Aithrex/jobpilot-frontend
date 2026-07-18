@@ -97,7 +97,7 @@ export function SocialAuthButtons({ verb = 'Continue with' }: Props) {
     // Not configured yet → be honest, never fake success or throw a scary error.
     if (googleConfigured === false) {
       toast.info('Google sign-in is being set up', {
-        description: 'It’s almost ready — continue with your email for now.',
+        description: 'It’s almost ready. Continue with your email for now.',
       });
       return;
     }
@@ -105,7 +105,7 @@ export function SocialAuthButtons({ verb = 'Continue with' }: Props) {
     if (res.error) {
       setPending(null);
       toast.info('Google sign-in is being set up', {
-        description: res.error || 'It’s almost ready — continue with your email for now.',
+        description: res.error || 'It’s almost ready. Continue with your email for now.',
       });
     }
   };

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { consumeAuthReturnTo } from '@/components/auth/AuthShell';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -60,7 +61,9 @@ export default function AuthCallback() {
         window.setTimeout(() => navigate('/login', { replace: true }), 2200);
       } else {
         toast.success('Signed in');
-        navigate('/next/today', { replace: true });
+        // Honor a deep link stashed before the OAuth round-trip (the provider
+        // redirect drops router state); falls back to the post-login default.
+        navigate(consumeAuthReturnTo() ?? '/next/today', { replace: true });
       }
     });
   }, [hydrateFromToken, navigate]);
