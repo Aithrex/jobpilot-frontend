@@ -18,14 +18,21 @@ const STEPS = [
 export function ProgressStepper({ currentStep }: { currentStep: 1 | 2 | 3 }) {
   return (
     <div className="surface shadow-soft rounded-container px-4 sm:px-8 py-4">
-      <div className="flex items-center justify-center gap-2 sm:gap-4">
+      <ol
+        aria-label="Tailoring progress"
+        className="flex items-center justify-center gap-2 sm:gap-4"
+      >
         {STEPS.map((s, i, arr) => {
           const status =
             currentStep > s.n ? 'done' : currentStep === s.n ? 'active' : 'upcoming';
           return (
             <Fragment key={s.n}>
-              <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <li
+                aria-current={status === 'active' ? 'step' : undefined}
+                className="flex items-center gap-2 sm:gap-3 min-w-0"
+              >
                 <div
+                  aria-hidden="true"
                   className={cn(
                     'w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-all duration-300',
                     status === 'done' &&
@@ -41,19 +48,23 @@ export function ProgressStepper({ currentStep }: { currentStep: 1 | 2 | 3 }) {
                     s.n
                   )}
                 </div>
+                {/* Visible ≥sm; below sm the label stays in the a11y tree. */}
                 <span
                   className={cn(
-                    'text-xs sm:text-sm font-medium hidden sm:inline transition-colors',
+                    'text-xs sm:text-sm font-medium sr-only sm:not-sr-only transition-colors',
                     status === 'active' && 'text-foreground',
                     status === 'done' && 'text-primary',
                     status === 'upcoming' && 'text-muted-foreground',
                   )}
                 >
                   {s.label}
+                  {status === 'done' && <span className="sr-only"> (completed)</span>}
                 </span>
-              </div>
+              </li>
               {i < arr.length - 1 && (
-                <div
+                <li
+                  role="presentation"
+                  aria-hidden="true"
                   className={cn(
                     'h-[2px] flex-1 max-w-[80px] rounded-full transition-colors duration-500',
                     currentStep > s.n ? 'bg-primary' : 'bg-muted',
@@ -63,7 +74,7 @@ export function ProgressStepper({ currentStep }: { currentStep: 1 | 2 | 3 }) {
             </Fragment>
           );
         })}
-      </div>
+      </ol>
     </div>
   );
 }

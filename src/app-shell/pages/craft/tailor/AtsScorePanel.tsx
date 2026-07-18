@@ -85,7 +85,7 @@ export function AtsScorePanel({
       {stale && (
         <div className="flex items-center justify-between gap-3 rounded-container border border-warning/40 bg-warning/10 px-4 py-3">
           <p className="text-xs text-foreground">
-            <span className="font-semibold">Edited since scored</span> — the
+            <span className="font-semibold">Edited since scored</span>. The
             numbers below reflect the pre-edit resume.
           </p>
           {onRescore && (
@@ -109,7 +109,7 @@ export function AtsScorePanel({
             <span className="font-semibold text-destructive">
               Your resume PDF failed to render or parse.
             </span>{' '}
-            No ATS can read it in this state — the overall score is capped
+            No ATS can read it in this state. The overall score is capped
             until this is fixed. ({scores.render_error})
           </p>
         </div>
@@ -125,7 +125,7 @@ export function AtsScorePanel({
             </p>
             <p className="mt-0.5 text-xs text-muted-foreground">
               {v2
-                ? 'Deterministic, research-backed rubric — 75-80 is the honest target band; scores above 85 usually mean keyword stuffing, not a better resume.'
+                ? 'Deterministic, research-backed rubric: 75-80 is the honest target band; scores above 85 usually mean keyword stuffing, not a better resume.'
                 : 'Weighted score across all dimensions'}
             </p>
           </div>
@@ -187,7 +187,7 @@ export function AtsScorePanel({
           {v2 ? (
             <>
               <p className="mb-3 text-[11px] leading-snug text-muted-foreground">
-                Real parse-compatibility checks per platform — ATS don't score
+                Real parse-compatibility checks per platform. ATS don't score
                 resumes; they parse them. These verify yours parses.
               </p>
               <div className="space-y-2.5">
@@ -297,7 +297,7 @@ export function AtsScorePanel({
               </p>
             </div>
             <span className="text-[10px] text-muted-foreground">
-              Click a skill to add it — only claim what you can defend
+              Click a skill to add it. Only claim what you can defend
             </span>
           </div>
           <div className="flex flex-wrap gap-1.5">
@@ -328,7 +328,7 @@ export function AtsScorePanel({
             {classified?.compliance.map((kw) => (
               <span
                 key={kw}
-                title="Compliance frameworks need real domain experience — add only if your history genuinely shows it."
+                title="Compliance frameworks need real domain experience. Add only if your history genuinely shows it."
                 className="inline-flex items-center gap-1 rounded-control border border-warning/30 bg-warning/10 px-2.5 py-1 text-[11px] font-medium text-warning"
               >
                 <AlertTriangle className="h-3 w-3" />
@@ -338,7 +338,7 @@ export function AtsScorePanel({
             {classified?.logistics.map((kw) => (
               <span
                 key={kw}
-                title="Describes the job's working arrangement — not a resume skill."
+                title="Describes the job's working arrangement. Not a resume skill."
                 className="inline-flex items-center gap-1 rounded-control border border-border bg-muted px-2.5 py-1 text-[11px] font-medium text-muted-foreground"
               >
                 <Info className="h-3 w-3" />

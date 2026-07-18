@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { Plus, Trash2, CheckCircle2, XCircle, Download } from 'lucide-react';
+import { Plus, Trash2, CheckCircle2, X, XCircle, Download } from 'lucide-react';
 import { apiService } from '@/lib/api';
 import { toast } from 'sonner';
 import type { TailoredFullResume, JDAnalysis, ATSScores } from '@/types/resume';
@@ -186,11 +186,11 @@ export default function BatchTailor() {
       const failedN = incoming.filter((e) => e.fetchFailed).length;
       if (failedN > 0) {
         toast.warning(
-          `${incoming.length} jobs loaded — ${failedN} JD${failedN > 1 ? 's' : ''} need a manual paste before they can be tailored.`,
+          `${incoming.length} jobs loaded. ${failedN} JD${failedN > 1 ? 's' : ''} need a manual paste before they can be tailored.`,
           { duration: 8000 },
         );
       } else {
-        toast.success(`${incoming.length} jobs loaded from the Daily Pipeline — hit "Tailor all" when you're ready.`);
+        toast.success(`${incoming.length} jobs loaded from the Daily Pipeline. Hit "Tailor all" when you're ready.`);
       }
     } catch (e) {
       // Bad JSON or storage error — ignore, the empty default form still works.
@@ -236,7 +236,7 @@ export default function BatchTailor() {
         upgrade.open({
           feature: 'batch_tailor',
           title: 'Unlock batch tailoring',
-          description: 'Tailor your resume to many job descriptions in one run — upgrade to enable batch tailoring.',
+          description: 'Tailor your resume to many job descriptions in one run. Upgrade to enable batch tailoring.',
         });
         return;
       }
@@ -328,7 +328,7 @@ export default function BatchTailor() {
         ? { ...j, confirming: false, applicationStatus: 'applied' }
         : j,
     ));
-    toast.success(`"${job.title}" marked as applied — synced to Daily Pipeline.`);
+    toast.success(`"${job.title}" marked as applied. Synced to Daily Pipeline.`);
   }, []);
 
   const handleConfirmNotYet = useCallback(async (job: BatchJob, label = 'Not yet') => {
@@ -352,7 +352,7 @@ export default function BatchTailor() {
         ? { ...j, confirming: false, applicationStatus: 'dismissed' }
         : j,
     ));
-    toast.message(`"${job.title}" — kept as Interested. ${label === 'Dismiss' ? 'Prompt dismissed.' : 'Confirm later from the kanban.'}`);
+    toast.message(`"${job.title}". Kept as Interested. ${label === 'Dismiss' ? 'Prompt dismissed.' : 'Confirm later from the kanban.'}`);
   }, []);
 
   const handleOpenInEditor = useCallback((job: BatchJob) => {
@@ -452,8 +452,8 @@ export default function BatchTailor() {
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">Create · Batch Tailor</p>
         <h2 className="font-display text-2xl font-extrabold tracking-tight">Batch Tailor</h2>
         <p className="max-w-xl text-sm text-muted-foreground">
-          Add up to {BATCH_TAILOR_MAX} job descriptions and tailor your resume to each in one run —
-          every edit stays honest and traceable. You can also tick rows on the Daily Pipeline and send
+          Add up to {BATCH_TAILOR_MAX} job descriptions and tailor your resume to each in one run.
+          Every edit stays honest and traceable. You can also tick rows on the Daily Pipeline and send
           them here in one shot.
         </p>
       </div>
@@ -476,7 +476,7 @@ export default function BatchTailor() {
                   <div className="flex items-center gap-2">
                     {entry.fetchFailed && !entry.text.trim() && (
                       <span className="inline-flex items-center gap-1 text-[10px] font-medium text-warning">
-                        ⚠ JD not auto-fetched — paste below
+                        ⚠ JD not auto-fetched. Paste below
                       </span>
                     )}
                     {entry.sourceUrl && (
@@ -515,7 +515,7 @@ export default function BatchTailor() {
                     rows={4}
                     placeholder={
                       entry.fetchFailed && !entry.text.trim()
-                        ? "Couldn't auto-fetch this posting — open the source link above, copy the full JD, and paste it here."
+                        ? "Couldn't auto-fetch this posting. Open the source link above, copy the full JD, and paste it here."
                         : 'Paste the complete job description here...'
                     }
                     maxLength={15000}
@@ -547,7 +547,7 @@ export default function BatchTailor() {
               {submitting ? (
                 <><span className="animate-spin rounded-full h-4 w-4 border-2 border-current border-t-transparent" />Submitting…</>
               ) : dailyUsage?.remaining === 0 ? (
-                <>Daily limit reached — see options</>
+                <>Daily limit reached. See options</>
               ) : (
                 <>Tailor all ({jdEntries.filter(e => e.text.trim().length > 50).length})</>
               )}
@@ -556,7 +556,7 @@ export default function BatchTailor() {
           </div>
           {submitError && (
             <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-              <p className="min-w-0">Couldn't submit the batch — {submitError}</p>
+              <p className="min-w-0">Couldn't submit the batch: {submitError}</p>
               <button
                 type="button"
                 onClick={handleSubmit}
@@ -573,7 +573,7 @@ export default function BatchTailor() {
                 <span className="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-warning/20 text-warning text-xs font-bold">!</span>
                 <div className="flex-1 text-sm">
                   <p className="font-semibold text-warning">
-                    Daily limit reached — {dailyUsage.limit} of {dailyUsage.limit} used
+                    Daily limit reached: {dailyUsage.limit} of {dailyUsage.limit} used
                   </p>
                   <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
                     Tailoring is capped at {dailyUsage.limit} per UTC day so the AI stays fast and
@@ -641,7 +641,7 @@ export default function BatchTailor() {
                       <p className="text-sm font-medium text-foreground truncate">{job.title}</p>
                       <p className={`text-xs ${job.status === 'failed' ? 'text-destructive' : 'text-muted-foreground'}`}>
                         {job.status === 'completed' ? 'Ready' :
-                         job.status === 'failed' ? (job.error || 'Tailoring failed — start a new batch to try this role again.') :
+                         job.status === 'failed' ? (job.error || 'Tailoring failed. Start a new batch to try this role again.') :
                          job.status === 'processing' ? 'Tailoring…' : 'Queued'}
                       </p>
                     </div>
@@ -670,7 +670,7 @@ export default function BatchTailor() {
                       <button
                         onClick={() => handleOpenInEditor(job)}
                         className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium text-primary bg-primary/10 border border-primary/30 hover:bg-primary/15 transition-all"
-                        title="Open the tailored resume in a new tab — edit / regenerate without leaving this batch"
+                        title="Open the tailored resume in a new tab. Edit / regenerate without leaving this batch"
                       >
                         Edit ↗
                       </button>
@@ -712,7 +712,7 @@ export default function BatchTailor() {
                         onClick={() => handleGenerateCoverLetter(job)}
                         className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium text-destructive bg-destructive/10 border border-destructive/30 hover:bg-destructive/15 transition-all"
                       >
-                        ✗ Retry cover letter
+                        <X className="w-3 h-3" aria-hidden="true" /> Retry cover letter
                       </button>
                     )}
 
@@ -750,7 +750,7 @@ export default function BatchTailor() {
                         onClick={() => handleGenerateAts(job)}
                         className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium text-destructive bg-destructive/10 border border-destructive/30 hover:bg-destructive/15 transition-all"
                       >
-                        ✗ Retry ATS score
+                        <X className="w-3 h-3" aria-hidden="true" /> Retry ATS score
                       </button>
                     )}
                   </div>
@@ -815,7 +815,7 @@ export default function BatchTailor() {
                 )}
                 {job.applicationStatus === 'applied' && (
                   <p className="mt-2 inline-flex items-center gap-1.5 rounded-md bg-success/10 px-2 py-1 text-[11px] font-medium text-success">
-                    ✓ Marked applied — synced everywhere
+                    ✓ Marked applied. Synced everywhere
                   </p>
                 )}
               </div>
@@ -832,7 +832,7 @@ export default function BatchTailor() {
           feedback.open({
             type: 'quota_bump',
             prefill:
-              "Hi — I tried to run a batch of " +
+              "Hi, I tried to run a batch of " +
               `${quotaDialog?.requested ?? ''} tailors and hit my daily limit. ` +
               "Could you bump it? Quick context:\n\n",
           })

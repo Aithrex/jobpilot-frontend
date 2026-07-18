@@ -13,10 +13,37 @@
  */
 import { useState, useEffect, useCallback, useMemo, Suspense, lazy } from 'react';
 import { toast } from 'sonner';
-import { ChevronDown, FileDown, Sparkles, Trash2, Search } from 'lucide-react';
+import {
+  CalendarDays,
+  CalendarRange,
+  ChevronDown,
+  FileDown,
+  Flame,
+  MessagesSquare,
+  RefreshCw,
+  Search,
+  Sparkles,
+  Trash2,
+  Wrench,
+  X,
+  Zap,
+  type LucideIcon,
+} from 'lucide-react';
 import { apiService } from '@/lib/api';
 import { formatDate } from '@/components/resume/ResumeDashboard';
 import type { TailoringRecord, TailoringVersion } from '@/types/resume';
+import { Skeleton } from '@/components/ui/skeleton';
+import { PanelError } from '@/app-shell/pages/today/primitives';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 const VersionDiffViewer = lazy(() => import('@/components/resume/VersionDiffViewer'));
 
@@ -69,6 +96,13 @@ export default function TailoredPage() {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [legacyOpen, setLegacyOpen] = useState(false);
   const [diffRecord, setDiffRecord] = useState<TailoringRecord | null>(null);
+  // Destructive deletes are confirmed through an AlertDialog (never
+  // window.confirm). One controlled dialog serves both delete flavours.
+  const [pendingDelete, setPendingDelete] = useState<
+    | { kind: 'record'; id: string; label: string }
+    | { kind: 'legacy'; s3Key: string; label: string }
+    | null
+  >(null);
 
   // Filters
   const [search, setSearch] = useState('');
@@ -86,13 +120,17 @@ export default function TailoredPage() {
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
+    setError('');
     const [recResp, legResp] = await Promise.all([
       apiService.listTailoringRecords(),
       apiService.listGeneratedResumes(),
     ]);
     if (recResp.data) setRecords((recResp.data.records || []) as TailoringRecord[]);
     if (legResp.data) setLegacyFiles((legResp.data.generated || []) as any);
-    if (recResp.error) setError(recResp.error);
+    // Unified error handling — a failed legacy-files list no longer hides
+    // those downloads silently; either failure surfaces with a retry.
+    const err = recResp.error || legResp.error;
+    if (err) setError(err);
     setLoading(false);
   }, []);
   useEffect(() => { fetchAll(); }, [fetchAll]);
@@ -309,7 +347,6 @@ export default function TailoredPage() {
   }, []);
 
   const handleDeleteRecord = useCallback(async (recordId: string) => {
-    if (!window.confirm('Delete this tailoring record and all its versions? This cannot be undone.')) return;
     setDeleting(recordId);
     const resp = await apiService.deleteTailoringRecord(recordId);
     setDeleting(null);
@@ -318,17 +355,36 @@ export default function TailoredPage() {
     setRecords(prev => prev.filter(r => r.record_id !== recordId));
   }, []);
 
+  const handleDeleteLegacy = useCallback(async (s3Key: string) => {
+    const resp = await apiService.deleteResume(s3Key);
+    if (resp.error) { toast.error('Delete failed'); return; }
+    toast.success('File deleted');
+    setLegacyFiles(prev => prev.filter(x => x.s3_key !== s3Key));
+  }, []);
+
   if (loading) {
     return (
-      <div className="animate-pulse space-y-3">
-        <div className="h-14 rounded-container bg-muted/40" />
-        <div className="h-20 rounded-container bg-muted/40" />
-        <div className="h-20 rounded-container bg-muted/30" />
+      <div className="space-y-3">
+        <Skeleton className="h-14 rounded-container" />
+        <Skeleton className="h-20 rounded-container" />
+        <Skeleton className="h-20 rounded-container" />
       </div>
     );
   }
 
-  const selectCls = 'w-full px-2.5 py-1.5 rounded-control bg-muted border border-border text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-ring/30';
+  // Records failed and there's nothing to show — full recoverable error state.
+  if (error && records.length === 0 && legacyFiles.length === 0) {
+    return (
+      <PanelError
+        title="Couldn't load your tailored resumes"
+        body={error}
+        onRetry={fetchAll}
+      />
+    );
+  }
+
+  const focusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background';
+  const selectCls = `w-full min-h-11 px-2.5 py-1.5 rounded-control bg-muted border border-border text-xs text-foreground ${focusRing}`;
   const inputCls = selectCls;
 
   return (
@@ -344,15 +400,25 @@ export default function TailoredPage() {
         <button
           type="button"
           onClick={fetchAll}
-          className="text-xs px-2.5 py-1 rounded-control text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+          className={`inline-flex min-h-11 items-center gap-1.5 text-xs px-3 rounded-control text-muted-foreground hover:text-foreground hover:bg-muted transition-colors ${focusRing}`}
         >
-          Refresh
+          <RefreshCw className="w-3.5 h-3.5" aria-hidden="true" /> Refresh
         </button>
       </header>
 
       {error && (
-        <div className="px-4 py-3 rounded-container bg-destructive/10 border border-destructive/30">
+        <div
+          role="alert"
+          className="px-4 py-3 rounded-container bg-destructive/10 border border-destructive/30 flex flex-wrap items-center justify-between gap-3"
+        >
           <p className="text-sm text-destructive">{error}</p>
+          <button
+            type="button"
+            onClick={fetchAll}
+            className={`inline-flex min-h-11 items-center gap-1.5 rounded-control border border-destructive/30 bg-card px-3.5 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10 ${focusRing}`}
+          >
+            <RefreshCw className="w-3.5 h-3.5" aria-hidden="true" /> Try again
+          </button>
         </div>
       )}
 
@@ -362,21 +428,26 @@ export default function TailoredPage() {
           {/* Row 1 — search + sort */}
           <div className="px-4 py-3 flex items-center gap-3 flex-wrap border-b border-border">
             <div className="relative flex-1 min-w-[240px]">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+              <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
               <input
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Search role, company, required skills…"
-                className="w-full pl-9 pr-3 py-2 rounded-control bg-background border border-border text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/30 focus:border-primary/30 transition-all"
+                aria-label="Search tailored resumes"
+                className={`w-full h-11 pl-9 pr-11 rounded-control bg-background border border-border text-sm text-foreground placeholder:text-muted-foreground transition-all ${focusRing}`}
               />
               {search && (
                 <button
+                  type="button"
                   onClick={() => setSearch('')}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted text-xs"
-                >×</button>
+                  aria-label="Clear search"
+                  className={`absolute inset-y-0 right-0 flex w-11 items-center justify-center rounded-control text-muted-foreground hover:text-foreground ${focusRing}`}
+                >
+                  <X className="w-4 h-4" aria-hidden="true" />
+                </button>
               )}
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1" role="group" aria-label="Sort order">
               {([
                 ['newest', 'Newest'],
                 ['oldest', 'Oldest'],
@@ -385,7 +456,8 @@ export default function TailoredPage() {
                 <button
                   key={k}
                   onClick={() => setSortKey(k)}
-                  className={`px-2.5 py-1.5 rounded-control text-[11px] font-medium transition-all ${
+                  aria-pressed={sortKey === k}
+                  className={`min-h-11 px-3 rounded-control text-xs font-medium transition-all ${focusRing} ${
                     sortKey === k
                       ? 'bg-primary/15 text-primary ring-1 ring-primary/30'
                       : 'text-muted-foreground hover:text-foreground hover:bg-muted'
@@ -399,23 +471,25 @@ export default function TailoredPage() {
           <div className="px-4 py-2.5 flex items-center gap-2 overflow-x-auto border-b border-border">
             <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground shrink-0">Quick</span>
             {([
-              { k: 'week',          label: 'This week',      count: presetCounts.week,         icon: '📅' },
-              { k: 'month',         label: 'Last 30 days',   count: presetCounts.month,        icon: '🗓' },
-              { k: 'highAts',       label: 'High match 80+', count: presetCounts.highAts,      icon: '✨' },
-              { k: 'needsWork',     label: 'Needs work',     count: presetCounts.needsWork,    icon: '🛠' },
-              { k: 'multiVersion',  label: 'Multi-version',  count: presetCounts.multiVersion, icon: '↻' },
-              { k: 'interviewing',  label: 'Interviewing',   count: presetCounts.interviewing, icon: '💬' },
-              { k: 'offers',        label: 'Offers',         count: presetCounts.offers,       icon: '🔥' },
-              { k: 'pending',       label: 'Due soon',       count: presetCounts.pending,      icon: '⚡' },
-            ] as const).map(p => {
+              { k: 'week',          label: 'This week',      count: presetCounts.week,         icon: CalendarDays },
+              { k: 'month',         label: 'Last 30 days',   count: presetCounts.month,        icon: CalendarRange },
+              { k: 'highAts',       label: 'High match 80+', count: presetCounts.highAts,      icon: Sparkles },
+              { k: 'needsWork',     label: 'Needs work',     count: presetCounts.needsWork,    icon: Wrench },
+              { k: 'multiVersion',  label: 'Multi-version',  count: presetCounts.multiVersion, icon: RefreshCw },
+              { k: 'interviewing',  label: 'Interviewing',   count: presetCounts.interviewing, icon: MessagesSquare },
+              { k: 'offers',        label: 'Offers',         count: presetCounts.offers,       icon: Flame },
+              { k: 'pending',       label: 'Due soon',       count: presetCounts.pending,      icon: Zap },
+            ] as { k: string; label: string; count: number; icon: LucideIcon }[]).map(p => {
               const active = quickPreset === p.k;
               const dim = p.count === 0;
+              const Icon = p.icon;
               return (
                 <button
                   key={p.k}
                   onClick={() => active ? (resetFilters()) : applyPreset(p.k)}
                   disabled={dim && !active}
-                  className={`group relative shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border transition-all ${
+                  aria-pressed={active}
+                  className={`group relative shrink-0 inline-flex min-h-11 items-center gap-1.5 px-3 rounded-full text-xs tracking-wide font-medium border transition-all ${focusRing} ${
                     active
                       ? 'brand-gradient text-primary-foreground border-transparent shadow-soft'
                       : dim
@@ -423,9 +497,9 @@ export default function TailoredPage() {
                       : 'bg-card text-muted-foreground border-border hover:border-primary/40 hover:bg-primary/5'
                   }`}
                 >
-                  <span className="text-[11px]">{p.icon}</span>
+                  <Icon className="w-3.5 h-3.5" aria-hidden="true" />
                   <span>{p.label}</span>
-                  <span className={`px-1.5 py-0 rounded-full text-[9px] font-bold ${
+                  <span className={`px-1.5 py-0.5 rounded-full text-xs font-bold tabular-nums ${
                     active ? 'bg-primary-foreground/25 text-primary-foreground' : dim ? 'bg-muted text-muted-foreground' : 'bg-muted text-muted-foreground group-hover:bg-primary/20 group-hover:text-primary'
                   }`}>{p.count}</span>
                 </button>
@@ -439,44 +513,46 @@ export default function TailoredPage() {
               <>
                 <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground shrink-0">Active</span>
                 {activeChips.map(c => (
-                  <span
+                  <button
                     key={c.key}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] bg-primary/10 text-primary border border-primary/25"
+                    type="button"
+                    onClick={c.clear}
+                    aria-label={`Remove filter: ${c.label}`}
+                    className={`inline-flex min-h-11 items-center gap-1.5 px-3 rounded-full text-xs tracking-wide bg-primary/10 text-primary border border-primary/25 hover:bg-primary/20 transition-colors ${focusRing}`}
                   >
                     {c.label}
-                    <button
-                      onClick={c.clear}
-                      className="ml-0.5 w-3.5 h-3.5 rounded-full flex items-center justify-center hover:bg-primary/20 text-primary"
-                      aria-label={`Remove ${c.key}`}
-                    >×</button>
-                  </span>
+                    <X className="w-3.5 h-3.5" aria-hidden="true" />
+                  </button>
                 ))}
-                <button onClick={resetFilters} className="text-[11px] text-muted-foreground hover:text-destructive ml-1">
+                <button onClick={resetFilters} className={`min-h-11 px-2 rounded-control text-xs text-muted-foreground hover:text-destructive ml-1 ${focusRing}`}>
                   Clear all
                 </button>
               </>
             ) : (
-              <span className="text-[11px] text-muted-foreground italic">No filters applied</span>
+              <span className="text-xs text-muted-foreground italic">No filters applied</span>
             )}
             <div className="flex-1" />
-            <span className="text-[11px] text-muted-foreground">
+            <span className="text-xs text-muted-foreground">
               <b className="text-foreground">{filtered.length}</b> of {records.length}
             </span>
             <button
               onClick={() => setAdvancedOpen(o => !o)}
-              className={`text-[11px] font-medium px-2.5 py-1 rounded-control transition-all ${
+              aria-expanded={advancedOpen}
+              aria-controls="advanced-filters"
+              className={`inline-flex min-h-11 items-center gap-1 text-xs font-medium px-3 rounded-control transition-all ${focusRing} ${
                 advancedOpen
                   ? 'bg-primary/15 text-primary'
                   : 'text-muted-foreground hover:text-foreground hover:bg-muted'
               }`}
             >
-              {advancedOpen ? 'Hide advanced ▴' : 'Advanced filters ▾'}
+              {advancedOpen ? 'Hide advanced' : 'Advanced filters'}
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${advancedOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
             </button>
           </div>
 
           {/* Advanced drawer (collapsible) */}
           {advancedOpen && (
-            <div className="px-4 pb-4 pt-1 border-t border-border grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 bg-muted/30">
+            <div id="advanced-filters" className="px-4 pb-4 pt-1 border-t border-border grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 bg-muted/30">
               <FilterInput label="Company">
                 <select value={companyFilter} onChange={e => setCompanyFilter(e.target.value)} className={selectCls}>
                   <option value="all">All companies</option>
@@ -517,7 +593,7 @@ export default function TailoredPage() {
               </FilterInput>
               <label className="flex flex-col gap-1 min-w-0">
                 <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Options</span>
-                <label className="inline-flex items-center gap-1.5 text-[11px] text-foreground cursor-pointer select-none px-2.5 py-1.5 rounded-control bg-muted border border-border">
+                <label className="inline-flex min-h-11 items-center gap-1.5 text-xs text-foreground cursor-pointer select-none px-2.5 py-1.5 rounded-control bg-muted border border-border">
                   <input type="checkbox" checked={hasRegensOnly} onChange={e => setHasRegensOnly(e.target.checked)} className="accent-primary" />
                   Multi-version only
                 </label>
@@ -552,14 +628,19 @@ export default function TailoredPage() {
             const currentId = rec.current_version_id || versions[0]?.version_id;
             return (
               <div key={rec.record_id} className="rounded-container border border-border bg-card shadow-soft overflow-hidden">
-                <div className="px-4 py-3 flex items-center gap-3 hover:bg-muted/50 transition-colors">
-                  <button type="button" onClick={() => toggleExpanded(rec.record_id)} className="flex items-center gap-3 min-w-0 flex-1 text-left">
+                <div className="px-4 py-2 flex items-center gap-2 hover:bg-muted/50 transition-colors">
+                  <button
+                    type="button"
+                    onClick={() => toggleExpanded(rec.record_id)}
+                    aria-expanded={isOpen}
+                    className={`flex min-h-11 items-center gap-3 min-w-0 flex-1 text-left rounded-control ${focusRing}`}
+                  >
                     <div className="w-2 h-2 rounded-full shrink-0 bg-primary" />
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium text-foreground truncate">
                         {title}{company && company !== 'Not specified' ? ` · ${company}` : ''}
                       </p>
-                      <p className="text-[11px] text-muted-foreground mt-0.5 flex items-center gap-2 flex-wrap">
+                      <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-2 flex-wrap">
                         <span>{formatDate(rec.created_at || '')}</span>
                         <span>·</span>
                         <span>{versions.length} version{versions.length === 1 ? '' : 's'}</span>
@@ -574,28 +655,29 @@ export default function TailoredPage() {
                           const chip = STATUS_CHIP[s];
                           if (!chip) return null;
                           return (
-                            <span className={`px-1.5 py-0.5 rounded border text-[10px] font-semibold ${chip.cls}`}>
+                            <span className={`px-1.5 py-0.5 rounded border text-xs tracking-wide font-semibold ${chip.cls}`}>
                               {chip.label}
                             </span>
                           );
                         })()}
                         {rec.interview_prep?.generated_at && (
-                          <span className="px-1.5 py-0.5 rounded border text-[10px] bg-success/10 text-success border-success/20">
+                          <span className="px-1.5 py-0.5 rounded border text-xs tracking-wide bg-success/10 text-success border-success/20">
                             Prep ready
                           </span>
                         )}
                       </p>
                     </div>
-                    <ChevronDown className={`w-4 h-4 text-muted-foreground shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                    <ChevronDown className={`w-4 h-4 text-muted-foreground shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
                   </button>
                   <button
                     type="button"
                     title="Delete record"
+                    aria-label={`Delete tailoring record: ${title}`}
                     disabled={deleting === rec.record_id}
-                    onClick={() => handleDeleteRecord(rec.record_id)}
-                    className="p-1.5 rounded-control text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"
+                    onClick={() => setPendingDelete({ kind: 'record', id: rec.record_id, label: title })}
+                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-control text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50 ${focusRing}`}
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    <Trash2 className="w-4 h-4" aria-hidden="true" />
                   </button>
                 </div>
                 {isOpen && (
@@ -610,16 +692,20 @@ export default function TailoredPage() {
                           {rec.jd_text ? (
                             <button
                               onClick={() => copyJd(rec.jd_text || '')}
-                              className="text-[10px] px-2 py-0.5 rounded text-muted-foreground hover:text-foreground hover:bg-muted"
+                              className={`min-h-11 text-xs px-2.5 rounded text-muted-foreground hover:text-foreground hover:bg-muted ${focusRing}`}
                             >Copy</button>
                           ) : null}
                           {rec.jd_text ? (
                             <button
                               onClick={() => toggleJd(rec.record_id)}
-                              className="text-[10px] px-2 py-0.5 rounded text-primary hover:text-primary/80 hover:bg-primary/10"
+                              aria-expanded={jdOpenFor.has(rec.record_id)}
+                              aria-controls={`jd-text-${rec.record_id}`}
+                              className={`min-h-11 text-xs px-2.5 rounded text-primary hover:text-primary/80 hover:bg-primary/10 ${focusRing}`}
                             >{jdOpenFor.has(rec.record_id) ? 'Hide JD' : 'View JD'}</button>
                           ) : (
-                            <span className="text-[10px] text-muted-foreground italic">loading…</span>
+                            <span role="status" aria-live="polite" className="text-xs text-muted-foreground italic">
+                              Loading job description…
+                            </span>
                           )}
                         </div>
                       </div>
@@ -647,7 +733,7 @@ export default function TailoredPage() {
                         </div>
                       )}
                       {jdOpenFor.has(rec.record_id) && rec.jd_text && (
-                        <div className="mt-2 max-h-64 overflow-y-auto rounded-control bg-background border border-border p-2.5">
+                        <div id={`jd-text-${rec.record_id}`} className="mt-2 max-h-64 overflow-y-auto rounded-control bg-background border border-border p-2.5">
                           <pre className="text-[11px] text-foreground whitespace-pre-wrap font-sans leading-relaxed">{rec.jd_text}</pre>
                         </div>
                       )}
@@ -657,14 +743,14 @@ export default function TailoredPage() {
                       <div className="flex items-center justify-end">
                         <button
                           onClick={() => setDiffRecord(rec)}
-                          className="text-[11px] px-2.5 py-1 rounded-control text-primary hover:text-primary/80 hover:bg-primary/10 border border-primary/25"
+                          className={`min-h-11 text-xs px-3 rounded-control text-primary hover:text-primary/80 hover:bg-primary/10 border border-primary/25 ${focusRing}`}
                         >
                           Compare versions
                         </button>
                       </div>
                     )}
                     {versions.length === 0 ? (
-                      <p className="text-xs text-muted-foreground">No versions yet — open the record in the Tailor tab.</p>
+                      <p className="text-xs text-muted-foreground">No versions yet. Open the record in the Tailor tab.</p>
                     ) : null}
                     {versions.map(v => {
                       const isCurrent = v.version_id === currentId;
@@ -678,37 +764,37 @@ export default function TailoredPage() {
                         <div key={v.version_id} className="rounded-control border border-border bg-muted/30 px-3 py-2.5">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-xs font-semibold text-foreground">v{v.version_number}</span>
-                            <span className={`text-[10px] px-1.5 py-0.5 rounded border ${badge.cls}`}>{badge.label}</span>
-                            {isCurrent && <span className="text-[10px] px-1.5 py-0.5 rounded bg-success/15 text-success border border-success/25">Current</span>}
+                            <span className={`text-xs tracking-wide px-1.5 py-0.5 rounded border ${badge.cls}`}>{badge.label}</span>
+                            {isCurrent && <span className="text-xs tracking-wide px-1.5 py-0.5 rounded bg-success/15 text-success border border-success/25">Current</span>}
                             {vAts !== undefined && (
-                              <span className={`text-[11px] font-medium ${atsColor(vAts)}`}>ATS {vAts}</span>
+                              <span className={`text-xs font-medium ${atsColor(vAts)}`}>ATS {vAts}</span>
                             )}
-                            <span className="text-[10px] text-muted-foreground ml-auto">{formatDate(v.created_at)}</span>
+                            <span className="text-xs text-muted-foreground ml-auto">{formatDate(v.created_at)}</span>
                           </div>
                           {v.user_feedback && (
-                            <p className="mt-1.5 text-[11px] italic text-muted-foreground line-clamp-2">“{v.user_feedback}”</p>
+                            <p className="mt-1.5 text-xs italic text-muted-foreground line-clamp-2">“{v.user_feedback}”</p>
                           )}
                           <div className="mt-2 flex items-center gap-1.5 flex-wrap">
                             <button
                               onClick={() => handleDownloadVersion(rec, v, 'pdf')}
                               disabled={downloading !== null}
-                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-control text-[11px] font-medium text-primary-foreground brand-gradient hover:opacity-90 disabled:opacity-50 transition-all"
+                              className={`inline-flex min-h-11 items-center gap-1.5 px-3 rounded-control text-xs font-medium text-primary-foreground brand-gradient hover:opacity-90 disabled:opacity-50 transition-all ${focusRing}`}
                             >
-                              <FileDown className="w-3 h-3" />
-                              {downloading === dlPdfKey ? '…' : cacheP ? 'PDF' : 'PDF (render)'}
+                              <FileDown className="w-3.5 h-3.5" aria-hidden="true" />
+                              {downloading === dlPdfKey ? 'Preparing…' : cacheP ? 'PDF' : 'PDF (render)'}
                             </button>
                             <button
                               onClick={() => handleDownloadVersion(rec, v, 'docx')}
                               disabled={downloading !== null}
-                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-control text-[11px] font-medium text-foreground bg-muted border border-border hover:bg-muted/70 disabled:opacity-50 transition-all"
+                              className={`inline-flex min-h-11 items-center gap-1.5 px-3 rounded-control text-xs font-medium text-foreground bg-muted border border-border hover:bg-muted/70 disabled:opacity-50 transition-all ${focusRing}`}
                             >
-                              <FileDown className="w-3 h-3" />
-                              {downloading === dlDocxKey ? '…' : cacheD ? 'DOCX' : 'DOCX (render)'}
+                              <FileDown className="w-3.5 h-3.5" aria-hidden="true" />
+                              {downloading === dlDocxKey ? 'Preparing…' : cacheD ? 'DOCX' : 'DOCX (render)'}
                             </button>
                             {!isCurrent && (
                               <button
                                 onClick={() => handleSetCurrent(rec.record_id, v.version_id)}
-                                className="px-2.5 py-1 rounded-control text-[11px] font-medium text-muted-foreground hover:text-success hover:bg-success/10 transition-colors"
+                                className={`min-h-11 px-3 rounded-control text-xs font-medium text-muted-foreground hover:text-success hover:bg-success/10 transition-colors ${focusRing}`}
                               >
                                 Set as current
                               </button>
@@ -738,24 +824,27 @@ export default function TailoredPage() {
           <button
             type="button"
             onClick={() => setLegacyOpen(o => !o)}
-            className="w-full px-4 py-2.5 flex items-center justify-between hover:bg-muted/50"
+            aria-expanded={legacyOpen}
+            aria-controls="legacy-downloads"
+            className={`w-full min-h-11 px-4 py-2.5 flex items-center justify-between hover:bg-muted/50 ${focusRing}`}
           >
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Earlier downloads ({legacyFiles.length})
             </span>
-            <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${legacyOpen ? 'rotate-180' : ''}`} />
+            <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${legacyOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
           </button>
           {legacyOpen && (
-            <div className="border-t border-border p-2 space-y-1.5">
+            <div id="legacy-downloads" className="border-t border-border p-2 space-y-1.5">
               {legacyFiles.map(f => {
                 const dlKey = `legacy-${f.s3_key}`;
+                const label = f.job_title || f.filename || 'Tailored resume';
                 return (
                   <div key={f.s3_key} className="flex items-center gap-3 px-2 py-1.5 rounded-control hover:bg-muted/60">
                     <div className="min-w-0 flex-1">
                       <p className="text-xs text-foreground truncate">
-                        {f.job_title || f.filename || 'Tailored resume'}
+                        {label}
                       </p>
-                      <p className="text-[10px] text-muted-foreground">
+                      <p className="text-xs text-muted-foreground">
                         {formatDate(f.generated_at || '')}
                       </p>
                     </div>
@@ -772,20 +861,17 @@ export default function TailoredPage() {
                         setDownloading(null);
                       }}
                       disabled={downloading === dlKey}
-                      className="text-[11px] px-2 py-1 rounded-control text-muted-foreground hover:text-primary hover:bg-primary/10 disabled:opacity-50"
+                      className={`min-h-11 text-xs px-3 rounded-control text-muted-foreground hover:text-primary hover:bg-primary/10 disabled:opacity-50 ${focusRing}`}
                     >
-                      {downloading === dlKey ? '…' : 'Download'}
+                      {downloading === dlKey ? 'Downloading…' : 'Download'}
                     </button>
                     <button
-                      onClick={async () => {
-                        if (!window.confirm('Delete this earlier download?')) return;
-                        const resp = await apiService.deleteResume(f.s3_key);
-                        if (resp.error) { toast.error('Delete failed'); return; }
-                        setLegacyFiles(prev => prev.filter(x => x.s3_key !== f.s3_key));
-                      }}
-                      className="p-1 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded"
+                      type="button"
+                      aria-label={`Delete earlier download: ${label}`}
+                      onClick={() => setPendingDelete({ kind: 'legacy', s3Key: f.s3_key, label })}
+                      className={`flex h-11 w-11 shrink-0 items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-control ${focusRing}`}
                     >
-                      <Trash2 className="w-3 h-3" />
+                      <Trash2 className="w-4 h-4" aria-hidden="true" />
                     </button>
                   </div>
                 );
@@ -794,6 +880,41 @@ export default function TailoredPage() {
           )}
         </div>
       )}
+
+      {/* Destructive-delete confirmation (records + earlier downloads) */}
+      <AlertDialog
+        open={pendingDelete !== null}
+        onOpenChange={(open) => { if (!open) setPendingDelete(null); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {pendingDelete?.kind === 'record'
+                ? 'Delete this tailoring record?'
+                : 'Delete this earlier download?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingDelete?.kind === 'record'
+                ? `“${pendingDelete.label}” and all its versions will be permanently deleted. This cannot be undone.`
+                : `“${pendingDelete?.label ?? ''}” will be permanently deleted. This cannot be undone.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="min-h-11">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="min-h-11 bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (!pendingDelete) return;
+                if (pendingDelete.kind === 'record') handleDeleteRecord(pendingDelete.id);
+                else handleDeleteLegacy(pendingDelete.s3Key);
+                setPendingDelete(null);
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

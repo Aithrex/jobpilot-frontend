@@ -171,7 +171,7 @@ export function JobSearchPanel({
             </div>
             <div>
               <h3 className="text-base font-semibold leading-tight">
-                {filters.date_posted === 'today' ? 'Fresh — last 24 hours' : `Last ${filters.date_posted === 'all' ? 'any time' : filters.date_posted}`}
+                {filters.date_posted === 'today' ? 'Fresh: last 24 hours' : `Last ${filters.date_posted === 'all' ? 'any time' : filters.date_posted}`}
               </h3>
               <p className="text-xs text-muted-foreground">
                 {visibleJobs.length > 0 ? `${visibleJobs.length} ranked matches` : 'No matches yet'}

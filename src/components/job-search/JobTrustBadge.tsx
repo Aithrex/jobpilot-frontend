@@ -12,7 +12,7 @@ const CFG: Record<TrustBand, { label: string; cls: string; icon: typeof ShieldCh
 
 const HEADLINE: Record<TrustBand, string> = {
   trusted: 'No scam signals detected',
-  caution: 'Some risk signals — verify before applying',
+  caution: 'Some risk signals. Verify before applying',
   high_risk: 'Likely scam or ghost job',
 };
 

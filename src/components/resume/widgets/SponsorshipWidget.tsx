@@ -30,7 +30,7 @@ export const sponsorshipWidget: Widget = {
         ) : withData.length === 0 ? (
           <WidgetEmpty
             title="Know who sponsors before you apply"
-            body="Search roles and Aspirely attaches each company's real H-1B track record — approvals, not guesses."
+            body="Search roles and Aspirely attaches each company's real H-1B track record: approvals, not guesses."
             ctaLabel="Find sponsor-friendly roles"
             onCta={() => ctx.navigate('jobs')}
           />

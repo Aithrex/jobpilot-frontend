@@ -70,6 +70,8 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
   const [err, setErr] = useState({ overview: false, streak: false, funnel: false, saved: false });
   const [loading, setLoading] = useState(true);
   const [firstLoad, setFirstLoad] = useState(true);
+  // Announced to screen readers after a user-triggered Refresh completes.
+  const [refreshAnnouncement, setRefreshAnnouncement] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -103,10 +105,23 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
     });
     setLoading(false);
     setFirstLoad(false);
+    // Whether anything a panel depends on failed — the Refresh announcement.
+    return !ok(ovR) || !ok(stR) || !ok(pfR) || !ok(sjR);
   }, []);
 
   useEffect(() => {
     void load();
+  }, [load]);
+
+  /** User-triggered refresh — same load, plus a polite completion announcement. */
+  const handleRefresh = useCallback(async () => {
+    setRefreshAnnouncement('');
+    const anyFailed = await load();
+    setRefreshAnnouncement(
+      anyFailed
+        ? "Refresh finished, but some panels couldn't load. Use the retry buttons below."
+        : 'Dashboard updated',
+    );
   }, [load]);
 
   const displayName = userName ?? user?.name ?? user?.email?.split('@')[0] ?? null;
@@ -169,9 +184,12 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
             })}
           </p>
         </div>
+        <p role="status" aria-live="polite" className="sr-only">
+          {refreshAnnouncement}
+        </p>
         <button
           type="button"
-          onClick={() => void load()}
+          onClick={() => void handleRefresh()}
           disabled={loading}
           aria-label="Refresh dashboard"
           className="inline-flex min-h-11 items-center gap-1.5 rounded-control border border-border bg-card px-3.5 text-caption font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-50"

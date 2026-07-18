@@ -166,7 +166,7 @@ export default function AuthGate({ children, description }: AuthGateProps) {
       setError(result.error);
       return;
     }
-    setSuccessMsg('Account created — signing you in…');
+    setSuccessMsg('Account created. Signing you in…');
     const loginResult = await login(email, password, sessionId, fingerprint);
     setSubmitting(false);
     if (loginResult.error) {
@@ -213,9 +213,9 @@ export default function AuthGate({ children, description }: AuthGateProps) {
     : 'Continue to Aspirely';
 
   const subtitle =
-    step === 'login' ? 'Enter your password — your plan is right where you left it.'
-    : step === 'register' ? "You're new here — let's set up your plan."
-    : (description || "Enter your email — we'll find your account or start a new one.");
+    step === 'login' ? 'Enter your password. Your plan is right where you left it.'
+    : step === 'register' ? "You're new here. Let's set up your plan."
+    : (description || "Enter your email. We'll find your account or start a new one.");
 
   const stepMotion = {
     initial: { opacity: 0, x: reduce ? 0 : 14 },
@@ -231,7 +231,7 @@ export default function AuthGate({ children, description }: AuthGateProps) {
         subtitle={subtitle}
         footer={
           step === 'email' ? (
-            <span>Returning or brand new — one field to get started.</span>
+            <span>Returning or brand new. One field to get started.</span>
           ) : (
             <button
               type="button"
@@ -427,7 +427,7 @@ export default function AuthGate({ children, description }: AuthGateProps) {
                     </select>
                   </div>
                   <p className="text-xs text-muted-foreground sm:col-span-2">
-                    Used to rank roles for your field — you can change these later.
+                    Used to rank roles for your field. You can change these later.
                   </p>
                 </div>
 

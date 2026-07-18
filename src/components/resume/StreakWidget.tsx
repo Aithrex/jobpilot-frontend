@@ -241,7 +241,7 @@ const StreakWidget = forwardRef<StreakWidgetHandle, { compact?: boolean }>(({ co
                 <div
                   key={cell.date}
                   className="flex flex-col items-center gap-1 group/cell"
-                  title={`${dayLabel(cell.date)} — ${cell.count} application${cell.count === 1 ? '' : 's'}`}
+                  title={`${dayLabel(cell.date)}: ${cell.count} application${cell.count === 1 ? '' : 's'}`}
                 >
                   <div
                     className={`relative rounded-lg border flex items-center justify-center font-semibold tabular-nums transition-all duration-200 ${baseTone} ${sizing} ${

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useOutletContext } from "react-router-dom";
 import { toast } from "sonner";
 import { apiService } from "@/lib/api";
 import type {
@@ -44,7 +45,18 @@ const ROLE_LABELS: Record<string, string> = {
   generic: "General",
 };
 
-export default function InterviewPrepTab() {
+interface InterviewPrepTabProps {
+  /** Mounted inside the /next app shell — the shell already renders the page
+      header + SubNav, so suppress the internal hero (the stat grid stays). */
+  embedded?: boolean;
+}
+
+export default function InterviewPrepTab({ embedded }: InterviewPrepTabProps) {
+  // Shell pages pass `embedded` via outlet context (the routes in App.tsx
+  // mount this component without props); the legacy /app monolith passes
+  // neither, so it renders unchanged.
+  const shellCtx = useOutletContext<{ embedded?: boolean } | null>();
+  const isEmbedded = embedded ?? shellCtx?.embedded ?? false;
   const [records, setRecords] = useState<TailoringRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -231,7 +243,7 @@ export default function InterviewPrepTab() {
       <div className="rounded-2xl border border-dashed border-border bg-gradient-to-b from-primary/5 to-transparent p-10 text-center">
         <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-xl">💡</div>
         <p className="text-sm font-semibold text-foreground">No tailored resumes yet</p>
-        <p className="text-xs text-muted-foreground mt-1">Tailor a resume to a job first — your prep pack is built from that resume and job description.</p>
+        <p className="text-xs text-muted-foreground mt-1">Tailor a resume to a job first. Your prep pack is built from that resume and job description.</p>
       </div>
     );
   }
@@ -249,25 +261,31 @@ export default function InterviewPrepTab() {
   return (
     <div className="space-y-4">
       <div className="rounded-2xl border border-border bg-card p-4 shadow-soft">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">Career · Interview</p><h2 className="mt-1 font-display text-2xl font-extrabold tracking-tight text-foreground">Interview Prep</h2>
-        <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
-          Question banks, timed mock answers with AI grading, and a coach that knows your resume and the job description.
-        </p>
-        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {/* Embedded in the /next shell the page h1 + SubNav already carry the
+            title — keep only the functional stat grid. */}
+        {!isEmbedded && (
+          <>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">Career · Interview</p><h2 className="mt-1 font-display text-2xl font-extrabold tracking-tight text-foreground">Interview Prep</h2>
+            <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
+              Question banks, timed mock answers with AI grading, and a coach that knows your resume and the job description.
+            </p>
+          </>
+        )}
+        <div className={`${isEmbedded ? "" : "mt-3 "}grid grid-cols-2 gap-2 sm:grid-cols-4`}>
           <div className="rounded-lg border border-primary/20 bg-primary/5 px-3 py-2">
-            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Selected role</p>
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">Selected role</p>
             <p className="truncate text-sm font-semibold text-primary">{selected?.jd_analysis?.job_title || "None"}</p>
           </div>
           <div className="rounded-lg border border-border bg-muted/40 px-3 py-2">
-            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Questions</p>
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">Questions</p>
             <p className="text-sm font-semibold text-foreground">{norm ? norm.behavioral.length + norm.technical.length + norm.company.length : 0}</p>
           </div>
           <div className="rounded-lg border border-success/20 bg-success/5 px-3 py-2">
-            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Reviewed</p>
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">Reviewed</p>
             <p className="text-sm font-semibold text-success">{reviewed.size}/{totalItems}</p>
           </div>
           <div className="rounded-lg border border-border bg-muted/40 px-3 py-2">
-            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Coverage</p>
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">Coverage</p>
             <p className="text-sm font-semibold text-foreground">{progress}%</p>
           </div>
         </div>
@@ -303,7 +321,7 @@ export default function InterviewPrepTab() {
                   {formatDate(r.created_at || "")}
                 </p>
                 {hasPrep && (
-                  <span className="mt-1.5 inline-block text-[10px] px-1.5 py-0.5 rounded bg-success/10 text-success border border-success/25 font-medium">Prep ready</span>
+                  <span className="mt-1.5 inline-block text-xs px-1.5 py-0.5 rounded bg-success/10 text-success border border-success/25 font-medium">Prep ready</span>
                 )}
               </button>
             );
@@ -369,19 +387,19 @@ export default function InterviewPrepTab() {
                     <div className="h-1 rounded-full bg-muted overflow-hidden">
                       <div className="h-full bg-primary transition-all duration-500" style={{ width: `${progress}%` }} />
                     </div>
-                    <p className="text-[10px] text-muted-foreground mt-1">{progress}% reviewed</p>
+                    <p className="text-xs text-muted-foreground mt-1">{progress}% reviewed</p>
                   </div>
                 )}
               </div>
 
               {!content && !generating && (
                 <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground leading-relaxed">
-                  Click <b>Generate prep</b> to build an interview pack for this role — role-adaptive questions, coding, case and system-design problems, plus the AI coach.
+                  Click <b>Generate prep</b> to build an interview pack for this role. Role-adaptive questions, coding, case and system-design problems, plus the AI coach.
                 </div>
               )}
               {generating && !content && (
                 <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground flex items-center justify-center gap-2 shadow-soft">
-                  <Spinner /> Generating prep — usually 15–30 seconds for a full pack.
+                  <Spinner /> Generating prep. Usually 15 to 30 seconds for a full pack.
                 </div>
               )}
 
@@ -416,7 +434,7 @@ export default function InterviewPrepTab() {
                             <div className="flex items-center gap-2 mb-2.5">
                               <span className="text-base">🎤</span>
                               <p className="text-xs font-bold uppercase tracking-wider text-primary">Elevator pitch</p>
-                              <span className="text-xs text-muted-foreground">— open with this</span>
+                              <span className="text-xs text-muted-foreground">· open with this</span>
                               <div className="flex-1" />
                               <CopyButton text={norm.pitch} />
                             </div>

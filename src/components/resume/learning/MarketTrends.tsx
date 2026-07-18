@@ -80,7 +80,7 @@ export function MarketTrends({ window = 90, onPlanCreated }: MarketTrendsProps) 
           <span className="text-sm font-semibold">Trending in your market</span>
         </div>
         <p className="mt-0.5 text-xs text-muted-foreground">
-          What the roles you're chasing keep asking for right now — learned across everyone's job
+          What the roles you're chasing keep asking for right now. Learned across everyone's job
           matches, matched to your real gaps.
         </p>
       </div>

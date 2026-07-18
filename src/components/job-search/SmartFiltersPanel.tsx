@@ -155,7 +155,7 @@ export function SmartFiltersPanel({ onApply, compact = false }: SmartFiltersPane
       next.add(group.intent);
       return next;
     });
-    toast.success(`Added "${group.label}" to pipeline — stays on this tab so you can keep stacking groups.`);
+    toast.success(`Added "${group.label}" to pipeline. Stays on this tab so you can keep stacking groups.`);
   };
 
   if (loading) {
@@ -334,8 +334,8 @@ export function SmartFiltersPanel({ onApply, compact = false }: SmartFiltersPane
               </div>
               <p className="text-[11px] text-muted-foreground">
                 {suggestions.past_days === 1
-                  ? 'Daily flow — surface the freshest postings only.'
-                  : 'Slightly wider window — niche roles have lower daily volume.'}
+                  ? 'Daily flow. Surface the freshest postings only.'
+                  : 'Slightly wider window. Niche roles have lower daily volume.'}
               </p>
             </CardContent>
           </Card>
@@ -390,7 +390,7 @@ function GroupCard({
             size="sm"
             disabled
             className="h-7 gap-1 bg-emerald-600 text-[11px] text-white opacity-90"
-            title="Group already added — switch to Daily Pipeline tab to run."
+            title="Group already added. Switch to Daily Pipeline tab to run."
           >
             <Check className="h-3 w-3" />
             Added

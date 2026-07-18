@@ -54,7 +54,7 @@ export function GitHubProofCard({ onLinked, connect, reloadConnect }: GitHubProo
         setProfile(r.data.profile);
         setEditing(false);
         setInput('');
-        toast.success('GitHub linked — proof added to your readiness');
+        toast.success('GitHub linked. Proof added to your readiness');
         onLinked?.();
       } else {
         toast.error(r.error || 'Could not analyze that profile');
@@ -170,7 +170,7 @@ export function GitHubProofCard({ onLinked, connect, reloadConnect }: GitHubProo
         <Github className="h-4 w-4" /> Prove your skills
       </div>
       <p className="mb-3 text-xs leading-relaxed text-muted-foreground">
-        Link your GitHub — your real, shipped projects count toward your Career Readiness. No login needed.
+        Link your GitHub. Your real, shipped projects count toward your Career Readiness. No login needed.
       </p>
       <div className="mt-auto flex gap-2">
         <input
@@ -242,7 +242,7 @@ function GitHubConnect({ connect, reloadConnect }: { connect?: ConnectStatus | n
         toast.error(r.error || 'Could not publish the project');
       }
     } catch {
-      toast.error('Publish failed — try again');
+      toast.error('Publish failed. Try again');
     } finally {
       setPublishing(false);
     }

@@ -84,7 +84,7 @@ export default function InterviewInsights({ onStartMock }: InterviewInsightsProp
           </div>
           <p className="text-sm font-medium">No answers to analyze yet</p>
           <p className="mx-auto mt-1 max-w-sm text-xs text-muted-foreground">
-            Do a few mock evaluations and we'll spot the patterns in your answers across every role —
+            Do a few mock evaluations and we'll spot the patterns in your answers across every role,
             then tell you exactly what to drill.
           </p>
           {onStartMock && (
@@ -223,8 +223,8 @@ function SalaryWidget() {
     setLoading(true); setErr('');
     const res = await apiService.getSalaryEstimate(role.trim(), location ? { location } : undefined);
     setLoading(false);
-    if (res.status === 403) { setErr('Daily salary lookups used up — upgrade for unlimited.'); return; }
-    if (res.error || !res.data) { setErr(res.error || "Couldn't estimate a range — try again."); return; }
+    if (res.status === 403) { setErr('Daily salary lookups used up. Upgrade for unlimited.'); return; }
+    if (res.error || !res.data) { setErr(res.error || "Couldn't estimate a range. Try again."); return; }
     setData(res.data);
   };
 

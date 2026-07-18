@@ -100,7 +100,7 @@ export function YourEdge({ onUnavailable }: YourEdgeProps) {
             Find the gap that makes you stand out
           </h3>
           <p className="mt-1 max-w-prose text-sm text-muted-foreground">
-            We scan what your target roles keep asking for — then surface a few trending,
+            We scan what your target roles keep asking for. Then surface a few trending,
             genuinely-scarce skills you could close in a week or two, with proof recruiters trust.
           </p>
           <Button className="mt-4" onClick={findEdge} disabled={finding}>
@@ -122,7 +122,7 @@ export function YourEdge({ onUnavailable }: YourEdgeProps) {
           <p className="mt-2 text-sm font-medium">No standout gaps right now</p>
           <p className="mx-auto mt-1 max-w-prose text-sm text-muted-foreground">
             {result.note ||
-              "We couldn't find a clearly scarce, closeable edge in your market this week. That's often a good sign — your profile already covers the common asks."}
+              "We couldn't find a clearly scarce, closeable edge in your market this week. That's often a good sign. Your profile already covers the common asks."}
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={findEdge}>
@@ -140,7 +140,7 @@ export function YourEdge({ onUnavailable }: YourEdgeProps) {
         <div>
           <h3 className="font-semibold">Pick the edge to build</h3>
           <p className="text-sm text-muted-foreground">
-            Trending, scarce, and closeable — choose one to turn into a practical plan.
+            Trending, scarce, and closeable. Choose one to turn into a practical plan.
           </p>
         </div>
         <Button variant="ghost" size="sm" onClick={findEdge} className="shrink-0">
@@ -225,7 +225,7 @@ export function YourEdge({ onUnavailable }: YourEdgeProps) {
         </div>
         {generating && (
           <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Sparkles className="h-3 w-3" /> Designing a day-by-day plan with real proof of work — ~20s.
+            <Sparkles className="h-3 w-3" /> Designing a day-by-day plan with real proof of work, ~20s.
           </p>
         )}
       </motion.div>

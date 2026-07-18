@@ -217,7 +217,7 @@ export function EdgeTaskCard({ pathId, task, verifyResult, onVerify }: EdgeTaskC
                     verifyResult.status === 'needs_work' ? 'text-warning' : 'text-muted-foreground',
                   )}
                 >
-                  {verifyResult.status === 'needs_work' ? 'Almost there — ' : "Couldn't verify — "}
+                  {verifyResult.status === 'needs_work' ? 'Almost there: ' : "Couldn't verify: "}
                 </span>
                 {verifyResult.details}
               </span>

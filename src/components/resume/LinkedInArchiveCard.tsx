@@ -34,7 +34,7 @@ function DiffRow({ item }: { item: LinkedInDiffItem }) {
       </div>
       <div className="mt-2 grid gap-1.5 sm:grid-cols-2">
         <div className="rounded-md bg-muted/50 px-2 py-1.5">
-          <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Résumé</p>
+          <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Resume</p>
           <p className="text-xs text-foreground/85">{item.resume_value || "—"}</p>
         </div>
         <div className="rounded-md bg-muted/50 px-2 py-1.5">
@@ -107,7 +107,7 @@ export function LinkedInArchiveCard() {
           <span className={`grid h-8 w-8 place-items-center rounded-lg ${LINKEDIN_TILE}`}>
             <Linkedin className="h-4 w-4" />
           </span>
-          <h3 className="text-sm font-semibold text-foreground">LinkedIn vs. résumé</h3>
+          <h3 className="text-sm font-semibold text-foreground">LinkedIn vs. resume</h3>
         </div>
         <Button
           size="sm"
@@ -145,7 +145,7 @@ export function LinkedInArchiveCard() {
         <div className="rounded-lg border border-dashed border-border px-4 py-6 text-center">
           <GitCompareArrows className="mx-auto mb-2 h-5 w-5 text-muted-foreground" />
           <p className="text-xs text-muted-foreground">
-            Upload your LinkedIn data export to spot where your profile and résumé disagree.
+            Upload your LinkedIn data export to spot where your profile and resume disagree.
           </p>
           <a
             href="https://www.linkedin.com/mypreferences/d/download-my-data"
@@ -159,7 +159,7 @@ export function LinkedInArchiveCard() {
       ) : items.length === 0 ? (
         <div className="flex items-center gap-2 rounded-lg border border-success/25 bg-success/10 px-3 py-3 text-xs text-success">
           <CheckCircle2 className="h-4 w-4 shrink-0" />
-          Your LinkedIn and résumé are consistent. Nice.
+          Your LinkedIn and resume are consistent. Nice.
         </div>
       ) : (
         <>

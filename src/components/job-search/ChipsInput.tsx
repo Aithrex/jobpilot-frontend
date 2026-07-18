@@ -27,7 +27,7 @@ export function ChipsInput({
   defaultValues,
   suggestionValues,
   accentClass = 'border-purple-500/30 bg-purple-500/10 text-purple-700 dark:text-purple-300',
-  emptyState = 'No items yet — start typing or paste a comma-separated list.',
+  emptyState = 'No items yet. Start typing or paste a comma-separated list.',
   searchable = true,
 }: ChipsInputProps) {
   const [draft, setDraft] = useState('');

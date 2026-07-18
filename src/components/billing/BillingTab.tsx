@@ -28,7 +28,7 @@ export default function BillingTab() {
 
   if (isLoading || !data) {
     return (
-      <div className="mx-auto max-w-3xl space-y-4 p-4">
+      <div className="max-w-3xl space-y-4">
         <Skeleton className="h-28 w-full rounded-2xl" />
         <Skeleton className="h-64 w-full rounded-2xl" />
       </div>
@@ -40,7 +40,10 @@ export default function BillingTab() {
   const upgradeTo = nextPlan(plan);
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6 p-4">
+    // No self-container (mx-auto/p-4): both mounts — /next settings and the
+    // classic workspace — already pad and align their content; centering here
+    // broke the settings panels' shared left alignment.
+    <div className="max-w-3xl space-y-6">
       {/* Current plan */}
       <Card className="overflow-hidden">
         <div className="flex flex-col gap-4 bg-gradient-to-br from-primary/10 to-transparent p-5 sm:flex-row sm:items-center sm:justify-between">

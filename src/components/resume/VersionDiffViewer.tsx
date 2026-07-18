@@ -122,7 +122,7 @@ export default function VersionDiffViewer({ record, onClose }: Props) {
           <div className="min-w-0">
             <p className="text-sm font-semibold text-foreground truncate">
               Compare versions · {record.jd_analysis?.job_title || "Record"}
-              {record.jd_analysis?.company && record.jd_analysis.company !== "Not specified" ? ` — ${record.jd_analysis.company}` : ""}
+              {record.jd_analysis?.company && record.jd_analysis.company !== "Not specified" ? ` · ${record.jd_analysis.company}` : ""}
             </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">

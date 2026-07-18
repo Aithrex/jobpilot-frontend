@@ -127,7 +127,7 @@ function ResumeDialogContent({ open: isOpen }: { open: boolean }) {
         <div className="flex items-center gap-2">
           <DialogTitle className="text-base font-semibold">Resume</DialogTitle>
           <DialogDescription className="sr-only">View or download Harshith&apos;s resume as PDF. If the preview does not load, use Open in new tab or Download.</DialogDescription>
-          {!mobile && <span className="hidden text-xs text-muted-foreground sm:inline">— click outside to close</span>}
+          {!mobile && <span className="hidden text-xs text-muted-foreground sm:inline">· click outside to close</span>}
         </div>
         <div className="flex items-center gap-2">
           <DialogClose asChild>

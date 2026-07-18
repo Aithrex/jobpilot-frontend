@@ -114,7 +114,7 @@ export function CoverLetterPanel({
             Writing your cover letter…
           </p>
           <p className="max-w-xs text-xs text-muted-foreground">
-            Matching your experience to the role. Usually takes 15–30 seconds.
+            Matching your experience to the role. Usually takes 15 to 30 seconds.
           </p>
         </div>
       ) : (

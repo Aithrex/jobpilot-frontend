@@ -7,7 +7,7 @@
  * Presentational: state (result, versions, cover-letter) + handlers via props.
  */
 import type { ReactNode } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { Sparkles, Lightbulb, PenLine, X, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { TailorPipelineResult } from './types';
@@ -43,6 +43,8 @@ export function NudgeBar({
   onReviewAts,
   onGenerateCoverLetter,
 }: NudgeBarProps) {
+  // Hook before any early return (rules of hooks).
+  const reduceMotion = useReducedMotion();
   if (!result) return null;
 
   const nudges: Nudge[] = [];
@@ -54,7 +56,7 @@ export function NudgeBar({
       icon: Sparkles,
       text: (
         <>
-          Resume regenerated —{' '}
+          Resume regenerated:{' '}
           <strong className="text-foreground">
             ATS score is now {result.ats_scores.overall}/100
           </strong>
@@ -80,8 +82,8 @@ export function NudgeBar({
       text: (
         <>
           Your Skills Alignment is{' '}
-          <strong className="text-warning">{result.ats_scores.skills_alignment}</strong>{' '}
-          — try adding{' '}
+          <strong className="text-warning">{result.ats_scores.skills_alignment}</strong>
+          . Try adding{' '}
           <strong className="text-foreground">"{top.join('"')}"</strong>
           {top.length > 1 ? ' and ' : ''}
           <strong className="text-foreground">"{top[top.length - 1]}"</strong> to bump
@@ -117,10 +119,10 @@ export function NudgeBar({
   return (
     <motion.div
       key={active.id}
-      initial={{ opacity: 0, y: -6 }}
+      initial={reduceMotion ? false : { opacity: 0, y: -6 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -6 }}
-      transition={{ duration: 0.25 }}
+      exit={reduceMotion ? undefined : { opacity: 0, y: -6 }}
+      transition={{ duration: reduceMotion ? 0 : 0.25 }}
       className="relative rounded-container border border-primary/20 bg-primary/5 px-4 py-3 flex items-center justify-between gap-3 overflow-hidden"
     >
       <div className="relative flex items-center gap-2.5 text-sm min-w-0">

@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { useOutletContext } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, useReducedMotion } from "framer-motion";
 import {
@@ -73,7 +74,18 @@ const speechCtor = (): SpeechRecognitionConstructor | undefined =>
     ? undefined
     : window.SpeechRecognition || window.webkitSpeechRecognition;
 
-export default function VoiceGraphTab() {
+interface VoiceGraphTabProps {
+  /** Mounted inside the /next app shell — the shell already renders the page
+      h1 + SubNav, so demote the internal hero and drop the outer padding. */
+  embedded?: boolean;
+}
+
+export default function VoiceGraphTab({ embedded }: VoiceGraphTabProps) {
+  // Shell pages pass `embedded` via outlet context (the routes in App.tsx
+  // mount this component without props); the legacy /app monolith passes
+  // neither, so it renders unchanged.
+  const shellCtx = useOutletContext<{ embedded?: boolean } | null>();
+  const isEmbedded = embedded ?? shellCtx?.embedded ?? false;
   const queryClient = useQueryClient();
   const reduce = useReducedMotion();
 
@@ -95,7 +107,7 @@ export default function VoiceGraphTab() {
   const minSignalWords = status?.samples.min_signal_words ?? 150;
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 py-6 sm:py-8">
+    <div className={cn("mx-auto w-full max-w-3xl", !isEmbedded && "px-4 py-6 sm:py-8")}>
       {statusQuery.isLoading ? (
         <LoadingState />
       ) : statusQuery.isError ? (
@@ -103,12 +115,13 @@ export default function VoiceGraphTab() {
       ) : status == null || !featureLive ? (
         <UnavailableState />
       ) : !consentGranted ? (
-        <ConsentGate reduce={!!reduce} onGranted={() => statusQuery.refetch()} />
+        <ConsentGate reduce={!!reduce} embedded={isEmbedded} onGranted={() => statusQuery.refetch()} />
       ) : (
         <WritingSurface
           minSignalWords={minSignalWords}
           readyCount={status.samples.ready}
           reduce={!!reduce}
+          embedded={isEmbedded}
           onStatusChanged={() =>
             queryClient.invalidateQueries({ queryKey: [...VG_KEY, "status"] })
           }
@@ -120,7 +133,23 @@ export default function VoiceGraphTab() {
 
 /* ─────────────────────────── Header ─────────────────────────── */
 
-function Header() {
+function Header({ embedded }: { embedded?: boolean }) {
+  // Embedded in the /next shell the page already has an h1 ("Shape your
+  // story") and a "Voice" SubNav item — demote to a section h2 on the shell's
+  // type scale and drop the duplicative chip so the page keeps a single h1.
+  if (embedded) {
+    return (
+      <header className="mb-6 text-center">
+        <h2 className="font-display text-h2 text-foreground">
+          Teach us how you write
+        </h2>
+        <p className="mx-auto mt-2 max-w-prose text-caption leading-relaxed text-muted-foreground">
+          Write a little, the way you actually talk. We learn your voice so every
+          resume we help you build sounds like you. Not like a template.
+        </p>
+      </header>
+    );
+  }
   return (
     <header className="mb-8 text-center">
       <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-xs font-medium text-muted-foreground">
@@ -132,7 +161,7 @@ function Header() {
       </h1>
       <p className="mx-auto mt-3 max-w-prose text-base leading-relaxed text-muted-foreground">
         Write a little, the way you actually talk. We learn your voice so every
-        resume we help you build sounds like you — not like a template.
+        resume we help you build sounds like you. Not like a template.
       </p>
     </header>
   );
@@ -178,7 +207,7 @@ function UnavailableState() {
       </h2>
       <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
         We&apos;re polishing the writing surface that learns how you sound. Check
-        back shortly — it&apos;ll be worth it.
+        back shortly. It&apos;ll be worth it.
       </p>
     </Card>
   );
@@ -207,9 +236,11 @@ const CONSENT_POINTS: { title: string; body: string }[] = [
 
 function ConsentGate({
   reduce,
+  embedded,
   onGranted,
 }: {
   reduce: boolean;
+  embedded?: boolean;
   onGranted: () => void;
 }) {
   const [granting, setGranting] = useState(false);
@@ -227,7 +258,7 @@ function ConsentGate({
 
   return (
     <>
-      <Header />
+      <Header embedded={embedded} />
       <motion.div
         initial={reduce ? false : { opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
@@ -277,11 +308,13 @@ function WritingSurface({
   minSignalWords,
   readyCount,
   reduce,
+  embedded,
   onStatusChanged,
 }: {
   minSignalWords: number;
   readyCount: number;
   reduce: boolean;
+  embedded?: boolean;
   onStatusChanged: () => void;
 }) {
   const queryClient = useQueryClient();
@@ -459,7 +492,7 @@ function WritingSurface({
       return;
     }
     toast.success("Saved to your voice", {
-      description: "Nice — this makes your resumes sound more like you.",
+      description: "Nice. This makes your resumes sound more like you.",
     });
     resetComposer();
     samplesQuery.refetch();
@@ -470,7 +503,7 @@ function WritingSurface({
     signal?.message ??
     (wordCount === 0
       ? `Start anywhere. Around ${minSignalWords} words lets us learn your voice.`
-      : `Keep going — around ${minSignalWords} words lets us learn your voice. You're at ${wordCount}.`);
+      : `Keep going. Around ${minSignalWords} words lets us learn your voice. You're at ${wordCount}.`);
 
   const priorSamples = (samplesQuery.data ?? []).filter(
     (s) => s.sample_id !== sampleId,
@@ -478,7 +511,7 @@ function WritingSurface({
 
   return (
     <>
-      <Header />
+      <Header embedded={embedded} />
 
       <motion.div
         initial={reduce ? false : { opacity: 0, y: 12 }}
@@ -571,7 +604,7 @@ function WritingSurface({
 
         {listening && (
           <p className="mt-2 text-xs text-muted-foreground">
-            Only the transcript is saved — your audio never leaves this device.
+            Only the transcript is saved. Your audio never leaves this device.
           </p>
         )}
       </motion.div>

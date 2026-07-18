@@ -25,11 +25,11 @@ function SectionFallback() {
 
 /**
  * "Craft" destination in the app shell (`/next/craft`). A layout route: a
- * horizontal sub-nav over deep-linkable nested sections. Standalone tools
- * (Batch, Six Seconds, Voice) mount directly; the monolith-embedded tools
- * (Tailor, My Resumes, Tailored) render an "Open in workspace" fallback that
- * deep-links into the classic `/app` workspace until they're extracted.
- * Sections are lazy-loaded via the nested routes in App.tsx.
+ * horizontal sub-nav over deep-linkable nested sections, all lazy-loaded via
+ * the nested routes in App.tsx. Tailor, My Resumes, and Tailored are
+ * shell-native pages (`./craft/*`); Batch, Six Seconds, and Voice mount the
+ * standalone monolith components directly (passed `embedded` via outlet
+ * context so they drop their internal hero headers under the shell's h1).
  */
 export default function CraftPage() {
   return (
@@ -40,7 +40,7 @@ export default function CraftPage() {
           Shape your story
         </h1>
         <p className="mt-1 text-caption text-muted-foreground">
-          Tailor résumés to a role, batch-tailor a pipeline, and pressure-test
+          Tailor resumes to a role, batch-tailor a pipeline, and pressure-test
           how you read.
         </p>
       </header>
@@ -48,7 +48,10 @@ export default function CraftPage() {
       <SubNav ariaLabel="Craft sections" items={CRAFT_SECTIONS} />
 
       <Suspense fallback={<SectionFallback />}>
-        <Outlet />
+        {/* Sections are mounted by App.tsx routes; `embedded` tells the
+            monolith-born tab components the shell already renders the page
+            header + SubNav, so they suppress their internal hero headers. */}
+        <Outlet context={{ embedded: true }} />
       </Suspense>
     </div>
   );

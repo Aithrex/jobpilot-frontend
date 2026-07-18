@@ -64,15 +64,18 @@ export function InspectorTabs({
     >
       {/* Tab bar */}
       <TabsList className="mb-4 flex h-auto w-full gap-1 rounded-container border border-border bg-muted/60 p-1.5">
+        {/* Below `sm` the labels collapse to icon-only VISUALLY, but stay in
+            the accessible name via sr-only (an aria-label would mask the
+            dynamic score/status text that follows each label). */}
         <TabsTrigger value="jd" className={triggerCls}>
-          <ClipboardList className="h-4 w-4 shrink-0" />
-          <span className="hidden sm:inline">Job Description</span>
+          <ClipboardList className="h-4 w-4 shrink-0" aria-hidden="true" />
+          <span className="sr-only sm:not-sr-only">Job Description</span>
         </TabsTrigger>
 
         {reviewPanel && (
           <TabsTrigger value="review" disabled={!hasResult} className={triggerCls}>
-            <ShieldAlert className="h-4 w-4 shrink-0" />
-            <span className="hidden sm:inline">Review</span>
+            <ShieldAlert className="h-4 w-4 shrink-0" aria-hidden="true" />
+            <span className="sr-only sm:not-sr-only">Review</span>
             {reviewPendingCount > 0 && (
               <span
                 className={cn(
@@ -83,14 +86,15 @@ export function InspectorTabs({
                 )}
               >
                 {reviewPendingCount}
+                <span className="sr-only"> flagged claims pending review</span>
               </span>
             )}
           </TabsTrigger>
         )}
 
         <TabsTrigger value="ats" disabled={!hasResult} className={triggerCls}>
-          <Search className="h-4 w-4 shrink-0" />
-          <span className="hidden sm:inline">ATS Score</span>
+          <Search className="h-4 w-4 shrink-0" aria-hidden="true" />
+          <span className="sr-only sm:not-sr-only">ATS Score</span>
           {atsScore != null ? (
             <span className="ml-0.5 inline-flex items-center gap-1">
               <span
@@ -102,14 +106,24 @@ export function InspectorTabs({
                 {atsScore}
               </span>
               {atsStale && (
-                <span
-                  title="Edited since scored"
-                  className="h-1.5 w-1.5 animate-pulse rounded-full bg-warning"
-                />
+                <>
+                  <span
+                    title="Edited since scored"
+                    aria-hidden="true"
+                    className="h-1.5 w-1.5 animate-pulse rounded-full bg-warning"
+                  />
+                  <span className="sr-only">Score outdated. Edited since scored</span>
+                </>
               )}
             </span>
           ) : atsLoading ? (
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-warning" />
+            <>
+              <span
+                aria-hidden="true"
+                className="h-1.5 w-1.5 animate-pulse rounded-full bg-warning"
+              />
+              <span className="sr-only">Scoring in progress</span>
+            </>
           ) : null}
         </TabsTrigger>
 
@@ -118,20 +132,29 @@ export function InspectorTabs({
           disabled={!hasResult}
           className={triggerCls}
         >
-          <RotateCw className="h-4 w-4 shrink-0" />
-          <span className="hidden sm:inline">Regenerate</span>
+          <RotateCw className="h-4 w-4 shrink-0" aria-hidden="true" />
+          <span className="sr-only sm:not-sr-only">Regenerate</span>
         </TabsTrigger>
 
         <TabsTrigger value="cover" disabled={!hasResult} className={triggerCls}>
-          <Sparkles className="h-4 w-4 shrink-0" />
-          <span className="hidden sm:inline">Cover Letter</span>
+          <Sparkles className="h-4 w-4 shrink-0" aria-hidden="true" />
+          <span className="sr-only sm:not-sr-only">Cover Letter</span>
           {coverLetterReady && !coverLetterLoading ? (
-            <span className="relative flex h-1.5 w-1.5">
-              <span className="absolute inset-0 animate-ping rounded-full bg-success opacity-60" />
-              <span className="relative h-1.5 w-1.5 rounded-full bg-success" />
-            </span>
+            <>
+              <span className="relative flex h-1.5 w-1.5" aria-hidden="true">
+                <span className="absolute inset-0 animate-ping rounded-full bg-success opacity-60" />
+                <span className="relative h-1.5 w-1.5 rounded-full bg-success" />
+              </span>
+              <span className="sr-only">Cover letter ready</span>
+            </>
           ) : coverLetterLoading ? (
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-warning" />
+            <>
+              <span
+                aria-hidden="true"
+                className="h-1.5 w-1.5 animate-pulse rounded-full bg-warning"
+              />
+              <span className="sr-only">Generating cover letter</span>
+            </>
           ) : null}
         </TabsTrigger>
       </TabsList>

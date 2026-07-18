@@ -17,8 +17,8 @@ export default function AutoApplyEntryCard({ onOpen }: { onOpen?: () => void }) 
   const subtitle = count > 0
     ? `${count} application${count === 1 ? "" : "s"} ready for your approval`
     : enabled
-      ? "On — Aspirely submits what you approve"
-      : "Review-only — approve each application yourself";
+      ? "On. Aspirely submits what you approve"
+      : "Review-only. Approve each application yourself";
 
   return (
     <Card

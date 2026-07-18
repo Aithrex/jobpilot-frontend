@@ -64,7 +64,7 @@ export function ShareWinDialog({ open, onClose, pathId, task }: ShareWinDialogPr
     await navigator.clipboard.writeText(variantText(variants[picked]));
     setCopied(true);
     setTimeout(() => setCopied(false), 1600);
-    toast.success('Copied — paste it into LinkedIn');
+    toast.success('Copied. Paste it into LinkedIn');
   };
 
   const publish = async (mode: 'manual' | 'auto') => {
@@ -95,7 +95,7 @@ export function ShareWinDialog({ open, onClose, pathId, task }: ShareWinDialogPr
       scheduleId: res.data?.schedule_id || '',
       holdsUntil: res.data?.holds_until || res.data?.scheduled_for,
     });
-    toast.success('Scheduled', { description: 'Holds for 30 minutes — you can still cancel.' });
+    toast.success('Scheduled', { description: 'Holds for 30 minutes. You can still cancel.' });
   };
 
   const cancel = async () => {
@@ -127,7 +127,7 @@ export function ShareWinDialog({ open, onClose, pathId, task }: ShareWinDialogPr
             <PartyPopper className="h-5 w-5 text-primary" /> Share this win
           </DialogTitle>
           <DialogDescription>
-            A verified, specific post — grounded in what you actually shipped.
+            A verified, specific post. Grounded in what you actually shipped.
           </DialogDescription>
         </DialogHeader>
 

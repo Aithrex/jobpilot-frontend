@@ -91,7 +91,7 @@ export default function AuthoredResumeView() {
     setActive(res.data);
     listQuery.refetch();
     toast.success("Built from your words", {
-      description: "Every line is verbatim — nothing written by a model.",
+      description: "Every line is verbatim. Nothing written by a model.",
     });
   };
 
@@ -121,7 +121,7 @@ export default function AuthoredResumeView() {
       <Card className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
         <div className="max-w-prose">
           <p className="text-sm leading-relaxed text-muted-foreground">
-            Assemble a resume from what you&apos;ve written — line for line, in
+            Assemble a resume from what you&apos;ve written, line for line, in
             your own words. Nothing here is written by a model.
           </p>
         </div>
@@ -165,8 +165,8 @@ export default function AuthoredResumeView() {
               <FileText className="h-4 w-4" />
             </div>
             <p className="mx-auto max-w-sm text-sm leading-relaxed text-muted-foreground">
-              Nothing built yet. Your first resume from your own words — every
-              line verbatim — will show up here.
+              Nothing built yet. Your first resume from your own words, every
+              line verbatim, will show up here.
             </p>
             <button
               type="button"
@@ -245,7 +245,7 @@ function ResumeDocument({ detail }: { detail: AuthoredResumeDetail }) {
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 bg-muted/30 px-6 py-3">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
           <ShieldCheck className="h-3.5 w-3.5" />
-          Raw — nothing was written by a model
+          Raw: nothing was written by a model
         </span>
         {typeof detail.voice_distance === "number" && (
           <span className="text-xs text-muted-foreground">
@@ -400,7 +400,7 @@ function ProvenanceLine({
             &ldquo;{prov.bullet}&rdquo;
           </p>
           <p className="mt-2 text-xs text-muted-foreground">
-            Verbatim from a writing sample — we didn&apos;t rewrite a word.
+            Verbatim from a writing sample. We didn&apos;t rewrite a word.
           </p>
         </HoverCardContent>
       </HoverCard>

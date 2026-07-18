@@ -93,7 +93,7 @@ export default function BetaLabTab() {
   }, []);
 
   const notify = (label: string) => {
-    toast.success(`Got it — we'll ping you when ${label} ships.`);
+    toast.success(`Got it. We'll ping you when ${label} ships.`);
   };
 
   return (
@@ -115,7 +115,7 @@ export default function BetaLabTab() {
         <p className="text-sm text-muted-foreground max-w-2xl">
           Experiments that aren't ready for the main flow. Working ones run on
           click; "Coming soon" cards are scoped and ranked, just not built yet.
-          Send feedback — these decisions reshape the roadmap.
+          Send feedback. These decisions reshape the roadmap.
         </p>
       </div>
 
@@ -133,7 +133,7 @@ export default function BetaLabTab() {
               </Badge>
             </div>
             <CardDescription className="text-xs">
-              One-screen briefing of what to do today — synthesizes follow-ups,
+              One-screen briefing of what to do today. Synthesizes follow-ups,
               interviews, saved roles, daily cadence.
             </CardDescription>
           </CardHeader>
@@ -194,7 +194,7 @@ export default function BetaLabTab() {
               </Badge>
             </div>
             <CardDescription className="text-xs">
-              Paste a JD you like — surfaces matching saved/recent roles by
+              Paste a JD you like. Surfaces matching saved/recent roles by
               skill-token overlap.
             </CardDescription>
           </CardHeader>
@@ -302,7 +302,7 @@ export default function BetaLabTab() {
                   Across <b className="tabular-nums">{ab.total}</b> tailored submission{ab.total === 1 ? '' : 's'}.
                   {!ab.hasTagged && (
                     <span className="ml-1 text-amber-600 dark:text-amber-300">
-                      No variants tagged yet — when you save a tailored resume, set
+                      No variants tagged yet. When you save a tailored resume, set
                       a <code className="font-mono">variant</code> tag (e.g. "A" or "B") to start comparing.
                     </span>
                   )}
@@ -384,7 +384,7 @@ export default function BetaLabTab() {
 
       <p className="text-[11px] text-muted-foreground border-t border-border/40 pt-3">
         Beta features may be unstable or change behavior. Disable them by simply
-        not opening this tab — the rest of the app is unaffected.
+        not opening this tab. The rest of the app is unaffected.
       </p>
     </div>
   );

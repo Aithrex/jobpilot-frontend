@@ -144,7 +144,7 @@ function ReviewCard({
             “{item.unsupported_claim}”
           </span>
           {item.flags.length > 0 && (
-            <> — {item.flags.map((f) => FLAG_LABELS[f] ?? f).join('; ')}</>
+            <> ({item.flags.map((f) => FLAG_LABELS[f] ?? f).join('; ')})</>
           )}
         </p>
       )}
@@ -266,7 +266,7 @@ export function ReviewPanel({
       <div className="p-6 text-center">
         <ShieldQuestion className="mx-auto mb-2 h-6 w-6 text-muted-foreground" />
         <p className="text-sm text-muted-foreground">
-          No verification data yet — it's generated automatically with each
+          No verification data yet. It's generated automatically with each
           tailoring run.
         </p>
       </div>
@@ -290,7 +290,7 @@ export function ReviewPanel({
             <p className="mt-0.5 text-[11px] text-muted-foreground">
               Every line checked against your resume
               {verification.status === 'skipped'
-                ? ' — verification was skipped this run'
+                ? '. Verification was skipped this run'
                 : ''}
               . {counts.supported} supported · {counts.partial} partial ·{' '}
               {counts.unsupported} unsupported

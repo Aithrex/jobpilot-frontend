@@ -240,7 +240,7 @@ function GraphCanvas({
                 }
                 tabIndex={0}
                 role="button"
-                aria-label={`${n.label} — ${n.type}, ${
+                aria-label={`${n.label}: ${n.type}, ${
                   n.user_confirmed ? "confirmed" : "inferred"
                 }`}
                 style={{ cursor: "pointer" }}

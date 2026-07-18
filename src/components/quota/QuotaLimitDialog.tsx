@@ -49,8 +49,8 @@ export function QuotaLimitDialog({ open, onOpenChange, usage, onRequestMore }: P
             {requested && requested > (usage?.remaining ?? 0) ? (
               <>
                 {" "}
-                That batch of <span className="font-semibold">{requested}</span> would push you over —
-                trim it down or come back tomorrow.
+                That batch of <span className="font-semibold">{requested}</span> would push you over.
+                Trim it down or come back tomorrow.
               </>
             ) : null}
           </DialogDescription>
@@ -59,15 +59,14 @@ export function QuotaLimitDialog({ open, onOpenChange, usage, onRequestMore }: P
         <div className="space-y-4 pt-2 text-sm text-muted-foreground">
           <p>
             I cap this at <span className="font-medium text-foreground">{limit} per day</span> so the
-            AI tailoring (powered by Claude) stays free for everyone — every tailor runs a few large
+            AI tailoring (powered by Claude) stays free for everyone. Every tailor runs a few large
             model calls under the hood, and unlimited use would burn the budget fast.
           </p>
           <p>
             Your counter resets at <span className="font-medium text-foreground">midnight UTC</span>
             {countdown ? (
               <>
-                {" "}
-                — about <span className="font-medium text-foreground">{countdown}</span> from now.
+                , about <span className="font-medium text-foreground">{countdown}</span> from now.
               </>
             ) : (
               "."

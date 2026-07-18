@@ -19,7 +19,8 @@ import {
   useRef,
   useState,
 } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
+import * as RadixDialog from '@radix-ui/react-dialog';
 import {
   FileText,
   FileDown,
@@ -35,6 +36,12 @@ import { useFeedback } from '@/components/feedback/FeedbackWidget';
 import { useUpgrade } from '@/components/billing/UpgradeModalProvider';
 import { QuotaLimitDialog } from '@/components/quota/QuotaLimitDialog';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PanelError } from '@/app-shell/pages/today/primitives';
 import StreakWidget from '@/components/resume/StreakWidget';
@@ -83,6 +90,7 @@ import { CoverLetterPanel } from './tailor/CoverLetterPanel';
 const ResumeEditor = lazy(() => import('@/components/resume/ResumeEditor'));
 
 export default function TailorPage() {
+  const reduceMotion = useReducedMotion();
   const [hasResumes, setHasResumes] = useState<boolean | null>(null);
   const [loadingCheck, setLoadingCheck] = useState(true);
   const [resumeLoadError, setResumeLoadError] = useState('');
@@ -106,6 +114,9 @@ export default function TailorPage() {
   const [tailorError, setTailorError] = useState('');
   const [result, setResult] = useState<TailorPipelineResult | null>(null);
   const [atsLoading, setAtsLoading] = useState(false);
+  // ATS scoring failed — surfaced beside the ATS panel with a manual retry
+  // (scoring used to fail silently, leaving users staring at a spinnerless gap).
+  const [atsError, setAtsError] = useState('');
   const [tailorElapsed, setTailorElapsed] = useState(0);
 
   // The parsed BASE resume (arrives with the tailor result) — powers the
@@ -162,7 +173,7 @@ export default function TailorPage() {
     });
     setEditing(true);
     if (payload.title) {
-      toast.success(`Loaded ${payload.title} from Batch Tailor — edit and re-download.`);
+      toast.success(`Loaded ${payload.title} from Batch Tailor. Edit and re-download.`);
     }
     clearBatchHandoffFromUrl();
   }, []);
@@ -177,14 +188,14 @@ export default function TailorPage() {
     if (job.url) setPendingJobUrl(job.url);
     if (job.title || job.company) {
       toast.info(
-        `Tailoring for ${job.title || ''}${job.company ? ' @ ' + job.company : ''} — apply status auto-tracks`,
+        `Tailoring for ${job.title || ''}${job.company ? ' @ ' + job.company : ''}. Apply status auto-tracks`,
       );
     }
     if (job.jd_fetch_failed) {
       toast.warning(
         job.url
-          ? `Couldn't auto-fetch this JD — opening the posting in a new tab and pasting it works, OR click "Retry JD fetch" beside the textarea.`
-          : "Couldn't auto-fetch this JD — please copy-paste it from the posting into the box below.",
+          ? `Couldn't auto-fetch this JD. Opening the posting in a new tab and pasting it works, OR click "Retry JD fetch" beside the textarea.`
+          : "Couldn't auto-fetch this JD. Please copy-paste it from the posting into the box below.",
         { duration: 8000 },
       );
       if (job.url) {
@@ -200,7 +211,7 @@ export default function TailorPage() {
             if (r.data?.ok && r.data.jd_text) {
               setJdText(r.data.jd_text);
               cacheJdText(job.url!, r.data.jd_text);
-              toast.success('JD auto-fetched on retry — review and tailor.');
+              toast.success('JD auto-fetched on retry. Review and tailor.');
             }
           })
           .catch(() => {
@@ -217,21 +228,6 @@ export default function TailorPage() {
   }, [applyPendingTailorJob]);
 
   useEffect(() => onNavigateToTailor(applyPendingTailorJob), [applyPendingTailorJob]);
-
-  /* ── Lock body scroll while the full-screen editor overlay is open ───────── */
-  useEffect(() => {
-    if (!editing) return;
-    const body = document.body;
-    const prevOverflow = body.style.overflow;
-    const prevPaddingRight = body.style.paddingRight;
-    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
-    body.style.overflow = 'hidden';
-    if (scrollbarWidth > 0) body.style.paddingRight = `${scrollbarWidth}px`;
-    return () => {
-      body.style.overflow = prevOverflow;
-      body.style.paddingRight = prevPaddingRight;
-    };
-  }, [editing]);
 
   /* ── Resume presence check ───────────────────────────────────────────────── */
   const checkResumes = useCallback(async () => {
@@ -351,35 +347,48 @@ export default function TailorPage() {
     }
   }, []);
 
+  /* ── ATS scoring — shared by the auto-trigger and the manual retry ───────── */
+  const runAtsScoring = useCallback(
+    (res: TailorPipelineResult) => {
+      const ctrl = new AbortController();
+      atsAbortRef.current = ctrl;
+      setAtsLoading(true);
+      setAtsError('');
+      apiService
+        .fetchATSScores(res.tailored_resume, res.jd_analysis, ctrl.signal)
+        .then((r) => {
+          if (ctrl.signal.aborted) return;
+          setAtsLoading(false);
+          if (r.data?.ats_scores) {
+            setResult((p) => (p ? { ...p, ats_scores: r.data!.ats_scores } : p));
+            updateRecordATS(r.data.ats_scores);
+            setScoreStale(false);
+            // Flagged claims outrank the score: send the user to review
+            // first when anything UNSUPPORTED is waiting on them.
+            const unsupported =
+              res.tailored_resume.verification?.counts.unsupported ?? 0;
+            setInspectorTab(unsupported > 0 ? 'review' : 'ats');
+          } else {
+            setAtsError(r.error || "Couldn't score this resume against the JD.");
+          }
+        })
+        .catch(() => {
+          if (ctrl.signal.aborted) return;
+          setAtsLoading(false);
+          setAtsError('Network issue while scoring. Check your connection.');
+        });
+    },
+    [updateRecordATS],
+  );
+
   /* ── Auto-trigger ATS scoring once a tailored result lands ───────────────── */
   useEffect(() => {
     if (result && !result.ats_scores && !atsLoading && !atsAutoTriggered.current) {
       atsAutoTriggered.current = true;
-      const t = setTimeout(() => {
-        const ctrl = new AbortController();
-        atsAbortRef.current = ctrl;
-        setAtsLoading(true);
-        apiService
-          .fetchATSScores(result.tailored_resume, result.jd_analysis, ctrl.signal)
-          .then((r) => {
-            if (ctrl.signal.aborted) return;
-            setAtsLoading(false);
-            if (r.data?.ats_scores) {
-              setResult((p) => (p ? { ...p, ats_scores: r.data!.ats_scores } : p));
-              updateRecordATS(r.data.ats_scores);
-              setScoreStale(false);
-              // Flagged claims outrank the score: send the user to review
-              // first when anything UNSUPPORTED is waiting on them.
-              const unsupported =
-                result.tailored_resume.verification?.counts.unsupported ?? 0;
-              setInspectorTab(unsupported > 0 ? 'review' : 'ats');
-            }
-          })
-          .catch(() => setAtsLoading(false));
-      }, 500);
+      const t = setTimeout(() => runAtsScoring(result), 500);
       return () => clearTimeout(t);
     }
-  }, [result, atsLoading, updateRecordATS]);
+  }, [result, atsLoading, runAtsScoring]);
 
   /* ── The tailoring flow — real phase transitions, no fake timer ──────────── */
   const handleTailoring = useCallback(async () => {
@@ -391,6 +400,7 @@ export default function TailorPage() {
     setPhase('submitting');
     setTailorPct(null);
     setTailorError('');
+    setAtsError('');
     setResult(null);
     setTailorElapsed(0);
     tailorTimerRef.current = setInterval(() => setTailorElapsed((p) => p + 1), 1000);
@@ -600,7 +610,7 @@ export default function TailorPage() {
       setRegenFeedback('');
       setRegenView('tailored');
       setInspectorTab('ats');
-      toast.success('Resume regenerated — previous version kept for comparison');
+      toast.success('Resume regenerated. Previous version kept for comparison');
       atsAutoTriggered.current = false;
     }
   }, [result, regenFeedback, upgrade]);
@@ -745,7 +755,7 @@ export default function TailorPage() {
           removeBulletAt(r, anchor.section, anchor.itemIndex, anchor.bulletIndex),
         );
         decideReview(address, 'removed');
-        toast.success('No matching original — bullet removed');
+        toast.success('No matching original. Bullet removed');
       }
     },
     [result, baseResume, mutateResume, decideReview],
@@ -777,6 +787,7 @@ export default function TailorPage() {
     setResult((prev) => (prev ? { ...prev, ats_scores: undefined } : prev));
     atsAutoTriggered.current = false;
     setScoreStale(false);
+    setAtsError('');
   }, [atsLoading]);
 
   /* ── Version + keyword + new-session helpers ─────────────────────────────── */
@@ -827,6 +838,7 @@ export default function TailorPage() {
     setResult(null);
     setTailorError('');
     setAtsLoading(false);
+    setAtsError('');
     setEditing(false);
     setRegenFeedback('');
     setRegenerating(false);
@@ -858,16 +870,16 @@ export default function TailorPage() {
       if (r.data?.ok && r.data.jd_text) {
         setJdText(r.data.jd_text);
         cacheJdText(pendingJobUrl, r.data.jd_text);
-        toast.success('JD fetched — review and tailor.');
+        toast.success('JD fetched. Review and tailor.');
       } else {
         toast.warning(
-          r.data?.error || "Still couldn't fetch — open the posting and paste manually.",
+          r.data?.error || "Still couldn't fetch. Open the posting and paste manually.",
           { duration: 8000 },
         );
       }
     } catch {
       toast.dismiss(fetching);
-      toast.error('Network issue — try again or paste manually.');
+      toast.error('Network issue. Try again or paste manually.');
     } finally {
       setRetryingJdFetch(false);
     }
@@ -993,14 +1005,35 @@ export default function TailorPage() {
               />
             }
             atsPanel={
-              <AtsScorePanel
-                scores={result?.ats_scores ?? null}
-                onAddKeyword={handleAddKeyword}
-                addedKeywords={addedKeywords}
-                stale={scoreStale}
-                onRescore={handleRescore}
-                rescoring={atsLoading}
-              />
+              <div>
+                {atsError && !atsLoading && (
+                  <div
+                    role="alert"
+                    className="mx-4 mt-4 flex flex-wrap items-center justify-between gap-3 rounded-control border border-destructive/30 bg-destructive/10 px-4 py-3"
+                  >
+                    <p className="min-w-0 flex-1 text-sm text-destructive">
+                      {atsError}
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => result && runAtsScoring(result)}
+                      disabled={!result}
+                      className="shrink-0"
+                    >
+                      Score now
+                    </Button>
+                  </div>
+                )}
+                <AtsScorePanel
+                  scores={result?.ats_scores ?? null}
+                  onAddKeyword={handleAddKeyword}
+                  addedKeywords={addedKeywords}
+                  stale={scoreStale}
+                  onRescore={handleRescore}
+                  rescoring={atsLoading}
+                />
+              </div>
             }
             regeneratePanel={
               <RegeneratePanel
@@ -1033,15 +1066,22 @@ export default function TailorPage() {
         </section>
       </div>
 
-      {/* Sticky bottom toolbar */}
+      {/* Sticky bottom toolbar. Below lg it sits ABOVE the fixed MobileNav
+          (same bottom-0 z-40 otherwise — the tab bar painted over Download);
+          offsetting here keeps primary navigation reachable while the result
+          actions stay visible. ≥lg the Sidebar owns nav, so bottom-0 is safe. */}
       {result && !editing && (
         <motion.div
-          initial={{ y: 100, opacity: 0 }}
+          initial={reduceMotion ? false : { y: 100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-          className="fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-card/90 shadow-float backdrop-blur-xl"
+          transition={
+            reduceMotion
+              ? { duration: 0 }
+              : { type: 'spring', stiffness: 300, damping: 30 }
+          }
+          className="fixed bottom-[calc(4rem+env(safe-area-inset-bottom))] left-0 right-0 z-40 border-t border-border bg-card/90 shadow-float backdrop-blur-xl lg:bottom-0"
         >
-          <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
+          <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
             <div className="flex min-w-0 flex-1 items-center gap-3">
               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-control border border-primary/25 bg-primary/10">
                 <FileText className="h-5 w-5 text-primary" aria-hidden="true" />
@@ -1113,107 +1153,99 @@ export default function TailorPage() {
                 <span className="hidden md:inline">Edit</span>
               </Button>
               <div className="mx-0.5 h-6 w-px bg-border" />
-              <div className="relative">
-                <Button
-                  onClick={() => setDownloadMenuOpen((v) => !v)}
-                  disabled={downloading !== null}
-                  aria-haspopup="menu"
-                  aria-expanded={downloadMenuOpen}
-                  className="gap-1.5"
-                >
-                  {downloading !== null ? (
-                    <>
-                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                      <span className="hidden sm:inline">Preparing…</span>
-                    </>
-                  ) : (
-                    <>
-                      <FileDown className="h-4 w-4" aria-hidden="true" />
-                      <span className="hidden sm:inline">Download Resume</span>
-                      <span className="sm:hidden">Download</span>
-                      <ChevronDown
-                        className={cn('h-3.5 w-3.5 opacity-70 transition-transform', downloadMenuOpen && 'rotate-180')}
-                        aria-hidden="true"
-                      />
-                    </>
-                  )}
-                </Button>
-                {downloadMenuOpen && (
-                  <>
-                    <button
-                      type="button"
-                      aria-label="Close download menu"
-                      className="fixed inset-0 z-10"
-                      onClick={() => setDownloadMenuOpen(false)}
-                    />
-                    <div
-                      role="menu"
-                      className="absolute bottom-full right-0 z-20 mb-2 w-64 overflow-hidden rounded-container border border-border bg-popover p-1.5 shadow-float"
+              <DropdownMenu open={downloadMenuOpen} onOpenChange={setDownloadMenuOpen}>
+                <DropdownMenuTrigger asChild>
+                  <Button disabled={downloading !== null} className="gap-1.5">
+                    {downloading !== null ? (
+                      <>
+                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                        <span className="hidden sm:inline">Preparing…</span>
+                      </>
+                    ) : (
+                      <>
+                        <FileDown className="h-4 w-4" aria-hidden="true" />
+                        <span className="hidden sm:inline">Download Resume</span>
+                        <span className="sm:hidden">Download</span>
+                        <ChevronDown
+                          className={cn('h-3.5 w-3.5 opacity-70 transition-transform', downloadMenuOpen && 'rotate-180')}
+                          aria-hidden="true"
+                        />
+                      </>
+                    )}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent side="top" align="end" className="w-64">
+                  {(['pdf', 'docx'] as const).map((fmt) => (
+                    <DropdownMenuItem
+                      key={fmt}
+                      disabled={downloading !== null}
+                      onSelect={() => handleDownload(fmt)}
+                      className="gap-3 py-2.5"
                     >
-                      {(['pdf', 'docx'] as const).map((fmt) => (
-                        <button
-                          key={fmt}
-                          type="button"
-                          role="menuitem"
-                          onClick={() => {
-                            setDownloadMenuOpen(false);
-                            handleDownload(fmt);
-                          }}
-                          disabled={downloading !== null}
-                          className="flex w-full items-center gap-3 rounded-control px-3 py-2.5 text-left transition-colors hover:bg-accent disabled:opacity-50"
-                        >
-                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control border border-primary/20 bg-primary/10">
-                            <FileDown className="h-4 w-4 text-primary" aria-hidden="true" />
-                          </span>
-                          <span className="min-w-0">
-                            <span className="block text-sm font-semibold text-foreground">
-                              Download as {fmt.toUpperCase()}
-                            </span>
-                            <span className="block text-[11px] text-muted-foreground">
-                              {fmt === 'pdf' ? 'Best for job applications' : 'Best for further editing'}
-                            </span>
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control border border-primary/20 bg-primary/10">
+                        <FileDown className="h-4 w-4 text-primary" aria-hidden="true" />
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block text-sm font-semibold text-foreground">
+                          Download as {fmt.toUpperCase()}
+                        </span>
+                        <span className="block text-[11px] text-muted-foreground">
+                          {fmt === 'pdf' ? 'Best for job applications' : 'Best for further editing'}
+                        </span>
+                      </span>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </motion.div>
       )}
 
-      {/* Editor mode — full-screen overlay */}
+      {/* Editor mode — full-screen overlay. A modal Radix Dialog (not a bare
+          fixed div) so we get the focus trap, Escape-to-close, aria-modal, and
+          body scroll-lock for free. Raw primitives because the shadcn
+          DialogContent is a centered card with a baked-in close X that would
+          float over the editor chrome. */}
       {result && editing && (
-        <div className="fixed inset-0 z-[60] overflow-y-auto overscroll-contain bg-background">
-          <div className="mx-auto max-w-7xl">
-            <Suspense
-              fallback={
-                <div className="rounded-container border border-border bg-card p-8">
-                  <Skeleton className="h-6 w-1/3" />
-                  <Skeleton className="mt-3 h-40" />
-                </div>
-              }
+        <RadixDialog.Root open onOpenChange={(open) => !open && setEditing(false)}>
+          <RadixDialog.Portal>
+            <RadixDialog.Content
+              aria-describedby={undefined}
+              className="fixed inset-0 z-[60] overflow-y-auto overscroll-contain bg-background outline-none"
             >
-              <ResumeEditor
-                resume={result.tailored_resume}
-                jdAnalysis={result.jd_analysis}
-                recordId={recordIdRef.current || undefined}
-                onBack={() => setEditing(false)}
-                onEditedVersionSaved={(versionId) => {
-                  if (recordIdRef.current) {
-                    apiService
-                      .setCurrentResumeVersion(recordIdRef.current, versionId)
-                      .catch(() => {
-                        toast.error("Couldn't set the edited version as current");
-                      });
+              <RadixDialog.Title className="sr-only">
+                Edit your tailored resume
+              </RadixDialog.Title>
+              <div className="mx-auto max-w-7xl">
+                <Suspense
+                  fallback={
+                    <div className="rounded-container border border-border bg-card p-8">
+                      <Skeleton className="h-6 w-1/3" />
+                      <Skeleton className="mt-3 h-40" />
+                    </div>
                   }
-                }}
-              />
-            </Suspense>
-          </div>
-        </div>
+                >
+                  <ResumeEditor
+                    resume={result.tailored_resume}
+                    jdAnalysis={result.jd_analysis}
+                    recordId={recordIdRef.current || undefined}
+                    onBack={() => setEditing(false)}
+                    onEditedVersionSaved={(versionId) => {
+                      if (recordIdRef.current) {
+                        apiService
+                          .setCurrentResumeVersion(recordIdRef.current, versionId)
+                          .catch(() => {
+                            toast.error("Couldn't set the edited version as current");
+                          });
+                      }
+                    }}
+                  />
+                </Suspense>
+              </div>
+            </RadixDialog.Content>
+          </RadixDialog.Portal>
+        </RadixDialog.Root>
       )}
 
       <QuotaLimitDialog
@@ -1224,7 +1256,7 @@ export default function TailorPage() {
           feedback.open({
             type: 'quota_bump',
             prefill:
-              "Hi — I've hit my daily tailor limit and have an active job-hunt push. " +
+              "Hi, I've hit my daily tailor limit and have an active job-hunt push. " +
               "Could you bump my limit? Here's the context:\n\n",
           })
         }

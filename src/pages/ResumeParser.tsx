@@ -1318,7 +1318,7 @@ function TailorTab() {
       } as TailorPipelineResult);
       setEditing(true);
       if (parsed.title) {
-        toast.success(`Loaded ${parsed.title} from Batch Tailor — edit and re-download.`);
+        toast.success(`Loaded ${parsed.title} from Batch Tailor. Edit and re-download.`);
       }
       // Clear the query param so a refresh in this tab doesn't try to reload.
       const cleanUrl = new URL(window.location.href);
@@ -1353,13 +1353,13 @@ function TailorTab() {
       if (parsed?.jd_text) setJdText(parsed.jd_text);
       if (parsed?.url) setPendingJobUrl(parsed.url);
       if (parsed?.title || parsed?.company) {
-        toast.info(`Tailoring for ${parsed.title || ''}${parsed.company ? ' @ ' + parsed.company : ''} — apply status auto-tracks`);
+        toast.info(`Tailoring for ${parsed.title || ''}${parsed.company ? ' @ ' + parsed.company : ''}. Apply status auto-tracks`);
       }
       if (parsed?.jd_fetch_failed) {
         toast.warning(
           parsed?.url
-            ? `Couldn't auto-fetch this JD — opening the posting in a new tab and pasting it works, OR click "Retry JD fetch" beside the textarea.`
-            : "Couldn't auto-fetch this JD — please copy-paste it from the posting into the box below.",
+            ? `Couldn't auto-fetch this JD. Opening the posting in a new tab and pasting it works, OR click "Retry JD fetch" beside the textarea.`
+            : "Couldn't auto-fetch this JD. Please copy-paste it from the posting into the box below.",
           { duration: 8000 },
         );
         if (parsed?.url) {
@@ -1384,7 +1384,7 @@ function TailorTab() {
                   JSON.stringify({ text: r.data.jd_text, at: Date.now() }),
                 );
               } catch { /* quota */ }
-              toast.success('JD auto-fetched on retry — review and tailor.');
+              toast.success('JD auto-fetched on retry. Review and tailor.');
             }
           }).catch(() => { /* silent — user has the manual Retry button */ });
         }
@@ -1885,7 +1885,7 @@ function TailorTab() {
       setRegenView("regenerated");
       setInspectorTab("ats");
       toast.success(
-        "Resume regenerated — previous version kept for comparison",
+        "Resume regenerated. Previous version kept for comparison",
       );
       // Re-trigger ATS scoring for the new version
       atsAutoTriggered.current = false;
@@ -2135,7 +2135,7 @@ function TailorTab() {
               icon: "✨",
               text: (
                 <>
-                  Resume regenerated —{" "}
+                  Resume regenerated:{" "}
                   <strong className="text-gray-900 dark:text-white">
                     ATS score is now {result.ats_scores.overall}/100
                   </strong>
@@ -2163,8 +2163,8 @@ function TailorTab() {
                   Your Skills Alignment is{" "}
                   <strong className="text-amber-500 dark:text-amber-400">
                     {result.ats_scores.skills_alignment}
-                  </strong>{" "}
-                  — try adding{" "}
+                  </strong>
+                  . Try adding{" "}
                   <strong className="text-gray-900 dark:text-white">
                     "{top.join('"')}"
                   </strong>
@@ -2621,7 +2621,7 @@ function TailorTab() {
                         <p className="text-[11px] text-gray-500 dark:text-gray-400">
                           {tailorElapsed >= 90
                             ? "Taking longer than expected"
-                            : "Usually takes 30–60 seconds"}
+                            : "Usually takes 30 to 60 seconds"}
                         </p>
                       </div>
                     </div>
@@ -2783,7 +2783,7 @@ function TailorTab() {
                         d="M13 7l5 5m0 0l-5 5m5-5H6"
                       />
                     </svg>
-                    Resume uploaded — ready to go
+                    Resume uploaded. Ready to go
                   </div>
                 </motion.div>
               )}
@@ -2898,7 +2898,7 @@ function TailorTab() {
                         Job Description
                       </h2>
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                        Paste the complete job posting — we'll extract
+                        Paste the complete job posting. We'll extract
                         requirements automatically
                       </p>
                     </div>
@@ -2920,16 +2920,16 @@ function TailorTab() {
                                     JSON.stringify({ text: r.data.jd_text, at: Date.now() }),
                                   );
                                 } catch { /* quota */ }
-                                toast.success('JD fetched — review and tailor.');
+                                toast.success('JD fetched. Review and tailor.');
                               } else {
                                 toast.warning(
-                                  r.data?.error || "Still couldn't fetch — open the posting and paste manually.",
+                                  r.data?.error || "Still couldn't fetch. Open the posting and paste manually.",
                                   { duration: 8000 },
                                 );
                               }
                             } catch {
                               toast.dismiss(fetching);
-                              toast.error('Network issue — try again or paste manually.');
+                              toast.error('Network issue. Try again or paste manually.');
                             } finally {
                               setRetryingJdFetch(false);
                             }
@@ -2986,7 +2986,7 @@ function TailorTab() {
 
                   <div className="relative">
                     <textarea
-                      placeholder="Paste the job description here — we'll extract key requirements and tailor your resume automatically..."
+                      placeholder="Paste the job description here. We'll extract key requirements and tailor your resume automatically..."
                       value={jdText}
                       onChange={(e) => setJdText(e.target.value)}
                       rows={10}
@@ -3039,7 +3039,7 @@ function TailorTab() {
                                 Extracted Requirements
                               </span>
                               <span className="text-[10px] text-gray-400 dark:text-gray-500">
-                                — auto-detected from job posting
+                                · auto-detected from job posting
                               </span>
                             </div>
 
@@ -3178,7 +3178,7 @@ function TailorTab() {
                               </span>
                               <span className="flex items-center gap-1.5">
                                 <span className="w-2 h-2 rounded-full bg-amber-400" />
-                                Missing — consider adding
+                                Missing. Consider adding
                               </span>
                             </div>
                           </div>
@@ -3194,7 +3194,7 @@ function TailorTab() {
                         <span className="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-200/60 dark:bg-amber-400/20 text-amber-700 dark:text-amber-300 text-xs font-bold">!</span>
                         <div className="flex-1 text-sm">
                           <p className="font-semibold text-amber-900 dark:text-amber-200">
-                            Daily limit reached — {dailyUsage.limit} of {dailyUsage.limit} used
+                            Daily limit reached: {dailyUsage.limit} of {dailyUsage.limit} used
                           </p>
                           <p className="mt-1 text-xs text-amber-800/80 dark:text-amber-200/80 leading-relaxed">
                             I cap tailoring at {dailyUsage.limit} per UTC day so the AI stays free
@@ -3233,7 +3233,7 @@ function TailorTab() {
                     ) : dailyUsage?.remaining === 0 ? (
                       <>
                         <SparklesIcon className="w-4 h-4" />
-                        Daily limit reached — see options
+                        Daily limit reached. See options
                       </>
                     ) : (
                       <>
@@ -3286,7 +3286,7 @@ function TailorTab() {
                         Regenerate Resume
                       </h2>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
-                        Refine with feedback — your current version is kept for
+                        Refine with feedback. Your current version is kept for
                         comparison
                       </p>
                     </div>
@@ -3464,7 +3464,7 @@ function TailorTab() {
                       Custom instructions
                     </label>
                     <textarea
-                      placeholder="Or write your own — e.g., 'Remove the summary and add a highlights section with top 3 achievements'"
+                      placeholder="Or write your own, e.g., 'Remove the summary and add a highlights section with top 3 achievements'"
                       value={regenFeedback}
                       onChange={(e) => setRegenFeedback(e.target.value)}
                       rows={5}
@@ -3590,7 +3590,7 @@ function TailorTab() {
                       </p>
                       <p className="text-xs text-gray-500 dark:text-gray-400 max-w-xs">
                         Matching your experience to the role. Usually takes
-                        15–30 seconds.
+                        15 to 30 seconds.
                       </p>
                     </div>
                   ) : (
@@ -3891,7 +3891,7 @@ function TailorTab() {
           feedback.open({
             type: "quota_bump",
             prefill:
-              "Hi — I've hit my daily tailor limit and have an active job-hunt push. " +
+              "Hi, I've hit my daily tailor limit and have an active job-hunt push. " +
               "Could you bump my limit? Here's the context:\n\n",
           })
         }
@@ -4281,7 +4281,7 @@ function CommandPalette({
 
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange}>
-      <CommandInput placeholder="Search features — jump to any tool…" />
+      <CommandInput placeholder="Search features. Jump to any tool…" />
       <CommandList>
         <CommandEmpty>No matching features.</CommandEmpty>
         {ROOMS.map((room) => {
@@ -4422,7 +4422,7 @@ function HeaderMeta({
               ? "border-warning/30 bg-warning/10 text-warning"
               : "border-border bg-muted/50 text-muted-foreground"
           }`}
-          title={`Daily tailors — resets ${new Date(usage.resets_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`}
+          title={`Daily tailors. Resets ${new Date(usage.resets_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`}
         >
           <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true" />
           <span aria-label={`${usage.remaining} of ${usage.limit} daily tailors left`}>
@@ -4596,7 +4596,7 @@ export default function ResumeParser() {
   return (
     <AuthGate
       title="Aspirely"
-      description="Your workspace for the job hunt — tailor resumes to any JD, track applications, read the market, and prep with intent."
+      description="Your workspace for the job hunt. Tailor resumes to any JD, track applications, read the market, and prep with intent."
     >
       <div className="min-h-screen bg-background text-foreground antialiased pb-24 lg:pb-0">
         {/* Top app bar keeps identity and account actions; sections live in the sidebar. */}

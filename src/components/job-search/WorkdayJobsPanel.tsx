@@ -186,7 +186,7 @@ function toJob(j: WorkdayJob, fallbackSource: string): Job {
           sponsors_h1b: {
             value: true,
             evidence: j.sponsor_note
-              || 'Recent H-1B filings appear in public disclosure data — a track record, not a guarantee.',
+              || 'Recent H-1B filings appear in public disclosure data. A track record, not a guarantee.',
           },
         }
       : undefined,
@@ -383,7 +383,7 @@ export function WorkdayJobsPanel({
         upgrade.open({
           feature: 'career_portals',
           title: 'Unlock direct career-portal search',
-          description: 'Search live openings straight from company career portals — fresh postings, scored against your résumé.',
+          description: 'Search live openings straight from company career portals. Fresh postings, scored against your resume.',
         });
       } else if (resp.error) {
         setError(resp.error);
@@ -524,7 +524,7 @@ export function WorkdayJobsPanel({
           <ShieldAlert className="mt-0.5 h-3 w-3 shrink-0" aria-hidden />
           <span>
             This posting states it won't sponsor a visa
-            {job.sponsor_note ? ` — ${job.sponsor_note}` : '.'}
+            {job.sponsor_note ? `: ${job.sponsor_note}` : '.'}
           </span>
         </p>
       )}
@@ -532,8 +532,8 @@ export function WorkdayJobsPanel({
         <p className="flex items-start gap-1.5 rounded-lg border border-warning/40 bg-warning/10 px-2.5 py-1.5 text-[11px] font-medium leading-snug text-foreground/80">
           <AlertCircle className="mt-0.5 h-3 w-3 shrink-0 text-warning" aria-hidden />
           <span>
-            Off-target for your résumé
-            {job.feasibility_reason ? ` — ${job.feasibility_reason}` : '.'}
+            Off-target for your resume
+            {job.feasibility_reason ? `: ${job.feasibility_reason}` : '.'}
           </span>
         </p>
       )}
@@ -557,7 +557,7 @@ export function WorkdayJobsPanel({
             <p className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
               <Search className="h-3.5 w-3.5" aria-hidden />
               Role titles
-              <span className="font-normal">— prefilled from your résumé</span>
+              <span className="font-normal">· prefilled from your resume</span>
             </p>
             <ChipsInput
               values={titles}
@@ -567,7 +567,7 @@ export function WorkdayJobsPanel({
               defaultValues={resumeTitles.length ? resumeTitles.slice(0, 40) : undefined}
               accentClass="border-primary/30 bg-primary/10 text-primary"
               helperText={`The first 4 core title families drive the ${isMncs ? 'MNC board scan' : isCareers ? 'career-site scan' : 'Workday search'}; every title participates in ranking. Your set is saved automatically.`}
-              emptyState="Add a role title, or upload a résumé to prefill."
+              emptyState="Add a role title, or upload a resume to prefill."
             />
             <Button
               type="button"
@@ -578,7 +578,7 @@ export function WorkdayJobsPanel({
               className="mt-1 gap-1 px-2 text-[11px] text-primary"
             >
               {suggesting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Wand2 className="h-3 w-3" />}
-              {suggesting ? 'Analyzing résumé…' : 'Smart-suggest titles from résumé'}
+              {suggesting ? 'Analyzing resume…' : 'Smart-suggest titles from resume'}
             </Button>
           </div>
 
@@ -587,7 +587,7 @@ export function WorkdayJobsPanel({
               <Factory className="h-3.5 w-3.5" aria-hidden />
               Industries
               <span className="font-normal">
-                — {industries.length ? `${selectedTenantCount} companies selected` : `all ${catalogTotal} companies`}
+                · {industries.length ? `${selectedTenantCount} companies selected` : `all ${catalogTotal} companies`}
               </span>
             </p>
             <div className="flex flex-wrap gap-1.5">
@@ -618,7 +618,7 @@ export function WorkdayJobsPanel({
               )}
               {!catalogLoading && !catalog && (
                 <span className="text-xs text-muted-foreground">
-                  Couldn't load the company catalog — search still works across all companies.
+                  Couldn't load the company catalog. Search still works across all companies.
                 </span>
               )}
             </div>
@@ -637,7 +637,7 @@ export function WorkdayJobsPanel({
                 id={`portal-location-${variant}`}
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
-                placeholder="Anywhere in the US — e.g. Texas, Austin, Remote"
+                placeholder="Anywhere in the US, e.g. Texas, Austin, Remote"
               />
             </div>
             <label className="flex cursor-pointer items-center gap-2 pb-2 text-xs font-medium text-muted-foreground">
@@ -674,13 +674,13 @@ export function WorkdayJobsPanel({
                 <span className="flex items-center gap-1.5">
                   <Loader2 className="h-3 w-3 animate-spin text-primary" aria-hidden />
                   {progress?.phase === 'details'
-                    ? 'Fetching full descriptions for top matches — refining skill scores…'
+                    ? 'Fetching full descriptions for top matches. Refining skill scores…'
                     : progress
-                      ? `Scanned ${progress.tenants_done} of ${progress.tenants_total} companies — ${progress.jobs_found} postings so far (matches stream in below)`
+                      ? `Scanned ${progress.tenants_done} of ${progress.tenants_total} companies, ${progress.jobs_found} postings so far (matches stream in below)`
                       : isMncs
                         ? 'Querying curated FAANG+ / Fortune-500 MNC career boards directly. No scraping, no credits.'
                         : isCareers
-                          ? 'Querying company career pages directly — Greenhouse, Lever, Ashby and more. No scraping, no credits.'
+                          ? 'Querying company career pages directly: Greenhouse, Lever, Ashby and more. No scraping, no credits.'
                           : 'Querying Workday career sites directly. No scraping, no credits.'}
                 </span>
               </div>
@@ -710,7 +710,7 @@ export function WorkdayJobsPanel({
               <div className="flex-1">
                 <p className="font-medium text-foreground">Direct portal search is a premium feature</p>
                 <p className="text-xs text-muted-foreground">
-                  Upgrade to scan company career portals with résumé-scored results.
+                  Upgrade to scan company career portals with resume-scored results.
                 </p>
               </div>
               <Button size="sm" onClick={() => upgrade.open({ feature: 'career_portals' })}>
@@ -828,7 +828,7 @@ export function WorkdayJobsPanel({
             {hasFeasibility && (
               <label
                 className="flex cursor-pointer items-center gap-1.5 text-[11px] font-medium text-muted-foreground"
-                title="Hides roles the feasibility check marks as not honestly tailorable — off-stack JDs (e.g. .NET for a Python résumé), 5+ year experience gaps, clearance requirements."
+                title="Hides roles the feasibility check marks as not honestly tailorable. Off-stack JDs (e.g. .NET for a Python resume), 5+ year experience gaps, clearance requirements."
               >
                 <Switch checked={hideUnrealistic} onCheckedChange={setHideUnrealistic} />
                 Hide off-target ({skippedCount})
@@ -837,7 +837,7 @@ export function WorkdayJobsPanel({
 
             <div
               className="inline-flex rounded-lg border border-border bg-muted/40 p-0.5"
-              title={`Sponsorship filter for international candidates. "Sponsor-friendly" hides postings whose description explicitly declines visa sponsorship (${refusedCount} here); "Proven sponsors" additionally keeps only companies with recent H-1B filings in public disclosure data — a track record, not a promise.`}
+              title={`Sponsorship filter for international candidates. "Sponsor-friendly" hides postings whose description explicitly declines visa sponsorship (${refusedCount} here); "Proven sponsors" additionally keeps only companies with recent H-1B filings in public disclosure data. A track record, not a promise.`}
             >
               {([['all', 'All'], ['friendly', 'Sponsor-friendly'], ['proven', 'Proven sponsors']] as const).map(([key, label]) => (
                 <Seg key={key} active={sponsorFilter === key} onClick={() => setSponsorFilter(key)}>
@@ -859,17 +859,17 @@ export function WorkdayJobsPanel({
             <div className="flex items-start gap-2 rounded-xl border border-warning/40 bg-warning/10 px-4 py-3 text-xs text-foreground/85">
               <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-warning" aria-hidden />
               <span>
-                No parsed résumé found for this account — match scores, skill overlap and
-                tailor-feasibility need one. Upload your résumé in the Tailor tab, then re-run the search.
+                No parsed resume found for this account. Match scores, skill overlap and
+                tailor-feasibility need one. Upload your resume in the Tailor tab, then re-run the search.
               </span>
             </div>
           )}
 
           <p className="text-[11px] text-muted-foreground">
             {result.streaming
-              ? `Streaming — ${result.tenants_done} of ${result.tenants_total} companies scanned, best matches so far below`
+              ? `Streaming: ${result.tenants_done} of ${result.tenants_total} companies scanned, best matches so far below`
               : <>Matched {result.tenants_with_results} of {result.tenants_total} companies
-                {result.cache_hit ? ' · served from cache — Refresh to re-scan' : ''}
+                {result.cache_hit ? ' · served from cache. Refresh to re-scan' : ''}
                 {result.query_terms.length ? ` · searched: ${result.query_terms.join(', ')}` : ''}
                 {result.errors.length > 0 ? ` · ${result.errors.length} source warnings` : ''}</>}
           </p>
@@ -885,7 +885,7 @@ export function WorkdayJobsPanel({
                   className="mt-3"
                   onClick={() => setRecency('30d')}
                 >
-                  Widen to 30 days — the full set is already loaded
+                  Widen to 30 days. The full set is already loaded
                 </Button>
               ) : (
                 <p className="mx-auto mt-1 max-w-sm text-xs">
@@ -949,10 +949,10 @@ export function WorkdayJobsPanel({
           </p>
           <p className="mx-auto mt-1 max-w-md text-xs text-muted-foreground">
             {isMncs
-              ? 'A curated FAANG+ / Fortune-500 MNC universe — Big Tech, semiconductors, banking, consulting and more, queried straight from each company’s official board and ranked by fit against your résumé.'
+              ? 'A curated FAANG+ / Fortune-500 MNC universe: Big Tech, semiconductors, banking, consulting and more, queried straight from each company’s official board and ranked by fit against your resume.'
               : isCareers
-                ? 'The non-Workday universe — companies hosting jobs on their own career pages via Greenhouse, Lever, Ashby, SmartRecruiters, Workable and Recruitee. Public JSON APIs; nothing scraped.'
-                : "Most large enterprises hire through Workday. This queries each company's public careers API directly — fast, free, and fresh."}{' '}
+                ? 'The non-Workday universe: companies hosting jobs on their own career pages via Greenhouse, Lever, Ashby, SmartRecruiters, Workable and Recruitee. Public JSON APIs; nothing scraped.'
+                : "Most large enterprises hire through Workday. This queries each company's public careers API directly. Fast, free, and fresh."}{' '}
             Defaults to roles posted in the last 3 days; the full 30-day window loads in one scan.
           </p>
           <Button

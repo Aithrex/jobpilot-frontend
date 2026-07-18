@@ -161,8 +161,7 @@ function InsufficientCard({
           <span className="tabular-nums">{needed}</span> words
           {remaining > 0 && (
             <>
-              {" "}
-              — about{" "}
+              , about{" "}
               <span className="tabular-nums text-foreground">{remaining}</span>{" "}
               to go.
             </>

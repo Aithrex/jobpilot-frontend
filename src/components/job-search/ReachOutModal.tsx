@@ -54,7 +54,7 @@ export function ReachOutModal({ open, onClose, rec }: ReachOutModalProps) {
         setSubject(resp.data.subject);
         setBody(resp.data.body);
       } catch {
-        setError('Draft failed — try Regenerate.');
+        setError('Draft failed. Try Regenerate.');
       } finally {
         setLoading(false);
       }
@@ -79,7 +79,7 @@ export function ReachOutModal({ open, onClose, rec }: ReachOutModalProps) {
     const combined = `Subject: ${subject}\n\n${body}`;
     navigator.clipboard
       .writeText(combined)
-      .then(() => toast.success('Outreach copied — paste into your email client'))
+      .then(() => toast.success('Outreach copied. Paste into your email client'))
       .catch(() => toast.error('Clipboard blocked'));
   }, [subject, body]);
 
@@ -111,7 +111,7 @@ export function ReachOutModal({ open, onClose, rec }: ReachOutModalProps) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Mail className="h-4 w-4 text-purple-500" />
-            Reach out — {rec.company}
+            Reach out: {rec.company}
           </DialogTitle>
           <DialogDescription className="text-xs">
             {rec.title}{rec.location ? ` · ${rec.location}` : ''}. Drafted from your resume + the JD.

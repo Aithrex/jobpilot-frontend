@@ -99,7 +99,7 @@ export function RegeneratePanel({
             Regenerate Resume
           </h2>
           <p className="text-xs text-muted-foreground">
-            Refine with feedback — your current version is kept for comparison
+            Refine with feedback. Your current version is kept for comparison
           </p>
         </div>
       </div>
@@ -155,7 +155,7 @@ export function RegeneratePanel({
       <div>
         <label className="overline mb-2 block">Custom instructions</label>
         <Textarea
-          placeholder="Or write your own — e.g., 'Remove the summary and add a highlights section with top 3 achievements'"
+          placeholder="Or write your own, e.g., 'Remove the summary and add a highlights section with top 3 achievements'"
           value={feedback}
           onChange={(e) => onFeedbackChange(e.target.value)}
           rows={5}

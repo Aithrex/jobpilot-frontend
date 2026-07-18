@@ -65,7 +65,7 @@ export function JdInputPanel({
         <div>
           <h2 className="text-base font-semibold text-foreground">Job Description</h2>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Paste the complete job posting — we'll extract requirements automatically
+            Paste the complete job posting. We'll extract requirements automatically
           </p>
         </div>
         <div className="flex items-center gap-1 shrink-0">
@@ -133,7 +133,7 @@ export function JdInputPanel({
 
       <div className="relative">
         <Textarea
-          placeholder="Paste the job description here — we'll extract key requirements and tailor your resume automatically..."
+          placeholder="Paste the job description here. We'll extract key requirements and tailor your resume automatically..."
           value={jdText}
           onChange={(e) => onJdTextChange(e.target.value)}
           rows={10}
@@ -201,7 +201,7 @@ export function JdInputPanel({
         ) : quotaBlocked ? (
           <>
             <Sparkles className="w-4 h-4" aria-hidden="true" />
-            Daily limit reached — see options
+            Daily limit reached. See options
           </>
         ) : (
           <>

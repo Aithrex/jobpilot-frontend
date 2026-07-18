@@ -97,7 +97,7 @@ function Footer({ disclaimer }: { disclaimer: string }) {
     <div className="mt-4 space-y-1.5 border-t border-border/70 pt-3">
       <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
         <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
-        Talk to your DSO — they are your official source of truth for every date.
+        Talk to your DSO. They are your official source of truth for every date.
       </p>
       <p className="text-[11px] leading-relaxed text-muted-foreground/70">{disclaimer}</p>
     </div>
@@ -278,7 +278,7 @@ export default function OptClockCard({
         {used} of {limit} days used on {stemLabel}
         {remaining < 0 && (
           <span className="ml-1 font-medium text-warning">
-            · past the {limit}-day limit — reach your DSO now
+            · past the {limit}-day limit. Reach your DSO now
           </span>
         )}
       </p>

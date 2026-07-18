@@ -138,7 +138,7 @@ export default function IntegrationsPanel() {
       <section className="space-y-3">
         <SectionHeading
           title="Gmail"
-          description="Sync your inbox so JobPilot can suggest application status updates."
+          description="Sync your inbox so Aspirely can suggest application status updates."
         />
         <GmailIntegration />
       </section>
@@ -172,7 +172,7 @@ export default function IntegrationsPanel() {
               label="GitHub"
               connected={!!status?.github.connected}
               detail={status?.github.login ? `Connected as ${status.github.login}` : undefined}
-              description="Surface real projects as proof-of-work on your résumé."
+              description="Surface real projects as proof-of-work on your resume."
               onChanged={loadStatus}
             />
             <ProviderRow

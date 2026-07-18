@@ -91,7 +91,14 @@ export function ScoreRing({ score, size = 96 }: { score: number; size?: number }
   const r = (size - 10) / 2,
     c = 2 * Math.PI * r,
     o = c - (score / 100) * c;
-  const col = score >= 80 ? "#10b981" : score >= 60 ? "#f59e0b" : "#ef4444";
+  // Semantic tokens (theme-aware) instead of hardcoded hex — keeps the ring
+  // AA-adjusted in both light and dark themes.
+  const col =
+    score >= 80
+      ? "hsl(var(--success))"
+      : score >= 60
+        ? "hsl(var(--warning))"
+        : "hsl(var(--destructive))";
   return (
     <div className="relative" style={{ width: size, height: size }}>
       <svg className="transform -rotate-90" width={size} height={size}>
@@ -177,7 +184,7 @@ export function PDFParseabilityCard({
       </div>
       <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
         Deterministic round-trip through pypdf (same library used by Workday,
-        Greenhouse, Taleo) — verifies what a real ATS will actually read.
+        Greenhouse, Taleo). Verifies what a real ATS will actually read.
       </p>
       <div className="grid gap-2 sm:grid-cols-2">
         <Row label="PDF text extraction" ok={!!checks.extraction_ok} />

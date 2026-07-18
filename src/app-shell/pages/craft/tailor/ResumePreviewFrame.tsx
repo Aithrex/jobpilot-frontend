@@ -10,7 +10,7 @@
  *
  * Presentational: all data + handlers arrive via props.
  */
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { FileText, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PanelEmpty } from '@/app-shell/pages/today/primitives';
@@ -79,6 +79,7 @@ export function ResumePreviewFrame({
   elapsedSeconds,
   onCancel,
 }: ResumePreviewFrameProps) {
+  const reduceMotion = useReducedMotion();
   const statusLabel = result
     ? 'Tailored Resume'
     : phase !== null
@@ -180,9 +181,9 @@ export function ResumePreviewFrame({
             )}
             <motion.div
               key={`loaded-${regenView}`}
-              initial={{ opacity: 0, scale: 0.98 }}
+              initial={reduceMotion ? false : { opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+              transition={{ duration: reduceMotion ? 0 : 0.35, ease: [0.22, 1, 0.36, 1] }}
             >
               {regenView === 'diff' && (previousResume || baseResume) ? (
                 // Previous-version diff when a regeneration exists; otherwise

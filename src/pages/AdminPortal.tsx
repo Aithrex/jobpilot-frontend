@@ -1023,7 +1023,7 @@ export default function AdminPortal() {
   const tabMeta: Record<Tab, { title: string; subtitle: string }> = {
     overview:     { title: 'Overview',       subtitle: 'System health, pipeline, and activity at a glance.' },
     users:        { title: 'Users',          subtitle: `${stats?.total_users ?? 0} registered · ${stats?.users_7d ?? 0} this week` },
-    quotas:       { title: 'Quotas',         subtitle: 'Daily tailor limits per user — raise for active job hunts.' },
+    quotas:       { title: 'Quotas',         subtitle: 'Daily tailor limits per user. Raise for active job hunts.' },
     feedback:     { title: 'Feedback',       subtitle: 'User-submitted notes, bugs, and ideas. Respond and resolve.' },
   };
 
@@ -1161,8 +1161,8 @@ function OverviewPanel({ stats, users, onSelectUser }: {
     .map(r => r.ats_scores?.overall)
     .filter((n: any): n is number => typeof n === 'number');
   const atsBuckets = [
-    { label: '0–39', value: 0 }, { label: '40–59', value: 0 },
-    { label: '60–74', value: 0 }, { label: '75–89', value: 0 }, { label: '90+', value: 0 },
+    { label: '0-39', value: 0 }, { label: '40-59', value: 0 },
+    { label: '60-74', value: 0 }, { label: '75-89', value: 0 }, { label: '90+', value: 0 },
   ];
   for (const s of atsScores) {
     if (s < 40) atsBuckets[0].value++;

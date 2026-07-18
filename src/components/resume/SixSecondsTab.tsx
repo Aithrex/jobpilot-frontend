@@ -68,7 +68,7 @@ function GazeHeatmap({ data }: { data: SixSecondsSuccess }) {
         })}
         {sections.length === 0 && (
           <li className="rounded-xl border border-dashed border-border px-3.5 py-6 text-center text-xs text-muted-foreground">
-            No sections were detected in your résumé.
+            No sections were detected in your resume.
           </li>
         )}
       </ol>
@@ -188,7 +188,7 @@ export default function SixSecondsTab({ onNavigate }: SixSecondsTabProps) {
           feature: "six_seconds",
           title: "Unlock the recruiter's six-second read",
           description:
-            "See exactly where a recruiter's eye lands on your résumé — and what gets skipped.",
+            "See exactly where a recruiter's eye lands on your resume, and what gets skipped.",
         });
       } else {
         setError(res.error);
@@ -216,7 +216,7 @@ export default function SixSecondsTab({ onNavigate }: SixSecondsTabProps) {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="space-y-1">
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
-            Grow · Résumé
+            Grow · Resume
           </p>
           <div className="flex items-center gap-2">
             <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary/10 text-primary">
@@ -226,7 +226,7 @@ export default function SixSecondsTab({ onNavigate }: SixSecondsTabProps) {
           </div>
           <p className="max-w-xl text-sm text-muted-foreground">
             A recruiter spends about six seconds on a first pass. This is a calm, honest read of what
-            they actually see — where the eye lands, and what slips by.
+            they actually see. Where the eye lands, and what slips by.
           </p>
         </div>
         <Button
@@ -250,13 +250,13 @@ export default function SixSecondsTab({ onNavigate }: SixSecondsTabProps) {
           <div className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-full bg-primary/10 text-primary">
             <FileUp className="h-5 w-5" />
           </div>
-          <p className="text-sm font-medium">Upload a résumé to see the six-second read</p>
+          <p className="text-sm font-medium">Upload a resume to see the six-second read</p>
           <p className="mx-auto mt-1 max-w-sm text-xs text-muted-foreground">
-            We need a parsed résumé to simulate a recruiter's first pass. It takes a few seconds.
+            We need a parsed resume to simulate a recruiter's first pass. It takes a few seconds.
           </p>
           {onNavigate && (
             <Button className="mt-4 gap-1.5" size="sm" onClick={() => onNavigate("my-resumes")}>
-              <FileUp className="h-3.5 w-3.5" /> Upload a résumé
+              <FileUp className="h-3.5 w-3.5" /> Upload a resume
             </Button>
           )}
         </div>
@@ -302,7 +302,7 @@ export default function SixSecondsTab({ onNavigate }: SixSecondsTabProps) {
               title="What draws the eye"
               items={success.gaze.focal_points || []}
               tone="focus"
-              empty="No strong focal points — the page reads flat."
+              empty="No strong focal points. The page reads flat."
             />
             <ListCard
               title="Blind spots"

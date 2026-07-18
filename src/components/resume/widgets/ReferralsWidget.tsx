@@ -39,8 +39,8 @@ export const referralsWidget: Widget = {
             </p>
             <p className="text-xs leading-relaxed text-muted-foreground">
               {savedCompanies > 0
-                ? `A referral beats a cold apply — start with alumni at your ${savedCompanies} saved ${savedCompanies === 1 ? 'company' : 'companies'}.`
-                : 'A referral beats a cold apply — save a few target companies and work the alumni angle.'}
+                ? `A referral beats a cold apply. Start with alumni at your ${savedCompanies} saved ${savedCompanies === 1 ? 'company' : 'companies'}.`
+                : 'A referral beats a cold apply. Save a few target companies and work the alumni angle.'}
             </p>
             <button
               type="button"

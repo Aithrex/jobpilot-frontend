@@ -50,7 +50,7 @@ export default function CareerPortalsTab() {
           <h2 className="font-display text-2xl font-extrabold tracking-tight">Career portals</h2>
         </div>
         <p className="max-w-xl text-sm text-muted-foreground">
-          Search live openings straight from company career portals — Workday enterprises,
+          Search live openings straight from company career portals: Workday enterprises,
           Greenhouse, Lever, Ashby and more, plus curated FAANG+ / Fortune-500 MNC boards.
         </p>
       </div>

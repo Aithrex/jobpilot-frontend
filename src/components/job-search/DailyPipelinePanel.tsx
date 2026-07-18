@@ -403,7 +403,7 @@ function VisaBadge({ status, confidence }: { status?: string; confidence?: numbe
       <Badge
         variant="outline"
         className="gap-1 border-emerald-500/40 bg-emerald-500/10 text-[9px] font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-300"
-        title="Verified H-1B sponsor — company is on the curated sponsor list or the JD says they sponsor."
+        title="Verified H-1B sponsor. Company is on the curated sponsor list or the JD says they sponsor."
       >
         <ShieldCheck className="h-2.5 w-2.5" />
         Sponsors{pct ? ` ${pct}` : ''}
@@ -707,7 +707,7 @@ function PipelineRow({
               title={
                 applied
                   ? 'You marked this applied in this session'
-                  : `Already in your funnel — status: ${prevStatus || 'applied'}`
+                  : `Already in your funnel. Status: ${prevStatus || 'applied'}`
               }
             >
               <CheckCircle2 className="h-3 w-3" />
@@ -733,7 +733,7 @@ function PipelineRow({
                 variant="ghost"
                 onClick={onDismissOpened}
                 className="h-7 gap-1 text-[10px] text-muted-foreground hover:text-foreground"
-                title="Didn't apply — dismiss this prompt and restore the Open button"
+                title="Didn't apply. Dismiss this prompt and restore the Open button"
               >
                 Not yet
               </Button>
@@ -743,7 +743,7 @@ function PipelineRow({
               size="sm"
               onClick={onOpen}
               className="gap-1 bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:opacity-90"
-              title="Open the posting in a new tab — saves it as Interested"
+              title="Open the posting in a new tab. Saves it as Interested"
             >
               Open posting
               <ExternalLink className="h-3 w-3" />
@@ -756,7 +756,7 @@ function PipelineRow({
               onClick={onTailor}
               disabled={tailorLoading}
               className="gap-1 border-purple-500/30 text-[11px] text-purple-700 hover:bg-purple-500/10 dark:text-purple-300 disabled:opacity-70"
-              title={tailorLoading ? 'Fetching JD — opening Tailor in a moment…' : 'Open this job in Tailor — auto-marks Applied once tailoring saves'}
+              title={tailorLoading ? 'Fetching JD. Opening Tailor in a moment…' : 'Open this job in Tailor. Auto-marks Applied once tailoring saves'}
             >
               {tailorLoading ? (
                 <span className="inline-block h-3 w-3 rounded-full border border-purple-500/60 border-t-transparent animate-spin" />
@@ -782,7 +782,7 @@ function PipelineRow({
               type="button"
               onClick={() => onSnooze(2)}
               className="rounded px-2 py-1 text-[11px] text-muted-foreground/80 hover:bg-purple-500/10 hover:text-purple-600 dark:hover:text-purple-300 transition-colors self-end opacity-80 sm:opacity-0 sm:group-hover:opacity-100"
-              title="Hide for 2 days — re-surfaces on its own"
+              title="Hide for 2 days. Re-surfaces on its own"
             >
               💤 Snooze 2d
             </button>
@@ -1208,7 +1208,7 @@ export function DailyPipelinePanel({
       if (resp.error && /no resume/i.test(resp.error)) {
         toast.warning('No resume on file', {
           description:
-            'These default filters are GENERIC SWE titles. Upload your resume in My Resumes / Profile to get titles personalized to your actual stack — then click ↻ Re-suggest.',
+            'These default filters are GENERIC SWE titles. Upload your resume in My Resumes / Profile to get titles personalized to your actual stack. Then click ↻ Re-suggest.',
           duration: 9000,
         });
         return;
@@ -1234,7 +1234,7 @@ export function DailyPipelinePanel({
         usedSynth: sx.synth_meta?.used_synth ?? false,
       });
       toast.success(`Filters refreshed from ${headline}`, {
-        description: 'Personalized to your resume — adjust before running.',
+        description: 'Personalized to your resume. Adjust before running.',
         duration: 4500,
       });
     }).catch(() => {
@@ -1569,14 +1569,14 @@ export function DailyPipelinePanel({
     window.dispatchEvent(new CustomEvent('portfolio:navigate-to-tailor'));
     if (jdText) {
       toast.success(
-        `Opening Tailor — JD pre-filled${fetchedKind ? ` (${fetchedKind.replace('_', ' ')})` : ''}.`,
+        `Opening Tailor. JD pre-filled${fetchedKind ? ` (${fetchedKind.replace('_', ' ')})` : ''}.`,
       );
     } else if (fetchFailed) {
-      toast.warning("Couldn't auto-fetch the JD — please copy-paste it from the posting.", {
+      toast.warning("Couldn't auto-fetch the JD. Please copy-paste it from the posting.", {
         duration: 6000,
       });
     } else {
-      toast.message('Opening Tailor — paste the JD to begin.');
+      toast.message('Opening Tailor. Paste the JD to begin.');
     }
     setTailorLoadingId(null);
   };
@@ -1590,7 +1590,7 @@ export function DailyPipelinePanel({
       .map((id) => allRowsById.get(id))
       .filter((r): r is DailyPipelineRecord => !!r);
     if (recs.length === 0) {
-      toast.info('Nothing in the batch yet — tick rows to add them.');
+      toast.info('Nothing in the batch yet. Tick rows to add them.');
       return;
     }
     setBatchRunning(true);
@@ -1653,7 +1653,7 @@ export function DailyPipelinePanel({
     try {
       sessionStorage.setItem('pending_batch_tailor_jobs', JSON.stringify(handoff));
     } catch (e) {
-      toast.error('Browser storage full — try clearing some history.');
+      toast.error('Browser storage full. Try clearing some history.');
       setBatchRunning(false);
       return;
     }
@@ -1661,11 +1661,11 @@ export function DailyPipelinePanel({
     const failedCount = handoff.filter((h) => h.jd_fetch_failed).length;
     if (failedCount > 0) {
       toast.warning(
-        `Sent ${handoff.length} to Batch Tailor — ${failedCount} need a manual JD paste before they'll run.`,
+        `Sent ${handoff.length} to Batch Tailor. ${failedCount} need a manual JD paste before they'll run.`,
         { duration: 8000 },
       );
     } else {
-      toast.success(`Sent ${handoff.length} to Batch Tailor — opening now.`);
+      toast.success(`Sent ${handoff.length} to Batch Tailor. Opening now.`);
     }
 
     // Clear selection so the user can keep browsing fresh rows after the
@@ -1749,7 +1749,7 @@ export function DailyPipelinePanel({
       });
     } catch { /* best effort */ }
     onJobApplied?.();
-    toast.success('Marked as applied — funnel updated.');
+    toast.success('Marked as applied. Funnel updated.');
   };
 
   // User clicked "Open" but hasn't yet hit "Mark applied" — they can dismiss
@@ -1823,20 +1823,20 @@ export function DailyPipelinePanel({
   }, [currentRowIds, seenSet]);
   const handleMarkAllSeen = useCallback(() => {
     setSeenIds(Array.from(currentRowIds));
-    toast.success('Caught up — all visible postings marked seen.');
+    toast.success('Caught up. All visible postings marked seen.');
   }, [currentRowIds]);
   const handleSnooze = useCallback((rec: DailyPipelineRecord, days: number) => {
     const id = _recordId(rec);
     const until = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
     setSnoozedUntil((prev) => ({ ...prev, [id]: until }));
-    toast.success(`Snoozed for ${days} day${days === 1 ? '' : 's'} — back on ${until.slice(0, 10)}.`);
+    toast.success(`Snoozed for ${days} day${days === 1 ? '' : 's'}. Back on ${until.slice(0, 10)}.`);
   }, []);
 
   const handleHideCompany = useCallback((rec: DailyPipelineRecord) => {
     const name = (rec.company || '').trim();
     if (!name) return;
     setHideCompanies((prev) => (prev.includes(name) ? prev : [...prev, name].slice(-50)));
-    toast.success(`${name} muted — won't appear in future pipeline runs. Manage in Advanced.`);
+    toast.success(`${name} muted. Won't appear in future pipeline runs. Manage in Advanced.`);
   }, []);
   const handleUnhideCompany = useCallback((name: string) => {
     setHideCompanies((prev) => prev.filter((c) => c !== name));
@@ -1972,7 +1972,7 @@ export function DailyPipelinePanel({
         bulk: true,
       }).catch(() => { /* best-effort */ });
     });
-    toast.success(`Opened ${candidates.length} postings — confirm "I applied" on each row after submitting.`);
+    toast.success(`Opened ${candidates.length} postings. Confirm "I applied" on each row after submitting.`);
   };
 
   // Keyboard shortcuts — j/k navigate, o open, a mark applied, t tailor.
@@ -2042,7 +2042,7 @@ export function DailyPipelinePanel({
               </div>
               <p className="max-w-2xl text-xs text-muted-foreground">
                 One click runs both Apify actors in parallel, scores results against your profile,
-                and groups them into Tier 1/2/3. Tweak the chips below or pick a preset — every change
+                and groups them into Tier 1/2/3. Tweak the chips below or pick a preset. Every change
                 persists per session. Smart Filters tab can auto-fill these from your resume.
               </p>
             </div>
@@ -2271,7 +2271,7 @@ export function DailyPipelinePanel({
                   F-1 / H-1B mode
                 </p>
                 <p className="text-[10px] leading-snug text-muted-foreground">
-                  Optional — for visa candidates. Drops postings that explicitly
+                  Optional, for visa candidates. Drops postings that explicitly
                   say "no sponsorship" or restrict to US citizens.
                 </p>
               </div>
@@ -2281,7 +2281,7 @@ export function DailyPipelinePanel({
                 onClick={() => {
                   setExcludeNoSponsorship(true);
                   setH1bOnly(false);
-                  toast.success('F-1 friendly mode on — postings that say "no sponsorship" will be dropped.');
+                  toast.success('F-1 friendly mode on. Postings that say "no sponsorship" will be dropped.');
                 }}
                 className="h-7 gap-1 text-[11px] border-amber-500/40 text-amber-700 hover:bg-amber-500/10 dark:text-amber-300"
               >
@@ -2315,7 +2315,7 @@ export function DailyPipelinePanel({
                   <p className="text-[11px] font-medium leading-tight">Verified sponsors only (strict)</p>
                   <p className="text-[10px] leading-tight text-muted-foreground">
                     Show only known H-1B sponsors or postings that affirmatively say "we sponsor".
-                    Trims recall — leave off for first pass.
+                    Trims recall. Leave off for first pass.
                   </p>
                 </div>
               </label>
@@ -2356,7 +2356,7 @@ export function DailyPipelinePanel({
                 placeholder="e.g. data engineer, security, mobile"
                 maxItems={20}
                 accentClass="border-purple-500/30 bg-purple-500/10 text-purple-700 dark:text-purple-300"
-                emptyState="Optional — only needed if you want roles outside the built-in families."
+                emptyState="Optional. Only needed if you want roles outside the built-in families."
               />
             </div>
           </div>
@@ -2369,7 +2369,7 @@ export function DailyPipelinePanel({
               onClick={() => setShowAdvanced((v) => !v)}
               className="gap-1 text-xs border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300 hover:bg-purple-500/10 hover:text-purple-600 dark:hover:text-purple-300 hover:border-purple-500/30"
             >
-              {showAdvanced ? '▾' : '▸'} Advanced — edit LinkedIn searches & Workday titles
+              {showAdvanced ? '▾' : '▸'} Advanced: edit LinkedIn searches & Workday titles
             </Button>
             <Button
               variant="ghost"
@@ -2377,7 +2377,7 @@ export function DailyPipelinePanel({
               onClick={handleRefreshFromResume}
               disabled={refreshingFilters}
               className="gap-1 text-xs text-purple-600 dark:text-purple-300 hover:bg-purple-500/10"
-              title="Re-run the filter suggester against your latest resume — replaces LinkedIn keywords + Workday titles"
+              title="Re-run the filter suggester against your latest resume. Replaces LinkedIn keywords + Workday titles"
             >
               {refreshingFilters ? (
                 <>
@@ -2417,7 +2417,7 @@ export function DailyPipelinePanel({
                     The resume classifier ran fine; the AI title generator hit
                     a transient error (rate limit / timeout) and fell back to
                     the curated default set for {detectedSummary.headline}.
-                    Click ↻ Re-suggest in 10-20 seconds — it usually succeeds
+                    Click ↻ Re-suggest in 10-20 seconds. It usually succeeds
                     on the second try.
                   </p>
                 )}
@@ -2464,7 +2464,7 @@ export function DailyPipelinePanel({
                   </div>
                 </div>
                 <p className="text-[10px] text-muted-foreground">
-                  Higher caps return more raw rows. Filtering accuracy stays the same — only recall changes.
+                  Higher caps return more raw rows. Filtering accuracy stays the same. Only recall changes.
                 </p>
                 <label className="flex items-start gap-2 rounded-lg border border-border/60 bg-muted/20 p-2 cursor-pointer hover:border-purple-500/40">
                   <input
@@ -2476,7 +2476,7 @@ export function DailyPipelinePanel({
                   <div className="space-y-0.5">
                     <p className="text-[11px] font-medium leading-tight">Include Indeed (extra Apify cost)</p>
                     <p className="text-[10px] leading-tight text-muted-foreground">
-                      ~$0.75 / run. Off by default — Indeed dates are unreliable and listings are dominated by body-shop reposts. Turn on for slow days when you've exhausted LinkedIn / Workday / ATS direct.
+                      ~$0.75 / run. Off by default. Indeed dates are unreliable and listings are dominated by body-shop reposts. Turn on for slow days when you've exhausted LinkedIn / Workday / ATS direct.
                     </p>
                   </div>
                 </label>
@@ -2524,7 +2524,7 @@ export function DailyPipelinePanel({
       {loading && (
         <div className="space-y-3">
           <p className="text-xs text-muted-foreground">
-            Running both Apify actors in parallel — this typically takes 1-3 minutes…
+            Running both Apify actors in parallel. This typically takes 1-3 minutes…
           </p>
           {Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} className="h-24 w-full rounded-xl" />
@@ -2559,7 +2559,7 @@ export function DailyPipelinePanel({
                     </p>
                     <p className="text-[11px] text-red-700/80 dark:text-red-300/80">
                       The Apify token used for this run hit its monthly limit. Add or update your own
-                      Apify API key above to keep running the daily pipeline — your free Apify account
+                      Apify API key above to keep running the daily pipeline. Your free Apify account
                       includes ~$5 monthly credit.
                     </p>
                   </div>
@@ -2649,7 +2649,7 @@ export function DailyPipelinePanel({
                 <div className="flex items-center gap-1.5">
                   <AlertCircle className="h-3.5 w-3.5 text-amber-500" />
                   <span className="font-semibold text-amber-700 dark:text-amber-300">
-                    A source returned 0 — here's what we sent
+                    A source returned 0. Here's what we sent
                   </span>
                 </div>
                 {result.source_breakdown && result.source_breakdown.linkedin.raw === 0 && (
@@ -2658,12 +2658,12 @@ export function DailyPipelinePanel({
                       <strong>LinkedIn (0/{linkedinCount}):</strong>{' '}
                       {result.actor_diagnostics?.linkedin_silent_zero
                         ? 'actor responded successfully but returned no rows. Most common cause: filters too narrow. Try widening past_days, switching experience to "any", or removing very specific keyword phrases.'
-                        : 'actor errored — see the Partial Results panel above for the cause.'}
+                        : 'actor errored. See the Partial Results panel above for the cause.'}
                     </p>
                     {result.actor_diagnostics?.linkedin_urls && result.actor_diagnostics.linkedin_urls.length > 0 && (
                       <details className="ml-2 cursor-pointer">
                         <summary className="select-none text-[10px] text-muted-foreground hover:text-foreground">
-                          Show {result.actor_diagnostics.linkedin_urls.length} LinkedIn URL{result.actor_diagnostics.linkedin_urls.length === 1 ? '' : 's'} we sent — click to verify in LinkedIn directly
+                          Show {result.actor_diagnostics.linkedin_urls.length} LinkedIn URL{result.actor_diagnostics.linkedin_urls.length === 1 ? '' : 's'} we sent. Click to verify in LinkedIn directly
                         </summary>
                         <ul className="mt-1 space-y-0.5">
                           {result.actor_diagnostics.linkedin_urls.slice(0, 8).map((u, i) => (
@@ -2693,7 +2693,7 @@ export function DailyPipelinePanel({
                     <strong>Workday (0/{workdayLimit}):</strong>{' '}
                     {result.actor_diagnostics?.workday_silent_zero
                       ? `actor responded but returned no rows. Sent ${result.actor_diagnostics?.workday_input_summary?.titles ?? '?'} titles. Try fewer / broader title chips, "any" experience, or check the Partial Results panel for actor errors.`
-                      : 'actor errored — see the Partial Results panel above for the cause.'}
+                      : 'actor errored. See the Partial Results panel above for the cause.'}
                   </p>
                 )}
               </CardContent>
@@ -2792,7 +2792,7 @@ export function DailyPipelinePanel({
                 <button
                   type="button"
                   onClick={() => {
-                    const next = window.prompt('Daily application goal (1–50):', String(dailyGoal));
+                    const next = window.prompt('Daily application goal (1-50):', String(dailyGoal));
                     if (!next) return;
                     const n = Math.max(1, Math.min(50, Number(next)));
                     if (Number.isFinite(n)) setDailyGoal(n);
@@ -2929,7 +2929,7 @@ export function DailyPipelinePanel({
                           ? 'bg-indigo-600 text-white shadow-sm'
                           : 'border border-border/60 bg-background/70 text-foreground/80 hover:border-indigo-500/40 hover:bg-indigo-500/10')
                       }
-                      title={`${c.label} — ${n} posting${n === 1 ? '' : 's'}`}
+                      title={`${c.label}: ${n} posting${n === 1 ? '' : 's'}`}
                     >
                       {c.label}
                       <span className={'ml-1 ' + (active ? 'opacity-90' : 'opacity-60')}>· {n}</span>
@@ -2994,7 +2994,7 @@ export function DailyPipelinePanel({
                           ? 'bg-purple-600/90 text-white'
                           : 'text-foreground/70 hover:bg-muted/60 hover:text-foreground')
                       }
-                      title={`${c.label} — ${n} posting${n === 1 ? '' : 's'}`}
+                      title={`${c.label}: ${n} posting${n === 1 ? '' : 's'}`}
                     >
                       {c.label}
                       <span className={'ml-1 ' + (active ? 'opacity-90' : 'opacity-50')}>· {n}</span>
@@ -3015,7 +3015,7 @@ export function DailyPipelinePanel({
           })()}
 
           <TierGroup
-            title={`🥇 Tier 1 — apply first (${tier1.length})`}
+            title={`🥇 Tier 1: apply first (${tier1.length})`}
             items={tier1}
             accent="border-yellow-500/30 bg-yellow-500/10 text-yellow-700 dark:text-yellow-300"
             appliedIds={appliedSet}
@@ -3083,7 +3083,7 @@ export function DailyPipelinePanel({
 
           {filteredVerifyDates.length > 0 && (
             <TierGroup
-              title={`⚠️ Verify dates (interns / co-ops) — ${filteredVerifyDates.length}`}
+              title={`⚠️ Verify dates (interns / co-ops): ${filteredVerifyDates.length}`}
               items={filteredVerifyDates}
               accent="border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300"
               appliedIds={appliedSet}

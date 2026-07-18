@@ -44,7 +44,10 @@ export default function GrowPage() {
       <SubNav ariaLabel="Grow sections" items={GROW_SECTIONS} />
 
       <Suspense fallback={<SectionFallback />}>
-        <Outlet />
+        {/* Sections are mounted by App.tsx routes; `embedded` tells the
+            monolith-born tab components the shell already renders the page
+            header + SubNav, so they suppress their internal hero headers. */}
+        <Outlet context={{ embedded: true }} />
       </Suspense>
     </div>
   );

@@ -99,8 +99,8 @@ function AppContent() {
         <Routes>
           {/* Public */}
           <Route path="/" element={<RootRoute />} />
-          {/* Guest onboarding (Start self-gates: authed users → /app; feature
-              off → back to the login-first landing). */}
+          {/* Guest onboarding (Start self-gates: authed users → /next/today;
+              feature off → back to the login-first landing). */}
           <Route path="/start" element={<Suspense fallback={<RouteLoadingFallback />}><Start /></Suspense>} />
           <Route path="/login" element={<Suspense fallback={<RouteLoadingFallback />}><Login /></Suspense>} />
           <Route path="/register" element={<Suspense fallback={<RouteLoadingFallback />}><Register /></Suspense>} />
@@ -130,7 +130,7 @@ function AppContent() {
           >
             <Route index element={<Navigate to="today" replace />} />
             <Route path="today" element={<TodayPage />} />
-            <Route path="applications" element={<ApplicationsTab />} />
+            <Route path="applications" element={<ApplicationsTab embedded />} />
             <Route path="grow" element={<GrowPage />}>
               <Route index element={<Navigate to="learning" replace />} />
               <Route path="learning" element={<LearningHubTab />} />

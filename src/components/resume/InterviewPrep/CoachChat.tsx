@@ -8,7 +8,7 @@ const STARTERS: string[] = [
   "Give me a crisp 60-second version of my elevator pitch.",
   "Drill me with 3 behavioral questions, then grade my answers.",
   "What's the most likely tough question I'll get? Walk me through a defence.",
-  "Pretend you're the hiring manager — ask me a tough question and let me answer.",
+  "Pretend you're the hiring manager. Ask me a tough question and let me answer.",
   "Suggest 5 questions I should ask the interviewer.",
   "Where are my biggest gaps vs this JD, and how do I close them verbally?",
 ];

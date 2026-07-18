@@ -250,7 +250,7 @@ export default function PipelineTab({ onNavigate }: PipelineTabProps) {
             <h2 className="font-display text-2xl font-extrabold tracking-tight">Pipeline Intelligence</h2>
           </div>
           <p className="max-w-xl text-sm text-muted-foreground">
-            Where your applications convert, which have gone quiet, and how you stack up — honestly.
+            Where your applications convert, which have gone quiet, and how you stack up. Honestly.
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={load} disabled={loading} className="gap-1.5">

@@ -202,7 +202,7 @@ export function ConversionFunnel({
         <PanelEmpty
           icon={Filter}
           title="Your funnel is empty for now"
-          body="As applications move from applied to interview to offer, you'll see each stage — and where things stall — here."
+          body="As applications move from applied to interview to offer, you'll see each stage here, and where things stall."
         />
       ) : (
         <ol className="space-y-3">

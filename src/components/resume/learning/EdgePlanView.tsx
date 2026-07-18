@@ -62,7 +62,7 @@ export function EdgePlanView({ plan, onBack }: EdgePlanViewProps) {
             <Progress value={pct} className="h-1.5" />
             <p className="mt-1 text-xs text-muted-foreground">
               {verified === total && total > 0
-                ? 'All tasks verified — you closed the gap. Share it.'
+                ? 'All tasks verified. You closed the gap. Share it.'
                 : `${verified} of ${total} tasks verified`}
             </p>
           </div>

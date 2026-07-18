@@ -197,7 +197,7 @@ export function FeedbackPanel() {
                     onChange={(e) => setDraftResponse(e.target.value)}
                     rows={4}
                     maxLength={4000}
-                    placeholder="Write a response — the user can read this in their feedback history."
+                    placeholder="Write a response. The user can read this in their feedback history."
                     className="w-full resize-none rounded-md border border-white/[0.08] bg-white/[0.03] p-2 text-sm text-gray-200 placeholder:text-gray-600 focus:border-purple-400/60 focus:outline-none"
                   />
                   <div className="flex justify-end gap-2">

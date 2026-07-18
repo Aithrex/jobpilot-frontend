@@ -137,7 +137,7 @@ export function VerifyDialog({ open, onClose, pathId, task, result, onResult }: 
             </Button>
             {loading && (
               <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
-                <Sparkles className="h-3 w-3" /> Reading against the acceptance criteria — no fabrication.
+                <Sparkles className="h-3 w-3" /> Reading against the acceptance criteria. No fabrication.
               </p>
             )}
           </div>

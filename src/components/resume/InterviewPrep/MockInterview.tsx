@@ -174,7 +174,7 @@ export default function MockInterview({
     let q = pickFromBank(cat, diff);
     if (!q) q = await fetchFresh(cat, diff);
     setGenerating(false);
-    if (!q) { toast.error("Couldn't get a question — try another category."); return; }
+    if (!q) { toast.error("Couldn't get a question. Try another category."); return; }
     setCurrent(q);
     setSeen(prev => [...prev, (q!.meta.question || q!.meta.title || q!.text).slice(0, 200)]);
     setTimerActive(true);
@@ -279,7 +279,7 @@ export default function MockInterview({
           <textarea
             value={answer}
             onChange={e => setAnswer(e.target.value)}
-            placeholder="Type your answer here — aim for structured, specific, grounded in your real experience. The coach scores it on relevance, clarity, specificity, and structure."
+            placeholder="Type your answer here. Aim for structured, specific, grounded in your real experience. The coach scores it on relevance, clarity, specificity, and structure."
             rows={8}
             disabled={evaluating || !!evaluation}
             className="w-full px-3.5 py-3 rounded-lg bg-card border border-input text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/30 resize-y font-sans leading-relaxed"

@@ -34,7 +34,7 @@ export const todaysMatchesWidget: Widget = {
         ) : matches.length === 0 ? (
           <WidgetEmpty
             title="Your best-fit roles will rank here"
-            body="Run one search and Aspirely scores every role against your resume — fit, skills, and sponsorship."
+            body="Run one search and Aspirely scores every role against your resume: fit, skills, and sponsorship."
             ctaLabel="Search jobs"
             onCta={() => ctx.navigate('jobs')}
           />

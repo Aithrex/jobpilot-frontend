@@ -122,7 +122,7 @@ export default function NotificationsTab() {
           {saving && <RefreshCw className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
         </div>
         <p className="max-w-xl text-sm text-muted-foreground">
-          Choose what we tell you about, where, and when — no noise you didn't ask for.
+          Choose what we tell you about, where, and when. No noise you didn't ask for.
         </p>
       </div>
 

@@ -87,7 +87,7 @@ export function PanelEmpty({
 
 export function PanelError({
   title = 'This panel could not load',
-  body = 'The connection dropped or the server was busy. Your data is safe — try again.',
+  body = 'The connection dropped or the server was busy. Your data is safe. Try again.',
   onRetry,
   className,
 }: {

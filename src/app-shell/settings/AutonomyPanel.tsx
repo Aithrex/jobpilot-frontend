@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { AlertCircle, Loader2, ShieldCheck } from "lucide-react";
 import { useAutoSubmit } from "@/hooks/useAutoSubmit";
@@ -34,6 +35,7 @@ export default function AutonomyPanel() {
     saveSettings,
   } = useAutoSubmit();
 
+  const qc = useQueryClient();
   const [enabled, setEnabled] = useState(false);
   const [threshold, setThreshold] = useState(DEFAULT_THRESHOLD);
 
@@ -99,9 +101,22 @@ export default function AutonomyPanel() {
       <div className="max-w-xl rounded-xl border border-destructive/30 bg-destructive/5 p-5">
         <div className="flex items-start gap-3">
           <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" aria-hidden="true" />
-          <p className="text-sm text-foreground">
-            Couldn&rsquo;t load your autonomy settings. Refresh and try again.
-          </p>
+          <div className="space-y-3">
+            <p className="text-sm text-foreground">
+              Couldn&rsquo;t load your autonomy settings.
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="min-h-[44px]"
+              onClick={() =>
+                // Re-runs the useAutoSubmit settings query (its key prefix).
+                void qc.invalidateQueries({ queryKey: ["auto-submit", "settings"] })
+              }
+            >
+              Try again
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -149,7 +164,7 @@ export default function AutonomyPanel() {
           </span>
         </div>
         <p className="mt-1 text-xs text-muted-foreground">
-          Only auto-submit when JobPilot is at least this confident. Everything
+          Only auto-submit when Aspirely is at least this confident. Everything
           below is queued for your review.
         </p>
         <Slider

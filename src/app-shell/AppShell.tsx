@@ -1,10 +1,17 @@
-import { Suspense, useCallback, useState } from "react";
-import { Navigate, Outlet } from "react-router-dom";
+import { Suspense, lazy, useCallback, useState } from "react";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Sidebar } from "./Sidebar";
 import { TopBar } from "./TopBar";
 import { MobileNav } from "./MobileNav";
+
+// First-run onboarding. All auth successes land on /next/today, so the shell
+// must host the wizard too (it self-gates: renders null unless the signed-in
+// user still lacks onboarding). Lazy so onboarded users never fetch the chunk.
+// No double-mount risk: /app mounts its own instance, but /app and /next/* are
+// mutually exclusive routes — exactly one instance can exist at a time.
+const OnboardingWizard = lazy(() => import("@/components/onboarding/OnboardingWizard"));
 
 const SIDEBAR_COLLAPSED_KEY = "appShellSidebarCollapsed";
 
@@ -41,6 +48,7 @@ function OutletFallback() {
  */
 export default function AppShell() {
   const { isAuthenticated, isLoading } = useAuth();
+  const location = useLocation();
   const [collapsed, setCollapsed] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return window.localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "true";
@@ -57,7 +65,8 @@ export default function AppShell() {
   }, []);
 
   if (isLoading) return <FullScreenLoader />;
-  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  // Carry the attempted deep link so Login can bounce back after sign-in.
+  if (!isAuthenticated) return <Navigate to="/login" replace state={{ from: location }} />;
 
   return (
     <div className="min-h-screen bg-background text-foreground antialiased">
@@ -85,6 +94,11 @@ export default function AppShell() {
       </div>
 
       <MobileNav />
+
+      {/* Self-gating first-run onboarding (null for onboarded users). */}
+      <Suspense fallback={null}>
+        <OnboardingWizard />
+      </Suspense>
     </div>
   );
 }

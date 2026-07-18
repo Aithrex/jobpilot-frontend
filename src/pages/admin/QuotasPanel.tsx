@@ -147,7 +147,7 @@ export function QuotasPanel() {
     toast.success(
       newLimit === null
         ? `Reset ${email} to the default limit (${defaultLimit})`
-        : `${email} can now tailor ${newLimit} resumes per day${resolvedPending ? ' — request resolved' : ''}`,
+        : `${email} can now tailor ${newLimit} resumes per day${resolvedPending ? '. Request resolved' : ''}`,
     );
   };
 
@@ -252,7 +252,7 @@ function QuotaRow({
     }
     const n = parseInt(trimmed, 10);
     if (Number.isNaN(n) || n < 0 || n > 1000) {
-      toast.error('Limit must be 0–1000');
+      toast.error('Limit must be 0-1000');
       return;
     }
     onSave(n);
@@ -327,7 +327,7 @@ function QuotaRow({
             </div>
             <p className="whitespace-pre-wrap text-sm text-gray-300">{pending.message}</p>
             <p className="mt-1.5 text-[11px] text-gray-500">
-              Set a higher limit above and hit Save — this request resolves automatically.
+              Set a higher limit above and hit Save. This request resolves automatically.
             </p>
           </div>
         </td>

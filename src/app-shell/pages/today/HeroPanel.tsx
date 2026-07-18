@@ -113,7 +113,7 @@ export function HeroPanel({ model, onRetry }: { model: HeroModel; onRetry: () =>
     return (
       <PanelError
         title="We couldn't load your day"
-        body="We couldn't reach your workspace just now. Nothing is lost — retry when you're ready."
+        body="We couldn't reach your workspace just now. Nothing is lost. Retry when you're ready."
         onRetry={onRetry}
         className="sm:py-14"
       />

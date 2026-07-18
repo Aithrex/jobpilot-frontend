@@ -43,7 +43,7 @@ export function QuotaMeter({ label, used, limit, feature, className }: Props) {
           onClick={() => open({ feature })}
           className="text-[11px] font-medium text-primary hover:underline"
         >
-          Daily limit reached — upgrade for more
+          Daily limit reached. Upgrade for more
         </button>
       )}
     </div>

@@ -83,7 +83,7 @@ export function ApifyKeyCard({ onChange, forceOpenSignal }: ApifyKeyCardProps) {
     setDraft('');
     setShowKey(false);
     onChange?.(next);
-    toast.success('Apify key saved — next pipeline run will use your key.');
+    toast.success('Apify key saved. Next pipeline run will use your key.');
   };
 
   const handleDelete = async () => {
@@ -307,7 +307,7 @@ export function ApifyKeyCard({ onChange, forceOpenSignal }: ApifyKeyCardProps) {
                   apify.com/sign-up
                   <ExternalLink className="h-3 w-3" />
                 </a>
-                . The free plan includes ~$5 of monthly credit — enough for daily pipeline runs.
+                . The free plan includes ~$5 of monthly credit, enough for daily pipeline runs.
               </li>
               <li>
                 <span className="font-semibold text-foreground">2.</span> Open{' '}
@@ -333,8 +333,8 @@ export function ApifyKeyCard({ onChange, forceOpenSignal }: ApifyKeyCardProps) {
                 your account instead of the shared one.
               </li>
               <li className="pt-1 text-[10px] italic">
-                Note: this site only uses two free Apify actors (LinkedIn + Workday scrapers) —
-                each daily run typically costs a few cents.
+                Note: this site only uses two free Apify actors (LinkedIn + Workday scrapers).
+                Each daily run typically costs a few cents.
               </li>
             </ol>
           )}

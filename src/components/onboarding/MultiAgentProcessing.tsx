@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { Check, Loader2, FileText, Sparkles, Target, ShieldCheck, Lightbulb, LayoutDashboard } from 'lucide-react';
 
 const AGENTS = [
@@ -18,6 +18,7 @@ const AGENTS = [
  */
 export function MultiAgentProcessing({ active, done }: { active: boolean; done?: boolean }) {
   const [stage, setStage] = useState(0);
+  const reduce = useReducedMotion();
 
   useEffect(() => {
     if (!active || done) return;
@@ -31,9 +32,13 @@ export function MultiAgentProcessing({ active, done }: { active: boolean; done?:
 
   return (
     <div className="space-y-2.5">
-      <div className="mb-1 text-center">
+      {/* Live region: screen readers hear the current agent as it advances. */}
+      <div className="mb-1 text-center" role="status" aria-live="polite">
         <p className="text-sm font-semibold">Your AI team is reviewing your resume</p>
         <p className="text-xs text-muted-foreground">This usually takes ~20 seconds.</p>
+        <p className="sr-only">
+          {done ? 'Resume processed.' : `${AGENTS[Math.min(stage, AGENTS.length - 1)].label}…`}
+        </p>
       </div>
       {AGENTS.map((a, i) => {
         const state = done || i < stage ? 'done' : i === stage ? 'active' : 'pending';
@@ -41,9 +46,9 @@ export function MultiAgentProcessing({ active, done }: { active: boolean; done?:
         return (
           <motion.div
             key={a.label}
-            initial={{ opacity: 0, x: -8 }}
+            initial={{ opacity: 0, x: reduce ? 0 : -8 }}
             animate={{ opacity: state === 'pending' ? 0.45 : 1, x: 0 }}
-            transition={{ delay: i * 0.05 }}
+            transition={reduce ? { duration: 0 } : { delay: i * 0.05 }}
             className={`flex items-center gap-3 rounded-xl border p-3 transition-colors ${
               state === 'active' ? 'border-primary/50 bg-primary/[0.04]' : 'border-border'
             }`}

@@ -71,7 +71,7 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
 
   const submit = async () => {
     if (!message.trim()) {
-      toast.error("Tell me what you're thinking — message can't be blank.");
+      toast.error("Tell me what you're thinking. Message can't be blank.");
       return;
     }
     setSubmitting(true);
@@ -81,7 +81,7 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
       toast.error(resp.error || "Could not send feedback. Try again in a moment.");
       return;
     }
-    toast.success("Thanks — feedback received. I read every one.");
+    toast.success("Thanks. Feedback received. I read every one.");
     setMessage("");
     setOpen(false);
   };

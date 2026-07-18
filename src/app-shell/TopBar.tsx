@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { ExternalLink, LogOut, Moon, Settings, Sparkles, Sun } from "lucide-react";
+import { ExternalLink, LogOut, Monitor, Moon, Settings, Sparkles, Sun } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,11 +24,15 @@ export function TopBar() {
   const { user, logout } = useAuth();
   const { pathname } = useLocation();
 
-  const isDark =
-    theme === "dark" ||
-    (theme === "system" &&
-      typeof window !== "undefined" &&
-      window.matchMedia("(prefers-color-scheme: dark)").matches);
+  // Three-state cycle: light → dark → system → light. Anything unexpected in
+  // storage is treated as "system" (the provider's default).
+  const themeState: "light" | "dark" | "system" =
+    theme === "light" || theme === "dark" ? theme : "system";
+  const nextTheme =
+    themeState === "light" ? "dark" : themeState === "dark" ? "system" : "light";
+  const ThemeIcon =
+    themeState === "light" ? Sun : themeState === "dark" ? Moon : Monitor;
+  const themeToggleLabel = `Theme: ${themeState}. Switch to ${nextTheme} theme`;
 
   const email = user?.email;
   const name = user?.name;
@@ -68,11 +72,12 @@ export function TopBar() {
         {/* Theme toggle */}
         <button
           type="button"
-          onClick={() => setTheme(isDark ? "light" : "dark")}
-          aria-label={isDark ? "Switch to light theme" : "Switch to dark theme"}
+          onClick={() => setTheme(nextTheme)}
+          aria-label={themeToggleLabel}
+          title={themeToggleLabel}
           className="flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground outline-none transition-colors hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:bg-accent/80"
         >
-          {isDark ? <Sun className="h-5 w-5" aria-hidden="true" /> : <Moon className="h-5 w-5" aria-hidden="true" />}
+          <ThemeIcon className="h-5 w-5" aria-hidden="true" />
         </button>
 
         {/* User menu */}

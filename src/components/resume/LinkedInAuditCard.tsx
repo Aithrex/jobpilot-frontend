@@ -39,7 +39,7 @@ export function LinkedInAuditCard({ connect, reloadConnect }: LinkedInAuditCardP
       if (r.data?.sections) setAudit(r.data);
       else toast.error(r.error || 'Could not run the audit');
     } catch {
-      toast.error('Audit failed — try again');
+      toast.error('Audit failed. Try again');
     } finally {
       setBusy(false);
     }
@@ -115,7 +115,7 @@ export function LinkedInAuditCard({ connect, reloadConnect }: LinkedInAuditCardP
         <Linkedin className={`h-4 w-4 ${LINKEDIN_ICON}`} /> Polish your LinkedIn
       </div>
       <p className="mb-3 text-xs leading-relaxed text-muted-foreground">
-        Get a personalized audit + a ready-to-paste headline and About, built from your résumé and goal.
+        Get a personalized audit + a ready-to-paste headline and About, built from your resume and goal.
       </p>
       <div className="mt-auto flex gap-2">
         <input
@@ -193,7 +193,7 @@ function LinkedInConnect({ connect, reloadConnect, prefill }: {
         toast.error(r.error || 'Could not post to LinkedIn');
       }
     } catch {
-      toast.error('Post failed — try again');
+      toast.error('Post failed. Try again');
     } finally {
       setPosting(false);
     }

@@ -76,7 +76,7 @@ export function DifferentiatorCard({ diff, index, selected, onSelect }: Differen
               : 'bg-muted text-muted-foreground',
           )}
         >
-          <Gem className="h-3 w-3" /> {scarce ? 'Genuinely scarce' : 'Common — nice to have'}
+          <Gem className="h-3 w-3" /> {scarce ? 'Genuinely scarce' : 'Common, nice to have'}
         </span>
       </div>
     </motion.button>

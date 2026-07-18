@@ -64,7 +64,7 @@ export function pickHeroAction(ctx: DashboardCtx): HeroActionModel {
       eyebrow: 'OPT priority',
       title: `${d} ${plural(d, 'unemployment day', 'unemployment days')} of runway left`,
       detail: hasQueue
-        ? `Submit the ${queue.length} ${plural(queue.length, 'application', 'applications')} you've already lined up — the fastest way to protect your clock.`
+        ? `Submit the ${queue.length} ${plural(queue.length, 'application', 'applications')} you've already lined up. The fastest way to protect your clock.`
         : 'Focus this week on sponsor-friendly roles. Confirm every date with your DSO.',
       meta: clock.key_dates.slice(0, 1).map((k) => ({ label: k.label, tone: 'warning' as Tone })),
       ctaLabel: hasQueue ? 'Submit your queue' : 'Find sponsor roles',
@@ -98,7 +98,7 @@ export function pickHeroAction(ctx: DashboardCtx): HeroActionModel {
         ? sponsor.summary
         : matched > 0
           ? `${matched} of your skills line up with what ${j.company} is hiring for. Submitting today keeps your pipeline warm.`
-          : "You've already done the hard part — submitting today is the fastest way to move your pipeline.";
+          : "You've already done the hard part. Submitting today is the fastest way to move your pipeline.";
     return {
       key: 'ready-to-submit',
       tone: 'primary',
@@ -107,7 +107,7 @@ export function pickHeroAction(ctx: DashboardCtx): HeroActionModel {
       title:
         queue.length === 1
           ? `Send your application to ${j.company}`
-          : `${queue.length} applications are ready — start with ${j.company}`,
+          : `${queue.length} applications are ready. Start with ${j.company}`,
       detail,
       meta,
       ctaLabel: 'Review & submit',
@@ -125,7 +125,7 @@ export function pickHeroAction(ctx: DashboardCtx): HeroActionModel {
       icon: Upload,
       eyebrow: 'Start here',
       title: 'Add your resume to unlock Aspirely',
-      detail: 'Everything — matches, tailoring, your readiness score, and your OPT clock — builds on your resume. It takes a minute.',
+      detail: 'Everything builds on your resume: matches, tailoring, your readiness score, and your OPT clock. It takes a minute.',
       meta: [],
       ctaLabel: 'Add your resume',
       onCta: () => ctx.navigate('tailor'),
@@ -142,8 +142,8 @@ export function pickHeroAction(ctx: DashboardCtx): HeroActionModel {
       tone: 'primary',
       icon: Sparkles,
       eyebrow: 'Next move',
-      title: 'Your resume is in — now find where it lands',
-      detail: 'Run one search and Aspirely scores every role against your resume — fit, skills, and sponsorship. Save the good ones and your matches build from there.',
+      title: 'Your resume is in. Now find where it lands',
+      detail: 'Run one search and Aspirely scores every role against your resume: fit, skills, and sponsorship. Save the good ones and your matches build from there.',
       meta: [],
       ctaLabel: 'Search jobs',
       onCta: () => ctx.navigate('jobs'),
@@ -175,7 +175,7 @@ export function pickHeroAction(ctx: DashboardCtx): HeroActionModel {
     icon: Sparkles,
     eyebrow: 'Get started',
     title: 'Find roles that actually fit you',
-    detail: 'Search and Aspirely scores each role for fit, skills, and sponsorship — your strongest matches surface right here.',
+    detail: 'Search and Aspirely scores each role for fit, skills, and sponsorship. Your strongest matches surface right here.',
     meta: [],
     ctaLabel: 'Search jobs',
     onCta: () => ctx.navigate('jobs'),

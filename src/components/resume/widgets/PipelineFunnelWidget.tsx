@@ -49,7 +49,7 @@ export const pipelineFunnelWidget: Widget = {
         ) : total === 0 ? (
           <WidgetEmpty
             title="Your pipeline starts with one application"
-            body="Tailor a resume to a role and it'll flow through here — applied, interviewing, offer."
+            body="Tailor a resume to a role and it'll flow through here: applied, interviewing, offer."
             ctaLabel="Tailor a resume"
             onCta={() => ctx.navigate('tailor')}
           />

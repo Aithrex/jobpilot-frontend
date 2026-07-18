@@ -37,7 +37,7 @@ export const PROOF_META: Record<EdgeProofType, ProofMeta> = {
     label: 'Write-up',
     icon: FileText,
     kind: 'text',
-    placeholder: 'Paste your write-up — what you built, the tradeoffs, what you learned…',
+    placeholder: 'Paste your write-up: what you built, the tradeoffs, what you learned…',
     inputLabel: 'Your write-up',
   },
 };
@@ -49,7 +49,7 @@ export function proofMeta(type: EdgeProofType): ProofMeta {
 export const LEVEL_OPTIONS: { id: EdgeLevel; label: string; hint: string }[] = [
   { id: 'auto', label: 'Auto', hint: 'We read your level and pick the right scaffolding.' },
   { id: 'guided', label: 'Guided', hint: 'We give you the skeleton and sub-steps.' },
-  { id: 'advanced', label: 'Advanced', hint: "You're on your own — just the brief and a stretch." },
+  { id: 'advanced', label: 'Advanced', hint: "You're on your own. Just the brief and a stretch." },
 ];
 
 export const DURATION_OPTIONS: EdgeDuration[] = [7, 14];

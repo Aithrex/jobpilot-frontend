@@ -22,7 +22,7 @@ export default function Terms() {
             A
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Aspirely — Terms of Service</h1>
+            <h1 className="text-2xl font-bold text-foreground">Aspirely Terms of Service</h1>
             <p className="text-sm text-muted-foreground">Last updated: July 10, 2026</p>
           </div>
         </div>
@@ -43,7 +43,7 @@ export default function Terms() {
 
         <Section title="What the service does">
           <p>
-            Aspirely helps you build and tailor résumés, discover jobs, and manage applications, using
+            Aspirely helps you build and tailor resumes, discover jobs, and manage applications, using
             AI to draft and score content based on the information you provide. You may optionally
             connect third-party accounts (such as Google, GitHub, or LinkedIn) to enhance these
             features; each connection is governed by the respective provider's terms.
@@ -54,7 +54,7 @@ export default function Terms() {
           <p>
             The service uses AI to generate suggestions, drafts, and scores. AI output may contain
             errors and is provided for your assistance only. <strong>You are solely responsible for
-            reviewing, editing, and verifying any content before you submit it</strong> — including on
+            reviewing, editing, and verifying any content before you submit it</strong>, including on
             job applications and to third parties. Aspirely is not responsible for hiring outcomes.
           </p>
         </Section>
@@ -71,7 +71,7 @@ export default function Terms() {
 
         <Section title="Your content">
           <p>
-            You retain ownership of the content you provide (résumés, profile data, application
+            You retain ownership of the content you provide (resumes, profile data, application
             answers). You grant Aspirely a limited license to process that content solely to operate
             and provide the service to you, as described in our{' '}
             <Link className="text-primary hover:underline" to="/privacy">Privacy Policy</Link>.

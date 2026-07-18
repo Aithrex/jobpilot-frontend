@@ -85,7 +85,7 @@ export function JobCard({ job, saved, jobStatus, onSave, onUnsave, onQuickApply 
       else if (r.trust_band === 'caution') toast.warning(title, { description });
       else toast.success(title, { description });
     } catch {
-      toast.error('Scan failed — try again');
+      toast.error('Scan failed. Try again');
     } finally {
       setScanning(false);
     }
@@ -235,7 +235,7 @@ export function JobCard({ job, saved, jobStatus, onSave, onUnsave, onQuickApply 
               size="sm"
               onClick={onQuickApply}
               asChild={!job.apply_link}
-              title={apply.fallback ? 'Apply link missing — opens Google search' : 'Opens career page and marks as applied'}
+              title={apply.fallback ? 'Apply link missing. Opens Google search' : 'Opens career page and marks as applied'}
               className="h-8 gap-1 bg-gradient-to-r from-purple-600 to-indigo-600 px-3 text-xs text-white shadow-sm shadow-purple-500/25 hover:from-purple-500 hover:to-indigo-500 hover:shadow-purple-500/30"
             >
               {job.apply_link ? (

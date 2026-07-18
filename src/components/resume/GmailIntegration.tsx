@@ -138,7 +138,7 @@ export default function GmailIntegration({ onSyncComplete }: { onSyncComplete?: 
 
     const jobId = resp.data.job_id;
     syncPollRef.current = { jobId, cancelled: false };
-    const toastId = toast.loading("Scanning your inbox… this can take ~30–90s");
+    const toastId = toast.loading("Scanning your inbox… this can take ~30-90s");
 
     // Poll loop: progressive backoff, no fixed deadline. We keep going until
     // the job either completes or fails — a slow first-time scan can take
@@ -179,7 +179,7 @@ export default function GmailIntegration({ onSyncComplete }: { onSyncComplete?: 
       // Update the toast text once we cross the "this is taking a while"
       // threshold so the user sees we're still on it instead of stuck.
       if (!stalledToastShown && attempt >= 16) {
-        toast.loading("Still scanning — large inboxes can take a couple of minutes…", { id: toastId });
+        toast.loading("Still scanning. Large inboxes can take a couple of minutes…", { id: toastId });
         stalledToastShown = true;
       }
     }

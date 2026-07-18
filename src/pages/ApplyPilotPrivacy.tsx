@@ -22,7 +22,7 @@ export default function ApplyPilotPrivacy() {
             ✓
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">ApplyPilot — Privacy Policy</h1>
+            <h1 className="text-2xl font-bold text-gray-900">ApplyPilot Privacy Policy</h1>
             <p className="text-sm text-gray-500">Last updated: June 5, 2026</p>
           </div>
         </div>
@@ -35,9 +35,9 @@ export default function ApplyPilotPrivacy() {
         <Section title="What the extension stores">
           <p>The extension stores the following <strong>locally in your browser</strong> (chrome.storage.local):</p>
           <ul className="list-disc pl-6 space-y-1">
-            <li><strong>Your profile vault</strong> — name, contact details, address, links, skills, certifications, projects, education, experience, work-authorization answers, and any custom field answers you enter.</li>
-            <li><strong>Your sign-in token</strong> — a session token (JWT) issued by your account, used to authenticate requests to the backend. It is stored only on your device.</li>
-            <li><strong>Settings</strong> — the backend URL and your autofill preferences.</li>
+            <li><strong>Your profile vault</strong>: name, contact details, address, links, skills, certifications, projects, education, experience, work-authorization answers, and any custom field answers you enter.</li>
+            <li><strong>Your sign-in token</strong>: a session token (JWT) issued by your account, used to authenticate requests to the backend. It is stored only on your device.</li>
+            <li><strong>Settings</strong>: the backend URL and your autofill preferences.</li>
           </ul>
           <p>This data stays on your device. It is not sold, shared, or transmitted to any third party.</p>
         </Section>
@@ -63,9 +63,9 @@ export default function ApplyPilotPrivacy() {
 
         <Section title="Permissions">
           <ul className="list-disc pl-6 space-y-1">
-            <li><strong>storage</strong> — to save your profile vault, token, and settings locally.</li>
-            <li><strong>activeTab / scripting</strong> — to read and fill form fields on the application page you're viewing.</li>
-            <li><strong>host access to the backend</strong> — to call the authentication and answer-generation endpoints.</li>
+            <li><strong>storage</strong>: to save your profile vault, token, and settings locally.</li>
+            <li><strong>activeTab / scripting</strong>: to read and fill form fields on the application page you're viewing.</li>
+            <li><strong>host access to the backend</strong>: to call the authentication and answer-generation endpoints.</li>
           </ul>
         </Section>
 
@@ -81,7 +81,7 @@ export default function ApplyPilotPrivacy() {
           <p>
             Generated answers are produced by an AI model (Anthropic Claude via the operator's backend)
             using your resume data and the job description you choose. Review every generated answer
-            before submitting it — you are responsible for the content you submit on applications.
+            before submitting it. You are responsible for the content you submit on applications.
           </p>
         </Section>
 
