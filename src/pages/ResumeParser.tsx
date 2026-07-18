@@ -9,7 +9,15 @@ import { QuotaLimitDialog } from "@/components/quota/QuotaLimitDialog";
 import { useFeedback } from "@/components/feedback/FeedbackWidget";
 import { buildCoverLetterFilename, titleCaseName } from "@/lib/filename";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Bot, Building2, CreditCard, GraduationCap, Trophy, Users, Mic, Menu, PanelLeftClose, PanelLeftOpen, X, Eye, TrendingUp, Bell, ShieldCheck, Home, Compass, PenTool, Send, Sprout, MessageSquarePlus, ChevronRight, Search } from "lucide-react";
+import { Bot, Building2, CreditCard, GraduationCap, Trophy, Users, Mic, Menu, PanelLeftClose, PanelLeftOpen, X, Eye, TrendingUp, Bell, ShieldCheck, Home, Compass, PenTool, Send, Sprout, MessageSquarePlus, ChevronRight, Search, Settings, LogOut } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ConnectedTo } from "@/components/resume/ConnectedTo";
 import MobileBottomNav from "@/components/layout/MobileBottomNav";
 import {
@@ -4472,7 +4480,7 @@ function readTabFromUrl(): NavTab | null {
 }
 
 export default function ResumeParser() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const feedback = useFeedback();
   // Seed from ?tab= so refresh / OAuth-callback redirects (e.g.
   // /resume-parser?tab=applications&gmail=linked) actually land on the
@@ -4747,6 +4755,22 @@ export default function ResumeParser() {
                               <MessageSquarePlus className="w-4 h-4" />
                             </span>
                             <span className="min-w-0 flex-1 truncate">Feedback</span>
+                          </button>
+                        </div>
+                        <div className="border-t border-border py-1">
+                          <button
+                            type="button"
+                            role="menuitem"
+                            onClick={() => {
+                              setUserMenuOpen(false);
+                              logout();
+                            }}
+                            className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-destructive transition-colors hover:bg-accent focus-visible:outline-none focus-visible:bg-accent"
+                          >
+                            <span className="shrink-0 text-destructive">
+                              <LogOut className="w-4 h-4" />
+                            </span>
+                            <span className="min-w-0 flex-1 truncate">Sign out</span>
                           </button>
                         </div>
                       </div>
