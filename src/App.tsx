@@ -5,9 +5,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { ThemeProvider } from './components/theme-provider';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { isGuestOnboardingEnabled } from './lib/guest';
-import { apiService } from './lib/api';
+import { AuthProvider } from './contexts/AuthContext';
 import { FeedbackProvider } from './components/feedback/FeedbackWidget';
 import { UpgradeModalProvider } from './components/billing/UpgradeModalProvider';
 import Landing from './pages/Landing';
@@ -83,20 +81,13 @@ function RouteLoadingFallback() {
 }
 
 /**
- * Root landing gate: signed-out visitors go to the guest onboarding flow at
- * /start (when the feature is enabled — build flag AND no runtime 503/404
- * marker); everyone else gets the marketing landing. Deep links to /login,
+ * Root route: the marketing landing is the front door for everyone. The
+ * guest onboarding funnel at /start stays one click away — the landing's
+ * primary CTAs route into it when the feature is enabled — so the landing
+ * sells the product and /start converts. Deep links to /start, /login,
  * /register, /privacy, /terms etc. are untouched.
  */
 function RootRoute() {
-  const { isAuthenticated, isLoading } = useAuth();
-  // No stored token = definitively signed out — redirect without waiting for
-  // the profile check (avoids a flash of the heavy landing page). With a
-  // token present, wait for verification; signed-in users keep the landing.
-  const signedOut = !isAuthenticated && (!isLoading || !apiService.getToken());
-  if (signedOut && isGuestOnboardingEnabled()) {
-    return <Navigate to="/start" replace />;
-  }
   return <Landing />;
 }
 

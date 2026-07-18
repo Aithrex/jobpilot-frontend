@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Container, EASE } from './_shared';
+import { Container, EASE, startHref } from './_shared';
 
 /**
  * Close — a single, calm call to action. The CTA wording is IDENTICAL to the
@@ -29,7 +29,7 @@ export function CloseCTA() {
           </p>
           <div className="mt-8 flex justify-center">
             <Button asChild size="lg" className="w-full rounded-control sm:w-auto">
-              <Link to="/register">
+              <Link to={startHref()}>
                 Find my matches <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>

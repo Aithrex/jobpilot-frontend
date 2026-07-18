@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowRight, Check, Minus, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Container, EASE, Eyebrow } from './_shared';
+import { Container, EASE, Eyebrow, startHref } from './_shared';
 
 /**
  * Pricing — the three real plans from the backend entitlements
@@ -117,7 +117,7 @@ function PlanCard({ plan, index }: { plan: Plan; index: number }) {
       </ul>
 
       <Link
-        to="/register"
+        to={startHref()}
         className={cn(
           'mt-7 inline-flex h-11 w-full items-center justify-center gap-1.5 rounded-control px-4 text-sm font-semibold transition-colors',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',

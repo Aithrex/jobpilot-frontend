@@ -4,7 +4,7 @@ import { Compass, Moon, Sun } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/components/theme-provider';
 import { cn } from '@/lib/utils';
-import { Container } from './_shared';
+import { Container, startHref } from './_shared';
 
 function ThemeToggle() {
   const { setTheme } = useTheme();
@@ -67,7 +67,7 @@ export function LandingNav() {
           <span className="grid h-8 w-8 place-items-center rounded-control bg-primary text-primary-foreground">
             <Compass className="h-[1.15rem] w-[1.15rem]" />
           </span>
-          <span className="font-display text-lg tracking-tight">Aspirely</span>
+          <span className="hidden font-display text-lg tracking-tight min-[430px]:inline">Aspirely</span>
         </Link>
 
         <nav aria-label="Landing sections" className="hidden items-center gap-1 md:flex">
@@ -84,11 +84,11 @@ export function LandingNav() {
 
         <div className="flex items-center gap-1.5">
           <ThemeToggle />
-          <Button asChild variant="ghost" size="sm" className="hidden text-muted-foreground hover:text-foreground sm:inline-flex">
+          <Button asChild variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
             <Link to="/login">Sign in</Link>
           </Button>
           <Button asChild className="h-11 rounded-full px-5">
-            <Link to="/register">Find my matches</Link>
+            <Link to={startHref()}>Find my matches</Link>
           </Button>
         </div>
       </Container>

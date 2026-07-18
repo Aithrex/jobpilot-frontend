@@ -10,6 +10,7 @@ import {
 } from 'framer-motion';
 import { type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { isGuestOnboardingEnabled } from '@/lib/guest';
 
 /**
  * Shared editorial primitives for the marketing landing (Compass §7).
@@ -256,4 +257,13 @@ export function LazyMount({
       {inView ? children : <DemoSkeleton style={{ minHeight }} />}
     </div>
   );
+}
+
+/**
+ * Primary-CTA destination: the zero-friction guest funnel (/start) when the
+ * feature is enabled, otherwise account creation. One helper so the nav,
+ * hero, pricing, and close CTAs can never drift onto different doors.
+ */
+export function startHref(): string {
+  return isGuestOnboardingEnabled() ? '/start' : '/register';
 }

@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowRight, BadgeCheck, CreditCard, Lock, Play, ShieldCheck, type LucideIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Aurora, Container, EASE } from './_shared';
+import { Aurora, Container, EASE, startHref } from './_shared';
 import { HeroShortlist } from './HeroShortlist';
 
 /**
@@ -73,7 +73,7 @@ export function Hero() {
             className="mt-8 flex flex-col items-center gap-3 sm:flex-row lg:justify-start"
           >
             <Button asChild size="lg" className="w-full rounded-control shadow-panel sm:w-auto">
-              <Link to="/register">
+              <Link to={startHref()}>
                 Find my matches <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
