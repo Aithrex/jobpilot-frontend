@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import {
   MapPin, Building2, Clock, DollarSign, Briefcase, ExternalLink,
   BookmarkPlus, BookmarkCheck, Sparkles, Target, FileText, Wand2, ChevronDown, Users,
@@ -52,6 +53,7 @@ function buildApplyUrl(job: Job): { url: string; fallback: boolean } {
 }
 
 export function JobCard({ job, saved, jobStatus, onSave, onUnsave, onQuickApply }: JobCardProps) {
+  const reduceMotion = useReducedMotion();
   const [expanded, setExpanded] = useState(false);
   const [analysisOpen, setAnalysisOpen] = useState(false);
   const [analysisAction, setAnalysisAction] = useState<'summarize' | 'missing_skills' | 'cover_letter'>('summarize');
@@ -95,7 +97,12 @@ export function JobCard({ job, saved, jobStatus, onSave, onUnsave, onQuickApply 
 
   return (
     <>
-      <Card className="group relative flex flex-col overflow-hidden rounded-2xl border-border/60 bg-card/80 backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:border-purple-500/40 hover:shadow-lg hover:shadow-purple-500/10">
+      <Card className="group relative flex flex-col overflow-hidden rounded-2xl border-border/60 bg-card/80 backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-purple-500/40 hover:shadow-lg hover:shadow-purple-500/10">
+        {/* Premium hover accent — a thin brand rail slides in on hover. */}
+        <span
+          className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-purple-500 via-indigo-500 to-purple-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+          aria-hidden
+        />
         <CardContent className="flex flex-1 flex-col gap-3 p-5">
           {/* Header row */}
           <div className="flex items-start gap-3">
@@ -212,14 +219,25 @@ export function JobCard({ job, saved, jobStatus, onSave, onUnsave, onQuickApply 
           )}
 
           {/* Expandable description */}
-          {expanded && (
-            <div className="max-h-48 overflow-y-auto rounded-lg border border-border/40 bg-muted/20 p-3 text-xs leading-relaxed text-muted-foreground">
-              <p className="whitespace-pre-line">
-                {job.description.slice(0, 1400)}
-                {job.description.length > 1400 && '…'}
-              </p>
-            </div>
-          )}
+          <AnimatePresence initial={false}>
+            {expanded && (
+              <motion.div
+                key="jd"
+                initial={reduceMotion ? undefined : { height: 0, opacity: 0 }}
+                animate={reduceMotion ? undefined : { height: 'auto', opacity: 1 }}
+                exit={reduceMotion ? undefined : { height: 0, opacity: 0 }}
+                transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+                className="overflow-hidden"
+              >
+                <div className="max-h-48 overflow-y-auto rounded-lg border border-border/40 bg-muted/20 p-3 text-xs leading-relaxed text-muted-foreground">
+                  <p className="whitespace-pre-line">
+                    {job.description.slice(0, 1400)}
+                    {job.description.length > 1400 && '…'}
+                  </p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
           <button
             type="button"
             onClick={() => setExpanded(!expanded)}

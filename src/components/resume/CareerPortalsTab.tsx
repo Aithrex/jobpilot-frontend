@@ -92,6 +92,7 @@ export default function CareerPortalsTab() {
           >
             <WorkdayJobsPanel
               variant={key}
+              active={active === key}
               isJobSaved={isJobSaved}
               getJobStatus={getJobStatus}
               saveJob={saveJob}
