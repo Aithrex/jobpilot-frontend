@@ -107,6 +107,12 @@ const INDUSTRY_LABELS: Record<string, string> = {
   media: 'Media',
   aerospace_defense: 'Aerospace / Defense',
   gaming: 'Gaming',
+  education: 'Education',
+  government: 'Government',
+  nonprofit: 'Nonprofit',
+  hospitality: 'Hospitality',
+  travel: 'Travel',
+  real_estate: 'Real Estate',
   other: 'Other',
 };
 
