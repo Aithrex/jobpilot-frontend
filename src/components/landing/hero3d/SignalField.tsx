@@ -41,7 +41,7 @@ const VARIANTS: Record<
     count: 3200,
     colorA: '#93A5EE', // soft indigo scatter (barely-there on white)
     colorB: '#4F63E7', // brand indigo once ordered
-    alpha: 0.5, // peak sprite alpha ~0.36 - a wash, never noise
+    alpha: 0.62, // peak sprite alpha ~0.45 - present behind the hero loop, never noise
     blending: THREE.NormalBlending,
   },
 };

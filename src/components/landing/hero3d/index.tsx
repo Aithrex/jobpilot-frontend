@@ -93,15 +93,17 @@ const STATIC_INK: Record<
     vignette: 'radial-gradient(ellipse 90% 80% at 50% 45%, transparent 55%, rgba(4, 6, 16, 0.55) 100%)',
   },
   light: {
+    // Tuned up a touch so the field holds its own beside the hero loop
+    // (still a wash - the copy and the loop stay the clearest things).
     glowInner: '#4F63E7',
-    glowInnerOpacity: 0.18,
-    glowOuterOpacity: 0.06,
+    glowInnerOpacity: 0.22,
+    glowOuterOpacity: 0.07,
     star: '#4F63E7',
-    starOpacity: 0.16,
+    starOpacity: 0.2,
     dot: '#4F63E7',
-    dotOpacity: 0.55,
+    dotOpacity: 0.6,
     satellite: '#4F63E7',
-    satelliteOpacity: 0.28,
+    satelliteOpacity: 0.33,
     // Feather the edges into the near-white page so the field stays behind
     // the copy instead of competing with it.
     vignette: 'radial-gradient(ellipse 90% 80% at 50% 45%, transparent 55%, hsl(210 40% 98% / 0.9) 100%)',
