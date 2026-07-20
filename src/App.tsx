@@ -33,8 +33,6 @@ const Terms = lazy(() => import('./pages/Terms'));
 // ResumeParser monolith at `/app` during the strangler-fig migration; AppShell
 // self-gates on AuthContext and redirects to /login without a session.
 const AppShell = lazy(() => import('@/app-shell/AppShell'));
-// DEV-only screenshot harness (registered below only when import.meta.env.DEV).
-const ShotsPage = lazy(() => import('@/dev/ShotsPage'));
 const TodayPage = lazy(() => import('@/app-shell/pages/TodayPage'));
 const ApplicationsTab = lazy(() => import('@/components/resume/ApplicationsTab'));
 const GrowPage = lazy(() => import('@/app-shell/pages/GrowPage'));
@@ -165,15 +163,6 @@ function AppContent() {
               <Route path="notifications" element={<NotificationsTab />} />
             </Route>
           </Route>
-
-          {/* DEV-only screenshot harness for the landing's product images —
-              real components, fictional data. Never registered in prod. */}
-          {import.meta.env.DEV && (
-            <Route
-              path="/__shots/:name"
-              element={<Suspense fallback={<RouteLoadingFallback />}><ShotsPage /></Suspense>}
-            />
-          )}
 
           {/* Utility routes */}
           <Route path="/admin" element={<Suspense fallback={<RouteLoadingFallback />}><AdminPortal /></Suspense>} />

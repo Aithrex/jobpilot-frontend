@@ -376,13 +376,14 @@ describe('guest landing flow', () => {
     expect(screen.getByText(/You have used your guest tailoring/)).toBeInTheDocument();
   });
 
-  test('8. feature disabled (503): only the upload action becomes an account CTA â€” the interactive preview stays usable', async () => {
+  test('8. feature disabled (503): only the upload action becomes an account CTA, and the atlas stays interactive', async () => {
     api.guestSession.mockResolvedValue({ error: 'Guest onboarding unavailable', status: 503 });
 
     const user = userEvent.setup();
     renderLanding();
 
-    // The real upload control is replaced by a concise free-account CTAâ€¦
+    // The real upload control is replaced by a concise free-account CTA,
+    // never a dead panel.
     await screen.findByText(/Guest upload is paused right now/);
     expect(
       screen.queryByRole('button', { name: /Upload my resume to find matches/i }),
@@ -390,13 +391,13 @@ describe('guest landing flow', () => {
     expect(screen.queryByLabelText(/^Resume file/)).not.toBeInTheDocument();
     expect(screen.getAllByRole('link', { name: /Create free account/i }).length).toBeGreaterThan(0);
 
-    // â€¦while the fictional interactive preview keeps working: selecting a
-    // different demo job still swaps the evidence.
-    const demo = screen.getByRole('region', {
-      name: /Interactive product preview with fictional data/i,
-    });
-    await user.click(within(demo).getByRole('button', { name: /Harborview Analytics/i }));
-    await screen.findByText(/No sponsorship filings found/i);
+    // Meanwhile the Signal Atlas stays fully interactive: the stage controls
+    // still move the scene.
+    await user.click(screen.getByRole('button', { name: 'Match' }));
+    expect(document.querySelector('[data-atlas-stage]')).toHaveAttribute(
+      'data-atlas-stage',
+      'match',
+    );
 
     // And none of it touches the backend beyond the initial probe.
     expect(api.guestOnboard).not.toHaveBeenCalled();

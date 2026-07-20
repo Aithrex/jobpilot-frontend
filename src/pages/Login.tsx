@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useSearchParams, useLocation, Link, type Location } from 'react-router-dom';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,16 +8,22 @@ import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   AuthShell,
-  AUTH_EASE,
   consumeAuthReturnTo,
   sanitizeReturnTo,
   stashAuthReturnTo,
+  type AuthPhase,
 } from '@/components/auth/AuthShell';
 import { ForgotPasswordDialog } from '@/components/auth/ForgotPasswordDialog';
 import { SocialQuietRow } from '@/components/auth/SocialQuietRow';
 import { PasswordInput } from '@/components/auth/PasswordInput';
 import { AuthNotice, errorVariant } from '@/components/auth/AuthNotice';
 
+/**
+ * Sign-in: a compact, familiar form (both fields visible — no wizard) on the
+ * Signal Atlas auth stage. The atlas reacts to focus via AuthShell's own
+ * delegation; the REAL submission lifecycle (pending → success/error) is
+ * reported through the `phase` prop so the visual never fakes progress.
+ */
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -27,12 +32,12 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [forgotOpen, setForgotOpen] = useState(false);
   const [sessionExpired, setSessionExpired] = useState(false);
+  const [scenePhase, setScenePhase] = useState<AuthPhase>('idle');
   const emailRef = useRef<HTMLInputElement | null>(null);
   const [params] = useSearchParams();
   const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const reduce = useReducedMotion();
 
   // Deep link preserved by AppShell's redirect (state.from). Sanitized to
   // same-app paths; falls back to the post-login default.
@@ -79,35 +84,33 @@ export default function Login() {
     setFieldErrors(fe);
     if (fe.email || fe.password) return;
     setIsLoading(true);
+    setScenePhase('pending'); // the atlas pulses along the path while the REAL request runs
     try {
       const result = await login(email, password);
       if (result.error) {
+        setScenePhase('error');
         setError(result.error);
         toast.error('Sign in failed', { description: result.error });
       } else {
+        setScenePhase('success'); // the path completes before navigation
         setSessionExpired(false);
         toast.success('Welcome back!');
         consumeAuthReturnTo(); // clear the OAuth stash — we're honoring state directly
         navigate(destination);
       }
     } catch {
+      setScenePhase('error');
       setError('An unexpected error occurred. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Beat 2 of the staged pane: the password reveals once the email holds
-  // something. Purely presentational — the field stays part of the same form.
-  // Under reduced motion both fields simply show; once the password has
-  // content (or an error), it stays visible even if the email is cleared.
-  const passwordVisible =
-    !!reduce || email.trim().length > 0 || password.length > 0 || !!fieldErrors.password;
-
   return (
     <AuthShell
       title="Welcome back"
       subtitle="Sign in to continue where you left off."
+      phase={scenePhase}
       banner={
         sessionExpired && !error ? (
           <AuthNotice variant="info">
@@ -148,6 +151,7 @@ export default function Login() {
             onChange={(e) => {
               setEmail(e.target.value);
               if (fieldErrors.email) setFieldErrors((f) => ({ ...f, email: undefined }));
+              if (scenePhase === 'error') setScenePhase('idle');
             }}
             placeholder="you@example.com"
             className="h-11"
@@ -168,52 +172,32 @@ export default function Login() {
           )}
         </div>
 
-        {/* Staged reveal — height/fade only, gated by useReducedMotion. The
-            negative margin + inner padding keep the focus ring unclipped. */}
-        <AnimatePresence initial={false}>
-          {passwordVisible && (
-            <motion.div
-              key="password-beat"
-              className="-mx-2 overflow-hidden"
-              initial={reduce ? false : { height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: reduce ? 0 : 0.24, ease: AUTH_EASE }}
-            >
-              <div
-                className="space-y-2 px-2 pb-1 pt-5"
-                onKeyDown={(e) => {
-                  // Escape steps back to the email beat without losing input.
-                  if (e.key === 'Escape') emailRef.current?.focus();
-                }}
-              >
-                <Label htmlFor="password">Password</Label>
-                <PasswordInput
-                  id="password"
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-                    if (fieldErrors.password) setFieldErrors((f) => ({ ...f, password: undefined }));
-                  }}
-                  placeholder="Enter your password"
-                  className="h-11"
-                  autoComplete="current-password"
-                  enterKeyHint="go"
-                  capsLockWarning
-                  required
-                  disabled={isLoading}
-                  aria-invalid={fieldErrors.password ? true : undefined}
-                  aria-describedby={fieldErrors.password ? 'password-error' : undefined}
-                />
-                {fieldErrors.password && (
-                  <p id="password-error" className="text-xs text-destructive" role="alert">
-                    {fieldErrors.password}
-                  </p>
-                )}
-              </div>
-            </motion.div>
+        <div className="mt-5 space-y-2">
+          <Label htmlFor="password">Password</Label>
+          <PasswordInput
+            id="password"
+            value={password}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              if (fieldErrors.password) setFieldErrors((f) => ({ ...f, password: undefined }));
+              if (scenePhase === 'error') setScenePhase('idle');
+            }}
+            placeholder="Enter your password"
+            className="h-11"
+            autoComplete="current-password"
+            enterKeyHint="go"
+            capsLockWarning
+            required
+            disabled={isLoading}
+            aria-invalid={fieldErrors.password ? true : undefined}
+            aria-describedby={fieldErrors.password ? 'password-error' : undefined}
+          />
+          {fieldErrors.password && (
+            <p id="password-error" className="text-xs text-destructive" role="alert">
+              {fieldErrors.password}
+            </p>
           )}
-        </AnimatePresence>
+        </div>
 
         <div className="mt-5 space-y-4">
           {error && <AuthNotice variant={errorVariant(error)}>{error}</AuthNotice>}

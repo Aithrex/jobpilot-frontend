@@ -1,18 +1,26 @@
-import { ReactNode } from 'react';
+import { useState, type FocusEvent, type PointerEvent, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { AuthAtlas, type AuthPhase, type AuthZone } from './AuthAtlas';
 
 /**
- * Shared single-focus auth stage for /login, /register, /reset-password and
- * the AuthGate wall. One full-viewport quiet dark stage (deliberately dark in
- * BOTH themes, matching the landing SignalField band), a CSS/SVG constellation
- * backdrop, and one centered focus pane (max-w-sm) that holds exactly one
- * thing at a time. Fully token-driven; the forced `dark` class re-points the
- * semantic tokens so every child (including AuthGate content) stays coherent.
- * All motion respects prefers-reduced-motion (framer via useReducedMotion,
- * CSS via the global net).
+ * Shared auth stage for /login, /register, /reset-password and the AuthGate
+ * wall — the same deep-ink Signal Atlas world as the landing. Desktop is an
+ * asymmetric 5/7 split: the compact form pane on the left, a large reactive
+ * atlas on the right. Mobile keeps the form primary with a shallow animated
+ * horizon above it (no viewport-height traps, no keyboard obstruction).
+ *
+ * The visual REACTS to the real form without any per-page wiring: focus and
+ * hover are read via event delegation (email → origin node, password →
+ * shield ring, provider buttons → social path, submit → convergence).
+ * Pages additionally report REAL submission phases through the optional
+ * `phase` prop (pending/error/success) — omitted, the scene is purely
+ * focus-driven, so every existing consumer keeps working unchanged.
+ *
+ * Fully token-driven; the forced `dark` class re-points the semantic tokens
+ * so every child stays coherent. All motion respects prefers-reduced-motion.
  */
 
 /** House ease for the auth stage; shared with the page-level beat reveals. */
@@ -52,6 +60,30 @@ export function consumeAuthReturnTo(): string | null {
   }
 }
 
+// ── Scene wiring ─────────────────────────────────────────────────────
+
+export type { AuthPhase } from './AuthAtlas';
+
+/** Map a focused/hovered element to the scene zone it belongs to. */
+function zoneFor(target: EventTarget | null): AuthZone | null {
+  if (!(target instanceof Element)) return null;
+  const input = target.closest('input');
+  if (input instanceof HTMLInputElement) {
+    const ac = (input.getAttribute('autocomplete') || '').toLowerCase();
+    if (input.type === 'password' || ac.includes('password')) return 'secure';
+    if (input.type === 'email' || ac.includes('email') || ac.includes('username')) return 'origin';
+    return null;
+  }
+  const button = target.closest('button, a');
+  if (button) {
+    const label = `${button.getAttribute('aria-label') || ''} ${button.textContent || ''}`.toLowerCase();
+    if (/google|github|linkedin|microsoft|apple/.test(label)) return 'social';
+    if (/password/.test(label)) return 'secure';
+    if ((button as HTMLButtonElement).type === 'submit') return 'submit';
+  }
+  return null;
+}
+
 function BrandMark({ className }: { className?: string }) {
   return (
     <span
@@ -79,90 +111,13 @@ function Wordmark() {
   );
 }
 
-/** Nodes of the rising signal path — kept toward the edges so the backdrop
- *  never competes with the focus pane. Coordinates live in a 1440x900 box
- *  sliced to the viewport. */
-const SIGNAL_NODES: Array<[number, number]> = [
-  [140, 760],
-  [340, 660],
-  [520, 560],
-  [1000, 380],
-  [1200, 250],
-];
-
-const FAINT_STARS: Array<[number, number]> = [
-  [110, 210],
-  [300, 120],
-  [620, 90],
-  [1330, 130],
-  [1250, 560],
-  [1360, 740],
-  [880, 790],
-  [420, 830],
-];
-
-/**
- * Pure-SVG constellation: a faint rising path with softly glowing nodes and a
- * scatter of dim stars. Static by design (loads instantly, no three.js); one
- * terminal node breathes gently unless reduced motion is on.
- */
-function Constellation({ animate }: { animate: boolean }) {
-  return (
-    <svg
-      className="absolute inset-0 h-full w-full"
-      viewBox="0 0 1440 900"
-      preserveAspectRatio="xMidYMid slice"
-      fill="none"
-      aria-hidden
-      focusable="false"
-    >
-      <path
-        d="M-60 860 L140 760 L340 660 L520 560 L1000 380 L1200 250 L1440 130"
-        stroke="hsl(var(--primary))"
-        strokeOpacity="0.16"
-        strokeWidth="1"
-      />
-      {SIGNAL_NODES.map(([x, y]) => (
-        <g key={`${x}-${y}`}>
-          <circle cx={x} cy={y} r={10} fill="hsl(var(--primary))" opacity={0.12} />
-          <circle cx={x} cy={y} r={2.5} fill="hsl(var(--primary))" opacity={0.65} />
-        </g>
-      ))}
-      {FAINT_STARS.map(([x, y]) => (
-        <circle
-          key={`${x}-${y}`}
-          cx={x}
-          cy={y}
-          r={1.5}
-          fill="hsl(var(--muted-foreground))"
-          opacity={0.3}
-        />
-      ))}
-      {/* Terminal node — a slow, quiet breath (opacity only, GPU-cheap). */}
-      <circle cx={1200} cy={250} r={16} fill="hsl(var(--primary))" opacity={0.1} />
-      {animate ? (
-        <motion.circle
-          cx={1200}
-          cy={250}
-          r={4.5}
-          fill="hsl(var(--primary))"
-          initial={{ opacity: 0.4 }}
-          animate={{ opacity: [0.4, 0.85, 0.4] }}
-          transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut' }}
-        />
-      ) : (
-        <circle cx={1200} cy={250} r={4.5} fill="hsl(var(--primary))" opacity={0.6} />
-      )}
-    </svg>
-  );
-}
-
 export function AuthShell({
   title,
   subtitle,
   children,
   footer,
   banner,
+  phase = 'idle',
 }: {
   title: string;
   subtitle: string;
@@ -170,8 +125,27 @@ export function AuthShell({
   footer: ReactNode;
   /** Optional notice rendered above the form (e.g. session-expired). */
   banner?: ReactNode;
+  /** REAL submission phase from the page (never inferred, never faked). */
+  phase?: AuthPhase;
 }) {
-  const reduce = useReducedMotion();
+  const reduce = !!useReducedMotion();
+
+  const [focusZone, setFocusZone] = useState<AuthZone>('idle');
+  const [hoverZone, setHoverZone] = useState<AuthZone | null>(null);
+
+  const onFocusCapture = (e: FocusEvent) => {
+    const z = zoneFor(e.target);
+    if (z) setFocusZone(z);
+  };
+  const onBlurCapture = (e: FocusEvent) => {
+    // Only reset when focus truly left the pane (not moving between fields).
+    if (!e.relatedTarget) setFocusZone('idle');
+  };
+  const onPointerOverCapture = (e: PointerEvent) => {
+    setHoverZone(zoneFor(e.target));
+  };
+
+  const zone = hoverZone && hoverZone !== 'idle' ? hoverZone : focusZone;
 
   const stagger = {
     hidden: {},
@@ -184,57 +158,73 @@ export function AuthShell({
 
   return (
     // The `dark` class deliberately forces the dark token set in both themes —
-    // the auth stage is one consistent night scene, like the landing hero band.
+    // auth and landing share one deep-ink night world.
     <div
-      className="dark relative flex min-h-screen flex-col overflow-hidden bg-background text-foreground"
+      className="dark relative min-h-screen overflow-hidden bg-background text-foreground"
       style={{ colorScheme: 'dark' }}
+      data-auth-scene={phase !== 'idle' ? phase : zone}
     >
-      {/* ── Backdrop: faint grid + constellation + soft glow behind the pane ── */}
-      <div className="pointer-events-none absolute inset-0" aria-hidden>
-        <div className="absolute inset-0 bg-grid-faint" />
-        <Constellation animate={!reduce} />
-        <div className="absolute left-1/2 top-1/3 h-96 w-96 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/10 blur-3xl" />
+      <div aria-hidden className="pointer-events-none absolute inset-0 bg-grid-faint" />
+
+      <div className="relative z-10 grid min-h-screen grid-cols-1 lg:grid-cols-12">
+          {/* ── Form pane (5/12) ── */}
+          <div
+            className="relative flex min-h-screen flex-col px-5 py-4 sm:px-8 lg:col-span-5"
+            onFocusCapture={onFocusCapture}
+            onBlurCapture={onBlurCapture}
+            onPointerOverCapture={onPointerOverCapture}
+            onPointerLeave={() => setHoverZone(null)}
+          >
+            <header>
+              <Wordmark />
+            </header>
+
+            {/* Mobile: a shallow animated horizon — never a viewport trap. */}
+            <div className="relative -mx-5 mt-2 h-24 sm:-mx-8 lg:hidden" aria-hidden>
+              <AuthAtlas variant="horizon" zone={zone} phase={phase} reduce={reduce} />
+            </div>
+
+            {/* Top-anchored (not vertically centered) so reveals grow downward
+                with zero shift of the title and fields above. */}
+            <main className="flex flex-1 justify-center pb-12 pt-4 sm:pt-8">
+              <motion.div variants={stagger} initial="hidden" animate="show" className="w-full max-w-sm">
+                <motion.h1
+                  variants={fadeUp}
+                  className="mt-4 font-display text-2xl font-extrabold tracking-tight text-balance"
+                >
+                  {title}
+                </motion.h1>
+                <motion.p variants={fadeUp} className="mt-2 text-sm text-muted-foreground">
+                  {subtitle}
+                </motion.p>
+                {banner && (
+                  <motion.div variants={fadeUp} className="mt-6">
+                    {banner}
+                  </motion.div>
+                )}
+                <motion.div variants={fadeUp} className="mt-8">
+                  {children}
+                </motion.div>
+                <motion.div variants={fadeUp} className="mt-6 text-center text-sm text-muted-foreground">
+                  {footer}
+                </motion.div>
+                {/* House motif — the mono integrity micro-chip. */}
+                <motion.p
+                  variants={fadeUp}
+                  className="mt-8 text-center font-mono text-[11px] uppercase tracking-wider text-muted-foreground/90"
+                >
+                  Integrity-first. No fabricated claims.
+                </motion.p>
+              </motion.div>
+            </main>
+          </div>
+
+        {/* ── Atlas pane (7/12, desktop only) ── */}
+        <div className="relative hidden lg:col-span-7 lg:block" aria-hidden>
+          <div className="absolute inset-y-0 left-0 w-px bg-border/60" />
+          <AuthAtlas variant="panel" zone={zone} phase={phase} reduce={reduce} />
+        </div>
       </div>
-
-      <header className="relative z-10 px-5 py-4 sm:px-8">
-        <Wordmark />
-      </header>
-
-      {/* Top-anchored (not vertically centered) so beat reveals grow downward
-          with zero shift of the title and fields above. */}
-      <main className="relative z-10 flex flex-1 justify-center px-5 pb-12 pt-4 sm:pt-10">
-        <motion.div
-          variants={stagger}
-          initial="hidden"
-          animate="show"
-          className="w-full max-w-sm"
-        >
-          <motion.div variants={fadeUp} className="flex justify-center">
-            <BrandMark className="h-11 w-11 rounded-2xl" />
-          </motion.div>
-          <motion.h1
-            variants={fadeUp}
-            className="mt-5 text-center font-display text-2xl font-extrabold tracking-tight text-balance"
-          >
-            {title}
-          </motion.h1>
-          <motion.p variants={fadeUp} className="mt-2 text-center text-sm text-muted-foreground">
-            {subtitle}
-          </motion.p>
-          {banner && <motion.div variants={fadeUp} className="mt-6">{banner}</motion.div>}
-          <motion.div variants={fadeUp} className="mt-8">{children}</motion.div>
-          <motion.div variants={fadeUp} className="mt-6 text-center text-sm text-muted-foreground">
-            {footer}
-          </motion.div>
-          {/* House motif — the mono integrity micro-chip. */}
-          <motion.p
-            variants={fadeUp}
-            className="mt-8 text-center font-mono text-[11px] uppercase tracking-wider text-muted-foreground/90"
-          >
-            Integrity-first. No fabricated claims.
-          </motion.p>
-        </motion.div>
-      </main>
     </div>
   );
 }

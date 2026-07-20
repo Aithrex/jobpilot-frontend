@@ -15,8 +15,8 @@ import { toTitleCase } from '@/lib/format';
 /**
  * The active guest workspace: everything AFTER a file is picked (parsing →
  * matches dashboard → tailor → completed), driven by ONE useGuestFlow
- * controller owned by the host. The idle upload surface lives in
- * GuestUploadState so the landing hero can compose it inside its panel.
+ * controller owned by the host. The idle upload surface is composed by the
+ * landing hero itself (AtlasHero seats GuestDropzone inside the atlas).
  *
  * Guest failures are 400/404/429/503 (never 401); the 429 variants render
  * conversion CTAs, never error toasts. Focus moves to each new step's

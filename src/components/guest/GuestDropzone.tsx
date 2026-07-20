@@ -92,7 +92,7 @@ export function GuestDropzone({
           compact
             ? 'gap-3 p-4'
             : panel
-              ? 'min-h-0 flex-1 flex-col justify-center gap-4 p-6 text-center sm:p-8'
+              ? 'min-h-0 flex-1 flex-col justify-center gap-2.5 p-4 text-center'
               : 'flex-col justify-center gap-3 p-8 text-center sm:p-12',
           dragActive
             ? 'scale-[1.01] border-primary bg-primary/5'
@@ -102,12 +102,12 @@ export function GuestDropzone({
         <span
           className={cn(
             'flex shrink-0 items-center justify-center rounded-full bg-primary/10 transition-transform',
-            compact ? 'h-10 w-10' : panel ? 'h-14 w-14' : 'h-12 w-12',
+            compact ? 'h-10 w-10' : panel ? 'h-11 w-11' : 'h-12 w-12',
             dragActive && !compact && 'scale-110',
           )}
         >
           <UploadCloud
-            className={cn('text-primary', compact ? 'h-5 w-5' : panel ? 'h-7 w-7' : 'h-6 w-6')}
+            className={cn('text-primary', compact ? 'h-5 w-5' : panel ? 'h-5 w-5' : 'h-6 w-6')}
             aria-hidden
           />
         </span>
@@ -116,14 +116,14 @@ export function GuestDropzone({
             className={cn(
               'block font-medium',
               compact && 'text-sm',
-              panel && 'text-base font-semibold sm:text-lg',
+              panel && 'text-sm font-semibold sm:text-[15px]',
             )}
           >
             {label}
           </span>
           <span className="mt-1 block text-xs text-muted-foreground">{microcopy}</span>
           {panel && (
-            <span className="mt-4 inline-flex h-11 items-center justify-center rounded-full bg-primary px-6 text-sm font-semibold text-primary-foreground shadow-panel">
+            <span className="mt-3 inline-flex h-10 items-center justify-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-panel">
               Browse files
             </span>
           )}

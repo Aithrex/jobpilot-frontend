@@ -39,12 +39,13 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
             }}
             {...props}
           />
+          {/* Keyboard-reachable by design — never tabIndex={-1}: sighted
+              keyboard users need the same reveal affordance pointer users get. */}
           <button
             type="button"
             onClick={() => setVisible((v) => !v)}
             aria-label={visible ? 'Hide password' : 'Show password'}
             aria-pressed={visible}
-            tabIndex={-1}
             className="absolute right-1 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
