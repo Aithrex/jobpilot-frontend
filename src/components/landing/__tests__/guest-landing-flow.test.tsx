@@ -1,11 +1,11 @@
-/**
- * Guest landing flow — behavior/contract tests for the live guest workspace
+﻿/**
+ * Guest landing flow â€” behavior/contract tests for the live guest workspace
  * on `/` (LandingExperience + useGuestFlow + the guest/* components).
  *
  * The API layer is mocked at the `apiService` boundary (never fetch, never
  * component internals); `@/lib/guest` stays real (localStorage-backed ids)
  * except the crypto.subtle-dependent fingerprint hash. Framer-motion runs for
- * real — async queries wait out the step transitions.
+ * real â€” async queries wait out the step transitions.
  */
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -18,7 +18,7 @@ import LandingExperience from '@/components/landing/LandingExperience';
 import { setReducedMotion } from '@/test/setup';
 import type { GuestJobMatch } from '@/types/guest';
 
-// ── Module mocks ─────────────────────────────────────────────────
+// â”€â”€ Module mocks â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 vi.mock('@/lib/api', () => ({
   companyLogoSrc: (logoUrl?: string | null) => logoUrl ?? null,
@@ -41,7 +41,7 @@ vi.mock('@/contexts/AuthContext', () => ({
 }));
 
 // Keep the real guest identity plumbing (localStorage-backed guest_id /
-// device_token, feature flag) — only the SubtleCrypto fingerprint is stubbed.
+// device_token, feature flag) â€” only the SubtleCrypto fingerprint is stubbed.
 vi.mock('@/lib/guest', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/guest')>();
   return {
@@ -52,7 +52,7 @@ vi.mock('@/lib/guest', async (importOriginal) => {
 
 const api = apiService as unknown as Record<string, Mock>;
 
-// ── Fixtures ─────────────────────────────────────────────────────
+// â”€â”€ Fixtures â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function matchFix(i: number): GuestJobMatch {
   return {
@@ -101,7 +101,7 @@ const parseResultWithProfile = {
     years: 5,
     skills: ['React', 'TypeScript', 'Accessibility'],
     summary_short: 'Frontend engineer with five years of React.',
-    // location / work_authorization deliberately ABSENT — must not render.
+    // location / work_authorization deliberately ABSENT â€” must not render.
   },
 };
 
@@ -122,7 +122,7 @@ const tailorResult = {
   download: { token: 'grant-1', formats: ['pdf', 'docx'] as ('pdf' | 'docx')[] },
 };
 
-// ── Harness ──────────────────────────────────────────────────────
+// â”€â”€ Harness â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function LocationProbe() {
   const location = useLocation();
@@ -156,7 +156,7 @@ function seedReturningGuest(session: Record<string, unknown> = {}) {
 }
 
 /** The FIRST "Matched jobs" list is the desktop master list (both desktop and
- * mobile lists are in the DOM — jsdom applies no responsive CSS). */
+ * mobile lists are in the DOM â€” jsdom applies no responsive CSS). */
 async function findDesktopMatchesList() {
   const lists = await screen.findAllByRole('list', { name: 'Matched jobs' });
   return lists[0];
@@ -175,7 +175,7 @@ async function continueFromProfile(user: ReturnType<typeof userEvent.setup>) {
   );
 }
 
-/** Drive the full confirm → tailor → completed path for Role 1. */
+/** Drive the full confirm â†’ tailor â†’ completed path for Role 1. */
 async function tailorFirstMatch(user: ReturnType<typeof userEvent.setup>) {
   seedReturningGuest();
   api.guestMatches.mockResolvedValue({ data: matchesData(3), status: 200 });
@@ -197,7 +197,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   localStorage.clear();
   sessionStorage.clear();
-  // Safe defaults — individual tests override what they exercise. Anything a
+  // Safe defaults â€” individual tests override what they exercise. Anything a
   // test does NOT expect to hit resolves as an explicit error payload so an
   // unexpected call fails an assertion instead of hanging.
   api.guestSession.mockResolvedValue({ data: { exists: false }, status: 200 });
@@ -210,10 +210,10 @@ beforeEach(() => {
   api.guestClaim.mockResolvedValue({ data: {}, status: 200 });
 });
 
-// ── Tests ────────────────────────────────────────────────────────
+// â”€â”€ Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 describe('guest landing flow', () => {
-  test('1. upload stays on / — guestOnboard fires and the parsing region appears without navigation', async () => {
+  test('1. upload stays on / â€” guestOnboard fires and the parsing region appears without navigation', async () => {
     api.guestOnboard.mockResolvedValue({
       data: { guest_id: 'g-new', job_id: 'parse-job-1', device_token: 'dev-1' },
       status: 202,
@@ -230,11 +230,11 @@ describe('guest landing flow', () => {
     const [file, fingerprint] = api.guestOnboard.mock.calls[0];
     expect(file).toBeInstanceOf(File);
     expect(fingerprint).toBe('fp-test');
-    // Still on the landing route — the flow runs in place.
+    // Still on the landing route â€” the flow runs in place.
     expect(screen.getByTestId('location-probe')).toHaveTextContent('/');
   });
 
-  test('2. matches render exactly what the server returned (5 jobs, then 3 — no padding)', async () => {
+  test('2. matches render exactly what the server returned (5 jobs, then 3 â€” no padding)', async () => {
     api.guestOnboard.mockResolvedValue({
       data: { guest_id: 'g-1', job_id: 'parse-job-1', device_token: 'dev-1' },
       status: 202,
@@ -246,7 +246,7 @@ describe('guest landing flow', () => {
     const first = renderLanding();
     await pickFile();
 
-    // The parse result carries no server profile block — the client
+    // The parse result carries no server profile block â€” the client
     // synthesizes the reveal from structured fields, then we continue.
     await screen.findByRole('region', { name: 'What we understood from your resume' });
     await continueFromProfile(user);
@@ -259,7 +259,7 @@ describe('guest landing flow', () => {
     expect(within(list).getByText(/Company 3/)).toBeInTheDocument();
     expect(within(list).getByText('Est. 89% match')).toBeInTheDocument(); // Role 1: 90 - 1
 
-    // A 3-job response renders exactly 3 — nothing padded, nothing hidden.
+    // A 3-job response renders exactly 3 â€” nothing padded, nothing hidden.
     first.unmount();
     seedReturningGuest();
     api.guestMatches.mockResolvedValue({ data: matchesData(3), status: 200 });
@@ -337,7 +337,7 @@ describe('guest landing flow', () => {
 
     expect(screen.getByText(/You have used your guest tailoring/)).toBeInTheDocument();
 
-    // The other matches are still fully readable — nothing disappears.
+    // The other matches are still fully readable â€” nothing disappears.
     await user.click(screen.getByRole('button', { name: /Back to matches/i }));
     const list = await findDesktopMatchesList();
     expect(within(list).getAllByRole('listitem')).toHaveLength(3);
@@ -372,17 +372,17 @@ describe('guest landing flow', () => {
     await user.click(await screen.findByRole('button', { name: /See today's matches/i }));
     await screen.findByRole('button', { name: /Role 2 at Company 2.*tailored/i });
     expect(screen.getAllByText('Tailored').length).toBeGreaterThanOrEqual(1);
-    // Quota restored from the session: 1 of 1 used → gate copy present.
+    // Quota restored from the session: 1 of 1 used â†’ gate copy present.
     expect(screen.getByText(/You have used your guest tailoring/)).toBeInTheDocument();
   });
 
-  test('8. feature disabled (503): only the upload action becomes an account CTA — the interactive preview stays usable', async () => {
+  test('8. feature disabled (503): only the upload action becomes an account CTA â€” the interactive preview stays usable', async () => {
     api.guestSession.mockResolvedValue({ error: 'Guest onboarding unavailable', status: 503 });
 
     const user = userEvent.setup();
     renderLanding();
 
-    // The real upload control is replaced by a concise free-account CTA…
+    // The real upload control is replaced by a concise free-account CTAâ€¦
     await screen.findByText(/Guest upload is paused right now/);
     expect(
       screen.queryByRole('button', { name: /Upload my resume to find matches/i }),
@@ -390,7 +390,7 @@ describe('guest landing flow', () => {
     expect(screen.queryByLabelText(/^Resume file/)).not.toBeInTheDocument();
     expect(screen.getAllByRole('link', { name: /Create free account/i }).length).toBeGreaterThan(0);
 
-    // …while the fictional interactive preview keeps working: selecting a
+    // â€¦while the fictional interactive preview keeps working: selecting a
     // different demo job still swaps the evidence.
     const demo = screen.getByRole('region', {
       name: /Interactive product preview with fictional data/i,
@@ -472,7 +472,7 @@ describe('guest landing flow', () => {
     // Completed state: Download actions are enabled buttons in tab order.
     await tailorFirstMatch(user);
     // GuestFlowShell moves focus to the new step's region ~340ms after a step
-    // change — wait for that app-driven focus move so it can't race the
+    // change â€” wait for that app-driven focus move so it can't race the
     // assertions below.
     await waitFor(() =>
       expect(screen.getByRole('region', { name: 'Tailoring your resume' })).toHaveFocus(),
@@ -491,7 +491,7 @@ describe('guest landing flow', () => {
     setReducedMotion(true);
     const user = userEvent.setup();
 
-    // Step 1: upload → the parsing step renders (parse kept in flight).
+    // Step 1: upload â†’ the parsing step renders (parse kept in flight).
     api.guestOnboard.mockResolvedValue({
       data: { guest_id: 'g-1', job_id: 'parse-job-1', device_token: 'dev-1' },
       status: 202,
@@ -502,8 +502,8 @@ describe('guest landing flow', () => {
     await screen.findByRole('region', { name: 'Reading your resume' });
     first.unmount();
 
-    // Steps 2-4 on a fresh mount: matches → tailor → completed. (The
-    // parsing→matches AnimatePresence handoff under reduced motion is
+    // Steps 2-4 on a fresh mount: matches â†’ tailor â†’ completed. (The
+    // parsingâ†’matches AnimatePresence handoff under reduced motion is
     // covered by the todo below.)
     await tailorFirstMatch(user);
     expect(screen.getByRole('button', { name: 'Download PDF' })).toBeEnabled();
@@ -528,7 +528,7 @@ describe('guest landing flow', () => {
     const region = await screen.findByRole('region', {
       name: 'What we understood from your resume',
     });
-    // Present fields render…
+    // Present fields renderâ€¦
     expect(within(region).getByText('Alex, here is what we understood')).toBeInTheDocument();
     expect(within(region).getByText('Frontend Engineer')).toBeInTheDocument();
     expect(within(region).getByText('Mid-level (5 years)')).toBeInTheDocument();
@@ -537,7 +537,7 @@ describe('guest landing flow', () => {
     expect(
       within(region).getByText('Frontend engineer with five years of React.'),
     ).toBeInTheDocument();
-    // …absent fields do NOT (no placeholders, nothing invented).
+    // â€¦absent fields do NOT (no placeholders, nothing invented).
     expect(within(region).queryByText('Location')).not.toBeInTheDocument();
     expect(within(region).queryByText('Work authorization')).not.toBeInTheDocument();
 
@@ -564,7 +564,7 @@ describe('guest landing flow', () => {
     expect(api.guestMatches).toHaveBeenCalledTimes(1);
   });
 
-  test('14. reduced motion: NO auto-advance — the profile step waits for the button', async () => {
+  test('14. reduced motion: NO auto-advance â€” the profile step waits for the button', async () => {
     setReducedMotion(true);
     api.guestOnboard.mockResolvedValue({
       data: { guest_id: 'g-1', job_id: 'parse-job-1', device_token: 'dev-1' },
@@ -579,7 +579,7 @@ describe('guest landing flow', () => {
     await screen.findByRole('region', { name: 'What we understood from your resume' });
 
     // Well past the 2.5s idle window: still on the profile step, no matches
-    // call — reduced motion means no auto-advance.
+    // call â€” reduced motion means no auto-advance.
     await new Promise((r) => setTimeout(r, 3200));
     expect(
       screen.getByRole('region', { name: 'What we understood from your resume' }),
@@ -608,7 +608,7 @@ describe('guest landing flow', () => {
     await pickFile();
     await screen.findByRole('region', { name: 'Reading your resume' });
 
-    // Truthful stepper: the server said extracting_skills — that phase is
+    // Truthful stepper: the server said extracting_skills â€” that phase is
     // current, the one before reads as done.
     const active = await screen.findByText('Extracting skills');
     expect(active).toHaveAttribute('aria-current', 'step');
@@ -648,8 +648,8 @@ describe('guest landing flow', () => {
     await openMatches(user);
 
     await screen.findByText('Job sources did not respond');
-    // Not a verdict on the resume — and distinct from the no-matches state.
-    expect(screen.queryByText('No strong matches today')).not.toBeInTheDocument();
+    // Not a verdict on the resume â€” and distinct from the no-matches state.
+    expect(screen.queryByText('No matches cleared the bar today')).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Try again' }));
     const list = await findDesktopMatchesList();
@@ -665,9 +665,9 @@ describe('guest landing flow', () => {
     const user = userEvent.setup();
     await openMatches(user);
 
-    await screen.findByText('No strong matches today');
+    await screen.findByText('No matches cleared the bar today');
     expect(screen.getByText(/across 300 roles considered/)).toBeInTheDocument();
-    // Retrying a cached same-day scan cannot help — no retry offered.
+    // Retrying a cached same-day scan cannot help â€” no retry offered.
     expect(screen.queryByRole('button', { name: 'Try again' })).not.toBeInTheDocument();
   });
 
@@ -709,13 +709,13 @@ describe('guest landing flow', () => {
   });
 
   test.todo(
-    '11b. reduced motion: the parsing→matches handoff specifically — under the jsdom matchMedia ' +
+    '11b. reduced motion: the parsingâ†’matches handoff specifically â€” under the jsdom matchMedia ' +
       'reduced-motion emulation, when the step advance originates from a resolved poll promise (not a user ' +
       'event), the matches section entering AnimatePresence mode="wait" (GuestFlowShell) freezes on its ' +
       'loading skeleton and never re-renders, even though guestMatches resolved and loadMatches consumed ' +
       'the data (verified via instrumented mocks; an explicit act() flush does not unstick it). The same ' +
-      'handoff works with motion enabled, and hero→matches / matches→tailor handoffs work under reduced ' +
-      'motion. Possible real framer-motion 12.23 reduced-motion bug — flagged to frontend-engineer for ' +
+      'handoff works with motion enabled, and heroâ†’matches / matchesâ†’tailor handoffs work under reduced ' +
+      'motion. Possible real framer-motion 12.23 reduced-motion bug â€” flagged to frontend-engineer for ' +
       'browser verification before pinning behavior here.',
   );
 });

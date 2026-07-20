@@ -221,7 +221,7 @@ export function GuestResultsDashboard({
           <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
             <ShieldCheck className="h-6 w-6 text-primary" aria-hidden />
           </span>
-          <p className="font-semibold">No strong matches today</p>
+          <p className="font-semibold">No matches cleared the bar today</p>
           <p className="mx-auto max-w-md text-sm text-muted-foreground">
             Nothing cleared our match bar today
             {typeof meta.totalConsidered === 'number' && meta.totalConsidered > 0
@@ -252,7 +252,7 @@ export function GuestResultsDashboard({
     <div>
       <p className="mb-4 text-xs text-muted-foreground" role="status">
         {matches.length < 5 && typeof meta.totalConsidered === 'number' && meta.totalConsidered > 0
-          ? `We found ${matches.length} strong ${matches.length === 1 ? 'match' : 'matches'} across ${meta.totalConsidered} roles considered. `
+          ? `We found ${matches.length} ${matches.some((m) => (m.match_score ?? 0) >= 40) ? 'strong ' : ''}${matches.length === 1 ? 'match' : 'matches'} across ${meta.totalConsidered} roles considered. `
           : `${matches.length} ${matches.length === 1 ? 'role' : 'roles'} cleared the bar in today's scan. `}
         Scores are estimates of fit, not hiring odds.
       </p>

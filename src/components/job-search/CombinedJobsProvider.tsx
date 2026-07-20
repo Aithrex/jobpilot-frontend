@@ -64,7 +64,9 @@ export function CombinedJobsProvider({ children }: { children: React.ReactNode }
   const [remoteOnly, setRemoteOnly] = useState(initialPrefs.remoteOnly ?? false);
   const [customizeOpen, setCustomizeOpen] = useState(false);
   const [search, setSearch] = useState('');
-  const [recency, setRecency] = useState<WorkdayRecency>('3d');
+  // Freshest first: open on today's postings; the segmented control shows
+  // per-window counts so widening to 1/3/7/30 days is one click.
+  const [recency, setRecency] = useState<WorkdayRecency>('today');
   const [seniority, setSeniority] = useState('any');
   const [minScore, setMinScore] = useState(0);
   const [sponsorFilter, setSponsorFilter] = useState<SponsorFilter>('friendly');

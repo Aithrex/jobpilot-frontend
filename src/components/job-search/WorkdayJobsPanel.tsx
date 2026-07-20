@@ -301,7 +301,7 @@ export function WorkdayJobsPanel({
   const [industries, setIndustries] = useState<string[]>(prefs.industries ?? []);
   const [location, setLocation] = useState(prefs.location ?? '');
   const [remoteOnly, setRemoteOnly] = useState(prefs.remoteOnly ?? false);
-  const [recency, setRecency] = useState<RecencyChoice>(prefs.recency ?? '3d');
+  const [recency, setRecency] = useState<RecencyChoice>(prefs.recency ?? 'today');
   const [customDays, setCustomDays] = useState(prefs.customDays ?? 2);
   const [groupByCompany, setGroupByCompany] = useState(prefs.groupByCompany ?? false);
   const [seniorityFilter, setSeniorityFilter] = useState<string>(prefs.seniorityFilter ?? 'any');
