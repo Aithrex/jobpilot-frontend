@@ -10,10 +10,12 @@
  *   SAME localStorage key AuthGate already reads for register/login context
  *   (`portfolio_fingerprint_hash`) so the existing auth flows start sending it
  *   too. No external fingerprint libs by design.
- * - feature flag: VITE_GUEST_ONBOARDING mirrors the backend flag resolution
- *   (unset → ON in dev, OFF in prod) PLUS a session-scoped runtime kill marker
- *   set when the backend answers 503/404 (feature disabled / edge route not
- *   deployed) so prod safely falls back to the login-first landing.
+ * - feature flag: VITE_GUEST_ONBOARDING is an explicit frontend kill switch
+ *   ("false"/"0"/"off" → hard OFF). Unset means "let the frontend probe the
+ *   backend" — the backend's own 503/404 (feature disabled / edge route not
+ *   deployed) is the authoritative runtime fallback, recorded in a
+ *   session-scoped kill marker so the page falls back to the account-first
+ *   upload CTA without re-probing every render.
  */
 
 import { toast } from "sonner";
@@ -28,14 +30,18 @@ const RUNTIME_DISABLED_KEY = "guest_onboarding_unavailable";
 
 // ── Feature flag ─────────────────────────────────────────────────
 
-/** Build-time flag: VITE_GUEST_ONBOARDING set → truthy-parse; unset → dev-only. */
+/**
+ * Build-time flag: "false"/"0"/"off" is the explicit kill switch; any other
+ * set value is ON. UNSET (or empty) is ON in every mode — a production build
+ * must probe the backend rather than silently hide a backend-enabled feature;
+ * the backend's 503/404 remains the authoritative runtime fallback.
+ */
 export function isGuestOnboardingBuildEnabled(): boolean {
   const raw = import.meta.env.VITE_GUEST_ONBOARDING as string | undefined;
   if (raw !== undefined && raw !== "") {
     return raw !== "false" && raw !== "0" && raw !== "off";
   }
-  // Mirrors backend GUEST_ONBOARDING_ENABLED: unset → ON in dev, OFF in prod.
-  return !!import.meta.env.DEV;
+  return true;
 }
 
 /**

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, type Ref } from 'react';
 import { toast } from 'sonner';
 import { UploadCloud } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -28,6 +28,9 @@ export interface GuestDropzoneProps {
   privacyNote?: string | null;
   disabled?: boolean;
   className?: string;
+  /** Ref to the visible drop button so a host action (e.g. the demo's "Use
+   * my resume") can return focus to the real upload control. */
+  buttonRef?: Ref<HTMLButtonElement>;
 }
 
 /**
@@ -44,6 +47,7 @@ export function GuestDropzone({
   privacyNote = DEFAULT_PRIVACY_NOTE,
   disabled = false,
   className,
+  buttonRef,
 }: GuestDropzoneProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [dragActive, setDragActive] = useState(false);
@@ -66,6 +70,7 @@ export function GuestDropzone({
   return (
     <div className={cn('w-full', panel && 'flex h-full flex-col', className)}>
       <button
+        ref={buttonRef}
         type="button"
         disabled={disabled}
         onClick={() => inputRef.current?.click()}

@@ -5,7 +5,6 @@ import { useGuestFlow } from '@/hooks/useGuestFlow';
 import { LandingNav } from './LandingNav';
 import { HeroWorkspace } from './HeroWorkspace';
 import { WhyAspirely } from './WhyAspirely';
-import { WorkspacePreview } from './WorkspacePreview';
 import { TrustBand } from './TrustBand';
 import { FinalCta } from './FinalCta';
 import { LandingFooter } from './LandingFooter';
@@ -15,10 +14,11 @@ import { LandingFooter } from './LandingFooter';
  * conversion first, honest everywhere:
  *
  *   1 Floating glass nav (the only blur on the page)
- *   2 Hero + LIVE guest workspace (#try): the real upload → parse → up to 5
+ *   2 Hero + LIVE guest workspace (#try): the real upload control plus an
+ *     interactive fictional preview; the real upload → parse → up to 5
  *     matches → one tailored resume flow runs right here on `/`
- *   3 Why Aspirely (#why) + workspace preview (#workspace): editorial proof
- *     points led by real product screenshots (fictional data)
+ *   3 Why Aspirely (#why): ONE editorial proof section with the page's single
+ *     product screenshot (fictional data)
  *   4 Trust band (#trust) + final CTA + compact footer
  *
  * ONE useGuestFlow controller lives here (never a second on another route —
@@ -108,7 +108,6 @@ export default function LandingExperience() {
         {!flowActive && (
           <>
             <WhyAspirely />
-            <WorkspacePreview />
             <TrustBand />
             <FinalCta />
           </>

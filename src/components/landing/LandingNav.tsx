@@ -7,7 +7,6 @@ import { startHref } from './_shared';
  *  stays compact: logo + Sign in + the primary CTA (no hamburger needed). */
 const SECTION_LINKS = [
   { label: 'Why Aspirely', href: '#why' },
-  { label: 'Workspace', href: '#workspace' },
   { label: 'Trust', href: '#trust' },
 ];
 

@@ -357,17 +357,29 @@ describe('guest landing flow', () => {
     expect(screen.getByText(/Your free tailor is used/)).toBeInTheDocument();
   });
 
-  test('8. feature disabled (503) falls back to the account-first panel with no further guest calls', async () => {
+  test('8. feature disabled (503): only the upload action becomes an account CTA — the interactive preview stays usable', async () => {
     api.guestSession.mockResolvedValue({ error: 'Guest onboarding unavailable', status: 503 });
 
+    const user = userEvent.setup();
     renderLanding();
 
-    await screen.findByText('Free to start. No card needed.');
-    expect(screen.getByText('Start free')).toBeInTheDocument();
+    // The real upload control is replaced by a concise free-account CTA…
+    await screen.findByText(/Guest upload is paused right now/);
     expect(
       screen.queryByRole('button', { name: /Upload my resume to find matches/i }),
     ).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/^Resume file/)).not.toBeInTheDocument();
     expect(screen.getAllByRole('link', { name: /Create free account/i }).length).toBeGreaterThan(0);
+
+    // …while the fictional interactive preview keeps working: selecting a
+    // different demo job still swaps the evidence.
+    const demo = screen.getByRole('region', {
+      name: /Interactive product preview with fictional data/i,
+    });
+    await user.click(within(demo).getByRole('button', { name: /Harborview Analytics/i }));
+    await screen.findByText(/No sponsorship filings found/i);
+
+    // And none of it touches the backend beyond the initial probe.
     expect(api.guestOnboard).not.toHaveBeenCalled();
     expect(api.guestMatches).not.toHaveBeenCalled();
     expect(api.guestTailor).not.toHaveBeenCalled();
