@@ -44,7 +44,7 @@ export function TopBar() {
   });
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-background/85 px-4 backdrop-blur-xl supports-[backdrop-filter]:bg-background/70 sm:px-6">
+    <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border/70 bg-background/80 px-4 shadow-soft backdrop-blur-xl transition-colors duration-200 ease-expo supports-[backdrop-filter]:bg-background/65 sm:px-6">
       {/* Brand mark for small viewports (the Sidebar carries it ≥lg) */}
       <Link
         to={navHref("today")}
@@ -75,7 +75,7 @@ export function TopBar() {
           onClick={() => setTheme(nextTheme)}
           aria-label={themeToggleLabel}
           title={themeToggleLabel}
-          className="flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground outline-none transition-colors hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:bg-accent/80"
+          className="flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground outline-none transition-colors duration-200 ease-expo hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:bg-accent/80"
         >
           <ThemeIcon className="h-5 w-5" aria-hidden="true" />
         </button>
@@ -86,7 +86,7 @@ export function TopBar() {
             <button
               type="button"
               aria-label="Open account menu"
-              className="flex h-11 w-11 items-center justify-center rounded-full outline-none transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:bg-accent/80"
+              className="flex h-11 w-11 items-center justify-center rounded-full outline-none transition-colors duration-200 ease-expo hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:bg-accent/80"
             >
               <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
                 {initials(name, email)}

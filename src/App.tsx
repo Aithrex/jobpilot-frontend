@@ -44,11 +44,8 @@ const SettingsPage = lazy(() => import('@/app-shell/pages/SettingsPage'));
 const LearningHubTab = lazy(() => import('@/components/resume/LearningHubTab'));
 const NetworkTab = lazy(() => import('@/components/resume/NetworkTab'));
 const EventsTab = lazy(() => import('@/components/resume/EventsTab'));
-const InterviewPrepTab = lazy(() => import('@/components/resume/InterviewPrepTab'));
-const CareerCopilotTab = lazy(() => import('@/components/resume/CareerCopilotTab'));
 const JobOpportunitiesTab = lazy(() => import('@/components/resume/JobOpportunitiesTab'));
 const CareerPortalsTab = lazy(() => import('@/components/resume/CareerPortalsTab'));
-const VisaTimelineTab = lazy(() => import('@/components/visa/VisaTimelineTab'));
 
 // Craft mounts the résumé tools directly as nested sections. Tailor / My
 // Resumes / Tailored are extracted into the app shell; Batch / Six Seconds /
@@ -61,6 +58,7 @@ const SixSecondsTab = lazy(() => import('@/components/resume/SixSecondsTab'));
 const VoiceGraphTab = lazy(() => import('@/components/resume/VoiceGraphTab'));
 
 // Settings hub sections.
+const VisaTimelineTab = lazy(() => import('@/components/visa/VisaTimelineTab'));
 const ProfilePanel = lazy(() => import('@/app-shell/settings/ProfilePanel'));
 const IntegrationsPanel = lazy(() => import('@/app-shell/settings/IntegrationsPanel'));
 const AutonomyPanel = lazy(() => import('@/app-shell/settings/AutonomyPanel'));
@@ -136,14 +134,11 @@ function AppContent() {
               <Route path="learning" element={<LearningHubTab />} />
               <Route path="network" element={<NetworkTab />} />
               <Route path="events" element={<EventsTab />} />
-              <Route path="interview" element={<InterviewPrepTab />} />
-              <Route path="copilot" element={<CareerCopilotTab />} />
             </Route>
             <Route path="discover" element={<DiscoverPage />}>
               <Route index element={<Navigate to="jobs" replace />} />
               <Route path="jobs" element={<JobOpportunitiesTab />} />
               <Route path="portals" element={<CareerPortalsTab />} />
-              <Route path="visa" element={<VisaTimelineTab />} />
             </Route>
             <Route path="craft" element={<CraftPage />}>
               {/* Land on Tailor — the flagship tool — as the Craft default. */}
@@ -160,6 +155,7 @@ function AppContent() {
               <Route path="profile" element={<ProfilePanel />} />
               <Route path="integrations" element={<IntegrationsPanel />} />
               <Route path="autonomy" element={<AutonomyPanel />} />
+              <Route path="visa" element={<VisaTimelineTab />} />
               <Route path="billing" element={<BillingTab />} />
               <Route path="notifications" element={<NotificationsTab />} />
             </Route>

@@ -1,14 +1,12 @@
 import { Suspense } from "react";
 import { Outlet } from "react-router-dom";
-import { BookOpen, Bot, CalendarDays, Loader2, MessageSquareText, Users } from "lucide-react";
+import { BookOpen, CalendarDays, Loader2, Users } from "lucide-react";
 import { SubNav, type SubNavItem } from "../SubNav";
 
 const GROW_SECTIONS: SubNavItem[] = [
   { to: "learning", label: "Learning Hub", icon: BookOpen },
   { to: "network", label: "Network", icon: Users },
   { to: "events", label: "Events", icon: CalendarDays },
-  { to: "interview", label: "Interview Prep", icon: MessageSquareText },
-  { to: "copilot", label: "Career Copilot", icon: Bot },
 ];
 
 function SectionFallback() {
@@ -37,7 +35,7 @@ export default function GrowPage() {
           Build skills &amp; momentum
         </h1>
         <p className="mt-1 text-caption text-muted-foreground">
-          Learning paths, networking, events, and interview prep in one place.
+          Learning paths, networking, and events in one place.
         </p>
       </header>
 

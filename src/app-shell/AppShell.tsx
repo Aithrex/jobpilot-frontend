@@ -77,10 +77,10 @@ export default function AppShell() {
         Skip to content
       </a>
 
-      <div className="flex">
+      <div className="flex items-start">
         <Sidebar collapsed={collapsed} onToggleCollapse={toggleCollapsed} />
 
-        <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex min-h-screen min-w-0 flex-1 flex-col">
           <TopBar />
 
           <main id="main-content" className="flex-1 pb-24 lg:pb-0">

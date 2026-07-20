@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import {
-  AlertCircle, Building2, Check, ChevronDown, Factory, Loader2, Lock,
+  AlertCircle, Building2, Check, ChevronDown, Factory, Loader2,
   MapPin, Radar, RefreshCw, Rocket, Search, ShieldAlert, SlidersHorizontal,
   Sparkles, Wand2,
 } from 'lucide-react';
@@ -13,11 +13,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { ChipsInput } from '@/components/job-search/ChipsInput';
 import { JobCard } from '@/components/job-search/JobCard';
-import { useUpgrade } from '@/components/billing/UpgradeModalProvider';
 import { useAutoSync } from '@/hooks/useAutoSync';
-import { useEntitlements } from '@/hooks/useEntitlements';
-import { planRank } from '@/lib/entitlements';
 import { apiService } from '@/lib/api';
+// (job listings are free & auth-only — no entitlement/upgrade wiring here)
 import { cn } from '@/lib/utils';
 import type {
   CareerPortalVariant, Job, WorkdayCatalog, WorkdayJob, WorkdayJobsProgress,
@@ -48,7 +46,7 @@ const SENIORITY_OPTIONS = [
 const MIN_SCORE_OPTIONS = [0, 40, 60, 80] as const;
 
 // Background refresh cadence — the listing quietly re-syncs on this interval
-// for entitled users without a manual refresh (visibility-aware; see useAutoSync).
+// for every logged-in user without a manual refresh (visibility-aware; see useAutoSync).
 const AUTO_SYNC_MS = 30 * 60 * 1000;
 
 // The backend returns up to 1500 scored roles — paginate so wide windows
@@ -288,15 +286,11 @@ export function WorkdayJobsPanel({
   const isMncs = variant === 'mncs';
   const industryLabels = isMncs ? MNC_SECTOR_LABELS : INDUSTRY_LABELS;
   const prefsKey = PREFS_KEYS[variant];
-  const upgrade = useUpgrade();
   const reduceMotion = useReducedMotion();
 
-  // Career-portal search is a premium feature (server-enforced). We use the
-  // plan tier as a client-side proxy to decide whether to AUTO-load + auto
-  // refresh — free users get a clean locked state instead of an auto-fired
-  // upgrade modal. Manual search still works (and 403s → upgrade) for anyone.
-  const { plan } = useEntitlements();
-  const entitled = planRank(plan) >= 1;
+  // Job listings are free for every logged-in user — the scan endpoints are
+  // auth-only, never entitlement-gated. So auto-load + background sync run for
+  // everyone signed in; there is no premium wall here.
 
   // ── Controls (hydrated from saved prefs so nothing reloads every visit) ──
   const [prefs] = useState<WorkdayPrefs>(() => loadPrefs(prefsKey));
@@ -353,7 +347,6 @@ export function WorkdayJobsPanel({
   const [loading, setLoading] = useState(false);
   const [suggesting, setSuggesting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [gated, setGated] = useState(false);
   const [resumeTitles, setResumeTitles] = useState<string[]>([]);
   const [needsAutoSuggest, setNeedsAutoSuggest] = useState(false);
 
@@ -395,7 +388,6 @@ export function WorkdayJobsPanel({
   const runSearch = useCallback(async (forceRefresh = false) => {
     setLoading(true);
     setError(null);
-    setGated(false);
     setProgress(null);
     const search = isMncs
       ? apiService.searchMncJobs.bind(apiService)
@@ -436,27 +428,23 @@ export function WorkdayJobsPanel({
     setLoading(false);
     setProgress(null);
     if (resp.error) {
-      if (resp.status === 403 || resp.status === 429) {
-        setGated(true);
-        upgrade.open({
-          feature: 'career_portals',
-          title: 'Unlock direct career-portal search',
-          description: 'Search live openings straight from company career portals. Fresh postings, scored against your resume.',
-        });
-      } else if (resp.error) {
+      // Listings are free & auth-only. A 429 here is IP rate-limiting, not a
+      // paywall — surface it as a transient "slow down" rather than an upgrade.
+      if (resp.status === 429) {
+        setError('You are searching very fast. Give it a few seconds and sync again.');
+      } else {
         setError(resp.error);
       }
       return;
     }
     if (resp.data) setResult(resp.data);
-  }, [titles, industries, location, remoteOnly, isCareers, isMncs, upgrade]);
+  }, [titles, industries, location, remoteOnly, isCareers, isMncs]);
 
-  // ── Auto-sync: entitled users get an initial auto-load + a quiet 30-min
-  //    background refresh of the visible variant. Manual `sync()` works for
-  //    everyone (free users hit the server gate → upgrade modal). ──────────
+  // ── Auto-sync: every logged-in user gets an initial auto-load + a quiet
+  //    30-min background refresh of the visible variant. ──────────────────
   const setupReady = !catalogLoading && !needsAutoSuggest && !suggesting;
   const autoSync = useAutoSync({
-    enabled: entitled && active && setupReady,
+    enabled: active && setupReady,
     intervalMs: AUTO_SYNC_MS,
     isBusy: loading,
     onSync: (force) => runSearch(force),
@@ -656,30 +644,22 @@ export function WorkdayJobsPanel({
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
                 <h3 className="text-sm font-semibold text-foreground">Live listings</h3>
-                {entitled ? (
-                  <Badge variant="outline" className="gap-1 border-primary/30 bg-primary/10 px-1.5 py-0 text-[10px] font-semibold text-primary">
-                    <Sparkles className="h-2.5 w-2.5" aria-hidden /> Auto-sync
-                  </Badge>
-                ) : (
-                  <Badge variant="outline" className="gap-1 border-amber-500/30 bg-amber-500/10 px-1.5 py-0 text-[10px] font-semibold text-amber-600 dark:text-amber-300">
-                    <Lock className="h-2.5 w-2.5" aria-hidden /> Premium
-                  </Badge>
-                )}
+                <Badge variant="outline" className="gap-1 border-primary/30 bg-primary/10 px-1.5 py-0 text-[10px] font-semibold text-primary">
+                  <Sparkles className="h-2.5 w-2.5" aria-hidden /> Auto-sync
+                </Badge>
               </div>
               <p className="truncate text-xs text-muted-foreground" aria-live="polite">
                 {loading
                   ? progress
                     ? `Scanning ${progress.tenants_done} of ${progress.tenants_total} companies · ${roleCount} roles so far`
                     : 'Starting scan…'
-                  : entitled
-                    ? lastSyncedAt
-                      ? <>Updated {formatAgo(lastSyncedAt)} · {roleCount} roles
-                          {secondsUntilNext != null && (
-                            <span className="ml-1 tabular-nums text-primary/80">· next sync {formatCountdown(secondsUntilNext)}</span>
-                          )}
-                        </>
-                      : `Syncing ${catalogNoun} straight to your feed…`
-                    : `Unlock live sync of ${catalogNoun}, scored against your resume`}
+                  : lastSyncedAt
+                    ? <>Updated {formatAgo(lastSyncedAt)} · {roleCount} roles
+                        {secondsUntilNext != null && (
+                          <span className="ml-1 tabular-nums text-primary/80">· next sync {formatCountdown(secondsUntilNext)}</span>
+                        )}
+                      </>
+                    : `Syncing ${catalogNoun} straight to your feed…`}
               </p>
             </div>
           </div>
@@ -691,7 +671,7 @@ export function WorkdayJobsPanel({
               onClick={() => sync(true)}
               disabled={loading}
               className="gap-1.5"
-              title={entitled ? 'Re-scan every company now' : 'Run a live scan (premium)'}
+              title="Re-scan every company now"
             >
               <RefreshCw className={cn('h-3.5 w-3.5', loading && 'animate-spin')} aria-hidden />
               {loading ? 'Syncing…' : 'Sync now'}
@@ -866,21 +846,6 @@ export function WorkdayJobsPanel({
           </div>
           <Button variant="outline" size="sm" onClick={() => sync(false)}>
             Retry
-          </Button>
-        </div>
-      )}
-
-      {gated && (
-        <div className="flex items-start gap-2 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm">
-          <Lock className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
-          <div className="flex-1">
-            <p className="font-medium text-foreground">Direct portal search is a premium feature</p>
-            <p className="text-xs text-muted-foreground">
-              Upgrade to scan company career portals with resume-scored results.
-            </p>
-          </div>
-          <Button size="sm" onClick={() => upgrade.open({ feature: 'career_portals' })}>
-            See plans
           </Button>
         </div>
       )}
@@ -1186,7 +1151,7 @@ export function WorkdayJobsPanel({
             <Building2 className="h-5 w-5" aria-hidden />
           </div>
           <p className="text-sm font-medium text-foreground">
-            {entitled ? 'Getting your live feed ready…' : `Search ${catalogTotal ? `${catalogTotal} ` : ''}${catalogNoun} directly`}
+            {`Getting your live feed of ${catalogNoun} ready…`}
           </p>
           <p className="mx-auto mt-1 max-w-md text-xs text-muted-foreground">
             {isMncs

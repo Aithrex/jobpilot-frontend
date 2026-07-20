@@ -35,6 +35,20 @@ function getApiBaseUrl(): string {
 }
 const API_BASE_URL = getApiBaseUrl();
 
+// Per-user entitlement override doc returned by the admin ops endpoint.
+// `overrides.plan` is overlaid on top of the user's stored plan by the
+// backend entitlements service; a falsy/empty `overrides` clears the grant.
+export interface AdminUserOverride {
+  user_email?: string;
+  overrides?: {
+    plan?: string;
+    limits?: Record<string, number>;
+    features?: Record<string, unknown>;
+  };
+  updated_at?: string;
+  updated_by?: string;
+}
+
 interface ApiResponse<T> {
   data?: T;
   error?: string;
@@ -3010,6 +3024,26 @@ class ApiService {
       method: "PATCH",
       body: JSON.stringify({ daily_tailor_limit: dailyTailorLimit }),
     });
+  }
+
+  // ── Admin: per-user entitlement override (runtime full-access grant) ──
+  // GET returns the current override doc (or null/empty when none is set).
+  // PUT with { overrides: { plan: "premium_plus" } } grants full access;
+  // PUT with { overrides: {} } clears the override back to the stored plan.
+  async getAdminUserOverride(email: string) {
+    return this.request<AdminUserOverride>(
+      `/admin/ops/override/${encodeURIComponent(email)}`,
+    );
+  }
+
+  async setAdminUserOverride(email: string, overrides: Record<string, unknown>) {
+    return this.request<AdminUserOverride>(
+      `/admin/ops/override/${encodeURIComponent(email)}`,
+      {
+        method: "PUT",
+        body: JSON.stringify({ overrides }),
+      },
+    );
   }
 
   async getAdminFeedback(status?: "open" | "responded" | "resolved") {

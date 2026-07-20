@@ -1,12 +1,11 @@
 import { Suspense } from "react";
 import { Outlet } from "react-router-dom";
-import { Briefcase, Globe, Loader2, Plane } from "lucide-react";
+import { Briefcase, Globe, Loader2 } from "lucide-react";
 import { SubNav, type SubNavItem } from "../SubNav";
 
 const DISCOVER_SECTIONS: SubNavItem[] = [
   { to: "jobs", label: "Job Opportunities", icon: Briefcase },
   { to: "portals", label: "Career Portals", icon: Globe },
-  { to: "visa", label: "Visa Timeline", icon: Plane },
 ];
 
 function SectionFallback() {
@@ -35,7 +34,7 @@ export default function DiscoverPage() {
           Find your next opportunity
         </h1>
         <p className="mt-1 text-caption text-muted-foreground">
-          Search roles, explore career portals, and track visa milestones.
+          Search roles and explore career portals.
         </p>
       </header>
 

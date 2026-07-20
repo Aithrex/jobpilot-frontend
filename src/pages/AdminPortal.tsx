@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useMemo, FormEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
-import { apiService } from '@/lib/api';
+import { apiService, type AdminUserOverride } from '@/lib/api';
 import { useNavigate } from 'react-router-dom';
 import { QuotasPanel } from './admin/QuotasPanel';
 import { FeedbackPanel } from './admin/FeedbackPanel';
@@ -1696,21 +1697,24 @@ function UserDetailDrawer({ detail, onBack }: { detail: UserDetail; onBack: () =
           transition={{ duration: 0.18 }}
         >
           {section === 'overview' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-5 space-y-3">
-                <SectionHeading title="Account" />
-                <Info label="Session ID" value={u.session_id || '—'} mono />
-                <Info label="Fingerprint" value={u.fingerprint_hash ? u.fingerprint_hash.slice(0, 16) + '…' : '—'} mono />
-                <Info label="Login attempts" value={String(u.login_attempts)} />
-                <Info label="Parsed resume" value={parsed_resume ? '✓ Yes' : '—'} />
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-5 space-y-3">
+                  <SectionHeading title="Account" />
+                  <Info label="Session ID" value={u.session_id || '—'} mono />
+                  <Info label="Fingerprint" value={u.fingerprint_hash ? u.fingerprint_hash.slice(0, 16) + '…' : '—'} mono />
+                  <Info label="Login attempts" value={String(u.login_attempts)} />
+                  <Info label="Parsed resume" value={parsed_resume ? '✓ Yes' : '—'} />
+                </div>
+                <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-5 space-y-3">
+                  <SectionHeading title="Activity" />
+                  <Info label="Base uploads" value={`${base_resumes.length}`} />
+                  <Info label="Generated / downloads" value={`${generated_resumes.length}`} />
+                  <Info label="Tailoring sessions" value={`${tailoring_records.length}`} />
+                  <Info label="Created" value={fmtDate(u.created_at)} />
+                </div>
               </div>
-              <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-5 space-y-3">
-                <SectionHeading title="Activity" />
-                <Info label="Base uploads" value={`${base_resumes.length}`} />
-                <Info label="Generated / downloads" value={`${generated_resumes.length}`} />
-                <Info label="Tailoring sessions" value={`${tailoring_records.length}`} />
-                <Info label="Created" value={fmtDate(u.created_at)} />
-              </div>
+              <AccessOverrideCard email={u.email} storedPlan={(u as { plan?: string }).plan} />
             </div>
           )}
 
@@ -1782,6 +1786,100 @@ function UserDetailDrawer({ detail, onBack }: { detail: UserDetail; onBack: () =
           </motion.div>
         )}
       </AnimatePresence>
+    </div>
+  );
+}
+
+// Runtime full-access grant for testers/devs. Overlays `overrides.plan` on top
+// of the user's stored plan server-side; clearing the override restores it.
+function AccessOverrideCard({ email, storedPlan }: { email: string; storedPlan?: string | null }) {
+  const [override, setOverride] = useState<AdminUserOverride | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  const fetchOverride = useCallback(async () => {
+    setLoading(true);
+    const res = await apiService.getAdminUserOverride(email);
+    if (res.error) {
+      toast.error('Failed to load access override', { description: res.error });
+      setOverride(null);
+    } else {
+      setOverride(res.data ?? null);
+    }
+    setLoading(false);
+  }, [email]);
+
+  useEffect(() => { fetchOverride(); }, [fetchOverride]);
+
+  const overridePlan = override?.overrides?.plan;
+  const fullAccess = !!overridePlan; // any override plan lifts the user above their stored plan
+  const effectivePlan = storedPlan || overridePlan || 'free';
+
+  const write = useCallback(async (overrides: Record<string, unknown>, successMsg: string) => {
+    setSaving(true);
+    const res = await apiService.setAdminUserOverride(email, overrides);
+    if (res.error) {
+      toast.error('Could not update access override', { description: res.error });
+      setSaving(false);
+      return;
+    }
+    toast.success(successMsg);
+    await fetchOverride();
+    setSaving(false);
+  }, [email, fetchOverride]);
+
+  return (
+    <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-5 space-y-4">
+      <SectionHeading
+        title="Access override"
+        subtitle="Grants all premium features immediately. Use for testers/devs."
+        action={
+          <span className={`text-[11px] px-2 py-0.5 rounded-full border ${
+            fullAccess
+              ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300'
+              : 'bg-white/[0.03] border-white/[0.06] text-gray-500'
+          }`}>
+            {loading ? 'Loading…' : fullAccess ? 'Full access active' : 'No override'}
+          </span>
+        }
+      />
+
+      <div className="flex flex-wrap items-center gap-4 text-[11px] text-gray-500">
+        <span className="inline-flex items-center gap-1.5">
+          <span className="text-gray-600">Stored plan</span>
+          <span className="font-mono text-gray-300">{effectivePlan}</span>
+        </span>
+        {fullAccess && (
+          <span className="inline-flex items-center gap-1.5">
+            <span className="text-gray-600">Override</span>
+            <span className="font-mono text-emerald-300">{overridePlan}</span>
+          </span>
+        )}
+        {override?.updated_by && (
+          <span className="inline-flex items-center gap-1.5">
+            <span className="text-gray-600">By</span>
+            <span className="font-mono text-gray-400">{override.updated_by}</span>
+          </span>
+        )}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2 pt-1">
+        <button
+          onClick={() => write({ plan: 'premium_plus' }, 'Full access granted (Premium+).')}
+          disabled={saving || loading || fullAccess}
+          className="h-9 px-4 rounded-lg bg-gradient-to-r from-indigo-500 to-violet-500 text-white text-xs font-medium inline-flex items-center gap-1.5 hover:from-indigo-400 hover:to-violet-400 transition disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          <Icon.Bolt c="w-3.5 h-3.5" />
+          {fullAccess ? 'Full access granted' : 'Grant full access (Premium+)'}
+        </button>
+        <button
+          onClick={() => write({}, 'Override cleared — reset to stored plan.')}
+          disabled={saving || loading || !fullAccess}
+          className="h-9 px-4 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-gray-300 text-xs font-medium border border-white/[0.06] inline-flex items-center gap-1.5 transition disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          Reset to plan
+        </button>
+      </div>
     </div>
   );
 }

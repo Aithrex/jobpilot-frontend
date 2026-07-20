@@ -42,6 +42,10 @@ import type {
   GuestTailorResult,
 } from '@/types/guest';
 import type { JobStatus, TailoredFullResume } from '@/types/resume';
+import { GuestGate } from '@/components/job-search/GuestGate';
+
+// Guests see this many matches clearly; the rest sit behind a sign-in gate.
+const GUEST_VISIBLE_MATCHES = 4;
 
 /**
  * /start — guest onboarding: upload → parsed resume → top matched jobs →
@@ -1098,7 +1102,7 @@ export default function Start() {
                     today's scan.
                   </p>
                   <div className="grid gap-4 md:grid-cols-2">
-                    {matches.map((job, i) => (
+                    {matches.slice(0, GUEST_VISIBLE_MATCHES).map((job, i) => (
                       <motion.div
                         key={`${job.company}-${job.title}-${i}`}
                         initial={reduceMotion ? false : { opacity: 0, y: 12 }}
@@ -1172,6 +1176,41 @@ export default function Start() {
                       </motion.div>
                     ))}
                   </div>
+
+                  {/* Overflow matches are gated for guests — a few real cards
+                      above stay interactive (tailor-free hook); the rest sit
+                      behind a frosted sign-in CTA. */}
+                  {matches.length > GUEST_VISIBLE_MATCHES && (
+                    <GuestGate totalCount={matches.length}>
+                      <div className="grid gap-4 md:grid-cols-2">
+                        {matches.slice(GUEST_VISIBLE_MATCHES, GUEST_VISIBLE_MATCHES + 4).map((job, i) => (
+                          <Card key={`gated-${job.company}-${job.title}-${i}`} className="h-full">
+                            <CardContent className="flex h-full flex-col gap-3 p-4 sm:p-5">
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0">
+                                  <h3 className="line-clamp-2 font-semibold">{job.title}</h3>
+                                  <p className="truncate text-sm text-muted-foreground">
+                                    {job.company}{job.location ? ` · ${job.location}` : ''}
+                                  </p>
+                                </div>
+                                <ScoreBadge score={job.match_score} />
+                              </div>
+                              {(job.matched_skills?.length ?? 0) > 0 && (
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                  {job.matched_skills!.slice(0, 4).map((skill) => (
+                                    <Badge key={skill} variant="secondary" className="text-[11px] font-normal">
+                                      {skill}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              )}
+                              <div className="mt-auto h-9 rounded-md bg-muted/60" />
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    </GuestGate>
+                  )}
                 </>
               )}
             </motion.section>
