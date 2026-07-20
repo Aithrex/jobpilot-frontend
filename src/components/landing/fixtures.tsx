@@ -1,17 +1,49 @@
-import { ArrowRight, BadgeCheck, Check, FileText, ShieldCheck } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { animate, useReducedMotion } from 'framer-motion';
+import { BadgeCheck, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 /**
- * Tiny token-styled product fixtures for the landing's "How it works" and
- * capability sections. Built from the real UI patterns (score badge, skill
- * chips, sponsorship row, tailor diff) rather than screenshots, so they stay
- * on-token and weightless. All data is clearly illustrative: fictional
- * company, no real names, and every card carries the Illustrative chip.
- * Static by design (no loops); success green appears only on positive
- * evidence rows.
+ * Shared illustrative fixture data + atoms for the landing's animated
+ * product stages (How it works, Capabilities). Built from the real UI
+ * patterns (score badge, skill chips, sponsorship row, tailor diff) rather
+ * than screenshots, so they stay on-token and weightless.
+ *
+ * All data is clearly fictional: made-up companies, no real names, and every
+ * stage carries the Illustrative chip. Scores always read as estimates;
+ * success green appears only on positive evidence and integrity-pass rows.
  */
 
-/** "Illustrative example" marker every fixture card wears. */
+export const FIXTURE_SKILLS = ['SQL', 'Python', 'Tableau', 'dbt'] as const;
+
+export const FIXTURE_REQUIREMENTS = [
+  { label: 'SQL', matched: true },
+  { label: 'Tableau', matched: true },
+  { label: 'Python', matched: true },
+  { label: 'Snowflake', matched: false },
+] as const;
+
+export const FIXTURE_JOBS = [
+  { title: 'Senior data analyst', company: 'Brightpath Health', score: 87 },
+  { title: 'Analytics engineer', company: 'Northgate Mobility', score: 82 },
+  { title: 'BI developer', company: 'Cobalt Grid Energy', score: 78 },
+  { title: 'Data analyst', company: 'Juniper Retail Group', score: 74 },
+  { title: 'Reporting analyst', company: 'Harborline Logistics', score: 71 },
+] as const;
+
+export const FIXTURE_BULLET = {
+  before: 'Worked on data pipelines and reporting for the clinical team',
+  after: 'Built and maintained SQL data pipelines powering clinical reporting',
+} as const;
+
+export const FIXTURE_LOCKED_FACTS = [
+  { kind: 'Employer', value: 'Brightpath Health' },
+  { kind: 'Title', value: 'Data analyst' },
+  { kind: 'Dates', value: '2021 to 2025' },
+  { kind: 'Skills', value: 'SQL, Python' },
+] as const;
+
+/** "Illustrative example" marker every fixture stage wears. */
 export function IllustrativeChip({ className }: { className?: string }) {
   return (
     <span
@@ -25,27 +57,99 @@ export function IllustrativeChip({ className }: { className?: string }) {
   );
 }
 
-/** Upload step: a parsed-resume file row with the extracted sections ticked. */
-export function MiniUpload({ className }: { className?: string }) {
+/**
+ * A number that counts up to `value` on mount. Starts at 40% of the target so
+ * the digit count (and therefore layout, with tabular-nums) never changes.
+ * Static under reduced motion. Remount (key it) to replay inside loops.
+ */
+export function CountUpNumber({ value, duration = 0.8, className }: { value: number; duration?: number; className?: string }) {
+  const reduce = useReducedMotion();
+  const [display, setDisplay] = useState(() => (reduce ? value : Math.round(value * 0.4)));
+
+  useEffect(() => {
+    if (reduce) {
+      setDisplay(value);
+      return;
+    }
+    const controls = animate(Math.round(value * 0.4), value, {
+      duration,
+      ease: [0.16, 1, 0.3, 1],
+      onUpdate: (v) => setDisplay(Math.round(v)),
+    });
+    return () => controls.stop();
+  }, [value, duration, reduce]);
+
+  return <span className={className}>{display}</span>;
+}
+
+/** Match score, always visibly framed as an estimate. */
+export function ScoreBadge({
+  score,
+  size = 'sm',
+  countUp = false,
+  className,
+}: {
+  score: number;
+  size?: 'sm' | 'xs';
+  /** Animate the number up on mount (reduced-motion aware). */
+  countUp?: boolean;
+  className?: string;
+}) {
   return (
-    <div className={cn('rounded-xl border border-border bg-card p-4 shadow-soft', className)}>
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-2.5">
-          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-control bg-primary/10 text-primary">
-            <FileText className="h-[18px] w-[18px]" aria-hidden />
-          </span>
-          <div className="min-w-0">
-            <p className="truncate text-sm font-medium text-foreground">resume.pdf</p>
-            <p className="text-xs text-muted-foreground">184 KB, parsed</p>
-          </div>
-        </div>
-        <IllustrativeChip />
-      </div>
-      <ul className="mt-3 space-y-1.5">
-        {['Experience read', 'Skills extracted', 'Education found'].map((line) => (
-          <li key={line} className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Check className="h-3.5 w-3.5 shrink-0 text-primary" strokeWidth={3} aria-hidden />
-            {line}
+    <span
+      className={cn(
+        'inline-flex shrink-0 items-baseline gap-1 rounded-control bg-primary/10 font-mono font-bold tabular-nums text-primary',
+        size === 'sm' ? 'px-2 py-0.5 text-sm' : 'px-1.5 py-0.5 text-xs',
+        className,
+      )}
+    >
+      {countUp ? <CountUpNumber value={score} /> : score}
+      <span className="text-[10px] font-medium text-primary/80">est.</span>
+    </span>
+  );
+}
+
+/** Skill / requirement chip. `matched` = solid indigo, `gap` = dashed muted. */
+export function SkillChip({
+  children,
+  tone = 'neutral',
+  className,
+}: {
+  children: React.ReactNode;
+  tone?: 'neutral' | 'matched' | 'gap';
+  className?: string;
+}) {
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center whitespace-nowrap rounded-full border px-2 py-0.5 text-[11px] font-medium',
+        tone === 'neutral' && 'border-border bg-card text-muted-foreground',
+        tone === 'matched' && 'border-primary/30 bg-primary/10 text-primary',
+        tone === 'gap' && 'border-dashed border-input bg-card text-muted-foreground',
+        className,
+      )}
+    >
+      {children}
+    </span>
+  );
+}
+
+/**
+ * The immutable-facts strip: employer, title, dates, skills with lock
+ * glyphs. Visibly unchanged while tailoring animates around it.
+ */
+export function LockedFactsRow({ className }: { className?: string }) {
+  return (
+    <div className={className}>
+      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Locked facts</p>
+      <ul className="mt-1.5 flex flex-wrap gap-1.5">
+        {FIXTURE_LOCKED_FACTS.map((fact) => (
+          <li
+            key={fact.kind}
+            className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/50 px-2 py-0.5 text-[10px] font-medium text-muted-foreground"
+          >
+            <Lock className="h-2.5 w-2.5 shrink-0" aria-hidden />
+            {fact.value}
           </li>
         ))}
       </ul>
@@ -53,95 +157,17 @@ export function MiniUpload({ className }: { className?: string }) {
   );
 }
 
-/**
- * Match step: one mini match card, the real anatomy: role + fictional
- * company, score (labelled estimate), skill chips, a sponsorship signal row
- * (the one sanctioned success-green element), and the "why this matches"
- * explanation line.
- */
-export function MiniMatchCard({ className }: { className?: string }) {
+/** The IntegrityGuard pass state, the one sanctioned success-green ending. */
+export function IntegrityPassRow({ className }: { className?: string }) {
   return (
-    <div className={cn('rounded-xl border border-border bg-card p-4 shadow-soft', className)}>
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-foreground">Senior data analyst</p>
-          <p className="truncate text-xs text-muted-foreground">Brightpath Health, via its careers site</p>
-        </div>
-        <span className="inline-flex shrink-0 items-baseline gap-1 rounded-control bg-primary/10 px-2 py-1 font-mono text-sm font-bold tabular-nums text-primary">
-          87<span className="text-[10px] font-medium text-primary/80">est.</span>
-        </span>
-      </div>
-      <div className="mt-2.5 flex flex-wrap gap-1.5">
-        {['SQL', 'Python', 'Tableau'].map((skill) => (
-          <span
-            key={skill}
-            className="rounded-full border border-border bg-muted/50 px-2 py-0.5 text-[11px] font-medium text-muted-foreground"
-          >
-            {skill}
-          </span>
-        ))}
-      </div>
-      <p className="mt-2.5 flex items-center gap-1.5 text-xs font-medium text-success">
-        <ShieldCheck className="h-3.5 w-3.5 shrink-0" aria-hidden />
-        Sponsorship signal found in public filings
-      </p>
-      <p className="mt-2 border-t border-border pt-2 text-xs leading-relaxed text-muted-foreground">
-        <span className="font-semibold text-foreground">Why this matches:</span> your analytics
-        experience covers the exact SQL and Tableau stack in the posting.
-      </p>
-      <div className="mt-2.5">
-        <IllustrativeChip />
-      </div>
-    </div>
-  );
-}
-
-/**
- * Tailor step: a mini before/after diff. The rewrite rephrases the same
- * facts, and the integrity row says exactly that: nothing invented.
- */
-export function MiniTailorDiff({ className }: { className?: string }) {
-  return (
-    <div className={cn('rounded-xl border border-border bg-card p-4 shadow-soft', className)}>
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Tailored bullet</p>
-        <IllustrativeChip />
-      </div>
-      <div className="mt-3 space-y-2">
-        <p className="rounded-control border border-border bg-muted/40 px-3 py-2 text-xs leading-relaxed text-muted-foreground">
-          Worked on data pipelines and reporting for the clinical team
-        </p>
-        <p className="flex items-center gap-1.5 pl-1 text-[11px] font-medium text-muted-foreground">
-          <ArrowRight className="h-3 w-3 shrink-0" aria-hidden />
-          reworded for the role, same facts
-        </p>
-        <p className="rounded-control border border-primary/25 bg-primary/5 px-3 py-2 text-xs leading-relaxed text-foreground">
-          Built and maintained SQL data pipelines powering clinical reporting
-        </p>
-      </div>
-      <p className="mt-3 flex items-center gap-1.5 border-t border-border pt-2.5 text-xs font-medium text-success">
-        <BadgeCheck className="h-3.5 w-3.5 shrink-0" aria-hidden />
-        Integrity check passed. Same employers, titles, dates, and skills.
-      </p>
-    </div>
-  );
-}
-
-/** Sponsorship capability: two honest signal rows, green only for evidence. */
-export function MiniSignalRows({ className }: { className?: string }) {
-  return (
-    <div className={cn('space-y-2', className)}>
-      <p className="flex items-center gap-2 rounded-control border border-success/25 bg-success/5 px-3 py-2 text-xs font-medium text-success">
-        <ShieldCheck className="h-3.5 w-3.5 shrink-0" aria-hidden />
-        Sponsorship signal found in public filings
-      </p>
-      <p className="flex items-center gap-2 rounded-control border border-border bg-muted/40 px-3 py-2 text-xs font-medium text-muted-foreground">
-        <ShieldCheck className="h-3.5 w-3.5 shrink-0" aria-hidden />
-        No sponsorship signal on record
-      </p>
-      <div className="pt-0.5">
-        <IllustrativeChip />
-      </div>
-    </div>
+    <p
+      className={cn(
+        'flex items-center gap-1.5 rounded-control border border-success/25 bg-success/5 px-2.5 py-1.5 text-[11px] font-medium leading-snug text-success',
+        className,
+      )}
+    >
+      <BadgeCheck className="h-3.5 w-3.5 shrink-0" aria-hidden />
+      IntegrityGuard passed. Same employers, titles, dates, and skills.
+    </p>
   );
 }

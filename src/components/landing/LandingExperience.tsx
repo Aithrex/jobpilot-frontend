@@ -14,15 +14,17 @@ import { LandingFooter } from './LandingFooter';
  *   1 Floating glass nav (the only blur on the page)
  *   2 Hero with the REAL product action: the guest dropzone (or the
  *     create-account door when the guest flag is off)
- *   3 How it works (#how-it-works): three steps as a compact product visual
- *   4 Three differentiated capabilities with token-styled fixtures
- *   5 Trust and privacy (#trust): sources, IntegrityGuard, retention
+ *   3 How it works (#how-it-works): an interactive animated pipeline on one
+ *     fixed-height stage (zero CLS when steps advance)
+ *   4 Three capabilities, each led by a looping in-view-gated infographic
+ *   5 Trust and privacy (#trust): one data-lifecycle diagram + captions
  *   6 Final CTA + compact footer
  *
  * No pitch player, no vision/mission, no pricing, no WebGL. Motion is
- * opacity/transform only (Reveal, under 320ms) and fully static under
- * prefers-reduced-motion. Every section uses semantic tokens only; the page
- * is light-pinned via LIGHT_SURFACE below.
+ * transform/opacity (plus SVG path draws) on the shared kit in _shared.tsx
+ * and fully static under prefers-reduced-motion; every animated stage
+ * reserves its height inline. Every section uses semantic tokens only; the
+ * page is light-pinned via LIGHT_SURFACE below.
  */
 
 /**
@@ -47,7 +49,9 @@ const LIGHT_SURFACE = {
   '--secondary': 'var(--slate-100-hsl)',
   '--secondary-foreground': 'var(--slate-700-hsl)',
   '--muted': 'var(--slate-100-hsl)',
-  '--muted-foreground': 'var(--slate-500-hsl)',
+  // slate-600, not 500: 500 lands at 4.48:1 on slate-50 surfaces, a hair
+  // under WCAG AA's 4.5:1 for the landing's body copy sizes.
+  '--muted-foreground': 'var(--slate-600-hsl)',
   '--accent': 'var(--slate-100-hsl)',
   '--accent-foreground': 'var(--slate-700-hsl)',
   '--destructive': 'var(--danger-600-hsl)',

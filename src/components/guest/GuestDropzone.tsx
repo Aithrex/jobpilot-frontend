@@ -9,7 +9,7 @@ const DEFAULT_MICROCOPY = 'PDF or DOCX, up to 5 MB';
 // Transparent first-party anti-abuse note (spec v2): the server issues a
 // device token we keep in this browser to keep the free trial fair.
 const DEFAULT_PRIVACY_NOTE =
-  'Free and private. We store a small first-party device token in your browser to prevent abuse of the free trial. It never identifies you and is not shared with anyone.';
+  'Free and private. We store a small first-party device token in your browser to help keep the free trial fair. It is used for abuse prevention and free-trial limits.';
 
 export interface GuestDropzoneProps {
   /** Fires with a validated file (pdf/docx, 5 MB max) — the caller starts
@@ -63,7 +63,6 @@ export function GuestDropzone({
       <button
         type="button"
         disabled={disabled}
-        aria-label={`Upload your resume: ${microcopy}`}
         onClick={() => inputRef.current?.click()}
         onDragOver={(e) => {
           e.preventDefault();
