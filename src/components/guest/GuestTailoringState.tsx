@@ -1,3 +1,4 @@
+import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowLeft, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -38,6 +39,7 @@ export function GuestTailoringState({
   onRetry,
   onBack,
 }: GuestTailoringStateProps) {
+  const reduceMotion = useReducedMotion();
   const stage = useStagedCopy(working, TAILOR_STAGES, 7000);
 
   return (
@@ -52,14 +54,21 @@ export function GuestTailoringState({
       </button>
 
       {activeMatch && (
-        <div className="mb-6">
+        // Morph target: shares 'guest-tailor-card' with the selected match
+        // card on the dashboard, so confirming a tailor visually carries the
+        // card into this pane (transform-only layout morph; off under
+        // reduced motion).
+        <motion.div
+          layoutId={reduceMotion ? undefined : 'guest-tailor-card'}
+          className="mb-6"
+        >
           <h2 className="text-balance text-xl font-bold tracking-tight sm:text-2xl">
             {activeMatch.title} · {activeMatch.company}
           </h2>
           <p className="mt-0.5 text-sm text-muted-foreground" role="status">
             Tailoring your resume for this role.
           </p>
-        </div>
+        </motion.div>
       )}
 
       {working && (

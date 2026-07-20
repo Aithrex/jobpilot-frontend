@@ -6,22 +6,30 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import {
   ErrorCard,
+  PhaseAnnouncer,
+  PhaseStepper,
   SignupCta,
   WorkingHeader,
   stepTransition,
+  type PhaseDef,
 } from '@/components/guest/_shared';
 import { PARSE_STAGES, useStagedCopy, type GuestCta } from '@/hooks/useGuestFlow';
+import type { GuestJobProgress } from '@/types/guest';
 import type { JobStatus } from '@/types/resume';
 
 /**
  * The parsing state: the uploaded document morphs into a structured resume
- * preview while the REAL async parse job runs. The section highlight sweeps
- * with the staged status copy (time-based, honest wording) — there is no
- * fake percentage and nothing is marked "done" until the job completes.
+ * preview while the REAL async parse job runs. When the backend emits
+ * progress markers (v3: parsing -> extracting_skills -> finalizing) the
+ * stepper and section sweep follow the SERVER truthfully; without markers the
+ * staged copy rotates flavor text but nothing is ever marked "done" until
+ * the job completes.
  */
 export interface GuestParsingStateProps {
   fileName: string | null;
   parseStatus: JobStatus | null;
+  /** Server-emitted sub-phase (null until the first marker arrives). */
+  progress?: GuestJobProgress | null;
   error: string | null;
   cta: GuestCta | null;
   canRetry: boolean;
@@ -29,6 +37,13 @@ export interface GuestParsingStateProps {
   onChooseAnother: () => void;
   className?: string;
 }
+
+/** The backend's guest_parse phases, in emission order (v3 3.4). */
+const PARSE_PHASES: readonly PhaseDef[] = [
+  { key: 'parsing', label: 'Reading the document' },
+  { key: 'extracting_skills', label: 'Extracting skills' },
+  { key: 'finalizing', label: 'Finalizing' },
+];
 
 const SECTIONS = [
   { Icon: User, label: 'Contact and summary', widths: ['w-2/5', 'w-4/5'] },
@@ -40,6 +55,7 @@ const SECTIONS = [
 export function GuestParsingState({
   fileName,
   parseStatus,
+  progress = null,
   error,
   cta,
   canRetry,
@@ -50,9 +66,15 @@ export function GuestParsingState({
   const reduceMotion = useReducedMotion();
   const working = !error && !cta;
   const stage = useStagedCopy(working, PARSE_STAGES);
-  // Map the staged copy onto a section highlight sweep (same honest timer).
+  // Section highlight sweep: driven by the SERVER phase when markers arrive,
+  // otherwise the staged-copy timer (same honest fallback wording).
+  const phaseIndex = progress ? PARSE_PHASES.findIndex((p) => p.key === progress.phase) : -1;
   const stageIndex = Math.max(0, PARSE_STAGES.indexOf(stage as (typeof PARSE_STAGES)[number]));
-  const activeSection = Math.min(stageIndex, SECTIONS.length - 1);
+  const activeSection =
+    phaseIndex >= 0
+      ? Math.min(phaseIndex + 1, SECTIONS.length - 1)
+      : Math.min(stageIndex, SECTIONS.length - 1);
+  const activePhaseLabel = phaseIndex >= 0 ? PARSE_PHASES[phaseIndex].label : null;
 
   if (cta) {
     return (
@@ -79,7 +101,9 @@ export function GuestParsingState({
   }
 
   return (
-    <div className={cn('flex h-full flex-col gap-5', className)} aria-live="polite">
+    <div className={cn('flex h-full flex-col gap-5', className)}>
+      {/* One debounced polite region announcing REAL phase changes only. */}
+      <PhaseAnnouncer message={activePhaseLabel} />
       <WorkingHeader
         stage={stage}
         hint={
@@ -88,6 +112,7 @@ export function GuestParsingState({
             : 'Queued. Starting now.'
         }
       />
+      <PhaseStepper phases={PARSE_PHASES} activeKey={progress?.phase ?? null} />
 
       {/* Document chip → structured preview morph */}
       <div className="grid min-h-0 flex-1 gap-4 sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">

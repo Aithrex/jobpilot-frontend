@@ -16,6 +16,9 @@ export interface GuestJobDetailProps {
   state: GuestJobDetailState;
   onConfirmTailor: (match: GuestJobMatch) => void;
   onViewTailored: () => void;
+  /** Hovering a matched skill reports it to the host so the OTHER visible
+   * cards can dim (null on leave). Optional — hover is an enhancement. */
+  onSkillHover?: (skill: string | null) => void;
   /** false when the host already renders the title/company/score header
    * (the mobile accordion card) — avoids a doubled header. */
   showHeader?: boolean;
@@ -33,6 +36,7 @@ export function GuestJobDetail({
   state,
   onConfirmTailor,
   onViewTailored,
+  onSkillHover,
   showHeader = true,
   className,
 }: GuestJobDetailProps) {
@@ -40,10 +44,15 @@ export function GuestJobDetail({
   const [confirming, setConfirming] = useState(false);
   const postingLink = match.apply_link || match.url;
 
-  // Selecting a different job always resets the pending confirmation.
+  // Selecting a different job always resets the pending confirmation and any
+  // lingering skill-hover highlight.
   useEffect(() => {
     setConfirming(false);
-  }, [match.match_id]);
+    onSkillHover?.(null);
+  }, [match.match_id, onSkillHover]);
+
+  // Never leave the host's cards dimmed after this detail unmounts.
+  useEffect(() => () => onSkillHover?.(null), [onSkillHover]);
 
   return (
     <motion.div
@@ -103,11 +112,17 @@ export function GuestJobDetail({
           <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Skills you match
           </p>
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-1.5" onMouseLeave={() => onSkillHover?.(null)}>
             {match.matched_skills!.map((skill) => (
-              <Badge key={skill} variant="secondary" className="text-[11px] font-normal">
-                {skill}
-              </Badge>
+              <span
+                key={skill}
+                onMouseEnter={() => onSkillHover?.(skill)}
+                onMouseLeave={() => onSkillHover?.(null)}
+              >
+                <Badge variant="secondary" className="text-[11px] font-normal">
+                  {skill}
+                </Badge>
+              </span>
             ))}
           </div>
         </div>

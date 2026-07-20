@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { BadgeCheck, LayoutDashboard, ShieldCheck, Target } from 'lucide-react';
+import { LayoutDashboard, ShieldCheck, UserRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { GuestProgressRail } from '@/components/guest/GuestProgressRail';
@@ -11,6 +11,7 @@ import { TailorQuota } from '@/components/guest/_shared';
 import type { GuestFlow } from '@/hooks/useGuestFlow';
 import { AmbientGlow, Container, Grain, Reveal, EASE } from './_shared';
 import { DemoWorkspace } from './demo/DemoWorkspace';
+import { SkillTokenFlow } from './demo/SkillTokenFlow';
 
 /**
  * Hero + live guest workspace: the real product IS the hero. Idle, the right
@@ -38,21 +39,16 @@ export interface HeroWorkspaceProps {
   flowActive: boolean;
 }
 
-const PROOF_POINTS = [
-  {
-    Icon: Target,
-    title: 'Real openings',
-    body: 'Direct from employer career sites, not a recycled feed.',
-  },
-  {
-    Icon: BadgeCheck,
-    title: 'Know why it fits',
-    body: 'Resume evidence and sponsorship signals on every match.',
-  },
+/** Entitlement chips (locked copy, landing-v8 brief) — the same numbers the
+ * gates enforce; never the word "unlimited" anywhere on this page. */
+const ENTITLEMENT_CHIPS = [
   {
     Icon: ShieldCheck,
-    title: 'Tailor without making things up',
-    body: 'IntegrityGuard protects your real employers, titles, dates, and skills.',
+    text: 'No account: up to 5 matched jobs + 1 tailored resume',
+  },
+  {
+    Icon: UserRound,
+    text: 'Free account: full job workspace + saved progress + 5 tailorings per UTC day',
   },
 ] as const;
 
@@ -114,44 +110,48 @@ export function HeroWorkspace({ flow, guestEnabled, authed, flowActive }: HeroWo
               key="idle"
               initial={false}
               exit={reduceMotion ? undefined : { opacity: 0, transition: { duration: 0.2 } }}
-              className="grid items-start gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:gap-12"
+              className="grid grid-cols-[minmax(0,1fr)] items-start gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:gap-12"
             >
-              {/* ── Copy column ── */}
+              {/* ── Copy column (locked hero copy, landing-v8 brief) ── */}
               <div className="mx-auto flex w-full max-w-xl flex-col text-center lg:sticky lg:top-28 lg:mx-0 lg:text-left">
                 <Reveal immediate>
-                  <p className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3.5 py-1.5 text-[13px] font-medium text-muted-foreground">
-                    <ShieldCheck className="h-4 w-4 shrink-0 text-primary" aria-hidden />
-                    No account · Up to 5 matches · 1 tailored resume
-                  </p>
-                </Reveal>
-
-                <Reveal immediate delay={0.05}>
-                  <h1 className="mt-6 text-balance font-display text-4xl font-extrabold leading-[1.08] tracking-[-0.03em] text-foreground sm:text-5xl">
-                    Upload your resume.{' '}
-                    <span className="text-primary">See the jobs that fit.</span>
+                  <h1 className="text-balance font-display text-4xl font-extrabold leading-[1.08] tracking-[-0.03em] text-foreground sm:text-5xl">
+                    Get 5 best-fit jobs from your resume.{' '}
+                    <span className="text-primary">Free.</span>
                   </h1>
                 </Reveal>
 
-                <Reveal immediate delay={0.1}>
+                <Reveal immediate delay={0.05}>
                   <p className="mx-auto mt-5 max-w-xl text-pretty text-lg leading-relaxed text-muted-foreground lg:mx-0">
-                    Aspirely scans live company career sites, explains why each role fits your
-                    experience, and tailors one resume without inventing anything.
+                    Upload your resume with no account required. See the strongest real
+                    openings, understand why they fit, and tailor your resume for one.
                   </p>
                 </Reveal>
 
-                <Reveal immediate delay={0.15}>
-                  <ul className="mx-auto mt-8 max-w-xl space-y-3 text-left lg:mx-0">
-                    {PROOF_POINTS.map(({ Icon, title, body }) => (
-                      <li key={title} className="flex items-start gap-3">
-                        <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
-                          <Icon className="h-4 w-4" aria-hidden />
-                        </span>
-                        <p className="text-sm leading-relaxed text-muted-foreground">
-                          <span className="font-semibold text-foreground">{title}.</span> {body}
-                        </p>
+                <Reveal immediate delay={0.1}>
+                  <ul className="mx-auto mt-7 flex max-w-xl flex-col items-center gap-2.5 lg:mx-0 lg:items-start">
+                    {ENTITLEMENT_CHIPS.map(({ Icon, text }) => (
+                      <li
+                        key={text}
+                        className="inline-flex items-start gap-2 rounded-full border border-border bg-card px-3.5 py-1.5 text-left text-[13px] font-medium text-muted-foreground"
+                      >
+                        <Icon className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
+                        {text}
                       </li>
                     ))}
                   </ul>
+                </Reveal>
+
+                <Reveal immediate delay={0.15}>
+                  <p className="mt-6 text-sm text-muted-foreground">
+                    Already have an account?{' '}
+                    <Link
+                      to="/login"
+                      className="font-medium text-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      Sign in
+                    </Link>
+                  </p>
                 </Reveal>
               </div>
 
@@ -216,6 +216,10 @@ export function HeroWorkspace({ flow, guestEnabled, authed, flowActive }: HeroWo
                             </Button>
                           </div>
                         )}
+
+                        {/* Idle micro-motion: tokens drift from the resume
+                            glyph into empty job-card slots (decorative). */}
+                        <SkillTokenFlow />
 
                         <DemoWorkspace onUseResume={handleUseResume} />
 

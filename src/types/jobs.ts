@@ -388,6 +388,11 @@ export type CareerPortalSponsorship = 'likely' | 'rare' | 'unknown' | 'refused';
 export interface WorkdayJob {
   job_id: string;
   title: string;
+  /** Tolerated source-side variants of `title` — some fetcher rows carry the
+   *  role under these keys instead. Normalized at the FE boundary via
+   *  `jobTitleOf`/`toJob` (lib/careerJobs.ts); backend normalizes too. */
+  job_title?: string;
+  role?: string;
   company: string;
   location: string;
   apply_link: string;

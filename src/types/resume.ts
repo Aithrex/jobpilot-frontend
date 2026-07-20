@@ -220,6 +220,26 @@ export interface ResumeStatus {
   job_titles?: string[];
   summary?: string;
   parsed_at?: string;
+  /** Resume Platform v3: id of the active resume asset (present when one exists). */
+  resume_id?: string;
+  filename?: string;
+  /** Legacy object key of the active asset; kept for older download paths. */
+  s3_key?: string;
+}
+
+// ─── Base resume assets (Resume Platform v3) ──────────────────────────────
+// Row shape of GET /api/resume/versions — backed by `resume_assets`.
+// Identity is `resume_id` everywhere (set-active, delete, original download);
+// rows no longer carry an s3_key.
+export type ParseStatus = "pending" | "parsed" | "failed";
+
+export interface ResumeAssetRow {
+  resume_id: string;
+  filename: string;
+  uploaded_at: string;
+  size_bytes: number;
+  parse_status: ParseStatus | string;
+  is_active: boolean;
 }
 
 // ─── Async job status ─────────────────────────────────────────────────────

@@ -165,7 +165,7 @@ export default function MyResumesPage() {
         <div className="divide-y divide-border overflow-hidden rounded-container border border-border bg-card shadow-soft">
           {resumes.map((r) => (
             <div
-              key={r.s3_key}
+              key={r.resume_id}
               className="flex items-center justify-between px-5 py-3.5 transition-colors hover:bg-accent"
             >
               <div className="flex min-w-0 flex-1 items-center gap-3">
@@ -184,10 +184,20 @@ export default function MyResumesPage() {
                         Active
                       </span>
                     )}
+                    {r.parse_status === 'pending' && (
+                      <span className="shrink-0 rounded-full border border-border bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                        Parsing
+                      </span>
+                    )}
+                    {r.parse_status === 'failed' && (
+                      <span className="shrink-0 rounded-full border border-destructive/25 bg-destructive/10 px-2 py-0.5 text-[10px] font-medium text-destructive">
+                        Parse failed
+                      </span>
+                    )}
                   </div>
                   <p className="text-xs text-muted-foreground">
                     {formatDate(r.uploaded_at)}
-                    {r.size ? ` · ${formatBytes(r.size)}` : ''}
+                    {r.size_bytes ? ` · ${formatBytes(r.size_bytes)}` : ''}
                   </p>
                 </div>
               </div>
@@ -196,26 +206,36 @@ export default function MyResumesPage() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    disabled={settingActive === r.s3_key}
+                    // A resume can only become active once parsed; the backend
+                    // answers 409 resume_not_parsed otherwise.
+                    disabled={settingActive === r.resume_id || r.parse_status !== 'parsed'}
                     onClick={async () => {
-                      setSettingActive(r.s3_key);
-                      const resp = await apiService.setActiveResume(r.s3_key);
+                      setSettingActive(r.resume_id);
+                      const resp = await apiService.setActiveResume(r.resume_id);
                       setSettingActive(null);
                       if (resp.error) {
-                        toast.error("Couldn't set active resume", { description: resp.error });
+                        const notParsed =
+                          resp.status === 409 &&
+                          (resp.errorPayload as { error?: string } | undefined)?.error ===
+                            'resume_not_parsed';
+                        toast.error("Couldn't set active resume", {
+                          description: notParsed
+                            ? 'This resume has not finished parsing yet. Try again in a moment.'
+                            : resp.error,
+                        });
                         return;
                       }
                       await load();
                     }}
                     className="text-primary hover:text-primary"
                   >
-                    {settingActive === r.s3_key ? 'Setting…' : 'Use for Tailoring'}
+                    {settingActive === r.resume_id ? 'Setting…' : 'Use for Tailoring'}
                   </Button>
                 )}
                 <Button
                   variant="ghost"
                   size="icon"
-                  disabled={deleting === r.s3_key}
+                  disabled={deleting === r.resume_id}
                   title="Delete"
                   aria-label={`Delete resume ${r.filename}`}
                   onClick={() => setPendingDelete(r)}
@@ -253,8 +273,8 @@ export default function MyResumesPage() {
                 const target = pendingDelete;
                 setPendingDelete(null);
                 if (!target) return;
-                setDeleting(target.s3_key);
-                const resp = await apiService.deleteResume(target.s3_key);
+                setDeleting(target.resume_id);
+                const resp = await apiService.deleteResume(target.resume_id);
                 setDeleting(null);
                 if (resp.error) {
                   toast.error('Delete failed', { description: resp.error });

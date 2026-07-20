@@ -64,12 +64,24 @@ export function locationKeyOf(job: WorkdayJob): string {
   return loc ? 'Other' : 'US-wide';
 }
 
+/** Boundary defense: some source rows carry the role under `job_title` or
+ *  `role` instead of `title`. Resolve to the first NON-EMPTY trimmed value
+ *  (an empty-string title counts as missing) — backend also normalizes
+ *  server-side; this is belt-and-braces. */
+export function jobTitleOf(j: Pick<WorkdayJob, 'title' | 'job_title' | 'role'>): string {
+  for (const t of [j.title, j.job_title, j.role]) {
+    if (typeof t === 'string' && t.trim()) return t.trim();
+  }
+  return '';
+}
+
 /** Normalize a portal row into the `Job` shape `JobCard` renders. Portal rows
  *  carry a discrete sponsorship band (not the SponsorshipSignal object) — we
  *  surface the honest signal via visa flags instead of fabricating numbers. */
 export function toJob(j: WorkdayJob, fallbackSource: string): Job {
   return {
     ...j,
+    title: jobTitleOf(j),
     logo: j.logo ?? '',
     description: j.description ?? '',
     salary: j.salary ?? '',
@@ -113,7 +125,7 @@ export function mergeJobs(...lists: WorkdayJob[][]): WorkdayJob[] {
   const map = new Map<string, WorkdayJob>();
   for (const list of lists) {
     for (const j of list) {
-      const composite = `${norm(j.company)}::${norm(j.title)}::${norm(j.location)}`;
+      const composite = `${norm(j.company)}::${norm(jobTitleOf(j))}::${norm(j.location)}`;
       const key = composite === '::::' ? j.job_id : composite;
       const existing = map.get(key);
       if (!existing || isBetter(j, existing)) map.set(key, j);

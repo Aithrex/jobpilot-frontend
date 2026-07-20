@@ -30,7 +30,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { apiService } from '@/lib/api';
+import { apiService, VERSION_LIMIT_MESSAGE } from '@/lib/api';
 import { useDailyUsage, type DailyUsage } from '@/hooks/useDailyUsage';
 import { useFeedback } from '@/components/feedback/FeedbackWidget';
 import { useUpgrade } from '@/components/billing/UpgradeModalProvider';
@@ -134,7 +134,8 @@ export default function TailorPage() {
   const tailorTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const recordIdRef = useRef<string | null>(null);
   const pendingJobIdRef = useRef<string | null>(null);
-  const activeResumeRef = useRef<{ filename: string; s3_key: string } | null>(null);
+  // Resume Platform v3: base rows are identified by resume_id (no s3_key).
+  const activeResumeRef = useRef<{ filename: string; resume_id: string } | null>(null);
   const atsAutoTriggered = useRef(false);
 
   const [downloading, setDownloading] = useState<'pdf' | 'docx' | null>(null);
@@ -236,11 +237,9 @@ export default function TailorPage() {
     const resp = await apiService.listBaseResumes();
     if (resp.data) {
       const baseVersions = resp.data.versions || [];
-      const active = baseVersions.find((v: { is_active?: boolean }) => v.is_active) as
-        | { filename: string; s3_key: string }
-        | undefined;
+      const active = baseVersions.find((v) => v.is_active);
       if (active) {
-        activeResumeRef.current = { filename: active.filename, s3_key: active.s3_key };
+        activeResumeRef.current = { filename: active.filename, resume_id: active.resume_id };
       }
       if (baseVersions.length > 0) {
         // Base files exist — /status re-parses from S3 if the parsed doc is
@@ -286,23 +285,30 @@ export default function TailorPage() {
   );
 
   /* ── Record persistence (now surfaces failures) ──────────────────────────── */
+  // Resume Platform v3: the tailor worker persists the record itself and
+  // echoes record_id in the job result — echo it back so save-record settles
+  // idempotently (attaches ats_scores + fires the streak, never duplicates).
   const saveRecord = useCallback(
     async (
       jdAnalysisData: JDAnalysis,
       tailoredResume: TailoredFullResume,
       jdRawText: string,
       atsScores?: ATSScores,
+      workerRecordId?: string,
     ) => {
       try {
         const resp = await apiService.saveTailoringRecord({
+          record_id: workerRecordId || recordIdRef.current || undefined,
           jd_text: jdRawText,
           jd_analysis: jdAnalysisData,
           tailored_resume: tailoredResume,
           ats_scores: atsScores || undefined,
           base_resume_filename: activeResumeRef.current?.filename || '',
-          base_resume_s3_key: activeResumeRef.current?.s3_key || '',
         });
         if (resp.error) {
+          // The worker-persisted record exists server-side even though the
+          // settle failed — keep the id so downloads/regens still attach.
+          if (workerRecordId) recordIdRef.current = workerRecordId;
           toast.error("Couldn't save this tailoring to your history", {
             description: resp.error,
           });
@@ -491,7 +497,13 @@ export default function TailorPage() {
         timestamp: Date.now(),
       },
     ]);
-    await saveRecord(analysis, tailoredResume, jdText);
+    await saveRecord(
+      analysis,
+      tailoredResume,
+      jdText,
+      undefined,
+      combined.data.record_id,
+    );
   }, [jdText, saveRecord, applyUsage, refreshUsage, upgrade]);
 
   const handleCancel = useCallback(() => {
@@ -549,6 +561,9 @@ export default function TailorPage() {
       result.jd_analysis,
       regenFeedback.trim(),
       ctrl.signal,
+      // Naming the record lets the backend refuse the 6th version up front
+      // (409 version_limit_reached) before spending an LLM call.
+      recordIdRef.current || undefined,
     );
 
     if (ctrl.signal.aborted) {
@@ -558,6 +573,15 @@ export default function TailorPage() {
     setRegenerating(false);
 
     if (resp.error) {
+      if (
+        resp.status === 409 &&
+        (resp.errorPayload as { error?: string } | undefined)?.error ===
+          'version_limit_reached'
+      ) {
+        setRegenError(VERSION_LIMIT_MESSAGE);
+        toast.error('Version limit reached', { description: VERSION_LIMIT_MESSAGE });
+        return;
+      }
       if (resp.status === 403) {
         upgrade.open({
           feature: 'tailor',
@@ -598,9 +622,14 @@ export default function TailorPage() {
           })
           .then((r) => {
             if (r.error) {
-              toast.error("Couldn't save this version to your history", {
-                description: r.error,
-              });
+              const capped =
+                r.status === 409 &&
+                (r.errorPayload as { error?: string } | undefined)?.error ===
+                  'version_limit_reached';
+              toast.error(
+                capped ? 'Version limit reached' : "Couldn't save this version to your history",
+                { description: capped ? VERSION_LIMIT_MESSAGE : r.error },
+              );
             }
           })
           .catch(() => {

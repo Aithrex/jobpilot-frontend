@@ -1,7 +1,7 @@
 /**
- * useGuestFlow — the guest onboarding state machine (spec v2):
- * upload → parse poll → matches poll → single tailor poll → polished
- * PDF/DOCX download via short-lived capability tokens.
+ * useGuestFlow — the guest onboarding state machine (spec v2 + v3 deltas):
+ * upload → parse poll → profile reveal → matches poll → single tailor poll →
+ * polished PDF/DOCX download via short-lived capability tokens.
  *
  * Extracted from pages/Start.tsx so the landing hero can embed the same flow
  * through GuestDropzone + this hook. All backend calls go through apiService;
@@ -29,10 +29,14 @@ import {
 } from "@/lib/guest";
 import type {
   GuestDownloadFormat,
+  GuestEmptyReason,
   GuestJobMatch,
+  GuestJobProgress,
   GuestParseResult,
+  GuestProfileBlock,
   GuestQuotaError,
   GuestSession,
+  GuestSourcesReport,
   GuestTailorResult,
 } from "@/types/guest";
 import type { JobStatus } from "@/types/resume";
@@ -75,9 +79,79 @@ function writeTailoredPointer(pointer: TailoredPointer | null): void {
   }
 }
 
-export type GuestStep = "hero" | "parsing" | "matches" | "tailor";
+export type GuestStep = "hero" | "parsing" | "profile" | "matches" | "tailor";
 export type GuestMatchesState = "idle" | "loading" | "ready" | "error" | "cta";
 export type GuestTailorState = "working" | "done" | "cta" | "error";
+
+/** Honest completion metadata from the guest_matches result (v3 additive) —
+ * drives "We found N strong matches" counts and the distinct empty vs
+ * sources-unavailable vs low-signal states. */
+export interface GuestMatchesMeta {
+  totalConsidered?: number;
+  emptyReason?: GuestEmptyReason | null;
+  sourcesReport?: GuestSourcesReport | null;
+}
+
+/** Title defense at the guest boundary: some source rows carry the role under
+ * job_title/role — resolve to ONE trimmed `title` before anything renders or
+ * keys off it (backend normalizes too; belt-and-braces). */
+export function normalizeGuestMatch(m: GuestJobMatch): GuestJobMatch {
+  let title = "";
+  for (const t of [m.title, m.job_title, m.role]) {
+    if (typeof t === "string" && t.trim()) {
+      title = t.trim();
+      break;
+    }
+  }
+  return { ...m, title };
+}
+
+/**
+ * Back-compat profile synthesis: when the parse result carries no `profile`
+ * block (pre-v3 backend), derive one client-side from the parsed structured
+ * resume — ONLY from fields genuinely present, never invented. Returns null
+ * when nothing presentable was extracted (the flow then skips the reveal).
+ */
+export function profileFromStructured(
+  structured: Record<string, unknown> | null,
+): GuestProfileBlock | null {
+  if (!structured) return null;
+  const s = structured as {
+    contact?: { name?: unknown; location?: unknown };
+    summary?: unknown;
+    skills?: unknown;
+    experience?: Array<{ title?: unknown }>;
+  };
+  const out: GuestProfileBlock = {};
+
+  const name = typeof s.contact?.name === "string" ? s.contact.name.trim() : "";
+  if (name) out.first_name = name.split(/\s+/)[0];
+
+  const title = s.experience?.[0]?.title;
+  if (typeof title === "string" && title.trim()) out.headline_title = title.trim();
+
+  // skills may be a flat list or grouped Record<string, string[]>.
+  const flat: string[] = [];
+  if (Array.isArray(s.skills)) {
+    for (const sk of s.skills) if (typeof sk === "string" && sk.trim()) flat.push(sk.trim());
+  } else if (s.skills && typeof s.skills === "object") {
+    for (const group of Object.values(s.skills as Record<string, unknown>)) {
+      if (!Array.isArray(group)) continue;
+      for (const sk of group) if (typeof sk === "string" && sk.trim()) flat.push(sk.trim());
+    }
+  }
+  if (flat.length) out.skills = flat.slice(0, 10);
+
+  const loc = s.contact?.location;
+  if (typeof loc === "string" && loc.trim()) out.location = loc.trim();
+
+  if (typeof s.summary === "string" && s.summary.trim()) {
+    const summary = s.summary.trim();
+    out.summary_short = summary.length > 220 ? `${summary.slice(0, 217)}...` : summary;
+  }
+
+  return Object.keys(out).length ? out : null;
+}
 
 /** Conversion CTA copy (quota / capacity / challenge) — rendered as a card
  * with sign-in + create-account actions, never as an error. */
@@ -183,14 +257,22 @@ export function useGuestFlow({ enabled, onUnavailable }: UseGuestFlowOptions) {
   const [tailorsLimit, setTailorsLimit] = useState(GUEST_TAILOR_LIMIT_DEFAULT);
 
   const [parseStatus, setParseStatus] = useState<JobStatus | null>(null);
+  /** Server-emitted parse sub-phase (v3) — null until the first marker. */
+  const [parseProgress, setParseProgress] = useState<GuestJobProgress | null>(null);
   const [parseError, setParseError] = useState<string | null>(null);
   const [parseCta, setParseCta] = useState<GuestCta | null>(null);
   /** Structured resume from the completed parse — drives the parsing morph
    * preview and the original-vs-tailored comparison. Kept in memory only. */
   const [parsedResume, setParsedResume] = useState<Record<string, unknown> | null>(null);
+  /** Profile block for the reveal step: server-provided when present,
+   * otherwise synthesized client-side from `structured` (back-compat). */
+  const [profile, setProfile] = useState<GuestProfileBlock | null>(null);
 
   const [matches, setMatches] = useState<GuestJobMatch[]>([]);
   const [matchesState, setMatchesState] = useState<GuestMatchesState>("idle");
+  /** Server-emitted matches sub-phase (v3) — null until the first marker. */
+  const [matchesProgress, setMatchesProgress] = useState<GuestJobProgress | null>(null);
+  const [matchesMeta, setMatchesMeta] = useState<GuestMatchesMeta>({});
   const [matchesError, setMatchesError] = useState<string | null>(null);
   const [matchesCta, setMatchesCta] = useState<GuestCta | null>(null);
 
@@ -292,9 +374,13 @@ export function useGuestFlow({ enabled, onUnavailable }: UseGuestFlowOptions) {
     setMatchesState("loading");
     setMatchesError(null);
     setMatchesCta(null);
+    setMatchesProgress(null);
     const resp = await apiService.guestMatches(
       gid,
       getDeviceToken() ?? undefined,
+      undefined,
+      undefined,
+      setMatchesProgress,
     );
     if (isUnavailable(resp.status)) {
       onUnavailable();
@@ -323,8 +409,14 @@ export function useGuestFlow({ enabled, onUnavailable }: UseGuestFlowOptions) {
       return;
     }
     // Render EXACTLY what the server returns — it caps at 5. No client-side
-    // slicing, no hidden rows, no blur.
-    setMatches(resp.data.jobs ?? []);
+    // slicing, no hidden rows, no blur. Titles are normalized at this
+    // boundary (job_title/role variants) before anything renders.
+    setMatches((resp.data.jobs ?? []).map(normalizeGuestMatch));
+    setMatchesMeta({
+      totalConsidered: resp.data.total_considered,
+      emptyReason: resp.data.empty_reason ?? null,
+      sourcesReport: resp.data.sources_report ?? null,
+    });
     setMatchesState("ready");
   }, [onUnavailable]);
 
@@ -343,7 +435,9 @@ export function useGuestFlow({ enabled, onUnavailable }: UseGuestFlowOptions) {
       setParseError(null);
       setParseCta(null);
       setParseStatus(null);
+      setParseProgress(null);
       setParsedResume(null);
+      setProfile(null);
       setStep("parsing");
 
       const fp = fingerprintRef.current ?? (await getFingerprintHash());
@@ -386,6 +480,7 @@ export function useGuestFlow({ enabled, onUnavailable }: UseGuestFlowOptions) {
         180000,
         undefined,
         setParseStatus,
+        setParseProgress,
       );
       if (poll.error || !poll.data) {
         setParseError(
@@ -418,8 +513,22 @@ export function useGuestFlow({ enabled, onUnavailable }: UseGuestFlowOptions) {
           });
         }
       }
-      setStep("matches");
-      void loadMatches();
+      // Profile reveal (v3): prefer the server's profile block; synthesize
+      // from structured when absent (back-compat). If neither yields any
+      // genuinely extracted field, skip straight to matches — never show an
+      // empty reveal.
+      const serverProfile =
+        poll.data.profile && Object.keys(poll.data.profile).length
+          ? poll.data.profile
+          : null;
+      const revealProfile = serverProfile ?? profileFromStructured(structured ?? null);
+      if (revealProfile) {
+        setProfile(revealProfile);
+        setStep("profile");
+      } else {
+        setStep("matches");
+        void loadMatches();
+      }
     },
     [onUnavailable, loadMatches, applyQuota],
   );
@@ -558,12 +667,19 @@ export function useGuestFlow({ enabled, onUnavailable }: UseGuestFlowOptions) {
   const backToMatches = useCallback(() => setStep("matches"), []);
   const backToHero = useCallback(() => setStep("hero"), []);
 
+  /** Profile reveal → matches ("Find my matches" or the idle auto-advance). */
+  const continueToMatches = useCallback(() => {
+    setStep("matches");
+    void loadMatches();
+  }, [loadMatches]);
+
   return {
     // step machine
     step,
     backToMatches,
     backToHero,
     goToMatches,
+    continueToMatches,
     // identity / recognition
     session,
     guestName,
@@ -577,12 +693,17 @@ export function useGuestFlow({ enabled, onUnavailable }: UseGuestFlowOptions) {
     hasPendingFile: !!fileRef.current,
     pendingFileName: fileRef.current?.name ?? null,
     parseStatus,
+    parseProgress,
     parseError,
     parseCta,
     parsedResume,
+    // profile reveal
+    profile,
     // matches
     matches,
     matchesState,
+    matchesProgress,
+    matchesMeta,
     matchesError,
     matchesCta,
     loadMatches,

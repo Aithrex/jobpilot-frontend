@@ -1,52 +1,32 @@
 import { Link } from 'react-router-dom';
-import {
-  Building2,
-  Clock,
-  EyeOff,
-  FileSearch,
-  KeyRound,
-  ShieldCheck,
-} from 'lucide-react';
+import { Building2, Clock, ShieldCheck } from 'lucide-react';
 import { Container, Reveal, RevealGroup, RevealItem } from './_shared';
 
 /**
- * Compact trust band — six short, honest facts and a link to the full
- * Privacy Policy. Precise language by contract: the device token is a
- * pseudonymous first-party signal (never described as anonymous), and
- * sponsorship wording is "signals from public filings", never "verified
- * sponsor".
+ * Trust band (v8) — exactly three trust points and a link to the full
+ * Privacy Policy. Precise language by contract: sponsorship wording is
+ * "signals from public filings" elsewhere, never "verified sponsor"; the
+ * guest-data retention sentence is the EXACT S3-versioning truth from the
+ * v8 brief (30 days + a further 90 days of residual encrypted backups) —
+ * never a claim of immediate physical erasure. No fabricated metrics,
+ * logos, or testimonials.
  */
 
-const FACTS = [
+const POINTS = [
   {
     Icon: Building2,
-    title: 'Direct employer sources',
-    body: 'Straight from company career sites, never a resold feed.',
-  },
-  {
-    Icon: FileSearch,
-    title: 'Sponsorship from public filings',
-    body: 'Public filing data, shown as signals, never guarantees.',
+    title: 'Real job sources',
+    body: 'Openings come straight from company career sites such as Workday, Greenhouse, Lever, and Ashby. Never a resold or recycled feed.',
   },
   {
     Icon: ShieldCheck,
-    title: 'IntegrityGuard',
-    body: 'Never invents employers, titles, dates, or skills.',
+    title: 'Tailoring without invented facts',
+    body: 'IntegrityGuard locks your real employers, titles, dates, and skills. Every tailored line is rephrased from your own experience, never fabricated.',
   },
   {
     Icon: Clock,
-    title: 'Guest data has a clock',
-    body: 'Claim it with a free account, or it is deleted after 30 days.',
-  },
-  {
-    Icon: KeyRound,
-    title: 'Fair-use protection',
-    body: 'A first-party device token and HMAC-protected signals keep the free trial fair.',
-  },
-  {
-    Icon: EyeOff,
-    title: 'Never sold, never ads',
-    body: 'We do not sell your personal information or use it for advertising.',
+    title: 'Private, time-limited guest data',
+    body: 'Unclaimed guest uploads are deleted from our systems within 30 days; residual encrypted backups expire within a further 90 days. Claim your work with a free account to keep it.',
   },
 ] as const;
 
@@ -55,11 +35,9 @@ export function TrustBand() {
     <section id="trust" aria-label="Trust and privacy" className="scroll-mt-24 border-t border-border py-14 sm:py-16">
       <Container>
         <Reveal className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-end">
-          <div>
-            <h2 className="font-display text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-              Built to be trusted with your resume
-            </h2>
-          </div>
+          <h2 className="font-display text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+            Built to be trusted with your resume
+          </h2>
           <Link
             to="/privacy"
             className="focus-ring-visible rounded-control text-sm font-medium text-primary underline-offset-2 hover:underline"
@@ -68,8 +46,8 @@ export function TrustBand() {
           </Link>
         </Reveal>
 
-        <RevealGroup as="ul" className="mt-8 grid gap-x-8 gap-y-6 sm:grid-cols-2 lg:grid-cols-3">
-          {FACTS.map(({ Icon, title, body }) => (
+        <RevealGroup as="ul" className="mt-8 grid gap-x-8 gap-y-6 sm:grid-cols-3">
+          {POINTS.map(({ Icon, title, body }) => (
             <RevealItem as="li" key={title} className="flex items-start gap-3">
               <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground">
                 <Icon className="h-4 w-4" aria-hidden />

@@ -86,22 +86,16 @@ const STATUS_CHIP: Record<string, { label: string; cls: string }> = {
 
 export default function TailoredPage() {
   const [records, setRecords] = useState<TailoringRecord[]>([]);
-  const [legacyFiles, setLegacyFiles] = useState<
-    { s3_key: string; filename?: string; job_title?: string; generated_at?: string }[]
-  >([]);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState<string | null>(null);
-  const [legacyOpen, setLegacyOpen] = useState(false);
   const [diffRecord, setDiffRecord] = useState<TailoringRecord | null>(null);
   // Destructive deletes are confirmed through an AlertDialog (never
-  // window.confirm). One controlled dialog serves both delete flavours.
+  // window.confirm).
   const [pendingDelete, setPendingDelete] = useState<
-    | { kind: 'record'; id: string; label: string }
-    | { kind: 'legacy'; s3Key: string; label: string }
-    | null
+    { id: string; label: string } | null
   >(null);
 
   // Filters
@@ -121,16 +115,12 @@ export default function TailoredPage() {
   const fetchAll = useCallback(async () => {
     setLoading(true);
     setError('');
-    const [recResp, legResp] = await Promise.all([
-      apiService.listTailoringRecords(),
-      apiService.listGeneratedResumes(),
-    ]);
+    // Resume Platform v3: generated files live on tailoring-record version
+    // refs (versions[].files) — the legacy GET /resume/generated list is
+    // dead (always []) and is no longer queried.
+    const recResp = await apiService.listTailoringRecords();
     if (recResp.data) setRecords((recResp.data.records || []) as TailoringRecord[]);
-    if (legResp.data) setLegacyFiles((legResp.data.generated || []) as any);
-    // Unified error handling — a failed legacy-files list no longer hides
-    // those downloads silently; either failure surfaces with a retry.
-    const err = recResp.error || legResp.error;
-    if (err) setError(err);
+    if (recResp.error) setError(recResp.error);
     setLoading(false);
   }, []);
   useEffect(() => { fetchAll(); }, [fetchAll]);
@@ -350,16 +340,28 @@ export default function TailoredPage() {
     setDeleting(recordId);
     const resp = await apiService.deleteTailoringRecord(recordId);
     setDeleting(null);
-    if (resp.error) { toast.error('Delete failed'); return; }
+    if (resp.error) {
+      // 502 deletion_pending: some generated files could not be removed yet;
+      // the backend queued the record for automatic cleanup. Keep the row —
+      // never remove it optimistically.
+      const payload = resp.errorPayload as
+        | { error?: string; deletion_pending?: boolean }
+        | undefined;
+      if (
+        resp.status === 502 &&
+        (payload?.error === 'deletion_pending' || payload?.deletion_pending)
+      ) {
+        toast.info('Cleanup in progress', {
+          description:
+            'Some files could not be removed yet. This record is queued for cleanup and will be deleted automatically.',
+        });
+        return;
+      }
+      toast.error('Delete failed');
+      return;
+    }
     toast.success('Record deleted');
     setRecords(prev => prev.filter(r => r.record_id !== recordId));
-  }, []);
-
-  const handleDeleteLegacy = useCallback(async (s3Key: string) => {
-    const resp = await apiService.deleteResume(s3Key);
-    if (resp.error) { toast.error('Delete failed'); return; }
-    toast.success('File deleted');
-    setLegacyFiles(prev => prev.filter(x => x.s3_key !== s3Key));
   }, []);
 
   if (loading) {
@@ -373,7 +375,7 @@ export default function TailoredPage() {
   }
 
   // Records failed and there's nothing to show — full recoverable error state.
-  if (error && records.length === 0 && legacyFiles.length === 0) {
+  if (error && records.length === 0) {
     return (
       <PanelError
         title="Couldn't load your tailored resumes"
@@ -674,7 +676,7 @@ export default function TailoredPage() {
                     title="Delete record"
                     aria-label={`Delete tailoring record: ${title}`}
                     disabled={deleting === rec.record_id}
-                    onClick={() => setPendingDelete({ kind: 'record', id: rec.record_id, label: title })}
+                    onClick={() => setPendingDelete({ id: rec.record_id, label: title })}
                     className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-control text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50 ${focusRing}`}
                   >
                     <Trash2 className="w-4 h-4" aria-hidden="true" />
@@ -818,85 +820,16 @@ export default function TailoredPage() {
         </Suspense>
       )}
 
-      {/* Earlier downloads — preserves access to pre-versioning generated files */}
-      {legacyFiles.length > 0 && (
-        <div className="rounded-container border border-border bg-card/60 overflow-hidden">
-          <button
-            type="button"
-            onClick={() => setLegacyOpen(o => !o)}
-            aria-expanded={legacyOpen}
-            aria-controls="legacy-downloads"
-            className={`w-full min-h-11 px-4 py-2.5 flex items-center justify-between hover:bg-muted/50 ${focusRing}`}
-          >
-            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Earlier downloads ({legacyFiles.length})
-            </span>
-            <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${legacyOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
-          </button>
-          {legacyOpen && (
-            <div id="legacy-downloads" className="border-t border-border p-2 space-y-1.5">
-              {legacyFiles.map(f => {
-                const dlKey = `legacy-${f.s3_key}`;
-                const label = f.job_title || f.filename || 'Tailored resume';
-                return (
-                  <div key={f.s3_key} className="flex items-center gap-3 px-2 py-1.5 rounded-control hover:bg-muted/60">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs text-foreground truncate">
-                        {label}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatDate(f.generated_at || '')}
-                      </p>
-                    </div>
-                    <button
-                      onClick={async () => {
-                        setDownloading(dlKey);
-                        try {
-                          const blob = await apiService.downloadResumeFile(f.s3_key);
-                          const u = URL.createObjectURL(blob);
-                          const a = document.createElement('a');
-                          a.href = u; a.download = f.filename || 'resume.pdf';
-                          a.click(); URL.revokeObjectURL(u);
-                        } catch { toast.error('Download failed'); }
-                        setDownloading(null);
-                      }}
-                      disabled={downloading === dlKey}
-                      className={`min-h-11 text-xs px-3 rounded-control text-muted-foreground hover:text-primary hover:bg-primary/10 disabled:opacity-50 ${focusRing}`}
-                    >
-                      {downloading === dlKey ? 'Downloading…' : 'Download'}
-                    </button>
-                    <button
-                      type="button"
-                      aria-label={`Delete earlier download: ${label}`}
-                      onClick={() => setPendingDelete({ kind: 'legacy', s3Key: f.s3_key, label })}
-                      className={`flex h-11 w-11 shrink-0 items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-control ${focusRing}`}
-                    >
-                      <Trash2 className="w-4 h-4" aria-hidden="true" />
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Destructive-delete confirmation (records + earlier downloads) */}
+      {/* Destructive-delete confirmation */}
       <AlertDialog
         open={pendingDelete !== null}
         onOpenChange={(open) => { if (!open) setPendingDelete(null); }}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              {pendingDelete?.kind === 'record'
-                ? 'Delete this tailoring record?'
-                : 'Delete this earlier download?'}
-            </AlertDialogTitle>
+            <AlertDialogTitle>Delete this tailoring record?</AlertDialogTitle>
             <AlertDialogDescription>
-              {pendingDelete?.kind === 'record'
-                ? `“${pendingDelete.label}” and all its versions will be permanently deleted. This cannot be undone.`
-                : `“${pendingDelete?.label ?? ''}” will be permanently deleted. This cannot be undone.`}
+              {`“${pendingDelete?.label ?? ''}” and all its versions will be permanently deleted. This cannot be undone.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -905,8 +838,7 @@ export default function TailoredPage() {
               className="min-h-11 bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() => {
                 if (!pendingDelete) return;
-                if (pendingDelete.kind === 'record') handleDeleteRecord(pendingDelete.id);
-                else handleDeleteLegacy(pendingDelete.s3Key);
+                handleDeleteRecord(pendingDelete.id);
                 setPendingDelete(null);
               }}
             >

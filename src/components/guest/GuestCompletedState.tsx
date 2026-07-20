@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowLeft, Check, Download, Loader2, ShieldCheck } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -117,6 +118,7 @@ export function GuestCompletedState({
   onDownload,
   onBack,
 }: GuestCompletedStateProps) {
+  const reduceMotion = useReducedMotion();
   const resume: TailoredFullResume = tailored.tailored_resume;
   const original = parsedResume as Resumeish | null;
   const canCompare = !!original && !!(original.summary || original.experience?.length);
@@ -136,7 +138,9 @@ export function GuestCompletedState({
         Back to matches
       </button>
 
-      <div>
+      {/* Morph target: continues the selected-card -> compare-header morph
+          when the tailor finishes (same layoutId as the dashboard card). */}
+      <motion.div layoutId={reduceMotion ? undefined : 'guest-tailor-card'}>
         {activeMatch && (
           <h2 className="text-balance text-xl font-bold tracking-tight sm:text-2xl">
             {activeMatch.title} · {activeMatch.company}
@@ -150,7 +154,7 @@ export function GuestCompletedState({
           Your tailored resume keeps your real employers, titles, dates, and skills. Review it
           before you send it.
         </p>
-      </div>
+      </motion.div>
 
       {tailored.record_id ? (
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -204,7 +208,7 @@ export function GuestCompletedState({
             ))}
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-2">
+          <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-2">
             <Card className={cn(view !== 'original' && 'hidden', 'lg:block')}>
               <CardContent className="p-5 sm:p-6">
                 <p className="mb-4 inline-flex rounded-full border border-border bg-muted/40 px-2.5 py-1 text-[11px] font-semibold text-muted-foreground">
@@ -239,8 +243,8 @@ export function GuestCompletedState({
       )}
 
       <SignupCta
-        title="You've used your guest tailor. Nice work."
-        body="Create a free account to save your resume, keep these matches and continue in your career workspace."
+        title="You have used your guest tailoring. Nice work."
+        body="Create a free account to save your work, see the full job workspace, and tailor up to 5 resumes per day."
       />
     </div>
   );

@@ -15,6 +15,7 @@ import { ChipsInput } from '@/components/job-search/ChipsInput';
 import { JobCard } from '@/components/job-search/JobCard';
 import { useAutoSync } from '@/hooks/useAutoSync';
 import { apiService } from '@/lib/api';
+import { jobTitleOf } from '@/lib/careerJobs';
 // (job listings are free & auth-only — no entitlement/upgrade wiring here)
 import { cn } from '@/lib/utils';
 import type {
@@ -210,6 +211,8 @@ function pageWindow(page: number, count: number): number[] {
 function toJob(j: WorkdayJob, fallbackSource: string): Job {
   return {
     ...j,
+    // Boundary defense: some rows carry the role under job_title/role.
+    title: jobTitleOf(j),
     logo: j.logo ?? '',
     description: j.description ?? '',
     salary: j.salary ?? '',

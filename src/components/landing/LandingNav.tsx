@@ -6,7 +6,8 @@ import { startHref } from './_shared';
 /** In-page anchors to real sections only. Hidden on mobile, where the bar
  *  stays compact: logo + Sign in + the primary CTA (no hamburger needed). */
 const SECTION_LINKS = [
-  { label: 'Why Aspirely', href: '#why' },
+  { label: 'How it works', href: '#how' },
+  { label: 'Workspace', href: '#workspace' },
   { label: 'Trust', href: '#trust' },
 ];
 

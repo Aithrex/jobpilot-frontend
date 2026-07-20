@@ -4,22 +4,25 @@ import { isGuestOnboardingEnabled, markGuestOnboardingUnavailable } from '@/lib/
 import { useGuestFlow } from '@/hooks/useGuestFlow';
 import { LandingNav } from './LandingNav';
 import { HeroWorkspace } from './HeroWorkspace';
-import { WhyAspirely } from './WhyAspirely';
+import { HowItWorksStory } from './HowItWorksStory';
+import { EcosystemPreview } from './EcosystemPreview';
 import { TrustBand } from './TrustBand';
 import { FinalCta } from './FinalCta';
 import { LandingFooter } from './LandingFooter';
 
 /**
- * Aspirely's public landing: the product IS the page. Four sections,
+ * Aspirely's public landing (v8): the product IS the page. Four sections,
  * conversion first, honest everywhere:
  *
  *   1 Floating glass nav (the only blur on the page)
  *   2 Hero + LIVE guest workspace (#try): the real upload control plus an
- *     interactive fictional preview; the real upload → parse → up to 5
- *     matches → one tailored resume flow runs right here on `/`
- *   3 Why Aspirely (#why): ONE editorial proof section with the page's single
- *     product screenshot (fictional data)
- *   4 Trust band (#trust) + final CTA + compact footer
+ *     interactive fictional preview; the real upload → parse → profile →
+ *     up to 5 matches → one tailored resume flow runs right here on `/`
+ *   3 How it works (#how): Upload -> Match -> Tailor as one short animated
+ *     pipeline
+ *   4 Workspace (#workspace): the five-tab ecosystem preview (real shots +
+ *     live micro-demos, fictional data)
+ *   5 Trust band (#trust) + final CTA + compact footer
  *
  * ONE useGuestFlow controller lives here (never a second on another route —
  * /start redirects back to /#try). The moment the flow leaves the idle hero,
@@ -107,7 +110,8 @@ export default function LandingExperience() {
             between the guest and their results. */}
         {!flowActive && (
           <>
-            <WhyAspirely />
+            <HowItWorksStory />
+            <EcosystemPreview />
             <TrustBand />
             <FinalCta />
           </>

@@ -66,6 +66,15 @@ export interface AdminUserOverride {
   updated_by?: string;
 }
 
+/**
+ * User-facing copy for the bounded-refinement cap (Resume Platform v3):
+ * a tailoring record holds at most 5 versions; the backend answers the 6th
+ * refinement (regenerate / version save / download auto-append) with
+ * 409 {"error":"version_limit_reached","limit":5}.
+ */
+export const VERSION_LIMIT_MESSAGE =
+  "This tailored resume already has 5 versions. Start a new tailoring session to continue.";
+
 interface ApiResponse<T> {
   data?: T;
   error?: string;
@@ -863,12 +872,30 @@ class ApiService {
     maxWaitMs = 180000,
     signal?: AbortSignal,
     onStatus?: (status: import("../types/resume").JobStatus) => void,
+    // Honest sub-phase marker the backend writes into job.result.progress
+    // while processing (v3: guest_parse + guest_matches emit phases).
+    // Additive/optional — existing callers are unaffected.
+    onProgress?: (p: import("../types/guest").GuestJobProgress) => void,
   ): Promise<ApiResponse<T>> {
-    return this.pollJob<T>(jobId, maxWaitMs, signal, undefined, onStatus, {
-      endpoint: (id) =>
-        `/resume/guest/job/${encodeURIComponent(id)}?guest_id=${encodeURIComponent(guestId)}`,
-      skipAuth: true,
-    });
+    return this.pollJob<T>(
+      jobId,
+      maxWaitMs,
+      signal,
+      onProgress
+        ? (partial) => {
+            const p = (
+              partial as { progress?: import("../types/guest").GuestJobProgress }
+            ).progress;
+            if (p?.phase) onProgress(p);
+          }
+        : undefined,
+      onStatus,
+      {
+        endpoint: (id) =>
+          `/resume/guest/job/${encodeURIComponent(id)}?guest_id=${encodeURIComponent(guestId)}`,
+        skipAuth: true,
+      },
+    );
   }
 
   /**
@@ -980,6 +1007,9 @@ class ApiService {
     deviceToken?: string,
     signal?: AbortSignal,
     onStatus?: (status: import("../types/resume").JobStatus) => void,
+    // v3: guest_matches emits reading_resume/searching_sources/ranking/
+    // finalizing progress markers — forwarded on every poll tick.
+    onProgress?: (p: import("../types/guest").GuestJobProgress) => void,
   ): Promise<ApiResponse<import("../types/guest").GuestMatchesResult>> {
     const submit = await this.request<
       import("../types/guest").GuestMatchesResult | { job_id: string }
@@ -1010,6 +1040,7 @@ class ApiService {
         300000,
         signal,
         onStatus,
+        onProgress,
       );
     }
     return submit as ApiResponse<import("../types/guest").GuestMatchesResult>;
@@ -1410,7 +1441,30 @@ class ApiService {
       clearTimeout(timeoutId);
       const data = await response.json().catch(() => ({}));
       if (response.status === 401) {
+        if (token) {
+          this.logout();
+          if (typeof window !== "undefined") {
+            window.dispatchEvent(new CustomEvent("auth:session-expired"));
+          }
+        }
         return { error: "Session expired. Please sign in again." };
+      }
+      // Resume Platform v3 upload failures — map the machine-readable error
+      // codes to user-safe copy (these are operational failures, not auth).
+      if (response.status === 503 && data.error === "storage_unavailable") {
+        return {
+          error:
+            "File storage is temporarily unavailable. Please try again in a few minutes.",
+          status: 503,
+          errorPayload: data,
+        };
+      }
+      if (response.status === 413 || data.error === "file_too_large") {
+        return {
+          error: "File too large. The maximum size is 5 MB.",
+          status: 413,
+          errorPayload: data,
+        };
       }
       if (!response.ok)
         return { error: data.error || `HTTP ${response.status}` };
@@ -1594,6 +1648,10 @@ class ApiService {
       // Post-backfill base resume (present on new backends) — enables
       // diff-vs-base without a second round-trip.
       base_resume?: import("../types/resume").TailoredFullResume;
+      // Resume Platform v3: the worker persists the tailoring record itself
+      // and echoes its id — callers MUST pass this to saveTailoringRecord so
+      // the settle is idempotent (never a duplicate record).
+      record_id?: string;
     }>
   > {
     const submitResp = await this.request<{ job_id: string }>(
@@ -1621,6 +1679,7 @@ class ApiService {
       jd_analysis: import("../types/resume").JDAnalysis;
       tailored_resume: import("../types/resume").TailoredFullResume;
       base_resume?: import("../types/resume").TailoredFullResume;
+      record_id?: string;
     }>(
       submitResp.data.job_id,
       120000,
@@ -1642,6 +1701,10 @@ class ApiService {
     jdAnalysis: import("../types/resume").JDAnalysis,
     userFeedback: string,
     signal?: AbortSignal,
+    // Resume Platform v3: naming the record lets the backend enforce the
+    // 5-version cap up front (409 version_limit_reached) BEFORE spending an
+    // LLM call whose result could never be saved.
+    recordId?: string,
   ): Promise<
     ApiResponse<{
       tailored_resume: import("../types/resume").TailoredFullResume;
@@ -1655,6 +1718,7 @@ class ApiService {
           tailored_resume: tailoredResume,
           jd_analysis: jdAnalysis,
           user_feedback: userFeedback,
+          record_id: recordId || undefined,
         }),
       },
       30000,
@@ -1717,6 +1781,12 @@ class ApiService {
     );
   }
 
+  /**
+   * Settle a tailoring session record. Resume Platform v3: the tailor worker
+   * persists the record itself and returns `record_id` in the job result —
+   * ALWAYS echo that id here so the backend settles idempotently (attaches
+   * ats_scores + fires the streak) instead of creating a duplicate record.
+   */
   async saveTailoringRecord(data: {
     record_id?: string;
     jd_text?: string;
@@ -1724,7 +1794,6 @@ class ApiService {
     tailored_resume?: any;
     ats_scores?: any;
     base_resume_filename?: string;
-    base_resume_s3_key?: string;
   }): Promise<ApiResponse<{ record_id: string; updated?: boolean }>> {
     let tz: string | undefined;
     try {
@@ -1742,12 +1811,16 @@ class ApiService {
   // Resume management endpoints
   // ============================================
 
-  async listBaseResumes(): Promise<ApiResponse<{ versions: any[] }>> {
+  /**
+   * List the user's uploaded resume assets (Resume Platform v3).
+   * Rows are identified by `resume_id`; there is no s3_key on a row.
+   * (GET /api/resume/generated is legacy/dead — it always returns [] on the
+   * v3 database, so it is no longer called anywhere.)
+   */
+  async listBaseResumes(): Promise<
+    ApiResponse<{ versions: import("../types/resume").ResumeAssetRow[] }>
+  > {
     return this.request("/resume/versions");
-  }
-
-  async listGeneratedResumes(): Promise<ApiResponse<{ generated: any[] }>> {
-    return this.request("/resume/generated");
   }
 
   async listTailoringRecords(): Promise<
@@ -1889,25 +1962,40 @@ class ApiService {
     );
   }
 
-  async setActiveResume(s3Key: string): Promise<ApiResponse<any>> {
+  /**
+   * PUT /api/resume/active {resume_id} (Resume Platform v3 — the s3_key form
+   * is retired). Errors the caller should surface: 404 (unknown resume) and
+   * 409 {"error":"resume_not_parsed"} when the asset has not finished parsing.
+   */
+  async setActiveResume(
+    resumeId: string,
+  ): Promise<ApiResponse<{ message: string; resume_id: string }>> {
     return this.request("/resume/active", {
       method: "PUT",
-      body: JSON.stringify({ s3_key: s3Key }),
+      body: JSON.stringify({ resume_id: resumeId }),
     });
   }
 
-  async deleteResume(s3Key: string): Promise<ApiResponse<any>> {
-    return this.request(`/resume/file/${encodeURIComponent(s3Key)}`, {
+  /** DELETE /api/resume/file/<resume_id> — deletes a resume asset (was s3_key). */
+  async deleteResume(
+    resumeId: string,
+  ): Promise<ApiResponse<{ message: string }>> {
+    return this.request(`/resume/file/${encodeURIComponent(resumeId)}`, {
       method: "DELETE",
     });
   }
 
-  async downloadResumeFile(s3Key: string): Promise<Blob> {
+  /**
+   * Download an owned file. Resume Platform v3: pass a `resume_id` for an
+   * original uploaded file; the legacy s3_key form still works for generated
+   * files referenced from tailoring records.
+   */
+  async downloadResumeFile(resumeIdOrKey: string): Promise<Blob> {
     const token = this.getToken();
     const headers: Record<string, string> = {};
     if (token) headers["Authorization"] = `Bearer ${token}`;
     const response = await fetch(
-      `${this.baseURL}/resume/download-file/${encodeURIComponent(s3Key)}`,
+      `${this.baseURL}/resume/download-file/${encodeURIComponent(resumeIdOrKey)}`,
       {
         headers,
       },
@@ -1954,6 +2042,14 @@ class ApiService {
       clearTimeout(timeoutId);
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
+        // Bounded refinement: downloads can auto-append a version; the 6th
+        // distinct version is refused with 409 version_limit_reached.
+        if (
+          response.status === 409 &&
+          errData.error === "version_limit_reached"
+        ) {
+          return { error: VERSION_LIMIT_MESSAGE };
+        }
         return { error: errData.error || `HTTP ${response.status}` };
       }
       const blob = await response.blob();

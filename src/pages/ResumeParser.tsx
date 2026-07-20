@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef, Fragment } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import { apiService } from "@/lib/api";
+import { apiService, VERSION_LIMIT_MESSAGE } from "@/lib/api";
 import AuthGate from "@/components/AuthGate";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDailyUsage, DailyUsage } from "@/hooks/useDailyUsage";
@@ -1505,8 +1505,9 @@ function TailorTab() {
     toast.success(`Added "${kw}" to your skills`);
   }, []);
 
-  // Fetch active resume info for record storage
-  const activeResumeRef = useRef<{ filename: string; s3_key: string } | null>(
+  // Fetch active resume info for record storage (Resume Platform v3 rows
+  // are identified by resume_id; there is no s3_key on a row).
+  const activeResumeRef = useRef<{ filename: string; resume_id: string } | null>(
     null,
   );
 
@@ -1516,11 +1517,11 @@ function TailorTab() {
     const resp = await apiService.listBaseResumes();
     if (resp.data) {
       const versions = resp.data.versions || [];
-      const active = versions.find((v: any) => v.is_active);
+      const active = versions.find((v) => v.is_active);
       if (active)
         activeResumeRef.current = {
           filename: active.filename,
-          s3_key: active.s3_key,
+          resume_id: active.resume_id,
         };
 
       if (versions.length > 0) {
@@ -1583,23 +1584,34 @@ function TailorTab() {
     };
   }, [editing]);
 
-  // Save tailoring record to backend (fire-and-forget)
+  // Settle the tailoring record on the backend (fire-and-forget).
+  // Resume Platform v3: the tailor worker already persisted the record and
+  // echoed its record_id in the job result — pass it through so the backend
+  // settles idempotently (never creates a duplicate). We still call this for
+  // the ats_scores attach + the once-per-record streak.
   const saveRecord = useCallback(
     async (
       jdAnalysisData: JDAnalysis,
       tailoredResume: TailoredFullResume,
       jdRawText: string,
       atsScores?: ATSScores,
+      workerRecordId?: string,
     ) => {
       try {
         const resp = await apiService.saveTailoringRecord({
+          record_id: workerRecordId || recordIdRef.current || undefined,
           jd_text: jdRawText,
           jd_analysis: jdAnalysisData,
           tailored_resume: tailoredResume,
           ats_scores: atsScores || undefined,
           base_resume_filename: activeResumeRef.current?.filename || "",
-          base_resume_s3_key: activeResumeRef.current?.s3_key || "",
         });
+        if (resp.error && workerRecordId) {
+          // The worker-persisted record exists server-side even though the
+          // settle failed — keep the id so downloads/regens still attach.
+          recordIdRef.current = workerRecordId;
+          return;
+        }
         if (resp.data?.record_id) {
           const isNewRecord = !recordIdRef.current;
           recordIdRef.current = resp.data.record_id;
@@ -1765,7 +1777,15 @@ function TailorTab() {
       },
     ]);
     // Await so downstream downloads / regenerations see recordIdRef set.
-    await saveRecord(analysis, tailoredResume, jdText);
+    // The worker persisted the record and echoed record_id — echo it back
+    // so save-record settles idempotently instead of creating a duplicate.
+    await saveRecord(
+      analysis,
+      tailoredResume,
+      jdText,
+      undefined,
+      combined.data.record_id,
+    );
 
     function cleanup() {
       if (tailorTimerRef.current) clearInterval(tailorTimerRef.current);
@@ -1831,6 +1851,9 @@ function TailorTab() {
       result.jd_analysis,
       regenFeedback.trim(),
       ctrl.signal,
+      // Naming the record lets the backend refuse the 6th version up front
+      // (409 version_limit_reached) before spending an LLM call.
+      recordIdRef.current || undefined,
     );
 
     if (ctrl.signal.aborted) {
@@ -1840,6 +1863,17 @@ function TailorTab() {
     setRegenerating(false);
 
     if (resp.error) {
+      if (
+        resp.status === 409 &&
+        (resp.errorPayload as { error?: string } | undefined)?.error ===
+          "version_limit_reached"
+      ) {
+        setRegenError(VERSION_LIMIT_MESSAGE);
+        toast.error("Version limit reached", {
+          description: VERSION_LIMIT_MESSAGE,
+        });
+        return;
+      }
       setRegenError(resp.error);
       toast.error("Regeneration failed", { description: resp.error });
       return;
@@ -1878,6 +1912,19 @@ function TailorTab() {
             source: "regenerated",
             user_feedback: regenFeedback.trim() || undefined,
             set_current: true,
+          })
+          .then((r) => {
+            // Bounded refinement: surface the 5-version cap; other failures
+            // stay silent (best-effort persistence, matching prior behavior).
+            if (
+              r.status === 409 &&
+              (r.errorPayload as { error?: string } | undefined)?.error ===
+                "version_limit_reached"
+            ) {
+              toast.error("Version limit reached", {
+                description: VERSION_LIMIT_MESSAGE,
+              });
+            }
           })
           .catch(() => { /* silent — best-effort */ });
       }

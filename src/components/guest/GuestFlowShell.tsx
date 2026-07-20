@@ -5,10 +5,12 @@ import { UserRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SignupCta, TailorQuota, stepTransition } from '@/components/guest/_shared';
 import { GuestParsingState } from '@/components/guest/GuestParsingState';
+import { GuestProfileReveal } from '@/components/guest/GuestProfileReveal';
 import { GuestResultsDashboard } from '@/components/guest/GuestResultsDashboard';
 import { GuestTailoringState } from '@/components/guest/GuestTailoringState';
 import { GuestCompletedState } from '@/components/guest/GuestCompletedState';
 import type { GuestFlow, GuestStep } from '@/hooks/useGuestFlow';
+import { toTitleCase } from '@/lib/format';
 
 /**
  * The active guest workspace: everything AFTER a file is picked (parsing →
@@ -55,7 +57,8 @@ export function GuestFlowShell({ flow }: { flow: GuestFlow }) {
   }, [step]);
 
   const recognized = !!session?.recognized;
-  const recognizedName = session?.recognized_name || '';
+  // recognized_name arrives identity-normalized (lowercased); restore display casing.
+  const recognizedName = toTitleCase(session?.recognized_name || '');
   const firstName = guestName?.split(' ')[0];
 
   return (
@@ -106,11 +109,29 @@ export function GuestFlowShell({ flow }: { flow: GuestFlow }) {
             <GuestParsingState
               fileName={flow.pendingFileName}
               parseStatus={flow.parseStatus}
+              progress={flow.parseProgress}
               error={flow.parseError}
               cta={flow.parseCta}
               canRetry={flow.hasPendingFile}
               onRetry={flow.retryUpload}
               onChooseAnother={flow.backToHero}
+            />
+          </motion.section>
+        )}
+
+        {step === 'profile' && flow.profile && (
+          <motion.section
+            key="profile"
+            {...stepMotion}
+            ref={stepSectionRef}
+            tabIndex={-1}
+            className="outline-none"
+            aria-label="What we understood from your resume"
+          >
+            <GuestProfileReveal
+              profile={flow.profile}
+              fileName={flow.pendingFileName}
+              onContinue={flow.continueToMatches}
             />
           </motion.section>
         )}
@@ -149,10 +170,10 @@ export function GuestFlowShell({ flow }: { flow: GuestFlow }) {
                 <SignupCta
                   title={
                     flow.tailoredMatchId
-                      ? 'Your free tailor is used. Nice work.'
-                      : "You've already used your free tailor."
+                      ? 'You have used your guest tailoring. Nice work.'
+                      : 'You have already used your guest tailoring.'
                   }
-                  body="Create a free account to save your resume, keep these matches and continue in your career workspace."
+                  body="Create a free account to save your work, see the full job workspace, and tailor up to 5 resumes per day."
                 />
               </div>
             )}
@@ -160,6 +181,8 @@ export function GuestFlowShell({ flow }: { flow: GuestFlow }) {
             <GuestResultsDashboard
               matches={flow.matches}
               state={flow.matchesState}
+              progress={flow.matchesProgress}
+              meta={flow.matchesMeta}
               error={flow.matchesError}
               cta={flow.matchesCta}
               tailoredMatchId={flow.tailoredMatchId}

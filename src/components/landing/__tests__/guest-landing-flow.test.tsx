@@ -90,6 +90,21 @@ const parseResult = {
   guest: { tailors_used: 0, tailors_limit: 1 },
 };
 
+/** v3 parse result: the server-provided profile block drives the reveal. */
+const parseResultWithProfile = {
+  ...parseResult,
+  resume_id: 'asset-1',
+  profile: {
+    first_name: 'Alex',
+    headline_title: 'Frontend Engineer',
+    experience_level: 'Mid-level',
+    years: 5,
+    skills: ['React', 'TypeScript', 'Accessibility'],
+    summary_short: 'Frontend engineer with five years of React.',
+    // location / work_authorization deliberately ABSENT — must not render.
+  },
+};
+
 const tailorResult = {
   tailored_resume: {
     contact: { name: 'Alex Doe' },
@@ -106,14 +121,6 @@ const tailorResult = {
   record_id: 'rec-1',
   download: { token: 'grant-1', formats: ['pdf', 'docx'] as ('pdf' | 'docx')[] },
 };
-
-function deferred<T>() {
-  let resolve!: (value: T) => void;
-  const promise = new Promise<T>((r) => {
-    resolve = r;
-  });
-  return { promise, resolve };
-}
 
 // ── Harness ──────────────────────────────────────────────────────
 
@@ -161,6 +168,13 @@ async function openMatches(user: ReturnType<typeof userEvent.setup>) {
   await user.click(await screen.findByRole('button', { name: /See today's matches/i }));
 }
 
+/** From the profile-reveal step, continue into the matches dashboard. */
+async function continueFromProfile(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(
+    await screen.findByRole('button', { name: /Find my matches/i }),
+  );
+}
+
 /** Drive the full confirm → tailor → completed path for Role 1. */
 async function tailorFirstMatch(user: ReturnType<typeof userEvent.setup>) {
   seedReturningGuest();
@@ -176,7 +190,7 @@ async function tailorFirstMatch(user: ReturnType<typeof userEvent.setup>) {
     await screen.findByRole('button', { name: /^Tailor my resume for Role 1/i }),
   );
   await user.click(await screen.findByRole('button', { name: 'Use my free tailor' }));
-  await screen.findByText(/You've used your guest tailor/);
+  await screen.findByText(/You have used your guest tailoring/);
 }
 
 beforeEach(() => {
@@ -228,8 +242,14 @@ describe('guest landing flow', () => {
     api.guestJobPoll.mockResolvedValue({ data: parseResult, status: 200 });
     api.guestMatches.mockResolvedValue({ data: matchesData(5), status: 200 });
 
+    const user = userEvent.setup();
     const first = renderLanding();
     await pickFile();
+
+    // The parse result carries no server profile block — the client
+    // synthesizes the reveal from structured fields, then we continue.
+    await screen.findByRole('region', { name: 'What we understood from your resume' });
+    await continueFromProfile(user);
 
     let list = await findDesktopMatchesList();
     expect(within(list).getAllByRole('listitem')).toHaveLength(5);
@@ -243,7 +263,6 @@ describe('guest landing flow', () => {
     first.unmount();
     seedReturningGuest();
     api.guestMatches.mockResolvedValue({ data: matchesData(3), status: 200 });
-    const user = userEvent.setup();
     await openMatches(user);
 
     list = await findDesktopMatchesList();
@@ -316,7 +335,7 @@ describe('guest landing flow', () => {
     const user = userEvent.setup();
     await tailorFirstMatch(user);
 
-    expect(screen.getByText(/You've used your guest tailor/)).toBeInTheDocument();
+    expect(screen.getByText(/You have used your guest tailoring/)).toBeInTheDocument();
 
     // The other matches are still fully readable — nothing disappears.
     await user.click(screen.getByRole('button', { name: /Back to matches/i }));
@@ -325,7 +344,7 @@ describe('guest landing flow', () => {
     expect(within(list).getByText('Role 2')).toBeInTheDocument();
     expect(within(list).getByText('Role 3')).toBeInTheDocument();
     // Quota-exhausted conversion prompt on the dashboard header.
-    expect(screen.getByText(/Your free tailor is used/)).toBeInTheDocument();
+    expect(screen.getByText(/You have used your guest tailoring/)).toBeInTheDocument();
   });
 
   test('7. refresh restore: stored pointer re-polls the tailor job and marks the match Tailored', async () => {
@@ -354,7 +373,7 @@ describe('guest landing flow', () => {
     await screen.findByRole('button', { name: /Role 2 at Company 2.*tailored/i });
     expect(screen.getAllByText('Tailored').length).toBeGreaterThanOrEqual(1);
     // Quota restored from the session: 1 of 1 used → gate copy present.
-    expect(screen.getByText(/Your free tailor is used/)).toBeInTheDocument();
+    expect(screen.getByText(/You have used your guest tailoring/)).toBeInTheDocument();
   });
 
   test('8. feature disabled (503): only the upload action becomes an account CTA — the interactive preview stays usable', async () => {
@@ -492,6 +511,201 @@ describe('guest landing flow', () => {
     await user.click(screen.getByRole('button', { name: /Back to matches/i }));
     const list = await findDesktopMatchesList();
     expect(within(list).getAllByRole('listitem')).toHaveLength(3);
+  });
+
+  test('12. profile reveal renders ONLY extracted fields and continues to matches on the CTA', async () => {
+    api.guestOnboard.mockResolvedValue({
+      data: { guest_id: 'g-1', job_id: 'parse-job-1', device_token: 'dev-1' },
+      status: 202,
+    });
+    api.guestJobPoll.mockResolvedValue({ data: parseResultWithProfile, status: 200 });
+    api.guestMatches.mockResolvedValue({ data: matchesData(3), status: 200 });
+
+    const user = userEvent.setup();
+    renderLanding();
+    await pickFile();
+
+    const region = await screen.findByRole('region', {
+      name: 'What we understood from your resume',
+    });
+    // Present fields render…
+    expect(within(region).getByText('Alex, here is what we understood')).toBeInTheDocument();
+    expect(within(region).getByText('Frontend Engineer')).toBeInTheDocument();
+    expect(within(region).getByText('Mid-level (5 years)')).toBeInTheDocument();
+    expect(within(region).getByText('React')).toBeInTheDocument();
+    expect(within(region).getByText('Accessibility')).toBeInTheDocument();
+    expect(
+      within(region).getByText('Frontend engineer with five years of React.'),
+    ).toBeInTheDocument();
+    // …absent fields do NOT (no placeholders, nothing invented).
+    expect(within(region).queryByText('Location')).not.toBeInTheDocument();
+    expect(within(region).queryByText('Work authorization')).not.toBeInTheDocument();
+
+    await continueFromProfile(user);
+    const list = await findDesktopMatchesList();
+    expect(within(list).getAllByRole('listitem')).toHaveLength(3);
+  });
+
+  test('13. profile reveal auto-advances to matches after the idle delay (motion on)', async () => {
+    api.guestOnboard.mockResolvedValue({
+      data: { guest_id: 'g-1', job_id: 'parse-job-1', device_token: 'dev-1' },
+      status: 202,
+    });
+    api.guestJobPoll.mockResolvedValue({ data: parseResultWithProfile, status: 200 });
+    api.guestMatches.mockResolvedValue({ data: matchesData(2), status: 200 });
+
+    renderLanding();
+    await pickFile();
+    await screen.findByRole('region', { name: 'What we understood from your resume' });
+
+    // No clicks, no keys: the idle timer (~2.5s) advances on its own.
+    const list = await findDesktopMatchesList();
+    expect(within(list).getAllByRole('listitem')).toHaveLength(2);
+    expect(api.guestMatches).toHaveBeenCalledTimes(1);
+  });
+
+  test('14. reduced motion: NO auto-advance — the profile step waits for the button', async () => {
+    setReducedMotion(true);
+    api.guestOnboard.mockResolvedValue({
+      data: { guest_id: 'g-1', job_id: 'parse-job-1', device_token: 'dev-1' },
+      status: 202,
+    });
+    api.guestJobPoll.mockResolvedValue({ data: parseResultWithProfile, status: 200 });
+    api.guestMatches.mockResolvedValue({ data: matchesData(2), status: 200 });
+
+    const user = userEvent.setup();
+    renderLanding();
+    await pickFile();
+    await screen.findByRole('region', { name: 'What we understood from your resume' });
+
+    // Well past the 2.5s idle window: still on the profile step, no matches
+    // call — reduced motion means no auto-advance.
+    await new Promise((r) => setTimeout(r, 3200));
+    expect(
+      screen.getByRole('region', { name: 'What we understood from your resume' }),
+    ).toBeInTheDocument();
+    expect(api.guestMatches).not.toHaveBeenCalled();
+
+    await continueFromProfile(user);
+    const list = await findDesktopMatchesList();
+    expect(within(list).getAllByRole('listitem')).toHaveLength(2);
+  });
+
+  test('15. parsing stepper follows the SERVER progress marker, with a polite announcer', async () => {
+    api.guestOnboard.mockResolvedValue({
+      data: { guest_id: 'g-1', job_id: 'parse-job-1', device_token: 'dev-1' },
+      status: 202,
+    });
+    api.guestJobPoll.mockImplementation(
+      (_jobId, _gid, _max, _signal, onStatus, onProgress) => {
+        onStatus?.('processing');
+        onProgress?.({ phase: 'extracting_skills', pct: 60 });
+        return new Promise(() => {});
+      },
+    );
+
+    renderLanding();
+    await pickFile();
+    await screen.findByRole('region', { name: 'Reading your resume' });
+
+    // Truthful stepper: the server said extracting_skills — that phase is
+    // current, the one before reads as done.
+    const active = await screen.findByText('Extracting skills');
+    expect(active).toHaveAttribute('aria-current', 'step');
+    expect(screen.getByText('Reading the document')).not.toHaveAttribute('aria-current');
+    expect(screen.getByText('Done:')).toBeInTheDocument();
+  });
+
+  test('16. matches stepper follows the SERVER progress marker while loading', async () => {
+    seedReturningGuest();
+    api.guestMatches.mockImplementation(
+      (_gid, _token, _signal, _onStatus, onProgress) => {
+        onProgress?.({ phase: 'searching_sources', pct: 40 });
+        return new Promise(() => {});
+      },
+    );
+    const user = userEvent.setup();
+    await openMatches(user);
+
+    const active = await screen.findByText('Searching live sources');
+    expect(active).toHaveAttribute('aria-current', 'step');
+    expect(screen.getByText('Ranking matches')).not.toHaveAttribute('aria-current');
+  });
+
+  test('17. sources unavailable: distinct copy WITH a working retry', async () => {
+    seedReturningGuest();
+    api.guestMatches
+      .mockResolvedValue({ data: matchesData(2), status: 200 })
+      .mockResolvedValueOnce({
+        data: {
+          jobs: [],
+          empty_reason: 'sources_unavailable',
+          sources_report: { ok: [], failed: ['workday'], timed_out: ['ats'], considered: 0 },
+        },
+        status: 200,
+      });
+    const user = userEvent.setup();
+    await openMatches(user);
+
+    await screen.findByText('Job sources did not respond');
+    // Not a verdict on the resume — and distinct from the no-matches state.
+    expect(screen.queryByText('No strong matches today')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Try again' }));
+    const list = await findDesktopMatchesList();
+    expect(within(list).getAllByRole('listitem')).toHaveLength(2);
+  });
+
+  test('18. completed-empty day: honest zero WITHOUT a retry button', async () => {
+    seedReturningGuest();
+    api.guestMatches.mockResolvedValue({
+      data: { jobs: [], empty_reason: 'no_openings_matched', total_considered: 300 },
+      status: 200,
+    });
+    const user = userEvent.setup();
+    await openMatches(user);
+
+    await screen.findByText('No strong matches today');
+    expect(screen.getByText(/across 300 roles considered/)).toBeInTheDocument();
+    // Retrying a cached same-day scan cannot help — no retry offered.
+    expect(screen.queryByRole('button', { name: 'Try again' })).not.toBeInTheDocument();
+  });
+
+  test('19. fewer than five results: honest "We found N strong matches" from total_considered', async () => {
+    seedReturningGuest();
+    api.guestMatches.mockResolvedValue({
+      data: { ...matchesData(3), total_considered: 240 },
+      status: 200,
+    });
+    const user = userEvent.setup();
+    await openMatches(user);
+
+    await findDesktopMatchesList();
+    expect(
+      screen.getByText(/We found 3 strong matches across 240 roles considered/),
+    ).toBeInTheDocument();
+  });
+
+  test('20. title normalization: a job carrying only job_title still shows its visible title', async () => {
+    seedReturningGuest();
+    const jobTitleOnly = {
+      ...matchFix(1),
+      title: undefined,
+      job_title: 'Platform Engineer II',
+    } as unknown as GuestJobMatch;
+    api.guestMatches.mockResolvedValue({
+      data: { jobs: [jobTitleOnly], date: '2026-07-20', cached: true },
+      status: 200,
+    });
+    const user = userEvent.setup();
+    await openMatches(user);
+
+    const list = await findDesktopMatchesList();
+    expect(within(list).getByText('Platform Engineer II')).toBeInTheDocument();
+    // The detail pane header uses the normalized title too.
+    expect(
+      screen.getAllByText('Platform Engineer II').length,
+    ).toBeGreaterThanOrEqual(2);
   });
 
   test.todo(

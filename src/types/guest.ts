@@ -37,15 +37,45 @@ export interface GuestRecognition {
   tailors_limit?: number;
 }
 
+/** Honest sub-phase marker guest job polls may carry while processing
+ * (resume-platform-v3.md section 5; written by update_job_progress).
+ * guest_parse: parsing -> extracting_skills -> finalizing.
+ * guest_matches: reading_resume -> searching_sources -> ranking -> finalizing.
+ * Unknown phases must be treated as "keep the current step". */
+export interface GuestJobProgress {
+  phase: string;
+  pct?: number;
+  updated_at?: string;
+}
+
+/** Profile block on the guest_parse result (v3 additive): ONLY fields the
+ * parser genuinely extracted are present — never synthesize server-side
+ * absences into placeholders. The extracted name is presentation-only,
+ * never identity. */
+export interface GuestProfileBlock {
+  first_name?: string;
+  headline_title?: string;
+  experience_level?: string;
+  years?: number;
+  skills?: string[];
+  location?: string;
+  work_authorization?: string;
+  summary_short?: string;
+}
+
 /** Completed guest_parse job result (NESTED — the resume lives under
  * parsed_resume.structured, plus a `guest` recognition/quota block so no
- * extra session call is needed after parsing). */
+ * extra session call is needed after parsing). v3 additive: `resume_id` and
+ * a `profile` block for the profile-reveal step (absent on older results —
+ * the FE synthesizes a client-side equivalent from `structured`). */
 export interface GuestParseResult {
   parsed_resume: {
     structured: Record<string, unknown>;
     filename?: string;
   };
   guest?: GuestRecognition;
+  resume_id?: string;
+  profile?: GuestProfileBlock;
 }
 
 /** GET /api/resume/guest/session?guest_id=&fingerprint_hash=&device_token= */
@@ -75,6 +105,10 @@ export interface GuestJobMatch {
   /** Opaque server-minted id — the ONLY reference guest tailor accepts. */
   match_id: string;
   title: string;
+  /** Tolerated source-side variants of `title` (backend normalizes, the FE
+   * defends belt-and-braces — see normalizeGuestMatch in useGuestFlow). */
+  job_title?: string;
+  role?: string;
   company: string;
   /** Backend-served favicon path ("/api/jobs/logo/<40-hex>"). May 404 — the
    *  UI must fall back to the hued monogram. Resolve via `companyLogoSrc`. */
@@ -100,11 +134,28 @@ export interface GuestJobMatch {
   sponsorship?: GuestSponsorship | null;
 }
 
+/** Why a completed guest_matches run returned zero jobs (v3 3.5) — a
+ * completed-empty is distinguishable from provider failure. */
+export type GuestEmptyReason =
+  | "no_openings_matched"
+  | "sources_unavailable"
+  | "low_signal_resume";
+
+/** Per-source outcome report on the guest_matches result (v3 additive). */
+export interface GuestSourcesReport {
+  ok?: string[];
+  failed?: string[];
+  timed_out?: string[];
+  considered?: number;
+}
+
 /**
  * POST /api/jobs/guest/matches ({guest_id, device_token?}):
  * - cache miss → 202 { job_id } → poll GET /resume/guest/job/<id>?guest_id=
  *   → completed result { jobs, date, min_score, cached:false }
  * - same-day repeat → 200 directly { jobs, date, computed_at, min_score, cached:true }
+ * v3 additive: sources_report / empty_reason / total_considered for honest
+ * empty vs unavailable vs partial states — never padded results.
  */
 export interface GuestMatchesResult {
   jobs: GuestJobMatch[];
@@ -112,6 +163,8 @@ export interface GuestMatchesResult {
   computed_at?: string;
   min_score?: number;
   total_considered?: number;
+  sources_report?: GuestSourcesReport;
+  empty_reason?: GuestEmptyReason;
   cached?: boolean;
 }
 

@@ -1,7 +1,7 @@
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { AlertCircle, Loader2, Target } from 'lucide-react';
+import { AlertCircle, Check, Loader2, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -131,6 +131,92 @@ export function WorkingHeader({ stage, hint }: { stage: string; hint: string }) 
         <p className="mt-0.5 text-xs text-muted-foreground">{hint}</p>
       </div>
     </div>
+  );
+}
+
+/** One backend phase in a truthful progress stepper. */
+export interface PhaseDef {
+  key: string;
+  label: string;
+}
+
+/**
+ * Truthful stepper for a long-running guest job, fed by the SERVER's
+ * update_job_progress markers — never a wall-clock guess. `activeKey` null
+ * (no marker yet) shows the first phase active; an unknown phase keeps the
+ * current rendering (per contract: treat unknown phases as "keep step").
+ * State is conveyed by check/number + label, never colour alone.
+ */
+export function PhaseStepper({
+  phases,
+  activeKey,
+  className,
+}: {
+  phases: readonly PhaseDef[];
+  activeKey: string | null;
+  className?: string;
+}) {
+  const found = activeKey ? phases.findIndex((p) => p.key === activeKey) : -1;
+  const current = found >= 0 ? found : 0;
+  return (
+    <ol className={cn('flex flex-wrap items-center gap-y-1.5', className)} aria-label="Progress">
+      {phases.map(({ key, label }, i) => {
+        const isDone = i < current;
+        const isActive = i === current;
+        return (
+          <li key={key} className="flex items-center">
+            {i > 0 && (
+              <span
+                aria-hidden
+                className={cn(
+                  'mx-1.5 h-px w-3 transition-colors sm:w-5',
+                  isDone || isActive ? 'bg-primary/40' : 'bg-border',
+                )}
+              />
+            )}
+            <span
+              aria-current={isActive ? 'step' : undefined}
+              className={cn(
+                'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium transition-colors',
+                isActive
+                  ? 'border-primary/40 bg-primary/10 text-primary'
+                  : isDone
+                    ? 'border-success/30 bg-success/10 text-success'
+                    : 'border-border text-muted-foreground',
+              )}
+            >
+              {isDone && (
+                <>
+                  <Check className="h-2.5 w-2.5" strokeWidth={3} aria-hidden />
+                  <span className="sr-only">Done: </span>
+                </>
+              )}
+              {label}
+            </span>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+/**
+ * The ONE aria-live region for async phase announcements: visually hidden,
+ * polite, and debounced so rapid poll ticks never spam screen readers. Only
+ * mounted by the currently active working state (parsing OR matches — never
+ * both), keeping a single live region per contract.
+ */
+export function PhaseAnnouncer({ message }: { message: string | null }) {
+  const [announced, setAnnounced] = useState('');
+  useEffect(() => {
+    if (!message || message === announced) return;
+    const t = window.setTimeout(() => setAnnounced(message), 400);
+    return () => window.clearTimeout(t);
+  }, [message, announced]);
+  return (
+    <p aria-live="polite" className="sr-only">
+      {announced}
+    </p>
   );
 }
 
