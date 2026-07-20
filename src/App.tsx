@@ -8,6 +8,7 @@ import { ThemeProvider } from './components/theme-provider';
 import { AuthProvider } from './contexts/AuthContext';
 import { FeedbackProvider } from './components/feedback/FeedbackWidget';
 import { UpgradeModalProvider } from './components/billing/UpgradeModalProvider';
+import { CombinedJobsProvider } from './components/job-search/CombinedJobsProvider';
 import Landing from './pages/Landing';
 import NotFound from './pages/NotFound';
 
@@ -191,7 +192,9 @@ const App = () => (
           <UpgradeModalProvider>
             <TooltipProvider>
               <FeedbackProvider>
-                <AppContent />
+                <CombinedJobsProvider>
+                  <AppContent />
+                </CombinedJobsProvider>
               </FeedbackProvider>
             </TooltipProvider>
           </UpgradeModalProvider>

@@ -1,21 +1,20 @@
 import { useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import {
-  MapPin, Clock, DollarSign, Briefcase, ExternalLink,
-  BookmarkPlus, BookmarkCheck, Sparkles, Target, FileText, Wand2, ChevronDown,
-  Users, ShieldCheck,
+  MapPin, ExternalLink, BookmarkPlus, BookmarkCheck, Sparkles, Target,
+  FileText, Wand2, ChevronDown, Users, ShieldCheck, Plane, Wifi, FileSignature,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { JobAnalysisModal } from './JobAnalysisModal';
 import { ResumeTailorModal } from './ResumeTailorModal';
 import { JobTrustBadge } from './JobTrustBadge';
-import { SponsorshipBadge, VisaFlagChips } from './JobVisaSignals';
+import { VisaFlagChips } from './JobVisaSignals';
 import { ReferralModal } from './ReferralModal';
 import { apiService } from '@/lib/api';
 import { cn } from '@/lib/utils';
+import { hostFromUrl, hueFromString, toTitleCase } from '@/lib/format';
 import type { Job } from '@/types/jobs';
 
 interface JobCardProps {
@@ -27,23 +26,18 @@ interface JobCardProps {
   onQuickApply: () => void;
 }
 
-/** Match band → accent. Green = strong fit, amber = partial, slate = low/unknown.
- *  Drives the score ring stroke AND the card's top accent rail so the fit signal
- *  reads at a glance without adding chrome. */
-function matchBand(score: number): { stroke: string; rail: string; text: string } {
-  if (score >= 70) {
-    return { stroke: 'hsl(150 65% 45%)', rail: 'from-emerald-400 to-emerald-500', text: 'text-emerald-600 dark:text-emerald-400' };
-  }
-  if (score >= 40) {
-    return { stroke: 'hsl(38 90% 55%)', rail: 'from-amber-400 to-amber-500', text: 'text-amber-600 dark:text-amber-400' };
-  }
-  return { stroke: 'hsl(var(--muted-foreground))', rail: 'from-slate-300 to-slate-400', text: 'text-muted-foreground' };
+/** Match band → ring stroke + label color. Green = strong fit, amber = partial. */
+function matchBand(score: number): { stroke: string; text: string } {
+  if (score >= 70) return { stroke: 'hsl(152 60% 44%)', text: 'text-emerald-600 dark:text-emerald-400' };
+  if (score >= 40) return { stroke: 'hsl(38 92% 52%)', text: 'text-amber-600 dark:text-amber-400' };
+  return { stroke: 'hsl(var(--muted-foreground))', text: 'text-muted-foreground' };
 }
 
 function MatchScoreRing({ score }: { score: number }) {
   const radius = 20;
   const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (Math.max(0, Math.min(100, score)) / 100) * circumference;
+  const clamped = Math.max(0, Math.min(100, score));
+  const offset = circumference - (clamped / 100) * circumference;
   const band = matchBand(score);
   return (
     <div className="relative h-12 w-12 flex-shrink-0" title={`${score}% resume match`}>
@@ -55,9 +49,44 @@ function MatchScoreRing({ score }: { score: number }) {
         />
       </svg>
       <span className="absolute inset-0 flex flex-col items-center justify-center leading-none">
-        <span className="text-[12px] font-bold tabular-nums">{score}</span>
+        <span className={cn('text-[12px] font-bold tabular-nums', band.text)}>{score}</span>
         <span className="text-[7px] font-medium uppercase tracking-wide text-muted-foreground">match</span>
       </span>
+    </div>
+  );
+}
+
+/** Company mark: real logo → favicon from the apply domain → hued monogram. */
+function CompanyLogo({ job, hue }: { job: Job; hue: number }) {
+  const host = hostFromUrl(job.apply_link);
+  const chain = [
+    job.logo,
+    host ? `https://www.google.com/s2/favicons?domain=${host}&sz=128` : '',
+  ].filter(Boolean) as string[];
+  const [idx, setIdx] = useState(0);
+  const src = chain[idx];
+
+  if (src) {
+    return (
+      <img
+        src={src}
+        alt=""
+        loading="lazy"
+        onError={() => setIdx((i) => i + 1)}
+        className="h-12 w-12 flex-shrink-0 rounded-xl border border-border/50 bg-background object-contain p-1.5"
+      />
+    );
+  }
+  return (
+    <div
+      className="grid h-12 w-12 flex-shrink-0 place-items-center rounded-xl text-lg font-bold"
+      style={{
+        backgroundColor: `hsl(${hue} 68% 55% / 0.14)`,
+        color: `hsl(${hue} 60% 52%)`,
+        boxShadow: `inset 0 0 0 1px hsl(${hue} 68% 55% / 0.28)`,
+      }}
+    >
+      {(job.company || '?').charAt(0).toUpperCase()}
     </div>
   );
 }
@@ -68,14 +97,9 @@ function buildApplyUrl(job: Job): { url: string; fallback: boolean } {
   return { url: `https://www.google.com/search?q=${q}`, fallback: true };
 }
 
-/** Compact ghost action used in the card's AI-actions cluster. */
-function ActionIcon({
-  label, icon: Icon, onClick, disabled,
-}: {
-  label: string;
-  icon: typeof Sparkles;
-  onClick: () => void;
-  disabled?: boolean;
+/** Compact ghost action for the card's AI cluster. */
+function ActionIcon({ label, icon: Icon, onClick, disabled }: {
+  label: string; icon: typeof Sparkles; onClick: () => void; disabled?: boolean;
 }) {
   return (
     <button
@@ -84,10 +108,27 @@ function ActionIcon({
       disabled={disabled}
       title={label}
       aria-label={label}
-      className="grid h-8 w-8 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-purple-500/10 hover:text-purple-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 dark:hover:text-purple-300"
+      className="grid h-8 w-8 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
     >
       <Icon className="h-3.5 w-3.5" aria-hidden />
     </button>
+  );
+}
+
+/** Primary eligibility signal pill. */
+function SignalPill({ icon: Icon, label, tone }: {
+  icon: typeof Plane; label: string; tone: 'sponsor' | 'remote' | 'contract';
+}) {
+  const cls = {
+    sponsor: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
+    remote: 'border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-300',
+    contract: 'border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-300',
+  }[tone];
+  return (
+    <span className={cn('inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10.5px] font-semibold', cls)}>
+      <Icon className="h-3 w-3" aria-hidden />
+      {label}
+    </span>
   );
 }
 
@@ -114,14 +155,10 @@ export function JobCard({ job, saved, jobStatus, onSave, onUnsave, onQuickApply 
         toast.error('Could not scan this posting');
         return;
       }
-      const title =
-        r.trust_band === 'high_risk'
-          ? 'High scam / ghost-job risk'
-          : r.trust_band === 'caution'
-            ? 'Some risk signals found'
-            : 'No scam signals found';
-      const description =
-        r.advice || r.llm_rationale || (r.trust_reasons || []).slice(0, 2).join(' · ') || undefined;
+      const title = r.trust_band === 'high_risk'
+        ? 'High scam / ghost-job risk'
+        : r.trust_band === 'caution' ? 'Some risk signals found' : 'No scam signals found';
+      const description = r.advice || r.llm_rationale || (r.trust_reasons || []).slice(0, 2).join(' · ') || undefined;
       if (r.trust_band === 'high_risk') toast.error(title, { description });
       else if (r.trust_band === 'caution') toast.warning(title, { description });
       else toast.success(title, { description });
@@ -133,67 +170,59 @@ export function JobCard({ job, saved, jobStatus, onSave, onUnsave, onQuickApply 
   };
 
   const apply = buildApplyUrl(job);
-  const band = matchBand(job.match_score);
+  const hue = hueFromString(job.company || job.title || 'JobPilot');
   const hasDescription = !!job.description && job.description.trim().length > 0;
+
+  const title = toTitleCase(job.title);
+  const company = toTitleCase(job.company);
+  const location = toTitleCase(job.location);
+
+  // Muted meta line — dot-separated, only what exists.
+  const meta = [
+    job.salary,
+    toTitleCase(job.employment_type),
+    job.source ? toTitleCase(job.source) : '',
+    job.posted_text,
+  ].filter(Boolean);
+
+  const hasSignals = job.trust_band || job.h1b_sponsor || job.is_remote || job.contract_friendly || job.visa_flags;
 
   return (
     <>
-      <Card className="group relative flex h-full flex-col overflow-hidden rounded-2xl border-border/60 bg-card/70 backdrop-blur-md transition-[transform,box-shadow,border-color] duration-200 ease-expo hover:-translate-y-1 hover:border-purple-500/40 hover:shadow-xl hover:shadow-purple-500/10">
-        {/* Ambient brand wash — subtle, uniform (our identity, not per-card pastel). */}
+      <Card className="group relative flex h-full flex-col overflow-hidden rounded-2xl border-border/60 bg-card/70 backdrop-blur-md transition-[transform,box-shadow,border-color] duration-200 ease-expo hover:-translate-y-1 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/10">
+        {/* Company-hued ambient wash + accent rail — the per-card color identity. */}
         <span
-          className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-gradient-to-br from-purple-500/10 to-indigo-500/5 blur-2xl transition-opacity duration-300 group-hover:opacity-100 opacity-60"
+          className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full opacity-50 blur-2xl transition-opacity duration-300 group-hover:opacity-90"
+          style={{ backgroundColor: `hsl(${hue} 70% 55% / 0.18)` }}
           aria-hidden
         />
-        {/* Score-keyed accent rail — brightens on hover. */}
         <span
-          className={cn(
-            'pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r opacity-70 transition-opacity duration-300 group-hover:opacity-100',
-            band.rail,
-          )}
+          className="pointer-events-none absolute inset-x-0 top-0 h-1 opacity-70 transition-opacity duration-300 group-hover:opacity-100"
+          style={{ backgroundImage: `linear-gradient(90deg, hsl(${hue} 72% 56%), hsl(${(hue + 45) % 360} 72% 60%))` }}
           aria-hidden
         />
 
         <CardContent className="relative flex flex-1 flex-col gap-3 p-5">
-          {/* Header: logo · company/meta · match ring */}
+          {/* Header */}
           <div className="flex items-start gap-3">
-            {job.logo ? (
-              <img
-                src={job.logo}
-                alt=""
-                className="h-12 w-12 flex-shrink-0 rounded-xl border border-border/50 bg-background object-contain p-1 ring-1 ring-border/30"
-              />
-            ) : (
-              <div className="grid h-12 w-12 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-purple-500/20 to-indigo-500/15 text-base font-bold text-purple-600 ring-1 ring-purple-500/20 dark:text-purple-300">
-                {job.company.charAt(0).toUpperCase()}
-              </div>
-            )}
+            <CompanyLogo job={job} hue={hue} />
             <div className="min-w-0 flex-1">
-              <p className="truncate text-[13px] font-semibold text-foreground" title={job.company}>
-                {job.company}
-              </p>
-              <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground">
-                <span className="inline-flex items-center gap-1 truncate">
-                  <MapPin className="h-3 w-3 flex-shrink-0" aria-hidden />
-                  <span className="truncate">{job.location || 'Location undisclosed'}</span>
-                </span>
-                {job.posted_text && (
-                  <span className="inline-flex items-center gap-1">
-                    <Clock className="h-3 w-3 flex-shrink-0" aria-hidden />
-                    {job.posted_text}
-                  </span>
-                )}
+              <p className="truncate text-[13px] font-semibold text-foreground" title={company}>{company}</p>
+              <p className="mt-0.5 flex items-center gap-1 truncate text-[11px] text-muted-foreground">
+                <MapPin className="h-3 w-3 flex-shrink-0" aria-hidden />
+                <span className="truncate">{location || 'Location undisclosed'}</span>
               </p>
             </div>
             <MatchScoreRing score={job.match_score} />
           </div>
 
           {/* Title */}
-          <h3 className="line-clamp-2 text-[15px] font-bold leading-snug text-foreground" title={job.title}>
-            {job.title}
+          <h3 className="line-clamp-2 text-[15px] font-bold leading-snug text-foreground" title={title}>
+            {title}
           </h3>
 
-          {/* Trust + visa + eligibility signals (our differentiator) */}
-          {(job.trust_band || job.sponsorship || job.visa_flags) && (
+          {/* Primary signal row */}
+          {hasSignals && (
             <div className="flex flex-wrap items-center gap-1.5">
               {job.trust_band && (
                 <>
@@ -209,70 +238,37 @@ export function JobCard({ job, saved, jobStatus, onSave, onUnsave, onQuickApply 
                   </button>
                 </>
               )}
-              {job.sponsorship && <SponsorshipBadge sponsorship={job.sponsorship} />}
+              {job.h1b_sponsor && <SignalPill icon={Plane} label="H1B sponsor" tone="sponsor" />}
+              {job.is_remote && <SignalPill icon={Wifi} label="Remote" tone="remote" />}
+              {job.contract_friendly && <SignalPill icon={FileSignature} label="Contract" tone="contract" />}
               {job.visa_flags && <VisaFlagChips flags={job.visa_flags} />}
             </div>
           )}
 
-          {/* Meta pills (status / H1B / remote / salary / type / source) */}
-          <div className="flex flex-wrap gap-1.5 text-[10.5px]">
-            {jobStatus === 'applied' && (
-              <Badge className="gap-1 border border-amber-500/30 bg-amber-500/15 px-1.5 py-0 text-amber-700 hover:bg-amber-500/20 dark:text-amber-300">
-                <BookmarkCheck className="h-2.5 w-2.5" /> Applied
-              </Badge>
-            )}
-            {jobStatus === 'interview' && (
-              <Badge className="border border-blue-500/30 bg-blue-500/15 px-1.5 py-0 text-blue-700 hover:bg-blue-500/20 dark:text-blue-300">Interview</Badge>
-            )}
-            {job.h1b_sponsor && (
-              <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0 text-emerald-700 dark:text-emerald-300">
-                H1B
-              </Badge>
-            )}
-            {job.contract_friendly && (
-              <Badge variant="outline" className="border-blue-500/30 bg-blue-500/10 px-1.5 py-0 text-blue-700 dark:text-blue-300">
-                Contract
-              </Badge>
-            )}
-            {job.is_remote && (
-              <Badge variant="outline" className="border-sky-500/30 bg-sky-500/10 px-1.5 py-0 text-sky-700 dark:text-sky-300">
-                Remote
-              </Badge>
-            )}
-            {job.salary && (
-              <Badge variant="outline" className="gap-0.5 border-border/60 px-1.5 py-0 text-muted-foreground">
-                <DollarSign className="h-2.5 w-2.5" /> {job.salary}
-              </Badge>
-            )}
-            {job.employment_type && (
-              <Badge variant="outline" className="gap-0.5 border-border/60 px-1.5 py-0 text-muted-foreground">
-                <Briefcase className="h-2.5 w-2.5" /> {job.employment_type}
-              </Badge>
-            )}
-            {job.source && (
-              <Badge variant="outline" className="border-purple-500/30 bg-purple-500/10 px-1.5 py-0 text-purple-600 dark:text-purple-300">
-                {job.source}
-              </Badge>
-            )}
-          </div>
-
           {/* Matched skills */}
           {job.matched_skills.length > 0 && (
             <div className="flex flex-wrap gap-1">
-              {job.matched_skills.slice(0, 8).map(skill => (
-                <span
-                  key={skill}
-                  className="rounded-md bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-300"
-                >
+              {job.matched_skills.slice(0, 7).map((skill) => (
+                <span key={skill} className="rounded-md bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-300">
                   {skill}
                 </span>
               ))}
-              {job.matched_skills.length > 8 && (
-                <span className="self-center text-[10px] text-muted-foreground">
-                  +{job.matched_skills.length - 8} more
-                </span>
+              {job.matched_skills.length > 7 && (
+                <span className="self-center text-[10px] text-muted-foreground">+{job.matched_skills.length - 7} more</span>
               )}
             </div>
+          )}
+
+          {/* Muted meta line */}
+          {meta.length > 0 && (
+            <p className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] text-muted-foreground">
+              {meta.map((m, i) => (
+                <span key={i} className="inline-flex items-center gap-1.5">
+                  {i > 0 && <span className="text-muted-foreground/40" aria-hidden>·</span>}
+                  <span className={i === 0 && job.salary ? 'font-medium text-foreground/80' : ''}>{m}</span>
+                </span>
+              ))}
+            </p>
           )}
 
           {/* Expandable JD */}
@@ -288,15 +284,14 @@ export function JobCard({ job, saved, jobStatus, onSave, onUnsave, onQuickApply 
               >
                 <div className="max-h-48 overflow-y-auto rounded-xl border border-border/40 bg-muted/20 p-3 text-xs leading-relaxed text-muted-foreground">
                   <p className="whitespace-pre-line">
-                    {job.description.slice(0, 1400)}
-                    {job.description.length > 1400 && '…'}
+                    {job.description.slice(0, 1400)}{job.description.length > 1400 && '…'}
                   </p>
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
 
-          {/* Footer — primary actions + AI cluster */}
+          {/* Footer */}
           <div className="mt-auto space-y-2 border-t border-border/40 pt-3">
             <div className="flex items-center gap-1.5">
               <Button
@@ -324,12 +319,10 @@ export function JobCard({ job, saved, jobStatus, onSave, onUnsave, onQuickApply 
                 variant="outline"
                 onClick={saved ? onUnsave : onSave}
                 title={saved ? 'Remove from saved' : 'Save this job'}
-                className={cn(
-                  'h-9 gap-1.5 px-3 text-xs',
+                className={cn('h-9 gap-1.5 px-3 text-xs',
                   saved
                     ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 dark:text-emerald-300'
-                    : 'border-border/60',
-                )}
+                    : 'border-border/60')}
               >
                 {saved ? <BookmarkCheck className="h-3.5 w-3.5" /> : <BookmarkPlus className="h-3.5 w-3.5" />}
                 {saved ? 'Saved' : 'Save'}
@@ -341,7 +334,7 @@ export function JobCard({ job, saved, jobStatus, onSave, onUnsave, onQuickApply 
                   variant="ghost"
                   onClick={() => setExpanded((v) => !v)}
                   aria-expanded={expanded}
-                  className="h-9 gap-1 px-2.5 text-xs text-muted-foreground hover:text-purple-600 dark:hover:text-purple-300"
+                  className="h-9 gap-1 px-2.5 text-xs text-muted-foreground hover:text-primary"
                 >
                   Details
                   <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', expanded && 'rotate-180')} aria-hidden />
@@ -349,7 +342,6 @@ export function JobCard({ job, saved, jobStatus, onSave, onUnsave, onQuickApply 
               )}
             </div>
 
-            {/* AI actions — compact, icon-only with tooltips */}
             <div className="flex items-center gap-0.5">
               <span className="mr-1 inline-flex items-center gap-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground/70">
                 <Sparkles className="h-3 w-3" aria-hidden /> AI
@@ -364,24 +356,9 @@ export function JobCard({ job, saved, jobStatus, onSave, onUnsave, onQuickApply 
         </CardContent>
       </Card>
 
-      <JobAnalysisModal
-        open={analysisOpen}
-        onOpenChange={setAnalysisOpen}
-        job={job}
-        action={analysisAction}
-      />
-
-      <ResumeTailorModal
-        open={tailorOpen}
-        onOpenChange={setTailorOpen}
-        job={job}
-      />
-
-      <ReferralModal
-        open={referralOpen}
-        onOpenChange={setReferralOpen}
-        job={job}
-      />
+      <JobAnalysisModal open={analysisOpen} onOpenChange={setAnalysisOpen} job={job} action={analysisAction} />
+      <ResumeTailorModal open={tailorOpen} onOpenChange={setTailorOpen} job={job} />
+      <ReferralModal open={referralOpen} onOpenChange={setReferralOpen} job={job} />
     </>
   );
 }

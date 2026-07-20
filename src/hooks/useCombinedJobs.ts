@@ -55,7 +55,7 @@ export interface CombinedJobsController {
  * deduped, ranked list. The same free engine backs all three, so this is the
  * "everything, in one feed" view (vs. the per-catalog CareerPortals tab).
  */
-export function useCombinedJobs(): CombinedJobsController {
+export function useCombinedJobs(enabled = true): CombinedJobsController {
   const [sources, setSources] = useState<Record<SourceKey, WorkdayJob[]>>(INIT_SOURCES);
   const [states, setStates] = useState<Record<SourceKey, SourceState>>(INIT_STATES);
   const [titles, setTitles] = useState<string[]>([]);
@@ -63,12 +63,17 @@ export function useCombinedJobs(): CombinedJobsController {
   const [ready, setReady] = useState(false);
   const [hasResult, setHasResult] = useState(false);
   const titlesRef = useRef<string[]>([]);
+  const hydratedRef = useRef(false);
   titlesRef.current = titles;
 
-  // Hydrate the search seed from the parsed resume once (with an LLM-synth
-  // fallback when the resume's own titles are too thin), mirroring the
+  // Hydrate the search seed from the parsed resume once — only after the feed
+  // is actually enabled (i.e. the user opened Jobs), so no resume fetch / LLM
+  // title-synth fires for users who never visit the tab. With an LLM-synth
+  // fallback when the resume's own titles are too thin, mirroring the
   // per-catalog panel so the combined feed is seeded the same way.
   useEffect(() => {
+    if (!enabled || hydratedRef.current) return;
+    hydratedRef.current = true;
     let cancelled = false;
     void (async () => {
       const resume = await apiService.getResume();
@@ -89,7 +94,7 @@ export function useCombinedJobs(): CombinedJobsController {
       setReady(true);
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [enabled]);
 
   const runOne = useCallback(async (
     key: SourceKey,

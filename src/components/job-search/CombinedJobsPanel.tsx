@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import {
   AlertCircle, Check, ChevronDown, Loader2, MapPin, Radar, RefreshCw,
-  Rocket, ShieldAlert, SlidersHorizontal, Sparkles,
+  Rocket, Search, ShieldAlert, SlidersHorizontal, Sparkles,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -11,13 +11,11 @@ import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { JobCard } from '@/components/job-search/JobCard';
-import { useAutoSync } from '@/hooks/useAutoSync';
-import { useCombinedJobs } from '@/hooks/useCombinedJobs';
-import { RECENCY_OPTIONS, locationKeyOf, seniorityOf, toJob } from '@/lib/careerJobs';
+import { useCombinedJobsCtx } from '@/components/job-search/CombinedJobsProvider';
+import { RECENCY_OPTIONS, seniorityOf, toJob } from '@/lib/careerJobs';
 import { cn } from '@/lib/utils';
 import type { Job, WorkdayJob } from '@/types/jobs';
 
-const AUTO_SYNC_MS = 30 * 60 * 1000;
 const PAGE_SIZE = 24;
 
 const SENIORITY_OPTIONS = [
@@ -83,30 +81,20 @@ export function CombinedJobsPanel({
   isJobSaved, getJobStatus, saveJob, unsaveJob, quickApply,
 }: CombinedJobsPanelProps) {
   const reduceMotion = useReducedMotion();
-  const feed = useCombinedJobs();
-  const { jobs, loading, states, sourceLabels, progress, ready, resumeSkillCount, hasResult } = feed;
+  // Feed state + view filters live in a provider ABOVE the router outlet, so a
+  // running scan (and its 30-min auto-sync) survive navigating between pages.
+  const {
+    jobs, loading, states, sourceLabels, progress, ready, resumeSkillCount, hasResult,
+    lastSyncedAt, secondsUntilNext, sync, ensureStarted,
+    location, setLocation, remoteOnly, setRemoteOnly, customizeOpen, setCustomizeOpen,
+    search, setSearch,
+    recency, setRecency, seniority, setSeniority, minScore, setMinScore,
+    sponsorFilter, setSponsorFilter, sortBy, setSortBy, page, setPage,
+  } = useCombinedJobsCtx();
 
-  // Server-side scan params (change → next sync uses them).
-  const [location, setLocation] = useState('');
-  const [remoteOnly, setRemoteOnly] = useState(false);
-  const [customizeOpen, setCustomizeOpen] = useState(false);
-
-  // Client-side filters (no refetch — reshape the merged set instantly).
-  const [recency, setRecency] = useState<(typeof RECENCY_OPTIONS)[number]['key']>('3d');
-  const [seniority, setSeniority] = useState<string>('any');
-  const [minScore, setMinScore] = useState<number>(0);
-  const [sponsorFilter, setSponsorFilter] = useState<'all' | 'friendly' | 'proven'>('friendly');
-  const [sortBy, setSortBy] = useState<'score' | 'newest'>('score');
-  const [page, setPage] = useState(1);
-
-  // Auto-load on open + quiet 30-min background refresh (all logged-in users).
-  const autoSync = useAutoSync({
-    enabled: ready,
-    intervalMs: AUTO_SYNC_MS,
-    isBusy: loading,
-    onSync: (force) => feed.run(force, { location, remoteOnly }),
-  });
-  const { lastSyncedAt, secondsUntilNext, sync } = autoSync;
+  // Kick off the very first scan when the tab opens (idempotent; the provider
+  // keeps it running afterwards even if you leave the page).
+  useEffect(() => { ensureStarted(); }, [ensureStarted]);
 
   const maxDays = RECENCY_OPTIONS.find((o) => o.key === recency)?.maxDays ?? 3;
 
@@ -121,6 +109,8 @@ export function CombinedJobsPanel({
 
   const visibleJobs = useMemo(() => {
     let out = jobs.filter((j) => j.days_ago != null && j.days_ago <= maxDays);
+    const q = search.trim().toLowerCase();
+    if (q) out = out.filter((j) => `${j.title} ${j.company}`.toLowerCase().includes(q));
     if (seniority !== 'any') out = out.filter((j) => seniorityOf(j) === seniority);
     if (minScore > 0) out = out.filter((j) => (j.match_score ?? 0) >= minScore);
     if (sponsorFilter === 'friendly') out = out.filter((j) => j.sponsorship !== 'refused');
@@ -129,11 +119,11 @@ export function CombinedJobsPanel({
       out = [...out].sort((a, b) => (a.days_ago ?? 99) - (b.days_ago ?? 99) || (b.match_score ?? 0) - (a.match_score ?? 0));
     }
     return out;
-  }, [jobs, maxDays, seniority, minScore, sponsorFilter, sortBy]);
+  }, [jobs, maxDays, search, seniority, minScore, sponsorFilter, sortBy]);
 
   const pageCount = Math.max(1, Math.ceil(visibleJobs.length / PAGE_SIZE));
-  useEffect(() => { setPage((p) => Math.min(Math.max(1, p), pageCount)); }, [pageCount]);
-  useEffect(() => { setPage(1); }, [recency, seniority, minScore, sponsorFilter, sortBy]);
+  useEffect(() => { setPage((p) => Math.min(Math.max(1, p), pageCount)); }, [pageCount, setPage]);
+  useEffect(() => { setPage(1); }, [recency, search, seniority, minScore, sponsorFilter, sortBy, setPage]);
 
   const pagedJobs = useMemo(
     () => visibleJobs.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
@@ -296,6 +286,17 @@ export function CombinedJobsPanel({
       {/* ── Glass filter bar ── */}
       {hasResult && (
         <div className="sticky top-2 z-10 flex flex-wrap items-center gap-2 rounded-2xl border border-border/60 bg-card/70 p-2.5 shadow-soft backdrop-blur-xl">
+          <div className="relative min-w-[180px] flex-1 basis-full sm:basis-56">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" aria-hidden />
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search title or company…"
+              aria-label="Search jobs by title or company"
+              className="h-8 w-full rounded-full border border-border bg-background pl-8 pr-3 text-[12px] text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-primary/40 focus-visible:ring-2 focus-visible:ring-ring"
+            />
+          </div>
           <div className="inline-flex flex-wrap rounded-full border border-border bg-muted/40 p-0.5">
             {RECENCY_OPTIONS.map((opt) => (
               <Seg key={opt.key} active={recency === opt.key} onClick={() => setRecency(opt.key)}>
