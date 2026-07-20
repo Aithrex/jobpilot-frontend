@@ -1,13 +1,19 @@
-import { useState } from 'react';
+import { Suspense, lazy, useState } from 'react';
 import {
-  Bookmark, MapPin, Building2, ExternalLink, Trash2, StickyNote,
+  Bookmark, MapPin, Building2, ExternalLink, Trash2, StickyNote, LayoutGrid, Columns3,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { KanbanBoard } from '@/components/job-search/KanbanBoard';
+import { cn } from '@/lib/utils';
 import type { SavedJob } from '@/types/jobs';
+
+// The 3D orb pulls in three.js — lazy-load it so the empty state is the only
+// place that ships the WebGL bundle.
+const ScoutOrb = lazy(() => import('@/components/job-search/ScoutOrb'));
 
 const STATUS_STYLES: Record<string, string> = {
   interested: 'border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-300',
@@ -20,8 +26,8 @@ const STATUS_STYLES: Record<string, string> = {
 
 interface SavedJobsPanelProps {
   savedJobs: SavedJob[];
-  updateJobStatus: (jobId: string, status: string, notes?: string) => Promise<any>;
-  unsaveJob: (jobId: string) => Promise<any>;
+  updateJobStatus: (jobId: string, status: string, notes?: string) => Promise<unknown>;
+  unsaveJob: (jobId: string) => Promise<unknown>;
 }
 
 function SavedJobCard({ saved, updateJobStatus, unsaveJob }: {
@@ -133,30 +139,70 @@ function SavedJobCard({ saved, updateJobStatus, unsaveJob }: {
 }
 
 export function SavedJobsPanel({ savedJobs, updateJobStatus, unsaveJob }: SavedJobsPanelProps) {
+  const [view, setView] = useState<'board' | 'list'>('board');
+
   if (savedJobs.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-purple-500/30 bg-gradient-to-b from-purple-500/5 to-transparent py-14 text-center">
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-500 text-white shadow-lg shadow-purple-500/30">
-          <Bookmark className="h-6 w-6" />
+      <div className="rounded-2xl border border-dashed border-purple-500/30 bg-gradient-to-b from-purple-500/5 to-transparent py-12 text-center">
+        <div className="mx-auto h-36 w-36">
+          <Suspense fallback={(
+            <div className="flex h-full w-full items-center justify-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-500 text-white shadow-lg shadow-purple-500/30">
+                <Bookmark className="h-6 w-6" />
+              </div>
+            </div>
+          )}
+          >
+            <ScoutOrb />
+          </Suspense>
         </div>
-        <p className="mt-3 text-sm font-medium">No saved jobs yet</p>
+        <p className="mt-2 text-sm font-medium">No saved jobs yet</p>
         <p className="mt-1 text-xs text-muted-foreground">
-          Save listings from the Listings tab to track applications here.
+          Save roles from Browse jobs to track them across your application board.
         </p>
       </div>
     );
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-2">
-      {savedJobs.map(saved => (
-        <SavedJobCard
-          key={saved.job_id}
-          saved={saved}
-          updateJobStatus={updateJobStatus}
-          unsaveJob={unsaveJob}
-        />
-      ))}
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-xs text-muted-foreground">
+          <span className="font-mono tabular-nums text-foreground">{savedJobs.length}</span> saved · drag cards between stages
+        </p>
+        <div className="inline-flex rounded-lg border border-border bg-muted/40 p-0.5">
+          {([['board', 'Board', Columns3], ['list', 'List', LayoutGrid]] as const).map(([key, label, Icon]) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setView(key)}
+              aria-pressed={view === key}
+              className={cn(
+                'inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-semibold transition-colors',
+                view === key ? 'bg-background text-primary shadow-soft' : 'text-muted-foreground hover:text-foreground',
+              )}
+            >
+              <Icon className="h-3.5 w-3.5" aria-hidden />
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {view === 'board' ? (
+        <KanbanBoard savedJobs={savedJobs} updateJobStatus={updateJobStatus} unsaveJob={unsaveJob} />
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2">
+          {savedJobs.map((saved) => (
+            <SavedJobCard
+              key={saved.job_id}
+              saved={saved}
+              updateJobStatus={updateJobStatus}
+              unsaveJob={unsaveJob}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
