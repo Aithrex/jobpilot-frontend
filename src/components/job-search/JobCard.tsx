@@ -15,6 +15,7 @@ import { ReferralModal } from './ReferralModal';
 import { apiService } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { hostFromUrl, hueFromString, toTitleCase } from '@/lib/format';
+import { useCountUp } from '@/hooks/useCountUp';
 import type { Job } from '@/types/jobs';
 
 interface JobCardProps {
@@ -34,22 +35,27 @@ function matchBand(score: number): { stroke: string; text: string } {
 }
 
 function MatchScoreRing({ score }: { score: number }) {
+  const reduce = useReducedMotion();
   const radius = 20;
   const circumference = 2 * Math.PI * radius;
   const clamped = Math.max(0, Math.min(100, score));
   const offset = circumference - (clamped / 100) * circumference;
   const band = matchBand(score);
+  const shown = useCountUp(clamped);
   return (
     <div className="relative h-12 w-12 flex-shrink-0" title={`${score}% resume match`}>
       <svg className="h-12 w-12 -rotate-90" viewBox="0 0 48 48">
         <circle cx="24" cy="24" r={radius} fill="none" stroke="currentColor" strokeWidth="3.5" className="text-muted/30" />
-        <circle
+        <motion.circle
           cx="24" cy="24" r={radius} fill="none" stroke={band.stroke} strokeWidth="3.5"
-          strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round"
+          strokeDasharray={circumference} strokeLinecap="round"
+          initial={reduce ? false : { strokeDashoffset: circumference }}
+          animate={{ strokeDashoffset: offset }}
+          transition={{ duration: 0.85, ease: [0.22, 1, 0.36, 1] }}
         />
       </svg>
       <span className="absolute inset-0 flex flex-col items-center justify-center leading-none">
-        <span className={cn('text-[12px] font-bold tabular-nums', band.text)}>{score}</span>
+        <span className={cn('font-mono text-[12px] font-bold tabular-nums', band.text)}>{shown}</span>
         <span className="text-[7px] font-medium uppercase tracking-wide text-muted-foreground">match</span>
       </span>
     </div>

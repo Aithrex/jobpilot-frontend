@@ -11,7 +11,9 @@ import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { JobCard } from '@/components/job-search/JobCard';
+import { SignalField } from '@/components/job-search/SignalField';
 import { useCombinedJobsCtx } from '@/components/job-search/CombinedJobsProvider';
+import { useCountUp } from '@/hooks/useCountUp';
 import { RECENCY_OPTIONS, seniorityOf, toJob } from '@/lib/careerJobs';
 import { cn } from '@/lib/utils';
 import type { Job, WorkdayJob } from '@/types/jobs';
@@ -157,12 +159,18 @@ export function CombinedJobsPanel({
   );
 
   const roleCount = visibleJobs.length;
+  const roleCountUp = useCountUp(roleCount);
+  // Signal Field intensity = share of strong (70%+) matches → a fuller field
+  // when the feed is genuinely good.
+  const strongCount = useMemo(() => jobs.filter((j) => (j.match_score ?? 0) >= 70).length, [jobs]);
+  const fieldIntensity = Math.min(1, strongCount / 25);
   const sourceKeys = ['workday', 'careers', 'mncs'] as const;
 
   return (
     <div className="space-y-5">
       {/* ── Live-sync command bar ── */}
       <div className="mesh-accent relative overflow-hidden rounded-2xl border border-border/70 p-4 shadow-soft sm:p-5">
+        <SignalField intensity={fieldIntensity} className="pointer-events-none absolute inset-0 h-full w-full opacity-50" />
         <div className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-primary/10 blur-3xl" aria-hidden />
         <div className="relative flex flex-wrap items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
@@ -184,7 +192,7 @@ export function CombinedJobsPanel({
                   : lastSyncedAt
                     ? <>Updated {formatAgo(lastSyncedAt)} · {roleCount} roles
                         {secondsUntilNext != null && (
-                          <span className="ml-1 tabular-nums text-primary/80">· next sync {formatCountdown(secondsUntilNext)}</span>
+                          <span className="ml-1 font-mono tabular-nums text-primary/80">· next sync {formatCountdown(secondsUntilNext)}</span>
                         )}
                       </>
                     : 'Building your feed from every company source…'}
@@ -340,7 +348,7 @@ export function CombinedJobsPanel({
             </div>
             <Badge variant="outline" className="gap-1 border-primary/30 bg-primary/10 text-primary">
               <Sparkles className="h-3 w-3" aria-hidden />
-              <span className="tabular-nums">{roleCount}</span> roles
+              <span className="font-mono tabular-nums">{roleCountUp}</span> roles
             </Badge>
           </div>
         </div>
@@ -390,7 +398,7 @@ export function CombinedJobsPanel({
                   onClick={() => setPage(n)}
                   aria-current={n === page ? 'page' : undefined}
                   className={cn(
-                    'h-8 min-w-8 rounded-md px-2 text-xs font-semibold tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                    'h-8 min-w-8 rounded-md px-2 font-mono text-xs font-semibold tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                     n === page ? 'bg-primary text-primary-foreground shadow-soft'
                       : 'border border-border text-muted-foreground hover:border-primary/40 hover:text-primary',
                   )}
