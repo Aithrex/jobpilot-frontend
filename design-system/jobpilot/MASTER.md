@@ -1,3 +1,11 @@
+> ## SUPERSEDED - DO NOT IMPLEMENT FROM THIS FILE
+>
+> This generated spec (violet `#7C3AED` / cyan `#0891B2`, Space Grotesk / DM Sans)
+> was never shipped and conflicts with the live token system. The authoritative
+> reference is **`docs/DESIGN_SYSTEM_MAP.md`**, backed by the runtime tokens in
+> **`src/index.css`** + `tailwind.config.ts` (indigo primary `hsl(238 70% 57%)`,
+> slate neutrals, Inter / Plus Jakarta Sans / JetBrains Mono). Kept for history only.
+
 # Design System Master File
 
 > **LOGIC:** When building a specific page, first check `design-system/pages/[page-name].md`.

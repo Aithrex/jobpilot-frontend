@@ -67,7 +67,7 @@ function ReferralRow({ referral, job }: { referral: Referral; job: ReferralModal
           <div className="flex items-center gap-1.5">
             <p className="truncate text-sm font-semibold">{referral.name}</p>
             {referral.is_alumni && (
-              <span className="inline-flex shrink-0 items-center gap-0.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-1.5 py-0 text-[10px] font-semibold text-amber-700 dark:text-amber-300">
+              <span className="inline-flex shrink-0 items-center gap-0.5 rounded-full border border-primary/30 bg-primary/10 px-1.5 py-0 text-[10px] font-semibold text-primary">
                 <GraduationCap className="h-2.5 w-2.5" /> Alumni
               </span>
             )}
@@ -106,7 +106,7 @@ function ReferralRow({ referral, job }: { referral: Referral; job: ReferralModal
           <p className="whitespace-pre-line text-xs leading-relaxed text-foreground/90">{message}</p>
           <div className="mt-2 flex justify-end">
             <Button size="sm" variant="ghost" className="h-7 gap-1 text-[11px]" onClick={copy}>
-              {copied ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3" />}
+              {copied ? <Check className="h-3 w-3 text-success" /> : <Copy className="h-3 w-3" />}
               {copied ? "Copied" : "Copy"}
             </Button>
           </div>

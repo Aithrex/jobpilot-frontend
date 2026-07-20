@@ -8,7 +8,7 @@ const ACTIVE_TAB_ID = "app-shell-mobilenav-active";
 
 /**
  * Bottom tab bar for small viewports (hidden ≥lg, where the Sidebar takes
- * over). A frosted glass bar (semi-opaque background + `backdrop-blur-xl`) with
+ * over). A frosted glass bar (the canonical `.glass-nav` recipe) with
  * safe-area padding. Primary destinations only; Settings + account actions live
  * in the TopBar user menu. Each tab is a ≥44px target with a visible focus ring
  * and an `aria-current` active state marked by a framer-motion pill that slides
@@ -20,7 +20,7 @@ export function MobileNav() {
   return (
     <nav
       aria-label="Primary"
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-border/70 bg-background/80 pb-[env(safe-area-inset-bottom)] shadow-pop backdrop-blur-xl supports-[backdrop-filter]:bg-background/70 lg:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-border/70 glass-nav pb-[env(safe-area-inset-bottom)] shadow-pop lg:hidden"
     >
       <ul className="mx-auto flex max-w-md items-stretch justify-around px-1">
         {NAV_ITEMS.map((item) => {

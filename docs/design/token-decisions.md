@@ -1,3 +1,9 @@
+> ## SUPERSEDED - PROPOSAL SINCE SHIPPED
+>
+> This proposal was implemented; the values below now live in **`src/index.css`**
+> (the single source of truth) and are documented in **`docs/DESIGN_SYSTEM_MAP.md`**.
+> Read those instead; this file is kept only for the contrast-math rationale.
+
 # JobPilot — Reconciled Design-Token Proposal
 
 > **Status: PROPOSAL — review before lock. Nothing here is wired into the running app.**

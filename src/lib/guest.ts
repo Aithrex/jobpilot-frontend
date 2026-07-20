@@ -16,9 +16,12 @@
  *   deployed) so prod safely falls back to the login-first landing.
  */
 
+import { toast } from "sonner";
 import { apiService } from "@/lib/api";
 
 export const GUEST_ID_KEY = "guest_id";
+/** Server-issued anti-abuse device token (spec v2) — NOT a capability. */
+export const GUEST_DEVICE_TOKEN_KEY = "guest_device_token";
 /** Shared with AuthGate's login/register context — see AuthGate.tsx readContext(). */
 const FINGERPRINT_KEY = "portfolio_fingerprint_hash";
 const RUNTIME_DISABLED_KEY = "guest_onboarding_unavailable";
@@ -118,6 +121,24 @@ export function clearGuestId(): void {
   }
 }
 
+// ── Server-issued device token (spec v2) ─────────────────────────
+//
+// `POST /resume/guest/onboard` returns an opaque `device_token` the server
+// stores only as a sha256 hash. It is a first-party anti-abuse signal (keeps
+// the single free tailor fair across re-uploads), NOT a capability — it
+// grants no access to anything. Persist it and echo it on
+// session/matches/tailor calls. Deliberately NOT cleared on claim: it is a
+// durable device signal, not session state.
+
+export function getDeviceToken(): string | null {
+  return safeGet(GUEST_DEVICE_TOKEN_KEY);
+}
+
+/** Persist the server-issued device token (from /resume/guest/onboard). */
+export function setDeviceToken(token: string): void {
+  safeSet(GUEST_DEVICE_TOKEN_KEY, token);
+}
+
 // ── Device fingerprint hash ──────────────────────────────────────
 
 async function sha256Hex(input: string): Promise<string> {
@@ -199,6 +220,25 @@ export function claimGuestIfPresent(): Promise<void> {
       const resp = await apiService.guestClaim(guestId);
       if (!resp.error || resp.status === 404) {
         clearGuestId();
+      }
+      // v2 response carries transfer + day-1 usage counters — surface a
+      // one-line confirmation when the claim actually moved work over.
+      // Best-effort only: any toast problem must never affect auth.
+      const result = resp.data;
+      if (result?.claimed && !result.already_claimed) {
+        const moved =
+          !!result.resume_imported ||
+          (result.records_transferred ?? 0) > 0 ||
+          (result.tailors_carried ?? 0) > 0;
+        if (moved) {
+          const used = result.daily_tailors_used;
+          const limit = result.daily_tailors_limit;
+          toast.success(
+            typeof used === "number" && typeof limit === "number"
+              ? `Your guest work is saved to your account. ${used} of ${limit} free tailors used today.`
+              : "Your guest work is saved to your account.",
+          );
+        }
       }
     } catch {
       /* claim is best-effort; the server-side claimed guard keeps it safe */

@@ -45,7 +45,7 @@ export function TopBar() {
   });
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border/70 bg-background/80 px-4 shadow-soft backdrop-blur-xl transition-colors duration-200 ease-expo supports-[backdrop-filter]:bg-background/65 sm:px-6">
+    <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border/70 glass-nav px-4 shadow-soft transition-colors duration-200 ease-expo sm:px-6">
       {/* Brand mark for small viewports (the Sidebar carries it ≥lg) */}
       <Link
         to={navHref("today")}

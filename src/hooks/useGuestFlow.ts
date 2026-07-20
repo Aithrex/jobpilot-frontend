@@ -1,0 +1,536 @@
+/**
+ * useGuestFlow — the guest onboarding state machine (spec v2):
+ * upload → parse poll → matches poll → single tailor poll → polished
+ * PDF/DOCX download via short-lived capability tokens.
+ *
+ * Extracted from pages/Start.tsx so the landing hero can embed the same flow
+ * through GuestDropzone + this hook. All backend calls go through apiService;
+ * every long phase is async {job_id} + poll (never blocking).
+ *
+ * Contract notes (jobpilot-backend/docs/specs/guest-onboarding.md v2):
+ * - onboard returns a server-issued device_token → persisted and echoed on
+ *   session/matches/tailor calls (first-party anti-abuse signal).
+ * - tailor sends { guest_id, match_id, device_token? } ONLY.
+ * - 429 bodies (quota_exhausted / capacity / challenge_required) become
+ *   conversion CTAs — never error toasts, never logout.
+ * - A failed tailor releases the server-side reservation, so quota numbers
+ *   are re-read from the session endpoint instead of guessed client-side.
+ */
+
+import { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
+import { apiService } from "@/lib/api";
+import {
+  getDeviceToken,
+  getFingerprintHash,
+  getGuestId,
+  setDeviceToken,
+  setGuestId,
+} from "@/lib/guest";
+import type {
+  GuestDownloadFormat,
+  GuestJobMatch,
+  GuestParseResult,
+  GuestQuotaError,
+  GuestSession,
+  GuestTailorResult,
+} from "@/types/guest";
+import type { JobStatus } from "@/types/resume";
+
+/** v2 default: ONE lifetime guest tailor (server is authoritative). */
+export const GUEST_TAILOR_LIMIT_DEFAULT = 1;
+
+export type GuestStep = "hero" | "parsing" | "matches" | "tailor";
+export type GuestMatchesState = "idle" | "loading" | "ready" | "error" | "cta";
+export type GuestTailorState = "working" | "done" | "cta" | "error";
+
+/** Conversion CTA copy (quota / capacity / challenge) — rendered as a card
+ * with sign-in + create-account actions, never as an error. */
+export interface GuestCta {
+  title: string;
+  body: string;
+}
+
+// Staged progress copy: honest status lines, no fake progress bars. Each list
+// ends on a phrase that can truthfully PERSIST (parse ~30-60s, first matches
+// scan ~1-2 min, tailor ~1-2 min are all longer than the staged run-through).
+export const PARSE_STAGES = [
+  "Uploading your resume…",
+  "Reading the document…",
+  "Extracting your experience and skills…",
+  "Building your profile. Almost done…",
+] as const;
+
+export const TAILOR_STAGES = [
+  "Reading the job description…",
+  "Mapping it against your real experience…",
+  "Rewriting with integrity checks. Nothing invented…",
+  "Polishing and scoring keyword coverage…",
+] as const;
+
+export const MATCHES_STAGES = [
+  "Scanning live openings on Workday, Greenhouse, Lever, and Ashby…",
+  "Scoring each role against your resume…",
+  "Keeping only the strong matches…",
+  "Ranking your best fits. A first scan takes a minute or two…",
+] as const;
+
+/** Cycles through staged status copy while `active`; parks on the last line. */
+export function useStagedCopy(
+  active: boolean,
+  stages: readonly string[],
+  intervalMs = 5000,
+) {
+  const [idx, setIdx] = useState(0);
+  useEffect(() => {
+    if (!active) {
+      setIdx(0);
+      return;
+    }
+    const id = window.setInterval(
+      () => setIdx((i) => Math.min(i + 1, stages.length - 1)),
+      intervalMs,
+    );
+    return () => window.clearInterval(id);
+  }, [active, stages, intervalMs]);
+  return stages[Math.min(idx, stages.length - 1)];
+}
+
+function isUnavailable(status?: number): boolean {
+  // 503 = backend feature flag off; 404 = guest edge route not deployed yet.
+  return status === 503 || status === 404;
+}
+
+/** Map a guest 429 body to conversion CTA copy, or null for a plain
+ * (retryable) throttle. `phase` only varies the wording. */
+function ctaFor429(
+  payload: GuestQuotaError,
+  phase: "upload" | "matches" | "tailor",
+): GuestCta | null {
+  if (payload.error === "challenge_required") {
+    return {
+      title: "We need a quick pause on guest requests",
+      body: "Requests from this network tripped our anti-abuse checks. Create a free account to keep going right away. Your work comes with you.",
+    };
+  }
+  if (payload.global || payload.error === "capacity") {
+    const bodies: Record<typeof phase, string> = {
+      upload:
+        "Guest uploads are maxed out for today. Create a free account to continue right now. It takes about a minute and has no daily guest cap.",
+      matches:
+        "Guest matching is maxed out for today. Create a free account to keep going. Your resume comes with you and there is no daily guest cap.",
+      tailor:
+        "Guest tailoring is at capacity today. Create a free account to keep going right now. Your resume and matches come with you.",
+    };
+    return { title: "We're at guest capacity today", body: bodies[phase] };
+  }
+  if (payload.quota_exhausted) {
+    return {
+      title: "Your free tailor is used. Nice work.",
+      body: "Create a free account to save this work and unlock 5 tailors a day. Everything you made here carries over automatically.",
+    };
+  }
+  return null;
+}
+
+export interface UseGuestFlowOptions {
+  /** The flow is live (unauthenticated + feature flag on). */
+  enabled: boolean;
+  /** 503/404 from any guest endpoint = feature off / edge route missing. */
+  onUnavailable: () => void;
+}
+
+export function useGuestFlow({ enabled, onUnavailable }: UseGuestFlowOptions) {
+  const [step, setStep] = useState<GuestStep>("hero");
+  const [session, setSession] = useState<GuestSession | null>(null);
+  const [guestName, setGuestName] = useState<string | null>(null);
+  const [tailorsUsed, setTailorsUsed] = useState(0);
+  const [tailorsLimit, setTailorsLimit] = useState(GUEST_TAILOR_LIMIT_DEFAULT);
+
+  const [parseStatus, setParseStatus] = useState<JobStatus | null>(null);
+  const [parseError, setParseError] = useState<string | null>(null);
+  const [parseCta, setParseCta] = useState<GuestCta | null>(null);
+
+  const [matches, setMatches] = useState<GuestJobMatch[]>([]);
+  const [matchesState, setMatchesState] = useState<GuestMatchesState>("idle");
+  const [matchesError, setMatchesError] = useState<string | null>(null);
+  const [matchesCta, setMatchesCta] = useState<GuestCta | null>(null);
+
+  const [activeMatch, setActiveMatch] = useState<GuestJobMatch | null>(null);
+  const [tailorState, setTailorState] = useState<GuestTailorState>("working");
+  const [tailorError, setTailorError] = useState<string | null>(null);
+  const [tailorCta, setTailorCta] = useState<GuestCta | null>(null);
+  const [tailored, setTailored] = useState<GuestTailorResult | null>(null);
+  /** match_id of the successfully tailored role — locks every other card. */
+  const [tailoredMatchId, setTailoredMatchId] = useState<string | null>(null);
+  const [downloading, setDownloading] = useState<GuestDownloadFormat | null>(
+    null,
+  );
+
+  const fingerprintRef = useRef<string | null>(null);
+  const fileRef = useRef<File | null>(null);
+
+  const remaining = Math.max(0, tailorsLimit - tailorsUsed);
+
+  const applyQuota = useCallback(
+    (used?: number, limit?: number) => {
+      if (typeof used === "number") setTailorsUsed(Math.max(0, used));
+      if (typeof limit === "number") setTailorsLimit(Math.max(0, limit));
+    },
+    [],
+  );
+
+  /** Re-read authoritative quota numbers (e.g. after a failed tailor, where
+   * the server releases the reservation). Best-effort. */
+  const refreshQuota = useCallback(async () => {
+    const gid = getGuestId();
+    if (!gid) return;
+    const fp = fingerprintRef.current ?? (await getFingerprintHash());
+    const resp = await apiService.guestSession(
+      gid,
+      fp,
+      getDeviceToken() ?? undefined,
+    );
+    if (resp.data) applyQuota(resp.data.tailors_used, resp.data.tailors_limit);
+  }, [applyQuota]);
+
+  // Recognition probe: on mount, ask the backend who this device might be.
+  useEffect(() => {
+    if (!enabled) return;
+    let cancelled = false;
+    (async () => {
+      const fp = await getFingerprintHash();
+      if (cancelled) return;
+      fingerprintRef.current = fp;
+      const resp = await apiService.guestSession(
+        getGuestId() ?? undefined,
+        fp,
+        getDeviceToken() ?? undefined,
+      );
+      if (cancelled) return;
+      if (isUnavailable(resp.status)) {
+        onUnavailable();
+        return;
+      }
+      if (resp.data) {
+        setSession(resp.data);
+        applyQuota(resp.data.tailors_used, resp.data.tailors_limit);
+      }
+      // Network/transient errors: stay put — the dropzone still works and
+      // upload surfaces its own honest error state.
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [enabled, onUnavailable, applyQuota]);
+
+  const loadMatches = useCallback(async () => {
+    const gid = getGuestId();
+    if (!gid) return;
+    setMatchesState("loading");
+    setMatchesError(null);
+    setMatchesCta(null);
+    const resp = await apiService.guestMatches(
+      gid,
+      getDeviceToken() ?? undefined,
+    );
+    if (isUnavailable(resp.status)) {
+      onUnavailable();
+      return;
+    }
+    if (resp.status === 429) {
+      const payload = (resp.errorPayload ?? {}) as GuestQuotaError;
+      const cta = ctaFor429(payload, "matches");
+      if (cta) {
+        setMatchesCta(cta);
+        setMatchesState("cta");
+        return;
+      }
+      // Plain per-IP throttle — genuinely retryable.
+      setMatchesState("error");
+      setMatchesError(
+        "High demand right now. Give it a few minutes and try again.",
+      );
+      return;
+    }
+    if (resp.error || !resp.data) {
+      setMatchesState("error");
+      setMatchesError(
+        resp.error || "We could not load your matches. Please try again.",
+      );
+      return;
+    }
+    // Render EXACTLY what the server returns — it caps at 5. No client-side
+    // slicing, no hidden rows, no blur.
+    setMatches(resp.data.jobs ?? []);
+    setMatchesState("ready");
+  }, [onUnavailable]);
+
+  /** Returning guest with a resume on file → straight to today's matches. */
+  const goToMatches = useCallback(() => {
+    if (!getGuestId()) return;
+    setStep("matches");
+    void loadMatches();
+  }, [loadMatches]);
+
+  /** Kick off the upload → parse → matches chain. The dropzone has already
+   * validated type/size. */
+  const startUpload = useCallback(
+    async (file: File) => {
+      fileRef.current = file;
+      setParseError(null);
+      setParseCta(null);
+      setParseStatus(null);
+      setStep("parsing");
+
+      const fp = fingerprintRef.current ?? (await getFingerprintHash());
+      fingerprintRef.current = fp;
+      const submit = await apiService.guestOnboard(
+        file,
+        fp,
+        getGuestId() ?? undefined,
+        getDeviceToken() ?? undefined,
+      );
+      if (submit.error || !submit.data?.job_id) {
+        if (isUnavailable(submit.status)) {
+          onUnavailable();
+          return;
+        }
+        if (submit.status === 429) {
+          const payload = (submit.errorPayload ?? {}) as GuestQuotaError;
+          const cta = ctaFor429(payload, "upload");
+          if (cta) {
+            setParseCta(cta);
+          } else {
+            setParseError(
+              "We've hit the guest upload limit from your network for now. Create a free account to continue right away. It takes a minute.",
+            );
+          }
+        } else {
+          setParseError(submit.error || "Upload failed. Please try again.");
+        }
+        return;
+      }
+
+      setGuestId(submit.data.guest_id);
+      // v2: persist the server-issued anti-abuse device token and echo it on
+      // every later guest call.
+      if (submit.data.device_token) setDeviceToken(submit.data.device_token);
+
+      const poll = await apiService.guestJobPoll<GuestParseResult>(
+        submit.data.job_id,
+        submit.data.guest_id,
+        180000,
+        undefined,
+        setParseStatus,
+      );
+      if (poll.error || !poll.data) {
+        setParseError(
+          poll.error ||
+            "We couldn't read that resume. If it's a scan or image-based PDF, try exporting a text-based version and upload again.",
+        );
+        return;
+      }
+      // Result is nested: { parsed_resume: { structured, filename }, guest: {...} }.
+      const contact = (
+        poll.data.parsed_resume?.structured as
+          | { contact?: { name?: string } }
+          | undefined
+      )?.contact;
+      if (contact?.name) setGuestName(contact.name);
+      // The `guest` block carries recognition + quota — no extra session call.
+      // v2: recognized_name is present ONLY when the owning guest_id proved
+      // the session; never synthesize a name from anything else.
+      const guest = poll.data.guest;
+      if (guest) {
+        applyQuota(guest.tailors_used, guest.tailors_limit);
+        if (guest.recognized) {
+          setSession((s) => {
+            const next: GuestSession = {
+              ...(s ?? { exists: true }),
+              exists: true,
+              recognized: true,
+            };
+            if (guest.recognized_name) next.recognized_name = guest.recognized_name;
+            return next;
+          });
+        }
+      }
+      setStep("matches");
+      void loadMatches();
+    },
+    [onUnavailable, loadMatches, applyQuota],
+  );
+
+  const retryUpload = useCallback(() => {
+    if (fileRef.current) void startUpload(fileRef.current);
+  }, [startUpload]);
+
+  /** Tailor for ONE served match. v2 sends { guest_id, match_id,
+   * device_token? } only — the JD is resolved server-side from the cache. */
+  const startTailor = useCallback(
+    async (match: GuestJobMatch) => {
+      const gid = getGuestId();
+      if (!gid) {
+        toast.error("Upload your resume first so we can tailor it.");
+        setStep("hero");
+        return;
+      }
+      setActiveMatch(match);
+      setTailored(null);
+      setTailorError(null);
+      setTailorCta(null);
+      setTailorState("working");
+      setStep("tailor");
+
+      const submit = await apiService.guestTailor({
+        guest_id: gid,
+        match_id: match.match_id,
+        device_token: getDeviceToken() ?? undefined,
+      });
+      if (submit.error || !submit.data?.job_id) {
+        if (isUnavailable(submit.status)) {
+          onUnavailable();
+          return;
+        }
+        if (submit.status === 429) {
+          const payload = (submit.errorPayload ?? {}) as GuestQuotaError;
+          applyQuota(payload.tailors_used, payload.tailors_limit);
+          if (
+            payload.quota_exhausted &&
+            typeof payload.tailors_used !== "number"
+          ) {
+            setTailorsUsed((used) => Math.max(used, tailorsLimit));
+          }
+          setTailorCta(
+            ctaFor429(payload, "tailor") ?? {
+              title: "Guest tailoring is busy right now",
+              body: "Create a free account to keep going right now. Your resume and matches come with you.",
+            },
+          );
+          setTailorState("cta");
+          return;
+        }
+        setTailorError(
+          submit.error || "Could not start tailoring. Please try again.",
+        );
+        setTailorState("error");
+        return;
+      }
+
+      // Both the fresh 202 and the idempotent 200 { existing:true } carry the
+      // server-confirmed quota numbers — update the meter immediately (the
+      // completed result doesn't repeat them; no double-count).
+      applyQuota(submit.data.tailors_used, submit.data.tailors_limit);
+
+      const poll = await apiService.guestJobPoll<GuestTailorResult>(
+        submit.data.job_id,
+        gid,
+        240000,
+      );
+      if (poll.error || !poll.data?.tailored_resume) {
+        setTailorError(poll.error || "Tailoring failed. Please try again.");
+        setTailorState("error");
+        // A failed tailor releases the server-side reservation — re-read the
+        // authoritative numbers instead of guessing.
+        void refreshQuota();
+        return;
+      }
+      setTailored(poll.data);
+      setTailoredMatchId(match.match_id);
+      setTailorState("done");
+    },
+    [onUnavailable, applyQuota, refreshQuota, tailorsLimit],
+  );
+
+  const retryTailor = useCallback(() => {
+    if (activeMatch) void startTailor(activeMatch);
+  }, [activeMatch, startTailor]);
+
+  /** Reopen the finished tailor result from the matches list. */
+  const openTailored = useCallback(() => {
+    if (!tailored) return;
+    setTailorState("done");
+    setStep("tailor");
+  }, [tailored]);
+
+  /** Issue a fresh short-lived token for the chosen format and trigger the
+   * browser download through a plain anchor (the token is the capability —
+   * no auth header). Re-issuing never consumes quota. */
+  const downloadTailored = useCallback(
+    async (format: GuestDownloadFormat) => {
+      const gid = getGuestId();
+      const recordId = tailored?.record_id;
+      if (!gid || !recordId) {
+        toast.error("This tailored resume can't be downloaded right now.");
+        return;
+      }
+      setDownloading(format);
+      try {
+        const resp = await apiService.guestDownloadIssue(gid, recordId, format);
+        if (resp.error || !resp.data?.token) {
+          toast.error(
+            resp.error ||
+              "Could not prepare the download. Please try again in a moment.",
+          );
+          return;
+        }
+        const a = document.createElement("a");
+        a.href = apiService.guestDownloadUrl(resp.data.token);
+        a.rel = "noopener";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      } finally {
+        setDownloading(null);
+      }
+    },
+    [tailored],
+  );
+
+  const backToMatches = useCallback(() => setStep("matches"), []);
+  const backToHero = useCallback(() => setStep("hero"), []);
+
+  return {
+    // step machine
+    step,
+    backToMatches,
+    backToHero,
+    goToMatches,
+    // identity / recognition
+    session,
+    guestName,
+    // quota
+    tailorsUsed,
+    tailorsLimit,
+    remaining,
+    // upload/parse
+    startUpload,
+    retryUpload,
+    hasPendingFile: !!fileRef.current,
+    parseStatus,
+    parseError,
+    parseCta,
+    // matches
+    matches,
+    matchesState,
+    matchesError,
+    matchesCta,
+    loadMatches,
+    // tailor
+    activeMatch,
+    tailorState,
+    tailorError,
+    tailorCta,
+    tailored,
+    tailoredMatchId,
+    startTailor,
+    retryTailor,
+    openTailored,
+    // download
+    downloading,
+    downloadTailored,
+  };
+}
+
+export type GuestFlow = ReturnType<typeof useGuestFlow>;

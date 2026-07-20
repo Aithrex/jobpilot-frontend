@@ -16,8 +16,9 @@ interface SidebarProps {
 const ACTIVE_PILL_ID = "app-shell-sidebar-active";
 
 /**
- * Desktop navigation rail for the app shell. A frosted glass rail (semi-opaque
- * sidebar token + `backdrop-blur-xl`) that reads clean in both themes. Expanded
+ * Desktop navigation rail for the app shell. A frosted glass rail (the
+ * canonical `.glass-nav` recipe on sidebar tokens) that reads clean in both
+ * themes. Expanded
  * ≈ 240px, collapsed ≈ 68px with icon-only items that surface their label as a
  * tooltip. Every control is a ≥44px target with a visible focus-visible ring;
  * the active item is marked with `aria-current` plus a framer-motion pill that
@@ -29,7 +30,7 @@ export function Sidebar({ collapsed, onToggleCollapse }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "sticky top-0 z-40 hidden h-screen shrink-0 flex-col border-r border-sidebar-border/80 bg-sidebar/70 text-sidebar-foreground backdrop-blur-xl transition-[width] duration-200 ease-expo supports-[backdrop-filter]:bg-sidebar/60 lg:flex",
+        "sticky top-0 z-40 hidden h-screen shrink-0 flex-col border-r border-sidebar-border/80 glass-nav glass-nav-sidebar text-sidebar-foreground transition-[width] duration-200 ease-expo lg:flex",
         collapsed ? "w-[68px]" : "w-60",
       )}
       data-themed-surface

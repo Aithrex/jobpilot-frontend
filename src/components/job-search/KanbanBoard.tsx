@@ -11,11 +11,11 @@ interface KanbanBoardProps {
 }
 
 const COLUMNS: Array<{ key: string; label: string; head: string }> = [
-  { key: 'interested', label: 'Saved', head: 'border-blue-500/40 text-blue-600 dark:text-blue-300' },
-  { key: 'applied', label: 'Applied', head: 'border-amber-500/40 text-amber-600 dark:text-amber-300' },
-  { key: 'interview', label: 'Interview', head: 'border-indigo-500/40 text-indigo-600 dark:text-indigo-300' },
-  { key: 'offer', label: 'Offer', head: 'border-emerald-500/40 text-emerald-600 dark:text-emerald-300' },
-  { key: 'rejected', label: 'Rejected', head: 'border-red-500/40 text-red-600 dark:text-red-400' },
+  { key: 'interested', label: 'Saved', head: 'border-info/40 text-info' },
+  { key: 'applied', label: 'Applied', head: 'border-warning/40 text-warning' },
+  { key: 'interview', label: 'Interview', head: 'border-primary/40 text-primary' },
+  { key: 'offer', label: 'Offer', head: 'border-success/40 text-success' },
+  { key: 'rejected', label: 'Rejected', head: 'border-destructive/40 text-destructive' },
   { key: 'withdrawn', label: 'Withdrawn', head: 'border-border text-muted-foreground' },
 ];
 
@@ -38,7 +38,7 @@ function Tile({ saved, updateJobStatus, unsaveJob }: {
         e.dataTransfer.setData('text/plain', saved.job_id);
         e.dataTransfer.effectAllowed = 'move';
       }}
-      className="group cursor-grab rounded-xl border border-border/60 bg-card p-3 shadow-soft transition-[transform,box-shadow,border-color] duration-150 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md active:cursor-grabbing"
+      className="group cursor-grab rounded-xl border border-border/60 bg-card p-3 shadow-soft transition-[transform,box-shadow,border-color] duration-150 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-panel active:cursor-grabbing"
     >
       <div className="flex items-start gap-2">
         <div

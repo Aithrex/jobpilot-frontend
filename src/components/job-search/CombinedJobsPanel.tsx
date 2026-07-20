@@ -227,7 +227,7 @@ export function CombinedJobsPanel({
                   'gap-1 text-[10px] font-medium',
                   st.error ? 'border-destructive/30 bg-destructive/10 text-destructive'
                     : active ? 'border-primary/30 bg-primary/5 text-primary'
-                    : done ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                    : done ? 'border-success/30 bg-success/10 text-success'
                     : 'border-border text-muted-foreground',
                 )}
               >
@@ -293,7 +293,7 @@ export function CombinedJobsPanel({
 
       {/* ── Glass filter bar ── */}
       {hasResult && (
-        <div className="sticky top-2 z-10 flex flex-wrap items-center gap-2 rounded-2xl border border-border/60 bg-card/70 p-2.5 shadow-soft backdrop-blur-xl">
+        <div className="glass-nav glass-nav-card sticky top-2 z-10 flex flex-wrap items-center gap-2 rounded-2xl border border-border/60 p-2.5 shadow-soft">
           <div className="relative min-w-[180px] flex-1 basis-full sm:basis-56">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" aria-hidden />
             <input

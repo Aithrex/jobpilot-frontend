@@ -778,28 +778,32 @@ class ApiService {
   // ============================================
   // Guest onboarding (/api/resume/guest/*, /api/jobs/guest/*)
   //
-  // Contract: jobpilot-backend/docs/specs/guest-onboarding.md (v1).
+  // Contract: jobpilot-backend/docs/specs/guest-onboarding.md (v2).
   // These endpoints are unauthenticated BY DESIGN (skipAuth) — guest failures
-  // are 429/503, NEVER 401, and a 429 with { quota_exhausted: true } is a
-  // signup CTA, not an error. The ONE exception is guestClaim, which is
-  // JWT'd (it moves guest work into the freshly-authenticated account).
+  // are 400/404/410/429/503, NEVER 401. A 429 with { quota_exhausted: true },
+  // { error: "capacity" }, or { error: "challenge_required" } is a conversion
+  // CTA, not an error. The ONE exception is guestClaim, which is JWT'd (it
+  // moves guest work into the freshly-authenticated account).
   // Rides existing edge routes (/api/resume/*, /api/jobs/*) — no new prefix.
   // ============================================
 
   /**
    * Kick off guest resume parsing: multipart file (pdf/docx, ≤5MB) +
-   * fingerprint_hash (+ optional pre-existing guest_id).
-   * → 202 { guest_id, job_id }; caller polls guestJobPoll.
+   * fingerprint_hash (+ optional pre-existing guest_id + device_token).
+   * → 202 { guest_id, job_id, device_token }; caller persists both ids and
+   * polls guestJobPoll.
    */
   async guestOnboard(
     file: File,
     fingerprintHash: string,
     guestId?: string,
+    deviceToken?: string,
   ): Promise<ApiResponse<import("../types/guest").GuestOnboardSubmit>> {
     const formData = new FormData();
     formData.append("file", file);
     formData.append("fingerprint_hash", fingerprintHash);
     if (guestId) formData.append("guest_id", guestId);
+    if (deviceToken) formData.append("device_token", deviceToken);
     const url = `${this.baseURL}/resume/guest/onboard`;
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 30000);
@@ -852,13 +856,19 @@ class ApiService {
 
   /**
    * GET /resume/guest/session — session lookup + soft identity recognition.
-   * With an unknown guest_id but a matching fingerprint cluster the backend
-   * answers { recognized: true, recognized_name } → "Welcome back" CTA.
+   * Device/fingerprint-only recognition answers { exists:false,
+   * recognized:true } with NO name; `recognized_name` appears only on a
+   * guest_id-proven session with a parsed resume (spec v2).
    */
-  async guestSession(guestId?: string, fingerprintHash?: string) {
+  async guestSession(
+    guestId?: string,
+    fingerprintHash?: string,
+    deviceToken?: string,
+  ) {
     const params = new URLSearchParams();
     if (guestId) params.set("guest_id", guestId);
     if (fingerprintHash) params.set("fingerprint_hash", fingerprintHash);
+    if (deviceToken) params.set("device_token", deviceToken);
     return this.request<import("../types/guest").GuestSession>(
       `/resume/guest/session?${params.toString()}`,
       {},
@@ -868,23 +878,63 @@ class ApiService {
   }
 
   /**
-   * POST /resume/guest/tailor → 202 { job_id }; caller polls guestJobPoll.
-   * 429 + { quota_exhausted: true } when the guest's lifetime free tailors
-   * are used up (or the global daily circuit breaker trips) — signup CTA.
+   * POST /resume/guest/tailor — v2 payload is { guest_id, match_id,
+   * device_token? } ONLY: match_id must come from the served match cards and
+   * the JD is resolved server-side (never a client-supplied URL/text).
+   * → 202 { job_id, tailors_used, tailors_limit } (fresh atomic reservation)
+   * or 200 { job_id, existing:true, ... } (idempotent retry, same match);
+   * caller polls guestJobPoll either way. 429 variants (quota_exhausted /
+   * capacity / challenge_required) are conversion CTAs, never errors.
    */
   async guestTailor(payload: {
     guest_id: string;
-    job: { title: string; company: string; url?: string };
+    match_id: string;
+    device_token?: string;
   }) {
-    // The 202 carries the server-confirmed quota numbers (tailors_used /
-    // tailors_limit) — callers update the meter from it immediately; the
-    // completed job result does NOT repeat them.
+    // The submit response carries the server-confirmed quota numbers
+    // (tailors_used / tailors_limit) — callers update the meter from it
+    // immediately; the completed job result does NOT repeat them.
     return this.request<import("../types/guest").GuestTailorSubmit>(
       "/resume/guest/tailor",
       { method: "POST", body: JSON.stringify(payload) },
       30000,
       { skipAuth: true },
     );
+  }
+
+  /**
+   * POST /resume/guest/download — issue a short-lived (≈15 min) download
+   * capability token for a tailoring record owned by this exact guest_id.
+   * → 200 { token, expires_at, formats }. Unlimited re-issue; downloads
+   * never consume tailor quota (both formats = the same single tailor).
+   */
+  async guestDownloadIssue(
+    guestId: string,
+    recordId: string,
+    format: import("../types/guest").GuestDownloadFormat,
+  ) {
+    return this.request<import("../types/guest").GuestDownloadGrant>(
+      "/resume/guest/download",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          guest_id: guestId,
+          record_id: recordId,
+          format,
+        }),
+      },
+      30000,
+      { skipAuth: true },
+    );
+  }
+
+  /**
+   * URL for GET /resume/guest/download/<token> — streams the rendered
+   * PDF/DOCX. The token IS the capability: no auth header needed, so callers
+   * trigger the download with a plain anchor pointing here.
+   */
+  guestDownloadUrl(token: string): string {
+    return `${this.baseURL}/resume/guest/download/${encodeURIComponent(token)}`;
   }
 
   /**
@@ -910,6 +960,7 @@ class ApiService {
    */
   async guestMatches(
     guestId: string,
+    deviceToken?: string,
     signal?: AbortSignal,
     onStatus?: (status: import("../types/resume").JobStatus) => void,
   ): Promise<ApiResponse<import("../types/guest").GuestMatchesResult>> {
@@ -917,7 +968,14 @@ class ApiService {
       import("../types/guest").GuestMatchesResult | { job_id: string }
     >(
       "/jobs/guest/matches",
-      { method: "POST", body: JSON.stringify({ guest_id: guestId }) },
+      {
+        method: "POST",
+        body: JSON.stringify(
+          deviceToken
+            ? { guest_id: guestId, device_token: deviceToken }
+            : { guest_id: guestId },
+        ),
+      },
       30000,
       { skipAuth: true },
     );

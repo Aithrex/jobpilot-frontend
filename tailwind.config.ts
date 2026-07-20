@@ -33,21 +33,31 @@ export default {
           DEFAULT: "hsl(var(--destructive))",
           foreground: "hsl(var(--destructive-foreground))",
         },
-        success: "hsl(var(--success))",
-        warning: "hsl(var(--warning))",
+        success: {
+          DEFAULT: "hsl(var(--success))",
+          foreground: "hsl(var(--success-foreground))",
+        },
+        warning: {
+          DEFAULT: "hsl(var(--warning))",
+          foreground: "hsl(var(--warning-foreground))",
+        },
+        info: {
+          DEFAULT: "hsl(var(--info))",
+          foreground: "hsl(var(--info-foreground))",
+        },
         // Categorical palette (src/index.css --chart-*) — data-viz AND the
-        // landing's decorative brand logomarks. Values are full hex tokens,
-        // so no hsl() bridge (opacity modifiers unsupported — pair with
-        // neutral surfaces instead).
+        // landing's decorative brand logomarks. Mapped through the additive
+        // --chart-N-hsl bridge so opacity modifiers work (bg-chart-1/10);
+        // the raw hex --chart-N tokens remain for non-Tailwind consumers.
         chart: {
-          "1": "var(--chart-1)",
-          "2": "var(--chart-2)",
-          "3": "var(--chart-3)",
-          "4": "var(--chart-4)",
-          "5": "var(--chart-5)",
-          "6": "var(--chart-6)",
-          "7": "var(--chart-7)",
-          "8": "var(--chart-8)",
+          "1": "hsl(var(--chart-1-hsl))",
+          "2": "hsl(var(--chart-2-hsl))",
+          "3": "hsl(var(--chart-3-hsl))",
+          "4": "hsl(var(--chart-4-hsl))",
+          "5": "hsl(var(--chart-5-hsl))",
+          "6": "hsl(var(--chart-6-hsl))",
+          "7": "hsl(var(--chart-7-hsl))",
+          "8": "hsl(var(--chart-8-hsl))",
         },
         muted: {
           DEFAULT: "hsl(var(--muted))",

@@ -41,7 +41,7 @@ export function LockBadge({ feature, label, className, interactive = true }: Pro
         e.stopPropagation();
         open({ feature, highlight: plan });
       }}
-      className="cursor-pointer transition-transform hover:scale-105"
+      className="cursor-pointer rounded-full transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       aria-label={`Upgrade to ${text}`}
     >
       {content}

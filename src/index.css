@@ -45,6 +45,14 @@
     /* Categorical chart palette (colorblind-aware, cap 8; always add a 2nd cue). */
     --chart-1: #2563EB;  --chart-2: #16A34A;  --chart-3: #D97706;  --chart-4: #7C3AED;
     --chart-5: #0891B2;  --chart-6: #DC2626;  --chart-7: #64748B;  --chart-8: #DB2777;
+    /* HSL bridge for the chart palette (ADDITIVE - the hex tokens above stay
+       for raw consumers). Same colors as the hex values; lets Tailwind map
+       chart-* through hsl(var()) so opacity modifiers (e.g. bg-chart-1/10)
+       work like every other semantic color. */
+    --chart-1-hsl: 221 83% 53%;  --chart-2-hsl: 142 76% 36%;
+    --chart-3-hsl: 32 95% 44%;   --chart-4-hsl: 262 83% 58%;
+    --chart-5-hsl: 192 91% 36%;  --chart-6-hsl: 0 72% 51%;
+    --chart-7-hsl: 215 16% 47%;  --chart-8-hsl: 333 71% 51%;
 
     /* Radius primitives (shadcn --radius base below derives sm/md/lg near 8/10/12). */
     --radius-sm:   8px;
@@ -270,6 +278,40 @@
   /* Glassmorphism card style */
   .glass-card {
     @apply bg-white/80 dark:bg-black/40 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-pop;
+  }
+
+  /* ── Canonical glass recipe (navigation / elevated controls ONLY) ──────
+     THE one sanctioned frosted-surface treatment: token-driven translucent
+     fill + a limited 16px blur, with a solid fallback when backdrop-filter
+     is unsupported (so text scrolling underneath never smears through an
+     un-blurred translucent bar). Do not hand-roll new blur recipes; compose
+     `.glass-nav` and, when the surface sits on card/sidebar tokens, add the
+     matching tint modifier. Reserved for sticky/fixed chrome: top bar,
+     mobile nav, sidebar, command palette, sticky filter bars. */
+  .glass-nav {
+    --glass-bg: var(--background);
+    background-color: hsl(var(--glass-bg) / 0.7);
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
+  }
+  .glass-nav-card {
+    --glass-bg: var(--card);
+  }
+  .glass-nav-sidebar {
+    --glass-bg: var(--sidebar-background);
+  }
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .glass-nav {
+      background-color: hsl(var(--glass-bg));
+    }
+  }
+
+  /* Canonical keyboard-focus ring for hand-rolled interactive elements.
+     shadcn ui/* primitives already ship this; use `.focus-ring-visible` (or
+     the same utilities inline) on any custom button/link so focus is always
+     visible, only for keyboard users, in both themes. */
+  .focus-ring-visible {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
   }
 
   /* ── Editorial surfaces (Compass §7) ───────────────────────────────────

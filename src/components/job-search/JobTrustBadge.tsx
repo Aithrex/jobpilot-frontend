@@ -5,8 +5,8 @@ import { cn } from '@/lib/utils';
 export type TrustBand = 'trusted' | 'caution' | 'high_risk';
 
 const CFG: Record<TrustBand, { label: string; cls: string; icon: typeof ShieldCheck }> = {
-  trusted: { label: 'Screened', cls: 'bg-emerald-500/12 text-emerald-600 dark:text-emerald-400', icon: ShieldCheck },
-  caution: { label: 'Caution', cls: 'bg-amber-500/12 text-amber-600 dark:text-amber-400', icon: ShieldAlert },
+  trusted: { label: 'Screened', cls: 'bg-success/12 text-success', icon: ShieldCheck },
+  caution: { label: 'Caution', cls: 'bg-warning/12 text-warning', icon: ShieldAlert },
   high_risk: { label: 'High risk', cls: 'bg-destructive/12 text-destructive', icon: ShieldX },
 };
 
