@@ -1,12 +1,13 @@
 import { Suspense, lazy, useState } from 'react';
 import {
-  Bookmark, MapPin, Building2, ExternalLink, Trash2, StickyNote, LayoutGrid, Columns3,
+  Bookmark, MapPin, ExternalLink, Trash2, StickyNote, LayoutGrid, Columns3,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { CompanyLogo } from '@/components/CompanyLogo';
 import { KanbanBoard } from '@/components/job-search/KanbanBoard';
 import { cn } from '@/lib/utils';
 import type { SavedJob } from '@/types/jobs';
@@ -43,12 +44,13 @@ function SavedJobCard({ saved, updateJobStatus, unsaveJob }: {
     <Card className="group overflow-hidden rounded-2xl border-border/60 bg-card transition-[border-color,box-shadow] hover:border-primary/40 hover:shadow-panel">
       <CardContent className="space-y-3 p-5">
         <div className="flex items-start justify-between gap-3">
+          <CompanyLogo company={job.company || job.title || ''} logoUrl={job.logo_url} size={32} className="mt-0.5" />
           <div className="min-w-0 flex-1">
             <h3 className="truncate text-sm font-semibold" title={job.title}>
               {job.title}
             </h3>
-            <p className="flex items-center gap-1 truncate text-xs text-muted-foreground">
-              <Building2 className="h-3 w-3 flex-shrink-0" /> {job.company}
+            <p className="truncate text-xs text-muted-foreground">
+              {job.company}
             </p>
             <p className="flex items-center gap-1 truncate text-xs text-muted-foreground">
               <MapPin className="h-3 w-3 flex-shrink-0" /> {job.location}

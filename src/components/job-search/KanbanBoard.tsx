@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { ExternalLink, GripVertical, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { hueFromString, toTitleCase } from '@/lib/format';
+import { toTitleCase } from '@/lib/format';
+import { CompanyLogo } from '@/components/CompanyLogo';
 import type { SavedJob } from '@/types/jobs';
 
 interface KanbanBoardProps {
@@ -27,7 +28,6 @@ function Tile({ saved, updateJobStatus, unsaveJob }: {
   unsaveJob: KanbanBoardProps['unsaveJob'];
 }) {
   const job = saved.job_data;
-  const hue = hueFromString(job.company || job.title || '');
   const title = toTitleCase(job.title);
   const company = toTitleCase(job.company);
 
@@ -41,17 +41,7 @@ function Tile({ saved, updateJobStatus, unsaveJob }: {
       className="group cursor-grab rounded-xl border border-border/60 bg-card p-3 shadow-soft transition-[transform,box-shadow,border-color] duration-150 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-panel active:cursor-grabbing"
     >
       <div className="flex items-start gap-2">
-        <div
-          className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-lg text-xs font-bold"
-          style={{
-            backgroundColor: `hsl(${hue} 68% 55% / 0.14)`,
-            color: `hsl(${hue} 60% 52%)`,
-            boxShadow: `inset 0 0 0 1px hsl(${hue} 68% 55% / 0.28)`,
-          }}
-          aria-hidden
-        >
-          {(company || '?').charAt(0).toUpperCase()}
-        </div>
+        <CompanyLogo company={job.company || job.title || ''} logoUrl={job.logo_url} size={32} />
         <div className="min-w-0 flex-1">
           <p className="line-clamp-2 text-xs font-semibold leading-snug text-foreground" title={title}>{title}</p>
           <p className="truncate text-[11px] text-muted-foreground">{company}</p>

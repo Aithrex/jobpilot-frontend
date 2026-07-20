@@ -222,6 +222,9 @@ export interface Job {
   title: string;
   company: string;
   logo: string;
+  /** Backend-served favicon path ("/api/jobs/logo/<40-hex>"). May 404 — the
+   *  UI must fall back to the hued monogram. Resolve via `companyLogoSrc`. */
+  logo_url?: string;
   location: string;
   apply_link: string;
   description: string;

@@ -35,6 +35,23 @@ function getApiBaseUrl(): string {
 }
 const API_BASE_URL = getApiBaseUrl();
 
+/**
+ * Absolute src for a backend-served company logo. Job rows carry an optional
+ * `logo_url` like "/api/jobs/logo/<hash>" — resolve it against the SAME base
+ * the API layer uses (dev: http://localhost:5000/api, prod: same-origin /api)
+ * so components never hardcode hosts. Logos are public assets: load with a
+ * plain <img>, never with auth headers. Returns null when there is no URL.
+ */
+export function companyLogoSrc(logoUrl?: string | null): string | null {
+  if (!logoUrl) return null;
+  if (/^https?:\/\//i.test(logoUrl)) return logoUrl;
+  // API_BASE_URL already ends in "/api" — strip the duplicate prefix.
+  const path = logoUrl.startsWith("/api/")
+    ? logoUrl.slice("/api".length)
+    : logoUrl;
+  return `${API_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
+}
+
 // Per-user entitlement override doc returned by the admin ops endpoint.
 // `overrides.plan` is overlaid on top of the user's stored plan by the
 // backend entitlements service; a falsy/empty `overrides` clears the grant.

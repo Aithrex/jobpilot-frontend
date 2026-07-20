@@ -4,6 +4,7 @@ import { BadgeCheck, Check, ExternalLink, Wand2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { CompanyLogo } from '@/components/CompanyLogo';
 import { ScoreBadge, stepTransition } from '@/components/guest/_shared';
 import type { GuestJobMatch } from '@/types/guest';
 
@@ -47,10 +48,13 @@ export function GuestMatchCard({
               <h3 className="line-clamp-2 font-semibold" title={match.title}>
                 {match.title}
               </h3>
-              <p className="truncate text-sm text-muted-foreground">
-                {match.company}
-                {match.location ? ` · ${match.location}` : ''}
-              </p>
+              <div className="mt-0.5 flex items-center gap-1.5">
+                <CompanyLogo company={match.company || match.title} logoUrl={match.logo_url} size={20} />
+                <p className="min-w-0 truncate text-sm text-muted-foreground">
+                  {match.company}
+                  {match.location ? ` · ${match.location}` : ''}
+                </p>
+              </div>
             </div>
             <ScoreBadge score={match.match_score} />
           </div>

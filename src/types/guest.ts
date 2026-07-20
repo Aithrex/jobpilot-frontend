@@ -76,6 +76,9 @@ export interface GuestJobMatch {
   match_id: string;
   title: string;
   company: string;
+  /** Backend-served favicon path ("/api/jobs/logo/<40-hex>"). May 404 — the
+   *  UI must fall back to the hued monogram. Resolve via `companyLogoSrc`. */
+  logo_url?: string;
   location?: string;
   /** Job posting URL (application page). */
   apply_link?: string;

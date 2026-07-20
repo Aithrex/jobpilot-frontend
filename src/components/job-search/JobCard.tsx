@@ -7,12 +7,13 @@ import {
 import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { CompanyLogo } from '@/components/CompanyLogo';
 import { JobAnalysisModal } from './JobAnalysisModal';
 import { ResumeTailorModal } from './ResumeTailorModal';
 import { JobTrustBadge } from './JobTrustBadge';
 import { VisaFlagChips } from './JobVisaSignals';
 import { ReferralModal } from './ReferralModal';
-import { apiService } from '@/lib/api';
+import { apiService, companyLogoSrc } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { hostFromUrl, hueFromString, toTitleCase } from '@/lib/format';
 import { useCountUp } from '@/hooks/useCountUp';
@@ -64,10 +65,13 @@ function MatchScoreRing({ score }: { score: number }) {
   );
 }
 
-/** Company mark: real logo → favicon from the apply domain → hued monogram. */
-function CompanyLogo({ job, hue }: { job: Job; hue: number }) {
+/** Company mark: backend-served favicon (`logo_url`) → scraped logo →
+ *  favicon from the apply domain → shared hued monogram (`CompanyLogo`
+ *  owns that terminal fallback). */
+function CompanyMark({ job }: { job: Job }) {
   const host = hostFromUrl(job.apply_link);
   const chain = [
+    companyLogoSrc(job.logo_url),
     job.logo,
     host ? `https://www.google.com/s2/favicons?domain=${host}&sz=128` : '',
   ].filter(Boolean) as string[];
@@ -79,24 +83,15 @@ function CompanyLogo({ job, hue }: { job: Job; hue: number }) {
       <img
         src={src}
         alt=""
+        aria-hidden
         loading="lazy"
+        decoding="async"
         onError={() => setIdx((i) => i + 1)}
         className="h-12 w-12 flex-shrink-0 rounded-xl border border-border/50 bg-background object-contain p-1.5"
       />
     );
   }
-  return (
-    <div
-      className="grid h-12 w-12 flex-shrink-0 place-items-center rounded-xl text-lg font-bold"
-      style={{
-        backgroundColor: `hsl(${hue} 68% 55% / 0.14)`,
-        color: `hsl(${hue} 60% 52%)`,
-        boxShadow: `inset 0 0 0 1px hsl(${hue} 68% 55% / 0.28)`,
-      }}
-    >
-      {(job.company || '?').charAt(0).toUpperCase()}
-    </div>
-  );
+  return <CompanyLogo company={job.company || job.title || 'JobPilot'} size={48} />;
 }
 
 function buildApplyUrl(job: Job): { url: string; fallback: boolean } {
@@ -213,7 +208,7 @@ export function JobCard({ job, saved, jobStatus, onSave, onUnsave, onQuickApply 
         <CardContent className="relative flex flex-1 flex-col gap-3 p-5">
           {/* Header */}
           <div className="flex items-start gap-3">
-            <CompanyLogo job={job} hue={hue} />
+            <CompanyMark job={job} />
             <div className="min-w-0 flex-1">
               <p className="truncate text-[13px] font-semibold text-foreground" title={company}>{company}</p>
               <p className="mt-0.5 flex items-center gap-1 truncate text-[11px] text-muted-foreground">
