@@ -149,7 +149,7 @@ export function PanelCard({
 
 /** All figures on the page render tabular so columns and deltas stay aligned. */
 export function Stat({ children, className }: { children: ReactNode; className?: string }) {
-  return <span className={cn('tabular-nums', className)}>{children}</span>;
+  return <span className={cn('font-mono tabular-nums', className)}>{children}</span>;
 }
 
 /* ── Application-status semantics (icon + label + hue; never colour alone) ── */

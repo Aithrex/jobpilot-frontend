@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
-import { ExternalLink, LogOut, Monitor, Moon, Settings, Sparkles, Sun } from "lucide-react";
+import { ExternalLink, LogOut, Monitor, Moon, Search, Settings, Sparkles, Sun } from "lucide-react";
+import { openCommandPalette } from "./CommandPalette";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -69,6 +70,28 @@ export function TopBar() {
       </div>
 
       <div className="flex items-center gap-1.5">
+        {/* Command palette trigger */}
+        <button
+          type="button"
+          onClick={openCommandPalette}
+          aria-label="Open command palette"
+          title="Search & jump (Ctrl/⌘ K)"
+          className="hidden h-10 items-center gap-2 rounded-full border border-border/70 bg-muted/40 pl-3 pr-2 text-caption text-muted-foreground outline-none transition-colors duration-200 ease-expo hover:border-border hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:flex"
+        >
+          <Search className="h-4 w-4" aria-hidden="true" />
+          <span>Search…</span>
+          <kbd className="rounded border border-border bg-background px-1.5 py-0.5 font-mono text-[10px] font-semibold text-muted-foreground">⌘K</kbd>
+        </button>
+        <button
+          type="button"
+          onClick={openCommandPalette}
+          aria-label="Open command palette"
+          title="Search & jump"
+          className="flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground outline-none transition-colors duration-200 ease-expo hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:hidden"
+        >
+          <Search className="h-5 w-5" aria-hidden="true" />
+        </button>
+
         {/* Theme toggle */}
         <button
           type="button"

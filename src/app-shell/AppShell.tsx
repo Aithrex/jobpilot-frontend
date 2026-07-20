@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Sidebar } from "./Sidebar";
 import { TopBar } from "./TopBar";
 import { MobileNav } from "./MobileNav";
+import { CommandPalette } from "./CommandPalette";
 
 // First-run onboarding. All auth successes land on /next/today, so the shell
 // must host the wizard too (it self-gates: renders null unless the signed-in
@@ -94,6 +95,9 @@ export default function AppShell() {
       </div>
 
       <MobileNav />
+
+      {/* Global ⌘K command palette (jump / search / actions). */}
+      <CommandPalette />
 
       {/* Self-gating first-run onboarding (null for onboarded users). */}
       <Suspense fallback={null}>
