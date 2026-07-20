@@ -144,7 +144,7 @@ export function SavedJobsPanel({ savedJobs, updateJobStatus, unsaveJob }: SavedJ
   if (savedJobs.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-purple-500/30 bg-gradient-to-b from-purple-500/5 to-transparent py-12 text-center">
-        <div className="mx-auto h-36 w-36">
+        <div className="mx-auto h-36 w-36" aria-hidden>
           <Suspense fallback={(
             <div className="flex h-full w-full items-center justify-center">
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-500 text-white shadow-lg shadow-purple-500/30">

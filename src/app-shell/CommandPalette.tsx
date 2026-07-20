@@ -5,6 +5,7 @@ import {
   CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem,
   CommandList, CommandSeparator, CommandShortcut,
 } from '@/components/ui/command';
+import { DialogTitle } from '@/components/ui/dialog';
 import { useTheme } from '@/components/theme-provider';
 import { useCombinedJobsCtx } from '@/components/job-search/CombinedJobsProvider';
 import { NAV_ALL, navHref } from './nav.config';
@@ -62,6 +63,7 @@ export function CommandPalette() {
 
   return (
     <CommandDialog open={open} onOpenChange={setOpen}>
+      <DialogTitle className="sr-only">Command palette</DialogTitle>
       <CommandInput
         placeholder="Search jobs, jump to a page, run an action…"
         value={query}

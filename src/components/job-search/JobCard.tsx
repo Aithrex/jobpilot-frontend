@@ -27,10 +27,12 @@ interface JobCardProps {
   onQuickApply: () => void;
 }
 
-/** Match band → ring stroke + label color. Green = strong fit, amber = partial. */
+/** Match band → ring stroke + label color, using the app's a11y-verified
+ *  semantic tokens (auto-adapt across light/dark). Strong fit = success,
+ *  partial = warning. */
 function matchBand(score: number): { stroke: string; text: string } {
-  if (score >= 70) return { stroke: 'hsl(152 60% 44%)', text: 'text-emerald-600 dark:text-emerald-400' };
-  if (score >= 40) return { stroke: 'hsl(38 92% 52%)', text: 'text-amber-600 dark:text-amber-400' };
+  if (score >= 70) return { stroke: 'hsl(var(--success))', text: 'text-success' };
+  if (score >= 40) return { stroke: 'hsl(var(--warning))', text: 'text-warning' };
   return { stroke: 'hsl(var(--muted-foreground))', text: 'text-muted-foreground' };
 }
 
