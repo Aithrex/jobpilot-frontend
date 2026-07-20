@@ -6,7 +6,8 @@ import { startHref } from './_shared';
 /** In-page anchors to real sections only. Hidden on mobile, where the bar
  *  stays compact: logo + Sign in + the primary CTA (no hamburger needed). */
 const SECTION_LINKS = [
-  { label: 'How it works', href: '#how-it-works' },
+  { label: 'Why Aspirely', href: '#why' },
+  { label: 'Workspace', href: '#workspace' },
   { label: 'Trust', href: '#trust' },
 ];
 
@@ -49,7 +50,11 @@ export function LandingNav() {
             <Link to="/login">Sign in</Link>
           </Button>
           <Button asChild size="sm" className="h-11 rounded-full px-4 sm:px-5">
-            <Link to={startHref()}>Try it free</Link>
+            {startHref().startsWith('/#') ? (
+              <a href="#try">Try it free</a>
+            ) : (
+              <Link to={startHref()}>Try it free</Link>
+            )}
           </Button>
         </div>
       </div>

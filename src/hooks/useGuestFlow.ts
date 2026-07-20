@@ -40,6 +40,41 @@ import type { JobStatus } from "@/types/resume";
 /** v2 default: ONE lifetime guest tailor (server is authoritative). */
 export const GUEST_TAILOR_LIMIT_DEFAULT = 1;
 
+/**
+ * Client-side pointer to the finished tailor job so a refresh can restore the
+ * completed result (the guest job route re-serves completed job docs). Holds
+ * only opaque ids — never resume content.
+ */
+const TAILORED_POINTER_KEY = "guest_tailored_v1";
+
+interface TailoredPointer {
+  job_id: string;
+  match_id: string;
+  record_id?: string;
+}
+
+function readTailoredPointer(): TailoredPointer | null {
+  try {
+    const raw = localStorage.getItem(TAILORED_POINTER_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as TailoredPointer;
+    return parsed && typeof parsed.job_id === "string" && typeof parsed.match_id === "string"
+      ? parsed
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeTailoredPointer(pointer: TailoredPointer | null): void {
+  try {
+    if (pointer) localStorage.setItem(TAILORED_POINTER_KEY, JSON.stringify(pointer));
+    else localStorage.removeItem(TAILORED_POINTER_KEY);
+  } catch {
+    /* storage unavailable — restore simply won't survive refresh */
+  }
+}
+
 export type GuestStep = "hero" | "parsing" | "matches" | "tailor";
 export type GuestMatchesState = "idle" | "loading" | "ready" | "error" | "cta";
 export type GuestTailorState = "working" | "done" | "cta" | "error";
@@ -150,6 +185,9 @@ export function useGuestFlow({ enabled, onUnavailable }: UseGuestFlowOptions) {
   const [parseStatus, setParseStatus] = useState<JobStatus | null>(null);
   const [parseError, setParseError] = useState<string | null>(null);
   const [parseCta, setParseCta] = useState<GuestCta | null>(null);
+  /** Structured resume from the completed parse — drives the parsing morph
+   * preview and the original-vs-tailored comparison. Kept in memory only. */
+  const [parsedResume, setParsedResume] = useState<Record<string, unknown> | null>(null);
 
   const [matches, setMatches] = useState<GuestJobMatch[]>([]);
   const [matchesState, setMatchesState] = useState<GuestMatchesState>("idle");
@@ -215,6 +253,30 @@ export function useGuestFlow({ enabled, onUnavailable }: UseGuestFlowOptions) {
       if (resp.data) {
         setSession(resp.data);
         applyQuota(resp.data.tailors_used, resp.data.tailors_limit);
+
+        // Refresh restore: a finished tailor leaves a client-side pointer to
+        // its completed job — re-read it so the preview, "Tailored" mark, and
+        // downloads survive a reload. Best-effort; a 404 (expired job doc)
+        // clears the pointer and the flow degrades to the locked-quota state.
+        const pointer = readTailoredPointer();
+        const gid = getGuestId();
+        if (pointer && gid && resp.data.exists) {
+          const job = await apiService.guestJobPoll<GuestTailorResult>(
+            pointer.job_id,
+            gid,
+            15000,
+          );
+          if (cancelled) return;
+          if (job.data?.tailored_resume) {
+            setTailored(job.data);
+            setTailoredMatchId(pointer.match_id);
+          } else if (job.status === 404) {
+            writeTailoredPointer(null);
+          }
+        } else if (pointer && (!gid || (resp.data.exists === false && gid))) {
+          // The session behind the pointer is gone — drop it.
+          writeTailoredPointer(null);
+        }
       }
       // Network/transient errors: stay put — the dropzone still works and
       // upload surfaces its own honest error state.
@@ -281,6 +343,7 @@ export function useGuestFlow({ enabled, onUnavailable }: UseGuestFlowOptions) {
       setParseError(null);
       setParseCta(null);
       setParseStatus(null);
+      setParsedResume(null);
       setStep("parsing");
 
       const fp = fingerprintRef.current ?? (await getFingerprintHash());
@@ -332,11 +395,10 @@ export function useGuestFlow({ enabled, onUnavailable }: UseGuestFlowOptions) {
         return;
       }
       // Result is nested: { parsed_resume: { structured, filename }, guest: {...} }.
-      const contact = (
-        poll.data.parsed_resume?.structured as
-          | { contact?: { name?: string } }
-          | undefined
-      )?.contact;
+      const structured = poll.data.parsed_resume?.structured;
+      if (structured) setParsedResume(structured);
+      const contact = (structured as { contact?: { name?: string } } | undefined)
+        ?.contact;
       if (contact?.name) setGuestName(contact.name);
       // The `guest` block carries recognition + quota — no extra session call.
       // v2: recognized_name is present ONLY when the owning guest_id proved
@@ -439,6 +501,11 @@ export function useGuestFlow({ enabled, onUnavailable }: UseGuestFlowOptions) {
       setTailored(poll.data);
       setTailoredMatchId(match.match_id);
       setTailorState("done");
+      writeTailoredPointer({
+        job_id: submit.data.job_id,
+        match_id: match.match_id,
+        record_id: poll.data.record_id,
+      });
     },
     [onUnavailable, applyQuota, refreshQuota, tailorsLimit],
   );
@@ -508,9 +575,11 @@ export function useGuestFlow({ enabled, onUnavailable }: UseGuestFlowOptions) {
     startUpload,
     retryUpload,
     hasPendingFile: !!fileRef.current,
+    pendingFileName: fileRef.current?.name ?? null,
     parseStatus,
     parseError,
     parseCta,
+    parsedResume,
     // matches
     matches,
     matchesState,

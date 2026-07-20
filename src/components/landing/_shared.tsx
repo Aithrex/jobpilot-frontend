@@ -246,10 +246,10 @@ export function AmbientGlow({ className }: { className?: string }) {
 }
 
 /**
- * Primary-CTA destination: the zero-friction guest funnel (/start) when the
- * feature is enabled, otherwise account creation. One helper so the nav,
- * hero, and close CTAs can never drift onto different doors.
+ * Primary-CTA destination: the live guest workspace in the hero (the flow now
+ * runs ON `/`) when the feature is enabled, otherwise account creation. One
+ * helper so the nav and close CTAs can never drift onto different doors.
  */
 export function startHref(): string {
-  return isGuestOnboardingEnabled() ? '/start' : '/register';
+  return isGuestOnboardingEnabled() ? '/#try' : '/register';
 }

@@ -1,0 +1,225 @@
+import { Link } from 'react-router-dom';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { BadgeCheck, LayoutDashboard, ShieldCheck, Target } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { GuestProgressRail } from '@/components/guest/GuestProgressRail';
+import { GuestFlowShell } from '@/components/guest/GuestFlowShell';
+import { GuestUploadState } from '@/components/guest/GuestUploadState';
+import { TailorQuota } from '@/components/guest/_shared';
+import type { GuestFlow } from '@/hooks/useGuestFlow';
+import { AmbientGlow, Container, Grain, Reveal, EASE } from './_shared';
+
+/**
+ * Hero + live guest workspace: the real product IS the hero. Idle, the right
+ * window is the actual upload surface (GuestUploadState) beside the promise
+ * copy; the moment a file is picked the same window morphs into the full
+ * parsing → matches → tailor workspace, full-width, while the marketing
+ * sections below collapse (LandingExperience hides them via `flowActive`).
+ *
+ * One useGuestFlow controller, owned by LandingExperience — this component
+ * is presentational. The h1 is the page's single h1 and its LCP element.
+ */
+export interface HeroWorkspaceProps {
+  flow: GuestFlow;
+  /** Guest flow is live (unauthenticated + feature flag on). */
+  guestEnabled: boolean;
+  authed: boolean;
+  /** A step beyond the idle hero is active — the workspace owns the page. */
+  flowActive: boolean;
+}
+
+const PROOF_POINTS = [
+  {
+    Icon: Target,
+    title: 'Real openings',
+    body: 'Direct from employer career sites, not a recycled feed.',
+  },
+  {
+    Icon: BadgeCheck,
+    title: 'Know why it fits',
+    body: 'Resume evidence and sponsorship signals on every match.',
+  },
+  {
+    Icon: ShieldCheck,
+    title: 'Tailor without making things up',
+    body: 'IntegrityGuard protects your real employers, titles, dates, and skills.',
+  },
+] as const;
+
+function WindowChrome({
+  step,
+  showQuota,
+  used,
+  limit,
+}: {
+  step: GuestFlow['step'];
+  showQuota: boolean;
+  used: number;
+  limit: number;
+}) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-border/60 bg-muted/30 px-4 py-2.5">
+      <span className="text-xs font-semibold text-muted-foreground">
+        Aspirely · guest workspace
+      </span>
+      <div className="flex items-center gap-3">
+        {showQuota && <TailorQuota used={used} limit={limit} className="hidden sm:block" />}
+        <GuestProgressRail step={step} />
+      </div>
+    </div>
+  );
+}
+
+export function HeroWorkspace({ flow, guestEnabled, authed, flowActive }: HeroWorkspaceProps) {
+  const reduceMotion = useReducedMotion();
+  const layoutId = reduceMotion ? undefined : 'guest-workspace-window';
+
+  return (
+    <section
+      id="try"
+      aria-label="Try Aspirely with your resume"
+      className="relative scroll-mt-24 pb-14 pt-24 sm:pb-16 sm:pt-32"
+    >
+      <AmbientGlow />
+      <Container className="relative">
+        <AnimatePresence mode="wait" initial={false}>
+          {!flowActive ? (
+            <motion.div
+              key="idle"
+              initial={false}
+              exit={reduceMotion ? undefined : { opacity: 0, transition: { duration: 0.2 } }}
+              className="grid items-stretch gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:gap-12"
+            >
+              {/* ── Copy column ── */}
+              <div className="mx-auto flex w-full max-w-xl flex-col justify-center text-center lg:mx-0 lg:text-left">
+                <Reveal immediate>
+                  <p className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3.5 py-1.5 text-[13px] font-medium text-muted-foreground">
+                    <ShieldCheck className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+                    Up to 5 matched jobs · 1 tailored resume · No signup
+                  </p>
+                </Reveal>
+
+                <Reveal immediate delay={0.05}>
+                  <h1 className="mt-6 text-balance font-display text-4xl font-extrabold leading-[1.08] tracking-[-0.03em] text-foreground sm:text-5xl">
+                    Discover up to 5 jobs that fit your resume,{' '}
+                    <span className="text-primary">free.</span>
+                  </h1>
+                </Reveal>
+
+                <Reveal immediate delay={0.1}>
+                  <p className="mx-auto mt-5 max-w-xl text-pretty text-lg leading-relaxed text-muted-foreground lg:mx-0">
+                    Upload your resume and Aspirely finds live openings from company career
+                    sites, explains why they fit, including sponsorship signals, and tailors one
+                    resume without inventing experience. No account or card.
+                  </p>
+                </Reveal>
+
+                <Reveal immediate delay={0.15}>
+                  <ul className="mx-auto mt-8 max-w-xl space-y-3 text-left lg:mx-0">
+                    {PROOF_POINTS.map(({ Icon, title, body }) => (
+                      <li key={title} className="flex items-start gap-3">
+                        <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+                          <Icon className="h-4 w-4" aria-hidden />
+                        </span>
+                        <p className="text-sm leading-relaxed text-muted-foreground">
+                          <span className="font-semibold text-foreground">{title}.</span> {body}
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
+                </Reveal>
+              </div>
+
+              {/* ── The live workspace window (idle = the upload surface) ── */}
+              <Reveal immediate delay={0.12}>
+                <motion.div
+                  layoutId={layoutId}
+                  transition={{ duration: 0.45, ease: EASE }}
+                  className="relative flex min-h-[480px] flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-float lg:min-h-[600px]"
+                >
+                  <WindowChrome
+                    step="hero"
+                    showQuota={guestEnabled && flow.tailorsUsed > 0}
+                    used={flow.tailorsUsed}
+                    limit={flow.tailorsLimit}
+                  />
+                  <div className="relative flex min-h-0 flex-1 flex-col p-4 sm:p-5">
+                    {authed ? (
+                      <div className="m-auto max-w-sm space-y-4 text-center">
+                        <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-primary/10 text-primary">
+                          <LayoutDashboard className="h-7 w-7" aria-hidden />
+                        </span>
+                        <p className="text-lg font-semibold">You're signed in</p>
+                        <p className="text-sm text-muted-foreground">
+                          Your resume, matches, and tailoring tools are waiting in your
+                          workspace.
+                        </p>
+                        <Button asChild size="lg" className="h-12 w-full rounded-control text-base font-semibold">
+                          <Link to="/next/today">Open my workspace</Link>
+                        </Button>
+                      </div>
+                    ) : guestEnabled ? (
+                      <GuestUploadState
+                        onFile={(file) => void flow.startUpload(file)}
+                        hasReturningResume={!!(flow.session?.exists && flow.session.has_resume)}
+                        onSeeMatches={flow.goToMatches}
+                      />
+                    ) : (
+                      <div className="m-auto max-w-sm space-y-4 text-center">
+                        <p className="text-lg font-semibold">Start free</p>
+                        <p className="text-sm text-muted-foreground">
+                          Create a free account to upload your resume, see your matches, and
+                          tailor for the role you pick.
+                        </p>
+                        <Button asChild size="lg" className="h-12 w-full rounded-control text-base font-semibold">
+                          <Link to="/register">Create free account</Link>
+                        </Button>
+                        <p className="text-xs text-muted-foreground">Free to start. No card needed.</p>
+                      </div>
+                    )}
+                  </div>
+                  <Grain />
+                </motion.div>
+              </Reveal>
+            </motion.div>
+          ) : (
+            /* ── Expanded: the workspace owns the page ── */
+            <motion.div
+              key="active"
+              initial={reduceMotion ? false : { opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={reduceMotion ? undefined : { opacity: 0, transition: { duration: 0.2 } }}
+              transition={{ duration: 0.3, ease: EASE }}
+            >
+              <motion.div
+                layoutId={layoutId}
+                transition={{ duration: 0.45, ease: EASE }}
+                className="relative flex flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-float"
+              >
+                <WindowChrome
+                  step={flow.step}
+                  showQuota
+                  used={flow.tailorsUsed}
+                  limit={flow.tailorsLimit}
+                />
+                <div className="relative min-h-[60vh] p-4 sm:p-6 lg:p-8">
+                  <GuestFlowShell flow={flow} />
+                </div>
+              </motion.div>
+              <p className="mt-3 text-center text-xs text-muted-foreground">
+                Guest preview. Create a{' '}
+                <Link
+                  to="/register"
+                  className="font-medium text-primary underline-offset-2 hover:underline"
+                >
+                  free account
+                </Link>{' '}
+                any time to save your work.
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </Container>
+    </section>
+  );
+}

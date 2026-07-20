@@ -91,6 +91,10 @@ export interface GuestJobMatch {
   /** jd_match score 0-100 int — presented to users as an ESTIMATE. */
   match_score: number;
   matched_skills?: string[];
+  /** Additive v2.1: up to 5 of the guest's OWN resume skills the posting does
+   * not mention (scorer `missing_top`). Resume-relative score context — label
+   * it that way, never as "requirements you lack". Absent on older caches. */
+  gaps?: string[];
   /** Short deterministic "why this matches" line from the scorer. */
   why?: string;
   sponsorship?: GuestSponsorship | null;

@@ -15,9 +15,12 @@ export interface GuestDropzoneProps {
   /** Fires with a validated file (pdf/docx, 5 MB max) — the caller starts
    * the upload/parse flow (useGuestFlow.startUpload). */
   onStarted: (file: File) => void;
-  /** 'full' = the /start hero card; 'compact' = a slim row for embeds
-   * (e.g. the landing hero). */
-  variant?: 'full' | 'compact';
+  /** 'full' = a standalone hero card; 'compact' = a slim row for embeds;
+   * 'panel' = the landing workspace's primary surface (fills its parent's
+   * height, larger type and target). */
+  variant?: 'full' | 'compact' | 'panel';
+  /** Primary action label on the control. */
+  label?: string;
   /** File-type line under the main label. */
   microcopy?: string;
   /** Privacy line under the control; pass null to hide (e.g. when the host
@@ -36,6 +39,7 @@ export interface GuestDropzoneProps {
 export function GuestDropzone({
   onStarted,
   variant = 'full',
+  label = 'Drop your resume here, or tap to browse',
   microcopy = DEFAULT_MICROCOPY,
   privacyNote = DEFAULT_PRIVACY_NOTE,
   disabled = false,
@@ -44,6 +48,7 @@ export function GuestDropzone({
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const compact = variant === 'compact';
+  const panel = variant === 'panel';
 
   const accept = (file: File) => {
     if (disabled) return;
@@ -59,7 +64,7 @@ export function GuestDropzone({
   };
 
   return (
-    <div className={cn('w-full', className)}>
+    <div className={cn('w-full', panel && 'flex h-full flex-col', className)}>
       <button
         type="button"
         disabled={disabled}
@@ -76,33 +81,47 @@ export function GuestDropzone({
           if (f) accept(f);
         }}
         className={cn(
-          'flex w-full cursor-pointer items-center rounded-2xl border-2 border-dashed text-left transition-colors',
+          'flex w-full cursor-pointer items-center rounded-2xl border-2 border-dashed text-left transition-all',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
           'disabled:cursor-not-allowed disabled:opacity-60',
           compact
             ? 'gap-3 p-4'
-            : 'flex-col justify-center gap-3 p-8 text-center sm:p-12',
+            : panel
+              ? 'min-h-0 flex-1 flex-col justify-center gap-4 p-6 text-center sm:p-8'
+              : 'flex-col justify-center gap-3 p-8 text-center sm:p-12',
           dragActive
-            ? 'border-primary bg-primary/5'
+            ? 'scale-[1.01] border-primary bg-primary/5'
             : 'border-border hover:border-primary/50 hover:bg-muted/40',
         )}
       >
         <span
           className={cn(
-            'flex shrink-0 items-center justify-center rounded-full bg-primary/10',
-            compact ? 'h-10 w-10' : 'h-12 w-12',
+            'flex shrink-0 items-center justify-center rounded-full bg-primary/10 transition-transform',
+            compact ? 'h-10 w-10' : panel ? 'h-14 w-14' : 'h-12 w-12',
+            dragActive && !compact && 'scale-110',
           )}
         >
           <UploadCloud
-            className={cn('text-primary', compact ? 'h-5 w-5' : 'h-6 w-6')}
+            className={cn('text-primary', compact ? 'h-5 w-5' : panel ? 'h-7 w-7' : 'h-6 w-6')}
             aria-hidden
           />
         </span>
         <span className={cn('min-w-0', compact ? 'flex-1' : undefined)}>
-          <span className={cn('block font-medium', compact && 'text-sm')}>
-            Drop your resume here, or tap to browse
+          <span
+            className={cn(
+              'block font-medium',
+              compact && 'text-sm',
+              panel && 'text-base font-semibold sm:text-lg',
+            )}
+          >
+            {label}
           </span>
           <span className="mt-1 block text-xs text-muted-foreground">{microcopy}</span>
+          {panel && (
+            <span className="mt-4 inline-flex h-11 items-center justify-center rounded-full bg-primary px-6 text-sm font-semibold text-primary-foreground shadow-panel">
+              Browse files
+            </span>
+          )}
         </span>
       </button>
       <input

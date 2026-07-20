@@ -33,6 +33,8 @@ const Terms = lazy(() => import('./pages/Terms'));
 // ResumeParser monolith at `/app` during the strangler-fig migration; AppShell
 // self-gates on AuthContext and redirects to /login without a session.
 const AppShell = lazy(() => import('@/app-shell/AppShell'));
+// DEV-only screenshot harness (registered below only when import.meta.env.DEV).
+const ShotsPage = lazy(() => import('@/dev/ShotsPage'));
 const TodayPage = lazy(() => import('@/app-shell/pages/TodayPage'));
 const ApplicationsTab = lazy(() => import('@/components/resume/ApplicationsTab'));
 const GrowPage = lazy(() => import('@/app-shell/pages/GrowPage'));
@@ -80,11 +82,11 @@ function RouteLoadingFallback() {
 }
 
 /**
- * Root route: the marketing landing is the front door for everyone. The
- * guest onboarding funnel at /start stays one click away — the landing's
- * primary CTAs route into it when the feature is enabled — so the landing
- * sells the product and /start converts. Deep links to /start, /login,
- * /register, /privacy, /terms etc. are untouched.
+ * Root route: the landing IS the product's front door — the full guest flow
+ * (upload → up to 5 matches → one tailored resume → download → signup gate)
+ * runs directly on `/` inside the hero workspace. /start survives only as a
+ * backward-compatible redirect (authed → /next/today, guests → /#try). Deep
+ * links to /login, /register, /privacy, /terms etc. are untouched.
  */
 function RootRoute() {
   return <Landing />;
@@ -98,8 +100,10 @@ function AppContent() {
         <Routes>
           {/* Public */}
           <Route path="/" element={<RootRoute />} />
-          {/* Guest onboarding (Start self-gates: authed users → /next/today;
-              feature off → back to the login-first landing). */}
+          {/* Legacy guest-onboarding entry — now a pure redirect (authed →
+              /next/today; guests → /#try; feature off → /). Guest state
+              lives in localStorage + the backend session, so nothing is
+              lost crossing this redirect. */}
           <Route path="/start" element={<Suspense fallback={<RouteLoadingFallback />}><Start /></Suspense>} />
           <Route path="/login" element={<Suspense fallback={<RouteLoadingFallback />}><Login /></Suspense>} />
           <Route path="/register" element={<Suspense fallback={<RouteLoadingFallback />}><Register /></Suspense>} />
@@ -161,6 +165,15 @@ function AppContent() {
               <Route path="notifications" element={<NotificationsTab />} />
             </Route>
           </Route>
+
+          {/* DEV-only screenshot harness for the landing's product images —
+              real components, fictional data. Never registered in prod. */}
+          {import.meta.env.DEV && (
+            <Route
+              path="/__shots/:name"
+              element={<Suspense fallback={<RouteLoadingFallback />}><ShotsPage /></Suspense>}
+            />
+          )}
 
           {/* Utility routes */}
           <Route path="/admin" element={<Suspense fallback={<RouteLoadingFallback />}><AdminPortal /></Suspense>} />

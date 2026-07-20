@@ -1,43 +1,42 @@
-import { type CSSProperties } from 'react';
+import { useCallback, useState, type CSSProperties } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { isGuestOnboardingEnabled, markGuestOnboardingUnavailable } from '@/lib/guest';
+import { useGuestFlow } from '@/hooks/useGuestFlow';
 import { LandingNav } from './LandingNav';
-import { LandingHero } from './LandingHero';
-import { HowItWorks } from './HowItWorks';
-import { Capabilities } from './Capabilities';
-import { TrustSection } from './TrustSection';
+import { HeroWorkspace } from './HeroWorkspace';
+import { WhyAspirely } from './WhyAspirely';
+import { WorkspacePreview } from './WorkspacePreview';
+import { TrustBand } from './TrustBand';
 import { FinalCta } from './FinalCta';
 import { LandingFooter } from './LandingFooter';
 
 /**
- * Aspirely's public landing: "Signal, not noise". Six sections, conversion
- * first, honest everywhere:
+ * Aspirely's public landing: the product IS the page. Four sections,
+ * conversion first, honest everywhere:
  *
  *   1 Floating glass nav (the only blur on the page)
- *   2 Hero with the REAL product action: the guest dropzone (or the
- *     create-account door when the guest flag is off)
- *   3 How it works (#how-it-works): an interactive animated pipeline on one
- *     fixed-height stage (zero CLS when steps advance)
- *   4 Three capabilities, each led by a looping in-view-gated infographic
- *   5 Trust and privacy (#trust): one data-lifecycle diagram + captions
- *   6 Final CTA + compact footer
+ *   2 Hero + LIVE guest workspace (#try): the real upload → parse → up to 5
+ *     matches → one tailored resume flow runs right here on `/`
+ *   3 Why Aspirely (#why) + workspace preview (#workspace): editorial proof
+ *     points led by real product screenshots (fictional data)
+ *   4 Trust band (#trust) + final CTA + compact footer
  *
- * No pitch player, no vision/mission, no pricing, no WebGL. Motion is
- * transform/opacity (plus SVG path draws) on the shared kit in _shared.tsx
- * and fully static under prefers-reduced-motion; every animated stage
- * reserves its height inline. Every section uses semantic tokens only; the
- * page is light-pinned via LIGHT_SURFACE below.
+ * ONE useGuestFlow controller lives here (never a second on another route —
+ * /start redirects back to /#try). The moment the flow leaves the idle hero,
+ * the marketing sections below collapse so the guest never scrolls through
+ * marketing while waiting; nav and footer stay for recovery.
  */
 
 /**
  * The landing's LIGHT surface — one deliberate professional look in BOTH app
- * themes (the mirror image of the old forced-dark mechanism). The theme
- * provider puts `dark`/`light` on <html>, so when an app user prefers dark,
- * the `.dark` custom properties would cascade into this subtree. These inline
- * overrides pin every semantic token back to its light value (via the
- * theme-independent primitives in src/index.css), locking the landing to
- * light. No landing component uses `dark:` Tailwind variants, so pinning the
- * tokens is sufficient.
+ * themes. The theme provider puts `dark`/`light` on <html>, so when an app
+ * user prefers dark, the `.dark` custom properties would cascade into this
+ * subtree. These inline overrides pin every semantic token back to its light
+ * value (via the theme-independent primitives in src/index.css), locking the
+ * landing to light. No landing component uses `dark:` Tailwind variants, so
+ * pinning the tokens is sufficient.
  */
-const LIGHT_SURFACE = {
+export const LIGHT_SURFACE = {
   '--background': 'var(--slate-50-hsl)',
   '--foreground': 'var(--slate-900-hsl)',
   '--card': 'var(--slate-0-hsl)',
@@ -74,6 +73,20 @@ const LIGHT_SURFACE = {
 } as CSSProperties;
 
 export default function LandingExperience() {
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const [runtimeDisabled, setRuntimeDisabled] = useState(() => !isGuestOnboardingEnabled());
+
+  const onUnavailable = useCallback(() => {
+    // Backend says the feature is off (503) or the edge route isn't live
+    // (404) — fall back to the account-first hero for this session.
+    markGuestOnboardingUnavailable();
+    setRuntimeDisabled(true);
+  }, []);
+
+  const guestEnabled = !authLoading && !isAuthenticated && !runtimeDisabled;
+  const flow = useGuestFlow({ enabled: guestEnabled, onUnavailable });
+  const flowActive = guestEnabled && flow.step !== 'hero';
+
   return (
     <div className="min-h-screen overflow-x-clip bg-background text-foreground" style={LIGHT_SURFACE}>
       <a
@@ -84,11 +97,22 @@ export default function LandingExperience() {
       </a>
       <LandingNav />
       <main id="main">
-        <LandingHero />
-        <HowItWorks />
-        <Capabilities />
-        <TrustSection />
-        <FinalCta />
+        <HeroWorkspace
+          flow={flow}
+          guestEnabled={guestEnabled}
+          authed={!authLoading && isAuthenticated}
+          flowActive={flowActive}
+        />
+        {/* Once real work starts, the workspace owns the page — no marketing
+            between the guest and their results. */}
+        {!flowActive && (
+          <>
+            <WhyAspirely />
+            <WorkspacePreview />
+            <TrustBand />
+            <FinalCta />
+          </>
+        )}
       </main>
       <LandingFooter />
     </div>

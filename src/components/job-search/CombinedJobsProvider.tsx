@@ -1,6 +1,9 @@
-import { createContext, useCallback, useContext, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { useAutoSync } from '@/hooks/useAutoSync';
-import { useCombinedJobs, type CombinedJobsController } from '@/hooks/useCombinedJobs';
+import {
+  loadCombinedPrefs, saveCombinedPrefs,
+  useCombinedJobs, type CombinedJobsController,
+} from '@/hooks/useCombinedJobs';
 import type { WorkdayRecency } from '@/types/jobs';
 
 const AUTO_SYNC_MS = 30 * 60 * 1000;
@@ -54,8 +57,11 @@ export function CombinedJobsProvider({ children }: { children: React.ReactNode }
   const [started, setStarted] = useState(false);
   const feed = useCombinedJobs(started);
 
-  const [location, setLocation] = useState('');
-  const [remoteOnly, setRemoteOnly] = useState(false);
+  // Scan params hydrate from the same versioned key the hook's titles use, so
+  // the whole saved setup survives reloads together.
+  const [initialPrefs] = useState(loadCombinedPrefs);
+  const [location, setLocation] = useState(initialPrefs.location ?? '');
+  const [remoteOnly, setRemoteOnly] = useState(initialPrefs.remoteOnly ?? false);
   const [customizeOpen, setCustomizeOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [recency, setRecency] = useState<WorkdayRecency>('3d');
@@ -66,6 +72,13 @@ export function CombinedJobsProvider({ children }: { children: React.ReactNode }
   const [page, setPage] = useState(1);
 
   const ensureStarted = useCallback(() => setStarted(true), []);
+
+  // Write-through persistence. Waits for hydration (`feed.ready`) so the
+  // pre-hydration empty title set never clobbers a saved, user-edited one.
+  useEffect(() => {
+    if (!feed.ready) return;
+    saveCombinedPrefs({ titles: feed.titles, location, remoteOnly });
+  }, [feed.ready, feed.titles, location, remoteOnly]);
 
   const autoSync = useAutoSync({
     enabled: started && feed.ready,

@@ -23,7 +23,7 @@ export function FinalCta() {
             See the jobs that fit you
           </h2>
           <p className="mt-3 text-pretty text-base leading-relaxed text-muted-foreground">
-            Five matched roles and one tailored resume, free, before you decide anything.
+            Up to five matched roles and one tailored resume, free, before you decide anything.
           </p>
           <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
             {guestEnabled ? (
@@ -32,7 +32,7 @@ export function FinalCta() {
                 size="lg"
                 className="h-12 w-full rounded-control px-7 text-base font-semibold shadow-panel transition-shadow duration-200 hover:shadow-pop motion-reduce:transition-none sm:w-auto"
               >
-                <a href="#upload">Upload your resume</a>
+                <a href="#try">Upload your resume</a>
               </Button>
             ) : (
               <Button
