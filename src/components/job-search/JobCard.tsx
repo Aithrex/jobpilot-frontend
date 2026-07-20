@@ -15,7 +15,7 @@ import { VisaFlagChips } from './JobVisaSignals';
 import { ReferralModal } from './ReferralModal';
 import { apiService, companyLogoSrc } from '@/lib/api';
 import { cn } from '@/lib/utils';
-import { hostFromUrl, hueFromString, toTitleCase } from '@/lib/format';
+import { hueFromString, toTitleCase } from '@/lib/format';
 import { useCountUp } from '@/hooks/useCountUp';
 import type { Job } from '@/types/jobs';
 
@@ -65,15 +65,18 @@ function MatchScoreRing({ score }: { score: number }) {
   );
 }
 
-/** Company mark: backend-served favicon (`logo_url`) → scraped logo →
- *  favicon from the apply domain → shared hued monogram (`CompanyLogo`
- *  owns that terminal fallback). */
+/** Company mark: backend-served icon (`logo_url`, cached in our own storage)
+ *  → scraped logo → shared hued monogram (`CompanyLogo` owns that terminal
+ *  fallback).
+ *
+ *  Deliberately NO client-side favicon lookup by apply-link domain: it
+ *  hotlinks a third party from every card, and the apply domain is usually
+ *  the ATS (boards.greenhouse.io, myworkdayjobs.com), so it rendered the
+ *  applicant-tracking vendor's logo instead of the employer's. */
 function CompanyMark({ job }: { job: Job }) {
-  const host = hostFromUrl(job.apply_link);
   const chain = [
     companyLogoSrc(job.logo_url),
     job.logo,
-    host ? `https://www.google.com/s2/favicons?domain=${host}&sz=128` : '',
   ].filter(Boolean) as string[];
   const [idx, setIdx] = useState(0);
   const src = chain[idx];
