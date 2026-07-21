@@ -192,6 +192,8 @@ export function GuestFlowShell({ flow }: { flow: GuestFlow }) {
               onTailor={(match) => void flow.startTailor(match)}
               onViewTailored={flow.openTailored}
               onRetry={() => void flow.loadMatches()}
+              onSeniorityChange={(level) => void flow.changeSeniority(level)}
+              seniorityPending={flow.seniorityPending}
             />
           </motion.section>
         )}

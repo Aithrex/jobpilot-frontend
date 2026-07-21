@@ -1010,18 +1010,24 @@ class ApiService {
     // v3: guest_matches emits reading_resume/searching_sources/ranking/
     // finalizing progress markers — forwarded on every poll tick.
     onProgress?: (p: import("../types/guest").GuestJobProgress) => void,
+    // v4: seniority view over the day's scanned pool. With a cached pool the
+    // server answers 200 instantly (re-slice, no re-scan, no quota).
+    seniority?: import("../types/guest").GuestSeniority,
   ): Promise<ApiResponse<import("../types/guest").GuestMatchesResult>> {
+    const body: Record<string, unknown> = {
+      guest_id: guestId,
+      // Viewer timezone: "posted today" is the USER's calendar day.
+      tz_offset_minutes: -new Date().getTimezoneOffset(),
+    };
+    if (deviceToken) body.device_token = deviceToken;
+    if (seniority) body.seniority = seniority;
     const submit = await this.request<
       import("../types/guest").GuestMatchesResult | { job_id: string }
     >(
       "/jobs/guest/matches",
       {
         method: "POST",
-        body: JSON.stringify(
-          deviceToken
-            ? { guest_id: guestId, device_token: deviceToken }
-            : { guest_id: guestId },
-        ),
+        body: JSON.stringify(body),
       },
       30000,
       { skipAuth: true },
@@ -3293,7 +3299,9 @@ class ApiService {
       "/jobs/workday/search",
       {
         method: "POST",
-        body: JSON.stringify(params),
+        // Viewer timezone rides every scan: "posted today" is computed in
+        // the USER's calendar day server-side, not UTC's.
+        body: JSON.stringify({ tz_offset_minutes: -new Date().getTimezoneOffset(), ...params }),
       },
       30000,
     );
@@ -3332,7 +3340,7 @@ class ApiService {
       "/jobs/career-pages/search",
       {
         method: "POST",
-        body: JSON.stringify(params),
+        body: JSON.stringify({ tz_offset_minutes: -new Date().getTimezoneOffset(), ...params }),
       },
       30000,
     );
@@ -3369,7 +3377,7 @@ class ApiService {
       "/jobs/mnc/search",
       {
         method: "POST",
-        body: JSON.stringify(params),
+        body: JSON.stringify({ tz_offset_minutes: -new Date().getTimezoneOffset(), ...params }),
       },
       30000,
     );

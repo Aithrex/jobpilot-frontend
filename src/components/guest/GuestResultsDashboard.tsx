@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { Check, ChevronDown, CloudOff, FileSearch, ShieldCheck } from 'lucide-react';
+import { Check, ChevronDown, CloudOff, FileSearch, Lock, ShieldCheck, UserRoundCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -25,7 +25,7 @@ import {
   type GuestMatchesState,
 } from '@/hooks/useGuestFlow';
 import { cn } from '@/lib/utils';
-import type { GuestJobMatch, GuestJobProgress } from '@/types/guest';
+import type { GuestJobMatch, GuestJobProgress, GuestSeniority } from '@/types/guest';
 
 /**
  * The live match dashboard. Renders EXACTLY the matches the server returned
@@ -58,7 +58,18 @@ export interface GuestResultsDashboardProps {
   onTailor: (match: GuestJobMatch) => void;
   onViewTailored: () => void;
   onRetry: () => void;
+  /** v4: seniority toggle — an instant server-side re-slice of the day's
+   * scanned pool (never a re-scan). Absent on legacy cached results. */
+  onSeniorityChange?: (seniority: GuestSeniority) => void;
+  seniorityPending?: boolean;
 }
+
+const SENIORITY_LABELS: Record<GuestSeniority, string> = {
+  any: 'All levels',
+  entry: 'Entry',
+  mid: 'Mid',
+  senior: 'Senior',
+};
 
 /** The backend's guest_matches phases, in emission order (v3 3.4). */
 const MATCH_PHASES: readonly PhaseDef[] = [
@@ -92,6 +103,8 @@ export function GuestResultsDashboard({
   onTailor,
   onViewTailored,
   onRetry,
+  onSeniorityChange,
+  seniorityPending = false,
 }: GuestResultsDashboardProps) {
   const reduceMotion = useReducedMotion();
   const stage = useStagedCopy(state === 'loading', MATCHES_STAGES, 7000);
@@ -106,7 +119,7 @@ export function GuestResultsDashboard({
         <PhaseAnnouncer message={phaseIndex >= 0 ? MATCH_PHASES[phaseIndex].label : null} />
         <WorkingHeader
           stage={stage}
-          hint="First scan of the day takes a minute or two. Repeat visits are instant."
+          hint="This runs the same full scan signed-in members get, across every source in parallel. A first scan can take a few minutes; repeat visits are instant."
         />
         <PhaseStepper phases={MATCH_PHASES} activeKey={progress?.phase ?? null} />
         <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
@@ -248,12 +261,70 @@ export function GuestResultsDashboard({
   const selected =
     matches.find((m) => m.match_id === selectedMatchId) ?? matches[0] ?? null;
 
+  const lockedCount = meta.lockedCount ?? 0;
+  const detected = meta.detectedExperience;
+
   return (
     <div>
+      {/* ── Seniority view toggle (v4): defaults to the level DETECTED from
+          the resume's own dates; switching re-slices the day's scanned pool
+          server-side instantly — never a re-scan, never quota. ── */}
+      {meta.seniority && onSeniorityChange && (
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          {detected?.level && (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary">
+              <UserRoundCheck className="h-3.5 w-3.5" aria-hidden />
+              Detected: {SENIORITY_LABELS[detected.level] ?? detected.level}
+              {typeof detected.years === 'number' && detected.years > 0
+                ? ` · ${detected.years} ${detected.years === 1 ? 'yr' : 'yrs'}`
+                : ''}
+            </span>
+          )}
+          <div
+            role="group"
+            aria-label="Seniority view"
+            className="flex items-center gap-1 rounded-full border border-border bg-muted/40 p-0.5"
+          >
+            {(Object.keys(SENIORITY_LABELS) as GuestSeniority[]).map((level) => {
+              const active = meta.seniority === level;
+              const count = meta.seniorityCounts?.[level];
+              return (
+                <button
+                  key={level}
+                  type="button"
+                  aria-pressed={active}
+                  disabled={seniorityPending}
+                  onClick={() => onSeniorityChange(level)}
+                  className={cn(
+                    'inline-flex min-h-[36px] items-center gap-1 rounded-full px-3 text-xs font-semibold transition-colors',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60',
+                    active
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:text-foreground',
+                  )}
+                >
+                  {SENIORITY_LABELS[level]}
+                  {typeof count === 'number' && (
+                    <span className={cn('tabular-nums', active ? 'opacity-90' : 'opacity-70')}>
+                      {count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       <p className="mb-4 text-xs text-muted-foreground" role="status">
-        {matches.length < 5 && typeof meta.totalConsidered === 'number' && meta.totalConsidered > 0
-          ? `We found ${matches.length} ${matches.some((m) => (m.match_score ?? 0) >= 40) ? 'strong ' : ''}${matches.length === 1 ? 'match' : 'matches'} across ${meta.totalConsidered} roles considered. `
-          : `${matches.length} ${matches.length === 1 ? 'role' : 'roles'} cleared the bar in today's scan. `}
+        {typeof meta.poolTotal === 'number' && meta.poolTotal > matches.length
+          ? `Showing your top ${matches.length} of ${meta.poolTotal} matches` +
+            (typeof meta.totalConsidered === 'number' && meta.totalConsidered > 0
+              ? ` across ${meta.totalConsidered} roles considered. `
+              : '. ')
+          : matches.length < 5 && typeof meta.totalConsidered === 'number' && meta.totalConsidered > 0
+            ? `We found ${matches.length} ${matches.some((m) => (m.match_score ?? 0) >= 40) ? 'strong ' : ''}${matches.length === 1 ? 'match' : 'matches'} across ${meta.totalConsidered} roles considered. `
+            : `${matches.length} ${matches.length === 1 ? 'role' : 'roles'} cleared the bar in today's scan. `}
         Scores are estimates of fit, not hiring odds.
       </p>
 
@@ -398,6 +469,38 @@ export function GuestResultsDashboard({
           );
         })}
       </ol>
+
+      {/* ── Locked remainder (v4): the scan found MORE than the guest cap.
+          Placeholder rows only — no real titles or companies leak; the
+          count is the honest pool number. ── */}
+      {lockedCount > 0 && (
+        <div className="mt-6" data-testid="locked-matches">
+          <div aria-hidden className="space-y-2">
+            {Array.from({ length: Math.min(3, lockedCount) }, (_, i) => (
+              <div
+                key={i}
+                className="flex items-center gap-3 rounded-2xl border border-dashed border-border/80 bg-muted/20 p-4"
+                style={{ opacity: 1 - i * 0.25 }}
+              >
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-muted/60 text-muted-foreground">
+                  <Lock className="h-4 w-4" />
+                </span>
+                <span className="min-w-0 flex-1 space-y-1.5">
+                  <Skeleton className="h-3.5 w-2/5 animate-none" />
+                  <Skeleton className="h-2.5 w-1/4 animate-none" />
+                </span>
+                <Skeleton className="h-6 w-16 shrink-0 rounded-full animate-none" />
+              </div>
+            ))}
+          </div>
+          <div className="mt-3">
+            <SignupCta
+              title={`${lockedCount} more ${lockedCount === 1 ? 'match' : 'matches'} found for your resume`}
+              body="Create a free account to see your full match list, filter it your way, and tailor up to 5 resumes per day."
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

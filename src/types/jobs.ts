@@ -438,6 +438,10 @@ export interface WorkdayJob {
 }
 
 export interface WorkdayJobsParams {
+  /** Viewer's UTC offset in minutes EAST of UTC (MST = -420) — the backend
+   * computes "posted today" in the USER's calendar day. apiService stamps
+   * this automatically on every scan; set it only to override. */
+  tz_offset_minutes?: number;
   titles?: string[];
   industries?: string[];
   companies?: string[];

@@ -24,11 +24,12 @@ import type {
 } from '@/types/jobs';
 
 // The engine reports posting age at day granularity ("Posted Today" /
-// "Posted N Days Ago"), so windows are calendar-day based: "1 day" =
-// today + yesterday. "custom" lets the user pick any 0-30 day window.
+// "Posted N Days Ago"), so windows are CUMULATIVE calendar-day buckets in
+// the VIEWER's timezone (tz_offset_minutes rides every scan): "Since
+// yesterday" = today + yesterday. "custom" lets the user pick any 0-30 days.
 const RECENCY_OPTIONS: Array<{ key: WorkdayRecency; label: string; maxDays: number }> = [
   { key: 'today', label: 'Today', maxDays: 0 },
-  { key: '24h', label: '1 day', maxDays: 1 },
+  { key: '24h', label: 'Since yesterday', maxDays: 1 },
   { key: '3d', label: '3 days', maxDays: 3 },
   { key: '7d', label: '7 days', maxDays: 7 },
   { key: '30d', label: '30 days', maxDays: 30 },

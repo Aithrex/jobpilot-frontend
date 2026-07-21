@@ -7,9 +7,16 @@ import type { Job, WorkdayJob, WorkdayRecency } from '@/types/jobs';
  * reaching into that component.)
  */
 
+/**
+ * Recency windows are CUMULATIVE calendar-day buckets in the VIEWER's
+ * timezone (the client sends tz_offset_minutes with every scan; the backend
+ * computes days_ago against the user's local today). Labels spell that out:
+ * the old "1 day" read as "exactly one day ago" while it actually meant
+ * "today + yesterday" — the source of the Today-vs-1-day confusion.
+ */
 export const RECENCY_OPTIONS: Array<{ key: WorkdayRecency; label: string; maxDays: number }> = [
   { key: 'today', label: 'Today', maxDays: 0 },
-  { key: '24h', label: '1 day', maxDays: 1 },
+  { key: '24h', label: 'Since yesterday', maxDays: 1 },
   { key: '3d', label: '3 days', maxDays: 3 },
   { key: '7d', label: '7 days', maxDays: 7 },
   { key: '30d', label: '30 days', maxDays: 30 },

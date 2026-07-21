@@ -133,7 +133,35 @@ export function GuestParsingState({
           </div>
         </motion.div>
 
-        <div className="space-y-2.5" role="img" aria-label="Preview of your resume being structured into sections">
+        <div className="space-y-2.5" aria-label="Preview of your resume being structured into sections">
+          {/* REAL extracted skills materialize the moment the server emits
+              them (finalizing marker carries skills_preview — genuinely
+              parsed names, never invented). This is the guest's own data
+              animating in, not an illustration. */}
+          {(progress?.skills_preview?.length ?? 0) > 0 && (
+            <div
+              className="rounded-xl border border-primary/30 bg-primary/5 p-3"
+              aria-live="polite"
+            >
+              <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-primary">
+                <Wrench className="h-3.5 w-3.5" aria-hidden />
+                Found in your resume
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {progress!.skills_preview!.map((skill, i) => (
+                  <motion.span
+                    key={skill}
+                    initial={reduceMotion ? false : { opacity: 0, scale: 0.8, x: -10 }}
+                    animate={{ opacity: 1, scale: 1, x: 0 }}
+                    transition={{ ...stepTransition, delay: reduceMotion ? 0 : i * 0.08 }}
+                    className="rounded-full border border-primary/25 bg-card px-2 py-0.5 text-[11px] font-medium text-foreground"
+                  >
+                    {skill}
+                  </motion.span>
+                ))}
+              </div>
+            </div>
+          )}
           {SECTIONS.map(({ Icon, label }, i) => {
             const active = i === activeSection;
             const visited = i < activeSection;

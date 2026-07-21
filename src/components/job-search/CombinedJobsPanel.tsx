@@ -383,7 +383,10 @@ export function CombinedJobsPanel({
               className="h-8 w-full rounded-full border border-border bg-background pl-8 pr-3 text-[12px] text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-primary/40 focus-visible:ring-2 focus-visible:ring-ring"
             />
           </div>
-          <div className="inline-flex flex-wrap rounded-full border border-border bg-muted/40 p-0.5">
+          <div
+            className="inline-flex flex-wrap rounded-full border border-border bg-muted/40 p-0.5"
+            title="Posting dates use your timezone. Each window includes everything newer, so Today is inside Since yesterday."
+          >
             {RECENCY_OPTIONS.map((opt) => (
               <Seg key={opt.key} active={recency === opt.key} onClick={() => setRecency(opt.key)}>
                 {opt.label}

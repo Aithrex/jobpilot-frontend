@@ -709,6 +709,110 @@ describe('guest landing flow', () => {
     ).toBeGreaterThanOrEqual(2);
   });
 
+  test('21. v4 seniority pool: detected chip + toggle render; switching re-slices via the API without a re-scan', async () => {
+    seedReturningGuest();
+    const v4 = {
+      ...matchesData(3),
+      seniority: 'mid',
+      seniority_counts: { any: 17, entry: 3, mid: 9, senior: 5 },
+      pool_total: 9,
+      locked_count: 6,
+      detected_experience: { level: 'mid', years: 4 },
+    };
+    api.guestMatches.mockResolvedValue({ data: v4, status: 200 });
+    const user = userEvent.setup();
+    await openMatches(user);
+    await findDesktopMatchesList();
+
+    // Detected chip from the resume's own dates.
+    expect(screen.getByText(/Detected: Mid · 4 yrs/)).toBeInTheDocument();
+    // Honest top-of-pool line.
+    expect(screen.getByText(/Showing your top 3 of 9 matches/)).toBeInTheDocument();
+
+    // Switch to Senior: instant server-side re-slice (cached 200), carrying
+    // the seniority param — and the list swaps to the new view.
+    api.guestMatches.mockResolvedValue({
+      data: {
+        ...matchesData(2),
+        seniority: 'senior',
+        seniority_counts: v4.seniority_counts,
+        pool_total: 5,
+        locked_count: 3,
+        detected_experience: v4.detected_experience,
+        cached: true,
+      },
+      status: 200,
+    });
+    const toggle = screen.getByRole('group', { name: 'Seniority view' });
+    await user.click(within(toggle).getByRole('button', { name: /^Senior/ }));
+    await waitFor(() => {
+      const last = api.guestMatches.mock.calls.at(-1)!;
+      expect(last[5]).toBe('senior');
+    });
+    const list = await findDesktopMatchesList();
+    await waitFor(() =>
+      expect(within(list).getAllByRole('listitem')).toHaveLength(2),
+    );
+  });
+
+  test('22. v4 locked remainder: placeholder rows + honest count + signup CTA, no real data leaked', async () => {
+    seedReturningGuest();
+    api.guestMatches.mockResolvedValue({
+      data: {
+        ...matchesData(5),
+        seniority: 'any',
+        seniority_counts: { any: 17, entry: 3, mid: 9, senior: 5 },
+        pool_total: 17,
+        locked_count: 12,
+        detected_experience: { level: 'senior', years: 7 },
+      },
+      status: 200,
+    });
+    const user = userEvent.setup();
+    await openMatches(user);
+
+    const list = await findDesktopMatchesList();
+    expect(within(list).getAllByRole('listitem')).toHaveLength(5);
+
+    const locked = await screen.findByTestId('locked-matches');
+    expect(
+      within(locked).getByText(/12 more matches found for your resume/),
+    ).toBeInTheDocument();
+    expect(
+      within(locked).getAllByRole('link', { name: /Create free account/i }).length,
+    ).toBeGreaterThan(0);
+    // Placeholder rows never leak real titles/companies.
+    expect(within(locked).queryByText(/Role \d/)).not.toBeInTheDocument();
+    expect(within(locked).queryByText(/Company \d/)).not.toBeInTheDocument();
+  });
+
+  test('23. parsing shows the GENUINELY extracted skills from the server progress marker', async () => {
+    api.guestOnboard.mockResolvedValue({
+      data: { guest_id: 'g-1', job_id: 'parse-job-1', device_token: 'dev-1' },
+      status: 202,
+    });
+    api.guestJobPoll.mockImplementation(
+      (_jobId, _gid, _max, _signal, onStatus, onProgress) => {
+        onStatus?.('processing');
+        onProgress?.({
+          phase: 'finalizing',
+          pct: 90,
+          skills_preview: ['React', 'TypeScript', 'PostgreSQL'],
+        });
+        return new Promise(() => {});
+      },
+    );
+
+    renderLanding();
+    await pickFile();
+    await screen.findByRole('region', { name: 'Reading your resume' });
+
+    expect(await screen.findByText('Found in your resume')).toBeInTheDocument();
+    expect(screen.getByText('React')).toBeInTheDocument();
+    expect(screen.getByText('TypeScript')).toBeInTheDocument();
+    expect(screen.getByText('PostgreSQL')).toBeInTheDocument();
+  });
+
   test.todo(
     '11b. reduced motion: the parsingâ†’matches handoff specifically â€” under the jsdom matchMedia ' +
       'reduced-motion emulation, when the step advance originates from a resolved poll promise (not a user ' +

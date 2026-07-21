@@ -5,6 +5,7 @@ import { LayoutDashboard, Pause, Play, RotateCcw, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { GuestDropzone } from '@/components/guest/GuestDropzone';
+import { useResumePicker } from '@/components/guest/useResumePicker';
 import { GuestFlowShell } from '@/components/guest/GuestFlowShell';
 import { GuestProgressRail } from '@/components/guest/GuestProgressRail';
 import { TailorQuota } from '@/components/guest/_shared';
@@ -94,20 +95,23 @@ export function AtlasHero({ flow, guestEnabled, authed, flowActive }: AtlasHeroP
     },
   };
 
-  // "Find my matches" hands focus to the real upload control with a pulse.
+  // ONE shared resume picker for the whole hero: the dropzone, the "Find my
+  // matches" CTA, and keyboard activation all open the SAME hidden input in
+  // a single click (a CTA that merely scrolls to a second uploader is a
+  // two-click upload — treated as a bug).
+  const picker = useResumePicker({ onFile: (file) => void flow.startUpload(file) });
   const dropButtonRef = useRef<HTMLButtonElement | null>(null);
   const pulseTimer = useRef<number | undefined>(undefined);
   const [uploadPulse, setUploadPulse] = useState(false);
   const focusUpload = useCallback(() => {
-    dropButtonRef.current?.scrollIntoView?.({
-      behavior: reduceMotion ? 'auto' : 'smooth',
-      block: 'center',
-    });
+    // Open the real file dialog immediately (single click), and pulse the
+    // in-scene dropzone so the connection is visible when the dialog closes.
+    picker.open();
     dropButtonRef.current?.focus({ preventScroll: true });
     setUploadPulse(true);
     window.clearTimeout(pulseTimer.current);
     pulseTimer.current = window.setTimeout(() => setUploadPulse(false), 1600);
-  }, [reduceMotion]);
+  }, [picker]);
 
   const caption = ATLAS_STAGES.find((s) => s.key === stage)?.caption ?? '';
 
@@ -128,12 +132,18 @@ export function AtlasHero({ flow, guestEnabled, authed, flowActive }: AtlasHeroP
         label="Upload my resume to find matches"
         microcopy="PDF or DOCX · Up to 5 MB · No account required"
         privacyNote={null}
-        onStarted={(file) => void flow.startUpload(file)}
+        picker={picker}
         buttonRef={dropButtonRef}
         className={cn(
           'h-full rounded-2xl bg-card/70 backdrop-blur-[2px] transition-shadow duration-300',
           uploadPulse && 'shadow-[0_0_0_3px_hsl(var(--ring)/0.45)]',
         )}
+      />
+      {/* The page's ONE hidden file input — every trigger opens this. */}
+      <input
+        {...picker.inputProps}
+        aria-hidden={undefined}
+        aria-label="Resume file: PDF or DOCX · Up to 5 MB · No account required"
       />
     </div>
   ) : (

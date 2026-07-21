@@ -46,6 +46,10 @@ export interface GuestJobProgress {
   phase: string;
   pct?: number;
   updated_at?: string;
+  /** v4 additive, guest_parse `finalizing` only: the GENUINELY extracted
+   * skill names (first ~8) so the parsing scene can materialize REAL data
+   * while the completed payload is still in flight. Never synthetic. */
+  skills_preview?: string[];
 }
 
 /** Profile block on the guest_parse result (v3 additive): ONLY fields the
@@ -132,6 +136,22 @@ export interface GuestJobMatch {
   /** Short deterministic "why this matches" line from the scorer. */
   why?: string;
   sponsorship?: GuestSponsorship | null;
+  /** v4 additive: viewer-local calendar-day age + its display label. */
+  days_ago?: number;
+  posted_text?: string;
+  /** v4 additive: deterministic title classification — 'senior' | 'mid' |
+   * 'entry' | 'neutral' (no marker; shows in every seniority view). */
+  seniority?: string;
+}
+
+/** Seniority views over the day's scanned pool (v4). */
+export type GuestSeniority = "any" | "entry" | "mid" | "senior";
+
+/** Deterministic experience detection from exact date-range math (merged
+ * intervals — concurrent roles never double-count). */
+export interface GuestDetectedExperience {
+  level?: GuestSeniority;
+  years?: number;
 }
 
 /** Why a completed guest_matches run returned zero jobs (v3 3.5) — a
@@ -166,6 +186,17 @@ export interface GuestMatchesResult {
   sources_report?: GuestSourcesReport;
   empty_reason?: GuestEmptyReason;
   cached?: boolean;
+  /** v4 additive — the seniority pool. `seniority` is the APPLIED view;
+   * `pool_total` counts qualifying matches for that view; `locked_count` =
+   * pool_total − visible (the honest "N more, create an account" number);
+   * `seniority_counts` powers the toggle badges; `detected_experience` is
+   * the deterministic level/years read from the resume's own dates. A
+   * seniority re-request against a cached pool answers 200 instantly. */
+  seniority?: GuestSeniority;
+  seniority_counts?: Partial<Record<GuestSeniority, number>>;
+  pool_total?: number;
+  locked_count?: number;
+  detected_experience?: GuestDetectedExperience;
 }
 
 /** POST /api/resume/guest/tailor → 202 (fresh atomic reservation) or

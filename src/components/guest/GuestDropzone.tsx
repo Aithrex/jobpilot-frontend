@@ -1,9 +1,7 @@
-import { useRef, useState, type Ref } from 'react';
-import { toast } from 'sonner';
+import { useState, type Ref } from 'react';
 import { UploadCloud } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-const MAX_FILE_BYTES = 5 * 1024 * 1024;
+import { useResumePicker, type ResumePicker } from './useResumePicker';
 
 const DEFAULT_MICROCOPY = 'PDF or DOCX, up to 5 MB';
 // Transparent first-party anti-abuse note (spec v2): the server issues a
@@ -12,9 +10,17 @@ const DEFAULT_PRIVACY_NOTE =
   'Free and private. We store a small first-party device token in your browser to help keep the free trial fair. It is used for abuse prevention and free-trial limits.';
 
 export interface GuestDropzoneProps {
-  /** Fires with a validated file (pdf/docx, 5 MB max) — the caller starts
-   * the upload/parse flow (useGuestFlow.startUpload). */
-  onStarted: (file: File) => void;
+  /**
+   * The page's ONE shared résumé picker (see useResumePicker). When the host
+   * provides it, the drop zone owns no `<input type="file">` of its own — the
+   * hero CTA, the nav action and this control all open the same element, so a
+   * single click anywhere starts the same upload. Omitted (standalone embeds,
+   * tests), the drop zone self-owns a picker + input via `onStarted`.
+   */
+  picker?: ResumePicker;
+  /** Validated-file callback for the SELF-OWNED mode (ignored when `picker`
+   * is provided — the shared picker already carries its own onFile). */
+  onStarted?: (file: File) => void;
   /** 'full' = a standalone hero card; 'compact' = a slim row for embeds;
    * 'panel' = the landing workspace's primary surface (fills its parent's
    * height, larger type and target). */
@@ -40,6 +46,7 @@ export interface GuestDropzoneProps {
  * in useGuestFlow.
  */
 export function GuestDropzone({
+  picker,
   onStarted,
   variant = 'full',
   label = 'Drop your resume here, or tap to browse',
@@ -49,23 +56,16 @@ export function GuestDropzone({
   className,
   buttonRef,
 }: GuestDropzoneProps) {
-  const inputRef = useRef<HTMLInputElement | null>(null);
+  // Self-owned fallback picker — created unconditionally (hooks rule), used
+  // only when the host didn't hand a shared one down.
+  const ownPicker = useResumePicker({
+    onFile: (file) => onStarted?.(file),
+    disabled,
+  });
+  const active = picker ?? ownPicker;
   const [dragActive, setDragActive] = useState(false);
   const compact = variant === 'compact';
   const panel = variant === 'panel';
-
-  const accept = (file: File) => {
-    if (disabled) return;
-    if (!/\.(pdf|docx)$/i.test(file.name)) {
-      toast.error('Please upload a PDF or DOCX resume.');
-      return;
-    }
-    if (file.size > MAX_FILE_BYTES) {
-      toast.error('That file is over 5 MB. Please upload a smaller resume.');
-      return;
-    }
-    onStarted(file);
-  };
 
   return (
     <div className={cn('w-full', panel && 'flex h-full flex-col', className)}>
@@ -73,7 +73,7 @@ export function GuestDropzone({
         ref={buttonRef}
         type="button"
         disabled={disabled}
-        onClick={() => inputRef.current?.click()}
+        onClick={active.open}
         onDragOver={(e) => {
           e.preventDefault();
           if (!disabled) setDragActive(true);
@@ -83,7 +83,7 @@ export function GuestDropzone({
           e.preventDefault();
           setDragActive(false);
           const f = e.dataTransfer.files?.[0];
-          if (f) accept(f);
+          if (f) active.acceptFile(f);
         }}
         className={cn(
           'flex w-full cursor-pointer items-center rounded-2xl border-2 border-dashed text-left transition-all',
@@ -129,20 +129,16 @@ export function GuestDropzone({
           )}
         </span>
       </button>
-      <input
-        ref={inputRef}
-        type="file"
-        aria-label={`Resume file: ${microcopy}`}
-        tabIndex={-1}
-        accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        className="hidden"
-        disabled={disabled}
-        onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f) accept(f);
-          e.target.value = '';
-        }}
-      />
+      {/* With a SHARED picker the page renders exactly one input elsewhere;
+          self-owned mode renders it here (aria-label preserved for tests +
+          assistive tech). */}
+      {!picker && (
+        <input
+          {...ownPicker.inputProps}
+          aria-hidden={undefined}
+          aria-label={`Resume file: ${microcopy}`}
+        />
+      )}
       {privacyNote && (
         <p
           className={cn(

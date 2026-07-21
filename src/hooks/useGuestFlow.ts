@@ -28,13 +28,16 @@ import {
   setGuestId,
 } from "@/lib/guest";
 import type {
+  GuestDetectedExperience,
   GuestDownloadFormat,
   GuestEmptyReason,
   GuestJobMatch,
   GuestJobProgress,
+  GuestMatchesResult,
   GuestParseResult,
   GuestProfileBlock,
   GuestQuotaError,
+  GuestSeniority,
   GuestSession,
   GuestSourcesReport,
   GuestTailorResult,
@@ -90,6 +93,14 @@ export interface GuestMatchesMeta {
   totalConsidered?: number;
   emptyReason?: GuestEmptyReason | null;
   sourcesReport?: GuestSourcesReport | null;
+  /** v4: seniority pool metadata — applied view, per-view counts, the
+   * honest locked count behind the visible 5, and the deterministic
+   * detected experience driving the default view. */
+  seniority?: GuestSeniority;
+  seniorityCounts?: Partial<Record<GuestSeniority, number>>;
+  poolTotal?: number;
+  lockedCount?: number;
+  detectedExperience?: GuestDetectedExperience | null;
 }
 
 /** Title defense at the guest boundary: some source rows carry the role under
@@ -178,10 +189,10 @@ export const TAILOR_STAGES = [
 ] as const;
 
 export const MATCHES_STAGES = [
-  "Scanning live openings on Workday, Greenhouse, Lever, and Ashby…",
+  "Scanning Workday, company career pages, and big tech boards in parallel…",
   "Scoring each role against your resume…",
   "Keeping only the strong matches…",
-  "Ranking your best fits. A first scan takes a minute or two…",
+  "Ranking your best fits. A first full scan can take a few minutes…",
 ] as const;
 
 /** Cycles through staged status copy while `active`; parks on the last line. */
@@ -368,7 +379,27 @@ export function useGuestFlow({ enabled, onUnavailable }: UseGuestFlowOptions) {
     };
   }, [enabled, onUnavailable, applyQuota]);
 
-  const loadMatches = useCallback(async () => {
+  /** Fold a matches result into state — shared by the full load and the
+   * instant seniority re-slice. */
+  const applyMatchesResult = useCallback((data: GuestMatchesResult) => {
+    // Render EXACTLY what the server returns — it caps at 5. No client-side
+    // slicing, no hidden rows, no blur. Titles are normalized at this
+    // boundary (job_title/role variants) before anything renders.
+    setMatches((data.jobs ?? []).map(normalizeGuestMatch));
+    setMatchesMeta({
+      totalConsidered: data.total_considered,
+      emptyReason: data.empty_reason ?? null,
+      sourcesReport: data.sources_report ?? null,
+      seniority: data.seniority,
+      seniorityCounts: data.seniority_counts,
+      poolTotal: data.pool_total,
+      lockedCount: data.locked_count,
+      detectedExperience: data.detected_experience ?? null,
+    });
+    setMatchesState("ready");
+  }, []);
+
+  const loadMatches = useCallback(async (seniority?: GuestSeniority) => {
     const gid = getGuestId();
     if (!gid) return;
     setMatchesState("loading");
@@ -381,6 +412,7 @@ export function useGuestFlow({ enabled, onUnavailable }: UseGuestFlowOptions) {
       undefined,
       undefined,
       setMatchesProgress,
+      seniority,
     );
     if (isUnavailable(resp.status)) {
       onUnavailable();
@@ -408,17 +440,34 @@ export function useGuestFlow({ enabled, onUnavailable }: UseGuestFlowOptions) {
       );
       return;
     }
-    // Render EXACTLY what the server returns — it caps at 5. No client-side
-    // slicing, no hidden rows, no blur. Titles are normalized at this
-    // boundary (job_title/role variants) before anything renders.
-    setMatches((resp.data.jobs ?? []).map(normalizeGuestMatch));
-    setMatchesMeta({
-      totalConsidered: resp.data.total_considered,
-      emptyReason: resp.data.empty_reason ?? null,
-      sourcesReport: resp.data.sources_report ?? null,
-    });
-    setMatchesState("ready");
-  }, [onUnavailable]);
+    applyMatchesResult(resp.data);
+  }, [onUnavailable, applyMatchesResult]);
+
+  /** Seniority toggle: an instant server-side re-slice of the day's scanned
+   * pool (200 from cache — no re-scan, no quota). The current list stays on
+   * screen while the swap is in flight. */
+  const [seniorityPending, setSeniorityPending] = useState(false);
+  const changeSeniority = useCallback(
+    async (seniority: GuestSeniority) => {
+      const gid = getGuestId();
+      if (!gid) return;
+      setSeniorityPending(true);
+      try {
+        const resp = await apiService.guestMatches(
+          gid,
+          getDeviceToken() ?? undefined,
+          undefined,
+          undefined,
+          undefined,
+          seniority,
+        );
+        if (resp.data) applyMatchesResult(resp.data);
+      } finally {
+        setSeniorityPending(false);
+      }
+    },
+    [applyMatchesResult],
+  );
 
   /** Returning guest with a resume on file → straight to today's matches. */
   const goToMatches = useCallback(() => {
@@ -707,6 +756,8 @@ export function useGuestFlow({ enabled, onUnavailable }: UseGuestFlowOptions) {
     matchesError,
     matchesCta,
     loadMatches,
+    changeSeniority,
+    seniorityPending,
     // tailor
     activeMatch,
     tailorState,

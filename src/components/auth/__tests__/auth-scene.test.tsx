@@ -47,9 +47,10 @@ async function renderLogin() {
       </Routes>
     </MemoryRouter>,
   );
-  // Wait out the page's 120ms email autofocus so it can't yank focus away
-  // mid-interaction and flake the assertions below.
-  await waitFor(() => expect(screen.getByLabelText('Email')).toHaveFocus());
+  // The page autofocuses email only on fine-pointer devices; the jsdom
+  // matchMedia stub reports coarse, so no delayed focus can yank mid-test.
+  // Just make sure the form is mounted before interactions begin.
+  await waitFor(() => expect(screen.getByLabelText('Email')).toBeInTheDocument());
   return view;
 }
 
