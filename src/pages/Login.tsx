@@ -57,7 +57,15 @@ export default function Login() {
     if (isAuthenticated) navigate(destination, { replace: true });
   }, [isAuthenticated, navigate, destination]);
 
+  // Autofocus the email field on pointer devices only. On touch, focusing it
+  // yanks up the software keyboard before the user has read the page, hides
+  // the password field, and shifts the layout — so phones get a calm, fully
+  // visible form instead.
   useEffect(() => {
+    const finePointer =
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(pointer: fine)').matches;
+    if (!finePointer) return;
     const id = window.setTimeout(() => emailRef.current?.focus(), 120);
     return () => window.clearTimeout(id);
   }, []);

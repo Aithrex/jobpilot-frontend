@@ -376,10 +376,9 @@ describe('guest landing flow', () => {
     expect(screen.getByText(/You have used your guest tailoring/)).toBeInTheDocument();
   });
 
-  test('8. feature disabled (503): only the upload action becomes an account CTA, and the atlas stays interactive', async () => {
+  test('8. feature disabled (503): only the upload action becomes an account CTA, and the workspace window still renders', async () => {
     api.guestSession.mockResolvedValue({ error: 'Guest onboarding unavailable', status: 503 });
 
-    const user = userEvent.setup();
     renderLanding();
 
     // The real upload control is replaced by a concise free-account CTA,
@@ -388,16 +387,14 @@ describe('guest landing flow', () => {
     expect(
       screen.queryByRole('button', { name: /Upload my resume to find matches/i }),
     ).not.toBeInTheDocument();
+    // No file input at all when the feature is off — an upload trigger that
+    // cannot upload is worse than no trigger.
     expect(screen.queryByLabelText(/^Resume file/)).not.toBeInTheDocument();
     expect(screen.getAllByRole('link', { name: /Create free account/i }).length).toBeGreaterThan(0);
 
-    // Meanwhile the Signal Atlas stays fully interactive: the stage controls
-    // still move the scene.
-    await user.click(screen.getByRole('button', { name: 'Match' }));
-    expect(document.querySelector('[data-atlas-stage]')).toHaveAttribute(
-      'data-atlas-stage',
-      'match',
-    );
+    // The workspace window itself stays on the page — the product story does
+    // not disappear just because guest upload is paused.
+    expect(screen.getByText('Career Workspace')).toBeInTheDocument();
 
     // And none of it touches the backend beyond the initial probe.
     expect(api.guestOnboard).not.toHaveBeenCalled();

@@ -25,9 +25,16 @@
   <!-- Fonts are SELF-HOSTED (public/fonts, latin subsets, OFL). @font-face
        lives in src/fonts.css; the critical text weights are preloaded here so
        first paint uses brand fonts with zero swap shift and no third-party
-       render-blocking chain. -->
+       render-blocking chain.
+
+       These are exactly the weights the landing hero paints above the fold:
+       Plus Jakarta 800 for the h1, Inter 400/500/600 for the supporting copy,
+       CTA and trust line. Preloading the WRONG weights is worse than none — a
+       measured CLS of 0.14 came entirely from 500/600/800 swapping in late. -->
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="/fonts/plus-jakarta-sans-800.woff2">
   <link rel="preload" as="font" type="font/woff2" crossorigin href="/fonts/inter-400.woff2">
-  <link rel="preload" as="font" type="font/woff2" crossorigin href="/fonts/plus-jakarta-sans-700.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="/fonts/inter-500.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="/fonts/inter-600.woff2">
   <!-- Theme color for browser UI -->
   <meta name="theme-color" content="#4338CA" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#27272A" media="(prefers-color-scheme: dark)">

@@ -3,9 +3,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { isGuestOnboardingEnabled, markGuestOnboardingUnavailable } from '@/lib/guest';
 import { useGuestFlow } from '@/hooks/useGuestFlow';
 import { LandingNav } from './LandingNav';
-import { AtlasHero } from './AtlasHero';
-import { StoryPath } from './StoryPath';
-import { CareerOrbit } from './CareerOrbit';
+import { WorkspaceHero } from './WorkspaceHero';
+import { AvailableNow } from './AvailableNow';
+import { ComingNext } from './ComingNext';
 import { TrustClose } from './TrustClose';
 import { LandingFooter } from './LandingFooter';
 
@@ -46,6 +46,23 @@ export default function LandingExperience() {
   const flow = useGuestFlow({ enabled: guestEnabled, onUnavailable });
   const flowActive = guestEnabled && flow.step !== 'hero';
 
+  // A coming-soon dock item reveals its concept preview by moving the reader
+  // to the roadmap section. It calls no API and claims no signup — the only
+  // real action on an unavailable capability is creating an account.
+  const onPreviewCapability = useCallback(() => {
+    const target = document.getElementById('coming-next');
+    if (!target) return;
+    target.scrollIntoView({
+      behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+        ? 'auto'
+        : 'smooth',
+      block: 'start',
+    });
+    // Move focus too, so the preview is reachable by keyboard alone.
+    target.setAttribute('tabindex', '-1');
+    target.focus({ preventScroll: true });
+  }, []);
+
   return (
     <div
       className="dark min-h-screen overflow-x-clip bg-background text-foreground"
@@ -59,18 +76,20 @@ export default function LandingExperience() {
       </a>
       <LandingNav />
       <main id="main">
-        <AtlasHero
+        <WorkspaceHero
           flow={flow}
           guestEnabled={guestEnabled}
           authed={!authLoading && isAuthenticated}
           flowActive={flowActive}
+          onPreviewCapability={onPreviewCapability}
         />
         {/* Once real work starts, the workspace owns the page — no marketing
-            between the guest and their results. */}
+            between the guest and their results, and no roadmap content while
+            they are waiting on something real. */}
         {!flowActive && (
           <>
-            <StoryPath />
-            <CareerOrbit />
+            <AvailableNow />
+            <ComingNext />
             <TrustClose />
           </>
         )}

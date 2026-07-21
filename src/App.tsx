@@ -3,6 +3,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
+import { cn } from '@/lib/utils';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { ThemeProvider } from './components/theme-provider';
 import { AuthProvider } from './contexts/AuthContext';
@@ -68,11 +69,31 @@ const NotificationsTab = lazy(() => import('@/components/resume/NotificationsTab
 
 const queryClient = new QueryClient();
 
-function RouteLoadingFallback() {
+/**
+ * Route-level Suspense fallback.
+ *
+ * `pinnedDark` matches the routes that render themselves on the pinned deep-ink
+ * token set (landing + every auth surface). Without it the fallback paints in
+ * the *app* theme — so a light-themed user hitting /login saw a bright flash
+ * for the duration of the chunk fetch, then a dark page. Pinning the same
+ * `.dark` scope + `bg-background` makes the fallback and the page it precedes
+ * one continuous surface.
+ */
+export function RouteLoadingFallback({ pinnedDark = false }: { pinnedDark?: boolean }) {
   return (
-    <div className="min-h-screen flex items-center justify-center" aria-live="polite">
+    <div
+      className={cn(
+        'flex min-h-screen items-center justify-center',
+        pinnedDark && 'dark bg-background',
+      )}
+      style={pinnedDark ? { colorScheme: 'dark' } : undefined}
+      aria-live="polite"
+    >
       <div className="flex items-center gap-2 text-muted-foreground">
-        <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+        <span
+          className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent motion-reduce:animate-none"
+          aria-hidden
+        />
         <span>Loading workspace…</span>
       </div>
     </div>
@@ -102,9 +123,11 @@ function AppContent() {
               /next/today; guests → /#try; feature off → /). Guest state
               lives in localStorage + the backend session, so nothing is
               lost crossing this redirect. */}
-          <Route path="/start" element={<Suspense fallback={<RouteLoadingFallback />}><Start /></Suspense>} />
-          <Route path="/login" element={<Suspense fallback={<RouteLoadingFallback />}><Login /></Suspense>} />
-          <Route path="/register" element={<Suspense fallback={<RouteLoadingFallback />}><Register /></Suspense>} />
+          {/* These render on AuthShell's forced-dark stage — the fallback is
+              pinned dark too so there is no light flash before the page paints. */}
+          <Route path="/start" element={<Suspense fallback={<RouteLoadingFallback pinnedDark />}><Start /></Suspense>} />
+          <Route path="/login" element={<Suspense fallback={<RouteLoadingFallback pinnedDark />}><Login /></Suspense>} />
+          <Route path="/register" element={<Suspense fallback={<RouteLoadingFallback pinnedDark />}><Register /></Suspense>} />
 
           {/* Product workspace (AuthGate handles the sign-in wall). The
               OnboardingWizard self-gates to authed users who haven't onboarded. */}
@@ -167,9 +190,9 @@ function AppContent() {
           {/* Utility routes */}
           <Route path="/admin" element={<Suspense fallback={<RouteLoadingFallback />}><AdminPortal /></Suspense>} />
           {/* Social sign-in landing (distinct from the Gmail-sync callback above) */}
-          <Route path="/oauth/callback" element={<Suspense fallback={<RouteLoadingFallback />}><AuthCallback /></Suspense>} />
+          <Route path="/oauth/callback" element={<Suspense fallback={<RouteLoadingFallback pinnedDark />}><AuthCallback /></Suspense>} />
           <Route path="/oauth/gmail/callback" element={<Suspense fallback={<RouteLoadingFallback />}><GmailCallback /></Suspense>} />
-          <Route path="/reset-password" element={<Suspense fallback={<RouteLoadingFallback />}><ResetPassword /></Suspense>} />
+          <Route path="/reset-password" element={<Suspense fallback={<RouteLoadingFallback pinnedDark />}><ResetPassword /></Suspense>} />
           <Route path="/privacy" element={<Suspense fallback={<RouteLoadingFallback />}><Privacy /></Suspense>} />
           <Route path="/terms" element={<Suspense fallback={<RouteLoadingFallback />}><Terms /></Suspense>} />
           <Route path="/applypilot/privacy" element={<Suspense fallback={<RouteLoadingFallback />}><ApplyPilotPrivacy /></Suspense>} />
