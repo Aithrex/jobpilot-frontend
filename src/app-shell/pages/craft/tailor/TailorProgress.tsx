@@ -1,9 +1,9 @@
 /**
- * TailorProgress — the live progress card shown in the left preview column
+ * TailorProgress - the live progress card shown in the left preview column
  * while a tailoring job runs.
  *
  * Presentational and HONEST: every step transition is driven by a real
- * backend phase marker (job.result.progress) — there is no elapsed-time
+ * backend phase marker (job.result.progress) - there is no elapsed-time
  * guessing. If an older backend never emits markers, the card truthfully
  * sits on the step the status floor implies.
  * Done = success, active = primary + pulse, pending = muted.
@@ -73,7 +73,7 @@ export function TailorProgress({
 
   return (
     <div className="px-6 sm:px-8 py-8 sm:py-10 min-h-[480px] flex flex-col">
-      {/* Screen-reader progress announcement — a persistent live region (a
+      {/* Screen-reader progress announcement - a persistent live region (a
           region that mounts with the active step wouldn't reliably announce). */}
       <p role="status" aria-live="polite" className="sr-only">
         Step {current + 1} of {STEPS.length}: {STEPS[current].label}

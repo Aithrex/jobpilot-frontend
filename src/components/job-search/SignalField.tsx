@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useReducedMotion } from 'framer-motion';
 
 interface SignalFieldProps {
-  /** 0..1 — drives node count + brightness (e.g. share of strong matches). */
+  /** 0..1 - drives node count + brightness (e.g. share of strong matches). */
   intensity?: number;
   className?: string;
 }
@@ -12,7 +12,7 @@ interface Node { x: number; y: number; vx: number; vy: number; r: number }
 /**
  * The app's in-product signature: a slow constellation of "signal" nodes whose
  * density and brightness scale with how strong the current feed is. Not
- * decoration — it's a data-driven ambient (more strong matches → a fuller
+ * decoration - it's a data-driven ambient (more strong matches → a fuller
  * field). Canvas-based (cheap), paused when the tab is hidden, and frozen to a
  * single static frame under reduced-motion.
  */

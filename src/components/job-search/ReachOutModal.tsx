@@ -1,10 +1,10 @@
 /**
- * ReachOutModal — drafts and opens a short cold-outreach email for a
+ * ReachOutModal - drafts and opens a short cold-outreach email for a
  * specific posting. Reads the candidate's resume on the backend so the
  * generated message references real bullets, not generic platitudes.
  *
  * UX flow:
- *   1. Modal opens with a "Drafting…" state while /jobs/draft-outreach runs.
+ *   1. Modal opens with a "Drafting..." state while /jobs/draft-outreach runs.
  *   2. Subject + body land in editable inputs. User can tweak.
  *   3. Three actions: Copy (clipboard), Open in Gmail (compose URL), Regenerate.
  *   4. User searches for the recruiter on LinkedIn separately and pastes the
@@ -143,7 +143,7 @@ export function ReachOutModal({ open, onClose, rec }: ReachOutModalProps) {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-10 text-sm text-muted-foreground">
             <Loader2 className="h-6 w-6 animate-spin text-purple-500" />
-            <p className="mt-2">Drafting outreach…</p>
+            <p className="mt-2">Drafting outreach...</p>
           </div>
         ) : (
           <div className="space-y-3">

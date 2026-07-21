@@ -236,7 +236,7 @@ export function JobSearchPanel({
                 disabled={loading || !localQuery.trim() || !filtersLoaded}
               >
                 <Search className="h-3.5 w-3.5" />
-                {loading ? 'Searching…' : 'Search'}
+                {loading ? 'Searching...' : 'Search'}
               </Button>
               <Button
                 type="button"
@@ -256,7 +256,7 @@ export function JobSearchPanel({
                 onClick={handleSaveFilters}
               >
                 <Save className="h-3.5 w-3.5" />
-                {savingFilters ? 'Saving…' : 'Save'}
+                {savingFilters ? 'Saving...' : 'Save'}
               </Button>
             </div>
           </form>

@@ -36,7 +36,7 @@ const STATUS_TONE: Record<string, string> = {
 };
 
 function formatTs(iso: string | null) {
-  if (!iso) return '—';
+  if (!iso) return ' - ';
   try {
     return new Date(iso).toLocaleString(undefined, {
       year: 'numeric',
@@ -153,7 +153,7 @@ export function FeedbackPanel() {
 
       {loading && (
         <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-6 text-center text-sm text-gray-500">
-          Loading feedback…
+          Loading feedback...
         </div>
       )}
 
@@ -212,7 +212,7 @@ export function FeedbackPanel() {
                       disabled={savingId === it.id}
                       className="rounded-md border border-purple-400/50 bg-purple-500/10 px-3 py-1 text-xs font-medium text-purple-200 hover:bg-purple-500/20 disabled:opacity-50"
                     >
-                      {savingId === it.id ? 'Saving…' : 'Send response'}
+                      {savingId === it.id ? 'Saving...' : 'Send response'}
                     </button>
                   </div>
                 </div>

@@ -44,14 +44,14 @@ function maskEmail(email: string): string {
 }
 
 /**
- * AuthGate — the sign-in wall for the /app workspace. Calm, token-driven, and
+ * AuthGate - the sign-in wall for the /app workspace. Calm, token-driven, and
  * theme-correct: an email-first flow (check email → sign in or register) that
  * reuses the shared AuthShell so it matches the standalone /login + /register
  * routes exactly.
  *
  * Auth behaviour is unchanged: it drives everything through `useAuth`
  * (login/register with session_id + fingerprint) and `apiService.checkEmail`.
- * Failures are surfaced inline (never a logout — the 401→session-expired
+ * Failures are surfaced inline (never a logout - the 401→session-expired
  * contract lives in api.ts).
  */
 export default function AuthGate({ children, description }: AuthGateProps) {
@@ -74,7 +74,7 @@ export default function AuthGate({ children, description }: AuthGateProps) {
   const emailInputRef = useRef<HTMLInputElement>(null);
   const passwordInputRef = useRef<HTMLInputElement>(null);
 
-  // A forced logout (401) while inside the app re-renders this gate — greet the
+  // A forced logout (401) while inside the app re-renders this gate - greet the
   // returning user gently rather than dumping them at a blank form.
   useEffect(() => {
     const onExpired = () => setSessionExpired(true);
@@ -100,7 +100,7 @@ export default function AuthGate({ children, description }: AuthGateProps) {
     fingerprint: localStorage.getItem('portfolio_fingerprint_hash') || undefined,
   });
 
-  // Step 1 — does this email already have an account?
+  // Step 1 - does this email already have an account?
   const handleEmailNext = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -128,7 +128,7 @@ export default function AuthGate({ children, description }: AuthGateProps) {
     }
   };
 
-  // Step 2a — sign in
+  // Step 2a - sign in
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -144,7 +144,7 @@ export default function AuthGate({ children, description }: AuthGateProps) {
     // On success isAuthenticated flips and the workspace renders.
   };
 
-  // Step 2b — register, then sign in
+  // Step 2b - register, then sign in
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -166,7 +166,7 @@ export default function AuthGate({ children, description }: AuthGateProps) {
       setError(result.error);
       return;
     }
-    setSuccessMsg('Account created. Signing you in…');
+    setSuccessMsg('Account created. Signing you in...');
     const loginResult = await login(email, password, sessionId, fingerprint);
     setSubmitting(false);
     if (loginResult.error) {
@@ -197,7 +197,7 @@ export default function AuthGate({ children, description }: AuthGateProps) {
       >
         <div className="flex items-center gap-2">
           <Loader2 className="h-5 w-5 animate-spin text-primary" aria-hidden />
-          <span className="text-sm">Loading your workspace…</span>
+          <span className="text-sm">Loading your workspace...</span>
         </div>
       </div>
     );
@@ -313,7 +313,7 @@ export default function AuthGate({ children, description }: AuthGateProps) {
                   {checkingEmail ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                      Checking…
+                      Checking...
                     </>
                   ) : (
                     <>
@@ -354,7 +354,7 @@ export default function AuthGate({ children, description }: AuthGateProps) {
                 </div>
                 <Button type="submit" size="lg" className="w-full" disabled={submitting}>
                   {submitting && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
-                  {submitting ? 'Signing in…' : 'Sign in'}
+                  {submitting ? 'Signing in...' : 'Sign in'}
                 </Button>
               </form>
             )}
@@ -407,7 +407,7 @@ export default function AuthGate({ children, description }: AuthGateProps) {
                       disabled={submitting}
                       className={selectClasses}
                     >
-                      <option value="">Select…</option>
+                      <option value="">Select...</option>
                       {ROLE_OPTIONS.map((r) => <option key={r} value={r}>{r}</option>)}
                     </select>
                   </div>
@@ -422,7 +422,7 @@ export default function AuthGate({ children, description }: AuthGateProps) {
                       disabled={submitting}
                       className={selectClasses}
                     >
-                      <option value="">Select…</option>
+                      <option value="">Select...</option>
                       {SECTOR_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
                     </select>
                   </div>
@@ -433,7 +433,7 @@ export default function AuthGate({ children, description }: AuthGateProps) {
 
                 <Button type="submit" size="lg" className="w-full" disabled={submitting}>
                   {submitting && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
-                  {submitting ? 'Creating account…' : 'Create account'}
+                  {submitting ? 'Creating account...' : 'Create account'}
                 </Button>
               </form>
             )}

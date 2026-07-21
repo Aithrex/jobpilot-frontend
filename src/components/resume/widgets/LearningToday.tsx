@@ -1,5 +1,5 @@
 /**
- * Learning Today — the one path to nudge forward, or the highest-value skill to
+ * Learning Today - the one path to nudge forward, or the highest-value skill to
  * start closing. Empty state invites starting a path for any topic.
  */
 import { GraduationCap } from 'lucide-react';

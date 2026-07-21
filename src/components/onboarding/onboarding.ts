@@ -1,5 +1,5 @@
 /**
- * Onboarding logic — pure helpers + resumable-state persistence.
+ * Onboarding logic - pure helpers + resumable-state persistence.
  *
  * Kept JSX-free so the wizard file stays about UI. Two jobs:
  *   1. Derive sensible DEFAULTS from a just-parsed resume so Step 4's few
@@ -10,7 +10,7 @@
 import type { ResumeStatus } from '@/types/resume';
 
 export const ONBOARDING_STORAGE_KEY = 'jobpilot.onboarding.v1';
-/** Set when the user dismisses the wizard — suppresses it for this tab session. */
+/** Set when the user dismisses the wizard - suppresses it for this tab session. */
 export const ONBOARDING_SNOOZE_KEY = 'jobpilot.onboarding.snoozed';
 
 /** The friendly seniority buckets we ask about (stored as `experience_level`). */
@@ -104,7 +104,7 @@ export function levelFromTitle(title?: string | null): string {
 /**
  * Derive defaults from the parser's rich `parsed_resume` payload. Tolerates both
  * the grouped-skills object shape and a flat skills array, and a missing
- * experience array — nothing here throws on partial data.
+ * experience array - nothing here throws on partial data.
  */
 export function deriveDefaultsFromParsed(parsed: unknown): OnboardingDefaults {
   const p = (parsed && typeof parsed === 'object' ? parsed : {}) as Record<string, unknown>;
@@ -169,7 +169,7 @@ export function saveOnboardingState(state: PersistedOnboarding): void {
   try {
     window.localStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify(state));
   } catch {
-    /* storage full / disabled — progress just won't survive a redirect */
+    /* storage full / disabled - progress just won't survive a redirect */
   }
 }
 

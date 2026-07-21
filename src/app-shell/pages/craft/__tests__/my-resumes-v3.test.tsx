@@ -2,7 +2,7 @@
  * MyResumesPage on the Resume Platform v3 versions contract.
  *
  * GET /resume/versions rows are {resume_id, filename, uploaded_at,
- * size_bytes, parse_status, is_active} — no s3_key. Set-active goes through
+ * size_bytes, parse_status, is_active} - no s3_key. Set-active goes through
  * PUT /resume/active {resume_id}; 409 resume_not_parsed surfaces as a
  * user-facing toast, and unparsed rows can't be activated at all.
  * The API layer is mocked at the apiService boundary (house style).

@@ -18,7 +18,7 @@ import { NAV_ALL, navHref } from "./nav.config";
  * Global top bar (64px): current-destination context on the left (plus the
  * brand mark below `lg`, where the Sidebar is hidden), then a theme toggle and
  * the account menu. Rendered as the page `<header>` landmark. No dead
- * affordances — every control here does something today.
+ * affordances - every control here does something today.
  */
 export function TopBar() {
   const { theme, setTheme } = useTheme();
@@ -38,7 +38,7 @@ export function TopBar() {
   const email = user?.email;
   const name = user?.name;
 
-  // Current top-level destination — drives the page-context readout.
+  // Current top-level destination - drives the page-context readout.
   const current = NAV_ALL.find((item) => {
     const href = navHref(item.to);
     return pathname === href || pathname.startsWith(`${href}/`);
@@ -79,7 +79,7 @@ export function TopBar() {
           className="hidden h-10 items-center gap-2 rounded-full border border-border/70 bg-muted/40 pl-3 pr-2 text-caption text-muted-foreground outline-none transition-colors duration-200 ease-expo hover:border-border hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:flex"
         >
           <Search className="h-4 w-4" aria-hidden="true" />
-          <span>Search…</span>
+          <span>Search...</span>
           <kbd className="rounded border border-border bg-background px-1.5 py-0.5 font-mono text-[10px] font-semibold text-muted-foreground">⌘K</kbd>
         </button>
         <button

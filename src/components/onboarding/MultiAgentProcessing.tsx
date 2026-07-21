@@ -6,7 +6,7 @@ const AGENTS = [
   { icon: FileText, label: 'Reading your experience', sub: 'Parsing roles, dates, and impact' },
   { icon: Sparkles, label: 'Extracting skills', sub: 'Building your skill graph' },
   { icon: Target, label: 'Matching target roles', sub: 'Finding the best-fit titles' },
-  { icon: ShieldCheck, label: 'Scoring ATS readiness', sub: 'Checking how recruiters’ systems read you' },
+  { icon: ShieldCheck, label: 'Scoring ATS readiness', sub: "Checking how recruiters' systems read you" },
   { icon: Lightbulb, label: 'Spotting skill gaps', sub: 'Where a little learning unlocks more roles' },
   { icon: LayoutDashboard, label: 'Personalizing your workspace', sub: 'Tailoring every tab to you' },
 ];
@@ -14,7 +14,7 @@ const AGENTS = [
 /**
  * Delightful "team of agents" processing screen shown while the uploaded resume
  * is parsed. Agents light up sequentially (spinner → check); when `done` flips,
- * all complete. Purely visual cadence — the real work is the single parse job.
+ * all complete. Purely visual cadence - the real work is the single parse job.
  */
 export function MultiAgentProcessing({ active, done }: { active: boolean; done?: boolean }) {
   const [stage, setStage] = useState(0);
@@ -37,7 +37,7 @@ export function MultiAgentProcessing({ active, done }: { active: boolean; done?:
         <p className="text-sm font-semibold">Your AI team is reviewing your resume</p>
         <p className="text-xs text-muted-foreground">This usually takes ~20 seconds.</p>
         <p className="sr-only">
-          {done ? 'Resume processed.' : `${AGENTS[Math.min(stage, AGENTS.length - 1)].label}…`}
+          {done ? 'Resume processed.' : `${AGENTS[Math.min(stage, AGENTS.length - 1)].label}...`}
         </p>
       </div>
       {AGENTS.map((a, i) => {

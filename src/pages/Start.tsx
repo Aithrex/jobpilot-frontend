@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { isGuestOnboardingEnabled } from '@/lib/guest';
 
 /**
- * /start — legacy guest-onboarding entry, kept for backward-compatible links.
+ * /start - legacy guest-onboarding entry, kept for backward-compatible links.
  * The live guest experience now runs directly on the landing (`/#try`) with a
  * single useGuestFlow controller, so this route only routes:
  *
@@ -20,7 +20,7 @@ export default function Start() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background" aria-live="polite">
         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" aria-hidden />
-        <span className="sr-only">Loading…</span>
+        <span className="sr-only">Loading...</span>
       </div>
     );
   }

@@ -65,7 +65,7 @@ export function CommandPalette() {
     <CommandDialog open={open} onOpenChange={setOpen}>
       <DialogTitle className="sr-only">Command palette</DialogTitle>
       <CommandInput
-        placeholder="Search jobs, jump to a page, run an action…"
+        placeholder="Search jobs, jump to a page, run an action..."
         value={query}
         onValueChange={setQuery}
       />
@@ -77,7 +77,7 @@ export function CommandPalette() {
             <CommandGroup heading="Jobs">
               <CommandItem value={`search jobs ${query}`} onSelect={runJobSearch}>
                 <Search className="mr-2 h-4 w-4" aria-hidden />
-                Search jobs for “{query.trim()}”
+                Search jobs for "{query.trim()}"
               </CommandItem>
             </CommandGroup>
             <CommandSeparator />

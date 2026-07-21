@@ -78,7 +78,7 @@ export function YourEdge({ onUnavailable }: YourEdgeProps) {
     return (
       <div className="space-y-3">
         <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-          <Sparkles className="h-3.5 w-3.5" /> Scanning your target market for closeable gaps…
+          <Sparkles className="h-3.5 w-3.5" /> Scanning your target market for closeable gaps...
         </div>
         <Skeleton className="h-32 w-full rounded-xl" />
         <Skeleton className="h-32 w-full rounded-xl" />
@@ -87,7 +87,7 @@ export function YourEdge({ onUnavailable }: YourEdgeProps) {
     );
   }
 
-  // Intro — the "find my edge" CTA.
+  // Intro - the "find my edge" CTA.
   if (!result) {
     return (
       <Card className="overflow-hidden">
@@ -113,7 +113,7 @@ export function YourEdge({ onUnavailable }: YourEdgeProps) {
 
   const diffs = result.differentiators ?? [];
 
-  // Honest empty state — the model found fewer than two real gaps.
+  // Honest empty state - the model found fewer than two real gaps.
   if (diffs.length === 0) {
     return (
       <div className="space-y-3">
@@ -220,7 +220,7 @@ export function YourEdge({ onUnavailable }: YourEdgeProps) {
 
           <Button onClick={generate} disabled={selected === null || generating}>
             {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
-            {generating ? 'Building plan…' : 'Generate plan'}
+            {generating ? 'Building plan...' : 'Generate plan'}
           </Button>
         </div>
         {generating && (

@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion, useInView } from 'framer-motion';
-import { LayoutDashboard, Sparkles } from 'lucide-react';
+import { LayoutDashboard, Sparkles, UploadCloud } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { GuestDropzone } from '@/components/guest/GuestDropzone';
 import { GuestFlowShell } from '@/components/guest/GuestFlowShell';
-import { useResumePicker } from '@/components/guest/useResumePicker';
+import type { ResumePicker } from '@/components/guest/useResumePicker';
 import type { GuestFlow } from '@/hooks/useGuestFlow';
 import type { Capability } from '@/lib/capabilities';
 import { Container } from './_shared';
@@ -16,20 +16,20 @@ import { CapabilityDock } from './workspace/CapabilityDock';
 import { useCinematic } from './workspace/useCinematic';
 
 /**
- * The hero: editorial copy beside the Aspirely Live Workspace — a Mac-inspired
+ * The hero: editorial copy beside the Aspirely Live Workspace, a Mac-inspired
  * application window built from live DOM, never a screenshot.
  *
- * Two lives, one window:
- *  1 Before an upload it runs ONE ~7.5s illustrative sequence using redacted
- *    structure only, then settles and reveals the "Coming next" dock.
- *  2 The instant a real file is chosen the illustration is killed permanently,
- *    the dock is removed, and the window hosts the genuine guest workflow
- *    driven by server phases from useGuestFlow.
+ * The window IS the uploader. In the idle state its body hosts the real drop
+ * surface with the illustrative stage above it, and the whole body is a
+ * drag-and-drop target - the product window and the thing you drop a resume
+ * on are one object, not two unrelated ones. The instant a real file is chosen
+ * the illustration is killed permanently, the dock is removed, and the window
+ * hosts the genuine guest workflow driven by server phases from useGuestFlow.
  *
- * Upload is ONE click from anywhere: this component renders the page's single
- * `<input type="file">` and hands the same picker to the CTA and the drop
- * zone, so "Find my matches" opens the OS file dialog directly — it never
- * scrolls to, or focuses, a second uploader.
+ * Upload is ONE click from anywhere on the page. This component does not own
+ * the file input: LandingExperience renders the page's single
+ * `<input type="file">` and hands the SAME picker to the hero CTA, the nav
+ * CTA, this drop surface and the closing CTA.
  *
  * This component is presentational; the single `useGuestFlow` controller lives
  * in LandingExperience.
@@ -39,8 +39,10 @@ export interface WorkspaceHeroProps {
   flow: GuestFlow;
   guestEnabled: boolean;
   authed: boolean;
-  /** A step beyond the idle hero is active — real work owns the window. */
+  /** A step beyond the idle hero is active - real work owns the window. */
   flowActive: boolean;
+  /** The page's ONE resume picker (owned by LandingExperience). */
+  picker: ResumePicker;
   onPreviewCapability: (cap: Capability) => void;
 }
 
@@ -50,7 +52,7 @@ function liveStatus(flow: GuestFlow): { status: WindowStatus; label: string } {
   switch (flow.step) {
     case 'parsing':
       if (flow.parseError) return { status: 'attention', label: 'Needs you' };
-      return { status: 'working', label: 'Reading résumé' };
+      return { status: 'working', label: 'Reading resume' };
     case 'profile':
       return { status: 'done', label: 'Profile ready' };
     case 'matches':
@@ -82,6 +84,7 @@ export function WorkspaceHero({
   guestEnabled,
   authed,
   flowActive,
+  picker,
   onPreviewCapability,
 }: WorkspaceHeroProps) {
   // Scene liveness: on screen AND tab visible. The sequence never burns
@@ -100,27 +103,25 @@ export function WorkspaceHero({
     takeover: flowActive,
   });
 
-  // The page's ONE résumé input. Every trigger opens this element.
-  const picker = useResumePicker({
-    onFile: (file) => void flow.startUpload(file),
-    disabled: !guestEnabled,
-  });
+  // Drag state for the WHOLE window body, not just the inner control.
+  const [dragActive, setDragActive] = useState(false);
+  const droppable = guestEnabled && !authed;
 
   const { status, label } = flowActive
     ? liveStatus(flow)
     : (BEAT_STATUS[cinematic.beat] ?? BEAT_STATUS.arrive);
 
-  // The dock only ever shows on the settled illustration — the moment real
+  // The dock only ever shows on the settled illustration - the moment real
   // work starts, roadmap content gets out of the user's way.
   const showDock = !flowActive && cinematic.settled;
 
   const uploadSurface = authed ? (
-    <div className="flex flex-col gap-3 rounded-2xl border border-primary/30 bg-card/70 p-4 text-center">
-      <span className="mx-auto grid h-11 w-11 place-items-center rounded-xl bg-primary/10 text-primary">
+    <div className="flex flex-col items-center gap-3 text-center sm:flex-row sm:text-left">
+      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
         <LayoutDashboard className="h-6 w-6" aria-hidden />
       </span>
-      <p className="text-sm font-semibold">You're signed in</p>
-      <Button asChild size="sm" className="h-11 w-full rounded-control font-semibold">
+      <p className="min-w-0 flex-1 text-sm font-semibold">You're signed in</p>
+      <Button asChild size="sm" className="h-11 w-full rounded-control font-semibold sm:w-auto">
         <Link to="/next/today">Open my workspace</Link>
       </Button>
     </div>
@@ -133,11 +134,10 @@ export function WorkspaceHero({
       privacyNote={null}
     />
   ) : (
-    <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card/70 p-4">
+    <div className="flex flex-col gap-3">
       <p className="text-sm text-muted-foreground">
-        <span className="font-semibold text-foreground">Start free.</span> Guest
-        upload is paused right now. Create a free account to upload your résumé
-        and see your matches.
+        <span className="font-semibold text-foreground">Start free.</span> Guest upload is paused
+        right now. Create a free account to upload your resume and see your matches.
       </p>
       <Button asChild size="sm" className="h-11">
         <Link to="/register">Create free account</Link>
@@ -149,21 +149,9 @@ export function WorkspaceHero({
     <section
       id="try"
       ref={sectionRef}
-      aria-label="Try Aspirely with your résumé"
+      aria-label="Try Aspirely with your resume"
       className="relative flex scroll-mt-24 items-center pb-12 pt-24 sm:pt-28 lg:min-h-[100svh] lg:pb-8 lg:pt-20"
     >
-      {/* The page's single résumé file input. The accessible name deliberately
-          uses unaccented "Resume file:" — it matches the long-standing label
-          contract the guest-flow tests assert on, and reads correctly in every
-          screen reader. */}
-      {guestEnabled && !authed && (
-        <input
-          {...picker.inputProps}
-          aria-hidden={undefined}
-          aria-label="Resume file: PDF or DOCX, up to 5 MB"
-        />
-      )}
-
       <Container className="relative w-full">
         <AnimatePresence mode="wait" initial={false}>
           {!flowActive ? (
@@ -173,16 +161,16 @@ export function WorkspaceHero({
               exit={{ opacity: 0, transition: { duration: 0.2 } }}
               className="grid grid-cols-[minmax(0,1fr)] items-center gap-8 lg:grid-cols-12 lg:gap-8"
             >
-              {/* ── Copy + the real upload action ── */}
+              {/* Copy + the primary action */}
               <div className="mx-auto flex w-full max-w-xl flex-col text-center lg:col-span-5 lg:mx-0 lg:text-left">
                 <h1 className="text-balance font-display text-4xl font-extrabold leading-[1.06] tracking-[-0.03em] text-foreground sm:text-5xl xl:text-[3.3rem]">
-                  Upload your résumé.{' '}
-                  <span className="gradient-text">Discover up to 5 best-fit jobs—free.</span>
+                  Upload your resume.{' '}
+                  <span className="gradient-text">Discover up to 5 best-fit jobs, free.</span>
                 </h1>
 
                 <p className="mx-auto mt-5 max-w-md text-pretty text-lg leading-relaxed text-muted-foreground lg:mx-0">
-                  No account needed. See where you fit, understand why, and tailor
-                  your résumé for one role.
+                  No account needed. See where you fit, understand why, and tailor your resume for
+                  one role.
                 </p>
 
                 <div className="mt-7 flex flex-col items-center gap-3 sm:flex-row lg:justify-start">
@@ -213,17 +201,13 @@ export function WorkspaceHero({
                   Private upload · Real openings · No invented experience
                 </p>
 
-                {/* On phones the upload surface sits ABOVE the decorative
-                    window; on desktop it rides under the copy column. */}
-                <div className="mt-6 lg:mt-7">{uploadSurface}</div>
-
-                {/* Returning guest whose résumé is already on file — straight
+                {/* Returning guest whose resume is already on file - straight
                     to today's matches, no re-upload. */}
                 {guestEnabled && flow.session?.exists && flow.session.has_resume && (
-                  <div className="mt-4 flex items-center justify-center gap-3 rounded-xl border border-primary/25 bg-primary/5 p-3 lg:justify-between">
+                  <div className="mt-6 flex items-center justify-center gap-3 rounded-xl border border-primary/25 bg-primary/5 p-3 lg:justify-between">
                     <p className="flex items-center gap-2 text-sm">
                       <Sparkles className="h-4 w-4 shrink-0 text-primary" aria-hidden />
-                      Your résumé is already on file.
+                      Your resume is already on file.
                     </p>
                     <Button
                       size="sm"
@@ -237,8 +221,8 @@ export function WorkspaceHero({
                 )}
 
                 <p className="mt-5 text-xs text-muted-foreground">
-                  Guest: up to 5 matches and 1 tailoring · Free account: full
-                  workspace and 5 tailorings daily
+                  Guest: up to 5 matches and 1 tailoring · Free account: full workspace and 5
+                  tailorings daily
                 </p>
 
                 <p className="mt-4 text-sm text-muted-foreground">
@@ -252,23 +236,69 @@ export function WorkspaceHero({
                 </p>
               </div>
 
-              {/* ── The live workspace window ── */}
+              {/* The live workspace window - illustration ABOVE, real upload
+                  surface INSIDE, whole body droppable. */}
               <div className="relative lg:col-span-7">
                 <MacWindow
                   status={status}
                   statusLabel={label}
                   animateArrival
                   bodyClassName="min-h-[290px] sm:min-h-[330px]"
-                  dock={
-                    <CapabilityDock show={showDock} onPreview={onPreviewCapability} />
-                  }
+                  dock={<CapabilityDock show={showDock} onPreview={onPreviewCapability} />}
                 >
-                  <CinematicStage beat={cinematic.beat} />
+                  <div
+                    className={cn(
+                      'relative flex h-full flex-col transition-colors',
+                      dragActive && 'bg-primary/5',
+                    )}
+                    onDragOver={
+                      droppable
+                        ? (e) => {
+                            e.preventDefault();
+                            setDragActive(true);
+                          }
+                        : undefined
+                    }
+                    onDragLeave={droppable ? () => setDragActive(false) : undefined}
+                    onDrop={
+                      droppable
+                        ? (e) => {
+                            e.preventDefault();
+                            setDragActive(false);
+                            const f = e.dataTransfer.files?.[0];
+                            if (f) picker.acceptFile(f);
+                          }
+                        : undefined
+                    }
+                  >
+                    <CinematicStage
+                      beat={cinematic.beat}
+                      onSelectBeat={cinematic.select}
+                      className="flex-1"
+                    />
+
+                    {/* The real thing, seated in the product window. */}
+                    <div className="relative z-10 border-t border-white/[0.07] bg-white/[0.03] p-3 sm:p-4">
+                      {uploadSurface}
+                    </div>
+
+                    {dragActive && (
+                      <div
+                        aria-hidden
+                        className="pointer-events-none absolute inset-0 z-20 grid place-items-center rounded-[10px] border-2 border-dashed border-primary bg-background/85"
+                      >
+                        <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                          <UploadCloud className="h-5 w-5 text-primary" aria-hidden />
+                          Drop your resume to start
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </MacWindow>
               </div>
             </motion.div>
           ) : (
-            /* ── Real work owns the window ── */
+            /* Real work owns the window */
             <motion.div
               key="active"
               initial={{ opacity: 0 }}

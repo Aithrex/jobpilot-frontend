@@ -1,7 +1,7 @@
 /**
  * Inspector tab chrome (Tailor right column).
  *
- * Presentational shell — owns only the active-tab selection contract (lifted to
+ * Presentational shell - owns only the active-tab selection contract (lifted to
  * props). Builds the 5-tab bar (JD / Review / ATS / Regenerate / Cover) on
  * shadcn Tabs, with score/status affordances, and renders caller-supplied
  * panels as content.
@@ -159,7 +159,7 @@ export function InspectorTabs({
         </TabsTrigger>
       </TabsList>
 
-      {/* Panels — each wrapped in a token-driven surface */}
+      {/* Panels - each wrapped in a token-driven surface */}
       <TabsContent
         value="jd"
         className="mt-0 rounded-container border border-border bg-card shadow-soft"

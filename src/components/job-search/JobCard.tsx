@@ -183,7 +183,7 @@ export function JobCard({ job, saved, jobStatus, onSave, onUnsave, onQuickApply 
   const company = toTitleCase(job.company);
   const location = toTitleCase(job.location);
 
-  // Muted meta line — dot-separated, only what exists.
+  // Muted meta line - dot-separated, only what exists.
   const meta = [
     job.salary,
     toTitleCase(job.employment_type),
@@ -196,7 +196,7 @@ export function JobCard({ job, saved, jobStatus, onSave, onUnsave, onQuickApply 
   return (
     <>
       <Card className="group relative flex h-full flex-col overflow-hidden rounded-2xl border-border/60 bg-card/70 backdrop-blur-md transition-[transform,box-shadow,border-color] duration-200 ease-expo hover:-translate-y-1 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/10">
-        {/* Company-hued ambient wash + accent rail — the per-card color identity. */}
+        {/* Company-hued ambient wash + accent rail - the per-card color identity. */}
         <span
           className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full opacity-50 blur-2xl transition-opacity duration-300 group-hover:opacity-90"
           style={{ backgroundColor: `hsl(${hue} 70% 55% / 0.18)` }}
@@ -240,7 +240,7 @@ export function JobCard({ job, saved, jobStatus, onSave, onUnsave, onQuickApply 
                     className="inline-flex items-center gap-0.5 text-[10px] font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:underline disabled:opacity-50"
                   >
                     <ShieldCheck className="h-3 w-3" aria-hidden />
-                    {scanning ? 'Scanning…' : 'Deep-scan'}
+                    {scanning ? 'Scanning...' : 'Deep-scan'}
                   </button>
                 </>
               )}
@@ -290,7 +290,7 @@ export function JobCard({ job, saved, jobStatus, onSave, onUnsave, onQuickApply 
               >
                 <div className="max-h-48 overflow-y-auto rounded-xl border border-border/40 bg-muted/20 p-3 text-xs leading-relaxed text-muted-foreground">
                   <p className="whitespace-pre-line">
-                    {job.description.slice(0, 1400)}{job.description.length > 1400 && '…'}
+                    {job.description.slice(0, 1400)}{job.description.length > 1400 && '...'}
                   </p>
                 </div>
               </motion.div>

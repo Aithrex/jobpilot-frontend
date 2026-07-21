@@ -1,14 +1,14 @@
 /**
- * DirectiveBlock — the signed-in Home's opener. Not a greeting, not a stat grid:
+ * DirectiveBlock - the signed-in Home's opener. Not a greeting, not a stat grid:
  * it answers "what do I do right now?" with up to three concrete roles worth
  * applying to today, each with its match % and the honest reason it surfaced,
  * behind ONE primary action.
  *
  * The roles come straight from the saved/scored jobs DashboardTab already
- * fetched — strongest match first, preferring ones still in the "interested"
+ * fetched - strongest match first, preferring ones still in the "interested"
  * (un-submitted) state. When there are no concrete roles yet, we fold in the
  * existing HeroAction ranker, which is itself a designed single-action state
- * (add a resume, run a search, protect an OPT clock, …).
+ * (add a resume, run a search, protect an OPT clock, ...).
  */
 import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowRight, Building2, Sparkles } from 'lucide-react';
@@ -23,7 +23,7 @@ function plural(n: number, one: string, many: string): string {
   return n === 1 ? one : many;
 }
 
-/** The one honest line for why a role surfaced — sponsorship, skills, or fit. */
+/** The one honest line for why a role surfaced - sponsorship, skills, or fit. */
 function whyReason(j: Job, onVisa: boolean): string {
   const sp = j.sponsorship;
   if (onVisa && sp && (sp.band === 'strong' || sp.band === 'moderate') && sp.approvals_5y > 0) {

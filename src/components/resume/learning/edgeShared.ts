@@ -37,7 +37,7 @@ export const PROOF_META: Record<EdgeProofType, ProofMeta> = {
     label: 'Write-up',
     icon: FileText,
     kind: 'text',
-    placeholder: 'Paste your write-up: what you built, the tradeoffs, what you learned…',
+    placeholder: 'Paste your write-up: what you built, the tradeoffs, what you learned...',
     inputLabel: 'Your write-up',
   },
 };

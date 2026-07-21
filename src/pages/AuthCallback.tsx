@@ -7,16 +7,16 @@ import { toast } from 'sonner';
 
 /**
  * Landing route for social sign-in. The backend redirects here with the JWT (or
- * an error) in the URL FRAGMENT — `/oauth/callback#token=…` or `#error=…` — so
+ * an error) in the URL FRAGMENT - `/oauth/callback#token=...` or `#error=...` - so
  * the credential never hits server/proxy logs. We read it, hydrate auth, and
  * forward into the app.
  */
 const ERROR_COPY: Record<string, string> = {
   invalid_state: 'Your sign-in link expired. Please try again.',
-  no_email: 'We couldn’t get a verified email from that provider. Try a different method.',
+  no_email: "We couldn't get a verified email from that provider. Try a different method.",
   oauth_failed: 'Sign-in failed. Please try again.',
-  provider_not_configured: 'That sign-in method isn’t available right now.',
-  unknown_provider: 'That sign-in method isn’t available right now.',
+  provider_not_configured: "That sign-in method isn't available right now.",
+  unknown_provider: "That sign-in method isn't available right now.",
   access_denied: 'Sign-in was cancelled.',
 };
 
@@ -75,12 +75,12 @@ export default function AuthCallback() {
           <>
             <AlertCircle className="h-8 w-8 text-destructive" />
             <p className="text-sm text-muted-foreground">{error}</p>
-            <p className="text-xs text-muted-foreground">Taking you back to sign in…</p>
+            <p className="text-xs text-muted-foreground">Taking you back to sign in...</p>
           </>
         ) : (
           <>
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-sm text-muted-foreground">Completing sign-in…</p>
+            <p className="text-sm text-muted-foreground">Completing sign-in...</p>
           </>
         )}
       </div>

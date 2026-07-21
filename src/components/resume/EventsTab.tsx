@@ -30,7 +30,7 @@ const RELATIONS: { id: EventRelation; label: string; icon: typeof Bookmark }[] =
 ];
 
 interface EventsTabProps {
-  /** Mounted inside the /next app shell — the shell already renders the page
+  /** Mounted inside the /next app shell - the shell already renders the page
       header + SubNav, so suppress the internal hero and top padding. */
   embedded?: boolean;
 }
@@ -83,7 +83,7 @@ export default function EventsTab({ embedded }: EventsTabProps) {
     qc.invalidateQueries({ queryKey: ['events'] });
     if (next === 'won' || next === 'attended') {
       toast.success(next === 'won' ? 'Marked as won' : 'Marked as attended', {
-        description: 'Want to post about it? Use “Draft post”.',
+        description: 'Want to post about it? Use "Draft post".',
       });
     }
   };
@@ -91,7 +91,7 @@ export default function EventsTab({ embedded }: EventsTabProps) {
   return (
     <div className={cn('space-y-5', isEmbedded ? 'max-w-3xl' : 'mx-auto max-w-3xl p-4')}>
       {isEmbedded ? (
-        // The shell page renders the h1 + SubNav — keep a slim toolbar row
+        // The shell page renders the h1 + SubNav - keep a slim toolbar row
         // (context line + refresh) instead of a second hero header.
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-caption text-muted-foreground">

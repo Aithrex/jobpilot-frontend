@@ -14,14 +14,14 @@ import {
  *
  * Design rules, all of them honesty rules first and aesthetics second:
  *  - Live capabilities are illuminated; upcoming ones are frosted and carry a
- *    visible text status badge. Status is NEVER communicated by colour or
- *    opacity alone.
+ *  visible text status badge. Status is NEVER communicated by colour or
+ *  opacity alone.
  *  - No padlock iconography. A lock reads "pay to unlock"; none of these are
- *    paid, and the upgrade endpoint is a stub, so a lock would be doubly
- *    misleading.
+ *  paid, and the upgrade endpoint is a stub, so a lock would be doubly
+ *  misleading.
  *  - Upcoming items are focusable buttons that reveal a description. They call
- *    no API, submit nothing, and claim no waitlist — the only real action
- *    offered anywhere is creating an account.
+ *  no API, submit nothing, and claim no waitlist - the only real action
+ *  offered anywhere is creating an account.
  */
 
 const ICONS: Record<string, typeof FileSearch> = {
@@ -44,9 +44,12 @@ export function StatusBadge({
     <span
       className={cn(
         'inline-flex shrink-0 items-center rounded-full border px-1.5 py-[1px] text-[9px] font-semibold leading-none tracking-[0.02em]',
+        // Token-driven, so the same badge is legible on the obsidian product
+        // dock AND on the pearl editorial surface. `success` is reserved for
+        // "this genuinely works today" and used nowhere decorative.
         live
-          ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-300'
-          : 'border-white/15 bg-white/[0.06] text-muted-foreground',
+          ? 'border-success/30 bg-success/10 text-success'
+          : 'border-border bg-muted text-muted-foreground',
         className,
       )}
     >
@@ -55,13 +58,7 @@ export function StatusBadge({
   );
 }
 
-function DockItem({
-  cap,
-  onPreview,
-}: {
-  cap: Capability;
-  onPreview?: (cap: Capability) => void;
-}) {
+function DockItem({ cap, onPreview }: { cap: Capability; onPreview?: (cap: Capability) => void }) {
   const Icon = ICONS[cap.id] ?? Sparkles;
   const live = isLive(cap.status);
 
@@ -95,7 +92,7 @@ function DockItem({
         )}
       >
         {/* The dock uses the short product noun; the full name lives in the
-            roadmap section below. */}
+  roadmap section below. */}
         {cap.id === 'whatsapp' ? 'WhatsApp' : cap.name}
       </span>
       {!live && <StatusBadge status={cap.status} />}
@@ -119,7 +116,7 @@ export function CapabilityDock({ show, onPreview }: CapabilityDockProps) {
       className="relative z-10 border-t border-white/[0.07] bg-white/[0.03] px-3 py-2 backdrop-blur-xl"
     >
       {/* Wraps rather than scrolls: a clipped capability with its status badge
-          cut off is exactly the ambiguity this dock exists to prevent. */}
+  cut off is exactly the ambiguity this dock exists to prevent. */}
       <div className="flex flex-wrap items-center gap-1.5">
         <span className="hidden shrink-0 pr-1 text-[9px] font-semibold uppercase tracking-[0.13em] text-muted-foreground/50 xl:inline">
           Coming next

@@ -29,7 +29,7 @@ function isUpgrade(res: { status?: number; errorPayload?: Record<string, unknown
 }
 
 interface LearningHubTabProps {
-  /** Mounted inside the /next app shell — the shell already renders the page
+  /** Mounted inside the /next app shell - the shell already renders the page
       header + SubNav, so suppress the internal hero and top padding. */
   embedded?: boolean;
 }
@@ -86,7 +86,7 @@ export default function LearningHubTab({ embedded }: LearningHubTabProps) {
   return (
     <div className={cn('space-y-6', isEmbedded ? 'max-w-3xl' : 'mx-auto max-w-3xl p-4')}>
       {isEmbedded ? (
-        // The shell page renders the h1 + SubNav — keep only the one line of
+        // The shell page renders the h1 + SubNav - keep only the one line of
         // section context so we don't stack a second hero under them.
         <p className="max-w-xl text-caption text-muted-foreground">
           Close the gap to the role you want. Find your trending market edge and build it with
@@ -108,7 +108,7 @@ export default function LearningHubTab({ embedded }: LearningHubTabProps) {
         </header>
       )}
 
-      {/* Cross-user market trend signal — what the whole corpus is asking for. */}
+      {/* Cross-user market trend signal - what the whole corpus is asking for. */}
       <MarketTrends onPlanCreated={(pathId) => setSelected(pathId)} />
 
       {/* Mode switch: the market-driven "Your edge" loop vs. free-form topics. */}
@@ -154,12 +154,12 @@ export default function LearningHubTab({ embedded }: LearningHubTabProps) {
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && !creating && create()}
-            placeholder="e.g. System design, Docker, SQL for analytics…"
+            placeholder="e.g. System design, Docker, SQL for analytics..."
             disabled={creating}
           />
           <Button onClick={create} disabled={creating || !topic.trim()} className="shrink-0">
             {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-            {creating ? 'Building…' : 'Create plan'}
+            {creating ? 'Building...' : 'Create plan'}
           </Button>
         </div>
         {creating && (

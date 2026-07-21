@@ -1,8 +1,8 @@
 /**
- * Warm intros — referrals beat cold applies, and for F-1 students they're the
+ * Warm intros - referrals beat cold applies, and for F-1 students they're the
  * fastest route past the resume pile. Reads the LinkedIn side of the connect
  * status the dashboard already fetches; deliberately shows only numbers that
- * exist in ctx (saved companies) — never a fabricated referral count.
+ * exist in ctx (saved companies) - never a fabricated referral count.
  */
 import { Users } from 'lucide-react';
 import type { Widget } from './types';

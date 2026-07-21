@@ -1,5 +1,5 @@
 /**
- * Derived reads over DashboardCtx — the small "ranker inputs" shared by the
+ * Derived reads over DashboardCtx - the small "ranker inputs" shared by the
  * hero and several widgets so the logic stays in one honest place.
  */
 import type { SavedJob } from '@/types/jobs';

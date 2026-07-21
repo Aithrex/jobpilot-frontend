@@ -1,5 +1,5 @@
 /**
- * Ready to Submit — the queue of saved-but-not-yet-applied roles. For an active
+ * Ready to Submit - the queue of saved-but-not-yet-applied roles. For an active
  * applicant this is the fastest lever, so it scores high when the queue is warm.
  * Empty state invites saving roles to build the queue.
  */

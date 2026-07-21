@@ -119,7 +119,7 @@ type QuizQuestion = {
 // ─── Agent theming ──────────────────────────────────────────────────────────
 
 // Deliberate token exception: a categorical, data-driven agent color scale.
-// Eight agents need eight distinguishable hues — more than the semantic token
+// Eight agents need eight distinguishable hues - more than the semantic token
 // set offers. Chips always pair the color with the agent's name, so meaning
 // never rides on color alone.
 const AGENT_COLORS: Record<string, { grad: string; text: string }> = {
@@ -953,7 +953,7 @@ export default function CareerCopilotTab() {
                 </AnimatePresence>
                 {sending && (
                   <div className="flex items-center gap-2 text-sm text-primary">
-                    <Loader2 className="h-4 w-4 animate-spin" /> Orchestrating agents…
+                    <Loader2 className="h-4 w-4 animate-spin" /> Orchestrating agents...
                   </div>
                 )}
                 <div ref={endRef} />
@@ -996,7 +996,7 @@ export default function CareerCopilotTab() {
                   <textarea value={input} onChange={(e) => setInput(e.target.value)}
                     onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void send(); } }}
                     rows={2}
-                    placeholder="Ask: outreach, PPT, project scaffold, STAR answers, tailoring…"
+                    placeholder="Ask: outreach, PPT, project scaffold, STAR answers, tailoring..."
                     className="min-h-[44px] flex-1 rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
                   />
                   <button type="button" disabled={sending || !input.trim()} onClick={() => void send()} aria-label="Send message"
@@ -1042,7 +1042,7 @@ export default function CareerCopilotTab() {
                   <div className="flex gap-2">
                     <button type="button" disabled={outreachBusy} onClick={() => void createCampaign()}
                       className="rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50"
-                    >{outreachBusy ? "Creating…" : "Create & auto-generate sequence"}</button>
+                    >{outreachBusy ? "Creating..." : "Create & auto-generate sequence"}</button>
                     <button type="button" onClick={() => setShowNewCampaign(false)} className="text-xs text-muted-foreground">Cancel</button>
                   </div>
                 </div>
@@ -1152,7 +1152,7 @@ export default function CareerCopilotTab() {
                       className="min-w-0 flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground" />
                     <button type="button" disabled={pgBusy} onClick={() => void startTrack()}
                       className="shrink-0 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50"
-                    >{pgBusy ? "Generating…" : "Generate custom track"}</button>
+                    >{pgBusy ? "Generating..." : "Generate custom track"}</button>
                   </div>
                 </div>
 
@@ -1199,7 +1199,7 @@ export default function CareerCopilotTab() {
                         <button type="button" disabled={pgBusy} onClick={() => void runQuiz()}
                           className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50"
                         >
-                          <Award className="h-3.5 w-3.5" /> {pgBusy ? "Generating…" : "Take assessment"}
+                          <Award className="h-3.5 w-3.5" /> {pgBusy ? "Generating..." : "Take assessment"}
                         </button>
                       </div>
                     )}

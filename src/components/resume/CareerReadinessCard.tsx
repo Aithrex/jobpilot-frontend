@@ -46,7 +46,7 @@ function DimBar({ d }: { d: ReadinessDimension }) {
 }
 
 /**
- * Career Readiness — the Compass hero. Turns the onboarding goal (finally used)
+ * Career Readiness - the Compass hero. Turns the onboarding goal (finally used)
  * + the cross-surface score into a single "here's where you are → your next step"
  * view, and recognizes the *building* via the "You've built" highlights.
  */

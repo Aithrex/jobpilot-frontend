@@ -19,7 +19,7 @@ import { PasswordInput } from '@/components/auth/PasswordInput';
 import { AuthNotice, errorVariant } from '@/components/auth/AuthNotice';
 
 /**
- * Sign-in: a compact, familiar form (both fields visible — no wizard) on the
+ * Sign-in: a compact, familiar form (both fields visible - no wizard) on the
  * Signal Atlas auth stage. The atlas reacts to focus via AuthShell's own
  * delegation; the REAL submission lifecycle (pending → success/error) is
  * reported through the `phase` prop so the visual never fakes progress.
@@ -47,7 +47,7 @@ export default function Login() {
   );
   const destination = returnTo ?? '/next/today';
 
-  // Social sign-in leaves the SPA entirely — stash the deep link so
+  // Social sign-in leaves the SPA entirely - stash the deep link so
   // AuthCallback can honor it when the OAuth round-trip returns.
   useEffect(() => {
     stashAuthReturnTo(returnTo);
@@ -59,7 +59,7 @@ export default function Login() {
 
   // Autofocus the email field on pointer devices only. On touch, focusing it
   // yanks up the software keyboard before the user has read the page, hides
-  // the password field, and shifts the layout — so phones get a calm, fully
+  // the password field, and shifts the layout - so phones get a calm, fully
   // visible form instead.
   useEffect(() => {
     const finePointer =
@@ -84,8 +84,8 @@ export default function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    // Inline, per-field validation — the notice banner stays reserved for
-    // server responses (400/409/429 — never a 401 here).
+    // Inline, per-field validation - the notice banner stays reserved for
+    // server responses (400/409/429 - never a 401 here).
     const fe: { email?: string; password?: string } = {};
     if (!email.trim()) fe.email = 'Enter your email to sign in.';
     if (!password.trim()) fe.password = 'Enter your password.';
@@ -103,7 +103,7 @@ export default function Login() {
         setScenePhase('success'); // the path completes before navigation
         setSessionExpired(false);
         toast.success('Welcome back!');
-        consumeAuthReturnTo(); // clear the OAuth stash — we're honoring state directly
+        consumeAuthReturnTo(); // clear the OAuth stash - we're honoring state directly
         navigate(destination);
       }
     } catch {
@@ -212,7 +212,7 @@ export default function Login() {
 
           <Button type="submit" size="lg" className="w-full" disabled={isLoading}>
             {isLoading && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
-            {isLoading ? 'Signing in…' : 'Sign in'}
+            {isLoading ? 'Signing in...' : 'Sign in'}
           </Button>
         </div>
       </form>

@@ -123,7 +123,7 @@ function SettingsCard({
               enabled ? "text-primary" : "text-muted-foreground",
             )}
           >
-            {saving ? "Saving…" : enabled ? "On" : "Review only"}
+            {saving ? "Saving..." : enabled ? "On" : "Review only"}
           </span>
         </div>
       </div>
@@ -446,7 +446,7 @@ export default function AutoApplyTab() {
     );
   }
 
-  // Master flag off — feature unavailable. Kept calm; the nav entry should be
+  // Master flag off - feature unavailable. Kept calm; the nav entry should be
   // gated on `available` so users rarely land here.
   if (available === false) {
     return (
@@ -479,7 +479,7 @@ export default function AutoApplyTab() {
 
       <SettingsCard enabled={enabled} saving={savingSettings} onToggle={onToggle} />
 
-      {/* Ready to submit — the review queue */}
+      {/* Ready to submit - the review queue */}
       <section className="space-y-3">
         <SectionHeading
           icon={<Send className="h-4 w-4 text-primary" />}
@@ -537,7 +537,7 @@ export default function AutoApplyTab() {
         )}
       </section>
 
-      {/* Approved — handed to the extension */}
+      {/* Approved - handed to the extension */}
       {waiting.length > 0 && (
         <section className="space-y-3">
           <SectionHeading

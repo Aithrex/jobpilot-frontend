@@ -165,7 +165,7 @@ export default function ProfilePanel() {
         <div className="flex items-center gap-3">
           <Button onClick={() => void onSave()} disabled={!dirty || saving} className="min-h-[44px]">
             {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
-            {saving ? "Saving…" : "Save changes"}
+            {saving ? "Saving..." : "Save changes"}
           </Button>
           {dirty && !saving && (
             <span className="text-xs text-muted-foreground">Unsaved changes</span>

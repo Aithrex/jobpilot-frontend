@@ -1,12 +1,12 @@
 /**
- * TodayPage — the "Today" mission-control dashboard (lazy-mounted at
+ * TodayPage - the "Today" mission-control dashboard (lazy-mounted at
  * /next/today by the app shell).
  *
  * A scanned tool, not a document. Three zones, top to bottom:
- *   Zone A "Are we OK?"    — one hero indicator (the needs-your-input queue, or
+ *   Zone A "Are we OK?" - one hero indicator (the needs-your-input queue, or
  *                            today's application status) + a KPI row.
- *   Zone B "What's changing?" — a 30-day application trend and the funnel.
- *   Zone C "Why?"          — a drill-down table of recent roles.
+ *   Zone B "What's changing?" - a 30-day application trend and the funnel.
+ *   Zone C "Why?" - a drill-down table of recent roles.
  *
  * Data comes exclusively through `apiService`. Every async surface owns its
  * own loading (skeleton) / empty / error state. Tokens only; verified in both
@@ -54,7 +54,7 @@ function greeting(): string {
   return 'Good evening';
 }
 
-/** Entrance easing shared with HeroPanel — a calm, decelerating rise. */
+/** Entrance easing shared with HeroPanel - a calm, decelerating rise. */
 const RISE_EASE: [number, number, number, number] = [0.16, 1, 0.3, 1];
 
 export default function TodayPage({ userName }: TodayPageProps = {}) {
@@ -85,7 +85,7 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
     ]);
 
     if (ok(ovR)) setOverview(ovR.data as DashboardOverview);
-    // Guard the backend's {}-error fallback — only accept a real readiness score.
+    // Guard the backend's {}-error fallback - only accept a real readiness score.
     if (ok(crR) && Array.isArray((crR.data as CareerReadiness).dimensions)) {
       setReadiness(crR.data as CareerReadiness);
     }
@@ -94,7 +94,7 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
       setFunnel(pfR.data as PipelineFunnel);
     }
     if (ok(sjR)) setSavedJobs(((sjR.data as { jobs?: SavedJob[] }).jobs as SavedJob[]) || []);
-    // Today inbox is best-effort — a failure just falls back to today's status.
+    // Today inbox is best-effort - a failure just falls back to today's status.
     if (ok(tiR)) setInbox(tiR.data as TodayInbox);
 
     setErr({
@@ -105,7 +105,7 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
     });
     setLoading(false);
     setFirstLoad(false);
-    // Whether anything a panel depends on failed — the Refresh announcement.
+    // Whether anything a panel depends on failed - the Refresh announcement.
     return !ok(ovR) || !ok(stR) || !ok(pfR) || !ok(sjR);
   }, []);
 
@@ -113,7 +113,7 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
     void load();
   }, [load]);
 
-  /** User-triggered refresh — same load, plus a polite completion announcement. */
+  /** User-triggered refresh - same load, plus a polite completion announcement. */
   const handleRefresh = useCallback(async () => {
     setRefreshAnnouncement('');
     const anyFailed = await load();
@@ -127,7 +127,7 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
   const displayName = userName ?? user?.name ?? user?.email?.split('@')[0] ?? null;
   const name = displayName?.split(' ')[0] || displayName || 'there';
 
-  /* ── Zone A hero model — Today inbox first, else today's status ──────────── */
+  /* ── Zone A hero model - Today inbox first, else today's status ──────────── */
   const hero: HeroModel = useMemo(() => {
     const items: HeroInputItem[] = (inbox?.items ?? []).slice(0, 4).map((it) => ({
       id: it.id,
@@ -157,7 +157,7 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
     firstLoad && loading ? 'loading' : isErr ? 'error' : 'ready';
 
   /**
-   * Staggered entrance, top to bottom — opacity + a small rise only, so
+   * Staggered entrance, top to bottom - opacity + a small rise only, so
    * nothing reflows. Skeletons occupy the same slots, so there is zero layout
    * shift when data lands. Disabled entirely under prefers-reduced-motion.
    */
@@ -199,7 +199,7 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
         </button>
       </motion.header>
 
-      {/* Zone A — Are we OK? */}
+      {/* Zone A - Are we OK? */}
       <motion.section {...rise(1)} aria-label="Today's status" className="space-y-4">
         <HeroPanel model={hero} onRetry={() => void load()} />
         <KpiRow
@@ -211,7 +211,7 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
         />
       </motion.section>
 
-      {/* Zone B — What's changing? */}
+      {/* Zone B - What's changing? */}
       <motion.section {...rise(2)} aria-label="Trends" className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <ApplicationTrend
@@ -229,7 +229,7 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
         </div>
       </motion.section>
 
-      {/* Zone C — Why? */}
+      {/* Zone C - Why? */}
       <motion.section {...rise(3)} aria-label="Recent roles">
         <RecentActivityPanel
           state={panelState(err.saved)}

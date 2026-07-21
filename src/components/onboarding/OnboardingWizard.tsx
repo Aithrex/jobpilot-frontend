@@ -21,7 +21,7 @@ import {
 } from './onboarding';
 
 /**
- * First-run onboarding — the product sequence:
+ * First-run onboarding - the product sequence:
  *   sign in (elsewhere) → 1) upload resume → 2) connect LinkedIn (skippable)
  *   → 3) a FEW resume-derived questions (target role, level, sponsorship,
  *   locations) → profile ready → land in the app.
@@ -238,7 +238,7 @@ export default function OnboardingWizard() {
 
   // Keep rendering through the resolve moment: savePreferences refreshes the
   // profile (user.onboarded flips true) before we navigate, which drops
-  // `pending` — without this guard the "ready" beat would unmount instantly.
+  // `pending` - without this guard the "ready" beat would unmount instantly.
   if ((!pending && phase !== 'resolve') || dismissed) return null;
 
   const handleFile = async (file: File) => {
@@ -268,7 +268,7 @@ export default function OnboardingWizard() {
 
   const startLinkedin = async () => {
     setLiConnecting(true);
-    // Persist first — the browser fully navigates to LinkedIn and back.
+    // Persist first - the browser fully navigates to LinkedIn and back.
     saveOnboardingState({ stepIndex: LINKEDIN_STEP, resumeDone, defaults, answers });
     const r = await apiService.getConnectAuthorizeUrl('linkedin');
     if (r.data?.authorize_url) {
@@ -309,7 +309,7 @@ export default function OnboardingWizard() {
   };
 
   /**
-   * Session snooze — dismisses the wizard WITHOUT marking onboarding complete,
+   * Session snooze - dismisses the wizard WITHOUT marking onboarding complete,
    * so it returns next login until the user genuinely finishes. Used by both
    * the dialog close and the final step's "Skip for now".
    */
@@ -478,7 +478,7 @@ export default function OnboardingWizard() {
   );
 }
 
-// ── Cinematic moments (presentation only — no data behavior) ────────────────
+// ── Cinematic moments (presentation only - no data behavior) ────────────────
 
 /** Dark, brand-tinted gradient backdrop shared by the welcome + resolve beats.
     Black overlays over the brand gradient keep it deliberately dark in BOTH
@@ -493,7 +493,7 @@ function CinematicBackdrop() {
   );
 }
 
-/** Full-bleed opening: staged reveals — mark → headline → promise → begin. */
+/** Full-bleed opening: staged reveals - mark → headline → promise → begin. */
 function WelcomeMoment({ onBegin }: { onBegin: () => void }) {
   const reduce = useReducedMotion();
   const container = {
@@ -562,7 +562,7 @@ function ReadyMoment() {
           transition={{ delay: reduce ? 0 : 0.5, duration: reduce ? 0 : 0.4 }}
           className="mt-2 text-sm text-white/80"
         >
-          Taking you to your dashboard…
+          Taking you to your dashboard...
         </motion.p>
       </div>
     </div>
@@ -714,7 +714,7 @@ function LinkedInStep({ connected, name, checking, connecting, onConnect, onBack
             </ul>
             <Button className="mt-5 w-full" onClick={onConnect} disabled={connecting}>
               {connecting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Linkedin className="h-4 w-4" />}
-              {connecting ? 'Opening LinkedIn…' : 'Connect LinkedIn'}
+              {connecting ? 'Opening LinkedIn...' : 'Connect LinkedIn'}
             </Button>
           </div>
         )}
@@ -744,7 +744,7 @@ function QuestionsStep({ answers, defaults, update, saving, onBack, onSkip, onFi
   update: (patch: Partial<OnboardingAnswers>) => void;
   saving: boolean;
   onBack: () => void;
-  /** Session snooze — does NOT complete onboarding (unlike onFinish). */
+  /** Session snooze - does NOT complete onboarding (unlike onFinish). */
   onSkip: () => void;
   onFinish: () => void;
 }) {

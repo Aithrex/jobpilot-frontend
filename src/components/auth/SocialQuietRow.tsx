@@ -8,7 +8,7 @@ import { toast } from 'sonner';
  * divider, then Google as a compact labelled button plus icon-only buttons for
  * any other providers the backend advertises. The OAuth behavior is identical
  * to SocialAuthButtons (same apiService calls, same branching); only the
- * presentation differs — this row sits BELOW the email form.
+ * presentation differs - this row sits BELOW the email form.
  */
 
 type Provider = 'google' | 'github' | 'linkedin' | 'microsoft' | 'apple';
@@ -23,7 +23,7 @@ const LABEL: Record<Provider, string> = {
   apple: 'Apple',
 };
 
-/* Official provider brand marks — brand colors are exempt from the token rule
+/* Official provider brand marks - brand colors are exempt from the token rule
    (same SVGs as SocialAuthButtons). */
 function BrandIcon({ provider }: { provider: Provider }) {
   const cls = 'h-[18px] w-[18px] shrink-0';
@@ -92,7 +92,7 @@ export function SocialQuietRow({ verb = 'Continue with' }: Props) {
   }, []);
 
   // Google is configured only if the backend advertised it. `null` (still
-  // loading) is treated as "attempt it" — the flow surfaces any real error.
+  // loading) is treated as "attempt it" - the flow surfaces any real error.
   const googleConfigured = providers === null ? null : providers.includes('google');
   const others = providers ? SECONDARY_ORDER.filter((p) => providers.includes(p)) : [];
 
@@ -132,7 +132,7 @@ export function SocialQuietRow({ verb = 'Continue with' }: Props) {
 
   return (
     <div className="space-y-4">
-      {/* Hairline divider — no solid mask, so the backdrop glow shows through. */}
+      {/* Hairline divider - no solid mask, so the backdrop glow shows through. */}
       <div className="flex items-center gap-3" aria-hidden>
         <span className="h-px flex-1 bg-border/70" />
         <span className="text-xs uppercase tracking-wide text-muted-foreground">or</span>
@@ -140,7 +140,7 @@ export function SocialQuietRow({ verb = 'Continue with' }: Props) {
       </div>
 
       <div className="flex items-stretch justify-center gap-2.5">
-        {/* PRIMARY — Google is always the obvious first choice. */}
+        {/* PRIMARY - Google is always the obvious first choice. */}
         <button
           type="button"
           onClick={onGoogle}
@@ -157,7 +157,7 @@ export function SocialQuietRow({ verb = 'Continue with' }: Props) {
           <span>{LABEL.google}</span>
         </button>
 
-        {/* SECONDARY — only the providers the backend actually advertises. */}
+        {/* SECONDARY - only the providers the backend actually advertises. */}
         {others.map((p) => (
           <button
             key={p}

@@ -1,8 +1,10 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { useAutoSync } from '@/hooks/useAutoSync';
 import {
-  loadCombinedPrefs, saveCombinedPrefs,
-  useCombinedJobs, type CombinedJobsController,
+  loadCombinedPrefs,
+  saveCombinedPrefs,
+  useCombinedJobs,
+  type CombinedJobsController,
 } from '@/hooks/useCombinedJobs';
 import type { WorkdayRecency } from '@/types/jobs';
 
@@ -48,7 +50,7 @@ const CombinedJobsContext = createContext<CombinedJobsContextValue | null>(null)
 
 /**
  * Hosts the combined job feed ABOVE the router outlet so the scan (and its
- * 30-min background auto-sync) survive navigating between pages — clicking
+ * 30-min background auto-sync) survive navigating between pages - clicking
  * "Sync now" and leaving the tab no longer aborts it. Lazy: nothing fetches
  * until `ensureStarted()` fires (the Jobs tab mounting), so users who never
  * open Jobs pay nothing.
@@ -75,12 +77,13 @@ export function CombinedJobsProvider({ children }: { children: React.ReactNode }
 
   const ensureStarted = useCallback(() => setStarted(true), []);
 
-  // Write-through persistence. Waits for hydration (`feed.ready`) so the
-  // pre-hydration empty title set never clobbers a saved, user-edited one.
+  // Write-through persistence for the scan params only. Titles are persisted
+  // by the shared `useJobTitles` store (into the same key), so both surfaces
+  // save one set instead of racing two.
   useEffect(() => {
     if (!feed.ready) return;
-    saveCombinedPrefs({ titles: feed.titles, location, remoteOnly });
-  }, [feed.ready, feed.titles, location, remoteOnly]);
+    saveCombinedPrefs({ location, remoteOnly });
+  }, [feed.ready, location, remoteOnly]);
 
   const autoSync = useAutoSync({
     enabled: started && feed.ready,
@@ -95,16 +98,26 @@ export function CombinedJobsProvider({ children }: { children: React.ReactNode }
     secondsUntilNext: autoSync.secondsUntilNext,
     sync: autoSync.sync,
     ensureStarted,
-    location, setLocation,
-    remoteOnly, setRemoteOnly,
-    customizeOpen, setCustomizeOpen,
-    search, setSearch,
-    recency, setRecency,
-    seniority, setSeniority,
-    minScore, setMinScore,
-    sponsorFilter, setSponsorFilter,
-    sortBy, setSortBy,
-    page, setPage,
+    location,
+    setLocation,
+    remoteOnly,
+    setRemoteOnly,
+    customizeOpen,
+    setCustomizeOpen,
+    search,
+    setSearch,
+    recency,
+    setRecency,
+    seniority,
+    setSeniority,
+    minScore,
+    setMinScore,
+    sponsorFilter,
+    setSponsorFilter,
+    sortBy,
+    setSortBy,
+    page,
+    setPage,
   };
 
   return <CombinedJobsContext.Provider value={value}>{children}</CombinedJobsContext.Provider>;

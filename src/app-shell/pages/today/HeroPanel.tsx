@@ -1,13 +1,13 @@
 /**
- * Zone A hero — "Are we OK?"  The single highest-value indicator.
+ * Zone A hero - "Are we OK?"  The single highest-value indicator.
  *
  * Priority order (Compass mission-control):
- *   1. The unified TODAY INBOX — approvals, auto-submit hand-offs, inbox status
+ *   1. The unified TODAY INBOX - approvals, auto-submit hand-offs, inbox status
  *      suggestions, and "did you apply?" nudges the user needs to act on. This
  *      is the primary hero surface whenever the count is > 0. The feed is
  *      composed server-side (GET /api/apply/today-inbox); the hero just renders
  *      it, one row per item with a per-kind icon and a per-item action.
- *   2. Otherwise, today's application status — a calm, encouraging read of the
+ *   2. Otherwise, today's application status - a calm, encouraging read of the
  *      day (sent today, streak) with a forward action.
  *
  * Copy is written from the user's side ("3 items need you"), never in system
@@ -55,7 +55,7 @@ export interface HeroModel {
   totalApps: number;
 }
 
-/** Per-kind leading icon — never colour-alone; the icon carries the meaning. */
+/** Per-kind leading icon - never colour-alone; the icon carries the meaning. */
 const KIND_ICON: Record<TodayInboxKind, LucideIcon> = {
   needs_input: ListChecks,
   auto_submit: Send,
@@ -63,7 +63,7 @@ const KIND_ICON: Record<TodayInboxKind, LucideIcon> = {
   did_you_apply: CircleHelp,
 };
 
-/** "Find roles" lands on Discover › Jobs — the shell's own job search. */
+/** "Find roles" lands on Discover › Jobs - the shell's own job search. */
 const FIND_ROLES_HREF = '/next/discover/jobs';
 
 /** Absolute http(s) links leave the SPA; everything else is an in-app route. */
@@ -75,7 +75,7 @@ function isExternal(href: string): boolean {
 const SHELL_BASE = '/next';
 
 /**
- * The backend emits base-agnostic in-app paths (e.g. "/applications") — it
+ * The backend emits base-agnostic in-app paths (e.g. "/applications") - it
  * shouldn't know the FE's route structure. Resolve them against the shell mount
  * so navigate() lands on a real route instead of the NotFound catch-all.
  * External URLs and already-prefixed paths pass through unchanged.

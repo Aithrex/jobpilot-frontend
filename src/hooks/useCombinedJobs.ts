@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { useJobTitles } from '@/hooks/useJobTitles';
 import { apiService } from '@/lib/api';
 import { mergeJobs } from '@/lib/careerJobs';
 import type { WorkdayJob, WorkdayJobsParams } from '@/types/jobs';
@@ -21,19 +22,26 @@ const SOURCE_LABELS: Record<SourceKey, string> = {
 };
 
 const EMPTY_STATE: SourceState = {
-  loading: false, tenantsDone: 0, tenantsTotal: 0, withResults: 0, cacheHit: false, error: null,
+  loading: false,
+  tenantsDone: 0,
+  tenantsTotal: 0,
+  withResults: 0,
+  cacheHit: false,
+  error: null,
 };
 
 const INIT_SOURCES: Record<SourceKey, WorkdayJob[]> = { workday: [], careers: [], mncs: [] };
 const INIT_STATES: Record<SourceKey, SourceState> = {
-  workday: { ...EMPTY_STATE }, careers: { ...EMPTY_STATE }, mncs: { ...EMPTY_STATE },
+  workday: { ...EMPTY_STATE },
+  careers: { ...EMPTY_STATE },
+  mncs: { ...EMPTY_STATE },
 };
 
-// ── Saved setup (dedicated versioned key) ───────────────────────────────────
-// The combined feed persists its search seed per browser so reopening the tab
-// restores the user's titles/location instantly. The resume fetch afterwards
-// only refreshes the Reset defaults — it NEVER clobbers a saved, user-edited
-// title set (mirrors the per-catalog WorkdayJobsPanel prefs pattern).
+// ── Saved scan params (dedicated versioned key) ─────────────────────────────
+// The combined feed persists its location/remote scan params per browser so
+// reopening the tab restores the setup instantly. TITLES are NOT stored here:
+// they live in the shared `useJobTitles` store (which writes them through to
+// the same key), so Careers and Opportunities always search the same set.
 const COMBINED_PREFS_KEY = 'combined_jobs_prefs_v1';
 
 export interface CombinedJobsPrefs {
@@ -51,18 +59,16 @@ export function loadCombinedPrefs(): CombinedJobsPrefs {
   }
 }
 
+/** Merges into the stored object so the shared title set is never dropped. */
 export function saveCombinedPrefs(prefs: CombinedJobsPrefs): void {
   try {
-    window.localStorage.setItem(COMBINED_PREFS_KEY, JSON.stringify(prefs));
+    window.localStorage.setItem(
+      COMBINED_PREFS_KEY,
+      JSON.stringify({ ...loadCombinedPrefs(), ...prefs }),
+    );
   } catch {
-    /* storage full/unavailable — non-fatal */
+    /* storage full/unavailable - non-fatal */
   }
-}
-
-/** Case-insensitive merge of `extra` into `prev`, capped at 40 titles. */
-function mergeTitles(prev: string[], extra: string[]): string[] {
-  const seen = new Set(prev.map((t) => t.toLowerCase()));
-  return [...prev, ...extra.filter((t) => !seen.has(t.toLowerCase()))].slice(0, 40);
 }
 
 /** Case-insensitive, order-independent set equality. */
@@ -90,15 +96,16 @@ export interface CombinedJobsController {
   resumeSkillCount: number | null;
   /** Whether any scan has completed at least once. */
   hasResult: boolean;
-  /** Role titles currently driving all three scans (user-editable). */
+  /** Role titles currently driving all three scans (user-editable). Shared
+   *  with the Career-portal panels via the `useJobTitles` store. */
   titles: string[];
-  setTitles: (next: string[]) => void;
-  /** Original resume-derived titles — the ChipsInput Reset target. */
+  setTitles: (next: string[] | ((prev: string[]) => string[])) => void;
+  /** Original resume-derived titles - the ChipsInput Reset target. */
   resumeTitles: string[];
-  /** LLM title synthesizer — merges suggestions into the current set (cap 40). */
+  /** LLM title synthesizer - merges suggestions into the current set (cap 40). */
   smartSuggestTitles: () => Promise<void>;
   suggestingTitles: boolean;
-  /** False when there are no titles — run() would be a meaningless scan. */
+  /** False when there are no titles - run() would be a meaningless scan. */
   canSearch: boolean;
   /** Snapshot of the titles the most recent scan actually used. */
   lastScanTitles: string[] | null;
@@ -117,134 +124,100 @@ export interface CombinedJobsController {
 export function useCombinedJobs(enabled = true): CombinedJobsController {
   const [sources, setSources] = useState<Record<SourceKey, WorkdayJob[]>>(INIT_SOURCES);
   const [states, setStates] = useState<Record<SourceKey, SourceState>>(INIT_STATES);
-  const [titles, setTitles] = useState<string[]>([]);
-  const [resumeTitles, setResumeTitles] = useState<string[]>([]);
-  const [suggestingTitles, setSuggestingTitles] = useState(false);
   const [lastScanTitles, setLastScanTitles] = useState<string[] | null>(null);
   const [resumeSkillCount, setResumeSkillCount] = useState<number | null>(null);
-  const [ready, setReady] = useState(false);
   const [hasResult, setHasResult] = useState(false);
+
+  // The search seed is SHARED with the Career-portal panels: one hydration
+  // (resume seed + thin-resume synth), one saved set, one cap. Passing
+  // `enabled` keeps it lazy, so no resume fetch or LLM call fires for a user
+  // who never opens Jobs.
+  const {
+    titles,
+    setTitles,
+    resumeTitles,
+    ready,
+    smartSuggestTitles,
+    suggesting: suggestingTitles,
+  } = useJobTitles(enabled);
+
   const titlesRef = useRef<string[]>([]);
-  const hydratedRef = useRef(false);
   titlesRef.current = titles;
 
-  // Hydrate the search seed once — only after the feed is actually enabled
-  // (i.e. the user opened Jobs), so no resume fetch / LLM title-synth fires
-  // for users who never visit the tab. Saved prefs win: a user-edited title
-  // set is restored as-is and the resume fetch only refreshes the Reset
-  // defaults. Otherwise seed from the parsed resume, with an LLM-synth
-  // fallback when the resume's own titles are too thin — mirroring the
-  // per-catalog panel so the combined feed is seeded the same way.
-  useEffect(() => {
-    if (!enabled || hydratedRef.current) return;
-    hydratedRef.current = true;
-    let cancelled = false;
-    void (async () => {
-      const savedTitles = (loadCombinedPrefs().titles ?? []).filter(Boolean);
-      if (savedTitles.length) {
-        setTitles(savedTitles.slice(0, 40));
-        setReady(true);
-        const resume = await apiService.getResume();
-        if (!cancelled) setResumeTitles(resume.data?.resume?.job_titles ?? []);
+  const runOne = useCallback(
+    async (key: SourceKey, fn: typeof apiService.searchWorkdayJobs, params: WorkdayJobsParams) => {
+      setStates((s) => ({ ...s, [key]: { ...EMPTY_STATE, loading: true } }));
+      const resp = await fn(params, (partial) => {
+        if (partial?.jobs?.length) {
+          setSources((s) => ({ ...s, [key]: partial.jobs }));
+        }
+        setStates((s) => ({
+          ...s,
+          [key]: {
+            ...s[key],
+            loading: true,
+            tenantsDone: partial.progress?.tenants_done ?? s[key].tenantsDone,
+            tenantsTotal: partial.progress?.tenants_total ?? s[key].tenantsTotal,
+          },
+        }));
+      });
+      if (resp.error) {
+        setStates((s) => ({
+          ...s,
+          [key]: { ...s[key], loading: false, error: resp.error ?? 'Scan failed' },
+        }));
         return;
       }
-      const resume = await apiService.getResume();
-      if (cancelled) return;
-      const fromResume: string[] = resume.data?.resume?.job_titles ?? [];
-      setResumeTitles(fromResume);
-      if (fromResume.length) setTitles(fromResume.slice(0, 40));
-      if (fromResume.length < 4) {
-        const sugg = await apiService.suggestPipelineFilters();
-        if (cancelled) return;
-        const synth: string[] = sugg.data?.suggestions?.workday_titles ?? [];
-        if (synth.length) setTitles((prev) => mergeTitles(prev, synth));
+      const data = resp.data;
+      if (data) {
+        setSources((s) => ({ ...s, [key]: data.jobs }));
+        setStates((s) => ({
+          ...s,
+          [key]: {
+            loading: false,
+            tenantsDone: data.tenants_done,
+            tenantsTotal: data.tenants_total,
+            withResults: data.tenants_with_results,
+            cacheHit: data.cache_hit,
+            error: null,
+          },
+        }));
+        if (data.resume_skill_count != null) setResumeSkillCount(data.resume_skill_count);
+        setHasResult(true);
       }
-      setReady(true);
-    })();
-    return () => { cancelled = true; };
-  }, [enabled]);
-
-  // Same LLM synthesizer the per-catalog panel's smart-suggest uses; merges
-  // case-insensitively into whatever the user already has, capped at 40.
-  const smartSuggestTitles = useCallback(async () => {
-    setSuggestingTitles(true);
-    const resp = await apiService.suggestPipelineFilters();
-    setSuggestingTitles(false);
-    const suggested: string[] = resp.data?.suggestions?.workday_titles ?? [];
-    if (suggested.length) setTitles((prev) => mergeTitles(prev, suggested));
-  }, []);
-
-  const runOne = useCallback(async (
-    key: SourceKey,
-    fn: typeof apiService.searchWorkdayJobs,
-    params: WorkdayJobsParams,
-  ) => {
-    setStates((s) => ({ ...s, [key]: { ...EMPTY_STATE, loading: true } }));
-    const resp = await fn(params, (partial) => {
-      if (partial?.jobs?.length) {
-        setSources((s) => ({ ...s, [key]: partial.jobs }));
-      }
-      setStates((s) => ({
-        ...s,
-        [key]: {
-          ...s[key],
-          loading: true,
-          tenantsDone: partial.progress?.tenants_done ?? s[key].tenantsDone,
-          tenantsTotal: partial.progress?.tenants_total ?? s[key].tenantsTotal,
-        },
-      }));
-    });
-    if (resp.error) {
-      setStates((s) => ({ ...s, [key]: { ...s[key], loading: false, error: resp.error ?? 'Scan failed' } }));
-      return;
-    }
-    const data = resp.data;
-    if (data) {
-      setSources((s) => ({ ...s, [key]: data.jobs }));
-      setStates((s) => ({
-        ...s,
-        [key]: {
-          loading: false,
-          tenantsDone: data.tenants_done,
-          tenantsTotal: data.tenants_total,
-          withResults: data.tenants_with_results,
-          cacheHit: data.cache_hit,
-          error: null,
-        },
-      }));
-      if (data.resume_skill_count != null) setResumeSkillCount(data.resume_skill_count);
-      setHasResult(true);
-    }
-  }, []);
-
-  const run = useCallback(async (force: boolean, opts?: { location?: string; remoteOnly?: boolean }) => {
-    // Snapshot the ref the moment the scan starts so all three sources search
-    // the exact same title set, even if the user keeps editing mid-scan.
-    const titlesSnapshot = titlesRef.current;
-    if (titlesSnapshot.length === 0) return; // nothing to search — skip the fan-out
-    setLastScanTitles(titlesSnapshot);
-    const params: WorkdayJobsParams = {
-      titles: titlesSnapshot,
-      location: opts?.location ?? '',
-      remote_only: opts?.remoteOnly ?? false,
-      force_refresh: force,
-    };
-    await Promise.all([
-      runOne('workday', apiService.searchWorkdayJobs.bind(apiService), params),
-      runOne('careers', apiService.searchCareerPagesJobs.bind(apiService), params),
-      runOne('mncs', apiService.searchMncJobs.bind(apiService), params),
-    ]);
-  }, [runOne]);
-
-  const jobs = useMemo(
-    () => mergeJobs(sources.workday, sources.careers, sources.mncs),
-    [sources],
+    },
+    [],
   );
+
+  const run = useCallback(
+    async (force: boolean, opts?: { location?: string; remoteOnly?: boolean }) => {
+      // Snapshot the ref the moment the scan starts so all three sources search
+      // the exact same title set, even if the user keeps editing mid-scan.
+      const titlesSnapshot = titlesRef.current;
+      if (titlesSnapshot.length === 0) return; // nothing to search - skip the fan-out
+      setLastScanTitles(titlesSnapshot);
+      const params: WorkdayJobsParams = {
+        titles: titlesSnapshot,
+        location: opts?.location ?? '',
+        remote_only: opts?.remoteOnly ?? false,
+        force_refresh: force,
+      };
+      await Promise.all([
+        runOne('workday', apiService.searchWorkdayJobs.bind(apiService), params),
+        runOne('careers', apiService.searchCareerPagesJobs.bind(apiService), params),
+        runOne('mncs', apiService.searchMncJobs.bind(apiService), params),
+      ]);
+    },
+    [runOne],
+  );
+
+  const jobs = useMemo(() => mergeJobs(sources.workday, sources.careers, sources.mncs), [sources]);
 
   const loading = states.workday.loading || states.careers.loading || states.mncs.loading;
   const progress = useMemo(() => {
     const done = states.workday.tenantsDone + states.careers.tenantsDone + states.mncs.tenantsDone;
-    const total = states.workday.tenantsTotal + states.careers.tenantsTotal + states.mncs.tenantsTotal;
+    const total =
+      states.workday.tenantsTotal + states.careers.tenantsTotal + states.mncs.tenantsTotal;
     return { done, total };
   }, [states]);
 
@@ -255,11 +228,22 @@ export function useCombinedJobs(enabled = true): CombinedJobsController {
   );
 
   return {
-    jobs, loading, states, sourceLabels: SOURCE_LABELS, progress,
-    ready, resumeSkillCount, hasResult,
-    titles, setTitles, resumeTitles,
-    smartSuggestTitles, suggestingTitles,
-    canSearch, lastScanTitles, titlesPending,
+    jobs,
+    loading,
+    states,
+    sourceLabels: SOURCE_LABELS,
+    progress,
+    ready,
+    resumeSkillCount,
+    hasResult,
+    titles,
+    setTitles,
+    resumeTitles,
+    smartSuggestTitles,
+    suggestingTitles,
+    canSearch,
+    lastScanTitles,
+    titlesPending,
     run,
   };
 }

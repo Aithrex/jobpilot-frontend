@@ -16,9 +16,9 @@ const SEGMENTS: Array<{
 ];
 
 /**
- * Career portals — one workspace tab, three catalogs behind the same engine:
+ * Career portals - one workspace tab, three catalogs behind the same engine:
  * the Workday enterprise universe, the non-Workday ATS universe
- * (Greenhouse / Lever / Ashby / …) and a curated FAANG+ / Fortune-500 MNC
+ * (Greenhouse / Lever / Ashby / ...) and a curated FAANG+ / Fortune-500 MNC
  * universe grouped by sector. Panels stay mounted once visited so switching
  * preserves results and in-flight scans.
  */
@@ -27,7 +27,7 @@ export default function CareerPortalsTab() {
   const [visited, setVisited] = useState<Set<CareerPortalVariant>>(
     () => new Set<CareerPortalVariant>(['workday']),
   );
-  // One saved-jobs store for both variants — save/apply state stays in sync
+  // One saved-jobs store for both variants - save/apply state stays in sync
   // when the same posting shows up in either catalog.
   const { isJobSaved, getJobStatus, saveJob, unsaveJob, quickApply } = useJobSearch();
 
@@ -80,7 +80,7 @@ export default function CareerPortalsTab() {
         })}
       </div>
 
-      {/* Panels — kept mounted once visited; the inactive one hides via CSS so
+      {/* Panels - kept mounted once visited; the inactive one hides via CSS so
           switching preserves results and lets an in-flight scan finish. */}
       {SEGMENTS.map(({ key }) =>
         visited.has(key) ? (

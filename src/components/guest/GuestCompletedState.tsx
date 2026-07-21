@@ -22,7 +22,7 @@ import type { TailoredFullResume } from '@/types/resume';
 export interface GuestCompletedStateProps {
   activeMatch: GuestJobMatch | null;
   tailored: GuestTailorResult;
-  /** Structured resume from the parse step — enables the comparison view. */
+  /** Structured resume from the parse step - enables the comparison view. */
   parsedResume: Record<string, unknown> | null;
   downloading: GuestDownloadFormat | null;
   onDownload: (format: GuestDownloadFormat) => void;

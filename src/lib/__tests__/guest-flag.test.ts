@@ -1,5 +1,5 @@
 /**
- * VITE_GUEST_ONBOARDING build-flag semantics — the production feature gate.
+ * VITE_GUEST_ONBOARDING build-flag semantics - the production feature gate.
  *
  * Contract: "false"/"0"/"off" is the explicit frontend kill switch; any other
  * set value is ON; UNSET (or empty) is ON so a production build PROBES the

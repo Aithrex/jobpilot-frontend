@@ -1,5 +1,5 @@
 /**
- * ATS score display atoms — shared across the Tailor and Batch flows.
+ * ATS score display atoms - shared across the Tailor and Batch flows.
  *
  * Extracted verbatim from the ResumeParser monolith so both the classic
  * workspace (`/app`) and the new app-shell Tailor page render identical score
@@ -91,7 +91,7 @@ export function ScoreRing({ score, size = 96 }: { score: number; size?: number }
   const r = (size - 10) / 2,
     c = 2 * Math.PI * r,
     o = c - (score / 100) * c;
-  // Semantic tokens (theme-aware) instead of hardcoded hex — keeps the ring
+  // Semantic tokens (theme-aware) instead of hardcoded hex - keeps the ring
   // AA-adjusted in both light and dark themes.
   const col =
     score >= 80

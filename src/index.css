@@ -1,113 +1,174 @@
 /* Fonts load from index.html via an async non-blocking <link> (a CSS @import
-   here serializes behind the bundle CSS and blocks first paint ~1s+ on mobile). */
+  here serializes behind the bundle CSS and blocks first paint ~1s+ on mobile). */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    /* ── LAYER 1 — PRIMITIVES (theme-independent) ─────────────────────────
-       Raw palette as HSL triplets so the existing shadcn `hsl(var(--x))`
-       bridge aliases them with zero refactor. Contrast verified WCAG 2.1 —
-       see docs/design/token-decisions.md. Strangler-fig: additive; no
-       existing semantic token NAME is removed, values are re-pointed. */
-    --slate-0-hsl:   0 0% 100%;
-    --slate-50-hsl:  210 40% 98%;
+    /* ── LAYER 1 - PRIMITIVES (theme-independent) ─────────────────────────
+  Raw palette as HSL triplets so the existing shadcn `hsl(var(--x))`
+  bridge aliases them with zero refactor. Contrast verified WCAG 2.1  - 
+  see docs/design/token-decisions.md. Strangler-fig: additive; no
+  existing semantic token NAME is removed, values are re-pointed. */
+    --slate-0-hsl: 0 0% 100%;
+    --slate-50-hsl: 210 40% 98%;
     --slate-100-hsl: 210 40% 96%;
     --slate-200-hsl: 214 32% 91%;
     --slate-300-hsl: 213 27% 84%;
-    --slate-400-hsl: 215 20% 65%;   /* icon-only / disabled — never text */
+    --slate-400-hsl: 215 20% 65%; /* icon-only / disabled - never text */
     --slate-500-hsl: 215 16% 47%;
-    --slate-600-hsl: 215 19% 35%;   /* muted text on tinted surfaces */
+    --slate-600-hsl: 215 19% 35%; /* muted text on tinted surfaces */
     --slate-700-hsl: 215 25% 27%;
-    --slate-800-hsl: 217 33% 17%;   /* card surface (dark) */
+    --slate-800-hsl: 217 33% 17%; /* card surface (dark) */
     --slate-900-hsl: 222 47% 11%;
 
-    /* Indigo brand ramp — established brand KEPT (passes AA). */
-    --indigo-300-hsl:     230 94% 82%;
-    --indigo-400-hsl:     234 89% 74%;
-    --indigo-500-hsl:     239 84% 67%;  /* tints ONLY — white on it = 4.47:1 */
-    --indigo-600-hsl:     243 75% 59%;  /* gradient start (= --brand-from) */
-    --indigo-primary-hsl: 238 70% 57%;  /* --primary, 6.41:1 AA — KEEP */
-    --indigo-dark-hsl:    235 84% 72%;  /* dark --primary — KEEP */
+    /* Indigo brand ramp - established brand KEPT (passes AA). */
+    --indigo-300-hsl: 230 94% 82%;
+    --indigo-400-hsl: 234 89% 74%;
+    --indigo-500-hsl: 239 84% 67%; /* tints ONLY - white on it = 4.47:1 */
+    --indigo-600-hsl: 243 75% 59%; /* gradient start (= --brand-from) */
+    --indigo-primary-hsl: 238 70% 57%; /* --primary, 6.41:1 AA - KEEP */
+    --indigo-dark-hsl: 235 84% 72%; /* dark --primary - KEEP */
 
-    /* Status — light foreground + tint (fixes the failing success/warning). */
-    --success-600-hsl:  142 72% 29%;   --success-tint-hsl: 138 76% 97%;
-    --warning-600-hsl:  26 90% 37%;    --warning-tint-hsl: 48 100% 96%;
-    --danger-600-hsl:   0 74% 42%;     --danger-tint-hsl:  0 86% 97%;
-    --info-600-hsl:     193 82% 31%;   --info-tint-hsl:    183 100% 96%;
-    /* Status — dark lifted foregrounds (AA/AAA on slate-900/800). */
+    /* ── Aspirely marketing surfaces (landing only) ────────────────────────
+  Two contrasting worlds, expressed as PRIMITIVES here and assembled into
+  real named surfaces (`.surface-editorial` / `.surface-obsidian`) below.
+  Warm pearl = the editorial/marketing voice; deep obsidian = the product
+  workspace. The contrast between them is the brand, so neither is a
+  one-off class: both re-point the same semantic token names, which means
+  every shadcn primitive and every Tailwind semantic utility follows. */
+    --pearl-0-hsl: 40 50% 99%; /* raised editorial card */
+    --pearl-50-hsl: 38 42% 97%; /* editorial canvas */
+    --pearl-100-hsl: 36 30% 94%; /* editorial muted fill */
+    --pearl-200-hsl: 34 22% 88%; /* editorial hairline */
+    --pearl-300-hsl: 32 18% 79%; /* editorial input edge */
+    --ink-900-hsl: 26 18% 10%; /* editorial foreground, 16.4:1 on pearl-50 */
+    --ink-700-hsl: 26 12% 25%; /* editorial strong secondary */
+    --ink-500-hsl: 26 9% 37%; /* editorial muted text, 5.2:1 on pearl-50 */
+
+    --obsidian-950-hsl: 232 32% 5%; /* product canvas */
+    --obsidian-900-hsl: 231 26% 8%; /* product card */
+    --obsidian-800-hsl: 230 22% 12%; /* product raised fill */
+    --obsidian-700-hsl: 229 16% 22%; /* product hairline */
+    --obsidian-fg-hsl: 222 26% 96%; /* product foreground */
+    --obsidian-mut-hsl: 220 14% 68%; /* product muted text, 7.9:1 on 900 */
+
+    /* Restrained energy accent. Cyan carries "signal"; emerald is reserved for
+  success ONLY and is never used decoratively. Two values because a cyan
+  legible on pearl is not the cyan that glows on obsidian. */
+    --signal-on-light-hsl: 192 88% 27%; /* 6.6:1 on pearl-50 */
+    --signal-on-dark-hsl: 188 92% 62%; /* 9.8:1 on obsidian-900 */
+
+    /* Status - light foreground + tint (fixes the failing success/warning). */
+    --success-600-hsl: 142 72% 29%;
+    --success-tint-hsl: 138 76% 97%;
+    --warning-600-hsl: 26 90% 37%;
+    --warning-tint-hsl: 48 100% 96%;
+    --danger-600-hsl: 0 74% 42%;
+    --danger-tint-hsl: 0 86% 97%;
+    --info-600-hsl: 193 82% 31%;
+    --info-tint-hsl: 183 100% 96%;
+    /* Status - dark lifted foregrounds (AA/AAA on slate-900/800). */
     --success-300-hsl: 142 69% 58%;
     --warning-300-hsl: 43 96% 56%;
-    --danger-300-hsl:  0 91% 71%;
-    --info-300-hsl:    188 86% 53%;
+    --danger-300-hsl: 0 91% 71%;
+    --info-300-hsl: 188 86% 53%;
 
     /* Categorical chart palette (colorblind-aware, cap 8; always add a 2nd cue). */
-    --chart-1: #2563EB;  --chart-2: #16A34A;  --chart-3: #D97706;  --chart-4: #7C3AED;
-    --chart-5: #0891B2;  --chart-6: #DC2626;  --chart-7: #64748B;  --chart-8: #DB2777;
+    --chart-1: #2563eb;
+    --chart-2: #16a34a;
+    --chart-3: #d97706;
+    --chart-4: #7c3aed;
+    --chart-5: #0891b2;
+    --chart-6: #dc2626;
+    --chart-7: #64748b;
+    --chart-8: #db2777;
     /* HSL bridge for the chart palette (ADDITIVE - the hex tokens above stay
-       for raw consumers). Same colors as the hex values; lets Tailwind map
-       chart-* through hsl(var()) so opacity modifiers (e.g. bg-chart-1/10)
-       work like every other semantic color. */
-    --chart-1-hsl: 221 83% 53%;  --chart-2-hsl: 142 76% 36%;
-    --chart-3-hsl: 32 95% 44%;   --chart-4-hsl: 262 83% 58%;
-    --chart-5-hsl: 192 91% 36%;  --chart-6-hsl: 0 72% 51%;
-    --chart-7-hsl: 215 16% 47%;  --chart-8-hsl: 333 71% 51%;
+  for raw consumers). Same colors as the hex values; lets Tailwind map
+  chart-* through hsl(var()) so opacity modifiers (e.g. bg-chart-1/10)
+  work like every other semantic color. */
+    --chart-1-hsl: 221 83% 53%;
+    --chart-2-hsl: 142 76% 36%;
+    --chart-3-hsl: 32 95% 44%;
+    --chart-4-hsl: 262 83% 58%;
+    --chart-5-hsl: 192 91% 36%;
+    --chart-6-hsl: 0 72% 51%;
+    --chart-7-hsl: 215 16% 47%;
+    --chart-8-hsl: 333 71% 51%;
 
     /* Radius primitives (shadcn --radius base below derives sm/md/lg near 8/10/12). */
-    --radius-sm:   8px;
-    --radius-md:   12px;
-    --radius-lg:   16px;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
     --radius-pill: 9999px;
 
-    /* Type scale (rem; base 16) — size / line-height / weight. */
-    --font-sans:    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    /* Type scale (rem; base 16) - size / line-height / weight. */
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
     --font-display: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
-    --text-display-size: 2.25rem;   --text-display-lh: 2.5rem;   --text-display-w: 700;
-    --text-h1-size: 1.875rem;       --text-h1-lh: 2.25rem;       --text-h1-w: 700;
-    --text-h2-size: 1.5rem;         --text-h2-lh: 2rem;          --text-h2-w: 600;
-    --text-h3-size: 1.25rem;        --text-h3-lh: 1.75rem;       --text-h3-w: 600;
-    --text-subtitle-size: 1.125rem; --text-subtitle-lh: 1.75rem; --text-subtitle-w: 600;
-    --text-bodyl-size: 1rem;        --text-bodyl-lh: 1.5rem;     --text-bodyl-w: 400;
-    --text-body-size: 0.875rem;     --text-body-lh: 1.25rem;     --text-body-w: 400;
-    --text-label-size: 0.75rem;     --text-label-lh: 1rem;       --text-label-w: 500;
-    --text-overline-size: 0.6875rem;--text-overline-lh: 1rem;    --text-overline-w: 600;
+    --text-display-size: 2.25rem;
+    --text-display-lh: 2.5rem;
+    --text-display-w: 700;
+    --text-h1-size: 1.875rem;
+    --text-h1-lh: 2.25rem;
+    --text-h1-w: 700;
+    --text-h2-size: 1.5rem;
+    --text-h2-lh: 2rem;
+    --text-h2-w: 600;
+    --text-h3-size: 1.25rem;
+    --text-h3-lh: 1.75rem;
+    --text-h3-w: 600;
+    --text-subtitle-size: 1.125rem;
+    --text-subtitle-lh: 1.75rem;
+    --text-subtitle-w: 600;
+    --text-bodyl-size: 1rem;
+    --text-bodyl-lh: 1.5rem;
+    --text-bodyl-w: 400;
+    --text-body-size: 0.875rem;
+    --text-body-lh: 1.25rem;
+    --text-body-w: 400;
+    --text-label-size: 0.75rem;
+    --text-label-lh: 1rem;
+    --text-label-w: 500;
+    --text-overline-size: 0.6875rem;
+    --text-overline-lh: 1rem;
+    --text-overline-w: 600;
     --text-overline-tracking: 0.06em; /* relaxed for 11px on-screen legibility */
 
     /* Motion tokens. */
     --motion-fast: 120ms;
     --motion-base: 200ms;
     --motion-slow: 320ms;
-    --ease-standard:   cubic-bezier(0.2, 0, 0, 1);
+    --ease-standard: cubic-bezier(0.2, 0, 0, 1);
     --ease-accelerate: cubic-bezier(0.3, 0, 1, 1);
-    /* Editorial motion easing — calm, decisive settle (Compass §7). KEPT;
-       also exposed as the reconciled `decelerate` (entrances). */
-    --ease-out-expo:   cubic-bezier(0.16, 1, 0.3, 1);
+    /* Editorial motion easing - calm, decisive settle (Compass §7). KEPT;
+  also exposed as the reconciled `decelerate` (entrances). */
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
     --ease-decelerate: cubic-bezier(0.16, 1, 0.3, 1);
 
-    /* ── LAYER 2 — SEMANTIC ALIASES (light) → shadcn bridge ───────────────
-       Existing shadcn token NAMES kept; re-pointed at primitives (values-only). */
+    /* ── LAYER 2 - SEMANTIC ALIASES (light) → shadcn bridge ───────────────
+  Existing shadcn token NAMES kept; re-pointed at primitives (values-only). */
     --background: var(--slate-50-hsl);
     --foreground: var(--slate-900-hsl);
     --card: var(--slate-0-hsl);
     --card-foreground: var(--slate-900-hsl);
     --popover: var(--slate-0-hsl);
     --popover-foreground: var(--slate-900-hsl);
-    --primary: var(--indigo-primary-hsl);       /* KEEP — 6.41:1 AA */
+    --primary: var(--indigo-primary-hsl); /* KEEP - 6.41:1 AA */
     --primary-foreground: var(--slate-0-hsl);
     --secondary: var(--slate-100-hsl);
     --secondary-foreground: var(--slate-700-hsl);
     --muted: var(--slate-100-hsl);
-    --muted-foreground: var(--slate-500-hsl);   /* on tinted surfaces step to slate-600 */
-    --accent: var(--slate-100-hsl);             /* subtle neutral hover surface */
+    --muted-foreground: var(--slate-500-hsl); /* on tinted surfaces step to slate-600 */
+    --accent: var(--slate-100-hsl); /* subtle neutral hover surface */
     --accent-foreground: var(--slate-700-hsl);
     --destructive: var(--danger-600-hsl);
     --destructive-foreground: var(--slate-0-hsl);
-    --success: var(--success-600-hsl);          /* a11y fix — 5.02:1 AA */
+    --success: var(--success-600-hsl); /* a11y fix - 5.02:1 AA */
     --success-foreground: var(--slate-0-hsl);
-    --warning: var(--warning-600-hsl);          /* a11y fix — 5.02:1 AA */
+    --warning: var(--warning-600-hsl); /* a11y fix - 5.02:1 AA */
     --warning-foreground: var(--slate-0-hsl);
-    --info: var(--info-600-hsl);                /* new semantic role */
+    --info: var(--info-600-hsl); /* new semantic role */
     --info-foreground: var(--slate-0-hsl);
     --border: var(--slate-200-hsl);
     --input: var(--slate-300-hsl);
@@ -115,16 +176,17 @@
     --radius: 0.75rem;
 
     /* ── Elevation scale (Compass §7) ──────────────────────────────────────
-       Token-driven, tinted with slate-900 (never pure black) so shadows read
-       as depth, not grime. Surfaced via tailwind boxShadow
-       (shadow-soft / -panel / -pop / -float). */
+  Token-driven, tinted with slate-900 (never pure black) so shadows read
+  as depth, not grime. Surfaced via tailwind boxShadow
+  (shadow-soft / -panel / -pop / -float). */
     --shadow-soft: 0 1px 2px hsl(222 47% 11% / 0.05), 0 1px 3px hsl(222 47% 11% / 0.05);
-    --shadow-panel: 0 1px 2px hsl(222 47% 11% / 0.04), 0 6px 16px -4px hsl(222 47% 11% / 0.10);
+    --shadow-panel: 0 1px 2px hsl(222 47% 11% / 0.04), 0 6px 16px -4px hsl(222 47% 11% / 0.1);
     --shadow-pop: 0 4px 12px -2px hsl(222 47% 11% / 0.08), 0 16px 32px -8px hsl(222 47% 11% / 0.12);
-    --shadow-float: 0 8px 24px -6px hsl(222 47% 11% / 0.14), 0 28px 56px -12px hsl(222 47% 11% / 0.16);
+    --shadow-float:
+      0 8px 24px -6px hsl(222 47% 11% / 0.14), 0 28px 56px -12px hsl(222 47% 11% / 0.16);
 
-    --brand-from: var(--indigo-600-hsl);        /* indigo — gradient (decorative) */
-    --brand-to: 199 89% 48%;                    /* sky — "growth / learning" accent */
+    --brand-from: var(--indigo-600-hsl); /* indigo - gradient (decorative) */
+    --brand-to: 199 89% 48%; /* sky - "growth / learning" accent */
 
     /* Sidebar */
     --sidebar-background: var(--slate-50-hsl);
@@ -138,28 +200,28 @@
   }
 
   .dark {
-    /* ── LAYER 2 — SEMANTIC ALIASES (dark) — token SWAP only, re-checked.
-       Near-black canvas (slate-900), off-white text (slate-100); never #000/#FFF.
-       Deep slate, never crushed black — easy on the eyes for long sessions. */
+    /* ── LAYER 2 - SEMANTIC ALIASES (dark) - token SWAP only, re-checked.
+  Near-black canvas (slate-900), off-white text (slate-100); never #000/#FFF.
+  Deep slate, never crushed black - easy on the eyes for long sessions. */
     --background: var(--slate-900-hsl);
     --foreground: var(--slate-100-hsl);
     --card: var(--slate-800-hsl);
     --card-foreground: var(--slate-100-hsl);
     --popover: var(--slate-800-hsl);
     --popover-foreground: var(--slate-100-hsl);
-    --primary: var(--indigo-dark-hsl);          /* lifted indigo — KEEP, 5.45:1 on card */
+    --primary: var(--indigo-dark-hsl); /* lifted indigo - KEEP, 5.45:1 on card */
     --primary-foreground: var(--slate-900-hsl);
     --secondary: var(--slate-800-hsl);
     --secondary-foreground: var(--slate-100-hsl);
     --muted: var(--slate-800-hsl);
-    --muted-foreground: var(--slate-400-hsl);   /* 6.96:1 on slate-900 */
+    --muted-foreground: var(--slate-400-hsl); /* 6.96:1 on slate-900 */
     --accent: var(--slate-800-hsl);
     --accent-foreground: var(--slate-100-hsl);
     --destructive: var(--danger-300-hsl);
     --destructive-foreground: var(--slate-900-hsl);
-    --success: var(--success-300-hsl);          /* a11y fix — lifted, AA/AAA on dark */
+    --success: var(--success-300-hsl); /* a11y fix - lifted, AA/AAA on dark */
     --success-foreground: var(--slate-900-hsl);
-    --warning: var(--warning-300-hsl);          /* a11y fix — lifted, AA/AAA on dark */
+    --warning: var(--warning-300-hsl); /* a11y fix - lifted, AA/AAA on dark */
     --warning-foreground: var(--slate-900-hsl);
     --info: var(--info-300-hsl);
     --info-foreground: var(--slate-900-hsl);
@@ -170,10 +232,10 @@
     --brand-from: 243 84% 72%;
     --brand-to: 199 90% 60%;
 
-    /* Elevation — deeper, softer halos on dark so cards lift without a black
-       ring. Tinted toward true black since the canvas is already deep slate. */
-    --shadow-soft: 0 1px 2px hsl(0 0% 0% / 0.30), 0 1px 3px hsl(0 0% 0% / 0.22);
-    --shadow-panel: 0 1px 2px hsl(0 0% 0% / 0.30), 0 8px 20px -6px hsl(0 0% 0% / 0.45);
+    /* Elevation - deeper, softer halos on dark so cards lift without a black
+  ring. Tinted toward true black since the canvas is already deep slate. */
+    --shadow-soft: 0 1px 2px hsl(0 0% 0% / 0.3), 0 1px 3px hsl(0 0% 0% / 0.22);
+    --shadow-panel: 0 1px 2px hsl(0 0% 0% / 0.3), 0 8px 20px -6px hsl(0 0% 0% / 0.45);
     --shadow-pop: 0 6px 16px -4px hsl(0 0% 0% / 0.45), 0 20px 40px -10px hsl(0 0% 0% / 0.55);
     --shadow-float: 0 10px 30px -8px hsl(0 0% 0% / 0.55), 0 32px 64px -16px hsl(0 0% 0% / 0.65);
 
@@ -188,6 +250,100 @@
     --sidebar-ring: var(--indigo-dark-hsl);
   }
 
+  /* ── The Aspirely visual language: two named surfaces ────────────────────
+  These are NOT themes and NOT one-off classes. Each re-points the whole
+  semantic layer for its own subtree, so they nest freely in either app
+  theme and in each other: the landing can hold an obsidian product window
+  inside a pearl editorial section, and both halves stay internally
+  consistent, keyboard-focusable and AA without a single `dark:` variant.
+
+  They set their own background/color so a surface is always opaque - a
+  translucent editorial band over an obsidian canvas would smear text. */
+
+  .surface-editorial {
+    color-scheme: light;
+
+    --background: var(--pearl-50-hsl);
+    --foreground: var(--ink-900-hsl);
+    --card: var(--pearl-0-hsl);
+    --card-foreground: var(--ink-900-hsl);
+    --popover: var(--pearl-0-hsl);
+    --popover-foreground: var(--ink-900-hsl);
+    --primary: var(--indigo-primary-hsl);
+    --primary-foreground: var(--slate-0-hsl);
+    --secondary: var(--pearl-100-hsl);
+    --secondary-foreground: var(--ink-700-hsl);
+    --muted: var(--pearl-100-hsl);
+    --muted-foreground: var(--ink-500-hsl);
+    --accent: var(--pearl-100-hsl);
+    --accent-foreground: var(--ink-700-hsl);
+    --destructive: var(--danger-600-hsl);
+    --destructive-foreground: var(--slate-0-hsl);
+    --success: var(--success-600-hsl);
+    --success-foreground: var(--slate-0-hsl);
+    --warning: var(--warning-600-hsl);
+    --warning-foreground: var(--slate-0-hsl);
+    --info: var(--info-600-hsl);
+    --info-foreground: var(--slate-0-hsl);
+    --border: var(--pearl-200-hsl);
+    --input: var(--pearl-300-hsl);
+    --ring: var(--indigo-primary-hsl);
+
+    --brand-from: var(--indigo-600-hsl);
+    --brand-to: var(--signal-on-light-hsl);
+
+    /* Warm-tinted elevation: shadows on ivory must read as warm shade, never
+  as grey grime. */
+    --shadow-soft: 0 1px 2px hsl(26 30% 12% / 0.05), 0 1px 3px hsl(26 30% 12% / 0.05);
+    --shadow-panel: 0 1px 2px hsl(26 30% 12% / 0.05), 0 8px 20px -6px hsl(26 30% 12% / 0.1);
+    --shadow-pop: 0 4px 12px -2px hsl(26 30% 12% / 0.08), 0 18px 36px -10px hsl(26 30% 12% / 0.12);
+    --shadow-float:
+      0 10px 28px -8px hsl(26 30% 12% / 0.14), 0 32px 64px -16px hsl(26 30% 12% / 0.16);
+
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
+
+  .surface-obsidian {
+    color-scheme: dark;
+
+    --background: var(--obsidian-950-hsl);
+    --foreground: var(--obsidian-fg-hsl);
+    --card: var(--obsidian-900-hsl);
+    --card-foreground: var(--obsidian-fg-hsl);
+    --popover: var(--obsidian-900-hsl);
+    --popover-foreground: var(--obsidian-fg-hsl);
+    --primary: var(--indigo-dark-hsl);
+    --primary-foreground: var(--obsidian-950-hsl);
+    --secondary: var(--obsidian-800-hsl);
+    --secondary-foreground: var(--obsidian-fg-hsl);
+    --muted: var(--obsidian-800-hsl);
+    --muted-foreground: var(--obsidian-mut-hsl);
+    --accent: var(--obsidian-800-hsl);
+    --accent-foreground: var(--obsidian-fg-hsl);
+    --destructive: var(--danger-300-hsl);
+    --destructive-foreground: var(--obsidian-950-hsl);
+    --success: var(--success-300-hsl);
+    --success-foreground: var(--obsidian-950-hsl);
+    --warning: var(--warning-300-hsl);
+    --warning-foreground: var(--obsidian-950-hsl);
+    --info: var(--info-300-hsl);
+    --info-foreground: var(--obsidian-950-hsl);
+    --border: var(--obsidian-700-hsl);
+    --input: var(--obsidian-700-hsl);
+    --ring: var(--indigo-dark-hsl);
+
+    --brand-from: 243 84% 74%;
+    --brand-to: var(--signal-on-dark-hsl);
+
+    --shadow-soft: 0 1px 2px hsl(0 0% 0% / 0.34), 0 1px 3px hsl(0 0% 0% / 0.26);
+    --shadow-panel: 0 1px 2px hsl(0 0% 0% / 0.34), 0 8px 22px -6px hsl(0 0% 0% / 0.5);
+    --shadow-pop: 0 6px 18px -4px hsl(0 0% 0% / 0.5), 0 22px 44px -10px hsl(0 0% 0% / 0.58);
+    --shadow-float: 0 12px 34px -8px hsl(0 0% 0% / 0.62), 0 38px 72px -18px hsl(0 0% 0% / 0.7);
+
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
 
   * {
     @apply border-border;
@@ -195,12 +351,24 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    font-feature-settings: "rlig" 1, "calt" 1, "cv11" 1, "ss01" 1;
+    font-family:
+      'Inter',
+      -apple-system,
+      BlinkMacSystemFont,
+      'Segoe UI',
+      sans-serif;
+    font-feature-settings:
+      'rlig' 1,
+      'calt' 1,
+      'cv11' 1,
+      'ss01' 1;
     -webkit-font-smoothing: antialiased;
   }
 
-  h1, h2, h3, .font-display {
+  h1,
+  h2,
+  h3,
+  .font-display {
     font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
     letter-spacing: -0.02em;
   }
@@ -211,8 +379,8 @@
   }
 
   /* Targeted, lightweight color transitions on common surfaces only.
-     Applying to `*` causes a global repaint storm during theme toggle and
-     makes every hover/focus feel sluggish. */
+  Applying to `*` causes a global repaint storm during theme toggle and
+  makes every hover/focus feel sluggish. */
   body,
   header,
   nav,
@@ -225,7 +393,7 @@
   input,
   textarea,
   select,
-  [role="dialog"],
+  [role='dialog'],
   [data-themed-surface],
   .glass-card {
     transition:
@@ -235,7 +403,7 @@
   }
 
   /* During theme toggles, disable transitions everywhere so the whole tree
-     repaints in one pass instead of staggering. */
+  repaints in one pass instead of staggering. */
   html.theme-transitioning,
   html.theme-transitioning *,
   html.theme-transitioning *::before,
@@ -246,7 +414,7 @@
 
   /* Disable transitions for animated elements */
   .no-transition,
-  [class*="animate-"] {
+  [class*='animate-'] {
     transition: none !important;
   }
 
@@ -254,12 +422,12 @@
     color-scheme: dark;
   }
 
-  /* Pointer affordance on everything interactive — a hand cursor on hover for
-     buttons, links, selects, tabs, switches and anything role="button". */
+  /* Pointer affordance on everything interactive - a hand cursor on hover for
+  buttons, links, selects, tabs, switches and anything role="button". */
   button:not(:disabled),
-  [role="button"]:not([aria-disabled="true"]),
-  [role="tab"],
-  [role="switch"],
+  [role='button']:not([aria-disabled='true']),
+  [role='tab'],
+  [role='switch'],
   a[href],
   summary,
   label[for],
@@ -267,27 +435,26 @@
     cursor: pointer;
   }
   button:disabled,
-  [aria-disabled="true"],
-  [role="button"][aria-disabled="true"] {
+  [aria-disabled='true'],
+  [role='button'][aria-disabled='true'] {
     cursor: not-allowed;
   }
 }
 
 @layer components {
-
   /* Glassmorphism card style */
   .glass-card {
     @apply bg-white/80 dark:bg-black/40 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-pop;
   }
 
   /* ── Canonical glass recipe (navigation / elevated controls ONLY) ──────
-     THE one sanctioned frosted-surface treatment: token-driven translucent
-     fill + a limited 16px blur, with a solid fallback when backdrop-filter
-     is unsupported (so text scrolling underneath never smears through an
-     un-blurred translucent bar). Do not hand-roll new blur recipes; compose
-     `.glass-nav` and, when the surface sits on card/sidebar tokens, add the
-     matching tint modifier. Reserved for sticky/fixed chrome: top bar,
-     mobile nav, sidebar, command palette, sticky filter bars. */
+  THE one sanctioned frosted-surface treatment: token-driven translucent
+  fill + a limited 16px blur, with a solid fallback when backdrop-filter
+  is unsupported (so text scrolling underneath never smears through an
+  un-blurred translucent bar). Do not hand-roll new blur recipes; compose
+  `.glass-nav` and, when the surface sits on card/sidebar tokens, add the
+  matching tint modifier. Reserved for sticky/fixed chrome: top bar,
+  mobile nav, sidebar, command palette, sticky filter bars. */
   .glass-nav {
     --glass-bg: var(--background);
     background-color: hsl(var(--glass-bg) / 0.7);
@@ -300,24 +467,55 @@
   .glass-nav-sidebar {
     --glass-bg: var(--sidebar-background);
   }
+  /* Floating marketing nav modifier. The landing bar crosses TWO surfaces as
+  you scroll (obsidian hero, then pearl editorial), so the canonical 0.7
+  fill is not enough: pearl bleeding through at 30% lifts the bar and drops
+  white-on-glass to ~3:1. At 0.86 the worst case (bar fully over pearl)
+  still measures 5.6:1 for foreground text, and over the hero it reads as
+  near-solid glass. Saturation is nudged so the wash underneath stays alive
+  rather than turning to grey. */
+  .glass-nav-strong {
+    background-color: hsl(var(--glass-bg) / 0.86);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    backdrop-filter: blur(20px) saturate(140%);
+  }
   @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-    .glass-nav {
+    .glass-nav,
+    .glass-nav-strong {
       background-color: hsl(var(--glass-bg));
     }
   }
 
+  /* The specular pass that makes glass read as a physical pane: a bright
+  hairline catching light on the top rim, a dark one grounding the bottom,
+  and the surface's own elevation underneath. Token-driven, so it inverts
+  correctly on either surface instead of assuming a dark canvas. */
+  .glass-specular {
+    box-shadow:
+      inset 0 1px 0 0 hsl(var(--foreground) / 0.1),
+      inset 0 -1px 0 0 hsl(var(--background) / 0.55),
+      var(--shadow-panel);
+  }
+
+  /* Editorial hairline divider that fades at both ends - separates marketing
+  movements without drawing a hard box around them. */
+  .rule-fade {
+    height: 1px;
+    background-image: linear-gradient(to right, transparent, hsl(var(--border)), transparent);
+  }
+
   /* Canonical keyboard-focus ring for hand-rolled interactive elements.
-     shadcn ui/* primitives already ship this; use `.focus-ring-visible` (or
-     the same utilities inline) on any custom button/link so focus is always
-     visible, only for keyboard users, in both themes. */
+  shadcn ui/* primitives already ship this; use `.focus-ring-visible` (or
+  the same utilities inline) on any custom button/link so focus is always
+  visible, only for keyboard users, in both themes. */
   .focus-ring-visible {
     @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
   }
 
   /* ── Editorial surfaces (Compass §7) ───────────────────────────────────
-     Calm, token-driven building blocks so every screen inherits the same
-     card language. `.surface` = flat resting panel; `.panel` adds a soft
-     lift; `.card-interactive` is the calm hover affordance. */
+  Calm, token-driven building blocks so every screen inherits the same
+  card language. `.surface` = flat resting panel; `.panel` adds a soft
+  lift; `.card-interactive` is the calm hover affordance. */
   .surface {
     @apply rounded-xl border border-border bg-card text-card-foreground;
   }
@@ -329,29 +527,21 @@
     @apply hover:-translate-y-0.5 hover:shadow-panel hover:border-border/80;
   }
 
-  /* Editorial eyebrow / section label — the quiet uppercase kicker used on
-     nav group headers and card overlines. */
+  /* Editorial eyebrow / section label - the quiet uppercase kicker used on
+  nav group headers and card overlines. */
   .overline {
     @apply text-[0.6875rem] font-semibold uppercase tracking-[0.06em] text-muted-foreground;
   }
 
-  /* Gradient text helper — uses the brand gradient (indigo → sky) */
+  /* Gradient text helper - uses the brand gradient (indigo → sky) */
   .gradient-text {
-    background-image: linear-gradient(
-      90deg,
-      hsl(var(--brand-from)),
-      hsl(var(--brand-to))
-    );
+    background-image: linear-gradient(90deg, hsl(var(--brand-from)), hsl(var(--brand-to)));
     @apply bg-clip-text text-transparent;
   }
 
   /* Brand gradient background surface */
   .brand-gradient {
-    background-image: linear-gradient(
-      135deg,
-      hsl(var(--brand-from)),
-      hsl(var(--brand-to))
-    );
+    background-image: linear-gradient(135deg, hsl(var(--brand-from)), hsl(var(--brand-to)));
   }
 
   /* Subtle elevated panel used across the workspace */
@@ -360,14 +550,14 @@
   }
 
   /* ── Editorial accent meshes (Compass §7) ──────────────────────────────
-     ONE saturated accent rendered as a soft, calm gradient wash over a card
-     surface. Token-based so light + dark stay coherent. Never decorative
-     noise — reserved for the dashboard hero (primary) and the OPT-priority
-     hero (warning, never alarm-red). */
+  ONE saturated accent rendered as a soft, calm gradient wash over a card
+  surface. Token-based so light + dark stay coherent. Never decorative
+  noise - reserved for the dashboard hero (primary) and the OPT-priority
+  hero (warning, never alarm-red). */
   .mesh-accent {
     background-color: hsl(var(--card));
     background-image:
-      radial-gradient(115% 120% at 0% 0%, hsl(var(--primary) / 0.10), transparent 55%),
+      radial-gradient(115% 120% at 0% 0%, hsl(var(--primary) / 0.1), transparent 55%),
       radial-gradient(120% 120% at 100% 8%, hsl(var(--brand-to) / 0.08), transparent 58%);
   }
   .dark .mesh-accent {
@@ -389,11 +579,11 @@
   }
 
   /* ── Ambient aurora (landing, Compass §7) ──────────────────────────────
-     Soft brand-tinted light blobs that drift very slowly behind hero/CTA
-     surfaces. Transform-only (GPU), sized in % so one component scales to
-     any section, and paused via inline animation-play-state when off-screen
-     (see landing/_shared.tsx `Aurora`). Reduced motion: the global net below
-     freezes them into a static wash. */
+  Soft brand-tinted light blobs that drift very slowly behind hero/CTA
+  surfaces. Transform-only (GPU), sized in % so one component scales to
+  any section, and paused via inline animation-play-state when off-screen
+  (see landing/_shared.tsx `Aurora`). Reduced motion: the global net below
+  freezes them into a static wash. */
   .aurora-blob {
     position: absolute;
     border-radius: 9999px;
@@ -422,13 +612,13 @@
     bottom: -28%;
     width: 46%;
     height: 62%;
-    background: hsl(var(--primary) / 0.10);
+    background: hsl(var(--primary) / 0.1);
     animation-duration: 27s;
     animation-delay: -13s;
   }
 
-  /* Faint blueprint grid — a quiet depth layer behind the hero, masked so it
-     dissolves before it can compete with content. Token-driven for themes. */
+  /* Faint blueprint grid - a quiet depth layer behind the hero, masked so it
+  dissolves before it can compete with content. Token-driven for themes. */
   .bg-grid-faint {
     background-image:
       linear-gradient(hsl(var(--border) / 0.6) 1px, transparent 1px),
@@ -468,24 +658,20 @@
     scroll-margin-top: 64px;
   }
 
-  /* Card hover effects — calm editorial lift (no bounce): a 2px rise on a
-     GPU-friendly transform + token shadow, settled with the expo easing. */
+  /* Card hover effects - calm editorial lift (no bounce): a 2px rise on a
+  GPU-friendly transform + token shadow, settled with the expo easing. */
   .card-hover {
     @apply transition-[transform,box-shadow] duration-200 ease-expo hover:-translate-y-0.5 hover:shadow-panel;
   }
 
-  /* Premium button style — subtle, clean, no aggressive lift */
+  /* Premium button style - subtle, clean, no aggressive lift */
   .btn-premium {
-    background-image: linear-gradient(
-      90deg,
-      hsl(var(--brand-from)),
-      hsl(var(--brand-to))
-    );
+    background-image: linear-gradient(90deg, hsl(var(--brand-from)), hsl(var(--brand-to)));
     @apply relative text-white font-medium shadow-sm hover:shadow-md hover:shadow-primary/20 transition-shadow duration-200;
   }
 
-  /* Surface that's clearly NOT a button — neutralizes default hover bg/scale.
-     Use on Badge/Card-like elements that look stylized but are decorative. */
+  /* Surface that's clearly NOT a button - neutralizes default hover bg/scale.
+  Use on Badge/Card-like elements that look stylized but are decorative. */
   .static-surface {
     pointer-events: none;
     cursor: default;
@@ -496,8 +682,8 @@
 }
 
 @layer utilities {
-  /* Hide scrollbars on horizontal tab strips (admin mobile nav) — content
-     stays scrollable, just no chrome. */
+  /* Hide scrollbars on horizontal tab strips (admin mobile nav) - content
+  stays scrollable, just no chrome. */
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
@@ -528,7 +714,7 @@
   }
 }
 
-/* Ambient aurora drift — a slow, symmetric breathe (never a bounce). */
+/* Ambient aurora drift - a slow, symmetric breathe (never a bounce). */
 @keyframes aurora-drift {
   0% {
     transform: translate3d(-4%, -3%, 0) scale(1);
@@ -542,7 +728,7 @@
 }
 
 /* Gentle looping shimmer: a light sweep with a long rest between passes.
-   Transform-only; pair with `motion-reduce:hidden` on the sweep element. */
+  Transform-only; pair with `motion-reduce:hidden` on the sweep element. */
 @keyframes chip-shimmer {
   0% {
     transform: translateX(-160%);
@@ -585,7 +771,6 @@
 
 /* Shake animation for form validation errors */
 @keyframes shake {
-
   0%,
   100% {
     transform: translateX(0);
@@ -640,7 +825,6 @@
 
 /* Gradient glow animation */
 @keyframes gradient-glow {
-
   0%,
   100% {
     opacity: 0.5;
@@ -659,7 +843,6 @@
 
 /* Pulse glow for buttons */
 @keyframes pulse-glow {
-
   0%,
   100% {
     box-shadow: 0 0 15px hsl(var(--primary) / 0.4);
@@ -675,11 +858,11 @@
 }
 
 /* ===== GLOBAL CUSTOM SCROLLBAR =====
-   Thin, subtle, ghost-white bars that stay out of the way and only become
-   visible when the user interacts. The previous scrollbars used the
-   app's primary (pink) HSL which clashed with the new purple theme. */
+  Thin, subtle, ghost-white bars that stay out of the way and only become
+  visible when the user interacts. The previous scrollbars used the
+  app's primary (pink) HSL which clashed with the new purple theme. */
 
-/* Webkit (Chrome, Edge, Safari) — thin + minimal */
+/* Webkit (Chrome, Edge, Safari) - thin + minimal */
 *::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -733,9 +916,11 @@ textarea {
   scrollbar-color: rgba(139, 92, 246, 0.35) transparent;
 }
 
-/* Kill horizontal scroll globally — nothing on the page should
-   expand past the viewport width. Columns handle their own x-overflow. */
-html, body, #root {
+/* Kill horizontal scroll globally - nothing on the page should
+  expand past the viewport width. Columns handle their own x-overflow. */
+html,
+body,
+#root {
   overflow-x: clip;
   max-width: 100vw;
 }
@@ -747,10 +932,10 @@ html, body, #root {
 }
 
 /* ── Reduced motion (Compass §7) ───────────────────────────────────────────
-   Global safety net: when the user asks for less motion, near-instantly
-   settle every CSS animation/transition. Framer Motion is gated separately
-   in-component via useReducedMotion(); together the product is equally good
-   with motion fully off. */
+  Global safety net: when the user asks for less motion, near-instantly
+  settle every CSS animation/transition. Framer Motion is gated separately
+  in-component via useReducedMotion(); together the product is equally good
+  with motion fully off. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -762,11 +947,23 @@ html, body, #root {
   }
 }
 
-/* ===== Concierge — section + project pulse effects ===== */
+/* ===== Concierge - section + project pulse effects ===== */
 @keyframes concierge-section-pulse {
-  0%   { box-shadow: 0 0 0 0 hsl(var(--primary) / 0.45), inset 0 0 0 0 hsl(var(--primary) / 0); }
-  35%  { box-shadow: 0 0 0 14px hsl(var(--primary) / 0.0), inset 0 0 0 2px hsl(var(--primary) / 0.55); }
-  100% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0), inset 0 0 0 0 hsl(var(--primary) / 0); }
+  0% {
+    box-shadow:
+      0 0 0 0 hsl(var(--primary) / 0.45),
+      inset 0 0 0 0 hsl(var(--primary) / 0);
+  }
+  35% {
+    box-shadow:
+      0 0 0 14px hsl(var(--primary) / 0),
+      inset 0 0 0 2px hsl(var(--primary) / 0.55);
+  }
+  100% {
+    box-shadow:
+      0 0 0 0 hsl(var(--primary) / 0),
+      inset 0 0 0 0 hsl(var(--primary) / 0);
+  }
 }
 .concierge-pulse {
   position: relative;
@@ -775,9 +972,18 @@ html, body, #root {
 }
 
 @keyframes concierge-project-glow {
-  0%   { transform: scale(1); box-shadow: 0 0 0 0 hsl(var(--primary) / 0.6); }
-  40%  { transform: scale(1.015); box-shadow: 0 0 0 8px hsl(var(--primary) / 0); }
-  100% { transform: scale(1); box-shadow: 0 0 0 0 hsl(var(--primary) / 0); }
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 hsl(var(--primary) / 0.6);
+  }
+  40% {
+    transform: scale(1.015);
+    box-shadow: 0 0 0 8px hsl(var(--primary) / 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 hsl(var(--primary) / 0);
+  }
 }
 .concierge-project-glow {
   animation: concierge-project-glow 2.4s ease-out;

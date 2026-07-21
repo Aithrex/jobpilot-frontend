@@ -9,6 +9,7 @@ import { GuestProfileReveal } from '@/components/guest/GuestProfileReveal';
 import { GuestResultsDashboard } from '@/components/guest/GuestResultsDashboard';
 import { GuestTailoringState } from '@/components/guest/GuestTailoringState';
 import { GuestCompletedState } from '@/components/guest/GuestCompletedState';
+import { GuestChallengeDialog } from '@/components/guest/GuestChallengeDialog';
 import type { GuestFlow, GuestStep } from '@/hooks/useGuestFlow';
 import { toTitleCase } from '@/lib/format';
 
@@ -24,14 +25,7 @@ import { toTitleCase } from '@/lib/format';
  */
 export function GuestFlowShell({ flow }: { flow: GuestFlow }) {
   const reduceMotion = useReducedMotion();
-  const {
-    step,
-    session,
-    guestName,
-    tailorsUsed,
-    tailorsLimit,
-    remaining,
-  } = flow;
+  const { step, session, guestName, tailorsUsed, tailorsLimit, remaining } = flow;
 
   const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null);
   const stepSectionRef = useRef<HTMLElement | null>(null);
@@ -63,7 +57,7 @@ export function GuestFlowShell({ flow }: { flow: GuestFlow }) {
 
   return (
     <div>
-      {/* Welcome-back recognition (soft — guests may continue below). */}
+      {/* Welcome-back recognition (soft - guests may continue below). */}
       {recognized && step === 'matches' && (
         <motion.div
           initial={reduceMotion ? false : { opacity: 0, y: -8 }}
@@ -76,8 +70,8 @@ export function GuestFlowShell({ flow }: { flow: GuestFlow }) {
             <p className="flex-1 text-sm">
               {recognizedName ? (
                 <>
-                  Welcome back, <span className="font-semibold">{recognizedName}</span>. Sign in
-                  to pick up where you left off.
+                  Welcome back, <span className="font-semibold">{recognizedName}</span>. Sign in to
+                  pick up where you left off.
                 </>
               ) : (
                 <>Welcome back. Sign in to pick up where you left off.</>
@@ -130,6 +124,7 @@ export function GuestFlowShell({ flow }: { flow: GuestFlow }) {
           >
             <GuestProfileReveal
               profile={flow.profile}
+              counts={flow.extractedCounts}
               fileName={flow.pendingFileName}
               onContinue={flow.continueToMatches}
             />
@@ -157,8 +152,8 @@ export function GuestFlowShell({ flow }: { flow: GuestFlow }) {
                 <p className="sr-only" role="status">
                   {flow.matchesState === 'ready'
                     ? flow.matches.length > 0
-                      ? `${flow.matches.length} strong ${flow.matches.length === 1 ? 'match' : 'matches'} found.`
-                      : 'No strong matches today.'
+                      ? `${flow.matches.length} fresh ${flow.matches.length === 1 ? 'match' : 'matches'} found.`
+                      : 'No fresh matches today.'
                     : ''}
                 </p>
               </div>
@@ -180,6 +175,7 @@ export function GuestFlowShell({ flow }: { flow: GuestFlow }) {
 
             <GuestResultsDashboard
               matches={flow.matches}
+              partialMatches={flow.partialMatches}
               state={flow.matchesState}
               progress={flow.matchesProgress}
               meta={flow.matchesMeta}
@@ -229,6 +225,16 @@ export function GuestFlowShell({ flow }: { flow: GuestFlow }) {
           </motion.section>
         )}
       </AnimatePresence>
+
+      {/* Anti-abuse challenge: only mounts when the backend actually issued one
+  for a provider we can render honestly (429 challenge_required). */}
+      <GuestChallengeDialog
+        challenge={flow.challenge}
+        error={flow.challengeError}
+        verifying={flow.challengeVerifying}
+        onSolve={(solution) => void flow.submitChallenge(solution)}
+        onDismiss={flow.dismissChallenge}
+      />
     </div>
   );
 }

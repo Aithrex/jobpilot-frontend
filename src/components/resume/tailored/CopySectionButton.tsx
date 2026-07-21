@@ -1,5 +1,5 @@
 /**
- * Copy-section-to-clipboard button — shared across the Tailor flow.
+ * Copy-section-to-clipboard button - shared across the Tailor flow.
  *
  * Extracted verbatim from the ResumeParser monolith so both the classic
  * workspace (`/app`) and the new app-shell render an identical copy button

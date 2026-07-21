@@ -54,7 +54,7 @@ export default function GmailCallback() {
         {status === "working" && (
           <>
             <div className="w-10 h-10 rounded-full border-2 border-current border-t-transparent animate-spin mx-auto text-purple-500" />
-            <p className="mt-3 text-sm font-medium text-gray-700 dark:text-gray-200">Linking your Gmail…</p>
+            <p className="mt-3 text-sm font-medium text-gray-700 dark:text-gray-200">Linking your Gmail...</p>
             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">This usually takes a couple of seconds.</p>
           </>
         )}
@@ -62,7 +62,7 @@ export default function GmailCallback() {
           <>
             <div className="w-10 h-10 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto text-lg">✓</div>
             <p className="mt-3 text-sm font-semibold text-gray-800 dark:text-gray-100">Gmail linked.</p>
-            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Taking you back to your applications…</p>
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Taking you back to your applications...</p>
           </>
         )}
         {status === "error" && (

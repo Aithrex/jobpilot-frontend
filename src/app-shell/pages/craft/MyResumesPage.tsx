@@ -1,9 +1,9 @@
 /**
- * MyResumesPage — base-résumé manager in the Craft section
+ * MyResumesPage - base-resume manager in the Craft section
  * (lazy-mounted at /next/craft/my-resumes).
  *
  * Extracted from the ResumeParser monolith and rebuilt on the design system
- * (semantic tokens + shadcn). Manages the base résumés used as the source for
+ * (semantic tokens + shadcn). Manages the base resumes used as the source for
  * tailoring: upload (PDF/DOCX ≤5MB), set-active, delete.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -41,7 +41,7 @@ export default function MyResumesPage() {
   const [loadError, setLoadError] = useState('');
   const [settingActive, setSettingActive] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
-  // Delete confirmation target — deletes are permanent, so they must be
+  // Delete confirmation target - deletes are permanent, so they must be
   // confirmed through an AlertDialog rather than firing on first tap.
   const [pendingDelete, setPendingDelete] = useState<BaseResume | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -106,7 +106,7 @@ export default function MyResumesPage() {
           </p>
         </div>
         {/* Real button + hidden input: unlike a `label` styled as a Button,
-            `disabled` genuinely blocks interaction while uploading. */}
+  `disabled` genuinely blocks interaction while uploading. */}
         <input
           ref={fileInputRef}
           type="file"
@@ -130,7 +130,7 @@ export default function MyResumesPage() {
           {uploading ? (
             <>
               <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
-              Uploading…
+              Uploading...
             </>
           ) : (
             <>
@@ -229,7 +229,7 @@ export default function MyResumesPage() {
                     }}
                     className="text-primary hover:text-primary"
                   >
-                    {settingActive === r.resume_id ? 'Setting…' : 'Use for Tailoring'}
+                    {settingActive === r.resume_id ? 'Setting...' : 'Use for Tailoring'}
                   </Button>
                 )}
                 <Button
@@ -260,7 +260,7 @@ export default function MyResumesPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete this resume?</AlertDialogTitle>
             <AlertDialogDescription>
-              “{pendingDelete?.filename}” will be permanently deleted
+              "{pendingDelete?.filename}" will be permanently deleted
               {pendingDelete?.is_active ? ' (it is currently the active base for tailoring)' : ''}.
               This cannot be undone.
             </AlertDialogDescription>

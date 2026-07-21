@@ -1,5 +1,5 @@
 /**
- * Compact monogram for avatar chips — first letters of up to two name/email
+ * Compact monogram for avatar chips - first letters of up to two name/email
  * segments. Shared by the TopBar account menu and the Sidebar account row so
  * the two renderings of the same user never disagree.
  */

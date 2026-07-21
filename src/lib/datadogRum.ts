@@ -1,16 +1,16 @@
 /**
- * Datadog Browser RUM — end-to-end trace stitching (browser → API GW → Lambda → MongoDB).
+ * Datadog Browser RUM - end-to-end trace stitching (browser → API GW → Lambda → MongoDB).
  *
  * Initialized once at app boot from main.tsx. No-ops when env vars are missing,
  * which keeps local dev and preview builds quiet (no events shipped, no errors).
  *
  * Config notes:
- *  • clientToken is a public write-only token — safe to ship in the bundle.
+ *  • clientToken is a public write-only token - safe to ship in the bundle.
  *  • allowedTracingUrls injects x-datadog-* + traceparent headers into fetch/XHR
  *    calls to the JobPilot API (same-origin /api in prod) so backend Lambda
  *    spans link to the RUM session resource.
  *  • sessionReplaySampleRate is 0 because Session Replay is a paid feature
- *    above the free tier — flip up later if you upgrade.
+ *    above the free tier - flip up later if you upgrade.
  */
 import { datadogRum } from "@datadog/browser-rum";
 
@@ -27,7 +27,7 @@ export function initDatadogRum(): void {
   const version = import.meta.env.VITE_DD_RUM_VERSION ?? "unknown";
 
   if (!applicationId || !clientToken) {
-    // Local dev or build without the secrets — stay silent.
+    // Local dev or build without the secrets - stay silent.
     return;
   }
 

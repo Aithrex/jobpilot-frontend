@@ -1,5 +1,5 @@
 /**
- * BetaLabTab — Beta features that aren't yet promoted to the main flow.
+ * BetaLabTab - Beta features that aren't yet promoted to the main flow.
  *
  * Layout: card grid. Each card is either a working "functional" feature
  * (load on click, render output inline) or a "coming soon" stub with a
@@ -147,7 +147,7 @@ export default function BetaLabTab() {
             {brief.kind === 'loading' && (
               <p className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                Synthesizing your agenda…
+                Synthesizing your agenda...
               </p>
             )}
             {brief.kind === 'done' && (
@@ -204,7 +204,7 @@ export default function BetaLabTab() {
               onChange={(e) => setSimilarJd(e.target.value)}
               rows={4}
               maxLength={15000}
-              placeholder="Paste the JD you'd like to find more like…"
+              placeholder="Paste the JD you'd like to find more like..."
               className="w-full rounded-md border border-border bg-background px-3 py-2 text-xs leading-relaxed focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
             />
             <Button
@@ -214,7 +214,7 @@ export default function BetaLabTab() {
               className="gap-1.5 bg-indigo-600 text-white hover:bg-indigo-500"
             >
               {similar.kind === 'loading' ? (
-                <><Loader2 className="h-3.5 w-3.5 animate-spin" />Searching…</>
+                <><Loader2 className="h-3.5 w-3.5 animate-spin" />Searching...</>
               ) : (
                 <><Wand2 className="h-3.5 w-3.5" />Find similar</>
               )}
@@ -293,7 +293,7 @@ export default function BetaLabTab() {
             {ab.kind === 'loading' && (
               <p className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                Crunching tailoring records…
+                Crunching tailoring records...
               </p>
             )}
             {ab.kind === 'done' && (

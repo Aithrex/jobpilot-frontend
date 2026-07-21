@@ -2,7 +2,7 @@ import type { Job, WorkdayJob, WorkdayRecency } from '@/types/jobs';
 
 /**
  * Shared career-portal helpers used by the combined Job Opportunities feed.
- * (The per-catalog CareerPortals panel keeps its own copies intentionally —
+ * (The per-catalog CareerPortals panel keeps its own copies intentionally  - 
  * this module exists so the combined feed can merge/normalize without
  * reaching into that component.)
  */
@@ -12,7 +12,7 @@ import type { Job, WorkdayJob, WorkdayRecency } from '@/types/jobs';
  * timezone (the client sends tz_offset_minutes with every scan; the backend
  * computes days_ago against the user's local today). Labels spell that out:
  * the old "1 day" read as "exactly one day ago" while it actually meant
- * "today + yesterday" — the source of the Today-vs-1-day confusion.
+ * "today + yesterday" - the source of the Today-vs-1-day confusion.
  */
 export const RECENCY_OPTIONS: Array<{ key: WorkdayRecency; label: string; maxDays: number }> = [
   { key: 'today', label: 'Today', maxDays: 0 },
@@ -44,7 +44,7 @@ const STATE_NAMES: Record<string, string> = {
   'washington, d.c.': 'DC', 'district of columbia': 'DC',
 };
 
-/** Title-based seniority, mirroring the backend classifier — a fallback for
+/** Title-based seniority, mirroring the backend classifier - a fallback for
  *  streamed rows that don't carry the field yet, so seniority filtering works
  *  mid-scan. */
 export function seniorityOf(j: WorkdayJob): string {
@@ -73,7 +73,7 @@ export function locationKeyOf(job: WorkdayJob): string {
 
 /** Boundary defense: some source rows carry the role under `job_title` or
  *  `role` instead of `title`. Resolve to the first NON-EMPTY trimmed value
- *  (an empty-string title counts as missing) — backend also normalizes
+ *  (an empty-string title counts as missing) - backend also normalizes
  *  server-side; this is belt-and-braces. */
 export function jobTitleOf(j: Pick<WorkdayJob, 'title' | 'job_title' | 'role'>): string {
   for (const t of [j.title, j.job_title, j.role]) {
@@ -83,7 +83,7 @@ export function jobTitleOf(j: Pick<WorkdayJob, 'title' | 'job_title' | 'role'>):
 }
 
 /** Normalize a portal row into the `Job` shape `JobCard` renders. Portal rows
- *  carry a discrete sponsorship band (not the SponsorshipSignal object) — we
+ *  carry a discrete sponsorship band (not the SponsorshipSignal object) - we
  *  surface the honest signal via visa flags instead of fabricating numbers. */
 export function toJob(j: WorkdayJob, fallbackSource: string): Job {
   return {
@@ -114,7 +114,7 @@ export function toJob(j: WorkdayJob, fallbackSource: string): Job {
 const norm = (s?: string) => (s || '').toLowerCase().replace(/\s+/g, ' ').trim();
 
 /** A merged row is "better" if it carries a full description, else the higher
- *  match score — so cross-catalog duplicates keep the richest copy. */
+ *  match score - so cross-catalog duplicates keep the richest copy. */
 function isBetter(candidate: WorkdayJob, current: WorkdayJob): boolean {
   const cDesc = (candidate.description || '').length;
   const curDesc = (current.description || '').length;

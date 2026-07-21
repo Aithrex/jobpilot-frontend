@@ -10,7 +10,7 @@ import {
 /**
  * Structural shapes mirroring ResumeParser's nav config. We intentionally keep
  * these generic (string keys) so this component stays decoupled from the
- * ResumeParser `NavTab` union — ResumeParser passes its real items/rooms in,
+ * ResumeParser `NavTab` union - ResumeParser passes its real items/rooms in,
  * so labels/icons remain a single source of truth there.
  */
 export type MobileNavItem = {
@@ -34,7 +34,7 @@ export type MobileNavRoom = {
 };
 
 type MobileBottomNavProps = {
-  /** Full leaf-item list — the source of truth for labels/icons in the sheet. */
+  /** Full leaf-item list - the source of truth for labels/icons in the sheet. */
   items: MobileNavItem[];
   /** The 5 rooms shown as the primary bottom-bar destinations. */
   rooms: MobileNavRoom[];
@@ -60,7 +60,7 @@ export default function MobileBottomNav({
   };
 
   // The active room = the one whose tabs contains the active leaf key. Configure
-  // surfaces (billing/profile/…) belong to no room, so nothing highlights then.
+  // surfaces (billing/profile/...) belong to no room, so nothing highlights then.
   const activeRoomKey = rooms.find((room) => room.tabs.includes(activeKey))?.key;
 
   return (

@@ -7,7 +7,7 @@ export type NotificationChannel = 'email' | 'whatsapp' | 'sms' | 'push';
 
 export interface NotificationChannelState {
   enabled: boolean;
-  /** When false the channel is not yet live — render as "coming soon". */
+  /** When false the channel is not yet live - render as "coming soon". */
   available: boolean;
   address?: string;
 }

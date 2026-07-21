@@ -1,5 +1,5 @@
 /**
- * NudgeBar — priority-ordered contextual nudge shown above the split-view.
+ * NudgeBar - priority-ordered contextual nudge shown above the split-view.
  * Rules fire in order (score improved → low skills alignment → no cover
  * letter); the first undismissed nudge renders in a brand-tinted bar with an
  * action button and a dismiss control.

@@ -1,5 +1,5 @@
 /**
- * Onboarding hero (first-run resume upload) — shared across the Tailor flow.
+ * Onboarding hero (first-run resume upload) - shared across the Tailor flow.
  *
  * Extracted verbatim from the ResumeParser monolith so both the classic
  * workspace (`/app`) and the new app-shell render an identical onboarding

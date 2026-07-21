@@ -24,7 +24,7 @@ export type PreviewMode = 'tailored' | 'base' | 'previous' | 'diff';
 export type ReviewDecision = 'accepted' | 'edited' | 'removed' | 'restored';
 
 /**
- * Real tailoring phase — every value is backend truth, no wall-clock guessing.
+ * Real tailoring phase - every value is backend truth, no wall-clock guessing.
  * `submitting` = POST in flight (job not yet accepted); `queued` = job accepted,
  * waiting for a worker; the rest arrive from `job.result.progress.phase`
  * written by the backend at each real pipeline stage (with a floor of
@@ -34,7 +34,7 @@ export type ReviewDecision = 'accepted' | 'edited' | 'removed' | 'restored';
 export type TailorPhase = 'submitting' | 'queued' | BackendTailorPhase;
 
 /**
- * Ordinal for monotonic phase advancement — polls can arrive out of order or
+ * Ordinal for monotonic phase advancement - polls can arrive out of order or
  * skip fast phases; the UI only ever steps forward.
  */
 export const PHASE_ORDER: Record<TailorPhase, number> = {

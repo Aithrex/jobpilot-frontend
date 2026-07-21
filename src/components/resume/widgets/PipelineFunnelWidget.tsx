@@ -1,5 +1,5 @@
 /**
- * Pipeline Funnel — applied → interview → offer with honest conversion. Reads
+ * Pipeline Funnel - applied → interview → offer with honest conversion. Reads
  * the pipeline intelligence endpoint the frontend already calls. Empty state
  * (no applications yet) invites the first tailor.
  */

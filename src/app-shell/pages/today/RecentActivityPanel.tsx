@@ -1,5 +1,5 @@
 /**
- * Zone C — "Why?"  Drill-down table of the most recent roles in play.
+ * Zone C - "Why?"  Drill-down table of the most recent roles in play.
  *
  * Progressive disclosure: a compact summary (the latest handful) with a link to
  * the full workspace. Numbers are right-aligned and tabular; the header is
@@ -25,9 +25,9 @@ const FIND_ROLES_HREF = '/next/discover/jobs';
 const MAX_ROWS = 8;
 
 function shortDate(iso: string | undefined): string {
-  if (!iso) return '—';
+  if (!iso) return ' - ';
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '—';
+  if (Number.isNaN(d.getTime())) return ' - ';
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
@@ -124,7 +124,7 @@ export function RecentActivityPanel({
                     </TableCell>
                     <TableCell className="py-3 text-right">
                       {m === null ? (
-                        <span className="text-caption text-muted-foreground">—</span>
+                        <span className="text-caption text-muted-foreground"> - </span>
                       ) : (
                         <Stat className="text-body font-medium text-foreground">{m}%</Stat>
                       )}

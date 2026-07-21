@@ -135,7 +135,7 @@ export function GuestParsingState({
 
         <div className="space-y-2.5" aria-label="Preview of your resume being structured into sections">
           {/* REAL extracted skills materialize the moment the server emits
-              them (finalizing marker carries skills_preview — genuinely
+              them (finalizing marker carries skills_preview - genuinely
               parsed names, never invented). This is the guest's own data
               animating in, not an illustration. */}
           {(progress?.skills_preview?.length ?? 0) > 0 && (

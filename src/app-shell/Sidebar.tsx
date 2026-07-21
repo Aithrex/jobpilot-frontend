@@ -101,7 +101,7 @@ export function Sidebar({ collapsed, onToggleCollapse }: SidebarProps) {
   );
 }
 
-/** Signed-in affordance pinned to the foot of the rail — links to Settings › Profile. */
+/** Signed-in affordance pinned to the foot of the rail - links to Settings › Profile. */
 function AccountRow({ collapsed }: { collapsed: boolean }) {
   const { user } = useAuth();
   const name = user?.name;
@@ -177,7 +177,7 @@ function SidebarLink({
     >
       {({ isActive }) => (
         <>
-          {/* Animated active pill — a single element shared via layoutId slides
+          {/* Animated active pill - a single element shared via layoutId slides
               behind whichever item is active. Reduced motion → instant. */}
           {isActive && (
             <motion.span

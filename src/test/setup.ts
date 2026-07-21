@@ -1,7 +1,7 @@
 /**
  * Global Vitest setup: jest-dom matchers + the browser API polyfills jsdom
  * lacks (matchMedia, IntersectionObserver, ResizeObserver, scrollTo,
- * scrollIntoView, requestIdleCallback). Everything here is deterministic —
+ * scrollIntoView, requestIdleCallback). Everything here is deterministic  - 
  * no network, no real timers hidden inside polyfills.
  */
 import '@testing-library/jest-dom/vitest';

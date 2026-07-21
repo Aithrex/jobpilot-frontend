@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { AlertCircle, Check, Loader2, Target } from 'lucide-react';
+import { AlertCircle, CalendarClock, Check, Loader2, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -9,16 +9,25 @@ import { cn } from '@/lib/utils';
 
 /**
  * Shared presentational pieces for the guest onboarding flow (/start + the
- * landing hero embed). Purely visual — all state lives in useGuestFlow.
+ * landing hero embed). Purely visual - all state lives in useGuestFlow.
  */
 
-// Editorial easing shared with the landing (_shared.tsx EASE) — a confident
+// Editorial easing shared with the landing (_shared.tsx EASE) - a confident
 // settle, never springy.
 export const EASE = [0.16, 1, 0.3, 1] as const;
 export const stepTransition = { duration: 0.28, ease: EASE } as const;
 
-/** Match score chip — always framed as an ESTIMATE, never a hiring odds. */
-export function ScoreBadge({ score }: { score: number }) {
+/** Turn a server band/component key into a display label. Formatting only  -
+ * never a value the server did not send. */
+export function humanizeBand(raw: string): string {
+  const s = raw.replace(/[_-]+/g, ' ').trim();
+  return s ? s[0].toUpperCase() + s.slice(1) : s;
+}
+
+/** Match score chip - always framed as an ESTIMATE, never a hiring odds. The
+ * optional `band` is the SERVER's qualitative label (FitScore v2); absent, the
+ * chip is exactly what it has always been. */
+export function ScoreBadge({ score, band }: { score: number; band?: string | null }) {
   const tone =
     score >= 85
       ? 'border-success/30 bg-success/10 text-success'
@@ -33,6 +42,55 @@ export function ScoreBadge({ score }: { score: number }) {
     >
       <Target className="h-3 w-3" aria-hidden />
       <span aria-label={`Estimated ${score} percent match`}>Est. {score}% match</span>
+      {band ? <span className="font-medium opacity-80">· {humanizeBand(band)}</span> : null}
+    </span>
+  );
+}
+
+/**
+ * SERVER-authoritative posting freshness. The label is the backend's own
+ * `posted_text`, or its `days_ago` integer rendered as words - freshness is
+ * NEVER computed, inferred, or defaulted client-side. When the server sent
+ * neither, this renders nothing at all (it never says "today").
+ */
+export function freshnessLabel(match: { posted_text?: string; days_ago?: number }): string | null {
+  if (typeof match.posted_text === 'string' && match.posted_text.trim()) {
+    return match.posted_text.trim();
+  }
+  const days = match.days_ago;
+  if (typeof days === 'number' && Number.isFinite(days) && days >= 0) {
+    const whole = Math.round(days);
+    if (whole === 0) return 'Posted today';
+    return `Posted ${whole} ${whole === 1 ? 'day' : 'days'} ago`;
+  }
+  return null;
+}
+
+/** Freshness chip for a match card. Renders nothing when the server gave no
+ * freshness value for this row. */
+export function FreshnessTag({
+  match,
+  className,
+}: {
+  match: { posted?: string; posted_text?: string; days_ago?: number };
+  className?: string;
+}) {
+  const label = freshnessLabel(match);
+  if (!label) return null;
+  // Machine-readable date only when the server's `posted` really is a date.
+  const iso =
+    typeof match.posted === 'string' && /^\d{4}-\d{2}-\d{2}/.test(match.posted)
+      ? match.posted
+      : undefined;
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground',
+        className,
+      )}
+    >
+      <CalendarClock className="h-3 w-3 shrink-0" aria-hidden />
+      {iso ? <time dateTime={iso}>{label}</time> : <span>{label}</span>}
     </span>
   );
 }
@@ -56,9 +114,7 @@ export function TailorQuota({
   return (
     <div className={cn('w-36 space-y-1', className)}>
       <div className="flex items-center justify-between gap-2 text-[11px]">
-        <span className="text-muted-foreground">
-          Free {limit === 1 ? 'tailor' : 'tailors'}
-        </span>
+        <span className="text-muted-foreground">Free {limit === 1 ? 'tailor' : 'tailors'}</span>
         <span className={cn('font-medium tabular-nums', exhausted && 'text-warning')}>
           {remaining} of {limit} left
         </span>
@@ -72,7 +128,7 @@ export function TailorQuota({
   );
 }
 
-/** Conversion CTA card (quota / capacity / challenge) — a friendly signup
+/** Conversion CTA card (quota / capacity / challenge) - a friendly signup
  * prompt, deliberately NOT an error surface. */
 export function SignupCta({
   title,
@@ -103,7 +159,7 @@ export function SignupCta({
   );
 }
 
-/** Spinner + crossfading stage line + steady hint — the shared "alive"
+/** Spinner + crossfading stage line + steady hint - the shared "alive"
  *  header for every long-running phase. The crossfade keys on the stage
  *  string so each cadence tick visibly moves, and is inert under
  *  prefers-reduced-motion (the spinner still turns via CSS until the global
@@ -142,7 +198,7 @@ export interface PhaseDef {
 
 /**
  * Truthful stepper for a long-running guest job, fed by the SERVER's
- * update_job_progress markers — never a wall-clock guess. `activeKey` null
+ * update_job_progress markers - never a wall-clock guess. `activeKey` null
  * (no marker yet) shows the first phase active; an unknown phase keeps the
  * current rendering (per contract: treat unknown phases as "keep step").
  * State is conveyed by check/number + label, never colour alone.
@@ -203,7 +259,7 @@ export function PhaseStepper({
 /**
  * The ONE aria-live region for async phase announcements: visually hidden,
  * polite, and debounced so rapid poll ticks never spam screen readers. Only
- * mounted by the currently active working state (parsing OR matches — never
+ * mounted by the currently active working state (parsing OR matches - never
  * both), keeping a single live region per contract.
  */
 export function PhaseAnnouncer({ message }: { message: string | null }) {
@@ -220,7 +276,7 @@ export function PhaseAnnouncer({ message }: { message: string | null }) {
   );
 }
 
-/** Recoverable error surface — consistent icon + title + body + actions,
+/** Recoverable error surface - consistent icon + title + body + actions,
  *  announced via role="alert". Never a raw string dump. */
 export function ErrorCard({
   title,
@@ -241,7 +297,9 @@ export function ErrorCard({
           <p className="font-semibold">{title}</p>
           <p className="text-sm text-muted-foreground">{body}</p>
         </div>
-        {children && <div className="flex flex-col justify-center gap-2 sm:flex-row">{children}</div>}
+        {children && (
+          <div className="flex flex-col justify-center gap-2 sm:flex-row">{children}</div>
+        )}
       </CardContent>
     </Card>
   );

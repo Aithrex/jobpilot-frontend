@@ -4,7 +4,7 @@ import { useReducedMotion } from 'framer-motion';
 import type { Group } from 'three';
 
 /**
- * A slowly rotating faceted "scout" orb — the app's 3D signature moment,
+ * A slowly rotating faceted "scout" orb - the app's 3D signature moment,
  * reserved for a hero-tier empty state (not list chrome). Lazy-loaded so the
  * three.js bundle only ships where it renders. Under reduced motion the loop
  * runs on demand (a single static frame).

@@ -1,12 +1,12 @@
 /**
- * Bullet-level resume diff view — shared across the Tailor flow.
+ * Bullet-level resume diff view - shared across the Tailor flow.
  *
  * Extracted from the ResumeParser monolith so both the classic workspace
  * (`/app`) and the new app-shell render an identical version diff from one
  * source. Pure presentational (prev/curr in → diff out).
  *
  * Diff model: bullets are set-compared per section, then removed×added
- * leftovers are similarity-paired (Dice ≥ 0.5) — a lightly-edited bullet
+ * leftovers are similarity-paired (Dice ≥ 0.5) - a lightly-edited bullet
  * renders as ONE row with inline word-level highlights instead of a
  * remove+add pair. Works for both previous-version diffs and diffs against
  * the BASE resume (pass `prevLabel`).
@@ -160,7 +160,7 @@ export function ResumeDiffView({
       </div>
 
       <div className="px-6 py-5 space-y-5">
-        {/* Summary — inline word diff instead of stacked del/ins */}
+        {/* Summary - inline word diff instead of stacked del/ins */}
         {summaryChanged && (
           <div>
             <ST title="Summary" n={1} />
@@ -170,7 +170,7 @@ export function ResumeDiffView({
           </div>
         )}
 
-        {/* Experience bullets — set diff + similarity-paired edits */}
+        {/* Experience bullets - set diff + similarity-paired edits */}
         {(prevExpBullets.size > 0 || currExpBullets.size > 0) &&
           (() => {
             const addedExp = [...currExpBullets].filter(
@@ -232,7 +232,7 @@ export function ResumeDiffView({
             );
           })()}
 
-        {/* Skills — chip diff */}
+        {/* Skills - chip diff */}
         {(addedSkills.size > 0 || removedSkills.size > 0) && (
           <div>
             <ST title="Skills" n={addedSkills.size + removedSkills.size} />

@@ -1,5 +1,5 @@
 /**
- * careerJobs boundary defense — title normalization + dedupe keys.
+ * careerJobs boundary defense - title normalization + dedupe keys.
  *
  * Regression for the "blank title" bug: some source rows carry the role
  * under `job_title` or `role` instead of `title`. Both toJob mappers and the

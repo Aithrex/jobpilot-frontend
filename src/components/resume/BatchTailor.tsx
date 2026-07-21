@@ -18,9 +18,9 @@ interface JDEntry {
   text: string;
   /** Set when handed off from Daily Pipeline with a failed JD scrape so the
    * UI can render a clear "paste below" prompt instead of a generic empty
-   * textarea. Purely informational — submission validation is text-length. */
+   * textarea. Purely informational - submission validation is text-length. */
   fetchFailed?: boolean;
-  /** Original posting URL when handed off from the pipeline — surfaced so
+  /** Original posting URL when handed off from the pipeline - surfaced so
    * the user can click through and copy the JD from the source. */
   sourceUrl?: string;
   /** Daily-pipeline record id. When present the backend wires the resulting
@@ -52,11 +52,11 @@ interface BatchJob {
    *  from the handoff). Server-side sync flips this saved_job's status when
    *  the user confirms applied via the batch prompt. */
   sourceJobId?: string;
-  /** Lazy-generated cover letter — only kicks off on user click. */
+  /** Lazy-generated cover letter - only kicks off on user click. */
   coverLetter?: { status: ExtraStatus; text?: string; error?: string };
-  /** Lazy-generated ATS scores — same pattern. */
+  /** Lazy-generated ATS scores - same pattern. */
   atsScores?: { status: ExtraStatus; data?: ATSScores; error?: string };
-  /** Local mirror of application.status — toggled by the I applied / Not
+  /** Local mirror of application.status - toggled by the I applied / Not
    *  yet / Dismiss prompt. Starts undefined until the user picks one. */
   applicationStatus?: 'interested' | 'applied' | 'dismissed';
   /** True while a PATCH is in flight from one of the three buttons. */
@@ -66,13 +66,13 @@ interface BatchJob {
 let idCounter = 0;
 const nextId = () => `jd-${++idCounter}`;
 
-// Persistence — keyed per user so two accounts on the same browser never
+// Persistence - keyed per user so two accounts on the same browser never
 // see each other's in-flight batch. The legacy global key is migrated
 // to the current user on first read so nobody loses a running batch
 // during the rollout.
 const BATCH_STORAGE_PREFIX = 'batch_tailor_jobs_v1';
 const LEGACY_BATCH_KEY = 'batch_tailor_jobs_v1';
-const BATCH_TTL_MS = 6 * 60 * 60 * 1000; // 6h — after that, results are stale
+const BATCH_TTL_MS = 6 * 60 * 60 * 1000; // 6h - after that, results are stale
 function batchStorageKey(userEmail: string | null | undefined): string {
   const slug = (userEmail || '').trim().toLowerCase() || 'anonymous';
   return `${BATCH_STORAGE_PREFIX}:${slug}`;
@@ -118,7 +118,7 @@ function writePersistedBatch(jobs: BatchJob[], userEmail: string | null | undefi
       JSON.stringify({ jobs, savedAt: Date.now() }),
     );
   } catch {
-    /* quota / private mode — ignore */
+    /* quota / private mode - ignore */
   }
 }
 
@@ -128,7 +128,7 @@ export default function BatchTailor() {
   const [jdEntries, setJdEntries] = useState<JDEntry[]>([{ id: nextId(), title: '', text: '' }]);
   const [batchJobs, setBatchJobs] = useState<BatchJob[]>(() => readPersistedBatch(userEmail) ?? []);
   const [submitting, setSubmitting] = useState(false);
-  /** Inline (non-quota) submission error — rendered under the actions row so
+  /** Inline (non-quota) submission error - rendered under the actions row so
    *  the failure and its retry live next to the button that caused it. */
   const [submitError, setSubmitError] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -193,7 +193,7 @@ export default function BatchTailor() {
         toast.success(`${incoming.length} jobs loaded from the Daily Pipeline. Hit "Tailor all" when you're ready.`);
       }
     } catch (e) {
-      // Bad JSON or storage error — ignore, the empty default form still works.
+      // Bad JSON or storage error - ignore, the empty default form still works.
     }
   }, []);
 
@@ -229,7 +229,7 @@ export default function BatchTailor() {
         setQuotaDialog({ ...u, requested: validEntries.length });
         return;
       }
-      // Batch tailoring is a gated feature on the free tier — a 403
+      // Batch tailoring is a gated feature on the free tier - a 403
       // upgrade_required opens the plan chooser rather than surfacing a raw
       // error (safe no-op if we're mounted outside the UpgradeModalProvider).
       if (resp.status === 403) {
@@ -301,7 +301,7 @@ export default function BatchTailor() {
     URL.revokeObjectURL(u);
   }, []);
 
-  // "Did you apply?" prompt — sets the tailoring_record's application
+  // "Did you apply?" prompt - sets the tailoring_record's application
   // status to applied (or clears the prompt without changing it) AND
   // syncs the linked Daily Pipeline saved_job via the backend sync
   // helper. Single source of truth: PATCH on the record, backend handles
@@ -447,7 +447,7 @@ export default function BatchTailor() {
 
   return (
     <div className="space-y-5">
-      {/* Tab header — same editorial pattern as the other workspace tabs. */}
+      {/* Tab header - same editorial pattern as the other workspace tabs. */}
       <div className="space-y-1">
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">Create · Batch Tailor</p>
         <h2 className="font-display text-2xl font-extrabold tracking-tight">Batch Tailor</h2>
@@ -545,7 +545,7 @@ export default function BatchTailor() {
               disabled={!canSubmit || submitting}
               className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed shadow-soft disabled:shadow-none transition-all duration-200">
               {submitting ? (
-                <><span className="animate-spin rounded-full h-4 w-4 border-2 border-current border-t-transparent" />Submitting…</>
+                <><span className="animate-spin rounded-full h-4 w-4 border-2 border-current border-t-transparent" />Submitting...</>
               ) : dailyUsage?.remaining === 0 ? (
                 <>Daily limit reached. See options</>
               ) : (
@@ -594,7 +594,7 @@ export default function BatchTailor() {
         </>
       )}
 
-      {/* Results phase — live progress cards */}
+      {/* Results phase - live progress cards */}
       {batchJobs.length > 0 && (
         <>
           <div className="flex items-center justify-between">
@@ -642,7 +642,7 @@ export default function BatchTailor() {
                       <p className={`text-xs ${job.status === 'failed' ? 'text-destructive' : 'text-muted-foreground'}`}>
                         {job.status === 'completed' ? 'Ready' :
                          job.status === 'failed' ? (job.error || 'Tailoring failed. Start a new batch to try this role again.') :
-                         job.status === 'processing' ? 'Tailoring…' : 'Queued'}
+                         job.status === 'processing' ? 'Tailoring...' : 'Queued'}
                       </p>
                     </div>
                   </div>
@@ -678,7 +678,7 @@ export default function BatchTailor() {
                   )}
                 </div>
 
-                {/* Secondary actions: cover letter + ATS score (lazy — model
+                {/* Secondary actions: cover letter + ATS score (lazy - model
                     calls are expensive, so we only generate on click). Each
                     button stays compact until clicked, then expands inline. */}
                 {job.status === 'completed' && (
@@ -695,7 +695,7 @@ export default function BatchTailor() {
                     {job.coverLetter?.status === 'generating' && (
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium text-primary bg-primary/5 border border-primary/20">
                         <span className="inline-block h-3 w-3 rounded-full border-2 border-primary/60 border-t-transparent animate-spin" />
-                        Writing cover letter…
+                        Writing cover letter...
                       </span>
                     )}
                     {job.coverLetter?.status === 'done' && (
@@ -728,7 +728,7 @@ export default function BatchTailor() {
                     {job.atsScores?.status === 'generating' && (
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium text-primary bg-primary/5 border border-primary/20">
                         <span className="inline-block h-3 w-3 rounded-full border-2 border-primary/60 border-t-transparent animate-spin" />
-                        Scoring…
+                        Scoring...
                       </span>
                     )}
                     {job.atsScores?.status === 'done' && job.atsScores.data && (
@@ -762,12 +762,12 @@ export default function BatchTailor() {
                     {job.result.tailored_resume.ats_keyword_audit.required_missing.length === 1 ? '' : 's'} not in resume:{' '}
                     <span className="font-mono text-[10.5px]">
                       {job.result.tailored_resume.ats_keyword_audit.required_missing.slice(0, 6).join(', ')}
-                      {job.result.tailored_resume.ats_keyword_audit.required_missing.length > 6 ? '…' : ''}
+                      {job.result.tailored_resume.ats_keyword_audit.required_missing.length > 6 ? '...' : ''}
                     </span>
                   </p>
                 ) : null}
 
-                {/* Did-you-apply prompt — shown only while the batch row is
+                {/* Did-you-apply prompt - shown only while the batch row is
                     still pending confirmation. Three exits: applied (syncs
                     Daily Pipeline saved_job → applied + ticks streak), Not
                     yet (keeps as Interested for later confirm from kanban),

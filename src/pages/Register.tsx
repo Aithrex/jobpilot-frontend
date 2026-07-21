@@ -57,7 +57,7 @@ export default function Register() {
   );
   const destination = returnTo ?? '/next/today';
 
-  // Social sign-up leaves the SPA — stash the deep link for AuthCallback.
+  // Social sign-up leaves the SPA - stash the deep link for AuthCallback.
   useEffect(() => {
     stashAuthReturnTo(returnTo);
   }, [returnTo]);
@@ -71,7 +71,7 @@ export default function Register() {
     return () => window.clearTimeout(id);
   }, []);
 
-  // Move focus with the beat (skip the initial mount — the effect above
+  // Move focus with the beat (skip the initial mount - the effect above
   // already autofocuses the email). Values are never cleared on beat change.
   useEffect(() => {
     if (prevBeatRef.current === beat) return;
@@ -89,7 +89,7 @@ export default function Register() {
     fieldErrors.confirm ??
     (confirmPassword.length > 0 && !passwordsMatch ? 'Passwords do not match.' : undefined);
 
-  // Advance from the identity beat — same email rule and message the final
+  // Advance from the identity beat - same email rule and message the final
   // submit uses, so the gate never disagrees with the real validation.
   const handleContinue = () => {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -132,7 +132,7 @@ export default function Register() {
         toast.error('Registration failed', { description: result.error });
         return;
       }
-      // register() intentionally does not keep a token — sign in to enter.
+      // register() intentionally does not keep a token - sign in to enter.
       const loginResult = await login(email, password);
       if (loginResult.error) {
         toast.success('Account created! Please sign in.');
@@ -140,7 +140,7 @@ export default function Register() {
         return;
       }
       toast.success('Account created. Welcome to Aspirely!');
-      consumeAuthReturnTo(); // clear the OAuth stash — we're honoring state directly
+      consumeAuthReturnTo(); // clear the OAuth stash - we're honoring state directly
       navigate(destination);
     } catch {
       setError('An unexpected error occurred. Please try again.');
@@ -236,7 +236,7 @@ export default function Register() {
                   disabled={isLoading}
                   className="flex h-11 w-full cursor-pointer rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  <option value="">Select a role…</option>
+                  <option value="">Select a role...</option>
                   {ROLE_OPTIONS.map((r) => (
                     <option key={r} value={r}>{r}</option>
                   ))}
@@ -365,7 +365,7 @@ export default function Register() {
 
               <Button type="submit" size="lg" className="w-full" disabled={isLoading}>
                 {isLoading && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
-                {isLoading ? 'Creating account…' : 'Create account'}
+                {isLoading ? 'Creating account...' : 'Create account'}
               </Button>
 
               <p className="text-center text-xs text-muted-foreground">

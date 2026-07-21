@@ -3,7 +3,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
 /**
- * MacWindow — the Aspirely Live Workspace frame.
+ * MacWindow - the Aspirely Live Workspace frame.
  *
  * A high-fidelity application window rendered entirely in live DOM (never a
  * screenshot, never a video). It is *inspired by* premium desktop app design
@@ -38,7 +38,7 @@ const STATUS_DOT: Record<WindowStatus, string> = {
   attention: 'bg-amber-400',
 };
 
-/** The Aspirely glyph — an upward signal chevron inside a rounded square. */
+/** The Aspirely glyph - an upward signal chevron inside a rounded square. */
 function AspirelyMark({ className }: { className?: string }) {
   return (
     <span
@@ -88,7 +88,7 @@ export const MacWindow = forwardRef<HTMLDivElement, MacWindowProps>(function Mac
 
   return (
     <div className={cn('relative', className)} style={{ perspective: 1600 }}>
-      {/* 1 — cast shadow. Separate element so it can expand as the window
+      {/* 1 - cast shadow. Separate element so it can expand as the window
           straightens without animating the frame's own box-shadow. */}
       <motion.div
         aria-hidden
@@ -109,7 +109,7 @@ export const MacWindow = forwardRef<HTMLDivElement, MacWindowProps>(function Mac
           'bg-card/95 shadow-float will-change-transform',
         )}
       >
-        {/* 2 — optical edge reflection: a hairline highlight on the top rim
+        {/* 2 - optical edge reflection: a hairline highlight on the top rim
             plus a whisper down the left edge, the way light catches a real
             bezel. Pure gradient, no cost. */}
         <span
@@ -131,7 +131,7 @@ export const MacWindow = forwardRef<HTMLDivElement, MacWindowProps>(function Mac
 
         {/* ── Title bar ── */}
         <div className="relative z-10 flex items-center gap-3 border-b border-white/[0.07] bg-white/[0.035] px-3.5 py-2.5 backdrop-blur-xl">
-          {/* Three understated window controls. Decorative — not buttons. */}
+          {/* Three understated window controls. Decorative - not buttons. */}
           <span aria-hidden className="flex shrink-0 items-center gap-[6px]">
             <span className="h-[11px] w-[11px] rounded-full bg-[#ff5f57]/85 shadow-[inset_0_0.5px_0_hsl(0_0%_100%/0.35)]" />
             <span className="h-[11px] w-[11px] rounded-full bg-[#febc2e]/85 shadow-[inset_0_0.5px_0_hsl(0_0%_100%/0.35)]" />
@@ -156,7 +156,7 @@ export const MacWindow = forwardRef<HTMLDivElement, MacWindowProps>(function Mac
 
         {/* ── Body ── */}
         <div className={cn('relative', bodyClassName)}>
-          {/* 3 — inner vignette so content reads as seated inside the frame. */}
+          {/* 3 - inner vignette so content reads as seated inside the frame. */}
           <span
             aria-hidden
             className="pointer-events-none absolute inset-0 z-10"

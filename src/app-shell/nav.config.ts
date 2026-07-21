@@ -15,7 +15,7 @@ import {
  * {@link SHELL_BASENAME}; helpers below build absolute, deep-linkable paths.
  */
 export interface NavItem {
-  /** URL segment under `/next` — also the stable key. */
+  /** URL segment under `/next` - also the stable key. */
   to: string;
   label: string;
   icon: LucideIcon;

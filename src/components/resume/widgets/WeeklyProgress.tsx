@@ -1,5 +1,5 @@
 /**
- * Weekly progress — a calm read on this week's effort: applied today, current
+ * Weekly progress - a calm read on this week's effort: applied today, current
  * streak, and tailors used against the daily allowance. Recognizes the work
  * without gamifying it (nothing celebrates loudly, Compass §7).
  */

@@ -11,7 +11,7 @@ import { CommandPalette } from "./CommandPalette";
 // must host the wizard too (it self-gates: renders null unless the signed-in
 // user still lacks onboarding). Lazy so onboarded users never fetch the chunk.
 // No double-mount risk: /app mounts its own instance, but /app and /next/* are
-// mutually exclusive routes — exactly one instance can exist at a time.
+// mutually exclusive routes - exactly one instance can exist at a time.
 const OnboardingWizard = lazy(() => import("@/components/onboarding/OnboardingWizard"));
 
 const SIDEBAR_COLLAPSED_KEY = "appShellSidebarCollapsed";
@@ -24,7 +24,7 @@ function FullScreenLoader() {
     >
       <div className="flex items-center gap-2">
         <Loader2 className="h-5 w-5 animate-spin text-primary" aria-hidden="true" />
-        <span className="text-sm">Loading your workspace…</span>
+        <span className="text-sm">Loading your workspace...</span>
       </div>
     </div>
   );
@@ -44,7 +44,7 @@ function OutletFallback() {
  *
  * Auth is gated the same way the monolith gates via AuthContext: while the
  * profile is verifying we show a loader; with no valid session we redirect to
- * `/login` (the monolith renders an in-place wall — here the task calls for a
+ * `/login` (the monolith renders an in-place wall - here the task calls for a
  * redirect so deep links land on a real sign-in page and bounce back).
  */
 export default function AppShell() {

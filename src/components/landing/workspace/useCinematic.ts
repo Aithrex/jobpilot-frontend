@@ -1,5 +1,5 @@
 /**
- * useCinematic — the pre-upload product sequence timeline.
+ * useCinematic - the pre-upload product sequence timeline.
  *
  * ONE settling run of roughly 7.5s, then it parks on `settled` forever. It
  * deliberately does NOT loop: an infinitely replaying hero is a battery tax and
@@ -10,30 +10,27 @@
  *  - never starts until the section is on screen AND the tab is visible,
  *  - pauses (holds its beat) when either goes false,
  *  - under `prefers-reduced-motion` it resolves INSTANTLY to `settled`, so the
- *    reduced-motion user sees the finished composition rather than nothing,
- *  - `takeover` (a real file was picked) kills it immediately and permanently.
+ *  reduced-motion user sees the finished composition rather than nothing,
+ *  - `takeover` (a real file was picked) kills it immediately and permanently,
+ *  - `select(beat)` (a person used the Read / Match / Tailor controls) also
+ *  ends autoplay permanently: once someone is driving, nothing moves under
+ *  their hands.
  */
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useReducedMotion } from "framer-motion";
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useReducedMotion } from 'framer-motion';
 
-/** Beats A–F from the product sequence, plus the terminal settle. */
-export type CinematicBeat =
-  | "arrive"
-  | "scan"
-  | "profile"
-  | "match"
-  | "tailor"
-  | "settled";
+/** Beats A-F from the product sequence, plus the terminal settle. */
+export type CinematicBeat = 'arrive' | 'scan' | 'profile' | 'match' | 'tailor' | 'settled';
 
 /** Cumulative start time (ms) of each beat. */
 const TIMELINE: ReadonlyArray<readonly [CinematicBeat, number]> = [
-  ["arrive", 0],
-  ["scan", 900],
-  ["profile", 2600],
-  ["match", 4200],
-  ["tailor", 5900],
-  ["settled", 7500],
+  ['arrive', 0],
+  ['scan', 900],
+  ['profile', 2600],
+  ['match', 4200],
+  ['tailor', 5900],
+  ['settled', 7500],
 ] as const;
 
 export const CINEMATIC_DURATION_MS = 7500;
@@ -52,23 +49,23 @@ export function atOrPast(current: CinematicBeat, target: CinematicBeat): boolean
 export interface UseCinematicOptions {
   /** Section is on screen and the tab is visible. */
   live: boolean;
-  /** A real résumé was picked — stop illustrating, permanently. */
+  /** A real resume was picked - stop illustrating, permanently. */
   takeover: boolean;
 }
 
 export function useCinematic({ live, takeover }: UseCinematicOptions) {
   const reduce = useReducedMotion();
-  const [beat, setBeat] = useState<CinematicBeat>(() =>
-    reduce ? "settled" : "arrive",
-  );
-  /** ms of timeline already played — lets pause/resume keep its place. */
+  const [beat, setBeat] = useState<CinematicBeat>(() => (reduce ? 'settled' : 'arrive'));
+  /** Someone used the beat controls - autoplay is over for good. */
+  const [manual, setManual] = useState(false);
+  /** ms of timeline already played - lets pause/resume keep its place. */
   const elapsed = useRef(0);
   const startedAt = useRef<number | null>(null);
 
   useEffect(() => {
-    if (takeover) return;
+    if (takeover || manual) return;
     if (reduce) {
-      setBeat("settled");
+      setBeat('settled');
       return;
     }
     if (!live) {
@@ -80,7 +77,7 @@ export function useCinematic({ live, takeover }: UseCinematicOptions) {
       return;
     }
     if (elapsed.current >= CINEMATIC_DURATION_MS) {
-      setBeat("settled");
+      setBeat('settled');
       return;
     }
 
@@ -101,15 +98,28 @@ export function useCinematic({ live, takeover }: UseCinematicOptions) {
         startedAt.current = null;
       }
     };
-  }, [live, reduce, takeover]);
+  }, [live, reduce, takeover, manual]);
+
+  /** Jump the illustration to a beat and stop autoplaying, permanently. */
+  const select = useCallback((target: CinematicBeat) => {
+    // Bank the whole timeline so a later resume can never restart the story.
+    elapsed.current = CINEMATIC_DURATION_MS;
+    startedAt.current = null;
+    setManual(true);
+    setBeat(target);
+  }, []);
 
   return useMemo(
     () => ({
       beat,
-      /** The illustrative sequence is finished (or was never animated). */
-      settled: beat === "settled",
+      /** The illustrative sequence is finished, was never animated, or is
+       *  being driven by hand - in every case autoplay is done. */
+      settled: beat === 'settled' || manual,
       reduce: !!reduce,
+      /** Someone took the controls. */
+      manual,
+      select,
     }),
-    [beat, reduce],
+    [beat, manual, reduce, select],
   );
 }

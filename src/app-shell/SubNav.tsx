@@ -17,7 +17,7 @@ interface SubNavProps {
 }
 
 /**
- * Horizontal sub-navigation for an app-shell destination — a row of route
+ * Horizontal sub-navigation for an app-shell destination - a row of route
  * links styled as a segmented/underline tab strip. Each item is a ≥44px
  * target with a focus-visible ring, an `aria-current` + underline-bar active
  * affordance (never color alone), and roving arrow-key operability. Scrolls

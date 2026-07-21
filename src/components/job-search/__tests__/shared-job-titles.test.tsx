@@ -1,0 +1,319 @@
+/**
+ * The shared job-title set (`useJobTitles`) is ONE source of truth for the
+ * Career-portal panels (all three variants) and the Opportunities feed.
+ *
+ * These tests cover the contract that used to be four independent stores:
+ *  - editing titles in one surface is visible in the other, with no reload
+ *  - a saved, user-edited set is never clobbered by a later resume fetch
+ *  - the 40-title cap and the thin-resume (< 4) auto-suggest path survive
+ *  - the resume seed + LLM synth fire ONCE even when both surfaces mount
+ *  - the titles are actually rendered on the Opportunities screen
+ *
+ * Only `apiService` is mocked; the store, hooks, providers and panels run real.
+ */
+import { render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
+import { beforeEach, describe, expect, test, vi, type Mock } from 'vitest';
+
+import { apiService } from '@/lib/api';
+import { resetJobTitlesStore } from '@/hooks/useJobTitles';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { CombinedJobsProvider } from '@/components/job-search/CombinedJobsProvider';
+import { CombinedJobsPanel } from '@/components/job-search/CombinedJobsPanel';
+import { WorkdayJobsPanel } from '@/components/job-search/WorkdayJobsPanel';
+import JobOpportunitiesTab from '@/components/resume/JobOpportunitiesTab';
+
+vi.mock('@/lib/api', () => ({
+  companyLogoSrc: (logoUrl?: string | null) => logoUrl ?? null,
+  apiService: {
+  getResume: vi.fn(),
+  suggestPipelineFilters: vi.fn(),
+  searchWorkdayJobs: vi.fn(),
+  searchCareerPagesJobs: vi.fn(),
+  searchMncJobs: vi.fn(),
+  getWorkdayCatalog: vi.fn(),
+  getCareerPagesCatalog: vi.fn(),
+  getMncCatalog: vi.fn(),
+  getSavedJobs: vi.fn(),
+  getJobFilters: vi.fn(),
+  },
+}));
+
+const api = apiService as unknown as Record<string, Mock>;
+
+const SHARED_CACHE_KEY = 'combined_jobs_prefs_v1';
+const RESUME_TITLES = [
+  'Backend Engineer',
+  'Data Engineer',
+  'Platform Engineer',
+  'Site Reliability Engineer',
+];
+
+/** A full (empty) scan payload - the Careers panel renders every field. */
+function okScan() {
+  return {
+  data: {
+  ok: true,
+  generated_at: '',
+  jobs: [],
+  total: 0,
+  window_counts: { today: 0, d1: 0, d3: 0, d7: 0, d30: 0 },
+  query_terms: [],
+  tenants_done: 0,
+  tenants_total: 0,
+  tenants_with_results: 0,
+  industries_available: [],
+  cache_hit: false,
+  errors: [],
+  },
+  status: 200,
+  };
+}
+
+const SEARCH_FNS = ['searchWorkdayJobs', 'searchCareerPagesJobs', 'searchMncJobs'] as const;
+const CATALOG_FNS = ['getWorkdayCatalog', 'getCareerPagesCatalog', 'getMncCatalog'] as const;
+
+const JOB_PROPS = {
+  isJobSaved: () => false,
+  getJobStatus: () => null,
+  saveJob: vi.fn(),
+  unsaveJob: vi.fn(),
+  quickApply: vi.fn(),
+};
+
+/** Opportunities (combined feed) and Careers (a Workday variant), side by side
+ *  in one tree - the exact situation where the four stores used to diverge. */
+function renderBothSurfaces() {
+  return render(
+  <MemoryRouter>
+  <TooltipProvider>
+  <CombinedJobsProvider>
+  <div data-testid="opportunities">
+  <CombinedJobsPanel {...JOB_PROPS} />
+  </div>
+  <div data-testid="careers">
+  <WorkdayJobsPanel {...JOB_PROPS} variant="workday" />
+  </div>
+  </CombinedJobsProvider>
+  </TooltipProvider>
+  </MemoryRouter>,
+  );
+}
+
+function renderOpportunitiesScreen() {
+  return render(
+  <MemoryRouter>
+  <TooltipProvider>
+  <CombinedJobsProvider>
+  <JobOpportunitiesTab embedded />
+  </CombinedJobsProvider>
+  </TooltipProvider>
+  </MemoryRouter>,
+  );
+}
+
+const surface = (testId: string) => within(screen.getByTestId(testId));
+
+async function openCustomize(
+  user: ReturnType<typeof userEvent.setup>,
+  testId: string,
+) {
+  await user.click(surface(testId).getByRole('button', { name: 'Customize' }));
+}
+
+function titlesInput(testId: string) {
+  return surface(testId).getByPlaceholderText(/e\.g\. Backend Engineer/);
+}
+
+function cachedTitles(): string[] {
+  return JSON.parse(localStorage.getItem(SHARED_CACHE_KEY) ?? '{}').titles ?? [];
+}
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  localStorage.clear();
+  resetJobTitlesStore();
+  api.getResume.mockResolvedValue({
+  data: { resume: { job_titles: RESUME_TITLES } },
+  status: 200,
+  });
+  api.suggestPipelineFilters.mockResolvedValue({
+  data: { suggestions: { workday_titles: [] } },
+  status: 200,
+  });
+  for (const fn of SEARCH_FNS) api[fn].mockResolvedValue(okScan());
+  for (const fn of CATALOG_FNS) {
+  api[fn].mockResolvedValue({ data: { total: 0, industries: [] }, status: 200 });
+  }
+  api.getSavedJobs.mockResolvedValue({ data: { jobs: [] }, status: 200 });
+  api.getJobFilters.mockResolvedValue({ data: { filters: null }, status: 200 });
+});
+
+describe('shared job titles', () => {
+  test('1. a title added in Opportunities appears in Careers with no reload', async () => {
+  const user = userEvent.setup();
+  renderBothSurfaces();
+
+  await openCustomize(user, 'opportunities');
+  await openCustomize(user, 'careers');
+  await surface('careers').findByLabelText('Remove Backend Engineer');
+
+  await user.type(titlesInput('opportunities'), 'Machine Learning Engineer{Enter}');
+
+  // Same tree, no remount, no reload: the Careers panel sees it immediately.
+  expect(
+  await surface('careers').findByLabelText('Remove Machine Learning Engineer'),
+  ).toBeInTheDocument();
+  });
+
+  test('2. a title removed in Careers disappears from Opportunities with no reload', async () => {
+  const user = userEvent.setup();
+  renderBothSurfaces();
+
+  await openCustomize(user, 'opportunities');
+  await openCustomize(user, 'careers');
+  await surface('opportunities').findByLabelText('Remove Data Engineer');
+
+  await user.click(surface('careers').getByLabelText('Remove Data Engineer'));
+
+  await waitFor(() =>
+  expect(
+  surface('opportunities').queryByLabelText('Remove Data Engineer'),
+  ).not.toBeInTheDocument(),
+  );
+  });
+
+  test('3. both surfaces mounting fires the resume seed and the synth once', async () => {
+  api.getResume.mockResolvedValue({
+  data: { resume: { job_titles: ['Backend Engineer'] } }, // thin: triggers synth
+  status: 200,
+  });
+  api.suggestPipelineFilters.mockResolvedValue({
+  data: { suggestions: { workday_titles: ['Platform Engineer'] } },
+  status: 200,
+  });
+
+  renderBothSurfaces();
+
+  await waitFor(() => expect(api.suggestPipelineFilters).toHaveBeenCalledTimes(1));
+  // Previously each of the four stores fetched the resume on its own mount.
+  expect(api.getResume).toHaveBeenCalledTimes(1);
+  });
+
+  test('4. a saved user-edited set is not clobbered by a later resume fetch', async () => {
+  const user = userEvent.setup();
+  const first = renderBothSurfaces();
+
+  await openCustomize(user, 'careers');
+  await surface('careers').findByLabelText('Remove Backend Engineer');
+  await user.type(titlesInput('careers'), 'Custom Role X{Enter}');
+  await waitFor(() => expect(cachedTitles()).toContain('Custom Role X'));
+
+  first.unmount();
+  resetJobTitlesStore(); // fresh session, saved set still on disk
+
+  // The resume now claims something completely different: saved must win.
+  api.getResume.mockResolvedValue({
+  data: { resume: { job_titles: ['Completely Different'] } },
+  status: 200,
+  });
+  renderBothSurfaces();
+
+  await openCustomize(user, 'opportunities');
+  expect(
+  await surface('opportunities').findByLabelText('Remove Custom Role X'),
+  ).toBeInTheDocument();
+  expect(
+  surface('opportunities').getByLabelText('Remove Backend Engineer'),
+  ).toBeInTheDocument();
+  expect(
+  surface('opportunities').queryByLabelText('Remove Completely Different'),
+  ).not.toBeInTheDocument();
+  });
+
+  test('5. the 40-title cap holds across surfaces (39 + paste 3 => exactly 40)', async () => {
+  const seed = Array.from({ length: 39 }, (_, i) => `Seed Title ${i + 1}`);
+  localStorage.setItem(SHARED_CACHE_KEY, JSON.stringify({ titles: seed }));
+
+  const user = userEvent.setup();
+  renderBothSurfaces();
+
+  await openCustomize(user, 'careers');
+  await surface('careers').findByLabelText('Remove Seed Title 1');
+
+  await user.click(titlesInput('careers'));
+  await user.paste('Extra One, Extra Two, Extra Three');
+
+  expect(await surface('careers').findByLabelText('Remove Extra One')).toBeInTheDocument();
+  expect(surface('careers').queryByLabelText('Remove Extra Two')).not.toBeInTheDocument();
+  expect(surface('careers').getByText('40 / 40')).toBeInTheDocument();
+
+  // And the cap is the shared set, not a per-panel one.
+  await openCustomize(user, 'opportunities');
+  expect(await surface('opportunities').findByText('40 / 40')).toBeInTheDocument();
+  });
+
+  test('6. a thin resume (< 4 titles) auto-suggests once and merges deduped', async () => {
+  api.getResume.mockResolvedValue({
+  data: { resume: { job_titles: ['Backend Engineer'] } },
+  status: 200,
+  });
+  api.suggestPipelineFilters.mockResolvedValue({
+  data: {
+  suggestions: {
+  workday_titles: ['Platform Engineer', 'backend engineer', 'Data Engineer'],
+  },
+  },
+  status: 200,
+  });
+
+  const user = userEvent.setup();
+  renderBothSurfaces();
+
+  await waitFor(() => expect(api.suggestPipelineFilters).toHaveBeenCalledTimes(1));
+  await openCustomize(user, 'careers');
+
+  const careers = surface('careers');
+  expect(await careers.findByLabelText('Remove Backend Engineer')).toBeInTheDocument();
+  expect(await careers.findByLabelText('Remove Platform Engineer')).toBeInTheDocument();
+  expect(await careers.findByLabelText('Remove Data Engineer')).toBeInTheDocument();
+  // Case-insensitive merge: the duplicate suggestion never becomes a chip.
+  expect(careers.queryByLabelText('Remove backend engineer')).not.toBeInTheDocument();
+  });
+
+  test('7. a resume with 4+ titles does NOT auto-suggest', async () => {
+  renderBothSurfaces();
+
+  await screen.findAllByText(/Searching roles:/);
+  expect(api.suggestPipelineFilters).not.toHaveBeenCalled();
+  });
+
+  test('8. the Opportunities screen renders the shared job titles', async () => {
+  renderOpportunitiesScreen();
+
+  const panel = await screen.findByRole('region', { name: 'Your job titles' });
+  for (const title of RESUME_TITLES) {
+  expect(await within(panel).findByText(title)).toBeInTheDocument();
+  }
+  expect(within(panel).getByText(/shared with Career portals/)).toBeInTheDocument();
+  });
+
+  test('9. Opportunities "Edit titles" opens the shared editor, not a second list', async () => {
+  const user = userEvent.setup();
+  renderOpportunitiesScreen();
+
+  const panel = await screen.findByRole('region', { name: 'Your job titles' });
+  await user.click(within(panel).getByRole('button', { name: 'Edit titles' }));
+
+  // One editor, seeded from the shared set.
+  expect(await screen.findByLabelText('Remove Backend Engineer')).toBeInTheDocument();
+  await user.type(
+  screen.getByPlaceholderText(/e\.g\. Backend Engineer/),
+  'Staff Engineer{Enter}',
+  );
+
+  // The readout above reflects the same state instantly.
+  expect(await within(panel).findByText('Staff Engineer')).toBeInTheDocument();
+  });
+});

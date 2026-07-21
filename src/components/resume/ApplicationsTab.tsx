@@ -63,7 +63,7 @@ function daysUntil(iso?: string | null): number | null {
 }
 function relDate(iso?: string | null): string {
   const d = daysUntil(iso);
-  if (d === null) return "—";
+  if (d === null) return " - ";
   if (d < 0) return `${Math.abs(d)}d overdue`;
   if (d === 0) return "Today";
   if (d === 1) return "Tomorrow";
@@ -76,7 +76,7 @@ function initials(name?: string): string {
   return name.split(/\s+/).slice(0, 2).map(w => w[0]).join("").toUpperCase();
 }
 
-/** Calm token-driven avatar chip for company initials — one accent, not a
+/** Calm token-driven avatar chip for company initials - one accent, not a
  *  per-company rainbow, so cards inherit the workspace's single-accent rule. */
 const avatarCls = "bg-primary/10 text-primary";
 
@@ -135,7 +135,7 @@ export default function ApplicationsTab({ embedded = false }: ApplicationsTabPro
 
   // Silent mode: post-action refreshes (e.g. applying a Gmail suggestion)
   // re-fetch in place without toggling the page-wide skeleton, so the user
-  // doesn't see a 1–2s blank flash. Only the very first load shows the
+  // doesn't see a 1-2s blank flash. Only the very first load shows the
   // skeleton.
   const fetch = useCallback(async ({ silent = false }: { silent?: boolean } = {}) => {
     if (!silent) {
@@ -144,7 +144,7 @@ export default function ApplicationsTab({ embedded = false }: ApplicationsTabPro
       setLoadError(null);
     }
 
-    // Records are the only thing the kanban needs to render — fire it first
+    // Records are the only thing the kanban needs to render - fire it first
     // and clear the page-level loading flag the moment it resolves.
     const recordsPromise = apiService.listTailoringRecords().then((resp) => {
       if (resp.error) {
@@ -160,7 +160,7 @@ export default function ApplicationsTab({ embedded = false }: ApplicationsTabPro
       if (!silent) setLoading(false);
     });
 
-    // Funnel + stale-apps are auxiliary panels — let them resolve in the
+    // Funnel + stale-apps are auxiliary panels - let them resolve in the
     // background; kanban is already visible.
     const auxPromise = Promise.all([
       apiService.getFunnelAnalytics(),
@@ -190,7 +190,7 @@ export default function ApplicationsTab({ embedded = false }: ApplicationsTabPro
 
   // Refresh the funnel counts after a status change so the column counts
   // (from local `grouped`) and the summary chips (from server `funnel`)
-  // stay in lockstep. Cheap fire-and-forget — no toast on failure.
+  // stay in lockstep. Cheap fire-and-forget - no toast on failure.
   const refreshFunnel = useCallback(async () => {
     try {
       const r = await apiService.getFunnelAnalytics();
@@ -217,7 +217,7 @@ export default function ApplicationsTab({ embedded = false }: ApplicationsTabPro
     }
   }, [updateRecord, refreshFunnel]);
 
-  // Drag & drop handlers — optimistic update, then persist via the
+  // Drag & drop handlers - optimistic update, then persist via the
   // existing updateApplication endpoint. Rollback on failure.
   const handleDrop = useCallback(async (status: ApplicationStatus) => {
     const id = draggingId;
@@ -327,7 +327,7 @@ export default function ApplicationsTab({ embedded = false }: ApplicationsTabPro
   if (loading) {
     return (
       <div className="space-y-4">
-        {/* Active loading indicator — spinner + descriptive text so users
+        {/* Active loading indicator - spinner + descriptive text so users
             understand the tab is working rather than frozen. */}
         <div className="flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/[0.05] px-4 py-3">
           <span
@@ -336,11 +336,11 @@ export default function ApplicationsTab({ embedded = false }: ApplicationsTabPro
             aria-label="Loading"
           />
           <div className="min-w-0">
-            <p className="text-xs font-semibold text-foreground">Loading your applications…</p>
+            <p className="text-xs font-semibold text-foreground">Loading your applications...</p>
             <p className="text-[11px] text-muted-foreground">Pulling tailored records, funnel analytics, and follow-up nudges.</p>
           </div>
         </div>
-        {/* Skeleton placeholders — sized to roughly match the real layout so
+        {/* Skeleton placeholders - sized to roughly match the real layout so
             the layout doesn't jump when the data arrives. */}
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
           {Array.from({ length: 5 }).map((_, i) => (
@@ -359,7 +359,7 @@ export default function ApplicationsTab({ embedded = false }: ApplicationsTabPro
     );
   }
   if (loadError && records.length === 0) {
-    // API failure — never masquerade as an empty pipeline.
+    // API failure - never masquerade as an empty pipeline.
     return (
       <PanelError
         title="Couldn't load your applications"
@@ -388,7 +388,7 @@ export default function ApplicationsTab({ embedded = false }: ApplicationsTabPro
 
   return (
     <div className="space-y-5">
-      {/* Header — the hero title is suppressed when the app shell already
+      {/* Header - the hero title is suppressed when the app shell already
           renders the page h1/SubNav (embedded), leaving only the controls. */}
       <div className={`flex items-start gap-3 flex-wrap ${embedded ? "justify-end" : "justify-between"}`}>
         {!embedded && (
@@ -406,7 +406,7 @@ export default function ApplicationsTab({ embedded = false }: ApplicationsTabPro
             <Input
               value={search}
               onChange={e => setSearch(e.target.value)}
-              placeholder="Search role, company, recruiter…"
+              placeholder="Search role, company, recruiter..."
               aria-label="Search applications"
               className="h-11 w-[min(280px,72vw)] bg-card pl-9"
             />
@@ -454,7 +454,7 @@ export default function ApplicationsTab({ embedded = false }: ApplicationsTabPro
         <Metric label="Offers" value={metrics.offers} accent="bg-success" />
         <Metric
           label="Response rate"
-          value={metrics.respRate !== null ? `${metrics.respRate}%` : "—"}
+          value={metrics.respRate !== null ? `${metrics.respRate}%` : " - "}
           accent="bg-muted-foreground/50"
         />
       </div>
@@ -462,7 +462,7 @@ export default function ApplicationsTab({ embedded = false }: ApplicationsTabPro
       {funnelLoading && !funnel && (
         <div className="flex items-center gap-2 rounded-2xl border border-primary/15 bg-primary/[0.03] px-3 py-2 text-[11px] text-primary">
           <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-primary border-t-transparent" aria-hidden />
-          <span>Crunching funnel intelligence and stale-application nudges…</span>
+          <span>Crunching funnel intelligence and stale-application nudges...</span>
         </div>
       )}
 
@@ -552,7 +552,7 @@ export default function ApplicationsTab({ embedded = false }: ApplicationsTabPro
                       onClick={async () => {
                         const r = await apiService.dismissIntelligenceFollowup(s.record_id);
                         if (r.error) { toast.error(r.error); return; }
-                        // Optimistic local removal — server will already not return it next time.
+                        // Optimistic local removal - server will already not return it next time.
                         setStaleApps(prev => prev.filter(x => x.record_id !== s.record_id));
                         setFollowups(prev => {
                           const next = { ...prev };
@@ -726,8 +726,8 @@ export default function ApplicationsTab({ embedded = false }: ApplicationsTabPro
                           {initials(co) || initials(r.jd_analysis?.job_title)}
                         </div>
                         <div className="min-w-0">
-                          <p className="text-[12px] font-medium text-foreground truncate">{r.jd_analysis?.job_title || "—"}</p>
-                          <p className="text-[10px] text-muted-foreground truncate">{co || "—"}</p>
+                          <p className="text-[12px] font-medium text-foreground truncate">{r.jd_analysis?.job_title || " - "}</p>
+                          <p className="text-[10px] text-muted-foreground truncate">{co || " - "}</p>
                         </div>
                       </div>
                     </td>
@@ -741,24 +741,24 @@ export default function ApplicationsTab({ embedded = false }: ApplicationsTabPro
                         {COLUMNS.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
                       </select>
                     </td>
-                    <td className="px-3 py-2.5 text-muted-foreground text-[11px]">{r.application?.applied_at ? formatDate(r.application.applied_at) : "—"}</td>
+                    <td className="px-3 py-2.5 text-muted-foreground text-[11px]">{r.application?.applied_at ? formatDate(r.application.applied_at) : " - "}</td>
                     <td className="px-3 py-2.5 text-[11px]">
                       {r.application?.next_action_date ? (
                         <span className={`${d! < 0 ? "text-destructive font-semibold" : d !== null && d <= 2 ? "text-warning font-semibold" : "text-muted-foreground"}`}>
                           {relDate(r.application.next_action_date)}
                           {r.application.next_action_note && <span className="text-muted-foreground"> · {r.application.next_action_note}</span>}
                         </span>
-                      ) : "—"}
+                      ) : " - "}
                     </td>
                     <td className="px-3 py-2.5 text-muted-foreground text-[11px] truncate max-w-[160px]">
-                      {r.application?.recruiter_name || "—"}
+                      {r.application?.recruiter_name || " - "}
                     </td>
                     <td className="px-3 py-2.5 text-[11px]">
                       {ats !== undefined ? (
                         <span className={`tabular-nums font-semibold ${ats >= 80 ? "text-success" : ats >= 60 ? "text-warning" : "text-destructive"}`}>
                           {ats}
                         </span>
-                      ) : "—"}
+                      ) : " - "}
                     </td>
                   </tr>
                 );
@@ -892,7 +892,7 @@ function ApplicationCard({
                       className="text-[10px] px-2 py-0.5 rounded text-muted-foreground hover:text-foreground">Cancel</button>
               <button onClick={save} disabled={saving}
                       className="text-[10px] px-2.5 py-0.5 rounded bg-primary hover:bg-primary/90 text-primary-foreground font-medium disabled:opacity-50 shadow-soft">
-                {saving ? "Saving…" : "Save"}
+                {saving ? "Saving..." : "Save"}
               </button>
             </div>
           </div>

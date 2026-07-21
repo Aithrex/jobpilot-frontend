@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils';
 
 /**
  * The auth stage's Signal Atlas: the same night-sky visual world as the
- * landing, reduced to one story — a signal travelling from the person's
+ * landing, reduced to one story - a signal travelling from the person's
  * document (origin) into their secured workspace (destination ring). It
  * REACTS to the real form:
  *
@@ -16,8 +16,8 @@ import { cn } from '@/lib/utils';
  *   phase 'error'                    → the path dims; a marker blinks once
  *
  * Decorative by contract (`aria-hidden` on the svg; hosts also hide the
- * containers) — every state is equally conveyed by the form's own text.
- * Static resolved compositions under reduced motion. Pure SVG — no WebGL.
+ * containers) - every state is equally conveyed by the form's own text.
+ * Static resolved compositions under reduced motion. Pure SVG - no WebGL.
  */
 
 export type AuthZone = 'idle' | 'origin' | 'secure' | 'social' | 'submit';
@@ -227,7 +227,7 @@ export function AuthAtlas({ zone, phase, reduce, variant = 'panel', className }:
           />
         )}
 
-        {/* Error marker: the signal stops mid-path — no shaking anywhere. */}
+        {/* Error marker: the signal stops mid-path - no shaking anywhere. */}
         {failed && (
           <motion.g initial={false} animate={{ opacity: 1 }}>
             <circle cx={MID.x} cy={MID.y} r={12} fill="hsl(var(--destructive) / 0.18)" />

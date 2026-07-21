@@ -39,7 +39,7 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
             }}
             {...props}
           />
-          {/* Keyboard-reachable by design — never tabIndex={-1}: sighted
+          {/* Keyboard-reachable by design - never tabIndex={-1}: sighted
               keyboard users need the same reveal affordance pointer users get. */}
           <button
             type="button"

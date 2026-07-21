@@ -10,7 +10,7 @@ const DOT: Record<string, string> = {
   missing: 'bg-destructive',
 };
 
-/** LinkedIn brand blue — intentional brand literal for the mark only; chrome stays tokenized. */
+/** LinkedIn brand blue - intentional brand literal for the mark only; chrome stays tokenized. */
 const LINKEDIN_ICON = 'text-[#0a66c2]';
 
 interface LinkedInAuditCardProps {
@@ -19,8 +19,8 @@ interface LinkedInAuditCardProps {
 }
 
 /**
- * LinkedIn self-audit. We don't (and can't) scrape LinkedIn — this builds honest,
- * specific guidance from the user's real résumé + goal, plus a paste-ready headline
+ * LinkedIn self-audit. We don't (and can't) scrape LinkedIn - this builds honest,
+ * specific guidance from the user's real resume + goal, plus a paste-ready headline
  * and About. Helps a student present as a legitimate, well-positioned candidate.
  *
  * The footer adds an optional OAuth "connect & act" capability: once connected,
@@ -70,7 +70,9 @@ export function LinkedInAuditCard({ connect, reloadConnect }: LinkedInAuditCardP
         {audit.headline && (
           <div className="mb-2 rounded-lg border border-border/60 bg-muted/20 p-2.5">
             <div className="mb-1 flex items-center justify-between">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Suggested headline</span>
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Suggested headline
+              </span>
               <button
                 onClick={() => copy(audit.headline, 'h')}
                 aria-label={copied === 'h' ? 'Headline copied' : 'Copy suggested headline'}
@@ -86,7 +88,9 @@ export function LinkedInAuditCard({ connect, reloadConnect }: LinkedInAuditCardP
         <div className="space-y-1.5">
           {audit.sections.map((s, i) => (
             <div key={i} className="flex items-start gap-2 text-xs">
-              <span className={`mt-1 h-2 w-2 shrink-0 rounded-full ${DOT[s.status] || 'bg-muted-foreground'}`} />
+              <span
+                className={`mt-1 h-2 w-2 shrink-0 rounded-full ${DOT[s.status] || 'bg-muted-foreground'}`}
+              />
               <span>
                 <span className="font-medium">{s.name}:</span>{' '}
                 <span className="text-muted-foreground">{s.tip}</span>
@@ -100,7 +104,8 @@ export function LinkedInAuditCard({ connect, reloadConnect }: LinkedInAuditCardP
             onClick={() => copy(audit.about, 'a')}
             className="mt-3 inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline"
           >
-            {copied === 'a' ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />} Copy suggested “About”
+            {copied === 'a' ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />} Copy
+            suggested "About"
           </button>
         )}
 
@@ -115,7 +120,8 @@ export function LinkedInAuditCard({ connect, reloadConnect }: LinkedInAuditCardP
         <Linkedin className={`h-4 w-4 ${LINKEDIN_ICON}`} /> Polish your LinkedIn
       </div>
       <p className="mb-3 text-xs leading-relaxed text-muted-foreground">
-        Get a personalized audit + a ready-to-paste headline and About, built from your resume and goal.
+        Get a personalized audit + a ready-to-paste headline and About, built from your resume and
+        goal.
       </p>
       <div className="mt-auto flex gap-2">
         <input
@@ -131,7 +137,13 @@ export function LinkedInAuditCard({ connect, reloadConnect }: LinkedInAuditCardP
           disabled={busy}
           className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
         >
-          {busy ? 'Auditing…' : <>Audit <ArrowRight className="h-3.5 w-3.5" /></>}
+          {busy ? (
+            'Auditing...'
+          ) : (
+            <>
+              Audit <ArrowRight className="h-3.5 w-3.5" />
+            </>
+          )}
         </button>
       </div>
 
@@ -141,11 +153,17 @@ export function LinkedInAuditCard({ connect, reloadConnect }: LinkedInAuditCardP
 }
 
 /**
- * "Connect & act" footer — OAuth LinkedIn so the user can post an update.
+ * "Connect & act" footer - OAuth LinkedIn so the user can post an update.
  * The user always writes/reviews the text before posting (human-approved).
  */
-function LinkedInConnect({ connect, reloadConnect, prefill }: {
-  connect?: ConnectStatus | null; reloadConnect?: () => void; prefill?: string;
+function LinkedInConnect({
+  connect,
+  reloadConnect,
+  prefill,
+}: {
+  connect?: ConnectStatus | null;
+  reloadConnect?: () => void;
+  prefill?: string;
 }) {
   const li = connect?.linkedin;
   const [connecting, setConnecting] = useState(false);
@@ -182,7 +200,10 @@ function LinkedInConnect({ connect, reloadConnect, prefill }: {
       if (r.data && !r.error) {
         if (r.data.post_url) {
           toast.success('Posted to LinkedIn', {
-            action: { label: 'View', onClick: () => window.open(r.data!.post_url!, '_blank', 'noopener,noreferrer') },
+            action: {
+              label: 'View',
+              onClick: () => window.open(r.data!.post_url!, '_blank', 'noopener,noreferrer'),
+            },
           });
         } else {
           toast.success('Posted to LinkedIn');
@@ -224,7 +245,8 @@ function LinkedInConnect({ connect, reloadConnect, prefill }: {
           disabled={connecting}
           className="inline-flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground hover:text-foreground disabled:opacity-50"
         >
-          <Linkedin className={`h-3.5 w-3.5 ${LINKEDIN_ICON}`} /> {connecting ? 'Connecting…' : 'Connect LinkedIn to post'}
+          <Linkedin className={`h-3.5 w-3.5 ${LINKEDIN_ICON}`} />{' '}
+          {connecting ? 'Connecting...' : 'Connect LinkedIn to post'}
         </button>
       </div>
     );
@@ -234,20 +256,24 @@ function LinkedInConnect({ connect, reloadConnect, prefill }: {
     <div className="mt-3 border-t border-border pt-3">
       <div className="flex items-center gap-2">
         <span className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
-          <Linkedin className={`h-3.5 w-3.5 ${LINKEDIN_ICON}`} /> Connected{li.name ? ` as ${li.name}` : ''}
+          <Linkedin className={`h-3.5 w-3.5 ${LINKEDIN_ICON}`} /> Connected
+          {li.name ? ` as ${li.name}` : ''}
         </span>
         <button
           onClick={disconnect}
           disabled={disconnecting}
           className="ml-auto text-[11px] font-medium text-muted-foreground hover:text-destructive disabled:opacity-50"
         >
-          {disconnecting ? 'Disconnecting…' : 'Disconnect'}
+          {disconnecting ? 'Disconnecting...' : 'Disconnect'}
         </button>
       </div>
 
       {!open ? (
         <button
-          onClick={() => { setText(prefill || ''); setOpen(true); }}
+          onClick={() => {
+            setText(prefill || '');
+            setOpen(true);
+          }}
           className="mt-2 inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
         >
           <Send className="h-3.5 w-3.5" /> Post to LinkedIn
@@ -258,7 +284,7 @@ function LinkedInConnect({ connect, reloadConnect, prefill }: {
             value={text}
             onChange={(e) => setText(e.target.value)}
             rows={4}
-            placeholder="Write your post… you review it before it goes live."
+            placeholder="Write your post... you review it before it goes live."
             className="w-full resize-y rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
           />
           <div className="flex items-center gap-2">
@@ -267,7 +293,13 @@ function LinkedInConnect({ connect, reloadConnect, prefill }: {
               disabled={posting || !text.trim()}
               className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
             >
-              {posting ? 'Posting…' : <>Post <Send className="h-3.5 w-3.5" /></>}
+              {posting ? (
+                'Posting...'
+              ) : (
+                <>
+                  Post <Send className="h-3.5 w-3.5" />
+                </>
+              )}
             </button>
             <button
               onClick={() => setOpen(false)}

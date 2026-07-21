@@ -3,7 +3,7 @@ import { apiService } from '@/lib/api';
 import type { Job, SavedJob, JobSearchFilters, JobSearchOptions, BatchSearchResponse, VisaFlags, VisaFilters } from '@/types/jobs';
 
 /**
- * Client-side visa pre-filter — lets a toggle re-shape the visible list
+ * Client-side visa pre-filter - lets a toggle re-shape the visible list
  * instantly, before the authoritative backend refetch lands. Lenient by
  * design: it only removes jobs whose flags DEFINITIVELY contradict a toggle
  * (explicit false / clearance true), so unknown/older payloads stay visible.

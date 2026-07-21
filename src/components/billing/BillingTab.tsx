@@ -40,8 +40,8 @@ export default function BillingTab() {
   const upgradeTo = nextPlan(plan);
 
   return (
-    // No self-container (mx-auto/p-4): both mounts — /next settings and the
-    // classic workspace — already pad and align their content; centering here
+    // No self-container (mx-auto/p-4): both mounts - /next settings and the
+    // classic workspace - already pad and align their content; centering here
     // broke the settings panels' shared left alignment.
     <div className="max-w-3xl space-y-6">
       {/* Current plan */}

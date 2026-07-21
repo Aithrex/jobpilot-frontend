@@ -1,5 +1,5 @@
 /**
- * JdInputPanel — the Job Description inspector tab body.
+ * JdInputPanel - the Job Description inspector tab body.
  *
  * Presentational: a shadcn Textarea (10k cap + char counter), Paste / Clear /
  * Retry-fetch / Open-posting affordances, the extracted-requirements chips
@@ -47,7 +47,7 @@ export function JdInputPanel({
       const t = await navigator.clipboard.readText();
       if (t) onJdTextChange(t.slice(0, 10000));
     } catch {
-      // Clipboard access denied — orchestrator surfaces toasts; stay silent here.
+      // Clipboard access denied - orchestrator surfaces toasts; stay silent here.
     }
   };
 
@@ -84,7 +84,7 @@ export function JdInputPanel({
               ) : (
                 <RotateCw className="w-3.5 h-3.5" aria-hidden="true" />
               )}
-              {retryingJdFetch ? 'Fetching…' : 'Retry JD fetch'}
+              {retryingJdFetch ? 'Fetching...' : 'Retry JD fetch'}
             </Button>
           )}
           {pendingJobUrl && (
@@ -146,7 +146,7 @@ export function JdInputPanel({
         </span>
       </div>
 
-      {/* Extracted requirements preview — chips color-coded matched/missing. */}
+      {/* Extracted requirements preview - chips color-coded matched/missing. */}
       {result?.jd_analysis && (
         <RequirementsChips
           jdAnalysis={result.jd_analysis}
@@ -154,7 +154,7 @@ export function JdInputPanel({
         />
       )}
 
-      {/* Quota-exhausted banner — shown above the CTA so the reason is clear. */}
+      {/* Quota-exhausted banner - shown above the CTA so the reason is clear. */}
       {quotaBlocked && (
         <div className="mb-3 rounded-container border border-warning/40 bg-warning/10 px-4 py-3">
           <div className="flex items-start gap-3">
@@ -196,7 +196,7 @@ export function JdInputPanel({
         {disabled ? (
           <>
             <span className="animate-spin rounded-full h-4 w-4 border-2 border-current border-t-transparent" />
-            Tailoring…
+            Tailoring...
           </>
         ) : quotaBlocked ? (
           <>
