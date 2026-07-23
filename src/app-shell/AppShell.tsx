@@ -1,8 +1,7 @@
-import { Suspense, lazy, useCallback, useState } from "react";
+import { Suspense, lazy } from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { Sidebar } from "./Sidebar";
 import { TopBar } from "./TopBar";
 import { MobileNav } from "./MobileNav";
 import { CommandPalette } from "./CommandPalette";
@@ -13,8 +12,6 @@ import { CommandPalette } from "./CommandPalette";
 // No double-mount risk: /app mounts its own instance, but /app and /next/* are
 // mutually exclusive routes - exactly one instance can exist at a time.
 const OnboardingWizard = lazy(() => import("@/components/onboarding/OnboardingWizard"));
-
-const SIDEBAR_COLLAPSED_KEY = "appShellSidebarCollapsed";
 
 function FullScreenLoader() {
   return (
@@ -50,20 +47,6 @@ function OutletFallback() {
 export default function AppShell() {
   const { isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
-  const [collapsed, setCollapsed] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    return window.localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "true";
-  });
-
-  const toggleCollapsed = useCallback(() => {
-    setCollapsed((prev) => {
-      const next = !prev;
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(next));
-      }
-      return next;
-    });
-  }, []);
 
   if (isLoading) return <FullScreenLoader />;
   // Carry the attempted deep link so Login can bounce back after sign-in.
@@ -78,20 +61,16 @@ export default function AppShell() {
         Skip to content
       </a>
 
-      <div className="flex items-start">
-        <Sidebar collapsed={collapsed} onToggleCollapse={toggleCollapsed} />
+      <div className="flex min-h-screen min-w-0 flex-col">
+        <TopBar />
 
-        <div className="flex min-h-screen min-w-0 flex-1 flex-col">
-          <TopBar />
-
-          <main id="main-content" className="flex-1 pb-24 lg:pb-0">
-            <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
-              <Suspense fallback={<OutletFallback />}>
-                <Outlet />
-              </Suspense>
-            </div>
-          </main>
-        </div>
+        <main id="main-content" className="flex-1 overflow-x-hidden pb-24 lg:pb-0">
+          <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
+            <Suspense fallback={<OutletFallback />}>
+              <Outlet />
+            </Suspense>
+          </div>
+        </main>
       </div>
 
       <MobileNav />

@@ -188,7 +188,8 @@ function AppContent() {
                 </Suspense>
               }
             >
-              <Route index element={<Navigate to="today" replace />} />
+              {/* Roles-first: land on the job feed (Discover) after login. */}
+              <Route index element={<Navigate to="discover" replace />} />
               <Route path="today" element={<TodayPage />} />
               <Route path="applications" element={<ApplicationsTab embedded />} />
               <Route path="grow" element={<GrowPage />}>

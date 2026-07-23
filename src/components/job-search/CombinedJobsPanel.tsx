@@ -4,11 +4,13 @@ import {
   AlertCircle,
   Check,
   ChevronDown,
+  Globe,
   Loader2,
   MapPin,
   Radar,
   RefreshCw,
   Rocket,
+  RotateCcw,
   Search,
   ShieldAlert,
   SlidersHorizontal,
@@ -19,6 +21,13 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { ChipsInput } from '@/components/job-search/ChipsInput';
@@ -42,6 +51,24 @@ const SENIORITY_OPTIONS = [
 ] as const;
 
 const MIN_SCORE_OPTIONS = [0, 40, 60, 80] as const;
+
+// Sentinel for the state <Select>, since Radix Select items cannot use "".
+const ANY_STATE = '__any__';
+
+// All 50 states + DC, plus a "Remote" narrowing option. Values are the human
+// labels we send straight through as the location narrow, so the backend reads
+// them as-is (e.g. "Texas", "Remote").
+const US_STATES = [
+  'Remote',
+  'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut',
+  'Delaware', 'District of Columbia', 'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois',
+  'Indiana', 'Iowa', 'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland', 'Massachusetts',
+  'Michigan', 'Minnesota', 'Mississippi', 'Missouri', 'Montana', 'Nebraska', 'Nevada',
+  'New Hampshire', 'New Jersey', 'New Mexico', 'New York', 'North Carolina', 'North Dakota',
+  'Ohio', 'Oklahoma', 'Oregon', 'Pennsylvania', 'Rhode Island', 'South Carolina',
+  'South Dakota', 'Tennessee', 'Texas', 'Utah', 'Vermont', 'Virginia', 'Washington',
+  'West Virginia', 'Wisconsin', 'Wyoming',
+] as const;
 
 function formatAgo(ms: number): string {
   const s = Math.max(0, Math.round((Date.now() - ms) / 1000));
@@ -133,12 +160,20 @@ export function CombinedJobsPanel({
     secondsUntilNext,
     sync,
     ensureStarted,
+    usOnly,
+    setUsOnly,
+    usState,
+    setUsState,
+    city,
+    setCity,
     location,
     setLocation,
+    scanLocation,
     remoteOnly,
     setRemoteOnly,
     customizeOpen,
     setCustomizeOpen,
+    resetScope,
     search,
     setSearch,
     recency,
@@ -359,6 +394,24 @@ export function CombinedJobsPanel({
                   </span>
                 )}
               </span>
+              {/* Active scope summary - one glance at what's being scanned. */}
+              <span className="mt-1 flex flex-wrap items-center gap-1">
+                <span className="inline-flex items-center gap-1 rounded-full border border-primary/25 bg-primary/8 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+                  <Globe className="h-2.5 w-2.5" aria-hidden />
+                  {usOnly ? 'US only' : 'Global'}
+                </span>
+                {scanLocation && (
+                  <span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/40 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                    <MapPin className="h-2.5 w-2.5" aria-hidden />
+                    {scanLocation}
+                  </span>
+                )}
+                {remoteOnly && (
+                  <span className="inline-flex items-center rounded-full border border-border bg-muted/40 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                    Remote only
+                  </span>
+                )}
+              </span>
               {titlesPending && lastScanTitles && (
                 <span className="mt-0.5 flex items-center gap-1.5 text-[11px] font-medium text-warning">
                   <span
@@ -439,6 +492,18 @@ export function CombinedJobsPanel({
               className="relative overflow-hidden"
             >
               <div className="mt-4 space-y-4 rounded-xl border border-border/60 bg-background/40 p-4">
+                <div className="flex items-center gap-2">
+                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-primary/12 text-primary">
+                    <Search className="h-3.5 w-3.5" aria-hidden />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-foreground">Search scope</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      Sets what we scan across every source. Press Search to re-scan.
+                    </p>
+                  </div>
+                </div>
+
                 <div>
                   <p className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
                     <Search className="h-3.5 w-3.5" aria-hidden />
@@ -474,37 +539,116 @@ export function CombinedJobsPanel({
                   </Button>
                 </div>
 
-                <div className="flex flex-wrap items-end gap-4">
-                  <div className="min-w-[200px] flex-1">
-                    <label
-                      htmlFor="combined-location"
-                      className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground"
-                    >
-                      <MapPin className="h-3.5 w-3.5" aria-hidden /> Location
+                {/* Location group - US-only by default, with optional narrowing. */}
+                <div className="space-y-3">
+                  <div className="flex items-start justify-between gap-3 rounded-lg border border-border/60 bg-background/50 p-3">
+                    <label htmlFor="combined-us-only" className="min-w-0 cursor-pointer">
+                      <span className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                        <Globe className="h-3.5 w-3.5 text-primary" aria-hidden />
+                        United States only
+                      </span>
+                      <span className="mt-0.5 block text-[11px] leading-snug text-muted-foreground">
+                        {usOnly
+                          ? 'Keeping only clearly US-based and US-remote roles. Turn off to include other countries.'
+                          : 'Including roles from any country. Turn on to limit to the US.'}
+                      </span>
                     </label>
-                    <Input
-                      id="combined-location"
-                      value={location}
-                      onChange={(e) => setLocation(e.target.value)}
-                      placeholder="Anywhere in the US, e.g. Texas, Austin, Remote"
+                    <Switch
+                      id="combined-us-only"
+                      checked={usOnly}
+                      onCheckedChange={setUsOnly}
+                      className="mt-0.5 shrink-0"
                     />
                   </div>
-                  <label className="flex cursor-pointer items-center gap-2 pb-2 text-xs font-medium text-muted-foreground">
-                    <Switch checked={remoteOnly} onCheckedChange={setRemoteOnly} />
-                    Remote only
-                  </label>
-                  <Button
-                    onClick={() => sync(true)}
-                    disabled={loading || !canSearch}
-                    className="mb-0.5 gap-1.5"
-                  >
-                    {loading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Rocket className="h-4 w-4" />
-                    )}
-                    Apply titles and sync
-                  </Button>
+
+                  {usOnly ? (
+                    <div className="flex flex-wrap items-end gap-3">
+                      <div className="min-w-[180px] flex-1">
+                        <label
+                          htmlFor="combined-state"
+                          className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground"
+                        >
+                          <MapPin className="h-3.5 w-3.5" aria-hidden /> Narrow to a state (optional)
+                        </label>
+                        <Select
+                          value={usState || ANY_STATE}
+                          onValueChange={(v) => setUsState(v === ANY_STATE ? '' : v)}
+                        >
+                          <SelectTrigger id="combined-state" className="h-10">
+                            <SelectValue placeholder="All US states" />
+                          </SelectTrigger>
+                          <SelectContent className="max-h-72">
+                            <SelectItem value={ANY_STATE}>All US states</SelectItem>
+                            {US_STATES.map((s) => (
+                              <SelectItem key={s} value={s}>
+                                {s}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="min-w-[150px] flex-1">
+                        <label
+                          htmlFor="combined-city"
+                          className="mb-1.5 block text-xs font-semibold text-muted-foreground"
+                        >
+                          City (optional)
+                        </label>
+                        <Input
+                          id="combined-city"
+                          value={city}
+                          onChange={(e) => setCity(e.target.value)}
+                          placeholder="e.g. Austin"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <label
+                        htmlFor="combined-location"
+                        className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground"
+                      >
+                        <MapPin className="h-3.5 w-3.5" aria-hidden /> Location
+                      </label>
+                      <Input
+                        id="combined-location"
+                        value={location}
+                        onChange={(e) => setLocation(e.target.value)}
+                        placeholder="City, state, or country - e.g. London, Toronto, Remote"
+                      />
+                    </div>
+                  )}
+
+                  <div className="flex flex-wrap items-center gap-3">
+                    <label className="flex cursor-pointer items-center gap-2 text-xs font-medium text-muted-foreground">
+                      <Switch checked={remoteOnly} onCheckedChange={setRemoteOnly} />
+                      Remote only
+                    </label>
+                    <div className="ml-auto flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={resetScope}
+                        className="gap-1.5 text-muted-foreground"
+                      >
+                        <RotateCcw className="h-3.5 w-3.5" aria-hidden />
+                        Reset
+                      </Button>
+                      <Button
+                        onClick={() => sync(true)}
+                        disabled={loading || !canSearch}
+                        className="gap-1.5"
+                      >
+                        {loading ? (
+                          <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                        ) : (
+                          <Search className="h-4 w-4" aria-hidden />
+                        )}
+                        {loading ? 'Searching...' : 'Search'}
+                      </Button>
+                    </div>
+                  </div>
                 </div>
 
                 {!canSearch && (
@@ -522,6 +666,16 @@ export function CombinedJobsPanel({
       {/* ── Glass filter bar ── */}
       {hasResult && (
         <div className="glass-nav glass-nav-card sticky top-2 z-10 flex flex-wrap items-center gap-2 rounded-2xl border border-border/60 p-2.5 shadow-soft">
+          <span
+            className="flex basis-full items-center gap-1.5 px-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground"
+            title="These filter the roles already loaded - instantly, with no re-scan."
+          >
+            <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden />
+            Refine results
+            <span className="font-normal normal-case tracking-normal opacity-70">
+              instant, no re-scan
+            </span>
+          </span>
           <div className="relative min-w-[180px] flex-1 basis-full sm:basis-56">
             <Search
               className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"

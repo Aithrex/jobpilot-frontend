@@ -18,30 +18,44 @@ const AGENTS = [
  */
 export function MultiAgentProcessing({ active, done }: { active: boolean; done?: boolean }) {
   const [stage, setStage] = useState(0);
+  // Once the scripted agents finish but the real job is still running, we drop
+  // into a calm "still working" state instead of clamping on the last agent
+  // with a spinner (which reads as frozen).
+  const [overtime, setOvertime] = useState(false);
   const reduce = useReducedMotion();
 
   useEffect(() => {
     if (!active || done) return;
-    // Advance through agents, easing off near the end so we don't "finish"
-    // before the real job resolves.
     const id = setInterval(() => {
-      setStage((s) => (s < AGENTS.length - 1 ? s + 1 : s));
+      setStage((s) => {
+        if (s < AGENTS.length - 1) return s + 1;
+        // Reached the last scripted agent - resolve the checklist and hand off
+        // to the calm ongoing indicator.
+        setOvertime(true);
+        return s;
+      });
     }, 1900);
     return () => clearInterval(id);
   }, [active, done]);
+
+  // The checklist is "done" when the real job completes OR the scripted run
+  // has caught up (overtime) - either way every step should read as resolved.
+  const allDone = done || overtime;
 
   return (
     <div className="space-y-2.5">
       {/* Live region: screen readers hear the current agent as it advances. */}
       <div className="mb-1 text-center" role="status" aria-live="polite">
         <p className="text-sm font-semibold">Your AI team is reviewing your resume</p>
-        <p className="text-xs text-muted-foreground">This usually takes ~20 seconds.</p>
+        <p className="text-xs text-muted-foreground">
+          This can take up to a minute for detailed resumes.
+        </p>
         <p className="sr-only">
           {done ? 'Resume processed.' : `${AGENTS[Math.min(stage, AGENTS.length - 1)].label}...`}
         </p>
       </div>
       {AGENTS.map((a, i) => {
-        const state = done || i < stage ? 'done' : i === stage ? 'active' : 'pending';
+        const state = allDone || i < stage ? 'done' : i === stage ? 'active' : 'pending';
         const Icon = a.icon;
         return (
           <motion.div
@@ -74,6 +88,19 @@ export function MultiAgentProcessing({ active, done }: { active: boolean; done?:
           </motion.div>
         );
       })}
+
+      {/* Calm ongoing state: the scripted checklist is done but the real parse
+          is still running. Honest, unhurried, never "frozen". */}
+      {overtime && !done && (
+        <div
+          className="flex items-center justify-center gap-2 pt-1 text-sm text-muted-foreground"
+          role="status"
+          aria-live="polite"
+        >
+          <Loader2 className="h-4 w-4 animate-spin text-primary" />
+          Still working, almost there
+        </div>
+      )}
     </div>
   );
 }

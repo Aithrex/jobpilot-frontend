@@ -7,12 +7,20 @@ import { NAV_ITEMS, navHref } from "./nav.config";
 const ACTIVE_TAB_ID = "app-shell-mobilenav-active";
 
 /**
- * Bottom tab bar for small viewports (hidden ≥lg, where the Sidebar takes
- * over). A frosted glass bar (the canonical `.glass-nav` recipe) with
- * safe-area padding. Primary destinations only; Settings + account actions live
- * in the TopBar user menu. Each tab is a ≥44px target with a visible focus ring
- * and an `aria-current` active state marked by a framer-motion pill that slides
- * between tabs (honoring `prefers-reduced-motion`).
+ * The four roles-first destinations that fit a bottom tab bar: Roles, Tailor,
+ * Apply, Grow. Overview (the daily briefing) is the secondary destination and
+ * is reached from the desktop bar / command palette, keeping mobile uncluttered.
+ */
+const MOBILE_ITEMS = NAV_ITEMS.slice(0, 4);
+
+/**
+ * Bottom tab bar for small viewports (hidden >=lg, where the horizontal top
+ * nav takes over). A frosted glass bar (the canonical `.glass-nav` recipe)
+ * with safe-area padding. Primary destinations only; Settings + account
+ * actions live in the TopBar user menu. Each tab is a >=44px target with a
+ * visible focus ring and an `aria-current` active state marked by a
+ * framer-motion pill that slides between tabs (honoring
+ * `prefers-reduced-motion`).
  */
 export function MobileNav() {
   const reduceMotion = useReducedMotion();
@@ -23,7 +31,7 @@ export function MobileNav() {
       className="fixed inset-x-0 bottom-0 z-40 border-t border-border/70 glass-nav pb-[env(safe-area-inset-bottom)] shadow-pop lg:hidden"
     >
       <ul className="mx-auto flex max-w-md items-stretch justify-around px-1">
-        {NAV_ITEMS.map((item) => {
+        {MOBILE_ITEMS.map((item) => {
           const { icon: Icon, label } = item;
           return (
             <li key={item.to} className="flex-1">

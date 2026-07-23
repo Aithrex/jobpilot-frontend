@@ -4,7 +4,7 @@ import { Briefcase, Globe, Loader2 } from "lucide-react";
 import { SubNav, type SubNavItem } from "../SubNav";
 
 const DISCOVER_SECTIONS: SubNavItem[] = [
-  { to: "jobs", label: "Job Opportunities", icon: Briefcase },
+  { to: "jobs", label: "Roles for you", icon: Briefcase },
   { to: "portals", label: "Career Portals", icon: Globe },
 ];
 
@@ -29,12 +29,12 @@ export default function DiscoverPage() {
   return (
     <div className="flex flex-col gap-6">
       <header>
-        <p className="overline mb-1">Discover</p>
+        <p className="overline mb-1">Roles</p>
         <h1 className="text-title font-display text-foreground">
-          Find your next opportunity
+          Find your next role
         </h1>
         <p className="mt-1 text-caption text-muted-foreground">
-          Search roles and explore career portals.
+          Browse roles picked for you and explore career portals.
         </p>
       </header>
 

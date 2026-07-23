@@ -138,7 +138,10 @@ class ApiService {
     // with X-Guest-Id / X-Guest-Device-Token as the header fallback - so guest
     // calls need `credentials: "include"` or the cookie is never sent. Scoped
     // to guest calls ONLY: authed calls keep the default same-origin policy.
-    reqOpts?: { skipAuth?: boolean; guest?: GuestCapability },
+    // signal: an external cancellation (e.g. onboarding "Cancel"/close) that,
+    // when aborted, tears down the in-flight fetch too. Distinct from the
+    // internal timeout controller so we can tell "canceled" from "timed out".
+    reqOpts?: { skipAuth?: boolean; guest?: GuestCapability; signal?: AbortSignal },
   ): Promise<ApiResponse<T>> {
     const url = `${this.baseURL}${endpoint}`;
     const guest = reqOpts?.guest;
@@ -161,6 +164,14 @@ class ApiService {
       timeoutMs || ApiService.REQUEST_TIMEOUT_MS,
     );
 
+    // Forward an external cancellation into this fetch's controller.
+    const externalSignal = reqOpts?.signal;
+    const onExternalAbort = () => controller.abort();
+    if (externalSignal) {
+      if (externalSignal.aborted) controller.abort();
+      else externalSignal.addEventListener('abort', onExternalAbort);
+    }
+
     try {
       const response = await fetch(url, {
         ...options,
@@ -171,6 +182,7 @@ class ApiService {
       });
 
       clearTimeout(timeoutId);
+      externalSignal?.removeEventListener('abort', onExternalAbort);
 
       const data = await response.json().catch(() => ({}));
 
@@ -196,6 +208,12 @@ class ApiService {
       return { data, status: response.status };
     } catch (error) {
       clearTimeout(timeoutId);
+      externalSignal?.removeEventListener('abort', onExternalAbort);
+      // An external cancellation aborts the same controller, so disambiguate:
+      // canceled by the caller vs. our own timeout.
+      if (externalSignal?.aborted) {
+        return { error: 'Canceled' };
+      }
       if (error instanceof Error && error.name === 'AbortError') {
         return { error: 'Request timed out. Please try again.' };
       }
@@ -1495,6 +1513,9 @@ class ApiService {
 
   async uploadResumeForParser(
     file: File,
+    // signal: cancellation from the caller (e.g. onboarding "Cancel"/close).
+    // Aborts BOTH the upload fetch and the subsequent poll.
+    signal?: AbortSignal,
   ): Promise<ApiResponse<{ resume: import('../types/jobs').ParsedResume }>> {
     const formData = new FormData();
     formData.append('file', file);
@@ -1502,6 +1523,11 @@ class ApiService {
     const url = `${this.baseURL}/resume/upload`;
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 30000);
+    const onExternalAbort = () => controller.abort();
+    if (signal) {
+      if (signal.aborted) controller.abort();
+      else signal.addEventListener('abort', onExternalAbort);
+    }
     try {
       const headers: Record<string, string> = {};
       if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -1512,6 +1538,7 @@ class ApiService {
         signal: controller.signal,
       });
       clearTimeout(timeoutId);
+      signal?.removeEventListener('abort', onExternalAbort);
       const data = await response.json().catch(() => ({}));
       if (response.status === 401) {
         if (token) {
@@ -1542,7 +1569,11 @@ class ApiService {
 
       // Backend returns { job_id } with 202 - poll for the parsed result
       if (data.job_id) {
-        const pollResult = await this.pollJob<{ parsed_resume: any }>(data.job_id, 120000);
+        const pollResult = await this.pollJob<{ parsed_resume: any }>(
+          data.job_id,
+          120000,
+          signal,
+        );
         return pollResult;
       }
 
@@ -1550,6 +1581,8 @@ class ApiService {
       return { data } as ApiResponse<{ parsed_resume: any }>;
     } catch (error) {
       clearTimeout(timeoutId);
+      signal?.removeEventListener('abort', onExternalAbort);
+      if (signal?.aborted) return { error: 'Canceled' };
       return {
         error: error instanceof Error ? error.message : 'Upload failed',
       };
@@ -1591,7 +1624,7 @@ class ApiService {
     const maxConsecutiveErrors = 3;
 
     while (Date.now() - startTime < maxWaitMs) {
-      if (signal?.aborted) return { error: 'Cancelled' };
+      if (signal?.aborted) return { error: 'Canceled' };
 
       const resp = await this.request<{
         status: import('../types/resume').JobStatus;
@@ -1603,11 +1636,13 @@ class ApiService {
         {},
         30000,
         pollOpts?.guest
-          ? { guest: pollOpts.guest }
-          : pollOpts?.skipAuth
-            ? { skipAuth: true }
-            : undefined,
+          ? { guest: pollOpts.guest, signal }
+          : { skipAuth: pollOpts?.skipAuth, signal },
       );
+
+      // A cancellation aborts the in-flight poll request; return promptly with a
+      // clear canceled result rather than counting it as a transient error.
+      if (signal?.aborted) return { error: 'Canceled' };
 
       if (resp.error) {
         consecutiveErrors++;
@@ -1640,8 +1675,14 @@ class ApiService {
 
       if (job.status === 'failed') {
         if (job.error_code === 'LLM_RETRIES_EXHAUSTED') {
+          // Fire the friendly, de-duped global toast, but ALSO return a
+          // non-empty error so callers never mistake a failure for success
+          // (the empty string used to slip past `if (res.error)` guards).
           notifyLLMRetriesExhausted();
-          return { error: '' };
+          return {
+            error: 'High demand right now. Please try again in a moment.',
+            errorPayload: { error_code: 'LLM_RETRIES_EXHAUSTED' },
+          };
         }
         return { error: job.error || 'Job failed. Please try again.' };
       }

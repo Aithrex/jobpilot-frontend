@@ -22,12 +22,26 @@ interface CombinedJobsContextValue extends CombinedJobsController {
   ensureStarted: () => void;
 
   // Server-side scan params (drive the next sync).
+  /** United States only facet (default ON). Sent to the scan as `us_only`. */
+  usOnly: boolean;
+  setUsOnly: (v: boolean) => void;
+  /** US-only narrowing: full state name / "Remote" / "" for anywhere. */
+  usState: string;
+  setUsState: (v: string) => void;
+  /** US-only narrowing: optional city. */
+  city: string;
+  setCity: (v: string) => void;
+  /** Free-text location, used only when `usOnly` is OFF. */
   location: string;
   setLocation: (v: string) => void;
+  /** The effective location string the next scan will send (composed). */
+  scanLocation: string;
   remoteOnly: boolean;
   setRemoteOnly: (v: boolean) => void;
   customizeOpen: boolean;
   setCustomizeOpen: (v: boolean | ((p: boolean) => boolean)) => void;
+  /** Reset every server-side scope control to its default. */
+  resetScope: () => void;
 
   // Client-side view filters (persist across navigation).
   search: string;
@@ -62,6 +76,9 @@ export function CombinedJobsProvider({ children }: { children: React.ReactNode }
   // Scan params hydrate from the same versioned key the hook's titles use, so
   // the whole saved setup survives reloads together.
   const [initialPrefs] = useState(loadCombinedPrefs);
+  const [usOnly, setUsOnly] = useState(initialPrefs.usOnly ?? true);
+  const [usState, setUsState] = useState(initialPrefs.usState ?? '');
+  const [city, setCity] = useState(initialPrefs.city ?? '');
   const [location, setLocation] = useState(initialPrefs.location ?? '');
   const [remoteOnly, setRemoteOnly] = useState(initialPrefs.remoteOnly ?? false);
   const [customizeOpen, setCustomizeOpen] = useState(false);
@@ -77,19 +94,33 @@ export function CombinedJobsProvider({ children }: { children: React.ReactNode }
 
   const ensureStarted = useCallback(() => setStarted(true), []);
 
+  const resetScope = useCallback(() => {
+    setUsOnly(true);
+    setUsState('');
+    setCity('');
+    setLocation('');
+    setRemoteOnly(false);
+  }, []);
+
+  // The effective location the scan sends: when US-only is on we compose the
+  // optional "city, state" narrowing; otherwise the raw free-text field wins.
+  const scanLocation = usOnly
+    ? [city.trim(), usState].filter(Boolean).join(', ')
+    : location.trim();
+
   // Write-through persistence for the scan params only. Titles are persisted
   // by the shared `useJobTitles` store (into the same key), so both surfaces
   // save one set instead of racing two.
   useEffect(() => {
     if (!feed.ready) return;
-    saveCombinedPrefs({ location, remoteOnly });
-  }, [feed.ready, location, remoteOnly]);
+    saveCombinedPrefs({ location, remoteOnly, usOnly, usState, city });
+  }, [feed.ready, location, remoteOnly, usOnly, usState, city]);
 
   const autoSync = useAutoSync({
     enabled: started && feed.ready,
     intervalMs: AUTO_SYNC_MS,
     isBusy: feed.loading,
-    onSync: (force) => feed.run(force, { location, remoteOnly }),
+    onSync: (force) => feed.run(force, { location: scanLocation, remoteOnly, usOnly }),
   });
 
   const value: CombinedJobsContextValue = {
@@ -98,12 +129,20 @@ export function CombinedJobsProvider({ children }: { children: React.ReactNode }
     secondsUntilNext: autoSync.secondsUntilNext,
     sync: autoSync.sync,
     ensureStarted,
+    usOnly,
+    setUsOnly,
+    usState,
+    setUsState,
+    city,
+    setCity,
     location,
     setLocation,
+    scanLocation,
     remoteOnly,
     setRemoteOnly,
     customizeOpen,
     setCustomizeOpen,
+    resetScope,
     search,
     setSearch,
     recency,

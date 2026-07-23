@@ -48,6 +48,12 @@ export interface CombinedJobsPrefs {
   titles?: string[];
   location?: string;
   remoteOnly?: boolean;
+  /** Server-side US country facet. Defaults to true when unset. */
+  usOnly?: boolean;
+  /** US-only narrowing: selected state name / "Remote" / "" for anywhere. */
+  usState?: string;
+  /** US-only narrowing: optional city. */
+  city?: string;
 }
 
 export function loadCombinedPrefs(): CombinedJobsPrefs {
@@ -112,7 +118,10 @@ export interface CombinedJobsController {
   /** True when results exist but the title set changed since that scan. */
   titlesPending: boolean;
   /** Fire all three scans. `force` bypasses the server cache. */
-  run: (force: boolean, opts?: { location?: string; remoteOnly?: boolean }) => Promise<void>;
+  run: (
+    force: boolean,
+    opts?: { location?: string; remoteOnly?: boolean; usOnly?: boolean },
+  ) => Promise<void>;
 }
 
 /**
@@ -190,7 +199,10 @@ export function useCombinedJobs(enabled = true): CombinedJobsController {
   );
 
   const run = useCallback(
-    async (force: boolean, opts?: { location?: string; remoteOnly?: boolean }) => {
+    async (
+      force: boolean,
+      opts?: { location?: string; remoteOnly?: boolean; usOnly?: boolean },
+    ) => {
       // Snapshot the ref the moment the scan starts so all three sources search
       // the exact same title set, even if the user keeps editing mid-scan.
       const titlesSnapshot = titlesRef.current;
@@ -200,6 +212,9 @@ export function useCombinedJobs(enabled = true): CombinedJobsController {
         titles: titlesSnapshot,
         location: opts?.location ?? '',
         remote_only: opts?.remoteOnly ?? false,
+        // US-only is the default posture: the backend drops ambiguous/foreign
+        // rows unless the user explicitly opts out. Sent on every scan.
+        us_only: opts?.usOnly ?? true,
         force_refresh: force,
       };
       await Promise.all([
