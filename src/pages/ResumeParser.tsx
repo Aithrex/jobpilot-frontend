@@ -56,7 +56,10 @@ const CareerCopilotTab = lazy(() => import("@/components/resume/CareerCopilotTab
 const VisaTimelineTab = lazy(() => import("@/components/visa/VisaTimelineTab"));
 const BetaLabTab = lazy(() => import("@/components/beta/BetaLabTab"));
 const BillingTab = lazy(() => import("@/components/billing/BillingTab"));
-const LearningHubTab = lazy(() => import("@/components/resume/LearningHubTab"));
+// Sprint Learning Hub — the 14-day Jira-ticket sprint (components/hub).
+// The previous study-plan/quiz UI is still on disk at
+// "@/components/resume/LearningHubTab" — swap this one line to restore it.
+const LearningHubTab = lazy(() => import("@/components/hub/LearningHubTab"));
 const EventsTab = lazy(() => import("@/components/resume/EventsTab"));
 const NetworkTab = lazy(() => import("@/components/resume/NetworkTab"));
 const VoiceGraphTab = lazy(() => import("@/components/resume/VoiceGraphTab"));

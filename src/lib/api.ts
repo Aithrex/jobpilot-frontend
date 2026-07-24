@@ -388,6 +388,104 @@ class ApiService {
     );
   }
 
+  // ── Sprint Learning Hub (/api/resume/hub/*) ──────────────────
+  // The 14-day Jira-ticket sprint. DISTINCT from the study-plan methods above
+  // (/resume/learning/*) — different backend, different data model. Types live
+  // in ../types/hub, consumed by hooks/useHub.ts.
+
+  /** Resolve the user's sprint path, kicking off generation if none exists yet.
+   *  Returns the full path when ready, or {status:"generating", job_id} while
+   *  the async job runs — useHubPath polls on the non-ready shape. */
+  async getHubPath(params?: import("../types/hub").HubPathParams) {
+    return this.request<
+      import("../types/hub").HubPath | import("../types/hub").HubPathPending
+    >("/resume/hub/start", {
+      method: "POST",
+      body: JSON.stringify({
+        ...(params?.role ? { role: params.role } : {}),
+        ...(params?.difficulty ? { difficulty: params.difficulty } : {}),
+      }),
+    }, 30000);
+  }
+
+  async getHubAnalytics(params?: import("../types/hub").HubPathParams) {
+    return this.request<import("../types/hub").HubAnalytics | { status: string }>(
+      `/resume/hub/analytics${this.hubQuery(params)}`,
+    );
+  }
+
+  async getHubAchievements() {
+    return this.request<{ achievements: import("../types/hub").HubAchievement[] }>(
+      "/resume/hub/achievements",
+    );
+  }
+
+  async getHubRoles() {
+    return this.request<import("../types/hub").HubRolesResponse>("/resume/hub/roles");
+  }
+
+  /** Submit a day for verification. `repoUrl` is the proof of work — a PUBLIC
+   *  GitHub repo the backend grades against the ticket's acceptance criteria.
+   *
+   *  Grading downloads the repo and runs a PRO-tier judge (40-60s), so the
+   *  backend queues an async job and we poll it — an inline request would blow
+   *  the gateway timeout. */
+  async submitHubDay(
+    dayKey: string,
+    note?: string,
+    params?: import("../types/hub").HubPathParams,
+    repoUrl?: string,
+  ) {
+    const submitResp = await this.request<{ job_id: string; status: string }>(
+      `/resume/hub/day/${encodeURIComponent(dayKey)}/submit`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          ...(note ? { note } : {}),
+          ...(repoUrl ? { repo_url: repoUrl } : {}),
+          ...(params?.role ? { role: params.role } : {}),
+          ...(params?.difficulty ? { difficulty: params.difficulty } : {}),
+        }),
+      },
+      30000,
+    );
+    if (submitResp.error) {
+      return {
+        error: submitResp.error,
+        status: submitResp.status,
+        errorPayload: submitResp.errorPayload,
+      };
+    }
+    if (!submitResp.data?.job_id) return { error: "Could not start verification" };
+    return this.pollJob<import("../types/hub").HubSubmitResult>(
+      submitResp.data.job_id,
+      180000,
+    );
+  }
+
+  async askHubMentor(body: {
+    question: string;
+    day_key?: string;
+    history?: import("../types/hub").MentorMessage[];
+    role?: string;
+    difficulty?: string;
+  }) {
+    return this.request<import("../types/hub").MentorAnswer>(
+      "/resume/hub/mentor",
+      { method: "POST", body: JSON.stringify(body) },
+      60000,
+    );
+  }
+
+  /** Admin role/difficulty preview travels as query params on hub GETs. */
+  private hubQuery(params?: import("../types/hub").HubPathParams) {
+    const qs = new URLSearchParams();
+    if (params?.role) qs.set("role", params.role);
+    if (params?.difficulty) qs.set("difficulty", params.difficulty);
+    const s = qs.toString();
+    return s ? `?${s}` : "";
+  }
+
   // ── §6.6 Learning loop: "Your edge" ──────────────────────────
   // find trending gaps → adaptive plan → per-task GitHub + verify → share.
 
