@@ -1,16 +1,16 @@
 /**
- * OptClockCard — the calm, precise OPT unemployment-days counter.
+ * OptClockCard - the calm, precise OPT unemployment-days counter.
  *
  * For an F-1/OPT international student this is the single most anxiety-defining
  * fact in their life, so this surface is deliberately quiet: a large but calm
  * number, the 90/150-day limit, the 2-3 dates that matter, and a standing
  * reminder to confirm everything with their DSO. Never gamified, never a red
- * screaming countdown — 'watch' is muted amber, 'urgent' is a restrained amber
+ * screaming countdown - 'watch' is muted amber, 'urgent' is a restrained amber
  * (never alarm-red).
  *
  * Presentational: the parent (DashboardTab) owns the {@link OptClock} fetch so
  * it can promote this card to the top when the runway is urgent. This component
- * only renders and — when the student hasn't told us their days-used yet — lets
+ * only renders and - when the student hasn't told us their days-used yet - lets
  * them set it (merging into the saved visa profile so nothing else is lost).
  */
 import { useState } from 'react';
@@ -37,7 +37,7 @@ function formatDate(iso: string): string {
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-/** Restrained frame per band — amber, never red. */
+/** Restrained frame per band - amber, never red. */
 function bandFrame(band: OptClock['status_band']): string {
   switch (band) {
     case 'urgent':
@@ -97,7 +97,7 @@ function Footer({ disclaimer }: { disclaimer: string }) {
     <div className="mt-4 space-y-1.5 border-t border-border/70 pt-3">
       <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
         <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
-        Talk to your DSO — they are your official source of truth for every date.
+        Talk to your DSO. They are your official source of truth for every date.
       </p>
       <p className="text-[11px] leading-relaxed text-muted-foreground/70">{disclaimer}</p>
     </div>
@@ -161,7 +161,7 @@ export default function OptClockCard({
       return;
     }
     setSaving(true);
-    // Load the current profile first so we merge — never clobber other fields.
+    // Load the current profile first so we merge - never clobber other fields.
     const cur = await apiService.getVisaProfile();
     if (cur.error || !cur.data) {
       setSaving(false);
@@ -278,12 +278,12 @@ export default function OptClockCard({
         {used} of {limit} days used on {stemLabel}
         {remaining < 0 && (
           <span className="ml-1 font-medium text-warning">
-            · past the {limit}-day limit — reach your DSO now
+            · past the {limit}-day limit. Reach your DSO now
           </span>
         )}
       </p>
 
-      {/* Quiet, precise progress — not a game meter. */}
+      {/* Quiet, precise progress - not a game meter. */}
       <div
         className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-muted"
         role="progressbar"

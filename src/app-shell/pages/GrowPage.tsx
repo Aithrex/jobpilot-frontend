@@ -1,14 +1,12 @@
 import { Suspense } from "react";
 import { Outlet } from "react-router-dom";
-import { BookOpen, Bot, CalendarDays, Loader2, MessageSquareText, Users } from "lucide-react";
+import { BookOpen, CalendarDays, Loader2, Users } from "lucide-react";
 import { SubNav, type SubNavItem } from "../SubNav";
 
 const GROW_SECTIONS: SubNavItem[] = [
   { to: "learning", label: "Learning Hub", icon: BookOpen },
   { to: "network", label: "Network", icon: Users },
   { to: "events", label: "Events", icon: CalendarDays },
-  { to: "interview", label: "Interview Prep", icon: MessageSquareText },
-  { to: "copilot", label: "Career Copilot", icon: Bot },
 ];
 
 function SectionFallback() {
@@ -33,18 +31,21 @@ export default function GrowPage() {
     <div className="flex flex-col gap-6">
       <header>
         <p className="overline mb-1">Grow</p>
-        <h1 className="font-display text-2xl font-bold tracking-tight text-foreground">
+        <h1 className="text-title font-display text-foreground">
           Build skills &amp; momentum
         </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Learning paths, networking, events, and interview prep in one place.
+        <p className="mt-1 text-caption text-muted-foreground">
+          Learning paths, networking, and events in one place.
         </p>
       </header>
 
       <SubNav ariaLabel="Grow sections" items={GROW_SECTIONS} />
 
       <Suspense fallback={<SectionFallback />}>
-        <Outlet />
+        {/* Sections are mounted by App.tsx routes; `embedded` tells the
+            monolith-born tab components the shell already renders the page
+            header + SubNav, so they suppress their internal hero headers. */}
+        <Outlet context={{ embedded: true }} />
       </Suspense>
     </div>
   );

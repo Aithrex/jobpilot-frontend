@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import {
   CircleOff, ClipboardList, Ghost, LayoutGrid, List, MessagesSquare, Pencil,
@@ -8,6 +9,10 @@ import { apiService } from "@/lib/api";
 import type { ApplicationStatus, TailoringRecord } from "@/types/resume";
 import { formatDate } from "@/components/resume/ResumeDashboard";
 import GmailIntegration from "@/components/resume/GmailIntegration";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { PanelError } from "@/app-shell/pages/today/primitives";
 
 // ─── Column config ────────────────────────────────────────────────────────
 // Status hues stay meaning-coded but resolve through the semantic token set:
@@ -58,7 +63,7 @@ function daysUntil(iso?: string | null): number | null {
 }
 function relDate(iso?: string | null): string {
   const d = daysUntil(iso);
-  if (d === null) return "—";
+  if (d === null) return " - ";
   if (d < 0) return `${Math.abs(d)}d overdue`;
   if (d === 0) return "Today";
   if (d === 1) return "Tomorrow";
@@ -71,7 +76,7 @@ function initials(name?: string): string {
   return name.split(/\s+/).slice(0, 2).map(w => w[0]).join("").toUpperCase();
 }
 
-/** Calm token-driven avatar chip for company initials — one accent, not a
+/** Calm token-driven avatar chip for company initials - one accent, not a
  *  per-company rainbow, so cards inherit the workspace's single-accent rule. */
 const avatarCls = "bg-primary/10 text-primary";
 
@@ -87,9 +92,16 @@ function Metric({ label, value, accent }: { label: string; value: number | strin
 }
 
 // ─── Main component ───────────────────────────────────────────────────────
-export default function ApplicationsTab() {
+interface ApplicationsTabProps {
+  /** When mounted inside the app shell (which renders its own h1/SubNav),
+   *  suppress the tab's internal hero header so the page has one title. */
+  embedded?: boolean;
+}
+
+export default function ApplicationsTab({ embedded = false }: ApplicationsTabProps) {
   const [records, setRecords] = useState<TailoringRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [view, setView] = useState<"kanban" | "list">("kanban");
   const [editing, setEditing] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
@@ -109,22 +121,46 @@ export default function ApplicationsTab() {
   // tab waited on the slowest of three serial-blocking endpoints.
   const [funnelLoading, setFunnelLoading] = useState(true);
 
+  // Drag-and-drop only makes sense with a fine pointer (mouse/trackpad).
+  // On touch devices the cards' status <select> is the supported mutation
+  // path, so we disable HTML5 DnD there entirely.
+  const [canDrag, setCanDrag] = useState(true);
+  useEffect(() => {
+    const mq = window.matchMedia("(hover: hover) and (pointer: fine)");
+    const update = () => setCanDrag(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+
   // Silent mode: post-action refreshes (e.g. applying a Gmail suggestion)
   // re-fetch in place without toggling the page-wide skeleton, so the user
-  // doesn't see a 1–2s blank flash. Only the very first load shows the
+  // doesn't see a 1-2s blank flash. Only the very first load shows the
   // skeleton.
   const fetch = useCallback(async ({ silent = false }: { silent?: boolean } = {}) => {
-    if (!silent) setLoading(true);
-    if (!silent) setFunnelLoading(true);
+    if (!silent) {
+      setLoading(true);
+      setFunnelLoading(true);
+      setLoadError(null);
+    }
 
-    // Records are the only thing the kanban needs to render — fire it first
+    // Records are the only thing the kanban needs to render - fire it first
     // and clear the page-level loading flag the moment it resolves.
     const recordsPromise = apiService.listTailoringRecords().then((resp) => {
-      if (resp.data) setRecords((resp.data.records || []) as TailoringRecord[]);
+      if (resp.error) {
+        // Track the failure so we can render a retryable error panel instead
+        // of masquerading as "No applications yet". Silent refreshes keep the
+        // data already on screen and just toast.
+        setLoadError(resp.error);
+        if (silent) toast.error("Couldn't refresh applications");
+      } else if (resp.data) {
+        setRecords((resp.data.records || []) as TailoringRecord[]);
+        setLoadError(null);
+      }
       if (!silent) setLoading(false);
     });
 
-    // Funnel + stale-apps are auxiliary panels — let them resolve in the
+    // Funnel + stale-apps are auxiliary panels - let them resolve in the
     // background; kanban is already visible.
     const auxPromise = Promise.all([
       apiService.getFunnelAnalytics(),
@@ -154,7 +190,7 @@ export default function ApplicationsTab() {
 
   // Refresh the funnel counts after a status change so the column counts
   // (from local `grouped`) and the summary chips (from server `funnel`)
-  // stay in lockstep. Cheap fire-and-forget — no toast on failure.
+  // stay in lockstep. Cheap fire-and-forget - no toast on failure.
   const refreshFunnel = useCallback(async () => {
     try {
       const r = await apiService.getFunnelAnalytics();
@@ -181,7 +217,7 @@ export default function ApplicationsTab() {
     }
   }, [updateRecord, refreshFunnel]);
 
-  // Drag & drop handlers — optimistic update, then persist via the
+  // Drag & drop handlers - optimistic update, then persist via the
   // existing updateApplication endpoint. Rollback on failure.
   const handleDrop = useCallback(async (status: ApplicationStatus) => {
     const id = draggingId;
@@ -206,7 +242,7 @@ export default function ApplicationsTab() {
         ...r,
         application: { ...(r.application || {}), status: prev },
       }));
-      toast.error("Couldn't move the card — reverted.");
+      toast.error("Couldn't move the card. Reverted.");
       return;
     }
     updateRecord(id, (r) => ({
@@ -291,7 +327,7 @@ export default function ApplicationsTab() {
   if (loading) {
     return (
       <div className="space-y-4">
-        {/* Active loading indicator — spinner + descriptive text so users
+        {/* Active loading indicator - spinner + descriptive text so users
             understand the tab is working rather than frozen. */}
         <div className="flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/[0.05] px-4 py-3">
           <span
@@ -300,23 +336,36 @@ export default function ApplicationsTab() {
             aria-label="Loading"
           />
           <div className="min-w-0">
-            <p className="text-xs font-semibold text-foreground">Loading your applications…</p>
+            <p className="text-xs font-semibold text-foreground">Loading your applications...</p>
             <p className="text-[11px] text-muted-foreground">Pulling tailored records, funnel analytics, and follow-up nudges.</p>
           </div>
         </div>
-        {/* Skeleton placeholders — sized to roughly match the real layout so
+        {/* Skeleton placeholders - sized to roughly match the real layout so
             the layout doesn't jump when the data arrives. */}
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
           {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="h-[68px] rounded-xl bg-muted/60 animate-pulse" />
           ))}
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-3">
+        <div className="flex flex-col gap-3 md:flex-row md:overflow-hidden">
           {Array.from({ length: 7 }).map((_, i) => (
-            <div key={i} className="h-56 rounded-xl bg-muted/40 animate-pulse" />
+            <div
+              key={i}
+              className={`h-56 rounded-xl bg-muted/40 animate-pulse md:w-[272px] md:shrink-0 ${i > 2 ? "hidden md:block" : ""}`}
+            />
           ))}
         </div>
       </div>
+    );
+  }
+  if (loadError && records.length === 0) {
+    // API failure - never masquerade as an empty pipeline.
+    return (
+      <PanelError
+        title="Couldn't load your applications"
+        body={loadError}
+        onRetry={() => fetch()}
+      />
     );
   }
   if (records.length === 0) {
@@ -327,53 +376,75 @@ export default function ApplicationsTab() {
         </div>
         <p className="font-display text-sm font-semibold text-foreground">No applications yet</p>
         <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
-          Tailor a resume and it lands here as a draft — then track every role from applied to offer,
+          Tailor a resume and it lands here as a draft. Then track every role from applied to offer,
           with no guessing which stage you're in.
         </p>
+        <Button asChild className="mt-4 min-h-11">
+          <Link to="/next/craft/tailor">Tailor a resume</Link>
+        </Button>
       </div>
     );
   }
 
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-3 flex-wrap">
-        <div className="space-y-1">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">Library · Applications</p>
-          <h2 className="font-display text-2xl font-extrabold tracking-tight">Applications</h2>
-          <p className="max-w-xl text-sm text-muted-foreground">
-            Your pipeline — every role from first tailor to offer, tracked in one place.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
+      {/* Header - the hero title is suppressed when the app shell already
+          renders the page h1/SubNav (embedded), leaving only the controls. */}
+      <div className={`flex items-start gap-3 flex-wrap ${embedded ? "justify-end" : "justify-between"}`}>
+        {!embedded && (
+          <div className="space-y-1">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">Library · Applications</p>
+            <h2 className="font-display text-2xl font-extrabold tracking-tight">Applications</h2>
+            <p className="max-w-xl text-sm text-muted-foreground">
+              Your pipeline. Every role from first tailor to offer, tracked in one place.
+            </p>
+          </div>
+        )}
+        <div className="flex items-center gap-2 flex-wrap">
           <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" aria-hidden />
-            <input
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+            <Input
               value={search}
               onChange={e => setSearch(e.target.value)}
-              placeholder="Search role, company, recruiter…"
+              placeholder="Search role, company, recruiter..."
               aria-label="Search applications"
-              className="pl-8 pr-3 py-1.5 w-full max-w-[260px] rounded-lg bg-card border border-input text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/30"
+              className="h-11 w-[min(280px,72vw)] bg-card pl-9"
             />
           </div>
-          <div className="inline-flex rounded-lg bg-muted p-0.5 border border-border">
-            {([
-              { key: "kanban" as const, label: "Kanban", icon: <LayoutGrid className="h-3 w-3" /> },
-              { key: "list" as const, label: "List", icon: <List className="h-3 w-3" /> },
-            ]).map(v => (
-              <button
-                key={v.key}
-                onClick={() => setView(v.key)}
-                className={`px-2.5 py-1 text-[11px] font-medium rounded-md flex items-center gap-1 transition-all ${view === v.key ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-              >
-                {v.icon}{v.label}
-              </button>
-            ))}
-          </div>
+          <ToggleGroup
+            type="single"
+            value={view}
+            onValueChange={(v) => { if (v === "kanban" || v === "list") setView(v); }}
+            aria-label="Pipeline view"
+            className="rounded-lg border border-border bg-muted p-0.5"
+          >
+            <ToggleGroupItem
+              value="kanban"
+              className="h-11 gap-1.5 px-3 text-xs font-medium data-[state=on]:bg-background data-[state=on]:text-foreground data-[state=on]:shadow-sm"
+            >
+              <LayoutGrid className="h-4 w-4" aria-hidden="true" /> Kanban
+            </ToggleGroupItem>
+            <ToggleGroupItem
+              value="list"
+              className="h-11 gap-1.5 px-3 text-xs font-medium data-[state=on]:bg-background data-[state=on]:text-foreground data-[state=on]:shadow-sm"
+            >
+              <List className="h-4 w-4" aria-hidden="true" /> List
+            </ToggleGroupItem>
+          </ToggleGroup>
         </div>
       </div>
 
-      <GmailIntegration onSyncComplete={fetchSilent} />
+      <div className="space-y-1.5">
+        <GmailIntegration onSyncComplete={fetchSilent} />
+        <p className="text-right text-xs text-muted-foreground">
+          <Link
+            to="/next/settings/integrations"
+            className="rounded underline-offset-2 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          >
+            Manage Gmail in Settings
+          </Link>
+        </p>
+      </div>
 
       {/* Metric row */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
@@ -383,7 +454,7 @@ export default function ApplicationsTab() {
         <Metric label="Offers" value={metrics.offers} accent="bg-success" />
         <Metric
           label="Response rate"
-          value={metrics.respRate !== null ? `${metrics.respRate}%` : "—"}
+          value={metrics.respRate !== null ? `${metrics.respRate}%` : " - "}
           accent="bg-muted-foreground/50"
         />
       </div>
@@ -391,7 +462,7 @@ export default function ApplicationsTab() {
       {funnelLoading && !funnel && (
         <div className="flex items-center gap-2 rounded-2xl border border-primary/15 bg-primary/[0.03] px-3 py-2 text-[11px] text-primary">
           <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-primary border-t-transparent" aria-hidden />
-          <span>Crunching funnel intelligence and stale-application nudges…</span>
+          <span>Crunching funnel intelligence and stale-application nudges...</span>
         </div>
       )}
 
@@ -481,7 +552,7 @@ export default function ApplicationsTab() {
                       onClick={async () => {
                         const r = await apiService.dismissIntelligenceFollowup(s.record_id);
                         if (r.error) { toast.error(r.error); return; }
-                        // Optimistic local removal — server will already not return it next time.
+                        // Optimistic local removal - server will already not return it next time.
                         setStaleApps(prev => prev.filter(x => x.record_id !== s.record_id));
                         setFollowups(prev => {
                           const next = { ...prev };
@@ -507,7 +578,7 @@ export default function ApplicationsTab() {
                           const f = followups[s.record_id];
                           navigator.clipboard
                             .writeText(`Subject: ${f.subject}\n\n${f.message}`)
-                            .then(() => toast.success('Copied — paste into your email'))
+                            .then(() => toast.success('Copied. Paste into your email'))
                             .catch(() => toast.error('Clipboard blocked'));
                         }}
                         className="rounded border border-border bg-card px-2 py-1 text-[11px] text-foreground hover:bg-muted transition-colors"
@@ -552,22 +623,27 @@ export default function ApplicationsTab() {
       {/* Pipeline */}
       {view === "kanban" ? (
         <>
-          <p className="text-[11px] italic text-muted-foreground">
-            Tip: drag a card between columns to update its status.
+          <p className="text-xs italic text-muted-foreground">
+            {canDrag
+              ? "Tip: drag a card between columns to update its status."
+              : "Tip: use the status dropdown on each card to move it between stages."}
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-3">
+          {/* Horizontal scroll-snap board on md+ (columns never wrap into a
+              grid of tiles); a plain vertical stack on small screens where
+              DnD is disabled and the card status select does the work. */}
+          <div className="flex flex-col gap-3 md:flex-row md:items-start md:snap-x md:snap-proximity md:overflow-x-auto md:pb-3">
           {COLUMNS.map(col => {
             const list = grouped[col.key];
-            const isDragOver = dragOverCol === col.key;
+            const isDragOver = canDrag && dragOverCol === col.key;
             return (
               <div
                 key={col.key}
-                onDragOver={(e) => { e.preventDefault(); setDragOverCol(col.key); }}
+                onDragOver={(e) => { if (!canDrag) return; e.preventDefault(); setDragOverCol(col.key); }}
                 onDragLeave={(e) => {
                   if (e.currentTarget === e.target) setDragOverCol((c) => (c === col.key ? null : c));
                 }}
-                onDrop={(e) => { e.preventDefault(); handleDrop(col.key); }}
-                className={`relative rounded-xl border overflow-hidden transition-all ${
+                onDrop={(e) => { if (!canDrag) return; e.preventDefault(); handleDrop(col.key); }}
+                className={`relative rounded-xl border overflow-hidden transition-all md:w-[272px] md:shrink-0 md:snap-start ${
                   isDragOver
                     ? 'border-primary/60 bg-primary/10 ring-2 ring-primary/40 scale-[1.01]'
                     : 'border-border bg-card/60'
@@ -587,14 +663,15 @@ export default function ApplicationsTab() {
                   {list.map(r => (
                     <div
                       key={r.record_id}
-                      draggable
+                      draggable={canDrag}
                       onDragStart={(e) => {
+                        if (!canDrag) return;
                         setDraggingId(r.record_id);
                         e.dataTransfer.effectAllowed = 'move';
                         try { e.dataTransfer.setData('text/plain', r.record_id); } catch { /* */ }
                       }}
                       onDragEnd={() => { setDraggingId(null); setDragOverCol(null); }}
-                      className={`cursor-grab active:cursor-grabbing transition-opacity ${
+                      className={`transition-opacity ${canDrag ? 'cursor-grab active:cursor-grabbing' : ''} ${
                         draggingId === r.record_id ? 'opacity-40' : ''
                       }`}
                     >
@@ -649,8 +726,8 @@ export default function ApplicationsTab() {
                           {initials(co) || initials(r.jd_analysis?.job_title)}
                         </div>
                         <div className="min-w-0">
-                          <p className="text-[12px] font-medium text-foreground truncate">{r.jd_analysis?.job_title || "—"}</p>
-                          <p className="text-[10px] text-muted-foreground truncate">{co || "—"}</p>
+                          <p className="text-[12px] font-medium text-foreground truncate">{r.jd_analysis?.job_title || " - "}</p>
+                          <p className="text-[10px] text-muted-foreground truncate">{co || " - "}</p>
                         </div>
                       </div>
                     </td>
@@ -664,24 +741,24 @@ export default function ApplicationsTab() {
                         {COLUMNS.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
                       </select>
                     </td>
-                    <td className="px-3 py-2.5 text-muted-foreground text-[11px]">{r.application?.applied_at ? formatDate(r.application.applied_at) : "—"}</td>
+                    <td className="px-3 py-2.5 text-muted-foreground text-[11px]">{r.application?.applied_at ? formatDate(r.application.applied_at) : " - "}</td>
                     <td className="px-3 py-2.5 text-[11px]">
                       {r.application?.next_action_date ? (
                         <span className={`${d! < 0 ? "text-destructive font-semibold" : d !== null && d <= 2 ? "text-warning font-semibold" : "text-muted-foreground"}`}>
                           {relDate(r.application.next_action_date)}
                           {r.application.next_action_note && <span className="text-muted-foreground"> · {r.application.next_action_note}</span>}
                         </span>
-                      ) : "—"}
+                      ) : " - "}
                     </td>
                     <td className="px-3 py-2.5 text-muted-foreground text-[11px] truncate max-w-[160px]">
-                      {r.application?.recruiter_name || "—"}
+                      {r.application?.recruiter_name || " - "}
                     </td>
                     <td className="px-3 py-2.5 text-[11px]">
                       {ats !== undefined ? (
                         <span className={`tabular-nums font-semibold ${ats >= 80 ? "text-success" : ats >= 60 ? "text-warning" : "text-destructive"}`}>
                           {ats}
                         </span>
-                      ) : "—"}
+                      ) : " - "}
                     </td>
                   </tr>
                 );
@@ -815,7 +892,7 @@ function ApplicationCard({
                       className="text-[10px] px-2 py-0.5 rounded text-muted-foreground hover:text-foreground">Cancel</button>
               <button onClick={save} disabled={saving}
                       className="text-[10px] px-2.5 py-0.5 rounded bg-primary hover:bg-primary/90 text-primary-foreground font-medium disabled:opacity-50 shadow-soft">
-                {saving ? "Saving…" : "Save"}
+                {saving ? "Saving..." : "Save"}
               </button>
             </div>
           </div>

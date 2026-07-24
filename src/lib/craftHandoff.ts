@@ -1,5 +1,5 @@
 /**
- * Craft cross-surface handoffs — one typed source of truth.
+ * Craft cross-surface handoffs - one typed source of truth.
  *
  * The Tailor tool can be launched from two other surfaces, each with its own
  * (previously ad-hoc) storage + signalling mechanism. This module consolidates
@@ -16,7 +16,7 @@
  *   2. Batch Tailor → Tailor (new tab): "Edit ↗" opens a new tab at
  *      `?tab=tailor&load_batch=<jobId>`; the payload rides in localStorage
  *      (each tab has its own sessionStorage, so session storage can't cross
- *      the tab boundary — localStorage can).
+ *      the tab boundary - localStorage can).
  *
  * All reads are one-shot: the payload is removed as it's consumed so a refresh
  * doesn't replay a stale handoff.
@@ -69,7 +69,7 @@ function writeJson(storage: Storage, key: string, value: unknown): void {
   try {
     storage.setItem(key, JSON.stringify(value));
   } catch {
-    /* quota / privacy mode — handoff is best-effort */
+    /* quota / privacy mode - handoff is best-effort */
   }
 }
 
@@ -89,7 +89,7 @@ export function stagePendingTailorJob(job: PendingTailorJob): void {
   try {
     window.dispatchEvent(new CustomEvent(NAVIGATE_TO_TAILOR_EVENT));
   } catch {
-    /* SSR / no window — ignore */
+    /* SSR / no window - ignore */
   }
 }
 
@@ -136,7 +136,7 @@ export function consumeBatchHandoff(jobId: string): BatchHandoff | null {
   return payload && payload.tailored_resume && payload.jd_analysis ? payload : null;
 }
 
-/** Strip `?load_batch=…` from the address bar so a refresh doesn't replay it. */
+/** Strip `?load_batch=...` from the address bar so a refresh doesn't replay it. */
 export function clearBatchHandoffFromUrl(): void {
   try {
     const url = new URL(window.location.href);

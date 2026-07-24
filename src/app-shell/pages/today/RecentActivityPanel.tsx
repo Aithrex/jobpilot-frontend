@@ -1,11 +1,12 @@
 /**
- * Zone C — "Why?"  Drill-down table of the most recent roles in play.
+ * Zone C - "Why?"  Drill-down table of the most recent roles in play.
  *
  * Progressive disclosure: a compact summary (the latest handful) with a link to
  * the full workspace. Numbers are right-aligned and tabular; the header is
  * sticky; status is shown as icon + label + hue (never colour alone).
  */
-import { ArrowUpRight, Search } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ArrowRight, Search } from 'lucide-react';
 import type { SavedJob } from '@/types/jobs';
 import {
   Table,
@@ -18,13 +19,15 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { PanelCard, PanelEmpty, PanelError, ZoneHeading, StatusPill, Stat } from './primitives';
 
-const WORKSPACE_HREF = '/app';
+/** Full pipeline lives in Applications; job search in Discover. */
+const APPLICATIONS_HREF = '/next/applications';
+const FIND_ROLES_HREF = '/next/discover/jobs';
 const MAX_ROWS = 8;
 
 function shortDate(iso: string | undefined): string {
-  if (!iso) return '—';
+  if (!iso) return ' - ';
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '—';
+  if (Number.isNaN(d.getTime())) return ' - ';
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
@@ -51,17 +54,16 @@ export function RecentActivityPanel({
   return (
     <PanelCard>
       <ZoneHeading
-        overline="Why"
         title="Recent roles"
-        hint="The latest roles you've saved or applied to — open the workspace for the full history."
+        hint="The latest roles you've saved or applied to."
         action={
           state === 'ready' && rows.length > 0 ? (
-            <a
-              href={WORKSPACE_HREF}
+            <Link
+              to={APPLICATIONS_HREF}
               className="inline-flex min-h-11 items-center gap-1.5 rounded-control px-3 text-caption font-medium text-primary transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
-              View all <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
-            </a>
+              View all <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+            </Link>
           ) : undefined
         }
       />
@@ -83,14 +85,14 @@ export function RecentActivityPanel({
         <PanelEmpty
           icon={Search}
           title="No roles saved yet"
-          body="Save roles from job search and they'll collect here so you can act on them fast."
+          body="Save roles from Discover and they'll collect here so you can act on them fast."
           action={
-            <a
-              href={WORKSPACE_HREF}
+            <Link
+              to={FIND_ROLES_HREF}
               className="inline-flex min-h-11 items-center gap-2 rounded-control bg-primary px-4 text-caption font-semibold text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
-              Find roles <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
-            </a>
+              Find roles <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+            </Link>
           }
         />
       ) : (
@@ -122,7 +124,7 @@ export function RecentActivityPanel({
                     </TableCell>
                     <TableCell className="py-3 text-right">
                       {m === null ? (
-                        <span className="text-caption text-muted-foreground">—</span>
+                        <span className="text-caption text-muted-foreground"> - </span>
                       ) : (
                         <Stat className="text-body font-medium text-foreground">{m}%</Stat>
                       )}

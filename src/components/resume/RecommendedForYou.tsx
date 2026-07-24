@@ -11,7 +11,7 @@ const ICONS: Record<string, typeof Sparkles> = {
 };
 
 /**
- * "Recommended for you" — the all-in-one payoff. One ranked feed of next-best
+ * "Recommended for you" - the all-in-one payoff. One ranked feed of next-best
  * actions synthesized across applications, learning, interviews, jobs, and
  * events. Each card deep-links into the relevant tab.
  */

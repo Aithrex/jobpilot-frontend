@@ -37,7 +37,7 @@ const PRESET_GRADIENTS: Record<string, string> = {
 };
 
 // Module-level cache so switching tabs doesn't burn another LLM call.
-// 24-hour TTL — resume content rarely changes; "Regenerate" busts it manually.
+// 24-hour TTL - resume content rarely changes; "Regenerate" busts it manually.
 const SUGGEST_TTL_MS = 24 * 60 * 60 * 1000;
 const SUGGEST_STORAGE_KEY = 'smart_filters_suggestions_v1';
 
@@ -69,7 +69,7 @@ function writeSuggestCache(data: SmartFilterSuggestions) {
   try {
     sessionStorage.setItem(SUGGEST_STORAGE_KEY, JSON.stringify(_suggestCache));
   } catch {
-    /* quota — module cache still has it */
+    /* quota - module cache still has it */
   }
 }
 
@@ -124,7 +124,7 @@ export function SmartFiltersPanel({ onApply, compact = false }: SmartFiltersPane
     toast.success('Smart filters applied to Daily Pipeline');
   };
 
-  // Per-group "+ Add to pipeline" — turns a single intent group into a slim
+  // Per-group "+ Add to pipeline" - turns a single intent group into a slim
   // SmartFilterSuggestions payload and forwards it as an append. The pipeline
   // panel will merge these into existing chips rather than replace them, so a
   // user can stack e.g. "Primary: ML" + "Adjacent: Data Eng" into one search.
@@ -155,7 +155,7 @@ export function SmartFiltersPanel({ onApply, compact = false }: SmartFiltersPane
       next.add(group.intent);
       return next;
     });
-    toast.success(`Added "${group.label}" to pipeline — stays on this tab so you can keep stacking groups.`);
+    toast.success(`Added "${group.label}" to pipeline. Stays on this tab so you can keep stacking groups.`);
   };
 
   if (loading) {
@@ -164,7 +164,7 @@ export function SmartFiltersPanel({ onApply, compact = false }: SmartFiltersPane
         <CardContent className="space-y-4 p-5">
           <div className="flex items-center gap-2">
             <Brain className="h-4 w-4 animate-pulse text-purple-500" />
-            <p className="text-sm font-medium">Reading your resume to suggest filters…</p>
+            <p className="text-sm font-medium">Reading your resume to suggest filters...</p>
           </div>
           <Skeleton className="h-5 w-2/3" />
           <Skeleton className="h-20 w-full" />
@@ -264,7 +264,7 @@ export function SmartFiltersPanel({ onApply, compact = false }: SmartFiltersPane
         </CardContent>
       </Card>
 
-      {/* Per-domain breakdown — shows the resume's broader coverage and lets
+      {/* Per-domain breakdown - shows the resume's broader coverage and lets
           the user "+ Add" each group selectively to the pipeline. Primary
           intent leads, secondary follows, then any adjacent specialties that
           scored above the soft floor (e.g. an ML candidate's Data Eng tail). */}
@@ -334,8 +334,8 @@ export function SmartFiltersPanel({ onApply, compact = false }: SmartFiltersPane
               </div>
               <p className="text-[11px] text-muted-foreground">
                 {suggestions.past_days === 1
-                  ? 'Daily flow — surface the freshest postings only.'
-                  : 'Slightly wider window — niche roles have lower daily volume.'}
+                  ? 'Daily flow. Surface the freshest postings only.'
+                  : 'Slightly wider window. Niche roles have lower daily volume.'}
               </p>
             </CardContent>
           </Card>
@@ -390,7 +390,7 @@ function GroupCard({
             size="sm"
             disabled
             className="h-7 gap-1 bg-emerald-600 text-[11px] text-white opacity-90"
-            title="Group already added — switch to Daily Pipeline tab to run."
+            title="Group already added. Switch to Daily Pipeline tab to run."
           >
             <Check className="h-3 w-3" />
             Added

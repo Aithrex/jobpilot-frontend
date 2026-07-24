@@ -1,7 +1,7 @@
 /**
  * The generated dashboard's shared vocabulary (Compass §6.2).
  *
- * The dashboard is not templated — it's a set of widgets, each with a
+ * The dashboard is not templated - it's a set of widgets, each with a
  * `relevance(ctx) -> 0..1` scorer. Render order + prominence follow the
  * scores. This file defines the widget contract and the `DashboardCtx`:
  * everything the frontend already knows about the user, assembled once by
@@ -41,7 +41,7 @@ export type ActivityPhase = 'new' | 'exploring' | 'applying' | 'interviewing';
 /**
  * Per-slice fetch failures. `true` = that fetch failed this load, so a widget
  * with no data for the slice should show a quiet retry, never a lying empty
- * state. (The OPT clock keeps its dedicated `optError` — its card owns it.)
+ * state. (The OPT clock keeps its dedicated `optError` - its card owns it.)
  */
 export interface SliceErrors {
   overview: boolean;
@@ -53,7 +53,7 @@ export interface SliceErrors {
   posts: boolean;
 }
 
-/** Everything the frontend knows — the single argument to every scorer. */
+/** Everything the frontend knows - the single argument to every scorer. */
 export interface DashboardCtx {
   /** True during the very first fetch (no data yet). */
   loading: boolean;
@@ -66,7 +66,7 @@ export interface DashboardCtx {
   savedJobs: SavedJob[];
   posts: PostDraft[];
   trends: TechChronicleItem[];
-  /** GitHub/LinkedIn link status — null until loaded (or if the fetch failed). */
+  /** GitHub/LinkedIn link status - null until loaded (or if the fetch failed). */
   connect: ConnectStatus | null;
   /** Which ctx slices failed to fetch this load. */
   errors: SliceErrors;
@@ -76,12 +76,12 @@ export interface DashboardCtx {
   navigate: (tab: NavKey) => void;
   /** Re-fetch just the OPT clock (used by the OPT widget after an edit). */
   reloadOptClock: () => void;
-  /** Re-fetch everything — the retry behind WidgetError. */
+  /** Re-fetch everything - the retry behind WidgetError. */
   retry: () => void;
 }
 
 /**
- * A dashboard widget. `relevance` returns 0..1 — return <= 0 to hide the widget
+ * A dashboard widget. `relevance` returns 0..1 - return <= 0 to hide the widget
  * entirely for this user (e.g. the OPT clock for a non-international student who
  * hasn't started a visa profile stays low, not absent). `span` is the widget's
  * natural width in the 3-column desktop grid; larger, higher-scoring widgets
@@ -94,7 +94,7 @@ export interface Widget {
   render: (ctx: DashboardCtx) => ReactNode;
 }
 
-/** Calm, decisive settle — the one dashboard easing (matches --ease-out-expo). */
+/** Calm, decisive settle - the one dashboard easing (matches --ease-out-expo). */
 export const EASE: [number, number, number, number] = [0.16, 1, 0.3, 1];
 
 export function clamp01(n: number): number {

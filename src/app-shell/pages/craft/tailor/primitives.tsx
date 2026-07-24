@@ -2,7 +2,7 @@
  * Tailor-scoped presentational helpers.
  *
  * Small shared bits used across 3+ Tailor sub-components that don't belong in
- * the Today-specific `today/primitives.tsx`. Tokens only — verified light+dark.
+ * the Today-specific `today/primitives.tsx`. Tokens only - verified light+dark.
  */
 
 /** Score → semantic tone (text + tinted surface + ring) for the 80/60 bands. */
@@ -20,7 +20,7 @@ export interface ScoreTone {
 }
 
 /**
- * Map an ATS-style 0–100 score to token-driven tone classes. Replaces the
+ * Map an ATS-style 0-100 score to token-driven tone classes. Replaces the
  * emerald/amber/red raw-Tailwind ternaries repeated across the old TailorTab.
  * ≥80 = success, ≥60 = warning, else destructive.
  */

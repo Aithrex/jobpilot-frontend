@@ -1,8 +1,8 @@
 /**
- * VisaTimelineTab — F-1 / OPT / STEM / H-1B clock dashboard.
+ * VisaTimelineTab - F-1 / OPT / STEM / H-1B clock dashboard.
  *
  * Two halves:
- *   1. Profile form (small — visa status, key dates, STEM flag, H-1B year)
+ *   1. Profile form (small - visa status, key dates, STEM flag, H-1B year)
  *   2. Computed milestone cards ordered by upcoming cliff date, color-coded
  *      by severity. Auto-refreshes when the profile changes.
  *
@@ -50,15 +50,15 @@ function severityClasses(sev: VisaMilestone['severity']) {
   switch (sev) {
     case 'critical':
       return {
-        ring: 'border-rose-500/40 bg-rose-500/[0.06]',
-        text: 'text-rose-700 dark:text-rose-300',
-        badge: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30',
+        ring: 'border-destructive/40 bg-destructive/[0.06]',
+        text: 'text-destructive',
+        badge: 'bg-destructive/15 text-destructive border-destructive/30',
       };
     case 'warning':
       return {
-        ring: 'border-amber-500/40 bg-amber-500/[0.06]',
-        text: 'text-amber-700 dark:text-amber-300',
-        badge: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30',
+        ring: 'border-warning/40 bg-warning/[0.06]',
+        text: 'text-warning',
+        badge: 'bg-warning/15 text-warning border-warning/30',
       };
     default:
       return {
@@ -70,7 +70,7 @@ function severityClasses(sev: VisaMilestone['severity']) {
 }
 
 function relativeLabel(days: number | null): string {
-  if (days === null || days === undefined) return '—';
+  if (days === null || days === undefined) return ' - ';
   if (days === 0) return 'today';
   if (days === 1) return 'tomorrow';
   if (days === -1) return 'yesterday';
@@ -109,7 +109,7 @@ export default function VisaTimelineTab() {
       toast.error('Could not save profile', { description: resp.error });
       return;
     }
-    toast.success('Visa profile saved — timeline refreshing.');
+    toast.success('Visa profile saved. Timeline refreshing.');
     // Re-fetch so the milestones reflect the new profile
     await loadTimeline();
   }, [profile, loadTimeline]);
@@ -126,7 +126,7 @@ export default function VisaTimelineTab() {
     return (
       <div className="flex items-center justify-center py-20 text-sm text-muted-foreground">
         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-        Loading your visa timeline…
+        Loading your visa timeline...
       </div>
     );
   }
@@ -134,30 +134,28 @@ export default function VisaTimelineTab() {
   return (
     <div className="space-y-6">
       <div className="space-y-1">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-500">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-success">
           F-1 / OPT / H-1B
         </p>
         <div className="flex flex-wrap items-center gap-2">
           <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight">
-            <span className="bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-              Visa Timeline Copilot
-            </span>
+            <span className="text-success">Visa Timeline Copilot</span>
           </h2>
-          <span className="rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-300">
+          <span className="rounded-full border border-success/25 bg-success/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-success">
             Beta
           </span>
         </div>
         <p className="text-sm text-muted-foreground max-w-2xl">
           Single source of truth for visa cliffs: OPT 90-day unemployment, STEM
           extension filing window, H-1B lottery deadlines. Your profile stays in
-          your account — nothing is shared.
+          your account. Nothing is shared.
         </p>
       </div>
 
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
-            <ShieldCheck className="h-4 w-4 text-emerald-500" />
+            <ShieldCheck className="h-4 w-4 text-success" />
             Your visa profile
           </CardTitle>
           <CardDescription className="text-xs">
@@ -267,7 +265,7 @@ export default function VisaTimelineTab() {
                 type="checkbox"
                 checked={profile.stem_degree}
                 onChange={(e) => update('stem_degree', e.target.checked)}
-                className="h-3.5 w-3.5 accent-emerald-600"
+                className="h-3.5 w-3.5 accent-success"
               />
               STEM degree
             </label>
@@ -276,7 +274,7 @@ export default function VisaTimelineTab() {
                 type="checkbox"
                 checked={profile.stem_extension_filed}
                 onChange={(e) => update('stem_extension_filed', e.target.checked)}
-                className="h-3.5 w-3.5 accent-emerald-600"
+                className="h-3.5 w-3.5 accent-success"
               />
               STEM extension filed
             </label>
@@ -285,7 +283,7 @@ export default function VisaTimelineTab() {
                 type="checkbox"
                 checked={profile.h1b_lottery_filed}
                 onChange={(e) => update('h1b_lottery_filed', e.target.checked)}
-                className="h-3.5 w-3.5 accent-emerald-600"
+                className="h-3.5 w-3.5 accent-success"
               />
               H-1B registered this FY
             </label>
@@ -294,7 +292,7 @@ export default function VisaTimelineTab() {
                 type="checkbox"
                 checked={profile.current_employer_e_verified}
                 onChange={(e) => update('current_employer_e_verified', e.target.checked)}
-                className="h-3.5 w-3.5 accent-emerald-600"
+                className="h-3.5 w-3.5 accent-success"
               />
               Current employer is E-Verified
             </label>
@@ -305,12 +303,12 @@ export default function VisaTimelineTab() {
               onClick={handleSave}
               disabled={saving || !dirty}
               size="sm"
-              className="gap-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white"
+              className="gap-1.5"
             >
               {saving ? (
                 <>
                   <Loader2 className="h-3 w-3 animate-spin" />
-                  Saving…
+                  Saving...
                 </>
               ) : dirty ? (
                 <>
@@ -329,9 +327,9 @@ export default function VisaTimelineTab() {
       </Card>
 
       {recommendation && (
-        <Card className="border-emerald-500/30 bg-gradient-to-br from-emerald-500/[0.05] to-teal-500/[0.05]">
+        <Card className="border-success/30 bg-success/[0.05]">
           <CardContent className="p-4 space-y-1.5">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-300 inline-flex items-center gap-1.5">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-success inline-flex items-center gap-1.5">
               <ShieldCheck className="h-3 w-3" />
               AI recommendation
             </p>
@@ -378,9 +376,9 @@ export default function VisaTimelineTab() {
                       </p>
                     )}
                     {m.severity === 'critical' && (
-                      <p className="text-[11px] text-rose-700 dark:text-rose-300 inline-flex items-center gap-1">
+                      <p className="text-[11px] text-destructive inline-flex items-center gap-1">
                         <AlertCircle className="h-3 w-3" />
-                        Critical — act soon.
+                        Critical. Act soon.
                       </p>
                     )}
                   </CardContent>

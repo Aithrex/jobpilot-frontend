@@ -8,7 +8,7 @@ const STARTERS: string[] = [
   "Give me a crisp 60-second version of my elevator pitch.",
   "Drill me with 3 behavioral questions, then grade my answers.",
   "What's the most likely tough question I'll get? Walk me through a defence.",
-  "Pretend you're the hiring manager — ask me a tough question and let me answer.",
+  "Pretend you're the hiring manager. Ask me a tough question and let me answer.",
   "Suggest 5 questions I should ask the interviewer.",
   "Where are my biggest gaps vs this JD, and how do I close them verbally?",
 ];
@@ -97,7 +97,7 @@ export default function CoachChat({
 
       {/* Scroller */}
       <div ref={scrollerRef} className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-4">
-        {loading && <p className="text-sm text-muted-foreground">Loading history…</p>}
+        {loading && <p className="text-sm text-muted-foreground">Loading history...</p>}
         {!loading && messages.length === 0 && (
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground leading-relaxed">
@@ -137,13 +137,13 @@ export default function CoachChat({
           <div className="flex gap-2 items-center">
             <div className="shrink-0 w-8 h-8 rounded-md brand-gradient text-white text-xs flex items-center justify-center">🧑‍🏫</div>
             <div className="rounded-xl bg-muted px-3.5 py-2.5 text-[13px] text-muted-foreground border border-border inline-flex items-center gap-1.5">
-              <Spinner className="w-3.5 h-3.5" /> thinking…
+              <Spinner className="w-3.5 h-3.5" /> thinking...
             </div>
           </div>
         )}
       </div>
 
-      {/* Composer — sticky at the bottom of the chat panel */}
+      {/* Composer - sticky at the bottom of the chat panel */}
       <div className="shrink-0 border-t border-border px-3 py-3 bg-card/95 backdrop-blur-sm">
         <div className="flex items-end gap-2">
           <textarea
@@ -153,7 +153,7 @@ export default function CoachChat({
               if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
             }}
             rows={Math.min(5, Math.max(2, input.split("\n").length))}
-            placeholder="Ask your coach anything… (Enter to send, Shift+Enter for newline)"
+            placeholder="Ask your coach anything... (Enter to send, Shift+Enter for newline)"
             className="flex-1 resize-none text-sm leading-relaxed px-3.5 py-2.5 rounded-lg bg-muted/40 border border-input focus:outline-none focus:ring-2 focus:ring-ring/30 text-foreground placeholder:text-muted-foreground"
           />
           <button

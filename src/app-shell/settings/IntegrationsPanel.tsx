@@ -7,7 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import type { ConnectStatus } from "@/types/career";
 import GmailIntegration from "@/components/resume/GmailIntegration";
-import { ApifyKeyCard } from "@/components/job-search/ApifyKeyCard";
+// import { ApifyKeyCard } from "@/components/job-search/ApifyKeyCard";  // APIFY DISABLED (temporary)
 
 type Provider = "github" | "linkedin";
 
@@ -106,7 +106,7 @@ function SectionHeading({ title, description }: { title: string; description: st
 }
 
 /**
- * Unified integrations hub — consolidates the previously scattered connections
+ * Unified integrations hub - consolidates the previously scattered connections
  * (Gmail inbox sync, GitHub + LinkedIn OAuth, and the personal Apify key) into
  * one settings panel. Each connection reuses its existing feature component or
  * the shared connect endpoints via apiService.
@@ -138,7 +138,7 @@ export default function IntegrationsPanel() {
       <section className="space-y-3">
         <SectionHeading
           title="Gmail"
-          description="Sync your inbox so JobPilot can suggest application status updates."
+          description="Sync your inbox so Aspirely can suggest application status updates."
         />
         <GmailIntegration />
       </section>
@@ -172,7 +172,7 @@ export default function IntegrationsPanel() {
               label="GitHub"
               connected={!!status?.github.connected}
               detail={status?.github.login ? `Connected as ${status.github.login}` : undefined}
-              description="Surface real projects as proof-of-work on your résumé."
+              description="Surface real projects as proof-of-work on your resume."
               onChanged={loadStatus}
             />
             <ProviderRow
@@ -188,7 +188,7 @@ export default function IntegrationsPanel() {
         )}
       </section>
 
-      {/* Personal Apify key */}
+      {/* --- APIFY DISABLED (temporary): BYO Apify key card hidden. Restore to re-enable. ---
       <section className="space-y-3">
         <SectionHeading
           title="Job search"
@@ -196,6 +196,7 @@ export default function IntegrationsPanel() {
         />
         <ApifyKeyCard />
       </section>
+      --- APIFY DISABLED (temporary) --- */}
     </div>
   );
 }

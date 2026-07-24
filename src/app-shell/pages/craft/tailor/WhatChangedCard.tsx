@@ -1,5 +1,5 @@
 /**
- * WhatChangedCard — a compact "what the regeneration did" summary. Diffs the
+ * WhatChangedCard - a compact "what the regeneration did" summary. Diffs the
  * previous vs current tailored resume into 4 stat tiles: bullets added /
  * removed / edited (heuristic) and keywords added.
  *

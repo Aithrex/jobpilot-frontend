@@ -12,7 +12,7 @@ import { apiService } from '@/lib/api';
 import type { ApifyKeyStatus } from '@/types/jobs';
 
 interface ApifyKeyCardProps {
-  /** Optional callback when the key status changes — lets the parent
+  /** Optional callback when the key status changes - lets the parent
    *  refresh the pipeline UI affordances. */
   onChange?: (status: ApifyKeyStatus) => void;
   /** Force the card open in edit mode (e.g. after credit exhaustion). */
@@ -83,7 +83,7 @@ export function ApifyKeyCard({ onChange, forceOpenSignal }: ApifyKeyCardProps) {
     setDraft('');
     setShowKey(false);
     onChange?.(next);
-    toast.success('Apify key saved — next pipeline run will use your key.');
+    toast.success('Apify key saved. Next pipeline run will use your key.');
   };
 
   const handleDelete = async () => {
@@ -168,7 +168,7 @@ export function ApifyKeyCard({ onChange, forceOpenSignal }: ApifyKeyCardProps) {
               )}
             </div>
             {loading ? (
-              <p className="text-xs text-muted-foreground">Checking…</p>
+              <p className="text-xs text-muted-foreground">Checking...</p>
             ) : status?.has_key ? (
               <p className="text-xs text-muted-foreground">
                 Using <span className="font-mono">{status.masked}</span>
@@ -256,7 +256,7 @@ export function ApifyKeyCard({ onChange, forceOpenSignal }: ApifyKeyCardProps) {
                 className="gap-1 bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:opacity-90"
               >
                 <Check className="h-3.5 w-3.5" />
-                {saving ? 'Saving…' : 'Save'}
+                {saving ? 'Saving...' : 'Save'}
               </Button>
               <Button
                 size="sm"
@@ -307,7 +307,7 @@ export function ApifyKeyCard({ onChange, forceOpenSignal }: ApifyKeyCardProps) {
                   apify.com/sign-up
                   <ExternalLink className="h-3 w-3" />
                 </a>
-                . The free plan includes ~$5 of monthly credit — enough for daily pipeline runs.
+                . The free plan includes ~$5 of monthly credit, enough for daily pipeline runs.
               </li>
               <li>
                 <span className="font-semibold text-foreground">2.</span> Open{' '}
@@ -333,8 +333,8 @@ export function ApifyKeyCard({ onChange, forceOpenSignal }: ApifyKeyCardProps) {
                 your account instead of the shared one.
               </li>
               <li className="pt-1 text-[10px] italic">
-                Note: this site only uses two free Apify actors (LinkedIn + Workday scrapers) —
-                each daily run typically costs a few cents.
+                Note: this site only uses two free Apify actors (LinkedIn + Workday scrapers).
+                Each daily run typically costs a few cents.
               </li>
             </ol>
           )}

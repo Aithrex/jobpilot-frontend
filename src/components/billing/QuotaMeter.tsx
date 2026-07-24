@@ -27,14 +27,14 @@ export function QuotaMeter({ label, used, limit, feature, className }: Props) {
     <div className={cn('space-y-1', className)}>
       <div className="flex items-center justify-between text-xs">
         <span className="text-muted-foreground">{label}</span>
-        <span className={cn('font-medium tabular-nums', exhausted && 'text-destructive', near && 'text-amber-500')}>
+        <span className={cn('font-medium tabular-nums', exhausted && 'text-destructive', near && 'text-warning')}>
           {unlimited ? 'Unlimited' : `${used} / ${limit}`}
         </span>
       </div>
       {!unlimited && (
         <Progress
           value={pct}
-          className={cn('h-1.5', exhausted && '[&>div]:bg-destructive', near && '[&>div]:bg-amber-500')}
+          className={cn('h-1.5', exhausted && '[&>div]:bg-destructive', near && '[&>div]:bg-warning')}
         />
       )}
       {exhausted && (
@@ -43,7 +43,7 @@ export function QuotaMeter({ label, used, limit, feature, className }: Props) {
           onClick={() => open({ feature })}
           className="text-[11px] font-medium text-primary hover:underline"
         >
-          Daily limit reached — upgrade for more
+          Daily limit reached. Upgrade for more
         </button>
       )}
     </div>

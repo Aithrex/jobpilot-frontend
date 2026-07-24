@@ -138,9 +138,9 @@ export default function MockInterview({
     if (r.error || !r.data) return null;
 
     // The model returns one of several shapes depending on category. Accept all:
-    //  1. {category, difficulty, question: {...}} — the preferred wrap
-    //  2. {category, difficulty, ...fields}       — fields at top level
-    //  3. {...fields} directly                    — no metadata wrap
+    //  1. {category, difficulty, question: {...}} - the preferred wrap
+    //  2. {category, difficulty, ...fields} - fields at top level
+    //  3. {...fields} directly - no metadata wrap
     const raw: any = r.data;
     let q: any = raw.question;
     if (!q || typeof q !== "object") {
@@ -154,7 +154,7 @@ export default function MockInterview({
     }
     if (!q || (typeof q !== "object")) return null;
 
-    // Build the display text — works for every category shape
+    // Build the display text - works for every category shape
     let text = "";
     if (typeof q.question === "string") {
       text = q.question;
@@ -174,7 +174,7 @@ export default function MockInterview({
     let q = pickFromBank(cat, diff);
     if (!q) q = await fetchFresh(cat, diff);
     setGenerating(false);
-    if (!q) { toast.error("Couldn't get a question — try another category."); return; }
+    if (!q) { toast.error("Couldn't get a question. Try another category."); return; }
     setCurrent(q);
     setSeen(prev => [...prev, (q!.meta.question || q!.meta.title || q!.text).slice(0, 200)]);
     setTimerActive(true);
@@ -245,7 +245,7 @@ export default function MockInterview({
           {history.length > 0 && (
             <span className="text-sm text-muted-foreground">
               <b>{history.length}</b> answered · avg{" "}
-              <span className={`font-bold tabular-nums ${avgScore !== null ? scoreColor(avgScore) : ""}`}>{avgScore ?? "—"}</span>
+              <span className={`font-bold tabular-nums ${avgScore !== null ? scoreColor(avgScore) : ""}`}>{avgScore ?? " - "}</span>
             </span>
           )}
           <button
@@ -279,7 +279,7 @@ export default function MockInterview({
           <textarea
             value={answer}
             onChange={e => setAnswer(e.target.value)}
-            placeholder="Type your answer here — aim for structured, specific, grounded in your real experience. The coach scores it on relevance, clarity, specificity, and structure."
+            placeholder="Type your answer here. Aim for structured, specific, grounded in your real experience. The coach scores it on relevance, clarity, specificity, and structure."
             rows={8}
             disabled={evaluating || !!evaluation}
             className="w-full px-3.5 py-3 rounded-lg bg-card border border-input text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/30 resize-y font-sans leading-relaxed"
@@ -293,7 +293,7 @@ export default function MockInterview({
                 disabled={!answer.trim() || evaluating}
                 className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-medium text-white bg-success hover:bg-success/90 disabled:opacity-50 shadow-soft"
               >
-                {evaluating ? <Spinner /> : <span>✓</span>} {evaluating ? "Grading…" : "Grade my answer"}
+                {evaluating ? <Spinner /> : <span>✓</span>} {evaluating ? "Grading..." : "Grade my answer"}
               </button>
             )}
             {evaluation && (

@@ -39,7 +39,7 @@ const STATUS_CHIP: Record<string, string> = {
   withdrawn: "bg-muted text-muted-foreground",
 };
 
-/** Gmail mark — Google's literal brand colors (intentional; all chrome around it stays tokenized). */
+/** Gmail mark - Google's literal brand colors (intentional; all chrome around it stays tokenized). */
 const GMAIL_MARK = "bg-gradient-to-br from-[#EA4335] via-[#FBBC05] to-[#34A853]";
 
 function formatRelative(iso?: string | null): string {
@@ -120,10 +120,10 @@ export default function GmailIntegration({ onSyncComplete }: { onSyncComplete?: 
   // Total horizon at index 60 ≈ 7 minutes, which covers the worst-case first
   // sync after a 60-day backfill with per-record LLM calls.
   const pollDelayMs = (attempt: number): number => {
-    if (attempt < 3) return 2000;        // 0–6s
-    if (attempt < 8) return 3000;        // 6–21s
-    if (attempt < 16) return 5000;       // 21–61s
-    if (attempt < 30) return 8000;       // 61–173s
+    if (attempt < 3) return 2000;        // 0-6s
+    if (attempt < 8) return 3000;        // 6-21s
+    if (attempt < 16) return 5000;       // 21-61s
+    if (attempt < 30) return 8000;       // 61-173s
     return 12000;                        // 173s+
   };
 
@@ -138,10 +138,10 @@ export default function GmailIntegration({ onSyncComplete }: { onSyncComplete?: 
 
     const jobId = resp.data.job_id;
     syncPollRef.current = { jobId, cancelled: false };
-    const toastId = toast.loading("Scanning your inbox… this can take ~30–90s");
+    const toastId = toast.loading("Scanning your inbox... this can take ~30-90s");
 
     // Poll loop: progressive backoff, no fixed deadline. We keep going until
-    // the job either completes or fails — a slow first-time scan can take
+    // the job either completes or fails - a slow first-time scan can take
     // several minutes, and asking the user to refresh felt broken. To avoid
     // lying to ourselves, we cap at attempt=80 (~12 minutes wall clock at the
     // settled cadence) which is well past any legitimate sync time.
@@ -150,7 +150,7 @@ export default function GmailIntegration({ onSyncComplete }: { onSyncComplete?: 
     let stalledToastShown = false;
 
     for (let attempt = 0; attempt < 80; attempt++) {
-      // Bail early if a newer sync started or the component unmounted —
+      // Bail early if a newer sync started or the component unmounted  - 
       // syncPollRef.current is reset to null on unmount.
       if (!syncPollRef.current || syncPollRef.current.cancelled || syncPollRef.current.jobId !== jobId) {
         return;
@@ -162,7 +162,7 @@ export default function GmailIntegration({ onSyncComplete }: { onSyncComplete?: 
       const poll = await apiService.pollGmailSyncJob(jobId);
       if (poll.error) {
         // Transient errors (network blip, brief 5xx) are common during long
-        // jobs — don't break the loop, just remember the latest and continue.
+        // jobs - don't break the loop, just remember the latest and continue.
         lastError = poll.error;
         continue;
       }
@@ -179,7 +179,7 @@ export default function GmailIntegration({ onSyncComplete }: { onSyncComplete?: 
       // Update the toast text once we cross the "this is taking a while"
       // threshold so the user sees we're still on it instead of stuck.
       if (!stalledToastShown && attempt >= 16) {
-        toast.loading("Still scanning — large inboxes can take a couple of minutes…", { id: toastId });
+        toast.loading("Still scanning. Large inboxes can take a couple of minutes...", { id: toastId });
         stalledToastShown = true;
       }
     }
@@ -203,7 +203,7 @@ export default function GmailIntegration({ onSyncComplete }: { onSyncComplete?: 
     }
 
     // We ran out of attempts without a terminal status. Refresh the data
-    // anyway — the job is almost certainly done; we just stopped polling.
+    // anyway - the job is almost certainly done; we just stopped polling.
     toast.success("Sync is taking longer than usual. Showing what's ready so far.", { id: toastId });
     await Promise.all([loadStatus(), loadSuggestions()]);
     onSyncComplete?.();
@@ -244,7 +244,7 @@ export default function GmailIntegration({ onSyncComplete }: { onSyncComplete?: 
 
   const pendingCount = useMemo(() => suggestions.length, [suggestions]);
 
-  // Loading — a stable-height stand-in for the banner so nothing shifts.
+  // Loading - a stable-height stand-in for the banner so nothing shifts.
   if (loading) {
     return (
       <div className="rounded-2xl border border-border bg-card p-3.5 shadow-soft" aria-hidden="true">
@@ -259,7 +259,7 @@ export default function GmailIntegration({ onSyncComplete }: { onSyncComplete?: 
     );
   }
 
-  // Error — quiet inline failure with a retry, in place of the banner.
+  // Error - quiet inline failure with a retry, in place of the banner.
   if (statusError && !status) {
     return (
       <div className="flex flex-wrap items-center gap-1.5 rounded-2xl border border-border bg-card p-3.5 text-xs text-muted-foreground shadow-soft">
@@ -275,7 +275,7 @@ export default function GmailIntegration({ onSyncComplete }: { onSyncComplete?: 
   }
 
   if (!status) return null;
-  if (!status.configured) return null; // server has no Google creds — hide silently
+  if (!status.configured) return null; // server has no Google creds - hide silently
 
   return (
     <div className="space-y-3">
@@ -290,7 +290,7 @@ export default function GmailIntegration({ onSyncComplete }: { onSyncComplete?: 
             </p>
             <p className="text-[11px] text-muted-foreground truncate">
               {status.connected
-                ? <>{status.gmail_address || "—"} · last sync {formatRelative(status.last_synced_at)}</>
+                ? <>{status.gmail_address || " - "} · last sync {formatRelative(status.last_synced_at)}</>
                 : "Link your inbox so confirmations, interviews, and rejections move cards automatically."}
             </p>
           </div>
@@ -301,7 +301,7 @@ export default function GmailIntegration({ onSyncComplete }: { onSyncComplete?: 
                 disabled={linking}
                 className="text-[11px] font-semibold px-3 py-1.5 rounded-lg bg-primary text-primary-foreground shadow-soft transition-colors hover:bg-primary/90 disabled:opacity-60"
               >
-                {linking ? "Opening Google…" : "Connect Gmail"}
+                {linking ? "Opening Google..." : "Connect Gmail"}
               </button>
             ) : (
               <>
@@ -310,7 +310,7 @@ export default function GmailIntegration({ onSyncComplete }: { onSyncComplete?: 
                   disabled={syncing}
                   className="text-[11px] font-semibold px-3 py-1.5 rounded-lg bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60"
                 >
-                  {syncing ? "Syncing…" : "Sync now"}
+                  {syncing ? "Syncing..." : "Sync now"}
                 </button>
                 <button
                   onClick={handleDisconnect}

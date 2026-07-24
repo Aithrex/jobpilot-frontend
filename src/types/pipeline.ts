@@ -1,5 +1,5 @@
 /**
- * Pipeline Intelligence — funnel conversion, ghosted applications, and the
+ * Pipeline Intelligence - funnel conversion, ghosted applications, and the
  * (privacy-noised) cohort comparison. Backend: /api/resume/pipeline/*.
  */
 

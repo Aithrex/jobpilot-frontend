@@ -36,7 +36,7 @@ const STATUS_TONE: Record<string, string> = {
 };
 
 function formatTs(iso: string | null) {
-  if (!iso) return '—';
+  if (!iso) return ' - ';
   try {
     return new Date(iso).toLocaleString(undefined, {
       year: 'numeric',
@@ -153,7 +153,7 @@ export function FeedbackPanel() {
 
       {loading && (
         <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-6 text-center text-sm text-gray-500">
-          Loading feedback…
+          Loading feedback...
         </div>
       )}
 
@@ -197,7 +197,7 @@ export function FeedbackPanel() {
                     onChange={(e) => setDraftResponse(e.target.value)}
                     rows={4}
                     maxLength={4000}
-                    placeholder="Write a response — the user can read this in their feedback history."
+                    placeholder="Write a response. The user can read this in their feedback history."
                     className="w-full resize-none rounded-md border border-white/[0.08] bg-white/[0.03] p-2 text-sm text-gray-200 placeholder:text-gray-600 focus:border-purple-400/60 focus:outline-none"
                   />
                   <div className="flex justify-end gap-2">
@@ -212,7 +212,7 @@ export function FeedbackPanel() {
                       disabled={savingId === it.id}
                       className="rounded-md border border-purple-400/50 bg-purple-500/10 px-3 py-1 text-xs font-medium text-purple-200 hover:bg-purple-500/20 disabled:opacity-50"
                     >
-                      {savingId === it.id ? 'Saving…' : 'Send response'}
+                      {savingId === it.id ? 'Saving...' : 'Send response'}
                     </button>
                   </div>
                 </div>

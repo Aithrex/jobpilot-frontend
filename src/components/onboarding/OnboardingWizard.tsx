@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, KeyboardEvent, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -21,7 +21,7 @@ import {
 } from './onboarding';
 
 /**
- * First-run onboarding — the product sequence:
+ * First-run onboarding - the product sequence:
  *   sign in (elsewhere) → 1) upload resume → 2) connect LinkedIn (skippable)
  *   → 3) a FEW resume-derived questions (target role, level, sponsorship,
  *   locations) → profile ready → land in the app.
@@ -43,6 +43,15 @@ const STEPS = [
 const LINKEDIN_STEP = 1;
 const QUESTIONS_STEP = 2;
 
+/** House ease (matches AuthShell) for the cinematic reveals. */
+const EASE: [number, number, number, number] = [0.16, 1, 0.3, 1];
+
+/**
+ * Presentation phases around the (unchanged) data-collecting steps:
+ * a full-bleed welcome moment → the 3 steps → a "workspace ready" resolve.
+ */
+type WizardPhase = 'welcome' | 'steps' | 'resolve';
+
 // ── Small reusable tag input (chips + suggestions) ──────────────────────────
 function TagInput({ value, onChange, placeholder, suggestions }: {
   value: string[]; onChange: (v: string[]) => void; placeholder: string; suggestions?: string[];
@@ -63,7 +72,13 @@ function TagInput({ value, onChange, placeholder, suggestions }: {
         {value.map((t) => (
           <span key={t} className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-sm text-primary">
             {t}
-            <button type="button" onClick={() => onChange(value.filter((x) => x !== t))} aria-label={`Remove ${t}`}>
+            {/* 24px hit target; negative margins keep the chip's visual size. */}
+            <button
+              type="button"
+              onClick={() => onChange(value.filter((x) => x !== t))}
+              aria-label={`Remove ${t}`}
+              className="-my-1.5 -ml-1 -mr-1.5 grid h-6 w-6 shrink-0 place-items-center rounded-full transition-colors hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
               <X className="h-3 w-3" />
             </button>
           </span>
@@ -96,6 +111,7 @@ function Chip({ active, onClick, children }: { active: boolean; onClick: () => v
     <button
       type="button"
       onClick={onClick}
+      aria-pressed={active}
       className={`rounded-full border px-3 py-1.5 text-sm transition-colors ${
         active ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:border-primary/50'
       }`}
@@ -113,6 +129,12 @@ export default function OnboardingWizard() {
   const pending = isAuthenticated && !!user && user.onboarded === false;
 
   const [dismissed, setDismissed] = useState(() => isOnboardingSnoozed());
+  // Fresh users get the cinematic welcome; anyone with real saved progress
+  // (e.g. resuming from the LinkedIn OAuth redirect) goes straight to steps.
+  const [phase, setPhase] = useState<WizardPhase>(() => {
+    const saved = loadOnboardingState();
+    return saved && (saved.stepIndex > 0 || saved.resumeDone) ? 'steps' : 'welcome';
+  });
   const [ready, setReady] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
   const [resumeState, setResumeState] = useState<ResumeState>('idle');
@@ -120,6 +142,9 @@ export default function OnboardingWizard() {
   const [defaults, setDefaults] = useState<OnboardingDefaults>(EMPTY_DEFAULTS);
   const [answers, setAnswers] = useState<OnboardingAnswers>(EMPTY_ANSWERS);
   const [saving, setSaving] = useState(false);
+  // Safety valve: even the brief preference-save write can never trap the user.
+  // If a save somehow hangs, this flips true and the modal becomes closable.
+  const [saveEscapable, setSaveEscapable] = useState(false);
 
   const [liConnected, setLiConnected] = useState(false);
   const [liName, setLiName] = useState('');
@@ -128,6 +153,10 @@ export default function OnboardingWizard() {
 
   const fileRef = useRef<HTMLInputElement | null>(null);
   const hydrated = useRef(false);
+  const resolveTimer = useRef<number | null>(null);
+  // Controls the in-flight resume parse so Cancel/close/unmount can abort it
+  // (upload fetch + the up-to-120s poll) instead of trapping the user.
+  const parseAbortRef = useRef<AbortController | null>(null);
 
   const update = useCallback(
     (patch: Partial<OnboardingAnswers>) => setAnswers((a) => ({ ...a, ...patch })),
@@ -208,7 +237,24 @@ export default function OnboardingWizard() {
     saveOnboardingState({ stepIndex, resumeDone, defaults, answers });
   }, [ready, pending, stepIndex, resumeDone, defaults, answers]);
 
-  if (!pending || dismissed) return null;
+  // Clear the resolve → navigate timer and abort any in-flight parse on unmount.
+  useEffect(() => () => {
+    if (resolveTimer.current) window.clearTimeout(resolveTimer.current);
+    parseAbortRef.current?.abort();
+  }, []);
+
+  // A hung preference save must not trap the user: after a few seconds, allow
+  // the modal to close even while `saving`.
+  useEffect(() => {
+    if (!saving) { setSaveEscapable(false); return; }
+    const t = window.setTimeout(() => setSaveEscapable(true), 6000);
+    return () => window.clearTimeout(t);
+  }, [saving]);
+
+  // Keep rendering through the resolve moment: savePreferences refreshes the
+  // profile (user.onboarded flips true) before we navigate, which drops
+  // `pending` - without this guard the "ready" beat would unmount instantly.
+  if ((!pending && phase !== 'resolve') || dismissed) return null;
 
   const handleFile = async (file: File) => {
     if (!file) return;
@@ -216,16 +262,35 @@ export default function OnboardingWizard() {
       toast.error('Please upload a PDF or Word document.');
       return;
     }
+    // Fresh controller per parse so Cancel/close/unmount can abort it.
+    parseAbortRef.current?.abort();
+    const controller = new AbortController();
+    parseAbortRef.current = controller;
+
     setResumeState('parsing');
-    const res = await apiService.uploadResumeForParser(file);
-    if (res.error) {
-      setResumeState('error');
-      toast.error("Couldn't read that resume", { description: res.error });
-      return;
-    }
+    const res = await apiService.uploadResumeForParser(file, controller.signal);
+
+    // The user canceled/closed mid-parse - don't clobber their state.
+    if (controller.signal.aborted) return;
+    parseAbortRef.current = null;
+
     const parsed = (res.data as { parsed_resume?: unknown; resume?: unknown })?.parsed_resume
       ?? (res.data as { resume?: unknown })?.resume
-      ?? {};
+      ?? null;
+    const hasParsed =
+      !!parsed && typeof parsed === 'object' && Object.keys(parsed as object).length > 0;
+
+    // Treat a failed poll OR an empty/absent parse as a real error - never let
+    // "no usable data" fall through as fake success (root cause: empty-string
+    // errors slipping past `if (res.error)`).
+    if (res.error || !res.data || !hasParsed) {
+      setResumeState('error');
+      toast.error("Couldn't read that resume", {
+        description: res.error || 'We could not read that resume. Please try another file.',
+      });
+      return;
+    }
+
     let d = deriveDefaultsFromParsed(parsed);
     const st = await apiService.getResumeStatus().catch(() => null);
     if (st?.data) d = mergeStatusDefaults(d, st.data);
@@ -235,9 +300,20 @@ export default function OnboardingWizard() {
     setResumeState('parsed');
   };
 
+  /**
+   * Cancel an in-flight parse and return to the upload prompt (stays in the
+   * wizard). Wired to the visible "Cancel" control in the parsing view.
+   */
+  const cancelParse = () => {
+    parseAbortRef.current?.abort();
+    parseAbortRef.current = null;
+    setResumeState('idle');
+    toast('Canceled. You can re-upload or skip for now.');
+  };
+
   const startLinkedin = async () => {
     setLiConnecting(true);
-    // Persist first — the browser fully navigates to LinkedIn and back.
+    // Persist first - the browser fully navigates to LinkedIn and back.
     saveOnboardingState({ stepIndex: LINKEDIN_STEP, resumeDone, defaults, answers });
     const r = await apiService.getConnectAuthorizeUrl('linkedin');
     if (r.data?.authorize_url) {
@@ -269,16 +345,50 @@ export default function OnboardingWizard() {
       return;
     }
     clearOnboardingState();
-    toast.success("You're all set — welcome to Aspirely!");
-    navigate('/app', { replace: true });
+    // Cinematic resolve: a brief "your workspace is ready" beat, then in.
+    setPhase('resolve');
+    resolveTimer.current = window.setTimeout(
+      () => navigate('/next/today', { replace: true }),
+      reduce ? 900 : 1700,
+    );
+  };
+
+  /**
+   * Session snooze - dismisses the wizard WITHOUT marking onboarding complete,
+   * so it returns next login until the user genuinely finishes. Used by both
+   * the dialog close and the final step's "Skip for now".
+   */
+  const snoozeAndClose = () => {
+    saveOnboardingState({ stepIndex, resumeDone, defaults, answers });
+    snoozeOnboarding();
+    setDismissed(true);
+  };
+
+  const skipForNow = () => {
+    snoozeAndClose();
+    toast("Skipped for now. We'll pick this up next time you sign in.");
   };
 
   const handleOpenChange = (open: boolean) => {
     if (open) return;
-    if (saving || resumeState === 'parsing') return; // don't drop mid-work
-    saveOnboardingState({ stepIndex, resumeDone, defaults, answers });
-    snoozeOnboarding();
-    setDismissed(true);
+    // Never trap the user. If a parse is in flight, abort it first (upload +
+    // poll) so nothing keeps running in the background, then let them out.
+    if (resumeState === 'parsing') {
+      parseAbortRef.current?.abort();
+      parseAbortRef.current = null;
+      snoozeAndClose();
+      return;
+    }
+    // The "workspace is ready" beat auto-navigates, but a manual close must
+    // still work in case navigation is slow or blocked.
+    if (phase === 'resolve') {
+      snoozeAndClose();
+      return;
+    }
+    // Guard only the very brief preference write - and even that gives way
+    // after the safety timeout so it can never trap the user.
+    if (saving && !saveEscapable) return;
+    snoozeAndClose();
   };
 
   const stepVariants = reduce
@@ -288,68 +398,134 @@ export default function OnboardingWizard() {
   return (
     <Dialog open onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-lg gap-0 overflow-hidden p-0 sm:rounded-2xl">
-        {/* Progress */}
-        <div className="border-b border-border px-5 pb-4 pt-5 sm:px-6">
-          <div className="flex items-center gap-1.5">
-            {STEPS.map((_, i) => (
-              <span
-                key={i}
-                className={`h-1.5 flex-1 rounded-full transition-colors ${i <= stepIndex ? 'bg-primary' : 'bg-muted'}`}
-              />
-            ))}
-          </div>
-          <div className="mt-2 flex items-center justify-between">
-            <p className="text-xs font-medium text-muted-foreground">
-              Step {stepIndex + 1} of {STEPS.length} · {STEPS[stepIndex].label}
-            </p>
-            <p className="hidden text-xs text-muted-foreground sm:block">You can change all of this later</p>
-          </div>
-        </div>
+        {/* Radix a11y: the dialog always has an accessible name + description;
+            the title tracks the current phase/step. */}
+        <DialogTitle className="sr-only">
+          {phase === 'welcome'
+            ? 'Welcome to Aspirely'
+            : phase === 'resolve'
+              ? 'Your workspace is ready'
+              : `Set up your workspace. Step ${stepIndex + 1} of ${STEPS.length}: ${STEPS[stepIndex].label}`}
+        </DialogTitle>
+        <DialogDescription className="sr-only">
+          Upload your resume, connect LinkedIn, and confirm a few details to personalize your workspace.
+        </DialogDescription>
 
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={stepIndex}
-            initial={stepVariants.initial}
-            animate={stepVariants.animate}
-            exit={stepVariants.exit}
-            transition={{ duration: reduce ? 0 : 0.2 }}
-          >
-            {stepIndex === 0 && (
-              <ResumeStep
-                state={resumeState}
-                defaults={defaults}
-                onPick={() => fileRef.current?.click()}
-                onDropFile={handleFile}
-                onRetry={() => setResumeState('idle')}
-                onSkip={() => setStepIndex(LINKEDIN_STEP)}
-                onContinue={() => setStepIndex(LINKEDIN_STEP)}
-              />
-            )}
+        <AnimatePresence mode="wait" initial={false}>
+          {phase === 'welcome' && (
+            <motion.div
+              key="welcome"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: reduce ? 0 : 0.3 }}
+            >
+              <WelcomeMoment onBegin={() => setPhase('steps')} />
+            </motion.div>
+          )}
 
-            {stepIndex === LINKEDIN_STEP && (
-              <LinkedInStep
-                connected={liConnected}
-                name={liName}
-                checking={liChecking}
-                connecting={liConnecting}
-                onConnect={startLinkedin}
-                onBack={() => setStepIndex(0)}
-                onSkip={() => setStepIndex(QUESTIONS_STEP)}
-                onContinue={() => setStepIndex(QUESTIONS_STEP)}
-              />
-            )}
+          {phase === 'steps' && (
+            <motion.div
+              key="steps"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: reduce ? 0 : 0.3 }}
+            >
+              {/* Thin timeline: hairline track, animated fill, one dot per step. */}
+              <div className="border-b border-border px-5 pb-4 pt-6 sm:px-6">
+                <div className="relative mx-0.5 flex items-center justify-between">
+                  <span className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-border" aria-hidden />
+                  <motion.span
+                    className="absolute left-0 top-1/2 h-px -translate-y-1/2 bg-primary"
+                    initial={false}
+                    animate={{ width: `${(stepIndex / (STEPS.length - 1)) * 100}%` }}
+                    transition={{ duration: reduce ? 0 : 0.45, ease: EASE }}
+                    aria-hidden
+                  />
+                  {STEPS.map((s, i) => (
+                    <span
+                      key={s.label}
+                      className={`relative z-10 h-2 w-2 rounded-full transition-colors duration-300 ${
+                        i < stepIndex
+                          ? 'bg-primary'
+                          : i === stepIndex
+                            ? 'bg-primary ring-4 ring-primary/20'
+                            : 'border border-border bg-background'
+                      }`}
+                      aria-hidden
+                    />
+                  ))}
+                </div>
+                <div className="mt-2.5 flex items-center justify-between">
+                  <p className="text-xs font-medium text-muted-foreground">
+                    Step {stepIndex + 1} of {STEPS.length} · {STEPS[stepIndex].label}
+                  </p>
+                  <p className="hidden text-xs text-muted-foreground sm:block">You can change all of this later</p>
+                </div>
+              </div>
 
-            {stepIndex === QUESTIONS_STEP && (
-              <QuestionsStep
-                answers={answers}
-                defaults={defaults}
-                update={update}
-                saving={saving}
-                onBack={() => setStepIndex(LINKEDIN_STEP)}
-                onFinish={complete}
-              />
-            )}
-          </motion.div>
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={stepIndex}
+                  initial={stepVariants.initial}
+                  animate={stepVariants.animate}
+                  exit={stepVariants.exit}
+                  transition={{ duration: reduce ? 0 : 0.25, ease: EASE }}
+                >
+                  {stepIndex === 0 && (
+                    <ResumeStep
+                      state={resumeState}
+                      defaults={defaults}
+                      onPick={() => fileRef.current?.click()}
+                      onDropFile={handleFile}
+                      onRetry={() => setResumeState('idle')}
+                      onCancel={cancelParse}
+                      onSkip={() => setStepIndex(LINKEDIN_STEP)}
+                      onContinue={() => setStepIndex(LINKEDIN_STEP)}
+                    />
+                  )}
+
+                  {stepIndex === LINKEDIN_STEP && (
+                    <LinkedInStep
+                      connected={liConnected}
+                      name={liName}
+                      checking={liChecking}
+                      connecting={liConnecting}
+                      onConnect={startLinkedin}
+                      onBack={() => setStepIndex(0)}
+                      onSkip={() => setStepIndex(QUESTIONS_STEP)}
+                      onContinue={() => setStepIndex(QUESTIONS_STEP)}
+                    />
+                  )}
+
+                  {stepIndex === QUESTIONS_STEP && (
+                    <QuestionsStep
+                      answers={answers}
+                      defaults={defaults}
+                      update={update}
+                      saving={saving}
+                      onBack={() => setStepIndex(LINKEDIN_STEP)}
+                      onSkip={skipForNow}
+                      onFinish={complete}
+                    />
+                  )}
+                </motion.div>
+              </AnimatePresence>
+            </motion.div>
+          )}
+
+          {phase === 'resolve' && (
+            <motion.div
+              key="resolve"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: reduce ? 0 : 0.3 }}
+            >
+              <ReadyMoment />
+            </motion.div>
+          )}
         </AnimatePresence>
 
         <input
@@ -364,24 +540,117 @@ export default function OnboardingWizard() {
   );
 }
 
+// ── Cinematic moments (presentation only - no data behavior) ────────────────
+
+/** Dark, brand-tinted gradient backdrop shared by the welcome + resolve beats.
+    Black overlays over the brand gradient keep it deliberately dark in BOTH
+    themes (same pattern as the glass surfaces in index.css). */
+function CinematicBackdrop() {
+  return (
+    <div className="pointer-events-none absolute inset-0" aria-hidden>
+      <div className="brand-gradient absolute inset-0" />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/40 to-black/65" />
+      <div className="bg-grid-faint absolute inset-0 opacity-30" />
+    </div>
+  );
+}
+
+/** Full-bleed opening: staged reveals - mark → headline → promise → begin. */
+function WelcomeMoment({ onBegin }: { onBegin: () => void }) {
+  const reduce = useReducedMotion();
+  const container = {
+    hidden: {},
+    show: { transition: { staggerChildren: reduce ? 0 : 0.4, delayChildren: reduce ? 0 : 0.2 } },
+  };
+  const item = {
+    hidden: { opacity: 0, y: reduce ? 0 : 14 },
+    show: { opacity: 1, y: 0, transition: { duration: reduce ? 0 : 0.55, ease: EASE } },
+  };
+  return (
+    <div className="relative overflow-hidden px-6 py-14 text-center sm:py-16">
+      <CinematicBackdrop />
+      <motion.div variants={container} initial="hidden" animate="show" className="relative">
+        <motion.span
+          variants={item}
+          className="mx-auto mb-5 grid h-14 w-14 place-items-center rounded-2xl bg-white/10 text-white backdrop-blur"
+        >
+          <Sparkles className="h-7 w-7" aria-hidden />
+        </motion.span>
+        <motion.h2
+          variants={item}
+          className="font-display text-2xl font-extrabold tracking-tight text-white sm:text-3xl"
+        >
+          Welcome to Aspirely
+        </motion.h2>
+        <motion.p variants={item} className="mx-auto mt-3 max-w-xs text-sm leading-relaxed text-white/80">
+          A workspace built around your real experience. Ready in about two minutes.
+        </motion.p>
+        <motion.div variants={item} className="mt-8">
+          <Button size="lg" onClick={onBegin} className="bg-white text-black hover:bg-white/90">
+            Let's begin <ArrowRight className="h-4 w-4" />
+          </Button>
+        </motion.div>
+      </motion.div>
+    </div>
+  );
+}
+
+/** "Your workspace is ready" resolve, shown briefly before navigating in. */
+function ReadyMoment() {
+  const reduce = useReducedMotion();
+  return (
+    <div className="relative overflow-hidden px-6 py-16 text-center">
+      <CinematicBackdrop />
+      <div className="relative" role="status" aria-live="polite">
+        <motion.span
+          initial={{ opacity: 0, scale: reduce ? 1 : 0.5 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: reduce ? 0 : 0.45, ease: EASE }}
+          className="mx-auto mb-5 grid h-14 w-14 place-items-center rounded-full bg-white/15 text-white"
+        >
+          <Check className="h-7 w-7" aria-hidden />
+        </motion.span>
+        <motion.h2
+          initial={{ opacity: 0, y: reduce ? 0 : 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: reduce ? 0 : 0.25, duration: reduce ? 0 : 0.5, ease: EASE }}
+          className="font-display text-2xl font-extrabold tracking-tight text-white"
+        >
+          Your workspace is ready
+        </motion.h2>
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: reduce ? 0 : 0.5, duration: reduce ? 0 : 0.4 }}
+          className="mt-2 text-sm text-white/80"
+        >
+          Taking you to your dashboard...
+        </motion.p>
+      </div>
+    </div>
+  );
+}
+
 // ── Step 1: Resume ──────────────────────────────────────────────────────────
-function ResumeStep({ state, defaults, onPick, onDropFile, onRetry, onSkip, onContinue }: {
+function ResumeStep({ state, defaults, onPick, onDropFile, onRetry, onCancel, onSkip, onContinue }: {
   state: ResumeState;
   defaults: OnboardingDefaults;
   onPick: () => void;
   onDropFile: (f: File) => void;
   onRetry: () => void;
+  onCancel: () => void;
   onSkip: () => void;
   onContinue: () => void;
 }) {
   const [dragging, setDragging] = useState(false);
+  const reduce = useReducedMotion();
   return (
     <div className="px-5 pb-6 pt-5 sm:px-6">
       <div className="flex items-center gap-2 text-primary">
         <Sparkles className="h-5 w-5" />
         <span className="text-xs font-semibold uppercase tracking-wide">Welcome to Aspirely</span>
       </div>
-      <h2 className="mt-1.5 text-xl font-bold tracking-tight">Upload your resume — we'll do the rest</h2>
+      <h2 className="mt-1.5 text-xl font-bold tracking-tight">Upload your resume. We'll do the rest</h2>
       <p className="mt-1 text-sm text-muted-foreground">
         One upload personalizes your workspace and pre-fills your profile. No forms required.
       </p>
@@ -406,12 +675,23 @@ function ResumeStep({ state, defaults, onPick, onDropFile, onRetry, onSkip, onCo
               <span className="text-xs text-muted-foreground">PDF or Word · we never share it</span>
             </button>
             <button type="button" onClick={onSkip} className="mt-4 block w-full text-center text-sm text-muted-foreground hover:text-foreground">
-              Skip for now — I'll add it later
+              Skip for now, I'll add it later
             </button>
           </div>
         )}
 
-        {state === 'parsing' && <MultiAgentProcessing active />}
+        {state === 'parsing' && (
+          <div>
+            <MultiAgentProcessing active />
+            <button
+              type="button"
+              onClick={onCancel}
+              className="mt-4 block w-full text-center text-sm text-muted-foreground hover:text-foreground"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
 
         {state === 'error' && (
           <div className="flex flex-col items-center gap-3 rounded-2xl border border-destructive/30 bg-destructive/5 p-8 text-center">
@@ -422,12 +702,17 @@ function ResumeStep({ state, defaults, onPick, onDropFile, onRetry, onSkip, onCo
         )}
 
         {state === 'parsed' && (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+          <motion.div
+            initial={{ opacity: 0, y: reduce ? 0 : 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: reduce ? 0 : 0.3, ease: EASE }}
+            className="space-y-4"
+          >
             <div className="rounded-2xl border border-primary/30 bg-primary/5 p-5 text-center">
               <span className="mx-auto mb-2 grid h-12 w-12 place-items-center rounded-full bg-primary/15 text-primary">
                 <Check className="h-6 w-6" />
               </span>
-              <p className="font-semibold">Resume read — profile pre-filled</p>
+              <p className="font-semibold">Resume read. Profile pre-filled</p>
               <p className="text-xs text-muted-foreground">We'll confirm a few details with you in a moment.</p>
             </div>
             {(defaults.roles.length > 0 || defaults.skills.length > 0) && (
@@ -478,7 +763,7 @@ function LinkedInStep({ connected, name, checking, connecting, onConnect, onBack
       </div>
       <h2 className="mt-1.5 text-xl font-bold tracking-tight">Bring your network along</h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        Connecting LinkedIn lets Aspirely audit your profile and share wins on your behalf — always with your review. Optional, and you can do it anytime.
+        Connecting LinkedIn lets Aspirely audit your profile and share wins on your behalf. Always with your review. Optional, and you can do it anytime.
       </p>
 
       <div className="mt-4 min-h-[180px]">
@@ -492,18 +777,18 @@ function LinkedInStep({ connected, name, checking, connecting, onConnect, onBack
               <Check className="h-6 w-6" />
             </span>
             <p className="font-semibold">LinkedIn connected{name ? ` · ${name}` : ''}</p>
-            <p className="text-xs text-muted-foreground">You're all set — we'll never post without your say-so.</p>
+            <p className="text-xs text-muted-foreground">You're all set. We'll never post without your say-so.</p>
           </div>
         ) : (
           <div className="rounded-2xl border border-border p-6">
             <ul className="space-y-2.5 text-sm">
               <li className="flex items-start gap-2"><ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" /> Audit your headline &amp; about for recruiter appeal</li>
-              <li className="flex items-start gap-2"><Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" /> Draft and post wins — you always approve first</li>
+              <li className="flex items-start gap-2"><Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" /> Draft and post wins. You always approve first</li>
               <li className="flex items-start gap-2"><Linkedin className="mt-0.5 h-4 w-4 shrink-0 text-primary" /> Keep your profile in sync with your target roles</li>
             </ul>
             <Button className="mt-5 w-full" onClick={onConnect} disabled={connecting}>
               {connecting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Linkedin className="h-4 w-4" />}
-              {connecting ? 'Opening LinkedIn…' : 'Connect LinkedIn'}
+              {connecting ? 'Opening LinkedIn...' : 'Connect LinkedIn'}
             </Button>
           </div>
         )}
@@ -527,12 +812,14 @@ function LinkedInStep({ connected, name, checking, connecting, onConnect, onBack
 }
 
 // ── Step 3: A few resume-derived questions ──────────────────────────────────
-function QuestionsStep({ answers, defaults, update, saving, onBack, onFinish }: {
+function QuestionsStep({ answers, defaults, update, saving, onBack, onSkip, onFinish }: {
   answers: OnboardingAnswers;
   defaults: OnboardingDefaults;
   update: (patch: Partial<OnboardingAnswers>) => void;
   saving: boolean;
   onBack: () => void;
+  /** Session snooze - does NOT complete onboarding (unlike onFinish). */
+  onSkip: () => void;
   onFinish: () => void;
 }) {
   const roleSuggestions = [...defaults.roles, ...ROLE_SUGGESTIONS];
@@ -544,7 +831,7 @@ function QuestionsStep({ answers, defaults, update, saving, onBack, onFinish }: 
       </div>
       <h2 className="mt-1.5 text-xl font-bold tracking-tight">A few quick things</h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        Pulled from your resume — confirm or tweak. Nothing here is locked in.
+        Pulled from your resume. Confirm or tweak. Nothing here is locked in.
       </p>
 
       <div className="mt-4 max-h-[52vh] space-y-5 overflow-y-auto pr-1">
@@ -625,7 +912,7 @@ function QuestionsStep({ answers, defaults, update, saving, onBack, onFinish }: 
           <ArrowLeft className="h-4 w-4" /> Back
         </Button>
         <div className="flex items-center gap-2">
-          <button type="button" onClick={onFinish} disabled={saving} className="text-sm text-muted-foreground hover:text-foreground">
+          <button type="button" onClick={onSkip} disabled={saving} className="text-sm text-muted-foreground hover:text-foreground">
             Skip for now
           </button>
           <Button onClick={onFinish} disabled={saving}>

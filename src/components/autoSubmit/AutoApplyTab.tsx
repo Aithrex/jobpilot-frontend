@@ -100,7 +100,7 @@ function SettingsCard({
             </h3>
           </div>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-            Off by default — Aspirely only prepares applications for you to
+            Off by default. Aspirely only prepares applications for you to
             review. Turn this on and Aspirely can submit an application{" "}
             <span className="font-medium text-foreground">
               after you approve it
@@ -123,7 +123,7 @@ function SettingsCard({
               enabled ? "text-primary" : "text-muted-foreground",
             )}
           >
-            {saving ? "Saving…" : enabled ? "On" : "Review only"}
+            {saving ? "Saving..." : enabled ? "On" : "Review only"}
           </span>
         </div>
       </div>
@@ -211,7 +211,7 @@ function ReviewCard({
         <div className="mt-4 space-y-3">
           <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             <Pencil className="h-3 w-3" />
-            Your answers — edit before approving
+            Your answers. Edit before approving
           </div>
           {questions.map((q) => (
             <div key={q} className="space-y-1">
@@ -430,7 +430,7 @@ export default function AutoApplyTab() {
       next ? "Auto-submit is on" : "Back to review only",
       {
         description: next
-          ? "Aspirely will submit applications you approve — with a cancel window."
+          ? "Aspirely will submit applications you approve, with a cancel window."
           : "Aspirely will only prepare applications for you to review.",
       },
     );
@@ -446,7 +446,7 @@ export default function AutoApplyTab() {
     );
   }
 
-  // Master flag off — feature unavailable. Kept calm; the nav entry should be
+  // Master flag off - feature unavailable. Kept calm; the nav entry should be
   // gated on `available` so users rarely land here.
   if (available === false) {
     return (
@@ -472,14 +472,14 @@ export default function AutoApplyTab() {
           Approve, then Aspirely submits
         </h2>
         <p className="text-sm text-muted-foreground">
-          You stay in control — nothing is sent until you approve it, and you can
+          You stay in control. Nothing is sent until you approve it, and you can
           cancel within a short window.
         </p>
       </header>
 
       <SettingsCard enabled={enabled} saving={savingSettings} onToggle={onToggle} />
 
-      {/* Ready to submit — the review queue */}
+      {/* Ready to submit - the review queue */}
       <section className="space-y-3">
         <SectionHeading
           icon={<Send className="h-4 w-4 text-primary" />}
@@ -537,7 +537,7 @@ export default function AutoApplyTab() {
         )}
       </section>
 
-      {/* Approved — handed to the extension */}
+      {/* Approved - handed to the extension */}
       {waiting.length > 0 && (
         <section className="space-y-3">
           <SectionHeading

@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { apiService } from '@/lib/api';
+import { claimGuestIfPresent } from '@/lib/guest';
 
 export interface AuthEntitlements {
   plan: string;
@@ -39,7 +40,7 @@ function mapProfile(data: ProfileData): AuthUser {
 interface AuthContextType {
   user: AuthUser | null;
   isAuthenticated: boolean;
-  /** @deprecated use isAdmin — kept for back-compat with existing callers */
+  /** @deprecated use isAdmin - kept for back-compat with existing callers */
   isSuperAdmin: boolean;
   isAdmin: boolean;
   isLoading: boolean;
@@ -129,6 +130,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { error: response.error };
       }
       if (response.data) {
+        // Claim any guest-onboarding work (resume + tailors) into this
+        // account before the app loads - idempotent server-side, clears
+        // guest_id on success, and never fails the login.
+        await claimGuestIfPresent();
         await refreshProfile();
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('auth:login'));
@@ -160,7 +165,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (response.error) {
         return { error: response.error };
       }
-      // Don't auto-login — clear any token set by the API call and let the
+      // Don't auto-login - clear any token set by the API call and let the
       // user sign in explicitly.
       apiService.logout();
       return { success: true };
@@ -220,6 +225,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null);
         return { error: 'Sign-in could not be completed. Please try again.' };
       }
+      // Social sign-in path - same guest-claim hook as password login.
+      await claimGuestIfPresent();
       await refreshProfile();
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('auth:login'));

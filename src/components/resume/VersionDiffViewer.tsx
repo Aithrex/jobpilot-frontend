@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import type { TailoringRecord, TailoringVersion, TailoredFullResume } from "@/types/resume";
 import { apiService } from "@/lib/api";
 
-// Minimal line-level diff. We avoid pulling in a heavy diff library — simple
+// Minimal line-level diff. We avoid pulling in a heavy diff library - simple
 // longest-common-subsequence over array elements (strings / bullets) gives a
 // clear-enough view for resumes. "diff" package listed in node_modules is not
 // always available at runtime in all build configs, so we roll our own.
@@ -122,7 +122,7 @@ export default function VersionDiffViewer({ record, onClose }: Props) {
           <div className="min-w-0">
             <p className="text-sm font-semibold text-foreground truncate">
               Compare versions · {record.jd_analysis?.job_title || "Record"}
-              {record.jd_analysis?.company && record.jd_analysis.company !== "Not specified" ? ` — ${record.jd_analysis.company}` : ""}
+              {record.jd_analysis?.company && record.jd_analysis.company !== "Not specified" ? ` · ${record.jd_analysis.company}` : ""}
             </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">

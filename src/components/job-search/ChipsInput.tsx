@@ -21,13 +21,13 @@ interface ChipsInputProps {
 export function ChipsInput({
   values,
   onChange,
-  placeholder = 'Type and press Enter…',
+  placeholder = 'Type and press Enter...',
   helperText,
   maxItems,
   defaultValues,
   suggestionValues,
   accentClass = 'border-purple-500/30 bg-purple-500/10 text-purple-700 dark:text-purple-300',
-  emptyState = 'No items yet — start typing or paste a comma-separated list.',
+  emptyState = 'No items yet. Start typing or paste a comma-separated list.',
   searchable = true,
 }: ChipsInputProps) {
   const [draft, setDraft] = useState('');
@@ -144,7 +144,7 @@ export function ChipsInput({
         <Input
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
-          placeholder={`Filter ${values.length} items…`}
+          placeholder={`Filter ${values.length} items...`}
           className="h-8 text-xs border-gray-200 bg-white/80 dark:border-white/10 dark:bg-gray-950/60 focus-visible:border-purple-500/40 focus-visible:ring-purple-500/40"
         />
       )}

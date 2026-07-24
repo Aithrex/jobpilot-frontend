@@ -1,13 +1,13 @@
 /**
  * Types for the unified "Today" inbox feed (GET /api/apply/today-inbox).
  *
- * The backend composes one queue of everything that may need the user today —
+ * The backend composes one queue of everything that may need the user today  - 
  * approvals awaiting input, auto-submit hand-offs, inbox status suggestions,
- * and "did you apply?" nudges — returned newest-first and capped at 50.
+ * and "did you apply?" nudges - returned newest-first and capped at 50.
  * This replaces the frontend's old best-effort synthesis of separate sources.
  */
 
-/** What a row represents — drives its icon and how the action reads. */
+/** What a row represents - drives its icon and how the action reads. */
 export type TodayInboxKind =
   | "needs_input"
   | "auto_submit"

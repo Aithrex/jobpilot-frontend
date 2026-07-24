@@ -1,22 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { apiService } from '@/lib/api';
+import type { ResumeAssetRow } from '@/types/resume';
 import StreakWidget from './StreakWidget';
 
-export interface BaseResume {
-  s3_key: string;
-  filename: string;
-  uploaded_at: string;
-  size?: number;
-  is_active?: boolean;
-}
-
-export interface GeneratedResume {
-  s3_key: string;
-  job_title?: string;
-  filename?: string;
-  created_at?: string;
-  generated_at?: string;
-}
+// Resume Platform v3: base resume rows come from `resume_assets` and are
+// identified by resume_id (no s3_key on a row).
+export type BaseResume = ResumeAssetRow;
 
 interface ResumeDashboardProps {
   onStartTailoring: () => void;
@@ -151,7 +140,7 @@ export default function ResumeDashboard({ onStartTailoring }: ResumeDashboardPro
     );
   }
 
-  // No active resume — prompt upload
+  // No active resume - prompt upload
   if (!activeResume) {
     return (
       <div className="space-y-5">
@@ -172,7 +161,7 @@ export default function ResumeDashboard({ onStartTailoring }: ResumeDashboardPro
                 : 'bg-primary hover:bg-primary/90 shadow-soft'
             }`}>
               {uploading ? (
-                <><span className="animate-spin rounded-full h-4 w-4 border-2 border-primary-foreground border-t-transparent" /> Uploading…</>
+                <><span className="animate-spin rounded-full h-4 w-4 border-2 border-primary-foreground border-t-transparent" /> Uploading...</>
               ) : (
                 <><UploadIcon className="w-4 h-4" /> Choose file</>
               )}
@@ -218,7 +207,7 @@ export default function ResumeDashboard({ onStartTailoring }: ResumeDashboardPro
                 </div>
                 <p className="text-xs text-muted-foreground mt-0.5">
                   Uploaded {formatDate(activeResume.uploaded_at)}
-                  {activeResume.size ? ` \u00B7 ${formatBytes(activeResume.size)}` : ''}
+                  {activeResume.size_bytes ? ` \u00B7 ${formatBytes(activeResume.size_bytes)}` : ''}
                 </p>
               </div>
             </div>

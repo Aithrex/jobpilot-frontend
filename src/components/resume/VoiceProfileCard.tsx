@@ -10,7 +10,7 @@ import type { VoiceProfile } from "@/types/voicegraph";
 
 const VOICE_KEY = ["voice-graph", "voice"] as const;
 
-/** How many "words you never use" to surface — enough to be recognizable, not a wall. */
+/** How many "words you never use" to surface - enough to be recognizable, not a wall. */
 const MAX_ANTI_PATTERNS = 6;
 /** How many distinctive verbs to show as chips. */
 const MAX_VERBS = 12;
@@ -76,7 +76,7 @@ function ReadyCard({
   return (
     <Card className="overflow-hidden">
       <div className="px-6 py-8 sm:px-10 sm:py-12">
-        {/* The hero — plain-English sentences, editorial, screenshot-worthy. */}
+        {/* The hero - plain-English sentences, editorial, screenshot-worthy. */}
         {description.length > 0 ? (
           <div className="mx-auto max-w-2xl space-y-4">
             {description.map((line, i) => (
@@ -161,8 +161,7 @@ function InsufficientCard({
           <span className="tabular-nums">{needed}</span> words
           {remaining > 0 && (
             <>
-              {" "}
-              — about{" "}
+              , about{" "}
               <span className="tabular-nums text-foreground">{remaining}</span>{" "}
               to go.
             </>

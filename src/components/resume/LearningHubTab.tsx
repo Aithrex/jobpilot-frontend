@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion, useReducedMotion } from 'framer-motion';
 import { apiService } from '@/lib/api';
@@ -27,7 +28,18 @@ function isUpgrade(res: { status?: number; errorPayload?: Record<string, unknown
   return res.status === 403 && res.errorPayload?.error === 'upgrade_required';
 }
 
-export default function LearningHubTab() {
+interface LearningHubTabProps {
+  /** Mounted inside the /next app shell - the shell already renders the page
+      header + SubNav, so suppress the internal hero and top padding. */
+  embedded?: boolean;
+}
+
+export default function LearningHubTab({ embedded }: LearningHubTabProps) {
+  // Shell pages pass `embedded` via outlet context (the routes in App.tsx
+  // mount this component without props); the legacy /app monolith passes
+  // neither, so it renders unchanged.
+  const shellCtx = useOutletContext<{ embedded?: boolean } | null>();
+  const isEmbedded = embedded ?? shellCtx?.embedded ?? false;
   const qc = useQueryClient();
   const reduceMotion = useReducedMotion();
   const { open: openUpgrade } = useUpgrade();
@@ -68,26 +80,35 @@ export default function LearningHubTab() {
   };
 
   if (selected) {
-    return <PathDetail pathId={selected} onBack={() => setSelected(null)} />;
+    return <PathDetail pathId={selected} onBack={() => setSelected(null)} embedded={isEmbedded} />;
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6 p-4">
-      <header className="space-y-1">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">Grow · Learning</p>
-        <div className="flex items-center gap-2">
-          <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary/10 text-primary">
-            <GraduationCap className="h-5 w-5" />
-          </span>
-          <h2 className="font-display text-2xl font-extrabold tracking-tight">Learning Hub</h2>
-        </div>
-        <p className="max-w-xl text-sm text-muted-foreground">
-          Close the gap to the role you want — find your trending market edge and build it with
+    <div className={cn('space-y-6', isEmbedded ? 'max-w-3xl' : 'mx-auto max-w-3xl p-4')}>
+      {isEmbedded ? (
+        // The shell page renders the h1 + SubNav - keep only the one line of
+        // section context so we don't stack a second hero under them.
+        <p className="max-w-xl text-caption text-muted-foreground">
+          Close the gap to the role you want. Find your trending market edge and build it with
           verified proof, or get an AI study plan for any topic.
         </p>
-      </header>
+      ) : (
+        <header className="space-y-1">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">Grow · Learning</p>
+          <div className="flex items-center gap-2">
+            <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary/10 text-primary">
+              <GraduationCap className="h-5 w-5" />
+            </span>
+            <h2 className="font-display text-2xl font-extrabold tracking-tight">Learning Hub</h2>
+          </div>
+          <p className="max-w-xl text-sm text-muted-foreground">
+            Close the gap to the role you want. Find your trending market edge and build it with
+            verified proof, or get an AI study plan for any topic.
+          </p>
+        </header>
+      )}
 
-      {/* Cross-user market trend signal — what the whole corpus is asking for. */}
+      {/* Cross-user market trend signal - what the whole corpus is asking for. */}
       <MarketTrends onPlanCreated={(pathId) => setSelected(pathId)} />
 
       {/* Mode switch: the market-driven "Your edge" loop vs. free-form topics. */}
@@ -133,17 +154,17 @@ export default function LearningHubTab() {
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && !creating && create()}
-            placeholder="e.g. System design, Docker, SQL for analytics…"
+            placeholder="e.g. System design, Docker, SQL for analytics..."
             disabled={creating}
           />
           <Button onClick={create} disabled={creating || !topic.trim()} className="shrink-0">
             {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-            {creating ? 'Building…' : 'Create plan'}
+            {creating ? 'Building...' : 'Create plan'}
           </Button>
         </div>
         {creating && (
           <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Sparkles className="h-3 w-3" /> Designing a week-by-week plan grounded in your skills — this takes ~20s.
+            <Sparkles className="h-3 w-3" /> Designing a week-by-week plan grounded in your skills. This takes ~20s.
           </p>
         )}
       </Card>
@@ -206,7 +227,7 @@ export default function LearningHubTab() {
   );
 }
 
-function PathDetail({ pathId, onBack }: { pathId: string; onBack: () => void }) {
+function PathDetail({ pathId, onBack, embedded }: { pathId: string; onBack: () => void; embedded?: boolean }) {
   const qc = useQueryClient();
   const [completing, setCompleting] = useState<number | null>(null);
   const [lastUnlock, setLastUnlock] = useState<ModuleCompletionResult | null>(null);
@@ -247,7 +268,7 @@ function PathDetail({ pathId, onBack }: { pathId: string; onBack: () => void }) 
     const res = await apiService.generateLearningQuiz(pathId, week);
     setQuizLoading(null);
     if (res.status === 403 && res.errorPayload?.error === 'upgrade_required') {
-      toast('Daily quiz limit reached — upgrade for more.');
+      toast('Daily quiz limit reached. Upgrade for more.');
       return;
     }
     if (res.error || !res.data?.questions?.length) {
@@ -259,7 +280,7 @@ function PathDetail({ pathId, onBack }: { pathId: string; onBack: () => void }) 
 
   if (detail.isError) {
     return (
-      <div className="mx-auto max-w-3xl space-y-4 p-4">
+      <div className={cn('space-y-4', embedded ? 'max-w-3xl' : 'mx-auto max-w-3xl p-4')}>
         <button onClick={onBack} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft className="h-4 w-4" /> All paths
         </button>
@@ -277,7 +298,7 @@ function PathDetail({ pathId, onBack }: { pathId: string; onBack: () => void }) 
 
   if (detail.isLoading || !detail.data) {
     return (
-      <div className="mx-auto max-w-3xl space-y-4 p-4" aria-busy="true">
+      <div className={cn('space-y-4', embedded ? 'max-w-3xl' : 'mx-auto max-w-3xl p-4')} aria-busy="true">
         <Skeleton className="h-8 w-40" />
         <Skeleton className="h-64 w-full rounded-xl" />
       </div>
@@ -288,7 +309,7 @@ function PathDetail({ pathId, onBack }: { pathId: string; onBack: () => void }) 
   const done = new Set(progress.completed_step_ids);
 
   return (
-    <div className="mx-auto max-w-3xl space-y-5 p-4">
+    <div className={cn('space-y-5', embedded ? 'max-w-3xl' : 'mx-auto max-w-3xl p-4')}>
       <button onClick={onBack} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
         <ArrowLeft className="h-4 w-4" /> All paths
       </button>

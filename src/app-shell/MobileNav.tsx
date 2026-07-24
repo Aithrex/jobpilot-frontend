@@ -1,21 +1,37 @@
 import { NavLink } from "react-router-dom";
+import { motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { NAV_ITEMS, navHref } from "./nav.config";
 
+/** Shared framer layoutId so the active highlight slides between mobile tabs. */
+const ACTIVE_TAB_ID = "app-shell-mobilenav-active";
+
 /**
- * Bottom tab bar for small viewports (hidden ≥lg, where the Sidebar takes
- * over). Primary destinations only; Settings + account actions live in the
- * TopBar user menu. Each tab is a ≥44px target with a visible focus ring and a
- * non-color-only active indicator.
+ * The four roles-first destinations that fit a bottom tab bar: Roles, Tailor,
+ * Apply, Grow. Overview (the daily briefing) is the secondary destination and
+ * is reached from the desktop bar / command palette, keeping mobile uncluttered.
+ */
+const MOBILE_ITEMS = NAV_ITEMS.slice(0, 4);
+
+/**
+ * Bottom tab bar for small viewports (hidden >=lg, where the horizontal top
+ * nav takes over). A frosted glass bar (the canonical `.glass-nav` recipe)
+ * with safe-area padding. Primary destinations only; Settings + account
+ * actions live in the TopBar user menu. Each tab is a >=44px target with a
+ * visible focus ring and an `aria-current` active state marked by a
+ * framer-motion pill that slides between tabs (honoring
+ * `prefers-reduced-motion`).
  */
 export function MobileNav() {
+  const reduceMotion = useReducedMotion();
+
   return (
     <nav
       aria-label="Primary"
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl supports-[backdrop-filter]:bg-background/80 lg:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-border/70 glass-nav pb-[env(safe-area-inset-bottom)] shadow-pop lg:hidden"
     >
       <ul className="mx-auto flex max-w-md items-stretch justify-around px-1">
-        {NAV_ITEMS.map((item) => {
+        {MOBILE_ITEMS.map((item) => {
           const { icon: Icon, label } = item;
           return (
             <li key={item.to} className="flex-1">
@@ -24,7 +40,7 @@ export function MobileNav() {
                 aria-label={label}
                 className={({ isActive }) =>
                   cn(
-                    "group relative flex min-h-[44px] min-w-[44px] flex-col items-center justify-center gap-1 px-1 pb-1.5 pt-2 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring",
+                    "group relative flex min-h-[44px] min-w-[44px] flex-col items-center justify-center gap-1 px-1 pb-1.5 pt-2 outline-none transition-colors duration-200 ease-expo focus-visible:ring-2 focus-visible:ring-ring",
                     isActive ? "text-primary" : "text-muted-foreground active:text-foreground",
                   )
                 }
@@ -32,14 +48,20 @@ export function MobileNav() {
                 {({ isActive }) => (
                   <>
                     {isActive && (
-                      <span
+                      <motion.span
+                        layoutId={ACTIVE_TAB_ID}
                         className="absolute top-0 h-0.5 w-8 rounded-full bg-primary"
+                        transition={
+                          reduceMotion
+                            ? { duration: 0 }
+                            : { type: "spring", stiffness: 520, damping: 40, mass: 0.7 }
+                        }
                         aria-hidden="true"
                       />
                     )}
                     <span
                       className={cn(
-                        "flex h-8 w-8 items-center justify-center rounded-full transition-colors",
+                        "flex h-8 w-8 items-center justify-center rounded-full transition-colors duration-200 ease-expo",
                         isActive && "bg-primary/10",
                       )}
                     >

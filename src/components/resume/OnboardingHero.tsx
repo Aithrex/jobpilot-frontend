@@ -1,5 +1,5 @@
 /**
- * Onboarding hero (first-run resume upload) — shared across the Tailor flow.
+ * Onboarding hero (first-run resume upload) - shared across the Tailor flow.
  *
  * Extracted verbatim from the ResumeParser monolith so both the classic
  * workspace (`/app`) and the new app-shell render an identical onboarding
@@ -157,7 +157,7 @@ export default function OnboardingHero({
             <UploadCloud className="w-8 h-8 text-purple-400" />
           </div>
           <p className="text-base font-semibold text-gray-800 dark:text-gray-200 mb-1">
-            Get started — upload your resume
+            Get started: upload your resume
           </p>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-5 max-w-sm">
             Drop your PDF or DOCX here or click below. We'll parse it and

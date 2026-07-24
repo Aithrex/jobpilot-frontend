@@ -1,8 +1,8 @@
 /**
- * Zone A KPI row — 3–5 stat cards, 4-up on lg / 2-up md / 1-up below.
+ * Zone A KPI row - 3-5 stat cards, 4-up on lg / 2-up md / 1-up below.
  *
  * Rule enforced here: NO NAKED NUMBERS. Every card pairs its figure with
- * context — a target, a prior-period delta, or a trend arrow whose direction
+ * context - a target, a prior-period delta, or a trend arrow whose direction
  * carries meaning (and is never signalled by colour alone: arrow icon + words).
  */
 import type { ReactNode } from 'react';
@@ -67,7 +67,7 @@ function StatCard({
       </div>
       <div className="mt-3 flex items-end gap-2">
         <span className="text-display font-display leading-none text-foreground">
-          {value === null ? <span className="text-muted-foreground">—</span> : <Stat>{value}</Stat>}
+          {value === null ? <span className="text-muted-foreground"> - </span> : <Stat>{value}</Stat>}
         </span>
         {trend ? <span className="pb-1"><TrendChip {...trend} /></span> : null}
       </div>
@@ -114,17 +114,17 @@ export function KpiRow({
     );
   }
 
-  /* 1 — Applications sent (context: today + streak) */
+  /* 1 - Applications sent (context: today + streak) */
   const totalApps = overview?.applications.total ?? streak?.total_applications ?? null;
   const today = streak?.today_count ?? 0;
   const streakDays = streak?.current_streak ?? 0;
 
-  /* 2 — Active pipeline (context: interviewing + offers) */
+  /* 2 - Active pipeline (context: interviewing + offers) */
   const active = overview?.applications.active ?? null;
   const interviewing = overview?.applications.interviewing ?? 0;
   const offers = overview?.applications.offers ?? 0;
 
-  /* 3 — Interview rate (context: the basis — advanced of applied) */
+  /* 3 - Interview rate (context: the basis - advanced of applied) */
   const appliedCount = stageCount(funnel, ['applied']) ?? overview?.applications.total ?? null;
   const interviewCount = stageCount(funnel, ['interview', 'interviewing']);
   const interviewRate =
@@ -132,7 +132,7 @@ export function KpiRow({
       ? (interviewCount / appliedCount) * 100
       : null;
 
-  /* 4 — Career readiness (context: band + next milestone) */
+  /* 4 - Career readiness (context: band + next milestone) */
   const readinessScore = typeof readiness?.overall === 'number' ? Math.round(readiness.overall) : null;
   const bandLabel = readiness?.band
     ? readiness.band[0].toUpperCase() + readiness.band.slice(1)

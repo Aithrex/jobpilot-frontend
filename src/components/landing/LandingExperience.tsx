@@ -1,134 +1,170 @@
-import { lazy } from 'react';
-import { ShieldCheck, Smartphone, Sparkles, Target } from 'lucide-react';
+import { useCallback, useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { isGuestOnboardingEnabled, markGuestOnboardingUnavailable } from '@/lib/guest';
+import { useGuestFlow } from '@/hooks/useGuestFlow';
+import { useResumePicker } from '@/components/guest/useResumePicker';
 import { LandingNav } from './LandingNav';
-import { Hero } from './Hero';
-import { VisionMission } from './VisionMission';
-import { FeatureSection } from './FeatureSection';
-import { IntegrityBand } from './IntegrityBand';
-import { Pricing } from './Pricing';
-import { CloseCTA } from './CloseCTA';
+import { WorkspaceHero } from './WorkspaceHero';
+import { SignalPath } from './SignalPath';
+import { ProofStrip } from './ProofStrip';
+import { ComingNext } from './ComingNext';
+import { TrustClose } from './TrustClose';
 import { LandingFooter } from './LandingFooter';
 
 /**
- * Aspirely's public landing — an "instrument, not a brochure". The opening
- * SHOWS what Aspirely does through four purpose-built, animated feature demos,
- * each conveying that feature's vision for an F-1 student racing a visa clock:
+ * Aspirely's public landing - the Career Signal Atlas. Three movements on one
+ * deep-ink canvas, conversion first, honest everywhere:
  *
- *   Hero (Signal Resolve) · Vision & Mission
- *   1 · Sponsorship intelligence   2 · One-tap apply, from WhatsApp
- *   3 · Become the candidate       4 · The growth loop (+ Track)
- *   Integrity · Pricing · Close
+ *  1 Floating glass nav (the only blur on the page)
+ *  2 Full-viewport hero: the living atlas with the REAL upload control
+ *  seated in its resume sheet; the real upload → parse → profile → up to
+ *  5 matches → one tailored resume flow runs right here on `/`
+ *  3 READ → MATCH → TAILOR as one drawn signal path (#how)
+ *  4 Career operating system orbit (#workspace) - code-native, no shots
+ *  5 Compact trust + final action (#trust) + footer
  *
- * Every demo composes the shared motion kit (demos/_kit.tsx): one timing/easing
- * language, in-view-gated with a single ambient loop, code-split + lazy so
- * nothing heavy runs off-screen, static-but-excellent under reduced motion,
- * zero layout shift, semantic tokens only (indigo = the one accent).
+ * ONE useGuestFlow controller AND the page's ONE resume picker live here. Every
+ * upload trigger on the page (hero CTA, nav CTA, the window drop surface, the
+ * closing CTA) calls the same `picker.open`, so any of them opens the same OS
+ * file dialog on that click. None of them scrolls to a second uploader.
+ *
+ * There is never a second useGuestFlow on another route (/start redirects back
+ * to /#try). The moment the flow leaves the idle hero,
+ * the marketing sections collapse so the guest never scrolls through
+ * marketing while waiting; nav and footer stay for recovery.
+ *
+ * SURFACE LANGUAGE (index.css). The page is built from TWO real named token
+ * surfaces, never from one-off colour classes:
+ *
+ *  `.surface-obsidian` - the PRODUCT world. The hero, the workspace window,
+ *  the closing action and the footer. This is the surface a signed-in user
+ *  actually works on, so it never goes light.
+ *  `.surface-editorial` - the warm pearl MARKETING world: the transformation
+ *  sequence, the proof, the roadmap. Paper you read, not software you use.
+ *
+ * The contrast between them is the brand. Each class re-points the entire
+ * semantic layer for its own subtree, so they nest freely (the pearl section
+ * holds an obsidian product stage) and every child resolves `bg-card`,
+ * `text-muted-foreground`, `border-border` correctly without one `dark:`
+ * variant. `dark` stays on the root so shared primitives that DO ship dark
+ * variants keep behaving inside the product world.
  */
-
-// Code-split each demo; FeatureSection wraps them in LazyMount + Suspense so
-// they only download and animate near the viewport.
-const SponsorshipDemo = lazy(() => import('./demos/SponsorshipDemo'));
-const WhatsAppApplyDemo = lazy(() => import('./demos/WhatsAppApplyDemo'));
-const TailorDemo = lazy(() => import('./demos/TailorDemo'));
-const GrowthLoopDemo = lazy(() => import('./demos/GrowthLoopDemo'));
-const TrackStrip = lazy(() => import('./demos/GrowthLoopDemo').then((m) => ({ default: m.TrackStrip })));
-
 export default function LandingExperience() {
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const [runtimeDisabled, setRuntimeDisabled] = useState(() => !isGuestOnboardingEnabled());
+
+  const onUnavailable = useCallback(() => {
+    // Backend says the feature is off (503) or the edge route isn't live
+    // (404) - fall back to the account-first hero for this session.
+    markGuestOnboardingUnavailable();
+    setRuntimeDisabled(true);
+  }, []);
+
+  const guestEnabled = !authLoading && !isAuthenticated && !runtimeDisabled;
+  const authed = !authLoading && isAuthenticated;
+  const flow = useGuestFlow({ enabled: guestEnabled, onUnavailable });
+  const flowActive = guestEnabled && flow.step !== 'hero';
+
+  // The page's ONE resume picker. Its input is rendered once, below.
+  const picker = useResumePicker({
+    onFile: (file) => void flow.startUpload(file),
+    disabled: !guestEnabled,
+  });
+
+  // A CTA may only open a file dialog when there is genuinely something to
+  // upload into. Otherwise it becomes a link that says what it does.
+  const onUpload = guestEnabled ? picker.open : undefined;
+  const fallbackHref = authed ? '/next/today' : '/register';
+  const fallbackLabel = authed ? 'Open my workspace' : 'Create free account';
+
+  // A coming-soon dock item reveals its concept preview by moving the reader
+  // to the roadmap section. It calls no API and claims no signup - the only
+  // real action on an unavailable capability is creating an account.
+  const onPreviewCapability = useCallback(() => {
+    const target = document.getElementById('coming-next');
+    if (!target) return;
+    target.scrollIntoView({
+      behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+      block: 'start',
+    });
+    // Move focus too, so the preview is reachable by keyboard alone.
+    target.setAttribute('tabindex', '-1');
+    target.focus({ preventScroll: true });
+  }, []);
+
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <LandingNav />
-      <main>
-        <Hero />
-        <VisionMission />
-
-        {/* 1 · Sponsorship intelligence */}
-        <FeatureSection
-          id="sponsorship"
-          index="01"
-          eyebrow="Sponsorship intelligence"
-          eyebrowIcon={ShieldCheck}
-          title={
-            <>
-              Never waste an application on a company that won&apos;t{' '}
-              <span className="text-primary">sponsor you</span>.
-            </>
-          }
-          subtitle="Every role carries honest H-1B facts — sponsor volume, approval rate, fiscal year — with a calm, clear state for the ones that don't. Because your OPT clock is already running."
-          demo={<SponsorshipDemo />}
-          reserve={404}
-          caption={{
-            feature: 'Sponsorship intelligence',
-            promise: 'know who actually sponsors before you spend a single application.',
-          }}
+    <div
+      className="dark surface-obsidian min-h-screen overflow-x-clip"
+      style={{ colorScheme: 'dark' }}
+    >
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-control focus:bg-card focus:px-4 focus:py-2.5 focus:text-sm focus:font-medium focus:text-foreground focus:shadow-panel"
+      >
+        Skip to content
+      </a>
+      {/* The page's single resume file input. The accessible name deliberately
+  uses unaccented "Resume file:" - it matches the long-standing label
+  contract the guest-flow tests assert on, and reads correctly in every
+  screen reader. Absent entirely when guest upload is unavailable: an
+  upload trigger that cannot upload is worse than no trigger. */}
+      {guestEnabled && (
+        <input
+          {...picker.inputProps}
+          aria-hidden={undefined}
+          aria-label="Resume file: PDF or DOCX, up to 5 MB"
         />
+      )}
 
-        {/* 2 · One-tap apply, from WhatsApp */}
-        <FeatureSection
-          id="one-tap-apply"
-          index="02"
-          eyebrow="One-tap apply"
-          eyebrowIcon={Smartphone}
-          title={
-            <>
-              Wake up to matched jobs. Approve with <span className="text-primary">one tap</span>.
-            </>
-          }
-          subtitle="A morning digest lands on WhatsApp — role, match, sponsorship. Tap approve, and Aspirely's extension autofills the application (your authored answers included) and submits it for you."
-          demo={<WhatsAppApplyDemo />}
-          reserve={488}
-          flip
-          caption={{
-            feature: 'One-tap apply, even from WhatsApp',
-            promise: 'approve on your phone; Aspirely applies and submits for you.',
-          }}
+      <LandingNav onUpload={onUpload} fallbackHref={fallbackHref} fallbackLabel={fallbackLabel} />
+      <main id="main">
+        <WorkspaceHero
+          flow={flow}
+          guestEnabled={guestEnabled}
+          authed={authed}
+          flowActive={flowActive}
+          picker={picker}
+          onPreviewCapability={onPreviewCapability}
         />
-
-        {/* 3 · Become the candidate they pick */}
-        <FeatureSection
-          id="tailoring"
-          index="03"
-          eyebrow="Resume tailoring"
-          eyebrowIcon={Target}
-          title={
-            <>
-              Become the candidate they <span className="text-primary">pick</span>.
-            </>
-          }
-          subtitle="Keywords from the JD lock into your resume and the ATS score climbs — then the recruiter's 6-second gaze shows exactly what earns the read. The strongest honest version of you, authored from your history."
-          demo={<TailorDemo />}
-          reserve={512}
-          caption={{
-            feature: 'Become the candidate they pick',
-            promise: 'authored to the role, built to survive the 6-second scan.',
-          }}
-        />
-
-        {/* 4 · The growth loop — the signature differentiator (prominent) + Track */}
-        <FeatureSection
-          id="growth-loop"
-          index="04"
-          eyebrow="The growth loop"
-          eyebrowIcon={Sparkles}
-          title={
-            <>
-              Aspirely <span className="text-primary">compounds</span> your edge.
-            </>
-          }
-          subtitle="Find what sets you apart, follow a 7-day plan, ship a GitHub-verified proof-of-work, then post it — impressions rise, and the next topic begins. Learn → verify → post → reach: the loop no one else runs. Your pipeline stays tracked the whole way."
-          demo={<GrowthLoopDemo />}
-          reserve={440}
-          prominent
-          caption={{
-            feature: 'The growth loop',
-            promise: 'a compounding, GitHub-verified edge that keeps opening doors.',
-          }}
-        >
-          <TrackStrip />
-        </FeatureSection>
-
-        <IntegrityBand />
-        <Pricing />
-        <CloseCTA />
+        {/* Once real work starts, the workspace owns the page - no marketing
+  between the guest and their results, and no roadmap content while
+  they are waiting on something real. */}
+        {!flowActive && (
+          <>
+            {/* The editorial world. One wrapper, so the surface switch is a
+  single declared boundary rather than three sections each
+  remembering to opt in. */}
+            <div className="surface-editorial relative">
+              {/* The seam between the two worlds: a short fade out of obsidian
+  plus one energy hairline, so the change of surface reads as
+  intentional craft rather than a missing background. */}
+              <span
+                aria-hidden
+                className="pointer-events-none absolute inset-x-0 top-0 h-8"
+                style={{
+                  background:
+                    'linear-gradient(to bottom, hsl(var(--obsidian-950-hsl) / 0.5), transparent)',
+                }}
+              />
+              <span
+                aria-hidden
+                className="pointer-events-none absolute inset-x-0 top-0 h-px"
+                style={{
+                  background:
+                    'linear-gradient(to right, transparent, hsl(var(--signal-on-dark-hsl) / 0.5), transparent)',
+                }}
+              />
+              <SignalPath />
+              <ProofStrip />
+              <ComingNext />
+            </div>
+            <TrustClose
+              onUpload={onUpload}
+              fallbackHref={fallbackHref}
+              fallbackLabel={fallbackLabel}
+            />
+          </>
+        )}
       </main>
       <LandingFooter />
     </div>

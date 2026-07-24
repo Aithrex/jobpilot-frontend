@@ -1,12 +1,11 @@
 import { Suspense } from "react";
 import { Outlet } from "react-router-dom";
-import { Briefcase, Globe, Loader2, Plane } from "lucide-react";
+import { Briefcase, Globe, Loader2 } from "lucide-react";
 import { SubNav, type SubNavItem } from "../SubNav";
 
 const DISCOVER_SECTIONS: SubNavItem[] = [
-  { to: "jobs", label: "Job Opportunities", icon: Briefcase },
+  { to: "jobs", label: "Roles for you", icon: Briefcase },
   { to: "portals", label: "Career Portals", icon: Globe },
-  { to: "visa", label: "Visa Timeline", icon: Plane },
 ];
 
 function SectionFallback() {
@@ -30,19 +29,22 @@ export default function DiscoverPage() {
   return (
     <div className="flex flex-col gap-6">
       <header>
-        <p className="overline mb-1">Discover</p>
-        <h1 className="font-display text-2xl font-bold tracking-tight text-foreground">
-          Find your next opportunity
+        <p className="overline mb-1">Roles</p>
+        <h1 className="text-title font-display text-foreground">
+          Find your next role
         </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Search roles, explore career portals, and track visa milestones.
+        <p className="mt-1 text-caption text-muted-foreground">
+          Browse roles picked for you and explore career portals.
         </p>
       </header>
 
       <SubNav ariaLabel="Discover sections" items={DISCOVER_SECTIONS} />
 
       <Suspense fallback={<SectionFallback />}>
-        <Outlet />
+        {/* Sections are mounted by App.tsx routes; `embedded` tells the
+            monolith-born tab components the shell already renders the page
+            header + SubNav, so they suppress their internal hero headers. */}
+        <Outlet context={{ embedded: true }} />
       </Suspense>
     </div>
   );

@@ -2,7 +2,7 @@ import { Check, ArrowRight } from 'lucide-react';
 import type { BuildStep } from '@/types/career';
 
 /**
- * "Your Path" — the guided journey the UX audit found missing. An ordered set of
+ * "Your Path" - the guided journey the UX audit found missing. An ordered set of
  * milestones the student completes one at a time; `done` reflects real state and
  * the first undone step is highlighted as "do this next". Recognizes building,
  * step by step, instead of dropping a newcomer onto a feature menu.
@@ -24,7 +24,7 @@ export function CareerPath({
     <div className="rounded-2xl border border-border bg-card p-5 shadow-soft">
       <div className="mb-2 flex items-center justify-between gap-3">
         <h2 className="text-sm font-semibold text-foreground">
-          {complete ? 'Your path — complete' : 'Your path'}
+          {complete ? 'Your path: complete' : 'Your path'}
         </h2>
         <span className="text-xs font-medium text-muted-foreground tabular-nums">{done}/{steps.length} done</span>
       </div>

@@ -1,10 +1,10 @@
 /**
- * Tailored resume preview — shared across the Tailor flow.
+ * Tailored resume preview - shared across the Tailor flow.
  *
  * Extracted verbatim from the ResumeParser monolith so both the classic
  * workspace (`/app`) and the new app-shell render an identical resume preview
  * from one source. Markup/classes are a parity move (raw purple/gray colors
- * preserved intentionally — this is NOT a re-theme).
+ * preserved intentionally - this is NOT a re-theme).
  */
 import { CopySectionButton } from "./CopySectionButton";
 import { titleCaseName } from "@/lib/filename";
@@ -83,7 +83,7 @@ export function ResumePreview({ resume }: { resume: TailoredFullResume }) {
                 (resume.experience || [])
                   .map(
                     (e) =>
-                      `${e.company}${e.location ? `, ${e.location}` : ""}${e.title ? ` — ${e.title}` : ""}${e.dates ? ` (${e.dates})` : ""}\n${(e.bullets || []).map((b) => `  • ${b}`).join("\n")}`,
+                      `${e.company}${e.location ? `, ${e.location}` : ""}${e.title ? ` - ${e.title}` : ""}${e.dates ? ` (${e.dates})` : ""}\n${(e.bullets || []).map((b) => `  • ${b}`).join("\n")}`,
                   )
                   .join("\n\n")
               }
@@ -197,7 +197,7 @@ export function ResumePreview({ resume }: { resume: TailoredFullResume }) {
                 (resume.education || [])
                   .map(
                     (e) =>
-                      `${e.institution}${e.degree ? ` — ${e.degree}` : ""}${e.dates ? ` (${e.dates})` : ""}`,
+                      `${e.institution}${e.degree ? ` - ${e.degree}` : ""}${e.dates ? ` (${e.dates})` : ""}`,
                   )
                   .join("\n")
               }
@@ -229,7 +229,7 @@ export function ResumePreview({ resume }: { resume: TailoredFullResume }) {
                       <span className="font-semibold text-gray-900 dark:text-white">
                         {edu.institution}
                       </span>
-                      {d ? `  — ${d}` : ""}
+                      {d ? `  - ${d}` : ""}
                     </p>
                     <span className="text-[11px] text-gray-500 dark:text-gray-400 whitespace-nowrap shrink-0">
                       {edu.dates}

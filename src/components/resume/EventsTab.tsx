@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiService } from '@/lib/api';
+import { cn } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -27,7 +29,18 @@ const RELATIONS: { id: EventRelation; label: string; icon: typeof Bookmark }[] =
   { id: 'won', label: 'Won', icon: Trophy },
 ];
 
-export default function EventsTab() {
+interface EventsTabProps {
+  /** Mounted inside the /next app shell - the shell already renders the page
+      header + SubNav, so suppress the internal hero and top padding. */
+  embedded?: boolean;
+}
+
+export default function EventsTab({ embedded }: EventsTabProps) {
+  // Shell pages pass `embedded` via outlet context (the routes in App.tsx
+  // mount this component without props); the legacy /app monolith passes
+  // neither, so it renders unchanged.
+  const shellCtx = useOutletContext<{ embedded?: boolean } | null>();
+  const isEmbedded = embedded ?? shellCtx?.embedded ?? false;
   const qc = useQueryClient();
   const [type, setType] = useState<undefined | 'hackathon' | 'webinar'>(undefined);
   const [refreshing, setRefreshing] = useState(false);
@@ -70,27 +83,41 @@ export default function EventsTab() {
     qc.invalidateQueries({ queryKey: ['events'] });
     if (next === 'won' || next === 'attended') {
       toast.success(next === 'won' ? 'Marked as won' : 'Marked as attended', {
-        description: 'Want to post about it? Use “Draft post”.',
+        description: 'Want to post about it? Use "Draft post".',
       });
     }
   };
 
   return (
-    <div className="mx-auto max-w-3xl space-y-5 p-4">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-1.5 text-primary">
-            <Trophy className="h-4 w-4" />
-            <span className="text-[11px] font-semibold uppercase tracking-[0.18em]">Grow · Events</span>
-          </div>
-          <h2 className="font-display text-2xl font-extrabold tracking-tight">Hackathons & webinars, vetted</h2>
-          <p className="text-sm text-muted-foreground">Legitimacy-scored so you only invest in events worth your time.</p>
+    <div className={cn('space-y-5', isEmbedded ? 'max-w-3xl' : 'mx-auto max-w-3xl p-4')}>
+      {isEmbedded ? (
+        // The shell page renders the h1 + SubNav - keep a slim toolbar row
+        // (context line + refresh) instead of a second hero header.
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-caption text-muted-foreground">
+            Legitimacy-scored so you only invest in events worth your time.
+          </p>
+          <Button variant="outline" onClick={refresh} disabled={refreshing}>
+            {refreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+            Refresh
+          </Button>
         </div>
-        <Button variant="outline" onClick={refresh} disabled={refreshing}>
-          {refreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-          Refresh
-        </Button>
-      </header>
+      ) : (
+        <header className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-1.5 text-primary">
+              <Trophy className="h-4 w-4" />
+              <span className="text-[11px] font-semibold uppercase tracking-[0.18em]">Grow · Events</span>
+            </div>
+            <h2 className="font-display text-2xl font-extrabold tracking-tight">Hackathons & webinars, vetted</h2>
+            <p className="text-sm text-muted-foreground">Legitimacy-scored so you only invest in events worth your time.</p>
+          </div>
+          <Button variant="outline" onClick={refresh} disabled={refreshing}>
+            {refreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+            Refresh
+          </Button>
+        </header>
+      )}
 
       <div className="flex flex-wrap gap-2">
         {TYPES.map((t) => (

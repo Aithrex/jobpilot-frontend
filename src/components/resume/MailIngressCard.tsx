@@ -174,7 +174,7 @@ export function MailIngressCard() {
               Needs your call ({suggestions.length})
             </p>
             {suggestions.length === 0 ? (
-              <p className="text-xs text-muted-foreground">Nothing waiting — captured emails with clear signals apply automatically.</p>
+              <p className="text-xs text-muted-foreground">Nothing waiting. Captured emails with clear signals apply automatically.</p>
             ) : (
               <ul className="space-y-2">
                 {suggestions.map((s) => (

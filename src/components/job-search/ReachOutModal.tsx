@@ -1,10 +1,10 @@
 /**
- * ReachOutModal — drafts and opens a short cold-outreach email for a
+ * ReachOutModal - drafts and opens a short cold-outreach email for a
  * specific posting. Reads the candidate's resume on the backend so the
  * generated message references real bullets, not generic platitudes.
  *
  * UX flow:
- *   1. Modal opens with a "Drafting…" state while /jobs/draft-outreach runs.
+ *   1. Modal opens with a "Drafting..." state while /jobs/draft-outreach runs.
  *   2. Subject + body land in editable inputs. User can tweak.
  *   3. Three actions: Copy (clipboard), Open in Gmail (compose URL), Regenerate.
  *   4. User searches for the recruiter on LinkedIn separately and pastes the
@@ -54,7 +54,7 @@ export function ReachOutModal({ open, onClose, rec }: ReachOutModalProps) {
         setSubject(resp.data.subject);
         setBody(resp.data.body);
       } catch {
-        setError('Draft failed — try Regenerate.');
+        setError('Draft failed. Try Regenerate.');
       } finally {
         setLoading(false);
       }
@@ -79,7 +79,7 @@ export function ReachOutModal({ open, onClose, rec }: ReachOutModalProps) {
     const combined = `Subject: ${subject}\n\n${body}`;
     navigator.clipboard
       .writeText(combined)
-      .then(() => toast.success('Outreach copied — paste into your email client'))
+      .then(() => toast.success('Outreach copied. Paste into your email client'))
       .catch(() => toast.error('Clipboard blocked'));
   }, [subject, body]);
 
@@ -111,7 +111,7 @@ export function ReachOutModal({ open, onClose, rec }: ReachOutModalProps) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Mail className="h-4 w-4 text-purple-500" />
-            Reach out — {rec.company}
+            Reach out: {rec.company}
           </DialogTitle>
           <DialogDescription className="text-xs">
             {rec.title}{rec.location ? ` · ${rec.location}` : ''}. Drafted from your resume + the JD.
@@ -143,7 +143,7 @@ export function ReachOutModal({ open, onClose, rec }: ReachOutModalProps) {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-10 text-sm text-muted-foreground">
             <Loader2 className="h-6 w-6 animate-spin text-purple-500" />
-            <p className="mt-2">Drafting outreach…</p>
+            <p className="mt-2">Drafting outreach...</p>
           </div>
         ) : (
           <div className="space-y-3">

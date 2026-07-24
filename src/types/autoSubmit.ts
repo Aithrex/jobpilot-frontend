@@ -2,14 +2,14 @@
  * Types for the opt-in auto-submit ("Auto-Apply") loop.
  *
  * The backend feature is gated behind a master flag (`AUTO_SUBMIT_ENABLED`).
- * When it is off every endpoint 404s — the frontend treats that as
+ * When it is off every endpoint 404s - the frontend treats that as
  * "feature unavailable" and hides the surface entirely (see useAutoSubmit).
  */
 
 export interface AutoSubmitSettings {
   auto_submit_enabled: boolean;
   /**
-   * Confidence floor (0–1) above which JobPilot may auto-submit an application
+   * Confidence floor (0-1) above which JobPilot may auto-submit an application
    * without a manual review. Anything below is held for one-tap approval.
    * Defaults server-side (0.90) when the account hasn't set it explicitly.
    */
@@ -26,7 +26,7 @@ export type AutoSubmitStatus =
 
 /**
  * A single approval "view" as returned by /pending. Company / role / match%
- * are best-effort enrichments — they are NOT guaranteed by the documented
+ * are best-effort enrichments - they are NOT guaranteed by the documented
  * shape, so every consumer must render them defensively (fall back to the
  * posting URL's host). `answers_snapshot` is the generated application answers.
  */
@@ -49,7 +49,7 @@ export interface AutoSubmitApprovalView {
   company?: string | null;
   role?: string | null;
   title?: string | null;
-  /** 0–1 or 0–100; normalize before display. */
+  /** 0-1 or 0-100; normalize before display. */
   match_score?: number | null;
 }
 

@@ -47,7 +47,7 @@ export function limitOf(ent: AuthEntitlements | undefined, key: string): number 
 /** Format a numeric limit for display (null => Unlimited, 0 => off). */
 export function formatLimit(v: number | null | undefined): string {
   if (v === null || v === undefined) return 'Unlimited';
-  if (v === 0) return '—';
+  if (v === 0) return ' - ';
   return String(v);
 }
 

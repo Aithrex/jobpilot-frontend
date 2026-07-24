@@ -1,19 +1,19 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
-import { Eye, RefreshCw, FileUp, Sparkles, Lock, AlertCircle } from "lucide-react";
-import { apiService } from "@/lib/api";
-import { useUpgrade } from "@/components/billing/UpgradeModalProvider";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
+import { Eye, RefreshCw, FileUp, Sparkles, Lock, AlertCircle } from 'lucide-react';
+import { apiService } from '@/lib/api';
+import { useUpgrade } from '@/components/billing/UpgradeModalProvider';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
 import {
   isSixSecondsNoResume,
   type SixSecondsResult,
   type SixSecondsSuccess,
-} from "@/types/sixSeconds";
+} from '@/types/sixSeconds';
 
 interface SixSecondsTabProps {
-  /** Lets the no-résumé empty state jump the user to an upload surface. */
+  /** Lets the no-resume empty state jump the user to an upload surface. */
   onNavigate?: (tab: string) => void;
 }
 
@@ -37,7 +37,10 @@ function GazeHeatmap({ data }: { data: SixSecondsSuccess }) {
         {/* Intensity legend */}
         <div className="flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground">
           <span>skimmed</span>
-          <span className="h-2.5 w-16 rounded-full bg-gradient-to-r from-primary/10 to-primary" aria-hidden />
+          <span
+            className="h-2.5 w-16 rounded-full bg-gradient-to-r from-primary/10 to-primary"
+            aria-hidden
+          />
           <span>focused</span>
         </div>
       </div>
@@ -57,7 +60,9 @@ function GazeHeatmap({ data }: { data: SixSecondsSuccess }) {
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">
                   <p className="truncate text-sm font-semibold text-foreground">{s.label}</p>
-                  <span className="shrink-0 text-[11px] font-bold tabular-nums text-foreground/70">{pct}%</span>
+                  <span className="shrink-0 text-[11px] font-bold tabular-nums text-foreground/70">
+                    {pct}%
+                  </span>
                 </div>
                 {s.reason && (
                   <p className="mt-0.5 text-xs leading-snug text-foreground/70">{s.reason}</p>
@@ -68,7 +73,7 @@ function GazeHeatmap({ data }: { data: SixSecondsSuccess }) {
         })}
         {sections.length === 0 && (
           <li className="rounded-xl border border-dashed border-border px-3.5 py-6 text-center text-xs text-muted-foreground">
-            No sections were detected in your résumé.
+            No sections were detected in your resume.
           </li>
         )}
       </ol>
@@ -84,16 +89,13 @@ function ListCard({
 }: {
   title: string;
   items: string[];
-  tone: "focus" | "blind";
+  tone: 'focus' | 'blind';
   empty: string;
 }) {
   return (
     <div className="rounded-2xl border border-border bg-card p-5 shadow-soft">
       <h3
-        className={cn(
-          "mb-3 text-sm font-bold",
-          tone === "focus" ? "text-primary" : "text-warning",
-        )}
+        className={cn('mb-3 text-sm font-bold', tone === 'focus' ? 'text-primary' : 'text-warning')}
       >
         {title}
       </h3>
@@ -105,8 +107,8 @@ function ListCard({
             <li key={i} className="flex items-start gap-2 text-sm text-foreground/85">
               <span
                 className={cn(
-                  "mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full",
-                  tone === "focus" ? "bg-primary/60" : "bg-warning/70",
+                  'mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full',
+                  tone === 'focus' ? 'bg-primary/60' : 'bg-warning/70',
                 )}
                 aria-hidden
               />
@@ -123,7 +125,9 @@ function ImpressionRow({ label, value }: { label: string; value?: string }) {
   if (!value) return null;
   return (
     <div className="border-t border-border/70 py-2.5 first:border-t-0 first:pt-0">
-      <dt className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</dt>
+      <dt className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+        {label}
+      </dt>
       <dd className="mt-0.5 text-sm leading-snug text-foreground/90">{value}</dd>
     </div>
   );
@@ -185,10 +189,10 @@ export default function SixSecondsTab({ onNavigate }: SixSecondsTabProps) {
       if (res.status === 403 || res.status === 429) {
         setGated(true);
         upgrade.open({
-          feature: "six_seconds",
+          feature: 'six_seconds',
           title: "Unlock the recruiter's six-second read",
           description:
-            "See exactly where a recruiter's eye lands on your résumé — and what gets skipped.",
+            "See exactly where a recruiter's eye lands on your resume, and what gets skipped.",
         });
       } else {
         setError(res.error);
@@ -216,47 +220,43 @@ export default function SixSecondsTab({ onNavigate }: SixSecondsTabProps) {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="space-y-1">
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
-            Grow · Résumé
+            Grow · Resume
           </p>
           <div className="flex items-center gap-2">
             <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary/10 text-primary">
               <Eye className="h-5 w-5" />
             </span>
-            <h2 className="font-display text-2xl font-extrabold tracking-tight">Recruiter's Six Seconds</h2>
+            <h2 className="font-display text-2xl font-extrabold tracking-tight">
+              Recruiter's Six Seconds
+            </h2>
           </div>
           <p className="max-w-xl text-sm text-muted-foreground">
-            A recruiter spends about six seconds on a first pass. This is a calm, honest read of what
-            they actually see — where the eye lands, and what slips by.
+            A recruiter spends about six seconds on a first pass. This is a calm, honest read of
+            what they actually see. Where the eye lands, and what slips by.
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={run}
-          disabled={loading}
-          className="gap-1.5"
-        >
-          <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
-          {loading ? "Reading…" : "Re-run"}
+        <Button variant="outline" size="sm" onClick={run} disabled={loading} className="gap-1.5">
+          <RefreshCw className={cn('h-3.5 w-3.5', loading && 'animate-spin')} />
+          {loading ? 'Reading...' : 'Re-run'}
         </Button>
       </div>
 
       {/* Loading */}
       {loading && <LoadingState />}
 
-      {/* No résumé */}
+      {/* No resume */}
       {!loading && noResume && (
         <div className="rounded-2xl border border-dashed border-primary/30 bg-gradient-to-b from-primary/5 to-transparent py-14 text-center">
           <div className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-full bg-primary/10 text-primary">
             <FileUp className="h-5 w-5" />
           </div>
-          <p className="text-sm font-medium">Upload a résumé to see the six-second read</p>
+          <p className="text-sm font-medium">Upload a resume to see the six-second read</p>
           <p className="mx-auto mt-1 max-w-sm text-xs text-muted-foreground">
-            We need a parsed résumé to simulate a recruiter's first pass. It takes a few seconds.
+            We need a parsed resume to simulate a recruiter's first pass. It takes a few seconds.
           </p>
           {onNavigate && (
-            <Button className="mt-4 gap-1.5" size="sm" onClick={() => onNavigate("my-resumes")}>
-              <FileUp className="h-3.5 w-3.5" /> Upload a résumé
+            <Button className="mt-4 gap-1.5" size="sm" onClick={() => onNavigate('my-resumes')}>
+              <FileUp className="h-3.5 w-3.5" /> Upload a resume
             </Button>
           )}
         </div>
@@ -269,7 +269,11 @@ export default function SixSecondsTab({ onNavigate }: SixSecondsTabProps) {
             <Lock className="h-5 w-5" />
           </div>
           <p className="text-sm font-medium">This read is a premium feature</p>
-          <Button className="mt-4" size="sm" onClick={() => upgrade.open({ feature: "six_seconds" })}>
+          <Button
+            className="mt-4"
+            size="sm"
+            onClick={() => upgrade.open({ feature: 'six_seconds' })}
+          >
             See plans
           </Button>
         </div>
@@ -283,7 +287,9 @@ export default function SixSecondsTab({ onNavigate }: SixSecondsTabProps) {
             <p className="font-medium">Couldn't complete the read.</p>
             <p className="text-xs opacity-80">{error}</p>
           </div>
-          <Button variant="outline" size="sm" onClick={run}>Retry</Button>
+          <Button variant="outline" size="sm" onClick={run}>
+            Retry
+          </Button>
         </div>
       )}
 
@@ -302,7 +308,7 @@ export default function SixSecondsTab({ onNavigate }: SixSecondsTabProps) {
               title="What draws the eye"
               items={success.gaze.focal_points || []}
               tone="focus"
-              empty="No strong focal points — the page reads flat."
+              empty="No strong focal points. The page reads flat."
             />
             <ListCard
               title="Blind spots"
@@ -318,7 +324,9 @@ export default function SixSecondsTab({ onNavigate }: SixSecondsTabProps) {
                 <p className="text-sm font-semibold text-foreground">{success.gaze.pattern}</p>
               )}
               {success.gaze.note && (
-                <p className="mt-1 text-sm leading-snug text-muted-foreground">{success.gaze.note}</p>
+                <p className="mt-1 text-sm leading-snug text-muted-foreground">
+                  {success.gaze.note}
+                </p>
               )}
             </div>
           )}

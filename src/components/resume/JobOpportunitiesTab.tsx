@@ -1,147 +1,168 @@
-import { useEffect, useState } from 'react';
-import { Bookmark, Briefcase, Zap, Wand2 } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
+import { Bookmark, Briefcase, LayoutGrid, Search } from 'lucide-react';
 import { useJobSearch } from '@/hooks/useJobSearch';
+import { useJobTitles } from '@/hooks/useJobTitles';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { CombinedJobsPanel } from '@/components/job-search/CombinedJobsPanel';
+import { useCombinedJobsCtx } from '@/components/job-search/CombinedJobsProvider';
 import { SavedJobsPanel } from '@/components/job-search/SavedJobsPanel';
-import { DailyPipelinePanel } from '@/components/job-search/DailyPipelinePanel';
-import { SmartFiltersPanel, type SmartFilterApplyMode } from '@/components/job-search/SmartFiltersPanel';
-import type { SmartFilterSuggestions } from '@/types/jobs';
+import { cn } from '@/lib/utils';
 
-export interface PendingFilterPayload {
-  data: SmartFilterSuggestions;
-  mode: SmartFilterApplyMode;
+interface JobOpportunitiesTabProps {
+  /** Mounted inside the /next app shell - the shell already renders the page
+  header + SubNav, so suppress the internal hero and keep a slim toolbar. */
+  embedded?: boolean;
 }
 
-export default function JobOpportunitiesTab() {
+type View = 'browse' | 'saved';
+
+/**
+ * The job titles driving this feed, surfaced on the Opportunities screen
+ * itself. These are the ONE shared set (`useJobTitles`) that also drives the
+ * Career portals tab, so what is listed here is exactly what every scan runs.
+ */
+function SharedJobTitles({ onEdit }: { onEdit: () => void }) {
+  const { titles, ready } = useJobTitles();
+
+  if (!ready && titles.length === 0) return null;
+
+  return (
+    <section
+      aria-label="Your job titles"
+      className="rounded-xl border border-border/70 bg-muted/30 p-3"
+    >
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <p className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+          <Search className="h-3.5 w-3.5" aria-hidden />
+          Your job titles
+        </p>
+        <span className="text-[11px] text-muted-foreground">· shared with Career portals</span>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={onEdit}
+          className="ml-auto h-7 px-2 text-[11px] text-primary"
+        >
+          Edit titles
+        </Button>
+      </div>
+      {titles.length ? (
+        <ul className="mt-2 flex flex-wrap gap-1.5">
+          {titles.map((title) => (
+            <li key={title}>
+              <Badge
+                variant="outline"
+                className="border-primary/30 bg-primary/10 text-[11px] font-medium text-primary"
+              >
+                {title}
+              </Badge>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mt-2 text-xs text-muted-foreground">
+          No titles yet. Add a few so the feed knows what to scan for.
+        </p>
+      )}
+    </section>
+  );
+}
+
+export default function JobOpportunitiesTab({ embedded }: JobOpportunitiesTabProps) {
+  const shellCtx = useOutletContext<{ embedded?: boolean } | null>();
+  const isEmbedded = embedded ?? shellCtx?.embedded ?? false;
   const jobSearch = useJobSearch();
-  const [activeTab, setActiveTab] = useState<'pipeline' | 'smart' | 'saved'>('pipeline');
-  const [pendingSuggestions, setPendingSuggestions] =
-    useState<PendingFilterPayload | null>(null);
+  const { setCustomizeOpen } = useCombinedJobsCtx();
+  const [view, setView] = useState<View>('browse');
 
-  // Pick up suggestions handed off from the inline component on the Tailor view.
-  useEffect(() => {
-    try {
-      const raw = sessionStorage.getItem('pending_smart_filters');
-      if (raw) {
-        sessionStorage.removeItem('pending_smart_filters');
-        const parsed = JSON.parse(raw) as SmartFilterSuggestions;
-        setPendingSuggestions({ data: parsed, mode: 'replace' });
-        setActiveTab('pipeline');
-      }
-    } catch {
-      /* ignore */
-    }
-  }, []);
-
-  const handleApplySuggestions = (s: SmartFilterSuggestions, mode: SmartFilterApplyMode = 'replace') => {
-    if (mode === 'replace') {
-      // Replace = big "Apply to pipeline" button — switch tabs so the user
-      // sees the populated form.
-      setPendingSuggestions({ data: s, mode: 'replace' });
-      setActiveTab('pipeline');
-      return;
-    }
-    // Append mode = per-group "+ Add to pipeline" while user stacks groups
-    // on the Smart Filters tab. DailyPipelinePanel isn't mounted yet (Radix
-    // Tabs only mounts the active content), so we MUST accumulate the
-    // suggestions ourselves — otherwise the second click overwrites the
-    // first and only the last group ever lands.
-    setPendingSuggestions((prev) => {
-      if (!prev || prev.mode !== 'append') {
-        return { data: s, mode: 'append' };
-      }
-      const dedup = (a: string[], b: string[]) => {
-        const seen = new Set(a.map((x) => x.toLowerCase()));
-        const out = [...a];
-        for (const item of b) {
-          const k = (item || '').trim().toLowerCase();
-          if (!k || seen.has(k)) continue;
-          seen.add(k);
-          out.push(item);
-        }
-        return out;
-      };
-      const merged: SmartFilterSuggestions = {
-        ...s,
-        headline: prev.data.headline || s.headline,
-        rationale: prev.data.rationale || s.rationale,
-        linkedin_keyword_sets: dedup(prev.data.linkedin_keyword_sets || [], s.linkedin_keyword_sets || []),
-        workday_titles: dedup(prev.data.workday_titles || [], s.workday_titles || []),
-        custom_role_terms: dedup(prev.data.custom_role_terms || [], s.custom_role_terms || []),
-        preset_tags: dedup(prev.data.preset_tags || [], s.preset_tags || []),
-        past_days: prev.data.past_days ?? s.past_days,
-        intent: prev.data.intent ?? s.intent,
-      };
-      return { data: merged, mode: 'append' };
-    });
+  // Editing lives in the feed's Customize drawer, so jump back to Browse and
+  // open it rather than keeping a second editor (and a second title list).
+  const editTitles = () => {
+    setView('browse');
+    setCustomizeOpen(true);
   };
+
+  const SEGMENTS: Array<{ key: View; label: string; icon: typeof LayoutGrid; count?: number }> = [
+    { key: 'browse', label: 'Browse jobs', icon: LayoutGrid },
+    { key: 'saved', label: 'Saved', icon: Bookmark, count: jobSearch.savedJobs.length },
+  ];
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-        <div className="space-y-1">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
-            Career · Jobs
-          </p>
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary/10 text-primary">
-              <Briefcase className="h-5 w-5" />
-            </span>
-            <h2 className="font-display text-2xl font-extrabold tracking-tight">
-              Job Opportunities
-            </h2>
-            <span className="rounded-full border border-primary/25 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
-              Beta
-            </span>
+      {!isEmbedded && (
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div className="space-y-1">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
+              Discover · Jobs
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary/10 text-primary">
+                <Briefcase className="h-5 w-5" />
+              </span>
+              <h2 className="font-display text-2xl font-extrabold tracking-tight">
+                Job Opportunities
+              </h2>
+            </div>
+            <p className="max-w-xl text-sm text-muted-foreground">
+              One live feed across every company source - Workday enterprises, Greenhouse / Lever /
+              Ashby career pages, and curated MNC boards - refreshed for you automatically and
+              ranked against your resume.
+            </p>
           </div>
-          <p className="text-sm text-muted-foreground max-w-xl">
-            A daily pipeline of roles pulled straight from company career portals — Workday,
-            Greenhouse, Lever, and Ashby — with smart filters built around your resume.
-            Applying moves a job straight into Saved, marked as applied.
-          </p>
         </div>
-        <div className="inline-flex w-fit items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-          <Bookmark className="h-3 w-3" />
-          {jobSearch.savedJobs.length} saved
-        </div>
+      )}
+
+      {/* Browse / Saved segmented control */}
+      <div className="inline-flex max-w-full flex-wrap rounded-xl border border-border bg-muted/40 p-1">
+        {SEGMENTS.map(({ key, label, icon: Icon, count }) => {
+          const isActive = view === key;
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setView(key)}
+              aria-pressed={isActive}
+              className={cn(
+                'flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                isActive
+                  ? 'bg-background text-primary shadow-soft'
+                  : 'text-muted-foreground hover:text-foreground',
+              )}
+            >
+              <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              {label}
+              {count != null && (
+                <span className={cn('tabular-nums', isActive ? 'text-primary/80' : 'opacity-60')}>
+                  ({count})
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)} className="space-y-5">
-        <TabsList className="border border-border bg-card/60 backdrop-blur-sm">
-          <TabsTrigger value="pipeline" className="gap-1.5 data-[state=active]:bg-background data-[state=active]:text-primary">
-            <Zap className="h-3.5 w-3.5" />
-            Daily pipeline
-          </TabsTrigger>
-          <TabsTrigger value="smart" className="gap-1.5 data-[state=active]:bg-background data-[state=active]:text-primary">
-            <Wand2 className="h-3.5 w-3.5" />
-            Smart filters
-          </TabsTrigger>
-          <TabsTrigger value="saved" className="gap-1.5 data-[state=active]:bg-background data-[state=active]:text-primary">
-            <Bookmark className="h-3.5 w-3.5" />
-            Saved ({jobSearch.savedJobs.length})
-          </TabsTrigger>
-        </TabsList>
+      <SharedJobTitles onEdit={editTitles} />
 
-        <TabsContent value="pipeline">
-          <DailyPipelinePanel
-            pendingSuggestions={pendingSuggestions}
-            onSuggestionsConsumed={() => setPendingSuggestions(null)}
-            onJobApplied={jobSearch.loadSavedJobs}
-          />
-        </TabsContent>
-
-        <TabsContent value="smart">
-          <SmartFiltersPanel onApply={handleApplySuggestions} />
-        </TabsContent>
-
-        <TabsContent value="saved">
-          <SavedJobsPanel
-            savedJobs={jobSearch.savedJobs}
-            updateJobStatus={jobSearch.updateJobStatus}
-            unsaveJob={jobSearch.unsaveJob}
-          />
-        </TabsContent>
-      </Tabs>
+      {/* Keep both mounted so a Browse scan keeps running while viewing Saved. */}
+      <div style={{ display: view === 'browse' ? undefined : 'none' }}>
+        <CombinedJobsPanel
+          isJobSaved={jobSearch.isJobSaved}
+          getJobStatus={jobSearch.getJobStatus}
+          saveJob={jobSearch.saveJob}
+          unsaveJob={jobSearch.unsaveJob}
+          quickApply={jobSearch.quickApply}
+        />
+      </div>
+      <div style={{ display: view === 'saved' ? undefined : 'none' }}>
+        <SavedJobsPanel
+          savedJobs={jobSearch.savedJobs}
+          updateJobStatus={jobSearch.updateJobStatus}
+          unsaveJob={jobSearch.unsaveJob}
+        />
+      </div>
     </div>
   );
 }

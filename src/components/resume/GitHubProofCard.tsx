@@ -54,7 +54,7 @@ export function GitHubProofCard({ onLinked, connect, reloadConnect }: GitHubProo
         setProfile(r.data.profile);
         setEditing(false);
         setInput('');
-        toast.success('GitHub linked — proof added to your readiness');
+        toast.success('GitHub linked. Proof added to your readiness');
         onLinked?.();
       } else {
         toast.error(r.error || 'Could not analyze that profile');
@@ -170,7 +170,7 @@ export function GitHubProofCard({ onLinked, connect, reloadConnect }: GitHubProo
         <Github className="h-4 w-4" /> Prove your skills
       </div>
       <p className="mb-3 text-xs leading-relaxed text-muted-foreground">
-        Link your GitHub — your real, shipped projects count toward your Career Readiness. No login needed.
+        Link your GitHub. Your real, shipped projects count toward your Career Readiness. No login needed.
       </p>
       <div className="mt-auto flex gap-2">
         <input
@@ -185,7 +185,7 @@ export function GitHubProofCard({ onLinked, connect, reloadConnect }: GitHubProo
           disabled={busy || !input.trim()}
           className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
         >
-          {busy ? 'Analyzing…' : <>Analyze <ArrowRight className="h-3.5 w-3.5" /></>}
+          {busy ? 'Analyzing...' : <>Analyze <ArrowRight className="h-3.5 w-3.5" /></>}
         </button>
       </div>
 
@@ -195,7 +195,7 @@ export function GitHubProofCard({ onLinked, connect, reloadConnect }: GitHubProo
 }
 
 /**
- * "Connect & act" footer — OAuth GitHub so the user can publish a project repo.
+ * "Connect & act" footer - OAuth GitHub so the user can publish a project repo.
  * Kept separate from the username-analysis flow above (that needs no login).
  */
 function GitHubConnect({ connect, reloadConnect }: { connect?: ConnectStatus | null; reloadConnect?: () => void }) {
@@ -242,7 +242,7 @@ function GitHubConnect({ connect, reloadConnect }: { connect?: ConnectStatus | n
         toast.error(r.error || 'Could not publish the project');
       }
     } catch {
-      toast.error('Publish failed — try again');
+      toast.error('Publish failed. Try again');
     } finally {
       setPublishing(false);
     }
@@ -273,7 +273,7 @@ function GitHubConnect({ connect, reloadConnect }: { connect?: ConnectStatus | n
           disabled={connecting}
           className="inline-flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground hover:text-foreground disabled:opacity-50"
         >
-          <Github className="h-3.5 w-3.5" /> {connecting ? 'Connecting…' : 'Connect GitHub to publish projects'}
+          <Github className="h-3.5 w-3.5" /> {connecting ? 'Connecting...' : 'Connect GitHub to publish projects'}
         </button>
       </div>
     );
@@ -290,7 +290,7 @@ function GitHubConnect({ connect, reloadConnect }: { connect?: ConnectStatus | n
           disabled={disconnecting}
           className="ml-auto text-[11px] font-medium text-muted-foreground hover:text-destructive disabled:opacity-50"
         >
-          {disconnecting ? 'Disconnecting…' : 'Disconnect'}
+          {disconnecting ? 'Disconnecting...' : 'Disconnect'}
         </button>
       </div>
 
@@ -327,7 +327,7 @@ function GitHubConnect({ connect, reloadConnect }: { connect?: ConnectStatus | n
             disabled={publishing || !name.trim()}
             className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
           >
-            {publishing ? 'Publishing…' : <>Publish <ArrowRight className="h-3.5 w-3.5" /></>}
+            {publishing ? 'Publishing...' : <>Publish <ArrowRight className="h-3.5 w-3.5" /></>}
           </button>
         </div>
       )}

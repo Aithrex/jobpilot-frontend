@@ -1,9 +1,9 @@
 /**
- * The widget registry — the generated dashboard's catalog (Compass §6.2).
+ * The widget registry - the generated dashboard's catalog (Compass §6.2).
  *
  * Existing polished cards (OPT clock, Career Readiness, Career Path) are reused
  * as widgets here; the lightweight new widgets live in their own files. Every
- * entry is just `{ relevance, span, render }` — the engine in DashboardTab sorts
+ * entry is just `{ relevance, span, render }` - the engine in DashboardTab sorts
  * by relevance and lays them out. Adding a widget = add one entry.
  */
 import type { NavKey, Widget } from './types';
@@ -24,12 +24,12 @@ import { marketPulseWidget } from './MarketPulse';
 import { sixSecondsWidget } from './SixSecondsWidget';
 import { referralsWidget } from './ReferralsWidget';
 
-/** OPT clock — jumps to the top and shifts to warning language when urgent. */
+/** OPT clock - jumps to the top and shifts to warning language when urgent. */
 const optClockWidget: Widget = {
   key: 'opt-clock',
   relevance: (ctx) => {
     const c = ctx.optClock;
-    if (!c || !c.has_profile) return 0.18; // present but quiet — an optional invite
+    if (!c || !c.has_profile) return 0.18; // present but quiet - an optional invite
     if (c.status_band === 'urgent') return 0.99;
     if (c.status_band === 'watch') return 0.82;
     if (c.unemployment_days_used == null) return 0.6;
@@ -47,7 +47,7 @@ const optClockWidget: Widget = {
   ),
 };
 
-/** Career readiness — the Compass score. Full-width band; highest for new users. */
+/** Career readiness - the Compass score. Full-width band; highest for new users. */
 const careerReadinessWidget: Widget = {
   key: 'career-readiness',
   relevance: (ctx) => {
@@ -62,7 +62,7 @@ const careerReadinessWidget: Widget = {
   ),
 };
 
-/** Career path — the guided build plan. Promoted for new users, muted when done. */
+/** Career path - the guided build plan. Promoted for new users, muted when done. */
 const careerPathWidget: Widget = {
   key: 'career-path',
   relevance: (ctx) => {
@@ -79,7 +79,7 @@ const careerPathWidget: Widget = {
     ) : null,
 };
 
-/** The full catalog. Order here is irrelevant — the engine ranks by relevance. */
+/** The full catalog. Order here is irrelevant - the engine ranks by relevance. */
 export const WIDGETS: Widget[] = [
   optClockWidget,
   careerReadinessWidget,

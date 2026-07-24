@@ -1,5 +1,5 @@
 /**
- * Learning Today — the one path to nudge forward, or the highest-value skill to
+ * Learning Today - the one path to nudge forward, or the highest-value skill to
  * start closing. Empty state invites starting a path for any topic.
  */
 import { GraduationCap } from 'lucide-react';
@@ -67,7 +67,7 @@ export const learningTodayWidget: Widget = {
         ) : (
           <WidgetEmpty
             title="Learn a skill in your downtime"
-            body="Start a guided path for any topic — it feeds straight back into your resume."
+            body="Start a guided path for any topic. It feeds straight back into your resume."
             ctaLabel="Explore learning"
             onCta={() => ctx.navigate('learning')}
           />

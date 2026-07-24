@@ -119,7 +119,7 @@ type QuizQuestion = {
 // ─── Agent theming ──────────────────────────────────────────────────────────
 
 // Deliberate token exception: a categorical, data-driven agent color scale.
-// Eight agents need eight distinguishable hues — more than the semantic token
+// Eight agents need eight distinguishable hues - more than the semantic token
 // set offers. Chips always pair the color with the agent's name, so meaning
 // never rides on color alone.
 const AGENT_COLORS: Record<string, { grad: string; text: string }> = {
@@ -190,7 +190,7 @@ function DeliverableCard({ d }: { d: Deliverable }) {
     return (
       <div className="mt-3 rounded-xl border border-primary/20 bg-primary/[0.04] p-3 text-xs">
         <p className="font-bold text-primary flex items-center gap-1.5">
-          <Layers className="h-3.5 w-3.5" /> PPT Outline — {String(data.title || "")}
+          <Layers className="h-3.5 w-3.5" /> PPT Outline: {String(data.title || "")}
         </p>
         {(data.subtitle as string) && <p className="text-muted-foreground text-[11px] mt-0.5">{String(data.subtitle)}</p>}
         <ol className="mt-2 ml-4 list-decimal space-y-1.5">
@@ -214,7 +214,7 @@ function DeliverableCard({ d }: { d: Deliverable }) {
     return (
       <div className="mt-3 rounded-xl border border-primary/20 bg-primary/[0.04] p-3 text-xs">
         <p className="font-bold text-primary flex items-center gap-1.5">
-          <FileText className="h-3.5 w-3.5" /> PDF One-Pager — {String(data.title || "")}
+          <FileText className="h-3.5 w-3.5" /> PDF One-Pager: {String(data.title || "")}
         </p>
         {sections.map((s, i) => (
           <div key={i} className="mt-2">
@@ -230,7 +230,7 @@ function DeliverableCard({ d }: { d: Deliverable }) {
     return (
       <div className="mt-3 rounded-xl border border-primary/20 bg-primary/[0.04] p-3 text-xs">
         <p className="font-bold text-primary flex items-center gap-1.5">
-          <Zap className="h-3.5 w-3.5" /> Project Scaffold — {String(data.name || "")}
+          <Zap className="h-3.5 w-3.5" /> Project Scaffold: {String(data.name || "")}
         </p>
         <p className="text-muted-foreground mt-1">{String(data.description || "")}</p>
         {(data.tech_stack as string) && <p className="mt-1 text-muted-foreground">Stack: {String(data.tech_stack)}</p>}
@@ -830,7 +830,7 @@ export default function CareerCopilotTab() {
             </h2>
             <p className="max-w-2xl text-sm text-muted-foreground leading-relaxed">
               Ask naturally and get grounded responses from your resume context. Use this workspace for outreach, interview drills,
-              application strategy, networking, and offer decisions — all in one guided flow.
+              application strategy, networking, and offer decisions. All in one guided flow.
             </p>
             <div className="mt-2 flex flex-wrap gap-1.5">
               <span className="rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">Resume-grounded answers</span>
@@ -839,7 +839,7 @@ export default function CareerCopilotTab() {
             </div>
             {!hasResume && (
               <p className="mt-1 text-sm text-warning">
-                No parsed resume — upload in <strong>My Resumes</strong> for grounded answers.
+                No parsed resume. Upload in <strong>My Resumes</strong> for grounded answers.
               </p>
             )}
           </div>
@@ -953,7 +953,7 @@ export default function CareerCopilotTab() {
                 </AnimatePresence>
                 {sending && (
                   <div className="flex items-center gap-2 text-sm text-primary">
-                    <Loader2 className="h-4 w-4 animate-spin" /> Orchestrating agents…
+                    <Loader2 className="h-4 w-4 animate-spin" /> Orchestrating agents...
                   </div>
                 )}
                 <div ref={endRef} />
@@ -978,7 +978,7 @@ export default function CareerCopilotTab() {
                 </button>
                 {showJd && (
                   <textarea value={jdPaste} onChange={(e) => setJdPaste(e.target.value)} rows={3}
-                    placeholder="Paste a job description — agents use it for tailoring, outreach, and interview prep."
+                    placeholder="Paste a job description. Agents use it for tailoring, outreach, and interview prep."
                     className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
                   />
                 )}
@@ -996,7 +996,7 @@ export default function CareerCopilotTab() {
                   <textarea value={input} onChange={(e) => setInput(e.target.value)}
                     onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void send(); } }}
                     rows={2}
-                    placeholder="Ask: outreach, PPT, project scaffold, STAR answers, tailoring…"
+                    placeholder="Ask: outreach, PPT, project scaffold, STAR answers, tailoring..."
                     className="min-h-[44px] flex-1 rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
                   />
                   <button type="button" disabled={sending || !input.trim()} onClick={() => void send()} aria-label="Send message"
@@ -1042,7 +1042,7 @@ export default function CareerCopilotTab() {
                   <div className="flex gap-2">
                     <button type="button" disabled={outreachBusy} onClick={() => void createCampaign()}
                       className="rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50"
-                    >{outreachBusy ? "Creating…" : "Create & auto-generate sequence"}</button>
+                    >{outreachBusy ? "Creating..." : "Create & auto-generate sequence"}</button>
                     <button type="button" onClick={() => setShowNewCampaign(false)} className="text-xs text-muted-foreground">Cancel</button>
                   </div>
                 </div>
@@ -1152,7 +1152,7 @@ export default function CareerCopilotTab() {
                       className="min-w-0 flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground" />
                     <button type="button" disabled={pgBusy} onClick={() => void startTrack()}
                       className="shrink-0 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50"
-                    >{pgBusy ? "Generating…" : "Generate custom track"}</button>
+                    >{pgBusy ? "Generating..." : "Generate custom track"}</button>
                   </div>
                 </div>
 
@@ -1184,7 +1184,7 @@ export default function CareerCopilotTab() {
                     <div className="flex items-center justify-between">
                       <p className="text-xs font-bold text-primary">
                         {playground.custom_title || tracks.find((x) => x.id === playground.active_track)?.title || "Track"}
-                        {playground.finished_at && " — complete"}
+                        {playground.finished_at && " · complete"}
                       </p>
                       <span className="text-[10px] text-muted-foreground">
                         {playground.current_step ?? 0}/{playground.steps.length} steps
@@ -1199,7 +1199,7 @@ export default function CareerCopilotTab() {
                         <button type="button" disabled={pgBusy} onClick={() => void runQuiz()}
                           className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50"
                         >
-                          <Award className="h-3.5 w-3.5" /> {pgBusy ? "Generating…" : "Take assessment"}
+                          <Award className="h-3.5 w-3.5" /> {pgBusy ? "Generating..." : "Take assessment"}
                         </button>
                       </div>
                     )}
@@ -1218,7 +1218,7 @@ export default function CareerCopilotTab() {
                           >
                             <Play className="h-3.5 w-3.5" /> Mark done & next
                           </button>
-                          <button type="button" onClick={() => void send(`Help me with: ${currentStep.title} — ${currentStep.body}`)}
+                          <button type="button" onClick={() => void send(`Help me with: ${currentStep.title}. ${currentStep.body}`)}
                             className="text-xs text-muted-foreground underline hover:text-foreground"
                           >Ask copilot</button>
                         </div>

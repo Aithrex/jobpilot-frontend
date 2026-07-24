@@ -378,7 +378,7 @@ export default function ResumeEditor({ resume: initialResume, jdAnalysis, record
     });
   }, []);
 
-  // Download — pushes the edited resume through the versioned download flow.
+  // Download - pushes the edited resume through the versioned download flow.
   // The backend appends a new version iff content_hash changed; repeated
   // downloads of the same content reuse the cached S3 file.
   const handleDownload = useCallback(async (fmt: 'pdf' | 'docx') => {
@@ -627,12 +627,12 @@ export default function ResumeEditor({ resume: initialResume, jdAnalysis, record
             <button type="button" onClick={() => handleDownload('pdf')} disabled={downloading !== null}
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed shadow-soft disabled:shadow-none transition-all duration-200">
               <DocumentArrowDownIcon className="w-4 h-4" />
-              {downloading === 'pdf' ? 'Generating…' : 'Download PDF'}
+              {downloading === 'pdf' ? 'Generating...' : 'Download PDF'}
             </button>
             <button type="button" onClick={() => handleDownload('docx')} disabled={downloading !== null}
               className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-foreground bg-muted border border-border hover:bg-muted/70 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200">
               <DocumentArrowDownIcon className="w-3.5 h-3.5" />
-              {downloading === 'docx' ? '…' : 'DOCX'}
+              {downloading === 'docx' ? '...' : 'DOCX'}
             </button>
           </div>
         </div>

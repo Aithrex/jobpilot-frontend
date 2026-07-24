@@ -1,13 +1,13 @@
 /**
- * Zone A hero — "Are we OK?"  The single highest-value indicator.
+ * Zone A hero - "Are we OK?"  The single highest-value indicator.
  *
  * Priority order (Compass mission-control):
- *   1. The unified TODAY INBOX — approvals, auto-submit hand-offs, inbox status
+ *   1. The unified TODAY INBOX - approvals, auto-submit hand-offs, inbox status
  *      suggestions, and "did you apply?" nudges the user needs to act on. This
  *      is the primary hero surface whenever the count is > 0. The feed is
  *      composed server-side (GET /api/apply/today-inbox); the hero just renders
  *      it, one row per item with a per-kind icon and a per-item action.
- *   2. Otherwise, today's application status — a calm, encouraging read of the
+ *   2. Otherwise, today's application status - a calm, encouraging read of the
  *      day (sent today, streak) with a forward action.
  *
  * Copy is written from the user's side ("3 items need you"), never in system
@@ -55,7 +55,7 @@ export interface HeroModel {
   totalApps: number;
 }
 
-/** Per-kind leading icon — never colour-alone; the icon carries the meaning. */
+/** Per-kind leading icon - never colour-alone; the icon carries the meaning. */
 const KIND_ICON: Record<TodayInboxKind, LucideIcon> = {
   needs_input: ListChecks,
   auto_submit: Send,
@@ -63,7 +63,8 @@ const KIND_ICON: Record<TodayInboxKind, LucideIcon> = {
   did_you_apply: CircleHelp,
 };
 
-const WORKSPACE_HREF = '/app';
+/** "Find roles" lands on Discover › Jobs - the shell's own job search. */
+const FIND_ROLES_HREF = '/next/discover/jobs';
 
 /** Absolute http(s) links leave the SPA; everything else is an in-app route. */
 function isExternal(href: string): boolean {
@@ -74,7 +75,7 @@ function isExternal(href: string): boolean {
 const SHELL_BASE = '/next';
 
 /**
- * The backend emits base-agnostic in-app paths (e.g. "/applications") — it
+ * The backend emits base-agnostic in-app paths (e.g. "/applications") - it
  * shouldn't know the FE's route structure. Resolve them against the shell mount
  * so navigate() lands on a real route instead of the NotFound catch-all.
  * External URLs and already-prefixed paths pass through unchanged.
@@ -112,7 +113,7 @@ export function HeroPanel({ model, onRetry }: { model: HeroModel; onRetry: () =>
     return (
       <PanelError
         title="We couldn't load your day"
-        body="We couldn't reach your workspace just now. Nothing is lost — retry when you're ready."
+        body="We couldn't reach your workspace just now. Nothing is lost. Retry when you're ready."
         onRetry={onRetry}
         className="sm:py-14"
       />
@@ -230,7 +231,7 @@ export function HeroPanel({ model, onRetry }: { model: HeroModel; onRetry: () =>
           <div className="shrink-0">
             <button
               type="button"
-              onClick={() => go(WORKSPACE_HREF)}
+              onClick={() => go(FIND_ROLES_HREF)}
               className="inline-flex min-h-11 items-center gap-2 rounded-control bg-primary px-5 text-body font-semibold text-primary-foreground shadow-soft transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
               Find roles

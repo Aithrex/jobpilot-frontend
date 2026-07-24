@@ -24,7 +24,7 @@ const DIM_LABEL: Record<string, string> = {
   technical_accuracy: 'Technical accuracy',
 };
 
-/** Score scale — meaning-coded (good / warming / weak), token-derived. */
+/** Score scale - meaning-coded (good / warming / weak), token-derived. */
 function scoreColor(v: number) {
   if (v >= 80) return 'bg-success';
   if (v >= 60) return 'bg-warning';
@@ -84,7 +84,7 @@ export default function InterviewInsights({ onStartMock }: InterviewInsightsProp
           </div>
           <p className="text-sm font-medium">No answers to analyze yet</p>
           <p className="mx-auto mt-1 max-w-sm text-xs text-muted-foreground">
-            Do a few mock evaluations and we'll spot the patterns in your answers across every role —
+            Do a few mock evaluations and we'll spot the patterns in your answers across every role,
             then tell you exactly what to drill.
           </p>
           {onStartMock && (
@@ -108,7 +108,7 @@ export default function InterviewInsights({ onStartMock }: InterviewInsightsProp
             <Card className="col-span-2 p-4 sm:col-span-1">
               <p className="text-xs text-muted-foreground">Weakest area</p>
               <p className="truncate text-lg font-bold">
-                {(coach.data.stats.weakest_dimensions || []).map((d) => DIM_LABEL[d] || d).join(', ') || '—'}
+                {(coach.data.stats.weakest_dimensions || []).map((d) => DIM_LABEL[d] || d).join(', ') || ' - '}
               </p>
             </Card>
           </div>
@@ -130,7 +130,7 @@ export default function InterviewInsights({ onStartMock }: InterviewInsightsProp
                 <div key={dim}>
                   <div className="mb-1 flex justify-between text-xs">
                     <span className="text-muted-foreground">{DIM_LABEL[dim] || dim}</span>
-                    <span className="font-medium tabular-nums">{v ?? '—'}</span>
+                    <span className="font-medium tabular-nums">{v ?? ' - '}</span>
                   </div>
                   <div className="h-2 overflow-hidden rounded-full bg-muted">
                     <div className={`h-full rounded-full ${scoreColor(v ?? 0)}`} style={{ width: `${v ?? 0}%` }} />
@@ -223,8 +223,8 @@ function SalaryWidget() {
     setLoading(true); setErr('');
     const res = await apiService.getSalaryEstimate(role.trim(), location ? { location } : undefined);
     setLoading(false);
-    if (res.status === 403) { setErr('Daily salary lookups used up — upgrade for unlimited.'); return; }
-    if (res.error || !res.data) { setErr(res.error || "Couldn't estimate a range — try again."); return; }
+    if (res.status === 403) { setErr('Daily salary lookups used up. Upgrade for unlimited.'); return; }
+    if (res.error || !res.data) { setErr(res.error || "Couldn't estimate a range. Try again."); return; }
     setData(res.data);
   };
 

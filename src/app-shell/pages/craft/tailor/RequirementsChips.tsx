@@ -1,5 +1,5 @@
 /**
- * RequirementsChips — color-coded matched/missing skill chips extracted from
+ * RequirementsChips - color-coded matched/missing skill chips extracted from
  * the JD analysis. Matched (found in the tailored resume) → success tint;
  * missing → warning tint. Preferred skills stay neutral unless matched.
  *
@@ -57,7 +57,7 @@ export function RequirementsChips({
             Extracted Requirements
           </span>
           <span className="text-[10px] text-muted-foreground">
-            — auto-detected from job posting
+            · auto-detected from job posting
           </span>
         </div>
 
@@ -151,7 +151,7 @@ export function RequirementsChips({
           </span>
           <span className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-warning" />
-            Missing — consider adding
+            Missing. Consider adding
           </span>
         </div>
       </div>

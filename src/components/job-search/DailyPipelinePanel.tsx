@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ChipsInput } from './ChipsInput';
-import { ApifyKeyCard } from './ApifyKeyCard';
+// import { ApifyKeyCard } from './ApifyKeyCard';  // APIFY DISABLED (temporary)
 import { ReachOutModal } from './ReachOutModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiService } from '@/lib/api';
@@ -31,7 +31,7 @@ import type {
 // --------------------------------------------------------------------------
 // Defaults & presets
 // --------------------------------------------------------------------------
-// DOMAIN-NEUTRAL defaults — used ONLY when:
+// DOMAIN-NEUTRAL defaults - used ONLY when:
 //   · the user hasn't uploaded a resume yet, OR
 //   · the resume-driven suggester returned an error
 // These intentionally avoid biasing toward any single role family
@@ -46,7 +46,7 @@ const DEFAULT_LINKEDIN_KEYWORDS = [
 ];
 
 const DEFAULT_WORKDAY_TITLES = [
-  // Generic early-career SWE titles only — no domain anchors.
+  // Generic early-career SWE titles only - no domain anchors.
   'Software Engineer', 'Software Engineer I',
   'Associate Software Engineer', 'Junior Software Engineer',
   'New Grad Software Engineer', 'Entry Level Software Engineer',
@@ -188,14 +188,14 @@ function storageKey(userEmail: string | null | undefined): string {
   const slug = (userEmail || '').trim().toLowerCase() || 'anonymous';
   return `${STORAGE_KEY_PREFIX}:${slug}`;
 }
-// Legacy global key — read once on first mount to migrate the old blob into
+// Legacy global key - read once on first mount to migrate the old blob into
 // the user-scoped key so nobody loses their snoozes / mutes during the rollout.
 const LEGACY_STORAGE_KEY = 'daily_pipeline_state_v2';
 
 // Bump when the resume-driven filter-suggester taxonomy changes so we drop
 // stale linkedinKws / workdayTitles / customRoles that were derived from an
 // older profiler. We preserve everything else (snoozes, mutes, counters,
-// applied ids) — only the resume-derived filters get invalidated.
+// applied ids) - only the resume-derived filters get invalidated.
 // v3: new resume-driven title synthesizer (Claude PRO reads actual resume
 // content) replaces the static per-intent seed lists.
 // v4 (May 2026): force re-fetch after defaults were made domain-neutral
@@ -218,7 +218,7 @@ interface PersistedState {
   workdayLimit?: number;
   linkedinCount?: number;
   includeIndeed?: boolean;
-  // New optional filter knobs — undefined preserves the original
+  // New optional filter knobs - undefined preserves the original
   // hardcoded defaults (entry-level, full-time, US-only, any arrangement).
   location?: string;
   experienceLevel?: PipelineExperienceLevel;
@@ -233,7 +233,7 @@ interface PersistedState {
   /** Has the user been auto-prefilled from /suggest-filters at least once? */
   prefilledFromResume?: boolean;
   /**
-   * IDs the user has acknowledged seeing — anything in the current result
+   * IDs the user has acknowledged seeing - anything in the current result
    * that is NOT in this set gets a "NEW" badge. Capped at 1500 entries to
    * keep localStorage payload tiny. Updated on "Mark all seen" or after the
    * result has been on-screen for a while.
@@ -244,13 +244,13 @@ interface PersistedState {
    * Anything in the past is implicitly cleared at next result render.
    */
   snoozedUntil?: Record<string, string>;
-  /** Daily application quota goal — student-tunable, defaults to 5. */
+  /** Daily application quota goal - student-tunable, defaults to 5. */
   dailyGoal?: number;
-  /** Per-day application counter — { date: 'YYYY-MM-DD', count: N }. */
+  /** Per-day application counter - { date: 'YYYY-MM-DD', count: N }. */
   dailyApplied?: { date: string; count: number };
   /**
    * Rows the user has checked for the "Run batch tailor" flow. Purely
-   * additive — single-row Tailor still works exactly as before. Persisted
+   * additive - single-row Tailor still works exactly as before. Persisted
    * so a refresh during selection doesn't lose progress.
    */
   batchSelectedIds?: string[];
@@ -275,7 +275,7 @@ let _memoryCache: PersistedState | null = null;
 /**
  * Render a backend "posted" YYYY-MM-DD (UTC date) in a form that matches the
  * viewer's local day intuition. Backend stamps "Posted Today" as `now()` in
- * UTC — for a viewer in PST that becomes tomorrow's UTC date and the raw
+ * UTC - for a viewer in PST that becomes tomorrow's UTC date and the raw
  * string lies about which day it was. We anchor each posted date at 12:00
  * UTC of that day so any local timezone within ±12h reads as the same calendar
  * day, then label "Today" / "Yesterday" / "N days ago" for fresh rows and
@@ -289,7 +289,7 @@ function formatPostedLocal(postedYMD: string): string {
   if (hours < 30) return 'Today';
   if (hours < 54) return 'Yesterday';
   if (hours < 7 * 24) return `${Math.round(hours / 24)}d ago`;
-  // Older — show local-tz calendar date in YYYY-MM-DD so the label still
+  // Older - show local-tz calendar date in YYYY-MM-DD so the label still
   // matches what the user sees on a calendar.
   const local = new Date(ts);
   const y = local.getFullYear();
@@ -392,7 +392,7 @@ function VisaBadge({ status, confidence }: { status?: string; confidence?: numbe
   // Render a compact, color-coded badge so an F-1 / H-1B candidate can tell
   // at a glance whether a posting will accept their visa status. The
   // optional `confidence` (0..1) layers a calibrated percent on top of the
-  // discrete status — "Sponsors 95%" reads stronger than just "Sponsors",
+  // discrete status - "Sponsors 95%" reads stronger than just "Sponsors",
   // and "Likely sponsor 62%" surfaces the soft positive bucket that used
   // to be hidden inside "unknown".
   const pct = typeof confidence === 'number' && confidence > 0
@@ -403,7 +403,7 @@ function VisaBadge({ status, confidence }: { status?: string; confidence?: numbe
       <Badge
         variant="outline"
         className="gap-1 border-emerald-500/40 bg-emerald-500/10 text-[9px] font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-300"
-        title="Verified H-1B sponsor — company is on the curated sponsor list or the JD says they sponsor."
+        title="Verified H-1B sponsor. Company is on the curated sponsor list or the JD says they sponsor."
       >
         <ShieldCheck className="h-2.5 w-2.5" />
         Sponsors{pct ? ` ${pct}` : ''}
@@ -485,7 +485,7 @@ function PipelineRow({
 }) {
   const tierStyle = TIER_STYLES[rec.tier || ''];
   const cardRef = useRef<HTMLDivElement | null>(null);
-  // Auto-scroll the focused row into view when it changes — keeps j/k
+  // Auto-scroll the focused row into view when it changes - keeps j/k
   // navigation usable on long tier lists.
   useEffect(() => {
     if (focused && cardRef.current) {
@@ -495,7 +495,7 @@ function PipelineRow({
   const flagList = (rec.flags || '')
     .split(',')
     .map((f) => f.trim())
-    .filter((f) => f && f !== '—');
+    .filter((f) => f && f !== ' - ');
 
   // Surface "previously applied X days ago" so a row that's been in the
   // funnel for a week doesn't get re-opened by mistake. We render different
@@ -513,7 +513,7 @@ function PipelineRow({
     } catch { return ''; }
   })();
   const showPrevApplied = !!prevStatus && prevStatus !== 'interested' && !applied;
-  // Effective applied state — true when EITHER the user marked applied in
+  // Effective applied state - true when EITHER the user marked applied in
   // this session OR the saved_job already shows an active-funnel status
   // (applied / interview / offer). This unifies the "I just applied"
   // flow with the "Batch Tailor confirmed applied" flow and the "synced
@@ -526,7 +526,7 @@ function PipelineRow({
     prevStatus === 'offer';
   const prevPalette = (() => {
     // Active in funnel → amber (still relevant). Closed-loop → muted gray
-    // (rejected/withdrawn — user can still re-apply but signal is weaker).
+    // (rejected/withdrawn - user can still re-apply but signal is weaker).
     switch (prevStatus) {
       case 'applied':
       case 'interview':
@@ -676,7 +676,7 @@ function PipelineRow({
                 {formatPostedLocal(rec.posted)}
               </span>
             )}
-            {rec.salary && rec.salary !== '—' && <span>{rec.salary}</span>}
+            {rec.salary && rec.salary !== ' - ' && <span>{rec.salary}</span>}
           </div>
 
           {flagList.length > 0 && (
@@ -707,14 +707,14 @@ function PipelineRow({
               title={
                 applied
                   ? 'You marked this applied in this session'
-                  : `Already in your funnel — status: ${prevStatus || 'applied'}`
+                  : `Already in your funnel. Status: ${prevStatus || 'applied'}`
               }
             >
               <CheckCircle2 className="h-3 w-3" />
               {prevStatus === 'interview' ? 'In Interview' : prevStatus === 'offer' ? 'Offer' : 'Applied'}
             </Button>
           ) : opened ? (
-            // Two-stage flow — user clicked "Open posting" in this run. Now
+            // Two-stage flow - user clicked "Open posting" in this run. Now
             // confirm whether they actually submitted, or dismiss to go back.
             // This only triggers AFTER an explicit click; openedIds is GC'd
             // against every fresh result so it never lingers across runs.
@@ -733,7 +733,7 @@ function PipelineRow({
                 variant="ghost"
                 onClick={onDismissOpened}
                 className="h-7 gap-1 text-[10px] text-muted-foreground hover:text-foreground"
-                title="Didn't apply — dismiss this prompt and restore the Open button"
+                title="Didn't apply. Dismiss this prompt and restore the Open button"
               >
                 Not yet
               </Button>
@@ -743,7 +743,7 @@ function PipelineRow({
               size="sm"
               onClick={onOpen}
               className="gap-1 bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:opacity-90"
-              title="Open the posting in a new tab — saves it as Interested"
+              title="Open the posting in a new tab. Saves it as Interested"
             >
               Open posting
               <ExternalLink className="h-3 w-3" />
@@ -756,14 +756,14 @@ function PipelineRow({
               onClick={onTailor}
               disabled={tailorLoading}
               className="gap-1 border-purple-500/30 text-[11px] text-purple-700 hover:bg-purple-500/10 dark:text-purple-300 disabled:opacity-70"
-              title={tailorLoading ? 'Fetching JD — opening Tailor in a moment…' : 'Open this job in Tailor — auto-marks Applied once tailoring saves'}
+              title={tailorLoading ? 'Fetching JD. Opening Tailor in a moment...' : 'Open this job in Tailor. Auto-marks Applied once tailoring saves'}
             >
               {tailorLoading ? (
                 <span className="inline-block h-3 w-3 rounded-full border border-purple-500/60 border-t-transparent animate-spin" />
               ) : (
                 <Wand2 className="h-3 w-3" />
               )}
-              {tailorLoading ? 'Fetching JD…' : 'Tailor'}
+              {tailorLoading ? 'Fetching JD...' : 'Tailor'}
             </Button>
           )}
           {!effectivelyApplied && rec.company && (
@@ -782,7 +782,7 @@ function PipelineRow({
               type="button"
               onClick={() => onSnooze(2)}
               className="rounded px-2 py-1 text-[11px] text-muted-foreground/80 hover:bg-purple-500/10 hover:text-purple-600 dark:hover:text-purple-300 transition-colors self-end opacity-80 sm:opacity-0 sm:group-hover:opacity-100"
-              title="Hide for 2 days — re-surfaces on its own"
+              title="Hide for 2 days. Re-surfaces on its own"
             >
               💤 Snooze 2d
             </button>
@@ -794,7 +794,7 @@ function PipelineRow({
               className="rounded px-2 py-1 text-[11px] text-muted-foreground/70 hover:bg-rose-500/10 hover:text-rose-600 dark:hover:text-rose-400 transition-colors self-end opacity-80 sm:opacity-0 sm:group-hover:opacity-100"
               title={`Stop showing ${rec.company} rows in future runs`}
             >
-              🚫 Hide {rec.company.slice(0, 14)}{rec.company.length > 14 ? '…' : ''}
+              🚫 Hide {rec.company.slice(0, 14)}{rec.company.length > 14 ? '...' : ''}
             </button>
           )}
           {!applied && rec.title && (
@@ -804,7 +804,7 @@ function PipelineRow({
               className="rounded px-2 py-1 text-[11px] text-muted-foreground/70 hover:bg-rose-500/10 hover:text-rose-600 dark:hover:text-rose-400 transition-colors self-end opacity-80 sm:opacity-0 sm:group-hover:opacity-100"
               title="Hide future postings whose title contains a substring (e.g. Senior, Lead, Staff)"
             >
-              🚫 Hide title…
+              🚫 Hide title...
             </button>
           )}
         </div>
@@ -916,15 +916,15 @@ function TierGroup({
 export interface PendingPipelinePayload {
   data: SmartFilterSuggestions;
   /**
-   * 'replace' — overwrite the form (big "Apply to pipeline" button).
-   * 'append'  — merge into existing chips so the user can stack groups.
+   * 'replace' - overwrite the form (big "Apply to pipeline" button).
+   * 'append' - merge into existing chips so the user can stack groups.
    */
   mode: 'replace' | 'append';
 }
 
 export interface DailyPipelinePanelProps {
   /**
-   * Pending suggestions handed in from SmartFiltersPanel — consumed once.
+   * Pending suggestions handed in from SmartFiltersPanel - consumed once.
    * Accepts both the legacy bare-SmartFilterSuggestions shape (treated as
    * replace) AND the new {data, mode} envelope so the parent can opt into
    * append-mode for per-group stacking.
@@ -953,7 +953,7 @@ export function DailyPipelinePanel({
   const [linkedinCount, setLinkedinCount] = useState<number>(persisted?.linkedinCount ?? 80);
   const [includeIndeed, setIncludeIndeed] = useState<boolean>(persisted?.includeIndeed ?? false);
 
-  // New filter knobs — defaults match the previous hardcoded behavior so a
+  // New filter knobs - defaults match the previous hardcoded behavior so a
   // first-time visitor or a user who never opens the Filters drawer gets the
   // exact same scrape they got before this change.
   const [location, setLocation] = useState<string>(persisted?.location ?? 'United States');
@@ -963,11 +963,11 @@ export function DailyPipelinePanel({
   const [domainStrict, setDomainStrict] = useState<boolean>(persisted?.domainStrict ?? false);
   const [h1bOnly, setH1bOnly] = useState<boolean>(persisted?.h1bOnly ?? false);
   // Default ON: an F-1 student has zero use for "US citizens only / GC required"
-  // postings. Tagging alone wasn't enough — they still cluttered Tier 2/3 rows.
+  // postings. Tagging alone wasn't enough - they still cluttered Tier 2/3 rows.
   // Users can disable via the F-1 panel if they're on a different visa path.
   const [excludeNoSponsorship, setExcludeNoSponsorship] = useState<boolean>(persisted?.excludeNoSponsorship ?? true);
 
-  // Named presets — server-backed so they survive across browsers/devices.
+  // Named presets - server-backed so they survive across browsers/devices.
   const [presets, setPresets] = useState<PipelinePreset[]>([]);
   const [presetMenuOpen, setPresetMenuOpen] = useState(false);
   const [savePresetOpen, setSavePresetOpen] = useState(false);
@@ -981,15 +981,15 @@ export function DailyPipelinePanel({
   const [appliedIds, setAppliedIds] = useState<string[]>(persisted?.appliedIds ?? []);
   const [openedIds, setOpenedIds] = useState<string[]>(persisted?.openedIds ?? []);
   const [showApplied, setShowApplied] = useState<boolean>(persisted?.showApplied ?? true);
-  // Tracks which row is currently in JD-prefetch — only one at a time. Used
+  // Tracks which row is currently in JD-prefetch - only one at a time. Used
   // so the row's Tailor button shows a spinner + disables itself instead of
   // looking idle while a 12s fetch is in flight.
   const [tailorLoadingId, setTailorLoadingId] = useState<string | null>(null);
-  // Batch-tailor selection — multiple rows the user wants to send to the
+  // Batch-tailor selection - multiple rows the user wants to send to the
   // Batch Tailor tab in one shot. Persisted so a refresh mid-pick doesn't
   // lose the selection. Single-row Tailor is untouched.
   const [batchSelectedIds, setBatchSelectedIds] = useState<string[]>(persisted?.batchSelectedIds ?? []);
-  // Companies the user dismissed — anything in this list is dropped on the
+  // Companies the user dismissed - anything in this list is dropped on the
   // server side before scoring on the NEXT pipeline run. Persists across
   // sessions so Stripe-flood etc. stays muted until the user un-hides.
   const [hideCompanies, setHideCompanies] = useState<string[]>(persisted?.hideCompanies ?? []);
@@ -998,12 +998,12 @@ export function DailyPipelinePanel({
   // Tracks whether the user is mid-batch-run so we can disable the Run
   // button + show a spinner while we pre-fetch all the JDs in parallel.
   const [batchRunning, setBatchRunning] = useState(false);
-  // Reach-out modal state — single modal instance, swapped target row.
+  // Reach-out modal state - single modal instance, swapped target row.
   const [reachOutRec, setReachOutRec] = useState<DailyPipelineRecord | null>(null);
   const [seenIds, setSeenIds] = useState<string[]>(persisted?.seenIds ?? []);
   const [snoozedUntil, setSnoozedUntil] = useState<Record<string, string>>(persisted?.snoozedUntil ?? {});
   const [dailyGoal, setDailyGoal] = useState<number>(persisted?.dailyGoal ?? 5);
-  // Per-day applied counter — reset to 0 whenever the local date rolls over
+  // Per-day applied counter - reset to 0 whenever the local date rolls over
   // so a fresh morning shows "0/5" instead of last night's tally.
   const _todayDate = new Date().toISOString().slice(0, 10);
   const [dailyApplied, setDailyApplied] = useState<{ date: string; count: number }>(() => {
@@ -1012,7 +1012,7 @@ export function DailyPipelinePanel({
     return { date: _todayDate, count: 0 };
   });
   const [activePreset, setActivePreset] = useState<string | null>(null);
-  // Per-source overrides — user can mute a board (enabled=false) or set a
+  // Per-source overrides - user can mute a board (enabled=false) or set a
   // tighter/looser past_days / experience_level just for that source. All
   // boards default to "enabled with global filters", which reproduces the
   // pre-feature behavior exactly.
@@ -1021,13 +1021,13 @@ export function DailyPipelinePanel({
   // on the merged result. The actor-side experience filter was the exact
   // reason Yahoo's Workday postings were being hidden, so even when the user
   // selects "entry" we send the wide payload and de-rank instead of dropping.
-  // Post-run date slicer — pure client-side filter over the existing
+  // Post-run date slicer - pure client-side filter over the existing
   // `result.apply_now` / `verify_dates` lists. Doesn't re-fetch from the
   // server. Ephemeral on purpose: a refresh restores results but resets the
   // slicer to "all" so the user sees the full set first.
   type PostRunDateFilter = 'all' | 'today' | 'yesterday' | '3d' | '7d';
   const [dateFilter, setDateFilter] = useState<PostRunDateFilter>('all');
-  // Source filter — narrows the visible rows to one origin (LinkedIn /
+  // Source filter - narrows the visible rows to one origin (LinkedIn /
   // Workday Apify / Workday Direct / Indeed / ATS direct). Lets the user
   // chew through one board at a time before moving to the next so they
   // don't lose context-switching to "where was that LinkedIn job again?"
@@ -1050,7 +1050,7 @@ export function DailyPipelinePanel({
     },
     [sourceFilter],
   );
-  // JD-vs-resume match scores — populated after each pipeline run by an async
+  // JD-vs-resume match scores - populated after each pipeline run by an async
   // batch call to /pipeline/match-scores. Deterministic (regex against resume
   // skills) so it's safe to overlay on every row without burning LLM quota.
   type MatchScore = {
@@ -1062,9 +1062,11 @@ export function DailyPipelinePanel({
   const [matchScores, setMatchScores] = useState<Record<string, MatchScore>>({});
   const [matchScoresLoading, setMatchScoresLoading] = useState(false);
   const [matchScoresHasResume, setMatchScoresHasResume] = useState<boolean>(true);
+  // --- APIFY DISABLED (temporary): BYO Apify-key card state removed. Restore
+  // the line below to re-enable. ---
   // Bumped each time we want to pop the Apify key card open (e.g. after a
   // credit-exhausted run). The card only reacts when this value changes.
-  const [apifyForceOpen, setApifyForceOpen] = useState<number | undefined>(undefined);
+  // const [apifyForceOpen, setApifyForceOpen] = useState<number | undefined>(undefined);
   const prefilledRef = useRef<boolean>(persisted?.prefilledFromResume ?? false);
 
   // Persist
@@ -1110,12 +1112,12 @@ export function DailyPipelinePanel({
     userEmail,
   ]);
 
-  // Manual "↻ Re-suggest from resume" trigger — bypasses prefilledRef so the
+  // Manual "↻ Re-suggest from resume" trigger - bypasses prefilledRef so the
   // user can force a fresh suggestion run any time (after updating their
   // resume, after a profiler upgrade, etc). Replaces linkedinKws / titles /
   // customRoles wholesale; everything else (snoozes, mutes) is preserved.
   const [refreshingFilters, setRefreshingFilters] = useState(false);
-  // Persistent debug panel showing what the synth detected — surfaces the
+  // Persistent debug panel showing what the synth detected - surfaces the
   // information that was previously only in transient toasts so any user
   // (or friend testing the system) can see at a glance whether their
   // filters are personalized to THEIR resume or fell back to defaults.
@@ -1134,7 +1136,7 @@ export function DailyPipelinePanel({
       // shapes so the handler is resilient to future endpoint changes.
       const raw = resp.data as any;
       const s = (raw && (raw.suggestions ?? raw)) || null;
-      // Distinguish "no resume" from other failures — the action is different.
+      // Distinguish "no resume" from other failures - the action is different.
       if (resp.error && /no resume/i.test(resp.error)) {
         toast.warning('Upload your resume first', {
           description: 'The current filters are GENERIC SWE defaults. Head to My Resumes / Profile and upload your resume, then click ↻ Re-suggest again to get titles tailored to your stack.',
@@ -1154,7 +1156,7 @@ export function DailyPipelinePanel({
       if (typeof s.past_days === 'number') setPastDays(s.past_days);
       prefilledRef.current = true;
       // Show what the backend actually detected so the user can verify the
-      // suggestion is grounded in their resume — not generic.
+      // suggestion is grounded in their resume - not generic.
       const headline = s.headline || s.intent?.primary_label || 'your resume';
       const rationale = s.rationale || '';
       const firstTitle = s.workday_titles?.[0] || '(no titles)';
@@ -1183,7 +1185,7 @@ export function DailyPipelinePanel({
   //   1. First-ever mount (no persisted state)
   //   2. After a FILTERS_DERIVED_VERSION migration wiped the stale filter
   //      fields (persisted exists but linkedinKws fell back to defaults)
-  //   3. Never — once prefilledRef is true (auto-prefill succeeded once, or
+  //   3. Never - once prefilledRef is true (auto-prefill succeeded once, or
   //      the user applied Smart Filters / Refresh), we don't re-run
   //
   // Previously this bailed on `if (persisted) return` which blocked case 2,
@@ -1201,12 +1203,12 @@ export function DailyPipelinePanel({
       if (cancelled) return;
       // Loud "upload your resume" CTA when the backend says no resume is on
       // file. Previously this was a silent catch, so a brand-new user just
-      // saw the cloud-flavored defaults and assumed those were "for them" —
+      // saw the cloud-flavored defaults and assumed those were "for them"  - 
       // never realizing personalization was waiting one upload away.
       if (resp.error && /no resume/i.test(resp.error)) {
         toast.warning('No resume on file', {
           description:
-            'These default filters are GENERIC SWE titles. Upload your resume in My Resumes / Profile to get titles personalized to your actual stack — then click ↻ Re-suggest.',
+            'These default filters are GENERIC SWE titles. Upload your resume in My Resumes / Profile to get titles personalized to your actual stack. Then click ↻ Re-suggest.',
           duration: 9000,
         });
         return;
@@ -1232,11 +1234,11 @@ export function DailyPipelinePanel({
         usedSynth: sx.synth_meta?.used_synth ?? false,
       });
       toast.success(`Filters refreshed from ${headline}`, {
-        description: 'Personalized to your resume — adjust before running.',
+        description: 'Personalized to your resume. Adjust before running.',
         duration: 4500,
       });
     }).catch(() => {
-      // Network error — defaults stay in place; user can retry via ↻ button.
+      // Network error - defaults stay in place; user can retry via ↻ button.
       // Not toasting because this can fire pre-auth on slow loads.
     });
     return () => { cancelled = true; };
@@ -1322,7 +1324,7 @@ export function DailyPipelinePanel({
       linkedin_count: linkedinCount,
       include_indeed: includeIndeed,
       // Only forward the new knobs when they differ from the original
-      // hardcoded behavior. Sending the defaults explicitly is fine — the
+      // hardcoded behavior. Sending the defaults explicitly is fine - the
       // backend treats "entry"/"FULLTIME"/"any"/"United States" as the
       // pre-existing baseline. We always send so the request is explicit.
       location,
@@ -1363,7 +1365,7 @@ export function DailyPipelinePanel({
       setOpenedIds((prev) => prev.filter((id) => liveIds.has(id)));
     } catch { /* best effort */ }
     if (resp.data.credits_exhausted) {
-      setApifyForceOpen(Date.now());
+      // setApifyForceOpen(Date.now());  // APIFY DISABLED (temporary)
       toast.error(
         'Apify credits are exhausted. Update your API key to keep running the pipeline.',
         { duration: 8000 },
@@ -1522,14 +1524,14 @@ export function DailyPipelinePanel({
       } catch { /* ignore */ }
     }
     if (!jdText && rec.url) {
-      const fetching = toast.loading('Fetching job description…', { duration: 50000 });
+      const fetching = toast.loading('Fetching job description...', { duration: 50000 });
       try {
         const resp = await apiService.fetchJobDescription(rec.url);
         toast.dismiss(fetching);
         if (resp.data?.ok && resp.data.jd_text) {
           jdText = resp.data.jd_text;
           fetchedKind = resp.data.source_kind;
-          // Cache for the rest of the session — re-clicks on the same row
+          // Cache for the rest of the session - re-clicks on the same row
           // (or pasting the same URL into another flow) are instant.
           try {
             sessionStorage.setItem(
@@ -1538,12 +1540,12 @@ export function DailyPipelinePanel({
             );
           } catch { /* quota */ }
         } else if (resp.data?.error) {
-          // Soft-fail — fall through to the placeholder so user can paste manually.
+          // Soft-fail - fall through to the placeholder so user can paste manually.
           toast.message(resp.data.error);
         }
       } catch {
         toast.dismiss(fetching);
-        /* ignore — fall through to placeholder */
+        /* ignore - fall through to placeholder */
       }
     }
     // When fetch fails, hand off an EMPTY jd_text and a fail flag so the
@@ -1567,32 +1569,32 @@ export function DailyPipelinePanel({
     window.dispatchEvent(new CustomEvent('portfolio:navigate-to-tailor'));
     if (jdText) {
       toast.success(
-        `Opening Tailor — JD pre-filled${fetchedKind ? ` (${fetchedKind.replace('_', ' ')})` : ''}.`,
+        `Opening Tailor. JD pre-filled${fetchedKind ? ` (${fetchedKind.replace('_', ' ')})` : ''}.`,
       );
     } else if (fetchFailed) {
-      toast.warning("Couldn't auto-fetch the JD — please copy-paste it from the posting.", {
+      toast.warning("Couldn't auto-fetch the JD. Please copy-paste it from the posting.", {
         duration: 6000,
       });
     } else {
-      toast.message('Opening Tailor — paste the JD to begin.');
+      toast.message('Opening Tailor. Paste the JD to begin.');
     }
     setTailorLoadingId(null);
   };
 
   // Batch handoff: pre-fetch JDs (parallel, capped) for every selected row
   // and hand them to the Batch Tailor tab via sessionStorage. Single-row
-  // Tailor is unchanged — this is a separate code path.
+  // Tailor is unchanged - this is a separate code path.
   const handleRunBatch = async () => {
     if (batchRunning) return;
     const recs = batchSelectedIds
       .map((id) => allRowsById.get(id))
       .filter((r): r is DailyPipelineRecord => !!r);
     if (recs.length === 0) {
-      toast.info('Nothing in the batch yet — tick rows to add them.');
+      toast.info('Nothing in the batch yet. Tick rows to add them.');
       return;
     }
     setBatchRunning(true);
-    const fetching = toast.loading(`Pre-fetching ${recs.length} job descriptions…`, {
+    const fetching = toast.loading(`Pre-fetching ${recs.length} job descriptions...`, {
       duration: 60000,
     });
 
@@ -1606,9 +1608,9 @@ export function DailyPipelinePanel({
       ),
     );
 
-    // Parallel JD prefetch — capped concurrency so we don't hammer the
+    // Parallel JD prefetch - capped concurrency so we don't hammer the
     // backend rate limiter (20/min on /jobs/fetch-jd). 3 in flight covers
-    // ~20 jobs in ~25–40s typical; the per-call timeout is server-side ~60s.
+    // ~20 jobs in ~25-40s typical; the per-call timeout is server-side ~60s.
     type Prefetched = {
       rec: DailyPipelineRecord;
       jdText: string;
@@ -1638,7 +1640,7 @@ export function DailyPipelinePanel({
     await Promise.all(Array.from({ length: Math.min(concurrency, recs.length) }, worker));
     toast.dismiss(fetching);
 
-    // Hand off to BatchTailor — entries marked fetchFailed render an inline
+    // Hand off to BatchTailor - entries marked fetchFailed render an inline
     // "paste JD" prompt. The BatchTailor mount-effect reads this key.
     const handoff = out.map(({ rec, jdText, fetchFailed }) => ({
       job_id: _recordId(rec),
@@ -1651,7 +1653,7 @@ export function DailyPipelinePanel({
     try {
       sessionStorage.setItem('pending_batch_tailor_jobs', JSON.stringify(handoff));
     } catch (e) {
-      toast.error('Browser storage full — try clearing some history.');
+      toast.error('Browser storage full. Try clearing some history.');
       setBatchRunning(false);
       return;
     }
@@ -1659,11 +1661,11 @@ export function DailyPipelinePanel({
     const failedCount = handoff.filter((h) => h.jd_fetch_failed).length;
     if (failedCount > 0) {
       toast.warning(
-        `Sent ${handoff.length} to Batch Tailor — ${failedCount} need a manual JD paste before they'll run.`,
+        `Sent ${handoff.length} to Batch Tailor. ${failedCount} need a manual JD paste before they'll run.`,
         { duration: 8000 },
       );
     } else {
-      toast.success(`Sent ${handoff.length} to Batch Tailor — opening now.`);
+      toast.success(`Sent ${handoff.length} to Batch Tailor. Opening now.`);
     }
 
     // Clear selection so the user can keep browsing fresh rows after the
@@ -1673,7 +1675,7 @@ export function DailyPipelinePanel({
     window.dispatchEvent(new CustomEvent('portfolio:navigate-to-batch-tailor'));
   };
 
-  // Build the Job payload we save / update — shared between the open and
+  // Build the Job payload we save / update - shared between the open and
   // mark-applied paths.
   const _jobPayload = (rec: DailyPipelineRecord) => ({
     job_id: _recordId(rec),
@@ -1696,7 +1698,7 @@ export function DailyPipelinePanel({
 
   // Open the posting in a new tab AND save it as "interested" (not applied).
   // Tracks the click so the row can later prompt "Did you apply?". This is
-  // the new primary action — the previous "Apply" button silently marked the
+  // the new primary action - the previous "Apply" button silently marked the
   // job applied even if the user didn't actually submit, which polluted the
   // funnel analytics.
   const handleOpenPosting = async (rec: DailyPipelineRecord) => {
@@ -1720,7 +1722,7 @@ export function DailyPipelinePanel({
     onJobApplied?.();
   };
 
-  // Confirm the user actually submitted the application — flips the saved
+  // Confirm the user actually submitted the application - flips the saved
   // job's status from "interested" to "applied" and adds it to the local
   // appliedIds. This is the only path that increments the funnel.
   const handleMarkApplied = async (rec: DailyPipelineRecord) => {
@@ -1747,10 +1749,10 @@ export function DailyPipelinePanel({
       });
     } catch { /* best effort */ }
     onJobApplied?.();
-    toast.success('Marked as applied — funnel updated.');
+    toast.success('Marked as applied. Funnel updated.');
   };
 
-  // User clicked "Open" but hasn't yet hit "Mark applied" — they can dismiss
+  // User clicked "Open" but hasn't yet hit "Mark applied" - they can dismiss
   // the prompt to remove the row from the "did-you-apply?" reminder list.
   const handleDismissOpened = (rec: DailyPipelineRecord) => {
     const id = _recordId(rec);
@@ -1758,7 +1760,7 @@ export function DailyPipelinePanel({
   };
 
   // Snooze: drop rows whose snoozedUntil is in the future. We don't garbage-
-  // collect the map here — entries naturally fall off when filtered out, and
+  // collect the map here - entries naturally fall off when filtered out, and
   // localStorage stays small (<1500 entries via persist slice).
   const _nowIso = new Date().toISOString();
   const snoozedSet = useMemo(
@@ -1768,7 +1770,7 @@ export function DailyPipelinePanel({
   const _notSnoozed = (r: DailyPipelineRecord) => !snoozedSet.has(_recordId(r));
 
   // Date-filter chip ("Today" / "Yesterday" / "Last 3d" / "Last 7d" / "All").
-  // Bucketed by HOURS-AGO from now rather than UTC date string equality —
+  // Bucketed by HOURS-AGO from now rather than UTC date string equality  - 
   // strict equality dropped local-today posts whose UTC date was yesterday
   // (and vice versa) for any timezone offset from UTC. The 30h "today"
   // window matches the backend's 36h recency grace and absorbs most of
@@ -1777,7 +1779,7 @@ export function DailyPipelinePanel({
     const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(postedYMD);
     if (!m) return Number.POSITIVE_INFINITY;
     // Anchor each posted date at 12:00 UTC to minimise timezone-edge
-    // misclassification — a row stamped 2026-05-14 is treated as ~mid-day
+    // misclassification - a row stamped 2026-05-14 is treated as ~mid-day
     // May 14 UTC, so it sits ~12-36h before any local "now" on May 15.
     const ts = Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 12, 0, 0);
     return Math.max(0, (Date.now() - ts) / 3_600_000);
@@ -1800,12 +1802,12 @@ export function DailyPipelinePanel({
   const tier2 = (result?.apply_now || []).filter((r) => r.tier === 'Tier 2' && _notSnoozed(r) && _dateMatches(r) && _sourceMatches(r));
   const tier3 = (result?.apply_now || []).filter((r) => r.tier === 'Tier 3' && _notSnoozed(r) && _dateMatches(r) && _sourceMatches(r));
   const allApplyNow = (result?.apply_now || []).filter(_notSnoozed);
-  // Verify-dates list also respects the chip — interns from 5 days ago
+  // Verify-dates list also respects the chip - interns from 5 days ago
   // shouldn't surface under "Today".
   const filteredVerifyDates = (result?.verify_dates || []).filter((r) => _dateMatches(r) && _sourceMatches(r));
   const remainingApply = allApplyNow.filter((r) => !appliedSet.has(_recordId(r))).length;
 
-  // "New since last check" — anything in the current result that the user
+  // "New since last check" - anything in the current result that the user
   // hasn't acknowledged with "Mark all seen". We derive it once here and pass
   // a Set down to PipelineRow as a prop so badges render consistently.
   const seenSet = useMemo(() => new Set(seenIds), [seenIds]);
@@ -1821,26 +1823,26 @@ export function DailyPipelinePanel({
   }, [currentRowIds, seenSet]);
   const handleMarkAllSeen = useCallback(() => {
     setSeenIds(Array.from(currentRowIds));
-    toast.success('Caught up — all visible postings marked seen.');
+    toast.success('Caught up. All visible postings marked seen.');
   }, [currentRowIds]);
   const handleSnooze = useCallback((rec: DailyPipelineRecord, days: number) => {
     const id = _recordId(rec);
     const until = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
     setSnoozedUntil((prev) => ({ ...prev, [id]: until }));
-    toast.success(`Snoozed for ${days} day${days === 1 ? '' : 's'} — back on ${until.slice(0, 10)}.`);
+    toast.success(`Snoozed for ${days} day${days === 1 ? '' : 's'}. Back on ${until.slice(0, 10)}.`);
   }, []);
 
   const handleHideCompany = useCallback((rec: DailyPipelineRecord) => {
     const name = (rec.company || '').trim();
     if (!name) return;
     setHideCompanies((prev) => (prev.includes(name) ? prev : [...prev, name].slice(-50)));
-    toast.success(`${name} muted — won't appear in future pipeline runs. Manage in Advanced.`);
+    toast.success(`${name} muted. Won't appear in future pipeline runs. Manage in Advanced.`);
   }, []);
   const handleUnhideCompany = useCallback((name: string) => {
     setHideCompanies((prev) => prev.filter((c) => c !== name));
   }, []);
 
-  // Title pattern hide — small prompt to pick the keyword the user wants to
+  // Title pattern hide - small prompt to pick the keyword the user wants to
   // mute. Prefills with the row's title-stem (first 2 words) so a "Senior
   // Software Engineer" row makes "Senior" a one-tap pick.
   const handleHideTitlePattern = useCallback((rec: DailyPipelineRecord) => {
@@ -1886,7 +1888,7 @@ export function DailyPipelinePanel({
     return map;
   }, [result]);
 
-  // Daily-digest stats — surfaced at the top so an F-1 student can see in one
+  // Daily-digest stats - surfaced at the top so an F-1 student can see in one
   // glance how many fresh sponsors / on-domain matches are waiting today,
   // instead of scrolling through three tier groups to count.
   const todayIso = new Date().toISOString().slice(0, 10);
@@ -1915,7 +1917,7 @@ export function DailyPipelinePanel({
   }, [result, appliedSet, newIds, snoozedSet]);
 
   // Fire a single batch match-scores call after each pipeline run lands.
-  // Reuses the JD text already scraped — no extra fetches. The state map
+  // Reuses the JD text already scraped - no extra fetches. The state map
   // is keyed by record_id so PipelineRow can look up its own score O(1).
   // We dedupe by resultAt so flipping date-filter chips doesn't re-fire.
   const lastScoredAtRef = useRef<number | null>(null);
@@ -1938,11 +1940,11 @@ export function DailyPipelinePanel({
           setMatchScoresHasResume(!!resp.data.meta?.has_resume);
         }
       })
-      .catch(() => { /* silent — badges just don't render */ })
+      .catch(() => { /* silent - badges just don't render */ })
       .finally(() => setMatchScoresLoading(false));
   }, [result, resultAt]);
 
-  // Bulk-open Tier 1 — opens the top N postings in new tabs and saves each as
+  // Bulk-open Tier 1 - opens the top N postings in new tabs and saves each as
   // Interested. Browsers throttle multi-window.open, but every modern
   // browser allows it within a single user-gesture handler. Skips any row
   // already applied or marked previously-applied.
@@ -1957,7 +1959,7 @@ export function DailyPipelinePanel({
     for (const rec of candidates) {
       window.open(rec.url, '_blank', 'noopener,noreferrer');
     }
-    // Background: save as Interested + log click for each. Don't await — we
+    // Background: save as Interested + log click for each. Don't await - we
     // want the tabs to open immediately within the user-gesture window.
     candidates.forEach((rec) => {
       const id = _recordId(rec);
@@ -1970,10 +1972,10 @@ export function DailyPipelinePanel({
         bulk: true,
       }).catch(() => { /* best-effort */ });
     });
-    toast.success(`Opened ${candidates.length} postings — confirm "I applied" on each row after submitting.`);
+    toast.success(`Opened ${candidates.length} postings. Confirm "I applied" on each row after submitting.`);
   };
 
-  // Keyboard shortcuts — j/k navigate, o open, a mark applied, t tailor.
+  // Keyboard shortcuts - j/k navigate, o open, a mark applied, t tailor.
   // Only active when the pipeline tab is mounted with results AND no input/
   // textarea is focused (so chip/preset typing isn't intercepted).
   const [focusedRowId, setFocusedRowId] = useState<string | null>(null);
@@ -2024,7 +2026,7 @@ export function DailyPipelinePanel({
   return (
     <div className="space-y-6">
       {/* BYO Apify key */}
-      <ApifyKeyCard forceOpenSignal={apifyForceOpen} />
+      {/* APIFY DISABLED (temporary): <ApifyKeyCard forceOpenSignal={apifyForceOpen} /> */}
 
       {/* Hero / config */}
       <Card className="overflow-hidden border-gray-200/80 dark:border-white/[0.08] bg-white/90 dark:bg-gray-900/50 bg-gradient-to-br from-purple-500/5 via-transparent to-indigo-500/5 dark:from-transparent dark:via-transparent dark:to-transparent">
@@ -2040,7 +2042,7 @@ export function DailyPipelinePanel({
               </div>
               <p className="max-w-2xl text-xs text-muted-foreground">
                 One click runs both Apify actors in parallel, scores results against your profile,
-                and groups them into Tier 1/2/3. Tweak the chips below or pick a preset — every change
+                and groups them into Tier 1/2/3. Tweak the chips below or pick a preset. Every change
                 persists per session. Smart Filters tab can auto-fill these from your resume.
               </p>
             </div>
@@ -2061,7 +2063,7 @@ export function DailyPipelinePanel({
                 className="gap-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/20 hover:opacity-90"
               >
                 <Sparkles className="h-4 w-4" />
-                {loading ? 'Running…' : 'Run pipeline'}
+                {loading ? 'Running...' : 'Run pipeline'}
               </Button>
             </div>
           </div>
@@ -2175,7 +2177,7 @@ export function DailyPipelinePanel({
             </div>
           </div>
 
-          {/* Filter drawer — actor-supported filters. Defaults reproduce
+          {/* Filter drawer - actor-supported filters. Defaults reproduce
               the previous hardcoded behavior so leaving these untouched
               gives the same scrape as before. */}
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-5">
@@ -2256,7 +2258,7 @@ export function DailyPipelinePanel({
             </label>
           </div>
 
-          {/* F-1 / H-1B mode — opt-in for international students. Compact panel
+          {/* F-1 / H-1B mode - opt-in for international students. Compact panel
               that surfaces the two visa toggles together with a one-click
               "F-1 friendly" combo and a short explainer. Off by default; the
               entire panel collapses when both toggles are off (keeps non-visa
@@ -2269,7 +2271,7 @@ export function DailyPipelinePanel({
                   F-1 / H-1B mode
                 </p>
                 <p className="text-[10px] leading-snug text-muted-foreground">
-                  Optional — for visa candidates. Drops postings that explicitly
+                  Optional, for visa candidates. Drops postings that explicitly
                   say "no sponsorship" or restrict to US citizens.
                 </p>
               </div>
@@ -2279,7 +2281,7 @@ export function DailyPipelinePanel({
                 onClick={() => {
                   setExcludeNoSponsorship(true);
                   setH1bOnly(false);
-                  toast.success('F-1 friendly mode on — postings that say "no sponsorship" will be dropped.');
+                  toast.success('F-1 friendly mode on. Postings that say "no sponsorship" will be dropped.');
                 }}
                 className="h-7 gap-1 text-[11px] border-amber-500/40 text-amber-700 hover:bg-amber-500/10 dark:text-amber-300"
               >
@@ -2313,7 +2315,7 @@ export function DailyPipelinePanel({
                   <p className="text-[11px] font-medium leading-tight">Verified sponsors only (strict)</p>
                   <p className="text-[10px] leading-tight text-muted-foreground">
                     Show only known H-1B sponsors or postings that affirmatively say "we sponsor".
-                    Trims recall — leave off for first pass.
+                    Trims recall. Leave off for first pass.
                   </p>
                 </div>
               </label>
@@ -2354,7 +2356,7 @@ export function DailyPipelinePanel({
                 placeholder="e.g. data engineer, security, mobile"
                 maxItems={20}
                 accentClass="border-purple-500/30 bg-purple-500/10 text-purple-700 dark:text-purple-300"
-                emptyState="Optional — only needed if you want roles outside the built-in families."
+                emptyState="Optional. Only needed if you want roles outside the built-in families."
               />
             </div>
           </div>
@@ -2367,7 +2369,7 @@ export function DailyPipelinePanel({
               onClick={() => setShowAdvanced((v) => !v)}
               className="gap-1 text-xs border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300 hover:bg-purple-500/10 hover:text-purple-600 dark:hover:text-purple-300 hover:border-purple-500/30"
             >
-              {showAdvanced ? '▾' : '▸'} Advanced — edit LinkedIn searches & Workday titles
+              {showAdvanced ? '▾' : '▸'} Advanced: edit LinkedIn searches & Workday titles
             </Button>
             <Button
               variant="ghost"
@@ -2375,12 +2377,12 @@ export function DailyPipelinePanel({
               onClick={handleRefreshFromResume}
               disabled={refreshingFilters}
               className="gap-1 text-xs text-purple-600 dark:text-purple-300 hover:bg-purple-500/10"
-              title="Re-run the filter suggester against your latest resume — replaces LinkedIn keywords + Workday titles"
+              title="Re-run the filter suggester against your latest resume. Replaces LinkedIn keywords + Workday titles"
             >
               {refreshingFilters ? (
                 <>
                   <span className="inline-block h-3 w-3 rounded-full border-2 border-purple-500/60 border-t-transparent animate-spin" />
-                  Refreshing…
+                  Refreshing...
                 </>
               ) : (
                 <>↻ Re-suggest from resume</>
@@ -2415,7 +2417,7 @@ export function DailyPipelinePanel({
                     The resume classifier ran fine; the AI title generator hit
                     a transient error (rate limit / timeout) and fell back to
                     the curated default set for {detectedSummary.headline}.
-                    Click ↻ Re-suggest in 10-20 seconds — it usually succeeds
+                    Click ↻ Re-suggest in 10-20 seconds. It usually succeeds
                     on the second try.
                   </p>
                 )}
@@ -2462,7 +2464,7 @@ export function DailyPipelinePanel({
                   </div>
                 </div>
                 <p className="text-[10px] text-muted-foreground">
-                  Higher caps return more raw rows. Filtering accuracy stays the same — only recall changes.
+                  Higher caps return more raw rows. Filtering accuracy stays the same. Only recall changes.
                 </p>
                 <label className="flex items-start gap-2 rounded-lg border border-border/60 bg-muted/20 p-2 cursor-pointer hover:border-purple-500/40">
                   <input
@@ -2474,7 +2476,7 @@ export function DailyPipelinePanel({
                   <div className="space-y-0.5">
                     <p className="text-[11px] font-medium leading-tight">Include Indeed (extra Apify cost)</p>
                     <p className="text-[10px] leading-tight text-muted-foreground">
-                      ~$0.75 / run. Off by default — Indeed dates are unreliable and listings are dominated by body-shop reposts. Turn on for slow days when you've exhausted LinkedIn / Workday / ATS direct.
+                      ~$0.75 / run. Off by default. Indeed dates are unreliable and listings are dominated by body-shop reposts. Turn on for slow days when you've exhausted LinkedIn / Workday / ATS direct.
                     </p>
                   </div>
                 </label>
@@ -2487,7 +2489,7 @@ export function DailyPipelinePanel({
                 <ChipsInput
                   values={linkedinKws}
                   onChange={setLinkedinKws}
-                  placeholder="Add a search phrase…"
+                  placeholder="Add a search phrase..."
                   maxItems={10}
                   defaultValues={DEFAULT_LINKEDIN_KEYWORDS}
                   accentClass="border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-300"
@@ -2502,7 +2504,7 @@ export function DailyPipelinePanel({
                 <ChipsInput
                   values={workdayTitles}
                   onChange={setWorkdayTitles}
-                  placeholder="Add a title… or paste a comma-separated list"
+                  placeholder="Add a title... or paste a comma-separated list"
                   maxItems={120}
                   defaultValues={DEFAULT_WORKDAY_TITLES}
                   accentClass="border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
@@ -2522,7 +2524,7 @@ export function DailyPipelinePanel({
       {loading && (
         <div className="space-y-3">
           <p className="text-xs text-muted-foreground">
-            Running both Apify actors in parallel — this typically takes 1-3 minutes…
+            Running both Apify actors in parallel. This typically takes 1-3 minutes...
           </p>
           {Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} className="h-24 w-full rounded-xl" />
@@ -2557,14 +2559,14 @@ export function DailyPipelinePanel({
                     </p>
                     <p className="text-[11px] text-red-700/80 dark:text-red-300/80">
                       The Apify token used for this run hit its monthly limit. Add or update your own
-                      Apify API key above to keep running the daily pipeline — your free Apify account
+                      Apify API key above to keep running the daily pipeline. Your free Apify account
                       includes ~$5 monthly credit.
                     </p>
                   </div>
                 </div>
                 <Button
                   size="sm"
-                  onClick={() => setApifyForceOpen(Date.now())}
+                  onClick={() => { /* APIFY DISABLED (temporary) */ }}
                   className="gap-1.5 bg-gradient-to-r from-red-500 to-rose-500 text-white hover:opacity-90"
                 >
                   <Sparkles className="h-3.5 w-3.5" />
@@ -2647,7 +2649,7 @@ export function DailyPipelinePanel({
                 <div className="flex items-center gap-1.5">
                   <AlertCircle className="h-3.5 w-3.5 text-amber-500" />
                   <span className="font-semibold text-amber-700 dark:text-amber-300">
-                    A source returned 0 — here's what we sent
+                    A source returned 0. Here's what we sent
                   </span>
                 </div>
                 {result.source_breakdown && result.source_breakdown.linkedin.raw === 0 && (
@@ -2656,12 +2658,12 @@ export function DailyPipelinePanel({
                       <strong>LinkedIn (0/{linkedinCount}):</strong>{' '}
                       {result.actor_diagnostics?.linkedin_silent_zero
                         ? 'actor responded successfully but returned no rows. Most common cause: filters too narrow. Try widening past_days, switching experience to "any", or removing very specific keyword phrases.'
-                        : 'actor errored — see the Partial Results panel above for the cause.'}
+                        : 'actor errored. See the Partial Results panel above for the cause.'}
                     </p>
                     {result.actor_diagnostics?.linkedin_urls && result.actor_diagnostics.linkedin_urls.length > 0 && (
                       <details className="ml-2 cursor-pointer">
                         <summary className="select-none text-[10px] text-muted-foreground hover:text-foreground">
-                          Show {result.actor_diagnostics.linkedin_urls.length} LinkedIn URL{result.actor_diagnostics.linkedin_urls.length === 1 ? '' : 's'} we sent — click to verify in LinkedIn directly
+                          Show {result.actor_diagnostics.linkedin_urls.length} LinkedIn URL{result.actor_diagnostics.linkedin_urls.length === 1 ? '' : 's'} we sent. Click to verify in LinkedIn directly
                         </summary>
                         <ul className="mt-1 space-y-0.5">
                           {result.actor_diagnostics.linkedin_urls.slice(0, 8).map((u, i) => (
@@ -2691,7 +2693,7 @@ export function DailyPipelinePanel({
                     <strong>Workday (0/{workdayLimit}):</strong>{' '}
                     {result.actor_diagnostics?.workday_silent_zero
                       ? `actor responded but returned no rows. Sent ${result.actor_diagnostics?.workday_input_summary?.titles ?? '?'} titles. Try fewer / broader title chips, "any" experience, or check the Partial Results panel for actor errors.`
-                      : 'actor errored — see the Partial Results panel above for the cause.'}
+                      : 'actor errored. See the Partial Results panel above for the cause.'}
                   </p>
                 )}
               </CardContent>
@@ -2731,7 +2733,7 @@ export function DailyPipelinePanel({
             </Card>
           )}
 
-          {/* Hidden-companies bar — surfaces what's currently muted so the
+          {/* Hidden-companies bar - surfaces what's currently muted so the
               user can un-mute easily. Quiet by default; only renders when
               there's at least one hidden company. */}
           {hideCompanies.length > 0 && (
@@ -2772,7 +2774,7 @@ export function DailyPipelinePanel({
             </div>
           )}
 
-          {/* Daily quota strip — student motivation lever. Shows today's
+          {/* Daily quota strip - student motivation lever. Shows today's
               applied count vs goal as a thin progress bar. The goal is
               user-tunable (click to edit). Hides when there's no result yet. */}
           {result && (
@@ -2790,7 +2792,7 @@ export function DailyPipelinePanel({
                 <button
                   type="button"
                   onClick={() => {
-                    const next = window.prompt('Daily application goal (1–50):', String(dailyGoal));
+                    const next = window.prompt('Daily application goal (1-50):', String(dailyGoal));
                     if (!next) return;
                     const n = Math.max(1, Math.min(50, Number(next)));
                     if (Number.isFinite(n)) setDailyGoal(n);
@@ -2810,7 +2812,7 @@ export function DailyPipelinePanel({
             </div>
           )}
 
-          {/* Daily digest — sticky one-liner so the user sees today's volume,
+          {/* Daily digest - sticky one-liner so the user sees today's volume,
               sponsor count, freshness, and already-applied dedup count
               without scrolling through three tier groups to count by hand. */}
           {digest && digest.total > 0 && (
@@ -2859,7 +2861,7 @@ export function DailyPipelinePanel({
                   {matchScoresLoading && (
                     <span className="inline-flex items-center gap-1 text-muted-foreground">
                       <Sparkles className="h-3 w-3 animate-pulse" />
-                      Scoring resume match…
+                      Scoring resume match...
                     </span>
                   )}
                   {!matchScoresLoading && !matchScoresHasResume && (
@@ -2892,7 +2894,7 @@ export function DailyPipelinePanel({
             </Card>
           )}
 
-          {/* Post-run date slicer — narrows the visible tier lists without
+          {/* Post-run date slicer - narrows the visible tier lists without
               re-running the pipeline. The chip set is intentionally small:
               Today / Yesterday cover the daily-check use case; 3d/7d catch
               up after a weekend. Always-visible counts on each chip preview
@@ -2927,7 +2929,7 @@ export function DailyPipelinePanel({
                           ? 'bg-indigo-600 text-white shadow-sm'
                           : 'border border-border/60 bg-background/70 text-foreground/80 hover:border-indigo-500/40 hover:bg-indigo-500/10')
                       }
-                      title={`${c.label} — ${n} posting${n === 1 ? '' : 's'}`}
+                      title={`${c.label}: ${n} posting${n === 1 ? '' : 's'}`}
                     >
                       {c.label}
                       <span className={'ml-1 ' + (active ? 'opacity-90' : 'opacity-60')}>· {n}</span>
@@ -2947,7 +2949,7 @@ export function DailyPipelinePanel({
             );
           })()}
 
-          {/* Source filter — quieter strip than the date one (smaller chips,
+          {/* Source filter - quieter strip than the date one (smaller chips,
               no border) so it reads as a secondary slicer. Lets the user
               chew through one board at a time. */}
           {result && (allApplyNow.length > 0 || result.verify_dates.length > 0) && (() => {
@@ -2992,7 +2994,7 @@ export function DailyPipelinePanel({
                           ? 'bg-purple-600/90 text-white'
                           : 'text-foreground/70 hover:bg-muted/60 hover:text-foreground')
                       }
-                      title={`${c.label} — ${n} posting${n === 1 ? '' : 's'}`}
+                      title={`${c.label}: ${n} posting${n === 1 ? '' : 's'}`}
                     >
                       {c.label}
                       <span className={'ml-1 ' + (active ? 'opacity-90' : 'opacity-50')}>· {n}</span>
@@ -3013,7 +3015,7 @@ export function DailyPipelinePanel({
           })()}
 
           <TierGroup
-            title={`🥇 Tier 1 — apply first (${tier1.length})`}
+            title={`🥇 Tier 1: apply first (${tier1.length})`}
             items={tier1}
             accent="border-yellow-500/30 bg-yellow-500/10 text-yellow-700 dark:text-yellow-300"
             appliedIds={appliedSet}
@@ -3081,7 +3083,7 @@ export function DailyPipelinePanel({
 
           {filteredVerifyDates.length > 0 && (
             <TierGroup
-              title={`⚠️ Verify dates (interns / co-ops) — ${filteredVerifyDates.length}`}
+              title={`⚠️ Verify dates (interns / co-ops): ${filteredVerifyDates.length}`}
               items={filteredVerifyDates}
               accent="border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300"
               appliedIds={appliedSet}
@@ -3123,7 +3125,7 @@ export function DailyPipelinePanel({
         onClose={() => setReachOutRec(null)}
       />
 
-      {/* Sticky batch bar — appears only when the user has ticked ≥1 row.
+      {/* Sticky batch bar - appears only when the user has ticked ≥1 row.
           Fixed to viewport bottom so it survives scrolling through long tier
           lists. Single-row Tailor / Open / Apply are untouched. */}
       {batchSelectedIds.length > 0 && (
@@ -3168,7 +3170,7 @@ export function DailyPipelinePanel({
                 {batchRunning ? (
                   <>
                     <span className="inline-block h-3 w-3 rounded-full border-2 border-purple-600/60 border-t-transparent animate-spin" />
-                    Prefetching…
+                    Prefetching...
                   </>
                 ) : (
                   <>

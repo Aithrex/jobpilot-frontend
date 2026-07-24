@@ -1,7 +1,7 @@
 /**
  * Cover Letter inspector panel (Tailor right column).
  *
- * Presentational only — typed props in, render out. Ported from the classic
+ * Presentational only - typed props in, render out. Ported from the classic
  * "Cover Letter" tab in ResumeParser, rebuilt on semantic tokens + shadcn/ui.
  * Three states: generated letter, loading, and empty (pre-generate) preview.
  */
@@ -60,7 +60,7 @@ export function CoverLetterPanel({
             {loading ? (
               <>
                 <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
-                Generating…
+                Generating...
               </>
             ) : (
               <>
@@ -87,7 +87,7 @@ export function CoverLetterPanel({
               className="rounded-control"
             >
               <FileDown className="h-4 w-4" />
-              {downloading ? 'Preparing…' : 'Download PDF'}
+              {downloading ? 'Preparing...' : 'Download PDF'}
             </Button>
             <Button
               onClick={onCopy}
@@ -111,10 +111,10 @@ export function CoverLetterPanel({
             <div className="absolute inset-0 animate-spin rounded-full border-2 border-primary border-t-transparent" />
           </div>
           <p className="mb-1 text-sm font-semibold text-foreground">
-            Writing your cover letter…
+            Writing your cover letter...
           </p>
           <p className="max-w-xs text-xs text-muted-foreground">
-            Matching your experience to the role. Usually takes 15–30 seconds.
+            Matching your experience to the role. Usually takes 15 to 30 seconds.
           </p>
         </div>
       ) : (

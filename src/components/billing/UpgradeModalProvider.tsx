@@ -42,7 +42,7 @@ const TIERS: { id: PlanId; name: string; icon: typeof Zap; tagline: string; bull
     id: 'premium_plus',
     name: 'Premium+',
     icon: Crown,
-    tagline: 'Everything, unlimited — the full edge',
+    tagline: 'Everything, unlimited. The full edge',
     bullets: [
       'Unlimited tailoring, ATS, cover letters & answers',
       'Predictive interview coaching + targeted drills',
@@ -98,7 +98,7 @@ export function UpgradeModalProvider({ children }: { children: ReactNode }) {
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
               {opts.description ||
-                'Go beyond the free tier — more tailoring, deeper coaching, and the all-in-one tools that get you hired faster.'}
+                'Go beyond the free tier. More tailoring, deeper coaching, and the all-in-one tools that get you hired faster.'}
             </p>
           </div>
 

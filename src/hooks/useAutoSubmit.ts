@@ -80,7 +80,7 @@ export function useAutoSubmit() {
     queryKey: SETTINGS_KEY,
     queryFn: async () => {
       const res = await api.getAutoSubmitSettings();
-      // Feature master-flag off — hide the whole surface.
+      // Feature master-flag off - hide the whole surface.
       if (res.status === 404) return { unavailable: true };
       if (res.error) throw new Error(res.error);
       return { unavailable: false, settings: res.data };

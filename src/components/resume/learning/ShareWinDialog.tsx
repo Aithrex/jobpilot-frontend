@@ -64,7 +64,7 @@ export function ShareWinDialog({ open, onClose, pathId, task }: ShareWinDialogPr
     await navigator.clipboard.writeText(variantText(variants[picked]));
     setCopied(true);
     setTimeout(() => setCopied(false), 1600);
-    toast.success('Copied — paste it into LinkedIn');
+    toast.success('Copied. Paste it into LinkedIn');
   };
 
   const publish = async (mode: 'manual' | 'auto') => {
@@ -90,12 +90,12 @@ export function ShareWinDialog({ open, onClose, pathId, task }: ShareWinDialogPr
       toast.success('Ready to post on LinkedIn');
       return;
     }
-    // auto — scheduled with a 30-min hold
+    // auto - scheduled with a 30-min hold
     setScheduled({
       scheduleId: res.data?.schedule_id || '',
       holdsUntil: res.data?.holds_until || res.data?.scheduled_for,
     });
-    toast.success('Scheduled', { description: 'Holds for 30 minutes — you can still cancel.' });
+    toast.success('Scheduled', { description: 'Holds for 30 minutes. You can still cancel.' });
   };
 
   const cancel = async () => {
@@ -127,7 +127,7 @@ export function ShareWinDialog({ open, onClose, pathId, task }: ShareWinDialogPr
             <PartyPopper className="h-5 w-5 text-primary" /> Share this win
           </DialogTitle>
           <DialogDescription>
-            A verified, specific post — grounded in what you actually shipped.
+            A verified, specific post. Grounded in what you actually shipped.
           </DialogDescription>
         </DialogHeader>
 
@@ -153,7 +153,7 @@ export function ShareWinDialog({ open, onClose, pathId, task }: ShareWinDialogPr
             </p>
             <Button onClick={draft} disabled={loading} className="w-full">
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-              {loading ? 'Writing your post…' : 'Draft my post'}
+              {loading ? 'Writing your post...' : 'Draft my post'}
             </Button>
           </div>
         ) : (

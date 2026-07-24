@@ -1,5 +1,5 @@
 /**
- * Mail-ingress — a personal forwarding address that auto-captures application
+ * Mail-ingress - a personal forwarding address that auto-captures application
  * updates from the inbox. Backend: /api/resume/mail-ingress/*.
  * A 404 on any of these means the feature flag is off → hide the surface.
  */
@@ -7,7 +7,7 @@
 export interface MailIngressAddress {
   provisioned: boolean;
   address?: string;
-  /** Ready-to-paste Gmail filter query, e.g. from:(*) to:(you+jobs@…). */
+  /** Ready-to-paste Gmail filter query, e.g. from:(*) to:(you+jobs@...). */
   gmail_filter?: string;
   /** Deep link that opens Gmail's "create filter" dialog pre-filled. */
   gmail_deep_link?: string;

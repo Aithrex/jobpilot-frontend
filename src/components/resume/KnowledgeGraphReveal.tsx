@@ -10,12 +10,12 @@ import type { GraphEdge, GraphNode, KnowledgeGraph } from "@/types/voicegraph";
 
 const GRAPH_KEY = ["voice-graph", "graph"] as const;
 
-/* Fixed drawing surface — the SVG scales to fit via viewBox. */
+/* Fixed drawing surface - the SVG scales to fit via viewBox. */
 const W = 720;
 const H = 520;
 const CX = W / 2;
 const CY = H / 2;
-const GOLDEN = Math.PI * (3 - Math.sqrt(5)); // ~137.5° — even, non-clumping spread
+const GOLDEN = Math.PI * (3 - Math.sqrt(5)); // ~137.5° - even, non-clumping spread
 
 interface PlacedNode extends GraphNode {
   x: number;
@@ -189,7 +189,7 @@ function GraphCanvas({
           role="img"
           aria-label={`A map of ${placed.length} facts about you across ${types.length} categories.`}
         >
-          {/* Edges — thin, quiet; fade in after the nodes settle. */}
+          {/* Edges - thin, quiet; fade in after the nodes settle. */}
           <motion.g
             className="stroke-current text-primary"
             fill="none"
@@ -240,7 +240,7 @@ function GraphCanvas({
                 }
                 tabIndex={0}
                 role="button"
-                aria-label={`${n.label} — ${n.type}, ${
+                aria-label={`${n.label}: ${n.type}, ${
                   n.user_confirmed ? "confirmed" : "inferred"
                 }`}
                 style={{ cursor: "pointer" }}

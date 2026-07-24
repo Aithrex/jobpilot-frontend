@@ -1,5 +1,5 @@
 /**
- * Content momentum — the LinkedIn posts the user has drafted and can publish to
+ * Content momentum - the LinkedIn posts the user has drafted and can publish to
  * build their presence. Empty state invites turning a win into a post.
  */
 import { PenLine } from 'lucide-react';
@@ -36,7 +36,7 @@ export const postPerformanceWidget: Widget = {
             <Stat value={posts.length} label={posts.length === 1 ? 'draft ready to publish' : 'drafts ready to publish'} />
             {latest?.variants?.[0]?.hook && (
               <p className="line-clamp-2 border-l-2 border-primary/30 pl-2.5 text-xs italic leading-relaxed text-muted-foreground">
-                “{latest.variants[0].hook}”
+                "{latest.variants[0].hook}"
               </p>
             )}
             <button

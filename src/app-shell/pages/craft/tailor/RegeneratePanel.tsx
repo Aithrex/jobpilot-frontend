@@ -1,7 +1,7 @@
 /**
  * Regenerate inspector panel (Tailor right column).
  *
- * Presentational only — typed props in, render out. Ported from the classic
+ * Presentational only - typed props in, render out. Ported from the classic
  * "Regenerate" tab in ResumeParser, rebuilt on semantic tokens + shadcn/ui.
  * Owns no data: feedback text + submit are lifted to the orchestrator.
  */
@@ -99,7 +99,7 @@ export function RegeneratePanel({
             Regenerate Resume
           </h2>
           <p className="text-xs text-muted-foreground">
-            Refine with feedback — your current version is kept for comparison
+            Refine with feedback. Your current version is kept for comparison
           </p>
         </div>
       </div>
@@ -155,7 +155,7 @@ export function RegeneratePanel({
       <div>
         <label className="overline mb-2 block">Custom instructions</label>
         <Textarea
-          placeholder="Or write your own — e.g., 'Remove the summary and add a highlights section with top 3 achievements'"
+          placeholder="Or write your own, e.g., 'Remove the summary and add a highlights section with top 3 achievements'"
           value={feedback}
           onChange={(e) => onFeedbackChange(e.target.value)}
           rows={5}
@@ -181,7 +181,7 @@ export function RegeneratePanel({
         {regenerating ? (
           <>
             <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
-            Regenerating…
+            Regenerating...
           </>
         ) : (
           <>

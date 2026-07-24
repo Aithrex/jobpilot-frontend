@@ -4,7 +4,7 @@ import {
 } from 'lucide-react';
 
 /**
- * Contextual cross-link strip — the interconnection tissue across tabs.
+ * Contextual cross-link strip - the interconnection tissue across tabs.
  *
  * Rendered once above the active tab in ResumeParser. Given the current tab,
  * it surfaces the 2-3 most relevant *other* features and navigates to them via

@@ -1,5 +1,5 @@
 /**
- * BetaLabTab — Beta features that aren't yet promoted to the main flow.
+ * BetaLabTab - Beta features that aren't yet promoted to the main flow.
  *
  * Layout: card grid. Each card is either a working "functional" feature
  * (load on click, render output inline) or a "coming soon" stub with a
@@ -93,7 +93,7 @@ export default function BetaLabTab() {
   }, []);
 
   const notify = (label: string) => {
-    toast.success(`Got it — we'll ping you when ${label} ships.`);
+    toast.success(`Got it. We'll ping you when ${label} ships.`);
   };
 
   return (
@@ -115,7 +115,7 @@ export default function BetaLabTab() {
         <p className="text-sm text-muted-foreground max-w-2xl">
           Experiments that aren't ready for the main flow. Working ones run on
           click; "Coming soon" cards are scoped and ranked, just not built yet.
-          Send feedback — these decisions reshape the roadmap.
+          Send feedback. These decisions reshape the roadmap.
         </p>
       </div>
 
@@ -133,7 +133,7 @@ export default function BetaLabTab() {
               </Badge>
             </div>
             <CardDescription className="text-xs">
-              One-screen briefing of what to do today — synthesizes follow-ups,
+              One-screen briefing of what to do today. Synthesizes follow-ups,
               interviews, saved roles, daily cadence.
             </CardDescription>
           </CardHeader>
@@ -147,7 +147,7 @@ export default function BetaLabTab() {
             {brief.kind === 'loading' && (
               <p className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                Synthesizing your agenda…
+                Synthesizing your agenda...
               </p>
             )}
             {brief.kind === 'done' && (
@@ -194,7 +194,7 @@ export default function BetaLabTab() {
               </Badge>
             </div>
             <CardDescription className="text-xs">
-              Paste a JD you like — surfaces matching saved/recent roles by
+              Paste a JD you like. Surfaces matching saved/recent roles by
               skill-token overlap.
             </CardDescription>
           </CardHeader>
@@ -204,7 +204,7 @@ export default function BetaLabTab() {
               onChange={(e) => setSimilarJd(e.target.value)}
               rows={4}
               maxLength={15000}
-              placeholder="Paste the JD you'd like to find more like…"
+              placeholder="Paste the JD you'd like to find more like..."
               className="w-full rounded-md border border-border bg-background px-3 py-2 text-xs leading-relaxed focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
             />
             <Button
@@ -214,7 +214,7 @@ export default function BetaLabTab() {
               className="gap-1.5 bg-indigo-600 text-white hover:bg-indigo-500"
             >
               {similar.kind === 'loading' ? (
-                <><Loader2 className="h-3.5 w-3.5 animate-spin" />Searching…</>
+                <><Loader2 className="h-3.5 w-3.5 animate-spin" />Searching...</>
               ) : (
                 <><Wand2 className="h-3.5 w-3.5" />Find similar</>
               )}
@@ -293,7 +293,7 @@ export default function BetaLabTab() {
             {ab.kind === 'loading' && (
               <p className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                Crunching tailoring records…
+                Crunching tailoring records...
               </p>
             )}
             {ab.kind === 'done' && (
@@ -302,7 +302,7 @@ export default function BetaLabTab() {
                   Across <b className="tabular-nums">{ab.total}</b> tailored submission{ab.total === 1 ? '' : 's'}.
                   {!ab.hasTagged && (
                     <span className="ml-1 text-amber-600 dark:text-amber-300">
-                      No variants tagged yet — when you save a tailored resume, set
+                      No variants tagged yet. When you save a tailored resume, set
                       a <code className="font-mono">variant</code> tag (e.g. "A" or "B") to start comparing.
                     </span>
                   )}
@@ -344,6 +344,7 @@ export default function BetaLabTab() {
         </Card>
 
         {/* ─── #7 Recruiter scrape (stub) ────────────────────────────── */}
+        {/* --- APIFY DISABLED (temporary): Apify recruiter-scrape stub card hidden. Restore to re-enable. ---
         <StubCard
           icon={<Globe className="h-4 w-4 text-rose-500" />}
           title="LinkedIn Recruiter Auto-Discover"
@@ -351,6 +352,7 @@ export default function BetaLabTab() {
           eta="2 weeks"
           onNotify={() => notify('LinkedIn auto-discover')}
         />
+        --- APIFY DISABLED (temporary) --- */}
 
         {/* ─── #9 Co-applicant (stub) ────────────────────────────────── */}
         <StubCard
@@ -382,7 +384,7 @@ export default function BetaLabTab() {
 
       <p className="text-[11px] text-muted-foreground border-t border-border/40 pt-3">
         Beta features may be unstable or change behavior. Disable them by simply
-        not opening this tab — the rest of the app is unaffected.
+        not opening this tab. The rest of the app is unaffected.
       </p>
     </div>
   );

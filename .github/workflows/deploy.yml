@@ -42,6 +42,8 @@ jobs:
             [ -n "${{ secrets.VITE_DD_RUM_SITE }}" ] && echo "VITE_DD_RUM_SITE=${{ secrets.VITE_DD_RUM_SITE }}"
             echo "VITE_DD_RUM_ENV=prod"
             echo "VITE_DD_RUM_VERSION=${{ github.sha }}"
+            # Guest onboarding (no-signup /start flow) — ON in prod.
+            echo "VITE_GUEST_ONBOARDING=true"
           } > .env.production
 
       - name: Build

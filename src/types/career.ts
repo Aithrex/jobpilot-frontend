@@ -34,7 +34,7 @@ export interface CareerReadiness {
   dimensions: ReadinessDimension[];
   next_step: ReadinessNextStep;
   build_plan: BuildStep[];
-  /** Things the user has *built* — surfaced to recognize the hard work. */
+  /** Things the user has *built* - surfaced to recognize the hard work. */
   highlights: string[];
   computed_at: string;
 }

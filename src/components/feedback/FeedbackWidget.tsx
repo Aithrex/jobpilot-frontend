@@ -46,7 +46,7 @@ const TYPE_LABELS: Record<FeedbackType, string> = {
 };
 
 const TYPE_PLACEHOLDERS: Record<FeedbackType, string> = {
-  general: "What's on your mind? Anything that worked well, broke, or felt off…",
+  general: "What's on your mind? Anything that worked well, broke, or felt off...",
   idea: "Describe the feature or change you'd like to see.",
   bug: "What happened, what did you expect, and how can I reproduce it?",
   quota_bump:
@@ -71,7 +71,7 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
 
   const submit = async () => {
     if (!message.trim()) {
-      toast.error("Tell me what you're thinking — message can't be blank.");
+      toast.error("Tell me what you're thinking. Message can't be blank.");
       return;
     }
     setSubmitting(true);
@@ -81,7 +81,7 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
       toast.error(resp.error || "Could not send feedback. Try again in a moment.");
       return;
     }
-    toast.success("Thanks — feedback received. I read every one.");
+    toast.success("Thanks. Feedback received. I read every one.");
     setMessage("");
     setOpen(false);
   };
@@ -89,7 +89,7 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
   return (
     <FeedbackContext.Provider value={value}>
       {children}
-      {/* Floating "Feedback" launcher removed for now (per request) — hidden on
+      {/* Floating "Feedback" launcher removed for now (per request) - hidden on
           every page. The dialog below stays reachable via useFeedback().open()
           for programmatic flows (e.g. the quota-bump request), so nothing else
           breaks. Restore the launcher button here to bring it back. */}
@@ -148,7 +148,7 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
               Cancel
             </Button>
             <Button onClick={submit} disabled={submitting || !message.trim()}>
-              {submitting ? "Sending…" : "Send"}
+              {submitting ? "Sending..." : "Send"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -157,6 +157,6 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// Silence unused-import warning for useEffect — kept in case future logic
+// Silence unused-import warning for useEffect - kept in case future logic
 // (e.g., open-on-mount when ?feedback=1) wants it without re-edits.
 void useEffect;

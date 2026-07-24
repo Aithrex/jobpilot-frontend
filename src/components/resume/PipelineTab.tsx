@@ -14,7 +14,7 @@ interface PipelineTabProps {
   onNavigate?: (tab: string) => void;
 }
 
-/** Conversion/callback values arrive as either a 0–1 fraction or a percent. */
+/** Conversion/callback values arrive as either a 0-1 fraction or a percent. */
 function pct(v?: number): number {
   if (v == null || Number.isNaN(v)) return 0;
   return Math.round(v <= 1 ? v * 100 : v);
@@ -215,7 +215,7 @@ export default function PipelineTab({ onNavigate }: PipelineTabProps) {
     if ("data" in fR && fR.data) setFunnel(fR.data as PipelineFunnel);
     if ("data" in gR && gR.data) setGhosts((gR.data as { ghosts: PipelineGhost[] }).ghosts || []);
     if ("data" in cR && cR.data) setCohort(cR.data as PipelineCohort);
-    // Only hard-error when everything failed — partial data still renders.
+    // Only hard-error when everything failed - partial data still renders.
     if (!("data" in fR) && !("data" in gR) && !("data" in cR)) {
       setError("Couldn't load your pipeline. Try again.");
     }
@@ -250,7 +250,7 @@ export default function PipelineTab({ onNavigate }: PipelineTabProps) {
             <h2 className="font-display text-2xl font-extrabold tracking-tight">Pipeline Intelligence</h2>
           </div>
           <p className="max-w-xl text-sm text-muted-foreground">
-            Where your applications convert, which have gone quiet, and how you stack up — honestly.
+            Where your applications convert, which have gone quiet, and how you stack up. Honestly.
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={load} disabled={loading} className="gap-1.5">
@@ -290,7 +290,7 @@ export default function PipelineTab({ onNavigate }: PipelineTabProps) {
             </div>
           )}
 
-          {/* Inbox capture — self-hides when the feature flag is off (404). */}
+          {/* Inbox capture - self-hides when the feature flag is off (404). */}
           <MailIngressCard />
         </div>
       )}

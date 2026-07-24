@@ -1,5 +1,5 @@
 /**
- * Today (mission-control) — shared presentational primitives.
+ * Today (mission-control) - shared presentational primitives.
  *
  * These carry the four required async states as first-class, reusable pieces so
  * every panel on the page (KPIs, trend, funnel, table) speaks the same visual
@@ -35,7 +35,8 @@ export function ZoneHeading({
   hint,
   action,
 }: {
-  overline: string;
+  /** Optional eyebrow - reserve it for headings that need extra framing. */
+  overline?: string;
   title: string;
   hint?: string;
   action?: ReactNode;
@@ -43,9 +44,7 @@ export function ZoneHeading({
   return (
     <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
       <div className="space-y-1">
-        <p className="text-[0.6875rem] font-semibold uppercase leading-none tracking-[0.06em] text-muted-foreground">
-          {overline}
-        </p>
+        {overline ? <p className="overline leading-none">{overline}</p> : null}
         <h2 className="text-h2 font-display text-foreground">{title}</h2>
         {hint ? <p className="text-caption text-muted-foreground">{hint}</p> : null}
       </div>
@@ -88,7 +87,7 @@ export function PanelEmpty({
 
 export function PanelError({
   title = 'This panel could not load',
-  body = 'The connection dropped or the server was busy. Your data is safe — try again.',
+  body = 'The connection dropped or the server was busy. Your data is safe. Try again.',
   onRetry,
   className,
 }: {
@@ -150,7 +149,7 @@ export function PanelCard({
 
 /** All figures on the page render tabular so columns and deltas stay aligned. */
 export function Stat({ children, className }: { children: ReactNode; className?: string }) {
-  return <span className={cn('tabular-nums', className)}>{children}</span>;
+  return <span className={cn('font-mono tabular-nums', className)}>{children}</span>;
 }
 
 /* ── Application-status semantics (icon + label + hue; never colour alone) ── */

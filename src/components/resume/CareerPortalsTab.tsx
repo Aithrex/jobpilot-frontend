@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Building2, Globe } from 'lucide-react';
+import { Building2, Globe, Landmark } from 'lucide-react';
 import { WorkdayJobsPanel } from '@/components/job-search/WorkdayJobsPanel';
 import { useJobSearch } from '@/hooks/useJobSearch';
 import { cn } from '@/lib/utils';
@@ -12,20 +12,22 @@ const SEGMENTS: Array<{
 }> = [
   { key: 'workday', label: 'Enterprise (Workday)', icon: Building2 },
   { key: 'careers', label: 'Startups & scale-ups (career pages)', icon: Globe },
+  { key: 'mncs', label: 'MNCs · Big Tech', icon: Landmark },
 ];
 
 /**
- * Career portals — one workspace tab, two catalogs behind the same engine:
- * the Workday enterprise universe and the non-Workday ATS universe
- * (Greenhouse / Lever / Ashby / …). Both panels stay mounted once visited so
- * switching preserves results and in-flight scans.
+ * Career portals - one workspace tab, three catalogs behind the same engine:
+ * the Workday enterprise universe, the non-Workday ATS universe
+ * (Greenhouse / Lever / Ashby / ...) and a curated FAANG+ / Fortune-500 MNC
+ * universe grouped by sector. Panels stay mounted once visited so switching
+ * preserves results and in-flight scans.
  */
 export default function CareerPortalsTab() {
   const [active, setActive] = useState<CareerPortalVariant>('workday');
   const [visited, setVisited] = useState<Set<CareerPortalVariant>>(
     () => new Set<CareerPortalVariant>(['workday']),
   );
-  // One saved-jobs store for both variants — save/apply state stays in sync
+  // One saved-jobs store for both variants - save/apply state stays in sync
   // when the same posting shows up in either catalog.
   const { isJobSaved, getJobStatus, saveJob, unsaveJob, quickApply } = useJobSearch();
 
@@ -48,8 +50,8 @@ export default function CareerPortalsTab() {
           <h2 className="font-display text-2xl font-extrabold tracking-tight">Career portals</h2>
         </div>
         <p className="max-w-xl text-sm text-muted-foreground">
-          Search live openings straight from company career portals — Workday enterprises plus
-          Greenhouse, Lever, Ashby and more.
+          Search live openings straight from company career portals: Workday enterprises,
+          Greenhouse, Lever, Ashby and more, plus curated FAANG+ / Fortune-500 MNC boards.
         </p>
       </div>
 
@@ -78,7 +80,7 @@ export default function CareerPortalsTab() {
         })}
       </div>
 
-      {/* Panels — kept mounted once visited; the inactive one hides via CSS so
+      {/* Panels - kept mounted once visited; the inactive one hides via CSS so
           switching preserves results and lets an in-flight scan finish. */}
       {SEGMENTS.map(({ key }) =>
         visited.has(key) ? (
@@ -90,6 +92,7 @@ export default function CareerPortalsTab() {
           >
             <WorkdayJobsPanel
               variant={key}
+              active={active === key}
               isJobSaved={isJobSaved}
               getJobStatus={getJobStatus}
               saveJob={saveJob}

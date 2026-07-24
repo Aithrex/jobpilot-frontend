@@ -1,18 +1,19 @@
 /**
- * TodayPage — the "Today" mission-control dashboard (lazy-mounted at
+ * TodayPage - the "Today" mission-control dashboard (lazy-mounted at
  * /next/today by the app shell).
  *
  * A scanned tool, not a document. Three zones, top to bottom:
- *   Zone A "Are we OK?"    — one hero indicator (the needs-your-input queue, or
+ *   Zone A "Are we OK?" - one hero indicator (the needs-your-input queue, or
  *                            today's application status) + a KPI row.
- *   Zone B "What's changing?" — a 30-day application trend and the funnel.
- *   Zone C "Why?"          — a drill-down table of recent roles.
+ *   Zone B "What's changing?" - a 30-day application trend and the funnel.
+ *   Zone C "Why?" - a drill-down table of recent roles.
  *
  * Data comes exclusively through `apiService`. Every async surface owns its
  * own loading (skeleton) / empty / error state. Tokens only; verified in both
  * themes and at mobile widths.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 import { RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { apiService } from '@/lib/api';
@@ -53,8 +54,12 @@ function greeting(): string {
   return 'Good evening';
 }
 
+/** Entrance easing shared with HeroPanel - a calm, decelerating rise. */
+const RISE_EASE: [number, number, number, number] = [0.16, 1, 0.3, 1];
+
 export default function TodayPage({ userName }: TodayPageProps = {}) {
   const { user } = useAuth();
+  const reduceMotion = useReducedMotion();
   const [overview, setOverview] = useState<DashboardOverview | null>(null);
   const [readiness, setReadiness] = useState<CareerReadiness | null>(null);
   const [streak, setStreak] = useState<StreakData | null>(null);
@@ -65,6 +70,8 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
   const [err, setErr] = useState({ overview: false, streak: false, funnel: false, saved: false });
   const [loading, setLoading] = useState(true);
   const [firstLoad, setFirstLoad] = useState(true);
+  // Announced to screen readers after a user-triggered Refresh completes.
+  const [refreshAnnouncement, setRefreshAnnouncement] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -78,7 +85,7 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
     ]);
 
     if (ok(ovR)) setOverview(ovR.data as DashboardOverview);
-    // Guard the backend's {}-error fallback — only accept a real readiness score.
+    // Guard the backend's {}-error fallback - only accept a real readiness score.
     if (ok(crR) && Array.isArray((crR.data as CareerReadiness).dimensions)) {
       setReadiness(crR.data as CareerReadiness);
     }
@@ -87,7 +94,7 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
       setFunnel(pfR.data as PipelineFunnel);
     }
     if (ok(sjR)) setSavedJobs(((sjR.data as { jobs?: SavedJob[] }).jobs as SavedJob[]) || []);
-    // Today inbox is best-effort — a failure just falls back to today's status.
+    // Today inbox is best-effort - a failure just falls back to today's status.
     if (ok(tiR)) setInbox(tiR.data as TodayInbox);
 
     setErr({
@@ -98,16 +105,29 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
     });
     setLoading(false);
     setFirstLoad(false);
+    // Whether anything a panel depends on failed - the Refresh announcement.
+    return !ok(ovR) || !ok(stR) || !ok(pfR) || !ok(sjR);
   }, []);
 
   useEffect(() => {
     void load();
   }, [load]);
 
+  /** User-triggered refresh - same load, plus a polite completion announcement. */
+  const handleRefresh = useCallback(async () => {
+    setRefreshAnnouncement('');
+    const anyFailed = await load();
+    setRefreshAnnouncement(
+      anyFailed
+        ? "Refresh finished, but some panels couldn't load. Use the retry buttons below."
+        : 'Dashboard updated',
+    );
+  }, [load]);
+
   const displayName = userName ?? user?.name ?? user?.email?.split('@')[0] ?? null;
   const name = displayName?.split(' ')[0] || displayName || 'there';
 
-  /* ── Zone A hero model — Today inbox first, else today's status ──────────── */
+  /* ── Zone A hero model - Today inbox first, else today's status ──────────── */
   const hero: HeroModel = useMemo(() => {
     const items: HeroInputItem[] = (inbox?.items ?? []).slice(0, 4).map((it) => ({
       id: it.id,
@@ -136,14 +156,23 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
   const panelState = (isErr: boolean): 'loading' | 'error' | 'ready' =>
     firstLoad && loading ? 'loading' : isErr ? 'error' : 'ready';
 
+  /**
+   * Staggered entrance, top to bottom - opacity + a small rise only, so
+   * nothing reflows. Skeletons occupy the same slots, so there is zero layout
+   * shift when data lands. Disabled entirely under prefers-reduced-motion.
+   */
+  const rise = (order: number) => ({
+    initial: reduceMotion ? false : ({ opacity: 0, y: 8 } as const),
+    animate: { opacity: 1, y: 0 },
+    transition: { duration: 0.3, delay: order * 0.06, ease: RISE_EASE },
+  });
+
   return (
     <div className="space-y-8">
       {/* Page header */}
-      <header className="flex flex-wrap items-end justify-between gap-3">
+      <motion.header {...rise(0)} className="flex flex-wrap items-end justify-between gap-3">
         <div className="space-y-1">
-          <p className="text-[0.6875rem] font-semibold uppercase leading-none tracking-[0.06em] text-muted-foreground">
-            Today
-          </p>
+          <p className="overline leading-none">Today</p>
           <h1 className="text-title font-display text-foreground">
             {greeting()}, {name}
           </h1>
@@ -155,9 +184,12 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
             })}
           </p>
         </div>
+        <p role="status" aria-live="polite" className="sr-only">
+          {refreshAnnouncement}
+        </p>
         <button
           type="button"
-          onClick={() => void load()}
+          onClick={() => void handleRefresh()}
           disabled={loading}
           aria-label="Refresh dashboard"
           className="inline-flex min-h-11 items-center gap-1.5 rounded-control border border-border bg-card px-3.5 text-caption font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-50"
@@ -165,10 +197,10 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
           <RefreshCw className={cn('h-3.5 w-3.5', loading && 'animate-spin')} aria-hidden="true" />
           Refresh
         </button>
-      </header>
+      </motion.header>
 
-      {/* Zone A — Are we OK? */}
-      <section aria-label="Today's status" className="space-y-4">
+      {/* Zone A - Are we OK? */}
+      <motion.section {...rise(1)} aria-label="Today's status" className="space-y-4">
         <HeroPanel model={hero} onRetry={() => void load()} />
         <KpiRow
           loading={firstLoad && loading}
@@ -177,10 +209,10 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
           streak={streak}
           funnel={funnel}
         />
-      </section>
+      </motion.section>
 
-      {/* Zone B — What's changing? */}
-      <section aria-label="Trends" className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      {/* Zone B - What's changing? */}
+      <motion.section {...rise(2)} aria-label="Trends" className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <ApplicationTrend
             state={panelState(err.streak)}
@@ -195,16 +227,16 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
             onRetry={() => void load()}
           />
         </div>
-      </section>
+      </motion.section>
 
-      {/* Zone C — Why? */}
-      <section aria-label="Recent roles">
+      {/* Zone C - Why? */}
+      <motion.section {...rise(3)} aria-label="Recent roles">
         <RecentActivityPanel
           state={panelState(err.saved)}
           jobs={savedJobs}
           onRetry={() => void load()}
         />
-      </section>
+      </motion.section>
     </div>
   );
 }

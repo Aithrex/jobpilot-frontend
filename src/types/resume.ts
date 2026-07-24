@@ -69,7 +69,7 @@ export interface JDAnalysis {
   keywords: string[];
 }
 
-/** @deprecated v1 LLM-simulated per-vendor scores — v2 backends emit
+/** @deprecated v1 LLM-simulated per-vendor scores - v2 backends emit
  * `vendor_compat` checklists instead. Present only on stored v1 records. */
 export interface ATSScannerScores {
   workday: number;
@@ -80,7 +80,7 @@ export interface ATSScannerScores {
   smartrecruiters: number;
 }
 
-/** @deprecated v1 pseudo-signal — removed in v2. */
+/** @deprecated v1 pseudo-signal - removed in v2. */
 export interface AIScreenerScores {
   overall: number;
   relevance: number;
@@ -109,7 +109,7 @@ export interface VendorCompatEntry {
   checks: VendorCheckItem[];
 }
 
-/** Real pypdf round-trip checks (first-class in v2 — no more untyped casts). */
+/** Real pypdf round-trip checks (first-class in v2 - no more untyped casts). */
 export interface PdfParseabilityChecks {
   extraction_ok?: boolean;
   single_page?: boolean;
@@ -136,14 +136,14 @@ export interface MissingKeywordsClassified {
 }
 
 /**
- * ATS scores — a union of the stored v1 shape and the honest v2 rubric.
+ * ATS scores - a union of the stored v1 shape and the honest v2 rubric.
  * v2 (schema_version === 2): 100% deterministic overall (hard_skill_match
  * 30% / title_alignment 15% / quantified_impact 15% / REAL ats_parseability
  * 15% / section_completeness 10% / recency_relevance 8% / readability 7%),
  * per-vendor parse-compat CHECKLISTS instead of fake scanner scores, and
  * legacy alias keys (keyword_match = hard_skill_match, format_score =
- * ats_parseability, …) so v1 readers keep working. Old records stored in
- * `tailoring_records` keep the v1 shape forever — branch with `isAtsV2()`
+ * ats_parseability, ...) so v1 readers keep working. Old records stored in
+ * `tailoring_records` keep the v1 shape forever - branch with `isAtsV2()`
  * from `@/lib/atsScores`.
  */
 export interface ATSScores {
@@ -187,7 +187,7 @@ export type BulletVerdict = "SUPPORTED" | "PARTIAL" | "UNSUPPORTED" | "UNVERIFIE
 export type FactSource = "resume" | "linkedin" | "github" | "user";
 
 export interface VerificationItem {
-  /** Verbatim text at verification time — re-anchor key after edits. */
+  /** Verbatim text at verification time - re-anchor key after edits. */
   text: string;
   verdict: BulletVerdict;
   evidence_fact_ids: string[];
@@ -220,6 +220,26 @@ export interface ResumeStatus {
   job_titles?: string[];
   summary?: string;
   parsed_at?: string;
+  /** Resume Platform v3: id of the active resume asset (present when one exists). */
+  resume_id?: string;
+  filename?: string;
+  /** Legacy object key of the active asset; kept for older download paths. */
+  s3_key?: string;
+}
+
+// ─── Base resume assets (Resume Platform v3) ──────────────────────────────
+// Row shape of GET /api/resume/versions - backed by `resume_assets`.
+// Identity is `resume_id` everywhere (set-active, delete, original download);
+// rows no longer carry an s3_key.
+export type ParseStatus = "pending" | "parsed" | "failed";
+
+export interface ResumeAssetRow {
+  resume_id: string;
+  filename: string;
+  uploaded_at: string;
+  size_bytes: number;
+  parse_status: ParseStatus | string;
+  is_active: boolean;
 }
 
 // ─── Async job status ─────────────────────────────────────────────────────
@@ -229,7 +249,7 @@ export interface ResumeStatus {
 export type JobStatus = "queued" | "processing" | "completed" | "failed";
 
 // Honest sub-phase the backend writes into `job.result.progress` while a
-// tailor job is processing (update_job_progress). Drives the real stepper —
+// tailor job is processing (update_job_progress). Drives the real stepper  - 
 // no elapsed-time guessing. `verifying` arrives once the claim-verification
 // pass ships; the UI treats unknown phases as "keep current step".
 export type BackendTailorPhase =

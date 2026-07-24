@@ -1,5 +1,5 @@
 /**
- * Pipeline Funnel — applied → interview → offer with honest conversion. Reads
+ * Pipeline Funnel - applied → interview → offer with honest conversion. Reads
  * the pipeline intelligence endpoint the frontend already calls. Empty state
  * (no applications yet) invites the first tailor.
  */
@@ -49,7 +49,7 @@ export const pipelineFunnelWidget: Widget = {
         ) : total === 0 ? (
           <WidgetEmpty
             title="Your pipeline starts with one application"
-            body="Tailor a resume to a role and it'll flow through here — applied, interviewing, offer."
+            body="Tailor a resume to a role and it'll flow through here: applied, interviewing, offer."
             ctaLabel="Tailor a resume"
             onCta={() => ctx.navigate('tailor')}
           />

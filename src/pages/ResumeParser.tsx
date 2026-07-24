@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef, Fragment } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import { apiService } from "@/lib/api";
+import { apiService, VERSION_LIMIT_MESSAGE } from "@/lib/api";
 import AuthGate from "@/components/AuthGate";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDailyUsage, DailyUsage } from "@/hooks/useDailyUsage";
@@ -9,7 +9,15 @@ import { QuotaLimitDialog } from "@/components/quota/QuotaLimitDialog";
 import { useFeedback } from "@/components/feedback/FeedbackWidget";
 import { buildCoverLetterFilename, titleCaseName } from "@/lib/filename";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Bot, Building2, CreditCard, GraduationCap, Trophy, Users, Mic, Menu, PanelLeftClose, PanelLeftOpen, X, Eye, TrendingUp, Bell, ShieldCheck, Home, Compass, PenTool, Send, Sprout, MessageSquarePlus, ChevronRight, Search } from "lucide-react";
+import { Bot, Building2, CreditCard, GraduationCap, Trophy, Users, Mic, Menu, PanelLeftClose, PanelLeftOpen, X, Eye, TrendingUp, Bell, ShieldCheck, Home, Compass, PenTool, Send, Sprout, MessageSquarePlus, ChevronRight, Search, Settings, LogOut } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ConnectedTo } from "@/components/resume/ConnectedTo";
 import MobileBottomNav from "@/components/layout/MobileBottomNav";
 import {
@@ -1049,7 +1057,7 @@ function ProfileTab() {
             Career Strategy (Copilot Memory)
           </p>
           {memoryLoading && (
-            <span className="text-xs text-gray-500 dark:text-gray-400">Loading strategy…</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400">Loading strategy...</span>
           )}
         </div>
 
@@ -1258,12 +1266,12 @@ function TailorTab() {
   const [hasResumes, setHasResumes] = useState<boolean | null>(null);
   const [loadingCheck, setLoadingCheck] = useState(true);
   const [jdText, setJdText] = useState("");
-  // Daily quota state — badge near the submit button, modal on 429.
+  // Daily quota state - badge near the submit button, modal on 429.
   const { usage: dailyUsage, loading: usageLoading, refresh: refreshUsage, applyUsage } = useDailyUsage();
   const [quotaDialog, setQuotaDialog] = useState<(DailyUsage & { requested?: number }) | null>(null);
   const feedback = useFeedback();
   // Original posting URL when the user came from Daily Pipeline / batch
-  // handoff — keeps the "Retry JD fetch" button next to the JD textarea
+  // handoff - keeps the "Retry JD fetch" button next to the JD textarea
   // useful even after the initial fetch failed or timed out. Cleared once
   // jdText has a real value via paste or successful fetch.
   const [pendingJobUrl, setPendingJobUrl] = useState<string>("");
@@ -1313,14 +1321,14 @@ function TailorTab() {
       } as TailorPipelineResult);
       setEditing(true);
       if (parsed.title) {
-        toast.success(`Loaded ${parsed.title} from Batch Tailor — edit and re-download.`);
+        toast.success(`Loaded ${parsed.title} from Batch Tailor. Edit and re-download.`);
       }
       // Clear the query param so a refresh in this tab doesn't try to reload.
       const cleanUrl = new URL(window.location.href);
       cleanUrl.searchParams.delete('load_batch');
       window.history.replaceState({}, '', cleanUrl.toString());
     } catch {
-      /* malformed or removed — ignore */
+      /* malformed or removed - ignore */
     }
   }, []);
 
@@ -1348,13 +1356,13 @@ function TailorTab() {
       if (parsed?.jd_text) setJdText(parsed.jd_text);
       if (parsed?.url) setPendingJobUrl(parsed.url);
       if (parsed?.title || parsed?.company) {
-        toast.info(`Tailoring for ${parsed.title || ''}${parsed.company ? ' @ ' + parsed.company : ''} — apply status auto-tracks`);
+        toast.info(`Tailoring for ${parsed.title || ''}${parsed.company ? ' @ ' + parsed.company : ''}. Apply status auto-tracks`);
       }
       if (parsed?.jd_fetch_failed) {
         toast.warning(
           parsed?.url
-            ? `Couldn't auto-fetch this JD — opening the posting in a new tab and pasting it works, OR click "Retry JD fetch" beside the textarea.`
-            : "Couldn't auto-fetch this JD — please copy-paste it from the posting into the box below.",
+            ? `Couldn't auto-fetch this JD. Opening the posting in a new tab and pasting it works, OR click "Retry JD fetch" beside the textarea.`
+            : "Couldn't auto-fetch this JD. Please copy-paste it from the posting into the box below.",
           { duration: 8000 },
         );
         if (parsed?.url) {
@@ -1379,9 +1387,9 @@ function TailorTab() {
                   JSON.stringify({ text: r.data.jd_text, at: Date.now() }),
                 );
               } catch { /* quota */ }
-              toast.success('JD auto-fetched on retry — review and tailor.');
+              toast.success('JD auto-fetched on retry. Review and tailor.');
             }
-          }).catch(() => { /* silent — user has the manual Retry button */ });
+          }).catch(() => { /* silent - user has the manual Retry button */ });
         }
       } else if (parsed?.jd_text && parsed?.url) {
         try {
@@ -1404,7 +1412,7 @@ function TailorTab() {
   }, [consumePendingTailorJob]);
 
   // 2. Re-run every time the navigate-to-tailor event fires. This is the
-  //    critical fix — when the user clicks Tailor on the Daily Pipeline,
+  //    critical fix - when the user clicks Tailor on the Daily Pipeline,
   //    handleTailor writes pending_tailor_job AND dispatches the event in
   //    the same call. The dispatch wakes this listener up to consume.
   useEffect(() => {
@@ -1500,8 +1508,9 @@ function TailorTab() {
     toast.success(`Added "${kw}" to your skills`);
   }, []);
 
-  // Fetch active resume info for record storage
-  const activeResumeRef = useRef<{ filename: string; s3_key: string } | null>(
+  // Fetch active resume info for record storage (Resume Platform v3 rows
+  // are identified by resume_id; there is no s3_key on a row).
+  const activeResumeRef = useRef<{ filename: string; resume_id: string } | null>(
     null,
   );
 
@@ -1511,22 +1520,22 @@ function TailorTab() {
     const resp = await apiService.listBaseResumes();
     if (resp.data) {
       const versions = resp.data.versions || [];
-      const active = versions.find((v: any) => v.is_active);
+      const active = versions.find((v) => v.is_active);
       if (active)
         activeResumeRef.current = {
           filename: active.filename,
-          s3_key: active.s3_key,
+          resume_id: active.resume_id,
         };
 
       if (versions.length > 0) {
-        // Base files exist — also check /status to ensure a parsed resume
+        // Base files exist - also check /status to ensure a parsed resume
         // doc exists. If it's missing (parse job failed/never completed),
         // the /status endpoint triggers an S3 re-parse automatically.
         const statusResp = await apiService.getResumeStatus();
         if (statusResp.data?.has_resume) {
           setHasResumes(true);
         } else {
-          // Status says no parsed resume — still show the tailor UI
+          // Status says no parsed resume - still show the tailor UI
           // (ensure_structured_resume in the tailor endpoint will retry)
           setHasResumes(true);
         }
@@ -1578,23 +1587,34 @@ function TailorTab() {
     };
   }, [editing]);
 
-  // Save tailoring record to backend (fire-and-forget)
+  // Settle the tailoring record on the backend (fire-and-forget).
+  // Resume Platform v3: the tailor worker already persisted the record and
+  // echoed its record_id in the job result - pass it through so the backend
+  // settles idempotently (never creates a duplicate). We still call this for
+  // the ats_scores attach + the once-per-record streak.
   const saveRecord = useCallback(
     async (
       jdAnalysisData: JDAnalysis,
       tailoredResume: TailoredFullResume,
       jdRawText: string,
       atsScores?: ATSScores,
+      workerRecordId?: string,
     ) => {
       try {
         const resp = await apiService.saveTailoringRecord({
+          record_id: workerRecordId || recordIdRef.current || undefined,
           jd_text: jdRawText,
           jd_analysis: jdAnalysisData,
           tailored_resume: tailoredResume,
           ats_scores: atsScores || undefined,
           base_resume_filename: activeResumeRef.current?.filename || "",
-          base_resume_s3_key: activeResumeRef.current?.s3_key || "",
         });
+        if (resp.error && workerRecordId) {
+          // The worker-persisted record exists server-side even though the
+          // settle failed - keep the id so downloads/regens still attach.
+          recordIdRef.current = workerRecordId;
+          return;
+        }
         if (resp.data?.record_id) {
           const isNewRecord = !recordIdRef.current;
           recordIdRef.current = resp.data.record_id;
@@ -1615,7 +1635,7 @@ function TailorTab() {
           }
         }
       } catch {
-        /* silent — analytics only */
+        /* silent - analytics only */
       }
     },
     [],
@@ -1683,7 +1703,7 @@ function TailorTab() {
     const ctrl = new AbortController();
     tailorAbortRef.current = ctrl;
 
-    // Visual phase 1: Analyze JD (UI only — backend has already started both)
+    // Visual phase 1: Analyze JD (UI only - backend has already started both)
     setAnalyzingJD(true);
     setTailoring(false);
     setTailorError("");
@@ -1742,7 +1762,7 @@ function TailorTab() {
       setTailorError("Failed to tailor resume.");
       return;
     }
-    // Success — refresh quota so the badge reflects the just-consumed credit.
+    // Success - refresh quota so the badge reflects the just-consumed credit.
     refreshUsage();
 
     const analysis = combined.data.jd_analysis;
@@ -1760,7 +1780,15 @@ function TailorTab() {
       },
     ]);
     // Await so downstream downloads / regenerations see recordIdRef set.
-    await saveRecord(analysis, tailoredResume, jdText);
+    // The worker persisted the record and echoed record_id - echo it back
+    // so save-record settles idempotently instead of creating a duplicate.
+    await saveRecord(
+      analysis,
+      tailoredResume,
+      jdText,
+      undefined,
+      combined.data.record_id,
+    );
 
     function cleanup() {
       if (tailorTimerRef.current) clearInterval(tailorTimerRef.current);
@@ -1826,6 +1854,9 @@ function TailorTab() {
       result.jd_analysis,
       regenFeedback.trim(),
       ctrl.signal,
+      // Naming the record lets the backend refuse the 6th version up front
+      // (409 version_limit_reached) before spending an LLM call.
+      recordIdRef.current || undefined,
     );
 
     if (ctrl.signal.aborted) {
@@ -1835,6 +1866,17 @@ function TailorTab() {
     setRegenerating(false);
 
     if (resp.error) {
+      if (
+        resp.status === 409 &&
+        (resp.errorPayload as { error?: string } | undefined)?.error ===
+          "version_limit_reached"
+      ) {
+        setRegenError(VERSION_LIMIT_MESSAGE);
+        toast.error("Version limit reached", {
+          description: VERSION_LIMIT_MESSAGE,
+        });
+        return;
+      }
       setRegenError(resp.error);
       toast.error("Regeneration failed", { description: resp.error });
       return;
@@ -1864,7 +1906,7 @@ function TailorTab() {
         ...v,
       ]);
       // Persist the regenerated version to the tailoring record so it's
-      // never lost — nothing about this download flow overwrites the
+      // never lost - nothing about this download flow overwrites the
       // previous version; each regeneration becomes its own versioned entry.
       if (recordIdRef.current) {
         apiService
@@ -1874,13 +1916,26 @@ function TailorTab() {
             user_feedback: regenFeedback.trim() || undefined,
             set_current: true,
           })
-          .catch(() => { /* silent — best-effort */ });
+          .then((r) => {
+            // Bounded refinement: surface the 5-version cap; other failures
+            // stay silent (best-effort persistence, matching prior behavior).
+            if (
+              r.status === 409 &&
+              (r.errorPayload as { error?: string } | undefined)?.error ===
+                "version_limit_reached"
+            ) {
+              toast.error("Version limit reached", {
+                description: VERSION_LIMIT_MESSAGE,
+              });
+            }
+          })
+          .catch(() => { /* silent - best-effort */ });
       }
       setRegenFeedback("");
       setRegenView("regenerated");
       setInspectorTab("ats");
       toast.success(
-        "Resume regenerated — previous version kept for comparison",
+        "Resume regenerated. Previous version kept for comparison",
       );
       // Re-trigger ATS scoring for the new version
       atsAutoTriggered.current = false;
@@ -1890,7 +1945,7 @@ function TailorTab() {
   const handleCoverLetter = useCallback(async () => {
     // Guard via ref so the in-flight check is stable across re-renders and
     // the callback identity doesn't change mid-generation. A re-invocation
-    // while generating must NOT abort the existing request — it's a no-op.
+    // while generating must NOT abort the existing request - it's a no-op.
     if (!result || coverLetterInFlightRef.current) return;
     coverLetterInFlightRef.current = true;
     const ctrl = new AbortController();
@@ -2019,7 +2074,7 @@ function TailorTab() {
   if (hasResumes === false)
     return <OnboardingHero onUploaded={() => setHasResumes(true)} />;
 
-  // Derive progress stepper state — 1: upload done, 2: JD entered, 3: tailored result
+  // Derive progress stepper state - 1: upload done, 2: JD entered, 3: tailored result
   const currentStep: 1 | 2 | 3 = result ? 3 : jdText.trim().length > 20 ? 2 : 1;
 
   return (
@@ -2031,7 +2086,7 @@ function TailorTab() {
     >
       <StreakWidget />
 
-      <SmartFiltersInline />
+      {/* APIFY DISABLED (temporary): <SmartFiltersInline /> feeds the hidden Apify pipeline. Restore to re-enable. */}
 
       {/* Horizontal progress stepper */}
       <div className="rounded-2xl border border-gray-200 dark:border-white/[0.07] bg-white/60 dark:bg-gray-900/40 backdrop-blur-sm px-4 sm:px-8 py-4 shadow-sm">
@@ -2110,7 +2165,7 @@ function TailorTab() {
         </motion.div>
       )}
 
-      {/* Smart nudge bar — contextual suggestions based on current state.
+      {/* Smart nudge bar - contextual suggestions based on current state.
           Rules fire in priority order; first match wins, user can dismiss each. */}
       {result &&
         (() => {
@@ -2130,7 +2185,7 @@ function TailorTab() {
               icon: "✨",
               text: (
                 <>
-                  Resume regenerated —{" "}
+                  Resume regenerated:{" "}
                   <strong className="text-gray-900 dark:text-white">
                     ATS score is now {result.ats_scores.overall}/100
                   </strong>
@@ -2158,8 +2213,8 @@ function TailorTab() {
                   Your Skills Alignment is{" "}
                   <strong className="text-amber-500 dark:text-amber-400">
                     {result.ats_scores.skills_alignment}
-                  </strong>{" "}
-                  — try adding{" "}
+                  </strong>
+                  . Try adding{" "}
                   <strong className="text-gray-900 dark:text-white">
                     "{top.join('"')}"
                   </strong>
@@ -2263,15 +2318,15 @@ function TailorTab() {
 
       {/* ─── SPLIT-VIEW ────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] gap-5 items-start">
-        {/* ═══ LEFT COLUMN — Resume preview / empty state.
-             No local scroll — the main body handles all scrolling, so there's
+        {/* ═══ LEFT COLUMN - Resume preview / empty state.
+             No local scroll - the main body handles all scrolling, so there's
              a single scroll context and the sticky navbar can't be clipped. ═══ */}
         <section
           className="min-w-0 lg:sticky lg:top-24 lg:self-start"
           aria-label="Resume preview"
         >
           <div className="relative rounded-2xl border border-gray-200 dark:border-white/[0.07] bg-gray-50/40 dark:bg-gray-900/40 backdrop-blur-sm shadow-xl shadow-black/5 dark:shadow-black/30 overflow-hidden flex flex-col lg:max-h-[calc(100vh-140px)]">
-            {/* Resume strength meter — vertical gradient bar on the left edge,
+            {/* Resume strength meter - vertical gradient bar on the left edge,
                 driven by ATS overall score. Always present while a result is loaded. */}
             {result?.ats_scores &&
               (() => {
@@ -2295,7 +2350,7 @@ function TailorTab() {
                   </div>
                 );
               })()}
-            {/* Frame header — status label + Tailored/Original segmented control + Revert.
+            {/* Frame header - status label + Tailored/Original segmented control + Revert.
                 "New Tailor" lives in the bottom toolbar to avoid duplication. */}
             <div className="shrink-0 px-5 py-3.5 border-b border-gray-200 dark:border-white/[0.07] flex items-center justify-between gap-3 bg-white/50 dark:bg-gray-900/60 flex-wrap">
               <div className="flex items-center gap-3 min-w-0">
@@ -2303,7 +2358,7 @@ function TailorTab() {
                   {result
                     ? "Tailored Resume"
                     : analyzingJD || tailoring
-                      ? "Tailoring…"
+                      ? "Tailoring..."
                       : "Resume Preview"}
                 </p>
                 {previousResume && (
@@ -2467,12 +2522,12 @@ function TailorTab() {
               </div>
             </div>
 
-            {/* Body — scrolls independently so the left preview stays pinned
+            {/* Body - scrolls independently so the left preview stays pinned
                  and matches the inspector column height on large screens. */}
             <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
               {result ? (
                 <div className="p-3 sm:p-5 bg-gray-100/60 dark:bg-gray-950/80 space-y-3">
-                  {/* "What Changed" stats — only shown when a previous version exists
+                  {/* "What Changed" stats - only shown when a previous version exists
                     (i.e., the user regenerated at least once). Builds instant confidence
                     that the regeneration actually did something. */}
                   {previousResume &&
@@ -2616,7 +2671,7 @@ function TailorTab() {
                         <p className="text-[11px] text-gray-500 dark:text-gray-400">
                           {tailorElapsed >= 90
                             ? "Taking longer than expected"
-                            : "Usually takes 30–60 seconds"}
+                            : "Usually takes 30 to 60 seconds"}
                         </p>
                       </div>
                     </div>
@@ -2665,7 +2720,7 @@ function TailorTab() {
                       // is split into 4 visual phases:
                       //  0 (analyze):   T=0  -> 12s  (handled by analyzingJD)
                       //  1 (tailor):    T=12 -> 25s  (~13s window)
-                      //  2 (augment):   T=25 -> 55s  (~30s — matches augmenter pipeline)
+                      //  2 (augment):   T=25 -> 55s  (~30s - matches augmenter pipeline)
                       //  3 (finalize):  T=55s+      (final stretch)
                       const current = analyzingJD
                         ? 0
@@ -2778,7 +2833,7 @@ function TailorTab() {
                         d="M13 7l5 5m0 0l-5 5m5-5H6"
                       />
                     </svg>
-                    Resume uploaded — ready to go
+                    Resume uploaded. Ready to go
                   </div>
                 </motion.div>
               )}
@@ -2786,7 +2841,7 @@ function TailorTab() {
           </div>
         </section>
 
-        {/* ═══ RIGHT COLUMN — Tabbed inspector.
+        {/* ═══ RIGHT COLUMN - Tabbed inspector.
              Flows with the main page scroll (no nested overflow). ═══ */}
         <section className="min-w-0 flex flex-col" aria-label="Inspector">
           {/* Tab bar */}
@@ -2893,7 +2948,7 @@ function TailorTab() {
                         Job Description
                       </h2>
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                        Paste the complete job posting — we'll extract
+                        Paste the complete job posting. We'll extract
                         requirements automatically
                       </p>
                     </div>
@@ -2903,7 +2958,7 @@ function TailorTab() {
                           onClick={async () => {
                             if (retryingJdFetch) return;
                             setRetryingJdFetch(true);
-                            const fetching = toast.loading('Fetching JD…', { duration: 50000 });
+                            const fetching = toast.loading('Fetching JD...', { duration: 50000 });
                             try {
                               const r = await apiService.fetchJobDescription(pendingJobUrl);
                               toast.dismiss(fetching);
@@ -2915,16 +2970,16 @@ function TailorTab() {
                                     JSON.stringify({ text: r.data.jd_text, at: Date.now() }),
                                   );
                                 } catch { /* quota */ }
-                                toast.success('JD fetched — review and tailor.');
+                                toast.success('JD fetched. Review and tailor.');
                               } else {
                                 toast.warning(
-                                  r.data?.error || "Still couldn't fetch — open the posting and paste manually.",
+                                  r.data?.error || "Still couldn't fetch. Open the posting and paste manually.",
                                   { duration: 8000 },
                                 );
                               }
                             } catch {
                               toast.dismiss(fetching);
-                              toast.error('Network issue — try again or paste manually.');
+                              toast.error('Network issue. Try again or paste manually.');
                             } finally {
                               setRetryingJdFetch(false);
                             }
@@ -2938,7 +2993,7 @@ function TailorTab() {
                           ) : (
                             <span>↻</span>
                           )}
-                          {retryingJdFetch ? 'Fetching…' : 'Retry JD fetch'}
+                          {retryingJdFetch ? 'Fetching...' : 'Retry JD fetch'}
                         </button>
                       )}
                       {pendingJobUrl && (
@@ -2981,7 +3036,7 @@ function TailorTab() {
 
                   <div className="relative">
                     <textarea
-                      placeholder="Paste the job description here — we'll extract key requirements and tailor your resume automatically..."
+                      placeholder="Paste the job description here. We'll extract key requirements and tailor your resume automatically..."
                       value={jdText}
                       onChange={(e) => setJdText(e.target.value)}
                       rows={10}
@@ -2994,7 +3049,7 @@ function TailorTab() {
                     </span>
                   </div>
 
-                  {/* Extracted requirements preview (after analysis) —
+                  {/* Extracted requirements preview (after analysis)  - 
                       chips are color-coded: green = found in resume, amber = missing. */}
                   {result?.jd_analysis &&
                     (() => {
@@ -3034,7 +3089,7 @@ function TailorTab() {
                                 Extracted Requirements
                               </span>
                               <span className="text-[10px] text-gray-400 dark:text-gray-500">
-                                — auto-detected from job posting
+                                · auto-detected from job posting
                               </span>
                             </div>
 
@@ -3173,7 +3228,7 @@ function TailorTab() {
                               </span>
                               <span className="flex items-center gap-1.5">
                                 <span className="w-2 h-2 rounded-full bg-amber-400" />
-                                Missing — consider adding
+                                Missing. Consider adding
                               </span>
                             </div>
                           </div>
@@ -3181,7 +3236,7 @@ function TailorTab() {
                       );
                     })()}
 
-                  {/* Quota-exhausted banner — shown ABOVE the button so the
+                  {/* Quota-exhausted banner - shown ABOVE the button so the
                       user knows why before they paste anything. */}
                   {dailyUsage?.remaining === 0 && (
                     <div className="mb-3 rounded-xl border border-amber-400/40 bg-amber-50 dark:bg-amber-500/10 px-4 py-3">
@@ -3189,7 +3244,7 @@ function TailorTab() {
                         <span className="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-200/60 dark:bg-amber-400/20 text-amber-700 dark:text-amber-300 text-xs font-bold">!</span>
                         <div className="flex-1 text-sm">
                           <p className="font-semibold text-amber-900 dark:text-amber-200">
-                            Daily limit reached — {dailyUsage.limit} of {dailyUsage.limit} used
+                            Daily limit reached: {dailyUsage.limit} of {dailyUsage.limit} used
                           </p>
                           <p className="mt-1 text-xs text-amber-800/80 dark:text-amber-200/80 leading-relaxed">
                             I cap tailoring at {dailyUsage.limit} per UTC day so the AI stays free
@@ -3209,7 +3264,7 @@ function TailorTab() {
                   )}
                   <button
                     onClick={() => {
-                      // Don't silently no-op when out of quota — surface
+                      // Don't silently no-op when out of quota - surface
                       // the dialog so the user knows why and can act.
                       if (dailyUsage?.remaining === 0) {
                         setQuotaDialog(dailyUsage);
@@ -3223,12 +3278,12 @@ function TailorTab() {
                     {analyzingJD || tailoring ? (
                       <>
                         <span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
-                        Tailoring…
+                        Tailoring...
                       </>
                     ) : dailyUsage?.remaining === 0 ? (
                       <>
                         <SparklesIcon className="w-4 h-4" />
-                        Daily limit reached — see options
+                        Daily limit reached. See options
                       </>
                     ) : (
                       <>
@@ -3259,7 +3314,7 @@ function TailorTab() {
                         <div className="absolute inset-0 rounded-full border-2 border-purple-500 border-t-transparent animate-spin" />
                       </div>
                       <p className="text-sm font-semibold text-gray-900 dark:text-white mb-1">
-                        Analyzing ATS compatibility…
+                        Analyzing ATS compatibility...
                       </p>
                       <p className="text-xs text-gray-500 dark:text-gray-400 max-w-xs">
                         Checking against Workday, Greenhouse, Lever, and more
@@ -3281,7 +3336,7 @@ function TailorTab() {
                         Regenerate Resume
                       </h2>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
-                        Refine with feedback — your current version is kept for
+                        Refine with feedback. Your current version is kept for
                         comparison
                       </p>
                     </div>
@@ -3459,7 +3514,7 @@ function TailorTab() {
                       Custom instructions
                     </label>
                     <textarea
-                      placeholder="Or write your own — e.g., 'Remove the summary and add a highlights section with top 3 achievements'"
+                      placeholder="Or write your own, e.g., 'Remove the summary and add a highlights section with top 3 achievements'"
                       value={regenFeedback}
                       onChange={(e) => setRegenFeedback(e.target.value)}
                       rows={5}
@@ -3487,7 +3542,7 @@ function TailorTab() {
                     {regenerating ? (
                       <>
                         <span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
-                        Regenerating…
+                        Regenerating...
                       </>
                     ) : (
                       <>
@@ -3525,7 +3580,7 @@ function TailorTab() {
                         {coverLetterLoading ? (
                           <>
                             <span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
-                            Generating…
+                            Generating...
                           </>
                         ) : (
                           <>
@@ -3552,7 +3607,7 @@ function TailorTab() {
                         >
                           <DocumentArrowDownIcon className="w-4 h-4" />
                           {coverLetterDownloading
-                            ? "Preparing…"
+                            ? "Preparing..."
                             : "Download PDF"}
                         </button>
                         <button
@@ -3581,11 +3636,11 @@ function TailorTab() {
                         <div className="absolute inset-0 rounded-full border-2 border-purple-500 border-t-transparent animate-spin" />
                       </div>
                       <p className="text-sm font-semibold text-gray-900 dark:text-white mb-1">
-                        Writing your cover letter…
+                        Writing your cover letter...
                       </p>
                       <p className="text-xs text-gray-500 dark:text-gray-400 max-w-xs">
                         Matching your experience to the role. Usually takes
-                        15–30 seconds.
+                        15 to 30 seconds.
                       </p>
                     </div>
                   ) : (
@@ -3633,7 +3688,7 @@ function TailorTab() {
           className="fixed bottom-0 left-0 right-0 z-40 bg-white/90 dark:bg-gray-950/95 backdrop-blur-xl border-t border-gray-200 dark:border-white/[0.07] shadow-2xl shadow-black/10"
         >
           <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-3">
-            {/* LEFT — humanized resume identity */}
+            {/* LEFT - humanized resume identity */}
             <div className="flex items-center gap-3 min-w-0 flex-1">
               <div className="w-10 h-10 rounded-xl bg-purple-500/15 border border-purple-500/25 flex items-center justify-center shrink-0">
                 <FileIcon className="w-5 h-5 text-purple-500 dark:text-purple-400" />
@@ -3676,7 +3731,7 @@ function TailorTab() {
               </div>
             </div>
 
-            {/* CENTER — ATS match badge (lg+) */}
+            {/* CENTER - ATS match badge (lg+) */}
             {result.ats_scores && (
               <div
                 className={`hidden lg:flex items-center gap-2 px-4 py-2 rounded-xl border shrink-0 ${
@@ -3701,12 +3756,12 @@ function TailorTab() {
               <div className="hidden lg:flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 shrink-0">
                 <span className="w-2.5 h-2.5 rounded-full border-2 border-purple-500 border-t-transparent animate-spin" />
                 <span className="text-xs text-gray-500 dark:text-gray-400">
-                  Scoring…
+                  Scoring...
                 </span>
               </div>
             )}
 
-            {/* RIGHT — escape hatch, ghost actions, primary dropdown */}
+            {/* RIGHT - escape hatch, ghost actions, primary dropdown */}
             <div className="flex items-center gap-1.5 shrink-0">
               <button
                 type="button"
@@ -3742,7 +3797,7 @@ function TailorTab() {
 
               <div className="w-px h-6 bg-gray-200 dark:bg-white/10 mx-0.5" />
 
-              {/* Primary CTA — Download Resume with format dropdown */}
+              {/* Primary CTA - Download Resume with format dropdown */}
               <div className="relative">
                 <button
                   type="button"
@@ -3755,7 +3810,7 @@ function TailorTab() {
                   {downloading !== null ? (
                     <>
                       <span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
-                      <span className="hidden sm:inline">Preparing…</span>
+                      <span className="hidden sm:inline">Preparing...</span>
                     </>
                   ) : (
                     <>
@@ -3787,7 +3842,7 @@ function TailorTab() {
                       className="fixed inset-0 z-10"
                       onClick={() => setDownloadMenuOpen(false)}
                     />
-                    {/* Dropdown menu — pops up above the bar */}
+                    {/* Dropdown menu - pops up above the bar */}
                     <motion.div
                       initial={{ opacity: 0, y: 6 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -3848,7 +3903,7 @@ function TailorTab() {
         </motion.div>
       )}
 
-      {/* Editor mode — full-screen overlay */}
+      {/* Editor mode - full-screen overlay */}
       {result && editing && (
         <div className="fixed inset-0 z-[60] bg-gray-100 dark:bg-gray-950 overflow-y-auto overscroll-contain">
           <div className="max-w-7xl mx-auto px-0 sm:px-0 lg:px-0">
@@ -3886,7 +3941,7 @@ function TailorTab() {
           feedback.open({
             type: "quota_bump",
             prefill:
-              "Hi — I've hit my daily tailor limit and have an active job-hunt push. " +
+              "Hi, I've hit my daily tailor limit and have an active job-hunt push. " +
               "Could you bump my limit? Here's the context:\n\n",
           })
         }
@@ -3905,7 +3960,7 @@ type ResumeNavItem = {
 };
 
 /**
- * Top-level "rooms" — the 5 destinations shown on the left rail and the mobile
+ * Top-level "rooms" - the 5 destinations shown on the left rail and the mobile
  * bottom bar. Every leaf `NavTab` that lives on the rail maps into exactly one
  * room; the room's own `tabs[0]` is its default sub-tab. Configure surfaces
  * (billing/notifications/profile/beta) intentionally live in the header user
@@ -4093,7 +4148,7 @@ const SETTINGS_MENU: NavTab[] = ["billing", "notifications", "profile", "beta"];
 
 // The active room = the one whose `tabs` contains the current leaf tab. Configure
 // surfaces (billing/notifications/profile/beta) belong to no room, so this returns
-// undefined for them and the rail shows nothing highlighted — by design.
+// undefined for them and the rail shows nothing highlighted - by design.
 function roomForTab(tab: NavTab): NavRoom | undefined {
   return ROOMS.find((room) => room.tabs.includes(tab));
 }
@@ -4111,11 +4166,11 @@ function roomItemsFor(room: NavRoom): ResumeNavItem[] {
  * owns the active tab is expanded by default; headers behave as an accordion
  * (click to open/close, one at a time). Selecting an item calls
  * onSelect(item.key). Every feature is therefore visible and reachable in ≤1-2
- * clicks from one place — no separate in-content sub-tab strip.
+ * clicks from one place - no separate in-content sub-tab strip.
  *
  * Collapsed (icon-only) mode keeps the rail narrow: each room icon jumps to its
  * default tab, and hovering the rail expands it back to the full grouped list
- * (revealing every item — the flyout equivalent).
+ * (revealing every item - the flyout equivalent).
  */
 function ResumeSectionNav({
   activeNav,
@@ -4276,7 +4331,7 @@ function CommandPalette({
 
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange}>
-      <CommandInput placeholder="Search features — jump to any tool…" />
+      <CommandInput placeholder="Search features. Jump to any tool..." />
       <CommandList>
         <CommandEmpty>No matching features.</CommandEmpty>
         {ROOMS.map((room) => {
@@ -4387,7 +4442,7 @@ function SidebarAccount({
 /**
  * Calm header context: the user's plan + remaining daily tailors, presented
  * quietly. Quota tone is neutral by default and only shifts to the (amber)
- * warning token when running low — never destructive red, so the surface
+ * warning token when running low - never destructive red, so the surface
  * stays encouraging rather than punitive. Renders nothing until it has data.
  */
 function HeaderMeta({
@@ -4417,7 +4472,7 @@ function HeaderMeta({
               ? "border-warning/30 bg-warning/10 text-warning"
               : "border-border bg-muted/50 text-muted-foreground"
           }`}
-          title={`Daily tailors — resets ${new Date(usage.resets_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`}
+          title={`Daily tailors. Resets ${new Date(usage.resets_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`}
         >
           <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true" />
           <span aria-label={`${usage.remaining} of ${usage.limit} daily tailors left`}>
@@ -4475,7 +4530,7 @@ function readTabFromUrl(): NavTab | null {
 }
 
 export default function ResumeParser() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const feedback = useFeedback();
   // Seed from ?tab= so refresh / OAuth-callback redirects (e.g.
   // /resume-parser?tab=applications&gmail=linked) actually land on the
@@ -4504,7 +4559,7 @@ export default function ResumeParser() {
 
   // Track which tabs the user has visited so we can keep heavy tabs (Tailor,
   // Jobs) mounted in the background. Without this, switching tabs unmounts
-  // <TailorTab /> mid-run — the tailor request still completes in the network
+  // <TailorTab /> mid-run - the tailor request still completes in the network
   // stack, but its setResult lands on a dead component, and on remount the
   // user sees a blank tailor view. Keeping mounted preserves state and lets
   // in-flight async finish into the live component.
@@ -4557,7 +4612,7 @@ export default function ResumeParser() {
   }, [activeNav]);
 
   // Mirror activeNav in the URL so refresh / share / back-button restores the
-  // same tab. We use replaceState (not pushState) — tab switches shouldn't
+  // same tab. We use replaceState (not pushState) - tab switches shouldn't
   // pollute browser history, and we want URL ↔ state to track 1:1.
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -4567,7 +4622,7 @@ export default function ResumeParser() {
     window.history.replaceState({}, "", url.toString());
   }, [activeNav]);
 
-  // Honor browser back/forward — when the URL's ?tab= changes via popstate,
+  // Honor browser back/forward - when the URL's ?tab= changes via popstate,
   // pull state back into activeNav so the visible tab matches the URL.
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -4591,7 +4646,7 @@ export default function ResumeParser() {
   return (
     <AuthGate
       title="Aspirely"
-      description="Your workspace for the job hunt — tailor resumes to any JD, track applications, read the market, and prep with intent."
+      description="Your workspace for the job hunt. Tailor resumes to any JD, track applications, read the market, and prep with intent."
     >
       <div className="min-h-screen bg-background text-foreground antialiased pb-24 lg:pb-0">
         {/* Top app bar keeps identity and account actions; sections live in the sidebar. */}
@@ -4752,6 +4807,22 @@ export default function ResumeParser() {
                             <span className="min-w-0 flex-1 truncate">Feedback</span>
                           </button>
                         </div>
+                        <div className="border-t border-border py-1">
+                          <button
+                            type="button"
+                            role="menuitem"
+                            onClick={() => {
+                              setUserMenuOpen(false);
+                              logout();
+                            }}
+                            className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-destructive transition-colors hover:bg-accent focus-visible:outline-none focus-visible:bg-accent"
+                          >
+                            <span className="shrink-0 text-destructive">
+                              <LogOut className="w-4 h-4" />
+                            </span>
+                            <span className="min-w-0 flex-1 truncate">Sign out</span>
+                          </button>
+                        </div>
                       </div>
                     </>
                   )}
@@ -4893,7 +4964,7 @@ export default function ResumeParser() {
 
             <main className="min-w-0 flex-1 px-4 py-6 sm:px-6 lg:px-8">
               <div className="mx-auto max-w-[1500px]">
-              {/* Navigation lives entirely in the grouped sidebar + ⌘K palette —
+              {/* Navigation lives entirely in the grouped sidebar + ⌘K palette  - 
                   no in-content sub-tab strip. The header shows the room ›
                   feature breadcrumb for context. */}
               {/* Cross-link tissue: contextual related-feature shortcuts for

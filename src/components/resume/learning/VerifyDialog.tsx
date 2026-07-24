@@ -133,11 +133,11 @@ export function VerifyDialog({ open, onClose, pathId, task, result, onResult }: 
             )}
             <Button onClick={submit} disabled={loading || !value.trim()} className="w-full">
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
-              {loading ? 'Checking your proof…' : 'Verify'}
+              {loading ? 'Checking your proof...' : 'Verify'}
             </Button>
             {loading && (
               <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
-                <Sparkles className="h-3 w-3" /> Reading against the acceptance criteria — no fabrication.
+                <Sparkles className="h-3 w-3" /> Reading against the acceptance criteria. No fabrication.
               </p>
             )}
           </div>

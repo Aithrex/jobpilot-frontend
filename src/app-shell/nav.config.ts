@@ -1,5 +1,5 @@
 import {
-  Compass,
+  Briefcase,
   LayoutList,
   PenLine,
   Settings,
@@ -15,7 +15,7 @@ import {
  * {@link SHELL_BASENAME}; helpers below build absolute, deep-linkable paths.
  */
 export interface NavItem {
-  /** URL segment under `/next` — also the stable key. */
+  /** URL segment under `/next` - also the stable key. */
   to: string;
   label: string;
   icon: LucideIcon;
@@ -31,13 +31,18 @@ export function navHref(to: string): string {
   return `${SHELL_BASENAME}/${to}`;
 }
 
-/** Primary top-level destinations, in display order. */
+/**
+ * Primary top-level destinations, in display order (roles-first). Paths are
+ * kept stable (`discover`, `craft`, `applications`, `today`) so existing deep
+ * links never break; only the user-facing labels/order changed. Roles (the
+ * job feed) leads; Overview is the secondary daily briefing, pinned last.
+ */
 export const NAV_ITEMS: NavItem[] = [
-  { to: "today", label: "Today", icon: Sun, hint: "Your daily briefing" },
-  { to: "applications", label: "Applications", icon: LayoutList, hint: "Track every role" },
-  { to: "grow", label: "Grow", icon: Sprout, hint: "Skills & progress" },
-  { to: "discover", label: "Discover", icon: Compass, hint: "Find opportunities" },
-  { to: "craft", label: "Craft", icon: PenLine, hint: "Tailor & build" },
+  { to: "discover", label: "Roles", icon: Briefcase, hint: "Roles picked for you" },
+  { to: "craft", label: "Tailor", icon: PenLine, hint: "Tailor and build your resume" },
+  { to: "applications", label: "Apply", icon: LayoutList, hint: "Track every application" },
+  { to: "grow", label: "Grow", icon: Sprout, hint: "Skills and progress" },
+  { to: "today", label: "Overview", icon: Sun, hint: "Your daily briefing" },
 ];
 
 /** Secondary / utility entries, pinned to the foot of the rail. */

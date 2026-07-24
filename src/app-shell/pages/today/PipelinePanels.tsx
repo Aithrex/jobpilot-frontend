@@ -1,11 +1,11 @@
 /**
- * Zone B — "What's changing?"  Trend + funnel.
+ * Zone B - "What's changing?"  Trend + funnel.
  *
  *  • ApplicationTrend: a 30-day area chart built from the streak heatmap. The
  *    Y-axis starts at zero (never truncated) and the series carries a text
- *    alternative — a visible caption plus an sr-only data table.
+ *    alternative - a visible caption plus an sr-only data table.
  *  • ConversionFunnel: horizontal, zero-based bars for the application funnel
- *    with the conversion rate between stages. Colour is never the only cue —
+ *    with the conversion rate between stages. Colour is never the only cue  - 
  *    every stage is labelled and counted.
  */
 import { useMemo } from 'react';
@@ -76,7 +76,6 @@ export function ApplicationTrend({
   return (
     <PanelCard>
       <ZoneHeading
-        overline="What's changing"
         title="Applications, last 30 days"
         hint={
           state === 'ready' && windowTotal > 0
@@ -140,7 +139,7 @@ export function ApplicationTrend({
               />
             </AreaChart>
           </ChartContainer>
-          {/* Equivalent data table — hidden visually, available to assistive tech. */}
+          {/* Equivalent data table - hidden visually, available to assistive tech. */}
           <table className="sr-only">
             <caption>Applications per day, last 30 days</caption>
             <thead>
@@ -186,7 +185,7 @@ export function ConversionFunnel({
 
   return (
     <PanelCard>
-      <ZoneHeading overline="What's changing" title="Where applications stand" />
+      <ZoneHeading title="Where applications stand" />
 
       {state === 'loading' ? (
         <div className="space-y-4">
@@ -203,7 +202,7 @@ export function ConversionFunnel({
         <PanelEmpty
           icon={Filter}
           title="Your funnel is empty for now"
-          body="As applications move from applied to interview to offer, you'll see each stage — and where things stall — here."
+          body="As applications move from applied to interview to offer, you'll see each stage here, and where things stall."
         />
       ) : (
         <ol className="space-y-3">

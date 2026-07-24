@@ -1,4 +1,11 @@
 /* ============================================================================
+   SUPERSEDED - PROPOSAL SINCE SHIPPED. DO NOT WIRE THIS FILE IN.
+   The live tokens are in src/index.css (single source of truth), mapped by
+   tailwind.config.ts and documented in docs/DESIGN_SYSTEM_MAP.md. Kept for
+   history only.
+   ============================================================================ */
+
+/* ============================================================================
    JobPilot — RECONCILED DESIGN TOKENS  (PROPOSAL — NOT WIRED INTO THE APP)
    ----------------------------------------------------------------------------
    Two layers:

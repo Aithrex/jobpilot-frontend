@@ -82,7 +82,7 @@ export function SocialAuthButtons({ verb = 'Continue with' }: Props) {
   }, []);
 
   // Google is configured only if the backend advertised it. `null` (still
-  // loading) is treated as "attempt it" — the flow surfaces any real error.
+  // loading) is treated as "attempt it" - the flow surfaces any real error.
   const googleConfigured = providers === null ? null : providers.includes('google');
   const others = providers ? SECONDARY_ORDER.filter((p) => providers.includes(p)) : [];
 
@@ -97,7 +97,7 @@ export function SocialAuthButtons({ verb = 'Continue with' }: Props) {
     // Not configured yet → be honest, never fake success or throw a scary error.
     if (googleConfigured === false) {
       toast.info('Google sign-in is being set up', {
-        description: 'It’s almost ready — continue with your email for now.',
+        description: "It's almost ready. Continue with your email for now.",
       });
       return;
     }
@@ -105,7 +105,7 @@ export function SocialAuthButtons({ verb = 'Continue with' }: Props) {
     if (res.error) {
       setPending(null);
       toast.info('Google sign-in is being set up', {
-        description: res.error || 'It’s almost ready — continue with your email for now.',
+        description: res.error || "It's almost ready. Continue with your email for now.",
       });
     }
   };
@@ -122,7 +122,7 @@ export function SocialAuthButtons({ verb = 'Continue with' }: Props) {
 
   return (
     <div className="space-y-4">
-      {/* PRIMARY — Google is always the obvious first choice. */}
+      {/* PRIMARY - Google is always the obvious first choice. */}
       <button
         type="button"
         onClick={onGoogle}
@@ -138,7 +138,7 @@ export function SocialAuthButtons({ verb = 'Continue with' }: Props) {
         <span>{verb} Google</span>
       </button>
 
-      {/* SECONDARY — only the providers the backend actually advertises. */}
+      {/* SECONDARY - only the providers the backend actually advertises. */}
       {others.length > 0 && (
         <div className="grid gap-2.5">
           {others.map((p) => (

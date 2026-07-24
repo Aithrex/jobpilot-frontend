@@ -1,5 +1,5 @@
 /**
- * Filename helpers — mirror the backend's `ResumeRenderer.build_filename` and
+ * Filename helpers - mirror the backend's `ResumeRenderer.build_filename` and
  * `build_cover_letter_filename` so anything we download client-side uses the
  * same ATS-friendly convention as anything the backend renders for us.
  *
@@ -15,7 +15,7 @@ function clean(s: string): string {
     .replace(/^_+|_+$/g, '');
 }
 
-// Title-case a name token only if it's all upper or all lower — keep
+// Title-case a name token only if it's all upper or all lower - keep
 // legitimately mixed-case surnames (McDonald, deShawn) intact.
 function titleCaseToken(tok: string): string {
   if (!tok) return tok;

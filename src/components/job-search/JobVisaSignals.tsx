@@ -6,9 +6,9 @@ import type { SponsorshipSignal, VisaFlags } from '@/types/jobs';
 
 const BAND_STYLES: Record<SponsorshipSignal['band'], string> = {
   none: 'border-border bg-muted/50 text-muted-foreground',
-  low: 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300',
-  moderate: 'border-indigo-500/30 bg-indigo-500/10 text-indigo-700 dark:text-indigo-300',
-  strong: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
+  low: 'border-warning/30 bg-warning/10 text-warning',
+  moderate: 'border-primary/30 bg-primary/10 text-primary',
+  strong: 'border-success/30 bg-success/10 text-success',
 };
 
 function fmtMoney(n?: number): string | null {
@@ -25,7 +25,7 @@ function fmtMoney(n?: number): string | null {
 }
 
 function fmtCount(n?: number): string {
-  if (n == null) return '—';
+  if (n == null) return ' - ';
   return n.toLocaleString();
 }
 
@@ -123,7 +123,7 @@ export function VisaFlagChips({ flags }: { flags: VisaFlags }) {
         <span
           key={k}
           title={flags[k]?.evidence || undefined}
-          className="inline-flex items-center gap-0.5 rounded-md border border-emerald-500/25 bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-300"
+          className="inline-flex items-center gap-0.5 rounded-md border border-success/25 bg-success/10 px-1.5 py-0.5 text-[10px] font-medium text-success"
         >
           <BadgeCheck className="h-2.5 w-2.5" />
           {FLAG_LABELS[k]}

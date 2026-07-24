@@ -22,34 +22,34 @@ export default function Privacy() {
             A
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Aspirely — Privacy Policy</h1>
+            <h1 className="text-2xl font-bold text-foreground">Aspirely Privacy Policy</h1>
             <p className="text-sm text-muted-foreground">Last updated: July 10, 2026</p>
           </div>
         </div>
 
         <p className="mt-6 leading-relaxed text-muted-foreground">
           Aspirely ("we", "us", the "service") is an AI career platform that helps you build and
-          tailor your résumé, discover jobs, and manage your applications. This policy explains what
+          tailor your resume, discover jobs, and manage your applications. This policy explains what
           data we collect, how we use it, who we share it with, and the choices you have. We keep the
-          service focused on your goals — we do not sell your data.
+          service focused on your goals. We do not sell your data.
         </p>
 
         <Section title="Information we collect">
           <ul className="list-disc space-y-1 pl-6">
-            <li><strong>Account information</strong> — your email address and an encrypted (hashed) password, or the profile details returned by a sign-in provider you choose to use (see "Connected accounts").</li>
-            <li><strong>Career content you provide</strong> — résumés, work history, education, projects, skills, links, and the answers you enter for job applications.</li>
-            <li><strong>Usage data</strong> — the jobs you save, tailoring and scoring you request, and basic technical logs (e.g. approximate location derived from IP, for security and rate-limiting).</li>
+            <li><strong>Account information</strong>: your email address and an encrypted (hashed) password, or the profile details returned by a sign-in provider you choose to use (see "Connected accounts").</li>
+            <li><strong>Career content you provide</strong>: resumes, work history, education, projects, skills, links, and the answers you enter for job applications.</li>
+            <li><strong>Usage data</strong>: the jobs you save, tailoring and scoring you request, and basic technical logs (e.g. approximate location derived from IP, for security and rate-limiting).</li>
           </ul>
         </Section>
 
         <Section title="How we use your information">
           <ul className="list-disc space-y-1 pl-6">
-            <li>To provide the core features — parsing and tailoring your résumé, scoring it against a job, and generating application answers.</li>
+            <li>To provide the core features: parsing and tailoring your resume, scoring it against a job, and generating application answers.</li>
             <li>To authenticate you and keep your account secure.</li>
             <li>To enforce plan limits and prevent abuse.</li>
             <li>To improve the reliability and quality of the service.</li>
           </ul>
-          <p>We do <strong>not</strong> use your résumé content to train third-party foundation models, and our AI is instructed never to fabricate facts about you.</p>
+          <p>We do <strong>not</strong> use your resume content to train third-party foundation models, and our AI is instructed never to fabricate facts about you.</p>
         </Section>
 
         <Section title="Connected accounts (optional integrations)">
@@ -59,10 +59,10 @@ export default function Privacy() {
             are <strong>encrypted at rest</strong>.
           </p>
           <ul className="list-disc space-y-1 pl-6">
-            <li><strong>Sign in with Google</strong> — if you sign in with Google, we receive your name, email address, and profile basics (via OpenID Connect) solely to create and authenticate your account. We do not access any other Google data.</li>
-            <li><strong>Connect GitHub</strong> — with your authorization, we read your public profile and public repositories to help enrich your résumé and portfolio. We do not modify your repositories.</li>
-            <li><strong>Connect LinkedIn</strong> — with your authorization, we read your basic profile and, only when you explicitly ask, publish a post on your behalf (the <code>w_member_social</code> permission). We never post without an action you take.</li>
-            <li><strong>Gmail (read-only)</strong> — where offered and enabled, and only with your consent, we read job-application-related emails to surface application updates. We request read-only access and never send email as you.</li>
+            <li><strong>Sign in with Google</strong>: if you sign in with Google, we receive your name, email address, and profile basics (via OpenID Connect) solely to create and authenticate your account. We do not access any other Google data.</li>
+            <li><strong>Connect GitHub</strong>: with your authorization, we read your public profile and public repositories to help enrich your resume and portfolio. We do not modify your repositories.</li>
+            <li><strong>Connect LinkedIn</strong>: with your authorization, we read your basic profile and, only when you explicitly ask, publish a post on your behalf (the <code>w_member_social</code> permission). We never post without an action you take.</li>
+            <li><strong>Gmail (read-only)</strong>: where offered and enabled, and only with your consent, we read job-application-related emails to surface application updates. We request read-only access and never send email as you.</li>
           </ul>
           <p>Disconnecting an integration removes our stored access tokens for it.</p>
         </Section>
@@ -98,8 +98,8 @@ export default function Privacy() {
         <Section title="How your information is shared">
           <p>We share data only with the service providers that make Aspirely work, under confidentiality obligations:</p>
           <ul className="list-disc space-y-1 pl-6">
-            <li><strong>Cloud hosting &amp; storage</strong> (Amazon Web Services) — to run the application and store your files and data.</li>
-            <li><strong>AI processing</strong> (Anthropic Claude on Amazon Bedrock) — the specific text you submit for tailoring, scoring, or answer-generation is processed to produce your result and is not used to train the model.</li>
+            <li><strong>Cloud hosting &amp; storage</strong> (Amazon Web Services): to run the application and store your files and data.</li>
+            <li><strong>AI processing</strong> (Anthropic Claude on Amazon Bedrock): the specific text you submit for tailoring, scoring, or answer-generation is processed to produce your result and is not used to train the model.</li>
           </ul>
           <p>We do not sell your personal information, and we do not share it for advertising.</p>
         </Section>
