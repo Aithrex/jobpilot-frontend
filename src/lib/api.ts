@@ -3297,6 +3297,132 @@ class ApiService {
   }
 
   // ============================================
+  // Managed Application Mailbox (/api/resume/mailbox/*)
+  // Contract: jobpilot-backend/docs/specs/managed-mailbox-v1.md §5. Field names
+  // are VERBATIM from that spec. A 404 on any of these = the feature flag
+  // (APPLY_MAILBOX_ENABLED) is off -> hide the whole surface. Business failures
+  // are 400/403/404/409/429 - never 401 (invariant #1). Rides the already-routed
+  // /api/resume edge prefix, so no new external Terraform route is required.
+  // ============================================
+
+  /** GET the flat mailbox view (§5). 404 => feature disabled. */
+  async getMailbox() {
+    return this.request<import('../types/mailbox').Mailbox>('/resume/mailbox');
+  }
+
+  /** Provision the stable primary address (idempotent). `privacy_alias` mints an
+   *  opaque career.<hex> local part instead of firstname.lastname (§1.1). */
+  async provisionMailbox(opts?: { privacy_alias?: boolean }) {
+    return this.request<import('../types/mailbox').Mailbox>('/resume/mailbox/provision', {
+      method: 'POST',
+      body: JSON.stringify(opts ?? {}),
+    });
+  }
+
+  /** Pause / resume accepting + acting on inbound mail (§1.2). */
+  async pauseMailbox(paused: boolean) {
+    return this.request<import('../types/mailbox').Mailbox>('/resume/mailbox/pause', {
+      method: 'POST',
+      body: JSON.stringify({ paused }),
+    });
+  }
+
+  /** Rotate: mint a NEW primary address, tombstone the old one (§1.2). The
+   *  returned mailbox carries the new address. */
+  async rotateMailbox() {
+    return this.request<import('../types/mailbox').Mailbox>('/resume/mailbox/rotate', {
+      method: 'POST',
+      body: '{}',
+    });
+  }
+
+  /** Turn forwarding on/off (and set/change the verified destination). Changing
+   *  `forward_to` re-triggers verification (§5). */
+  async setForwarding(opts: { enabled: boolean; forward_to?: string }) {
+    return this.request<import('../types/mailbox').Mailbox>('/resume/mailbox/forwarding', {
+      method: 'POST',
+      body: JSON.stringify(opts),
+    });
+  }
+
+  /**
+   * Redeem a forwarding-destination verification token (the link mailed to the
+   * user's ORIGINAL inbox). §1.2 lists forwarding re-verification as a control
+   * and §5 mounts every mailbox route under /api/resume/mailbox/*; this rides the
+   * forwarding sub-path. Failure is 400/404/409 - never 401.
+   * NOTE: §5's endpoint table does not enumerate this path explicitly - confirm
+   * with backend-engineer.
+   */
+  async verifyForwarding(token: string) {
+    return this.request<import('../types/mailbox').Mailbox>('/resume/mailbox/forwarding/verify', {
+      method: 'POST',
+      body: JSON.stringify({ token }),
+    });
+  }
+
+  /** List conversation summaries (§5: `?trust=&application_id=&unread=`). */
+  async getMailboxThreads(params?: import('../types/mailbox').MailboxThreadQuery) {
+    const qs = new URLSearchParams();
+    if (params?.trust) qs.set('trust', params.trust);
+    if (params?.application_id) qs.set('application_id', params.application_id);
+    if (params?.unread) qs.set('unread', 'true');
+    const suffix = qs.toString() ? `?${qs.toString()}` : '';
+    return this.request<{ threads: import('../types/mailbox').ThreadSummary[] }>(
+      `/resume/mailbox/threads${suffix}`,
+    );
+  }
+
+  /** Full thread: the thread summary + its ordered, SANITIZED messages (§5). */
+  async getMailboxThread(threadId: string) {
+    return this.request<import('../types/mailbox').ThreadDetail>(
+      `/resume/mailbox/threads/${encodeURIComponent(threadId)}`,
+    );
+  }
+
+  /** Mark a whole thread read / unread (§5). */
+  async markThreadRead(threadId: string, read: boolean) {
+    return this.request<{ ok: boolean }>(
+      `/resume/mailbox/threads/${encodeURIComponent(threadId)}/read`,
+      { method: 'POST', body: JSON.stringify({ read }) },
+    );
+  }
+
+  /** Bind a thread to a tracked application (§5). */
+  async attachThread(threadId: string, applicationId: string) {
+    return this.request<{ ok: boolean }>(
+      `/resume/mailbox/threads/${encodeURIComponent(threadId)}/attach`,
+      { method: 'POST', body: JSON.stringify({ application_id: applicationId }) },
+    );
+  }
+
+  /** Unbind a thread from its application (§5). */
+  async detachThread(threadId: string) {
+    return this.request<{ ok: boolean }>(
+      `/resume/mailbox/threads/${encodeURIComponent(threadId)}/detach`,
+      { method: 'POST', body: '{}' },
+    );
+  }
+
+  /**
+   * Issue a short-lived presigned download URL for one attachment (§5). ONLY
+   * call this for a `clean` attachment - a suspicious/blocked one is
+   * download-blocked server-side and the FE must never render a link for it.
+   */
+  async getAttachmentDownloadUrl(attachmentId: string) {
+    return this.request<{ download_url: string }>(
+      `/resume/mailbox/attachments/${encodeURIComponent(attachmentId)}`,
+    );
+  }
+
+  /** Report a thread as phishing (§5). */
+  async reportPhishing(threadId: string) {
+    return this.request<{ ok: boolean }>(
+      `/resume/mailbox/threads/${encodeURIComponent(threadId)}/report-phishing`,
+      { method: 'POST', body: '{}' },
+    );
+  }
+
+  // ============================================
   // Admin endpoints (/api/admin)
   // ============================================
 
@@ -3602,17 +3728,45 @@ class ApiService {
     );
   }
 
-  async updateAutoSubmitSettings(enabled: boolean, autonomyThreshold?: number) {
+  async updateAutoSubmitSettings(
+    enabled: boolean,
+    autonomyThreshold?: number,
+    // The explicit autonomy mode. Sent only when provided so a settings save
+    // never blanks a mode the onboarding flow already set (the mode is the
+    // single source of truth; a bad value is a business 400, never 401).
+    mode?: import('../types/onboarding').AutoApplyMode,
+  ) {
+    const body: Record<string, unknown> = { auto_submit_enabled: enabled };
+    if (autonomyThreshold !== undefined) body.autonomy_threshold = autonomyThreshold;
+    if (mode !== undefined) body.mode = mode;
     return this.request<import('../types/autoSubmit').AutoSubmitSettings>(
       '/apply/auto-submit/settings',
-      {
-        method: 'PUT',
-        body: JSON.stringify(
-          autonomyThreshold === undefined
-            ? { enabled }
-            : { enabled, autonomy_threshold: autonomyThreshold },
-        ),
-      },
+      { method: 'PUT', body: JSON.stringify(body) },
+    );
+  }
+
+  // ── Auto-Apply onboarding (declared-profile) — /api/apply/onboarding/* ──
+  // The ask-once question bank the executor fills from. GET returns the catalog
+  // grouped by category (+ ready_for_autoapply + mode); PUT validates each
+  // answer against the catalog (unknown field / bad value -> 400, never 401)
+  // and persists it to the declared store. Rides the existing /api/apply/* edge.
+
+  /** The grouped onboarding questionnaire + readiness + current autonomy mode. */
+  async getOnboardingQuestions() {
+    return this.request<import('../types/onboarding').OnboardingQuestions>(
+      '/apply/onboarding/questions',
+    );
+  }
+
+  /**
+   * Persist reviewed onboarding answers (and optionally the autonomy mode).
+   * Returns the refreshed questionnaire payload. An unknown field_id or a value
+   * that fails its field's type/options is a 400 (business error, never 401).
+   */
+  async saveOnboardingAnswers(body: import('../types/onboarding').SaveOnboardingAnswersBody) {
+    return this.request<import('../types/onboarding').OnboardingQuestions>(
+      '/apply/onboarding/answers',
+      { method: 'PUT', body: JSON.stringify(body) },
     );
   }
 
@@ -3654,6 +3808,23 @@ class ApiService {
       method: 'POST',
       body: JSON.stringify({ application_id: applicationId }),
     });
+  }
+
+  /**
+   * Confirm an emailed approval link. The email's GET link is NON-mutating - it
+   * 302s the browser to `/next/applications?approve=<token>`; the signed-in SPA
+   * then POSTs the token HERE to actually approve (CSRF-safe: authorization is
+   * the Bearer header, never an ambient cookie). Outcomes are read off the
+   * status by the caller: 200 (approved / not-ready via `approved`), 409
+   * (`link_already_used`), 403 (`not_authorized` - wrong account). A missing JWT
+   * is the ONE legitimate 401 here (the decorator's contract), and this call
+   * only runs for a signed-in user, so it never trips a spurious force-logout.
+   */
+  async confirmApproveLink(token: string) {
+    return this.request<import('../types/autoSubmit').ApproveLinkResult>(
+      '/apply/approve-link',
+      { method: 'POST', body: JSON.stringify({ token }) },
+    );
   }
 }
 

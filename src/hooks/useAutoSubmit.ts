@@ -30,6 +30,7 @@ interface AutoSubmitApi {
   updateAutoSubmitSettings(
     enabled: boolean,
     autonomyThreshold?: number,
+    mode?: import("@/types/onboarding").AutoApplyMode,
   ): Promise<ApiResp<AutoSubmitSettings>>;
   approveAutoSubmit(
     body: AutoSubmitApproveBody,
@@ -95,6 +96,10 @@ export function useAutoSubmit() {
     ? !settingsQuery.data.unavailable
     : undefined;
   const enabled = settingsQuery.data?.settings?.auto_submit_enabled ?? false;
+  // The explicit autonomy mode (null until onboarding forces a pick). The
+  // AutoApplyTab routes the user to the mode picker while this is null, and
+  // renders copilot rows as a prepare-only answer sheet.
+  const mode = settingsQuery.data?.settings?.mode ?? null;
 
   const pendingQuery = useQuery<AutoSubmitPending>({
     queryKey: PENDING_KEY,
@@ -201,6 +206,7 @@ export function useAutoSubmit() {
     /** undefined = still resolving; false = feature flag off (hide surface). */
     available,
     enabled,
+    mode,
     settings: settingsQuery.data?.settings,
     settingsLoading: settingsQuery.isLoading,
     settingsError: settingsQuery.isError,
