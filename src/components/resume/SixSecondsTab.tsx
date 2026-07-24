@@ -176,14 +176,14 @@ export default function SixSecondsTab({ onNavigate }: SixSecondsTabProps) {
   const ranOnce = useRef(false);
   const reduceMotion = useReducedMotion();
 
-  const run = useCallback(async () => {
+  const run = useCallback(async (force = false) => {
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
     setLoading(true);
     setError(null);
     setGated(false);
-    const res = await apiService.runSixSeconds(controller.signal);
+    const res = await apiService.runSixSeconds(controller.signal, force);
     if (controller.signal.aborted) return;
     if (res.error) {
       if (res.status === 403 || res.status === 429) {
@@ -235,7 +235,7 @@ export default function SixSecondsTab({ onNavigate }: SixSecondsTabProps) {
             what they actually see. Where the eye lands, and what slips by.
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={run} disabled={loading} className="gap-1.5">
+        <Button variant="outline" size="sm" onClick={() => run(true)} disabled={loading} className="gap-1.5">
           <RefreshCw className={cn('h-3.5 w-3.5', loading && 'animate-spin')} />
           {loading ? 'Reading...' : 'Re-run'}
         </Button>
@@ -287,7 +287,7 @@ export default function SixSecondsTab({ onNavigate }: SixSecondsTabProps) {
             <p className="font-medium">Couldn't complete the read.</p>
             <p className="text-xs opacity-80">{error}</p>
           </div>
-          <Button variant="outline" size="sm" onClick={run}>
+          <Button variant="outline" size="sm" onClick={() => run(true)}>
             Retry
           </Button>
         </div>

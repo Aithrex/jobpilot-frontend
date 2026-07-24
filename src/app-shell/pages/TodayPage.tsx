@@ -25,6 +25,7 @@ import type { SavedJob } from '@/types/jobs';
 import type { TodayInbox } from '@/types/todayInbox';
 
 import { HeroPanel, type HeroModel, type HeroInputItem } from './today/HeroPanel';
+import { ResumeEntryPanel } from './today/ResumeEntryPanel';
 import { KpiRow } from './today/KpiCards';
 import { ApplicationTrend, ConversionFunnel } from './today/PipelinePanels';
 import { RecentActivityPanel } from './today/RecentActivityPanel';
@@ -199,8 +200,14 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
         </button>
       </motion.header>
 
+      {/* Resume upload entry point - the primary onboarding action when the
+          user has no base resume; a quiet, discoverable affordance once they do. */}
+      <motion.div {...rise(1)}>
+        <ResumeEntryPanel onUploaded={() => void load()} />
+      </motion.div>
+
       {/* Zone A - Are we OK? */}
-      <motion.section {...rise(1)} aria-label="Today's status" className="space-y-4">
+      <motion.section {...rise(2)} aria-label="Today's status" className="space-y-4">
         <HeroPanel model={hero} onRetry={() => void load()} />
         <KpiRow
           loading={firstLoad && loading}
@@ -212,7 +219,7 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
       </motion.section>
 
       {/* Zone B - What's changing? */}
-      <motion.section {...rise(2)} aria-label="Trends" className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <motion.section {...rise(3)} aria-label="Trends" className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <ApplicationTrend
             state={panelState(err.streak)}
@@ -230,7 +237,7 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
       </motion.section>
 
       {/* Zone C - Why? */}
-      <motion.section {...rise(3)} aria-label="Recent roles">
+      <motion.section {...rise(4)} aria-label="Recent roles">
         <RecentActivityPanel
           state={panelState(err.saved)}
           jobs={savedJobs}

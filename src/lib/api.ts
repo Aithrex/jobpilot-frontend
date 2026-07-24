@@ -3126,10 +3126,13 @@ class ApiService {
 
   async runSixSeconds(
     signal?: AbortSignal,
+    force = false,
   ): Promise<ApiResponse<import('../types/sixSeconds').SixSecondsResult>> {
+    // force=true bypasses the server-side cache and spends a quota unit; the
+    // passive auto-run on mount leaves it false so re-opening the tab is free.
     const submit = await this.request<{ job_id?: string }>(
       '/resume/six-seconds',
-      { method: 'POST', body: '{}' },
+      { method: 'POST', body: JSON.stringify({ force }) },
       30000,
     );
     if (submit.error) {
