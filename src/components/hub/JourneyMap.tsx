@@ -65,7 +65,7 @@ const STATE_META: Record<HubSeasonSummary["state"], StateMeta> = {
  *  chapters are enterable; locked + coming-soon are shown but not clickable. */
 export default function JourneyMap({ journey, selectedSeasonId, onSelect }: JourneyMapProps) {
   const reduce = useReducedMotion();
-  const chapters = [...journey.seasons].sort((a, b) => a.order - b.order);
+  const chapters = [...(journey?.seasons ?? [])].sort((a, b) => a.order - b.order);
 
   // Fill the spine through the furthest reached node (last completed, or active).
   const reachedIdx = Math.max(
@@ -97,7 +97,7 @@ export default function JourneyMap({ journey, selectedSeasonId, onSelect }: Jour
 
         <ul className="relative space-y-3">
           {chapters.map((ch, i) => {
-            const meta = STATE_META[ch.state];
+            const meta = STATE_META[ch.state] ?? STATE_META.locked;
             const selected = ch.season_id === selectedSeasonId;
             const prev = chapters[i - 1];
             const denom = ch.published_days || ch.length_days;

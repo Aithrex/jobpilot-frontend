@@ -120,9 +120,9 @@ export default function LearningHubTab() {
   // after a submit (e.g. current → completed).
   const activeDay = openDay ? path?.days.find((d) => d.key === openDay.key) ?? openDay : null;
 
-  const selectedSummary = journey?.seasons.find((s) => s.season_id === selectedSeason);
+  const selectedSummary = journey?.seasons?.find((s) => s.season_id === selectedSeason);
   const nextChapter = useMemo(() => {
-    if (!journey || !selectedSummary) return undefined;
+    if (!journey?.seasons || !selectedSummary) return undefined;
     return journey.seasons
       .filter((s) => s.order > selectedSummary.order && s.state !== "locked" && s.state !== "coming_soon")
       .sort((a, b) => a.order - b.order)[0];

@@ -30,7 +30,9 @@ export function useHubJourney(params?: HubPathParams) {
     queryFn: async () => {
       const res = await apiService.getHubJourney(params);
       if (res.error) throw new Error(res.error);
-      return res.data ?? null;
+      // Only accept a well-formed journey; anything else → null (renders the
+      // empty/loading state instead of crashing a consumer that spreads seasons).
+      return res.data && Array.isArray(res.data.seasons) ? res.data : null;
     },
     staleTime: 30_000,
   });
