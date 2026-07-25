@@ -118,7 +118,7 @@ export default function LearningHubTab() {
   };
   // Re-resolve the open day against the freshest path so its state/ticket update
   // after a submit (e.g. current → completed).
-  const activeDay = openDay ? path?.days.find((d) => d.key === openDay.key) ?? openDay : null;
+  const activeDay = openDay ? path?.days?.find((d) => d.key === openDay.key) ?? openDay : null;
 
   const selectedSummary = journey?.seasons?.find((s) => s.season_id === selectedSeason);
   const nextChapter = useMemo(() => {
