@@ -8,7 +8,6 @@ import { GuestDropzone } from '@/components/guest/GuestDropzone';
 import { GuestFlowShell } from '@/components/guest/GuestFlowShell';
 import type { ResumePicker } from '@/components/guest/useResumePicker';
 import type { GuestFlow } from '@/hooks/useGuestFlow';
-import type { Capability } from '@/lib/capabilities';
 import { Container } from './_shared';
 import { MacWindow, type WindowStatus } from './workspace/MacWindow';
 import { CinematicStage } from './workspace/CinematicStage';
@@ -43,7 +42,6 @@ export interface WorkspaceHeroProps {
   flowActive: boolean;
   /** The page's ONE resume picker (owned by LandingExperience). */
   picker: ResumePicker;
-  onPreviewCapability: (cap: Capability) => void;
 }
 
 /** Map the real flow onto the window's status indicator. Never invented: each
@@ -76,6 +74,7 @@ const BEAT_STATUS: Record<string, { status: WindowStatus; label: string }> = {
   profile: { status: 'working', label: 'Building profile' },
   match: { status: 'working', label: 'Ranking matches' },
   tailor: { status: 'working', label: 'Tailoring' },
+  track: { status: 'working', label: 'Tracking' },
   settled: { status: 'done', label: 'Preview' },
 };
 
@@ -85,7 +84,6 @@ export function WorkspaceHero({
   authed,
   flowActive,
   picker,
-  onPreviewCapability,
 }: WorkspaceHeroProps) {
   // Scene liveness: on screen AND tab visible. The sequence never burns
   // battery in a background tab or below the fold.
@@ -220,12 +218,7 @@ export function WorkspaceHero({
                   </div>
                 )}
 
-                <p className="mt-5 text-xs text-muted-foreground">
-                  Guest: up to 5 matches and 1 tailoring · Free account: full workspace and 5
-                  tailorings daily
-                </p>
-
-                <p className="mt-4 text-sm text-muted-foreground">
+                <p className="mt-5 text-sm text-muted-foreground">
                   Already have an account?{' '}
                   <Link
                     to="/login"
@@ -244,7 +237,7 @@ export function WorkspaceHero({
                   statusLabel={label}
                   animateArrival
                   bodyClassName="min-h-[290px] sm:min-h-[330px]"
-                  dock={<CapabilityDock show={showDock} onPreview={onPreviewCapability} />}
+                  dock={<CapabilityDock show={showDock} />}
                 >
                   <div
                     className={cn(

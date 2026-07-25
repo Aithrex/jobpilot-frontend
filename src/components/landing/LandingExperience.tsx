@@ -77,21 +77,6 @@ export default function LandingExperience() {
   const fallbackHref = authed ? '/next/today' : '/register';
   const fallbackLabel = authed ? 'Open my workspace' : 'Create free account';
 
-  // A coming-soon dock item reveals its concept preview by moving the reader
-  // to the roadmap section. It calls no API and claims no signup - the only
-  // real action on an unavailable capability is creating an account.
-  const onPreviewCapability = useCallback(() => {
-    const target = document.getElementById('coming-next');
-    if (!target) return;
-    target.scrollIntoView({
-      behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
-      block: 'start',
-    });
-    // Move focus too, so the preview is reachable by keyboard alone.
-    target.setAttribute('tabindex', '-1');
-    target.focus({ preventScroll: true });
-  }, []);
-
   return (
     <div
       className="dark surface-obsidian min-h-screen overflow-x-clip"
@@ -116,7 +101,7 @@ export default function LandingExperience() {
         />
       )}
 
-      <LandingNav onUpload={onUpload} fallbackHref={fallbackHref} fallbackLabel={fallbackLabel} />
+      <LandingNav />
       <main id="main">
         <WorkspaceHero
           flow={flow}
@@ -124,7 +109,6 @@ export default function LandingExperience() {
           authed={authed}
           flowActive={flowActive}
           picker={picker}
-          onPreviewCapability={onPreviewCapability}
         />
         {/* Once real work starts, the workspace owns the page - no marketing
   between the guest and their results, and no roadmap content while

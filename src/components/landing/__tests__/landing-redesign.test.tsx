@@ -69,8 +69,8 @@ function renderLanding() {
   );
 }
 
-/** The hero's illustrative demo panel (Read / Match / Tailor). */
-const heroPanel = () => screen.getByRole('tabpanel', { name: /^(Read|Match|Tailor)$/ });
+/** The hero's illustrative demo panel (Read / Match / Tailor / Track). */
+const heroPanel = () => screen.getByRole('tabpanel', { name: /^(Read|Match|Tailor|Track)$/ });
 
 /** The editorial transformation stage (Resume / Understood / Matched / Tailored). */
 const signalPanel = () => screen.getByRole('tabpanel', { name: /Resume transformation stage/i });
@@ -96,20 +96,31 @@ describe('primary CTA', () => {
     const input = inputs[0] as HTMLInputElement;
     const clickSpy = vi.spyOn(input, 'click').mockImplementation(() => {});
 
-    // 1 - nav CTA (used to be an <a href="#try"> that only scrolled).
-    await user.click(screen.getByRole('button', { name: /^Upload resume$/i }));
-    // 2 - hero CTA.
+    // The nav no longer carries an upload CTA - the page's upload actions live
+    // in the hero and the closing section, so the bar does not repeat them.
+    // 1 - hero CTA.
     await user.click(screen.getByRole('button', { name: /^Find my matches$/i }));
-    // 3 - the drop surface inside the workspace window.
+    // 2 - the drop surface inside the workspace window.
     await user.click(
       await screen.findByRole('button', { name: /Upload my resume to find matches/i }),
     );
-    // 4 - the closing CTA (used to be an <a href="#try"> too).
+    // 3 - the closing CTA (used to be an <a href="#try"> too).
     await user.click(await screen.findByRole('button', { name: /^Upload your resume$/i }));
 
-    expect(clickSpy).toHaveBeenCalledTimes(4);
+    expect(clickSpy).toHaveBeenCalledTimes(3);
     // And none of them is an anchor that merely scrolls to the hero.
     expect(document.querySelectorAll('a[href="#try"]')).toHaveLength(0);
+  });
+
+  test('the header is brand-only: no upload or sign-in control lives in the nav', () => {
+    renderLanding();
+    const banner = screen.getByRole('banner');
+    // Both CTAs moved to the hero; the sticky bar no longer repeats them, so a
+    // visitor never sees Sign in / Upload twice in the first viewport.
+    expect(within(banner).queryByRole('button')).toBeNull();
+    expect(within(banner).queryByRole('link', { name: /sign in|upload/i })).toBeNull();
+    // It still carries the wordmark home link.
+    expect(within(banner).getByRole('link', { name: /Aspirely home/i })).toBeInTheDocument();
   });
 
   test('"Find my matches" opens the real file input directly - no second click', async () => {
@@ -227,14 +238,14 @@ describe('product demo accessibility', () => {
     expect(document.querySelector('[aria-hidden="true"]')).toBeTruthy();
   });
 
-  test('Read / Match / Tailor are real focusable tabs', async () => {
+  test('Read / Match / Tailor / Track are real focusable tabs', async () => {
     renderLanding();
     const tablist = await screen.findByRole('tablist', {
       name: /Illustrative workflow steps/i,
     });
     const tabs = within(tablist).getAllByRole('tab');
 
-    expect(tabs.map((t) => t.textContent)).toEqual(['Read', 'Match', 'Tailor']);
+    expect(tabs.map((t) => t.textContent)).toEqual(['Read', 'Match', 'Tailor', 'Track']);
     tabs.forEach((t) => expect(t.tagName).toBe('BUTTON'));
     // Roving tabindex: exactly one tab is in the tab order.
     expect(tabs.filter((t) => t.getAttribute('tabindex') === '0')).toHaveLength(1);
@@ -248,7 +259,7 @@ describe('product demo accessibility', () => {
     const tablist = await screen.findByRole('tablist', {
       name: /Illustrative workflow steps/i,
     });
-    const [read, match, tailor] = within(tablist).getAllByRole('tab');
+    const [read, match, tailor, track] = within(tablist).getAllByRole('tab');
 
     read.focus();
     expect(read).toHaveFocus();
@@ -260,8 +271,8 @@ describe('product demo accessibility', () => {
     expect(read).toHaveAttribute('aria-selected', 'false');
 
     await user.keyboard('{End}');
-    expect(tailor).toHaveFocus();
-    expect(tailor).toHaveAttribute('aria-selected', 'true');
+    expect(track).toHaveFocus();
+    expect(track).toHaveAttribute('aria-selected', 'true');
 
     // Space activates the focused tab natively (it is a real button).
     await user.keyboard('{Home}');
@@ -269,7 +280,7 @@ describe('product demo accessibility', () => {
     await user.keyboard(' ');
     expect(read).toHaveAttribute('aria-selected', 'true');
 
-    // Clicking Tailor jumps forward, and the final beat's content appears.
+    // Clicking Tailor jumps to the rewrite beat, which shows the guarantee.
     await user.click(tailor);
     expect(tailor).toHaveAttribute('aria-selected', 'true');
     expect(within(heroPanel()).getByText('IntegrityGuard')).toBeInTheDocument();
@@ -299,7 +310,7 @@ describe('capability status', () => {
     renderLanding();
 
     const availableHeading = await screen.findByRole('heading', {
-      name: /From resume to tailored, in one pass\./i,
+      name: /Your resume, read, matched, tailored, and tracked\./i,
     });
     const comingHeading = screen.getByRole('heading', {
       name: /From matched to applied\./i,
@@ -422,11 +433,12 @@ describe('reduced motion', () => {
     expect(screen.getByRole('heading', { name: /From matched to applied\./i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^Find my matches$/i })).toBeInTheDocument();
 
-    // The demo resolves straight to its FINAL meaningful beat - no animation,
-    // nothing withheld from the reduced-motion visitor.
+    // The demo resolves straight to its fully-built final beat (Track) - no
+    // animation, nothing withheld from the reduced-motion visitor, and the
+    // integrity guarantee from the tailoring beat is still on screen.
     const tablist = screen.getByRole('tablist', { name: /Illustrative workflow steps/i });
     const tabs = within(tablist).getAllByRole('tab');
-    expect(tabs[2]).toHaveAttribute('aria-selected', 'true');
+    expect(tabs[3]).toHaveAttribute('aria-selected', 'true');
     expect(within(heroPanel()).getByText('IntegrityGuard')).toBeInTheDocument();
   });
 });
@@ -491,7 +503,7 @@ describe('surface language', () => {
 // ── 7c. The transformation sequence ──────────────────────────────
 
 describe('resume transformation sequence', () => {
-  test('the four stages are real, keyboard-operable tabs', async () => {
+  test('the six stages are real, keyboard-operable tabs', async () => {
     const user = userEvent.setup();
     renderLanding();
     const tablist = await screen.findByRole('tablist', {
@@ -499,18 +511,22 @@ describe('resume transformation sequence', () => {
     });
     const tabs = within(tablist).getAllByRole('tab');
 
-    expect(tabs.map((t) => t.textContent?.split(/(?=[A-Z])/)[0])).toHaveLength(4);
+    // Resume, Understood, Matched, Tailored, Tracked, Updates - the full flow.
+    expect(tabs.map((t) => t.textContent?.split(/(?=[A-Z])/)[0])).toHaveLength(6);
     expect(tabs.filter((t) => t.getAttribute('tabindex') === '0')).toHaveLength(1);
 
     tabs[0].focus();
     await user.keyboard('{End}');
-    expect(tabs[3]).toHaveFocus();
-    expect(tabs[3]).toHaveAttribute('aria-selected', 'true');
-    // The final stage shows the rewrite AND the integrity guarantee.
-    expect(within(signalPanel()).getByText('IntegrityGuard')).toBeInTheDocument();
+    expect(tabs[5]).toHaveFocus();
+    expect(tabs[5]).toHaveAttribute('aria-selected', 'true');
 
     await user.keyboard('{Home}');
     expect(tabs[0]).toHaveAttribute('aria-selected', 'true');
+
+    // The Tailored stage (index 3) carries the rewrite AND the guarantee.
+    await user.click(tabs[3]);
+    expect(tabs[3]).toHaveAttribute('aria-selected', 'true');
+    expect(await within(signalPanel()).findByText('IntegrityGuard')).toBeInTheDocument();
   });
 
   test('driving the sequence never fabricates data', async () => {
@@ -528,7 +544,8 @@ describe('resume transformation sequence', () => {
     expect(text).not.toMatch(/\d{1,3}\s*%\s*(match|fit)/i);
   });
 
-  test('reduced motion lands on the FINAL stage with no scrolling required', async () => {
+  test('reduced motion lands on the headline stage fully resolved, no scrolling required', async () => {
+    const user = userEvent.setup();
     setReducedMotion(true);
     renderLanding();
     const tablist = await screen.findByRole('tablist', {
@@ -536,10 +553,15 @@ describe('resume transformation sequence', () => {
     });
     const tabs = within(tablist).getAllByRole('tab');
 
-    // The sequence is scroll-linked for everyone else; a reduced-motion
-    // visitor must never have to scroll to be shown the payoff.
-    expect(tabs[3]).toHaveAttribute('aria-selected', 'true');
-    expect(within(signalPanel()).getByText('IntegrityGuard')).toBeInTheDocument();
+    // The sequence auto-advances for everyone else; a reduced-motion visitor
+    // must never have to wait or scroll to be shown the shipped product. It
+    // resolves to the first stage (Resume) with its content already painted.
+    expect(tabs[0]).toHaveAttribute('aria-selected', 'true');
+    expect(within(signalPanel()).getByText('Experience')).toBeInTheDocument();
+
+    // And the integrity guarantee is a few clicks away, never hidden.
+    await user.click(tabs[3]);
+    expect(await within(signalPanel()).findByText('IntegrityGuard')).toBeInTheDocument();
   });
 });
 
@@ -549,7 +571,7 @@ describe('roadmap weight', () => {
   test('Coming next is structurally lighter than what actually ships', async () => {
     renderLanding();
     const shipped = (
-      await screen.findByRole('heading', { name: /From resume to tailored, in one pass\./i })
+      await screen.findByRole('heading', { name: /Your resume, read, matched, tailored, and tracked\./i })
     ).closest('section') as HTMLElement;
     const roadmap = screen
       .getByRole('heading', { name: /From matched to applied\./i })

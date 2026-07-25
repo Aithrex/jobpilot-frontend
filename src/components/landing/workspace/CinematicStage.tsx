@@ -345,8 +345,56 @@ function TailorPanel() {
   );
 }
 
+/** F: the pipeline - applications held across three status columns. */
+function TrackPanel() {
+  const still = useStill();
+  const columns: { label: string; cards: number; lit?: boolean }[] = [
+    { label: 'Saved', cards: 2 },
+    { label: 'Applied', cards: 2 },
+    { label: 'Interview', cards: 1, lit: true },
+  ];
+  return (
+    <motion.div
+      initial={still ? false : { opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={still ? { duration: 0 } : { duration: 0.5, ease: EASE }}
+      className="mt-2 grid grid-cols-3 gap-2 rounded-lg border border-white/[0.08] bg-white/[0.03] p-2.5"
+    >
+      {columns.map((col) => (
+        <div key={col.label} className="min-w-0 space-y-1.5">
+          <span
+            className={cn(
+              'block text-[9px] font-semibold uppercase tracking-[0.13em]',
+              col.lit ? 'text-[hsl(var(--brand-to))]' : 'text-muted-foreground/50',
+            )}
+          >
+            {col.label}
+          </span>
+          {Array.from({ length: col.cards }).map((_, i) => (
+            <div
+              key={i}
+              className={cn(
+                'rounded-md border p-1.5',
+                col.lit && i === 0
+                  ? 'border-[hsl(var(--brand-to)/0.5)] bg-[hsl(var(--brand-to)/0.10)]'
+                  : 'border-white/[0.07] bg-white/[0.02]',
+              )}
+            >
+              <div className="flex items-center gap-1">
+                {/* Empty slot: no logo, no company, no title. */}
+                <span aria-hidden className="h-3 w-3 shrink-0 rounded bg-foreground/10" />
+                <Bar w="68%" lit={col.lit && i === 0} />
+              </div>
+            </div>
+          ))}
+        </div>
+      ))}
+    </motion.div>
+  );
+}
+
 /**
- * The three beats a person can jump to. `beat` is the timeline position each
+ * The four beats a person can jump to. `beat` is the timeline position each
  * control lands on; the caption is a claim about the product, never data.
  */
 const STEPS = [
@@ -368,6 +416,12 @@ const STEPS = [
     beat: 'tailor' as CinematicBeat,
     caption: 'It tailors one resume, with your facts locked.',
   },
+  {
+    id: 'track',
+    label: 'Track',
+    beat: 'track' as CinematicBeat,
+    caption: 'It keeps every application in one pipeline.',
+  },
 ] as const;
 
 export interface CinematicStageProps {
@@ -380,6 +434,7 @@ export interface CinematicStageProps {
 export function CinematicStage({ beat, onSelectBeat, className }: CinematicStageProps) {
   const still = !!useReducedMotion();
   const showTailor = atOrPast(beat, 'tailor');
+  const showTrack = atOrPast(beat, 'track');
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
   // The furthest step the illustration has reached. Before the first beat we
@@ -494,6 +549,7 @@ export function CinematicStage({ beat, onSelectBeat, className }: CinematicStage
             <OpportunityPanel beat={beat} />
           </div>
           <AnimatePresence>{showTailor && <TailorPanel key="tailor" />}</AnimatePresence>
+          <AnimatePresence>{showTrack && <TrackPanel key="track" />}</AnimatePresence>
         </div>
       </div>
     </StillContext.Provider>

@@ -167,11 +167,13 @@ export function capabilityById(id: string): Capability | undefined {
 }
 
 /**
- * The in-window capability dock. Live capabilities render illuminated;
- * upcoming ones render frosted with their status badge. Order is deliberate:
- * the real product first, the roadmap after it, so the future never leads.
+ * The in-window "Coming next" dock. It lists ONLY capabilities that are not
+ * live yet - the shipped ones (Match, Tailor, Track) are already demonstrated
+ * by the illustrative workflow directly above it, so repeating them here under
+ * a "Coming next" label was both redundant and untrue. Frosted, with a visible
+ * status badge; never illuminated, because nothing in this list works today.
  */
-export const DOCK_CAPABILITIES: Capability[] = [MATCH, TAILOR, TRACK, AUTO_APPLY, WHATSAPP];
+export const DOCK_CAPABILITIES: Capability[] = [AUTO_APPLY, WHATSAPP];
 
 /** The two roadmap features that get a full concept preview. */
 export const ROADMAP_FEATURED: Capability[] = [AUTO_APPLY, WHATSAPP];
