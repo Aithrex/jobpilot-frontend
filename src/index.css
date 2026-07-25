@@ -727,6 +727,20 @@
   }
 }
 
+/* A carousel dot filling as its slide's turn runs out. Deliberately a CSS
+  animation rather than a JS-driven one: `animation-play-state: paused` is the
+  only way to FREEZE a progress indicator mid-way and resume it exactly where
+  it stopped, which is what an indicator that pauses on hover has to do to stay
+  truthful. Transform-only. */
+@keyframes carousel-tick {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
 /* Gentle looping shimmer: a light sweep with a long rest between passes.
   Transform-only; pair with `motion-reduce:hidden` on the sweep element. */
 @keyframes chip-shimmer {

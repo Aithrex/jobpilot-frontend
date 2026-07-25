@@ -1,49 +1,55 @@
 /**
- * useCinematic - the pre-upload product sequence timeline.
+ * useCinematic - the pre-upload product tour that drives the hero workspace.
  *
- * ONE settling run of roughly 7.5s, then it parks on `settled` forever. It
- * deliberately does NOT loop: an infinitely replaying hero is a battery tax and
- * a distraction from the real upload control sitting next to it. After it
- * settles, only ambient environmental motion remains.
+ * It walks the four things Aspirely does - READ, MATCH, TAILOR, TRACK - one
+ * scene at a time, and it KEEPS WALKING. A visitor who never touches anything
+ * still sees the whole product, because the loop is the demo: a stage that
+ * played once and froze meant three quarters of the workflow was only reachable
+ * by clicking a tab nobody clicked.
+ *
+ * Why a loop is affordable here: each tick is one `setTimeout` swapping one
+ * small subtree. There is no rAF loop, no canvas, no video, and the whole thing
+ * is suspended whenever it is not being watched.
  *
  * Liveness rules (all of them non-negotiable for performance/a11y):
  *  - never starts until the section is on screen AND the tab is visible,
- *  - pauses (holds its beat) when either goes false,
- *  - under `prefers-reduced-motion` it resolves INSTANTLY to `settled`, so the
- *  reduced-motion user sees the finished composition rather than nothing,
+ *  - pauses on the current beat when either goes false, and resumes there,
+ *  - under `prefers-reduced-motion` it resolves INSTANTLY to the final beat and
+ *    never advances, so nothing moves and nothing is withheld,
  *  - `takeover` (a real file was picked) kills it immediately and permanently,
- *  - `select(beat)` (a person used the Read / Match / Tailor controls) also
- *  ends autoplay permanently: once someone is driving, nothing moves under
- *  their hands.
+ *  - `select(beat)` RESUMES the tour from the chosen scene rather than ending
+ *    it. Clicking a tab used to stop the loop for good, which quietly punished
+ *    the one visitor who engaged with the demo: they poked it once and the
+ *    thing they were enjoying died. A click now just says "start here".
+ *  - the tour holds while the tablist has keyboard focus, and resumes on blur.
+ *    That is the narrow case where "nothing moves under their hands" genuinely
+ *    matters: a keyboard user parked on the control would otherwise have the
+ *    selection change beneath their focus.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useReducedMotion } from 'framer-motion';
 
-/** Beats A-F from the product sequence, plus the terminal settle. */
-export type CinematicBeat = 'arrive' | 'scan' | 'profile' | 'match' | 'tailor' | 'settled';
+/** The four scenes of the workflow. One tab, one beat, one scene. */
+export type CinematicBeat = 'read' | 'match' | 'tailor' | 'track';
 
-/** Cumulative start time (ms) of each beat. */
-const TIMELINE: ReadonlyArray<readonly [CinematicBeat, number]> = [
-  ['arrive', 0],
-  ['scan', 900],
-  ['profile', 2600],
-  ['match', 4200],
-  ['tailor', 5900],
-  ['settled', 7500],
-] as const;
+export const BEATS: readonly CinematicBeat[] = ['read', 'match', 'tailor', 'track'] as const;
 
-export const CINEMATIC_DURATION_MS = 7500;
-
-const ORDER: CinematicBeat[] = TIMELINE.map(([b]) => b);
+/**
+ * How long each scene holds before the tour advances. Not uniform: `tailor`
+ * carries the most to look at (two columns plus the integrity guarantee), and
+ * `read` has the scanning pass to finish, so both hold longer than the two
+ * list-shaped scenes.
+ */
+const HOLD_MS: Record<CinematicBeat, number> = {
+  read: 2900,
+  match: 2500,
+  tailor: 3100,
+  track: 2500,
+};
 
 export function beatIndex(beat: CinematicBeat): number {
-  return ORDER.indexOf(beat);
-}
-
-/** True once the sequence has reached (or passed) `target`. */
-export function atOrPast(current: CinematicBeat, target: CinematicBeat): boolean {
-  return beatIndex(current) >= beatIndex(target);
+  return BEATS.indexOf(beat);
 }
 
 export interface UseCinematicOptions {
@@ -53,73 +59,64 @@ export interface UseCinematicOptions {
   takeover: boolean;
 }
 
+/**
+ * Where a reduced-motion visitor lands. There is no tour for them, so they see
+ * exactly ONE scene until they use the tabs - which makes this a real editorial
+ * choice, not a fallback. It is `tailor` because that scene carries
+ * IntegrityGuard, the promise we least want a visitor to have to go looking
+ * for: tailoring moves emphasis, never facts.
+ */
+const STILL_BEAT: CinematicBeat = 'tailor';
+
 export function useCinematic({ live, takeover }: UseCinematicOptions) {
   const reduce = useReducedMotion();
-  const [beat, setBeat] = useState<CinematicBeat>(() => (reduce ? 'settled' : 'arrive'));
-  /** Someone used the beat controls - autoplay is over for good. */
-  const [manual, setManual] = useState(false);
-  /** ms of timeline already played - lets pause/resume keep its place. */
-  const elapsed = useRef(0);
-  const startedAt = useRef<number | null>(null);
+  const stillIndex = BEATS.indexOf(STILL_BEAT);
+
+  const [index, setIndex] = useState(() => (reduce ? stillIndex : 0));
+  /** The tablist has keyboard focus - hold, but only until it is given up. */
+  const [held, setHeld] = useState(false);
+
+  const autoplay = live && !takeover && !held && !reduce;
+
+  // The preference can flip mid-session (a system setting, or a test).
+  useEffect(() => {
+    if (reduce) setIndex(stillIndex);
+  }, [reduce, stillIndex]);
 
   useEffect(() => {
-    if (takeover || manual) return;
-    if (reduce) {
-      setBeat('settled');
-      return;
-    }
-    if (!live) {
-      // Bank the time played so far, then hold this beat.
-      if (startedAt.current !== null) {
-        elapsed.current += performance.now() - startedAt.current;
-        startedAt.current = null;
-      }
-      return;
-    }
-    if (elapsed.current >= CINEMATIC_DURATION_MS) {
-      setBeat('settled');
-      return;
-    }
+    if (!autoplay) return;
+    const id = window.setTimeout(
+      () => setIndex((i) => (i + 1) % BEATS.length),
+      HOLD_MS[BEATS[index]],
+    );
+    return () => window.clearTimeout(id);
+  }, [autoplay, index]);
 
-    startedAt.current = performance.now();
-    const timers: number[] = [];
-    for (const [name, at] of TIMELINE) {
-      const delay = at - elapsed.current;
-      if (delay <= 0) {
-        setBeat(name);
-        continue;
-      }
-      timers.push(window.setTimeout(() => setBeat(name), delay));
-    }
-    return () => {
-      timers.forEach(window.clearTimeout);
-      if (startedAt.current !== null) {
-        elapsed.current += performance.now() - startedAt.current;
-        startedAt.current = null;
-      }
-    };
-  }, [live, reduce, takeover, manual]);
-
-  /** Jump the illustration to a beat and stop autoplaying, permanently. */
+  /** Jump the tour to a beat. It keeps running from there: the effect above is
+   *  keyed on `index`, so selecting restarts the hold for the chosen scene. */
   const select = useCallback((target: CinematicBeat) => {
-    // Bank the whole timeline so a later resume can never restart the story.
-    elapsed.current = CINEMATIC_DURATION_MS;
-    startedAt.current = null;
-    setManual(true);
-    setBeat(target);
+    const i = BEATS.indexOf(target);
+    if (i < 0) return;
+    setIndex(i);
   }, []);
+
+  /** Hold the tour while the controls have keyboard focus. */
+  const hold = useCallback((holding: boolean) => setHeld(holding), []);
 
   return useMemo(
     () => ({
-      beat,
-      /** The illustrative sequence is finished, was never animated, or is
-       *  being driven by hand - in every case autoplay is done. */
-      settled: beat === 'settled' || manual,
+      beat: BEATS[index],
+      index,
+      count: BEATS.length,
+      /** ms the current scene holds - lets the stage draw a progress hairline
+       *  that finishes exactly as the scene changes. */
+      holdMs: HOLD_MS[BEATS[index]],
+      /** The tour is running on its own right now. */
+      autoplay,
       reduce: !!reduce,
-      /** Someone took the controls. */
-      manual,
       select,
+      hold,
     }),
-    [beat, manual, reduce, select],
+    [index, autoplay, reduce, select, hold],
   );
 }

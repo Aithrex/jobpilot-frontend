@@ -67,15 +67,13 @@ function liveStatus(flow: GuestFlow): { status: WindowStatus; label: string } {
   }
 }
 
-/** Status text for the illustrative sequence. */
+/** Status text for the illustrative tour - one entry per scene, so the window
+ *  chrome narrates whatever the stage is currently showing. */
 const BEAT_STATUS: Record<string, { status: WindowStatus; label: string }> = {
-  arrive: { status: 'ready', label: 'Ready' },
-  scan: { status: 'working', label: 'Reading' },
-  profile: { status: 'working', label: 'Building profile' },
+  read: { status: 'working', label: 'Reading' },
   match: { status: 'working', label: 'Ranking matches' },
   tailor: { status: 'working', label: 'Tailoring' },
   track: { status: 'working', label: 'Tracking' },
-  settled: { status: 'done', label: 'Preview' },
 };
 
 export function WorkspaceHero({
@@ -107,11 +105,15 @@ export function WorkspaceHero({
 
   const { status, label } = flowActive
     ? liveStatus(flow)
-    : (BEAT_STATUS[cinematic.beat] ?? BEAT_STATUS.arrive);
+    : (BEAT_STATUS[cinematic.beat] ?? BEAT_STATUS.read);
 
-  // The dock only ever shows on the settled illustration - the moment real
-  // work starts, roadmap content gets out of the user's way.
-  const showDock = !flowActive && cinematic.settled;
+  // The dock is part of the window, not a reward for waiting. It used to hold
+  // back until the tour had shown every scene, which on a loop meant it simply
+  // did not exist for the first eleven seconds and then appeared - growing the
+  // window by its own height, mid-read - unless you happened to click a tab
+  // first. It shows whenever the window is illustrating; the moment real work
+  // starts, roadmap content gets out of the user's way.
+  const showDock = !flowActive;
 
   const uploadSurface = authed ? (
     <div className="flex flex-col items-center gap-3 text-center sm:flex-row sm:text-left">
@@ -124,10 +126,16 @@ export function WorkspaceHero({
       </Button>
     </div>
   ) : guestEnabled ? (
+    // The label states the ACTION and what it buys, in the second person.
+    // Two earlier tries missed in opposite directions: "Upload my resume to
+    // find matches" put the visitor's own words on the thing being spoken to,
+    // and "Drop your resume here, or browse" spent every word restating the
+    // affordance - "here" is what the dashed box already says, and "browse" is
+    // what clicking obviously does. Neither told anyone why to bother.
     <GuestDropzone
       picker={picker}
       variant="compact"
-      label="Upload my resume to find matches"
+      label="Drop your resume to see your matches"
       microcopy="PDF or DOCX · up to 5 MB · no account required"
       privacyNote={null}
     />
@@ -148,7 +156,7 @@ export function WorkspaceHero({
       id="try"
       ref={sectionRef}
       aria-label="Try Aspirely with your resume"
-      className="relative flex scroll-mt-24 items-center pb-12 pt-24 sm:pt-28 lg:min-h-[100svh] lg:pb-8 lg:pt-20"
+      className="relative flex scroll-mt-4 items-center pb-12 pt-24 sm:pt-28 lg:min-h-[100svh] lg:pb-8 lg:pt-20"
     >
       <Container className="relative w-full">
         <AnimatePresence mode="wait" initial={false}>
@@ -267,6 +275,9 @@ export function WorkspaceHero({
                     <CinematicStage
                       beat={cinematic.beat}
                       onSelectBeat={cinematic.select}
+                      autoplay={cinematic.autoplay}
+                      holdMs={cinematic.holdMs}
+                      onHold={cinematic.hold}
                       className="flex-1"
                     />
 

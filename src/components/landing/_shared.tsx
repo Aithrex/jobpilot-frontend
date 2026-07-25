@@ -1,6 +1,55 @@
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useId, useRef, useState, type MouseEvent, type ReactNode } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+
+/**
+ * The page's in-document destinations, declared ONCE. The header and the
+ * footer both offer them, and a renamed section that updated only one of the
+ * two would leave the other pointing at an anchor that no longer exists.
+ */
+export const SECTION_LINKS: ReadonlyArray<{ href: string; label: string }> = [
+  { href: '#how', label: 'How it works' },
+  { href: '#proof', label: 'Why trust it' },
+  { href: '#coming-next', label: 'Coming next' },
+] as const;
+
+/** Bar height (56) + its top inset (12) + a breath of space. */
+const NAV_CLEARANCE = 88;
+
+/**
+ * Scroll so a section's CONTENT starts just under the fixed bar.
+ *
+ * A bare anchor cannot get this right. The landing sections carry up to 96px
+ * of their own top padding, the page sets `scroll-padding-top: 64px`, and CSS
+ * ADDS those to any `scroll-margin` - so "How it works" was landing with about
+ * 160px of empty band above its eyebrow and its heading pushed toward the
+ * middle of the screen. Reading each section's own computed padding removes
+ * the guesswork, so every section lands identically however much padding it
+ * happens to carry.
+ *
+ * Modified clicks are left alone (they mean "open elsewhere"), a missing
+ * target falls through to default anchor behaviour, and the hash is still
+ * pushed so Back returns the reader to where they were.
+ */
+export function useSectionJump() {
+  const reduce = useReducedMotion();
+
+  return useCallback(
+    (e: MouseEvent<HTMLAnchorElement>, href: string) => {
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+      const el = document.getElementById(href.slice(1));
+      if (!el) return;
+
+      e.preventDefault();
+      const padTop = parseFloat(getComputedStyle(el).paddingTop) || 0;
+      const top = window.scrollY + el.getBoundingClientRect().top + padTop - NAV_CLEARANCE;
+
+      window.history.pushState(null, '', href);
+      window.scrollTo({ top: Math.max(0, top), behavior: reduce ? 'auto' : 'smooth' });
+    },
+    [reduce],
+  );
+}
 
 /**
  * Shared primitives + motion kit for the marketing landing (the Career

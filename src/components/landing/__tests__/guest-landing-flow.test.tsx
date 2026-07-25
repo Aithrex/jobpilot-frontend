@@ -568,7 +568,7 @@ describe('guest landing flow', () => {
     await screen.findByText(/Guest upload is paused right now/);
 
     expect(
-      screen.queryByRole('button', { name: /Upload my resume to find matches/i }),
+      screen.queryByRole('button', { name: /Drop your resume to see your matches/i }),
     ).not.toBeInTheDocument();
 
     // No file input at all when the feature is off - an upload trigger that
@@ -668,7 +668,7 @@ describe('guest landing flow', () => {
     const first = renderLanding();
 
     const dropButton = await screen.findByRole('button', {
-      name: /Upload my resume to find matches/i,
+      name: /Drop your resume to see your matches/i,
     });
 
     expect(dropButton.tagName).toBe('BUTTON');

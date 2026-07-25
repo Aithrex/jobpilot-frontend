@@ -13,13 +13,14 @@ import { Container, SectionHead } from './_shared';
 /**
  * SignalPath - the shipped product, shown as ONE interactive stepper.
  *
- * This section used to do two things that fought each other: a four-stage
- * resume-transformation demo (Resume / Understood / Matched / Tailored) AND,
- * directly beneath it, a four-card capability list (Match / Tailor / Track /
- * Email). Match and Tailor therefore appeared twice, a few hundred pixels
- * apart, saying more or less the same thing. That is now one control: the four
- * things Aspirely genuinely does today are the four steps, each driving the
- * obsidian stage on the right. There is no separate card grid anymore.
+ * SIX steps, because the flow has six: Resume, Understood, Matched, Tailored,
+ * Tracked, Updates. A shorter edit of this list once dropped the first two,
+ * which removed the only part that explains WHY the matching is any good - the
+ * section became four outcomes with no origin. The whole list is also visible
+ * at once by design: the rows are uniform and compact, so a visitor can see
+ * there are six of them without scrolling or hovering anything, and the active
+ * step's claim rides on the stage that illustrates it rather than expanding
+ * the row and pushing the last steps off screen.
  *
  * INTERACTION (the reason it no longer feels static):
  *  - The stage follows the cursor. Hovering a step previews it immediately;
@@ -29,8 +30,8 @@ import { Container, SectionHead } from './_shared';
  *  - Before anyone touches it, scroll POSITION advances the committed step, so
  *    the sequence tells itself as the section comes into view. No scroll
  *    hijacking - it only reads where the section sits.
- *  - Under prefers-reduced-motion none of that wiring attaches: the first,
- *    headline step (Matched) paints immediately and nothing animates.
+ *  - Under prefers-reduced-motion none of that wiring attaches: the first step
+ *    (Resume) paints immediately and nothing animates.
  *
  * HONESTY: every shape here is redacted structure - bars, empty slots, status
  * columns and region labels from the product's own vocabulary. There is no
@@ -52,10 +53,22 @@ interface Stage {
 
 const STAGES: readonly Stage[] = [
   {
+    id: 'resume',
+    label: 'Resume',
+    title: 'Your resume, exactly as you wrote it.',
+    body: 'One PDF or DOCX goes in. Nothing is rewritten, nothing is invented, and nothing leaves this step until you ask for it.',
+  },
+  {
+    id: 'understood',
+    label: 'Understood',
+    title: 'Read as structure, not keywords.',
+    body: 'Experience, skills, education and impact are separated out, so what you actually did is what gets compared.',
+  },
+  {
     id: 'matched',
     label: 'Matched',
     title: 'Ranked against real openings.',
-    body: 'Your resume is read as structure, then matched to up to 5 best-fit roles, each carrying the reason it fits.',
+    body: 'That structure is matched to up to 5 best-fit roles, each carrying the reason it fits.',
   },
   {
     id: 'tailored',
@@ -106,12 +119,31 @@ function MiniLabel({ children }: { children: string }) {
 }
 
 /**
- * The persistent resume sheet. Fluid by contract (`min-w-0 flex-1 basis-0`):
- * no fixed pixel width, so it cannot clip at 320px.
+ * The persistent resume sheet. Fluid by contract - no fixed pixel width, so it
+ * cannot clip at 320px.
  */
-function Sheet() {
+function Sheet({ scanning = false }: { scanning?: boolean }) {
+  const reduce = useReducedMotion();
   return (
-    <div className="relative min-w-0 flex-1 basis-0 overflow-hidden rounded-xl border border-white/10 bg-card p-3 shadow-panel">
+    // `flex-1 basis-0` only from `sm` up, where this sheet actually shares a
+    // ROW with the panel beside it. Below that the stages stack in a column,
+    // and a zero height-basis plus `overflow-hidden` collapsed the sheet to a
+    // single visible line on every phone.
+    <div className="relative w-full min-w-0 overflow-hidden rounded-xl border border-white/10 bg-card p-3 shadow-panel sm:flex-1 sm:basis-0">
+      {/* A single scanning pass on arrival at "Understood" - not a loop. */}
+      {scanning && !reduce && (
+        <motion.span
+          aria-hidden
+          initial={{ y: '-120%' }}
+          animate={{ y: '120%' }}
+          transition={{ duration: 1.3, ease: 'easeInOut' }}
+          className="pointer-events-none absolute inset-x-0 z-10 h-12"
+          style={{
+            background:
+              'linear-gradient(to bottom, transparent, hsl(var(--brand-to) / 0.28), transparent)',
+          }}
+        />
+      )}
       <div className="mb-3 flex items-center gap-1.5">
         <FileText className="h-3 w-3 shrink-0 text-muted-foreground" aria-hidden />
         <Bar w="54%" lit />
@@ -134,10 +166,46 @@ function Sheet() {
   );
 }
 
+/** The structure the reader now holds. Chips carry no invented text. */
+function Structure() {
+  return (
+    <div className="w-full min-w-0 space-y-2 sm:flex-1 sm:basis-0">
+      <MiniLabel>Understood as</MiniLabel>
+      <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-2.5">
+        <div className="mb-2 flex items-center gap-1.5">
+          <span
+            aria-hidden
+            className="h-5 w-5 shrink-0 rounded-full bg-gradient-to-br from-[hsl(var(--brand-from))] to-[hsl(var(--brand-to))] opacity-80"
+          />
+          <span className="min-w-0 flex-1 space-y-1">
+            <Bar w="78%" lit />
+            <Bar w="52%" />
+          </span>
+        </div>
+        <div className="my-2 space-y-1.5 border-l border-white/10 pl-2">
+          {[86, 72, 58].map((w, i) => (
+            <Bar key={w} w={`${w}%`} lit={i === 0} />
+          ))}
+        </div>
+        <div className="flex flex-wrap gap-1">
+          {[30, 22, 34, 26, 20].map((w, i) => (
+            <span
+              key={i}
+              aria-hidden
+              style={{ width: w }}
+              className="inline-block h-[18px] rounded-full border border-[hsl(var(--brand-to)/0.35)] bg-[hsl(var(--brand-to)/0.14)]"
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /** Up to five EMPTY opportunity positions. Never populated. */
 function Opportunities() {
   return (
-    <div className="min-w-0 flex-1 basis-0 space-y-1.5">
+    <div className="w-full min-w-0 space-y-1.5 sm:flex-1 sm:basis-0">
       <MiniLabel>Opportunities</MiniLabel>
       {[0, 1, 2, 3, 4].map((i) => {
         const chosen = i === 0;
@@ -309,6 +377,29 @@ function DigestCard() {
 /** The obsidian stage content for a given step. */
 function StageVisual({ id }: { id: string }) {
   switch (id) {
+    case 'resume':
+      // The file on its own, before anything has been done to it.
+      //
+      // A PLAIN BLOCK WRAPPER, deliberately. `Sheet` is `flex-1 basis-0` so it
+      // can share a row with the panel beside it in later stages - but in a
+      // flex COLUMN that basis applies to height, so the sheet collapsed to
+      // nothing and its `overflow-hidden` clipped everything below the first
+      // line. The stage rendered as a single stray bar in an empty panel.
+      // Flex properties are inert on a child of a block container, so this
+      // wrapper lets the same component be a full-height sheet here and a
+      // flexible column elsewhere.
+      return (
+        <div className="mx-auto w-full max-w-[300px]">
+          <Sheet />
+        </div>
+      );
+    case 'understood':
+      return (
+        <div className="flex min-w-0 flex-col gap-3 sm:flex-row">
+          <Sheet scanning />
+          <Structure />
+        </div>
+      );
     case 'matched':
       return (
         <div className="flex min-w-0 flex-col gap-3 sm:flex-row">
@@ -382,7 +473,7 @@ export function SignalPath() {
       id="how"
       ref={sectionRef}
       aria-labelledby="signal-path-heading"
-      className="relative scroll-mt-24 py-16 sm:py-20 lg:py-24"
+      className="relative scroll-mt-4 py-16 sm:py-20 lg:py-24"
     >
       <Container>
         <SectionHead
@@ -390,23 +481,36 @@ export function SignalPath() {
           titleId="signal-path-heading"
           title={
             <>
-              From resume to matched, tailored,{' '}
-              <span className="text-[hsl(var(--brand-to))]">and tracked.</span>
+              From resume to tracked,{' '}
+              <span className="text-[hsl(var(--brand-to))]">in one pass.</span>
             </>
           }
-          lede="One file goes in. Every step below already works today. Hover or click to drive it."
+          lede="One file goes in. Watch what happens to it."
         />
 
-        <div className="mt-10 grid gap-6 lg:mt-12 lg:grid-cols-12 lg:gap-10">
-          {/* The four steps: a real vertical tablist, keyboard and touch
-              operable, each control at least 44px tall. The stage tracks a
-              pointer hover but selection is committed on click/keys. */}
+        {/* `lg:items-center` - the stepper is six 48px rows, the stage is a
+            fixed-height product panel, and top-aligning two columns of very
+            different heights read as a mistake rather than a choice. They now
+            share a centre line. */}
+        <div className="mt-10 grid gap-6 lg:mt-12 lg:grid-cols-12 lg:items-center lg:gap-10">
+          {/* ALL SIX STEPS FIT ON ONE SCREEN. Each step used to expand in place
+              with its title and body, which pushed the list to roughly 700px:
+              a visitor saw four or five rows and had no way to know the
+              sequence had six. The rows are now uniform and compact - a real
+              index of the flow - and the active step's claim moved onto the
+              stage it describes, where the illustration can carry it.
+
+              Still a real vertical tablist: keyboard and touch operable, every
+              control at least 44px tall, hover previews and click commits. */}
           <div
             role="tablist"
             aria-label="Resume transformation stages"
             aria-orientation="vertical"
             onKeyDown={onKeyDown}
-            className="flex flex-col gap-1 lg:col-span-5"
+            // `gap-0`: the rail below is drawn in per-row halves, so any gap
+            // between rows would show as a break in a line that is meant to be
+            // continuous.
+            className="relative flex flex-col lg:col-span-5"
           >
             {STAGES.map((stage, i) => {
               const isCommitted = i === committed;
@@ -427,56 +531,114 @@ export function SignalPath() {
                   onMouseEnter={() => setHover(i)}
                   onMouseLeave={() => setHover((h) => (h === i ? null : h))}
                   className={cn(
-                    'group relative min-h-[44px] rounded-xl px-3 py-3 text-left transition-colors duration-200',
+                    // A FIXED 48px row. The rail behind these markers is drawn
+                    // from the first marker's centre to the last one's, which
+                    // only lines up if every row is exactly the same height.
+                    'group relative flex h-12 items-center gap-3 rounded-xl px-3 text-left transition-colors duration-200',
                     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
                     isActive ? 'bg-card shadow-soft' : 'hover:bg-card/60',
                   )}
                 >
-                  <span className="flex items-center gap-3">
-                    {/* Progress is never colour-only: the marker fills AND the
-                        step number stays readable at every state. */}
+                  {/* THE RAIL, in two halves per row - above the marker and
+                      below it. Six disconnected numbers are a list; a rail
+                      that fills down to where you are is a progress stepper,
+                      and it says "these happen in order, to one file" without
+                      spending a word of copy on it. Hovering any step fills
+                      the rail to that step, because `display` already follows
+                      the pointer.
+
+                      Drawn per row rather than as one line behind the column:
+                      the active row has its own card background, which would
+                      paint straight over a single full-height rail and leave a
+                      gap in it exactly where the reader is looking. The
+                      staggered delay makes the colour change read as the rail
+                      filling downward rather than all of it flipping at once. */}
+                  {[
+                    { key: 'up', show: i > 0, top: '-top-px', filled: i <= display },
+                    { key: 'down', show: i < LAST, top: 'top-6', filled: i < display },
+                  ].map((seg) =>
+                    seg.show ? (
+                      <span
+                        key={seg.key}
+                        aria-hidden
+                        // Two things keep this reading as ONE line rather than
+                        // a column of dashes:
+                        //
+                        // `z-10` - rows are painted in order, so the ACTIVE
+                        // row (which has its own card background and a soft
+                        // shadow) was painting over the tail of the segment
+                        // belonging to the row above it. The marker sits
+                        // higher still (`z-20`) so the rail runs behind the
+                        // numbers rather than through them.
+                        //
+                        // SQUARE ENDS AND A 1px OVERLAP - `rounded-full` on a
+                        // 3px-wide bar tapers both ends by 1.5px, and where
+                        // two segments met, those tapers formed a waist that
+                        // read as a break. Butt ends that overlap by a pixel
+                        // cannot show a seam at any device pixel ratio.
+                        className={cn(
+                          'absolute left-[26px] z-10 h-[25px] w-[3px] -translate-x-1/2 overflow-hidden bg-border',
+                          seg.top,
+                        )}
+                      >
+                        {/* The fill GROWS rather than switching colour: a
+                            scaleY from the top is what makes the rail read as
+                            progress moving down the list instead of six
+                            independent lines changing shade at once. */}
+                        <span
+                          className={cn(
+                            'block h-full w-full origin-top bg-[hsl(var(--brand-to))] transition-transform duration-300 ease-out',
+                            seg.filled ? 'scale-y-100' : 'scale-y-0',
+                          )}
+                          style={{ transitionDelay: reduce ? '0ms' : `${i * 40}ms` }}
+                        />
+                      </span>
+                    ) : null,
+                  )}
+
+                  {/* Progress is never colour-only: the marker fills AND the
+                      step number stays readable at every state.
+                      EVERY fill here is OPAQUE. A translucent one (the passed
+                      steps used `bg-primary/15`) let the rail show straight
+                      through the circle, so the first three step numbers
+                      looked struck through. */}
+                  {/* The stepper wears the SIGNAL accent - the same
+                      `--brand-to` as "in one pass" in the heading above it and
+                      the lit state inside the product stage beside it. Indigo
+                      is the page's action colour (the CTAs); this rail is not
+                      an action, it is the thread running through the section,
+                      so it takes the thread's colour. On the pearl surface
+                      that token resolves to a deep teal, so white numerals on
+                      a filled marker stay well clear of AA. */}
+                  <span
+                    aria-hidden
+                    className={cn(
+                      'relative z-20 grid h-7 w-7 shrink-0 place-items-center rounded-full border text-[11px] font-bold tabular-nums transition-colors duration-300',
+                      i < display &&
+                        'border-[hsl(var(--brand-to))] bg-[hsl(var(--brand-to))] text-white',
+                      isActive &&
+                        'border-[hsl(var(--brand-to))] bg-[hsl(var(--brand-to))] text-white shadow-[0_0_0_4px_hsl(var(--brand-to)/0.16)]',
+                      i > display && 'border-border bg-background text-muted-foreground',
+                    )}
+                  >
+                    {i + 1}
+                  </span>
+                  <span
+                    className={cn(
+                      'font-display text-[17px] font-bold tracking-[-0.015em] transition-colors duration-200',
+                      isActive ? 'text-foreground' : 'text-muted-foreground',
+                    )}
+                  >
+                    {stage.label}
+                  </span>
+                  {/* The active row grows a marker on its trailing edge, so
+                      which step the stage is showing is never colour alone. */}
+                  {isActive && (
                     <span
                       aria-hidden
-                      className={cn(
-                        'grid h-7 w-7 shrink-0 place-items-center rounded-full border text-[11px] font-bold tabular-nums transition-colors duration-200',
-                        isActive
-                          ? 'border-transparent bg-primary text-primary-foreground'
-                          : i < display
-                            ? 'border-primary/40 bg-primary/10 text-primary'
-                            : 'border-border text-muted-foreground',
-                      )}
-                    >
-                      {i + 1}
-                    </span>
-                    <span
-                      className={cn(
-                        'font-display text-lg font-bold tracking-[-0.015em] transition-colors duration-200',
-                        isActive ? 'text-foreground' : 'text-muted-foreground',
-                      )}
-                    >
-                      {stage.label}
-                    </span>
-                  </span>
-
-                  {/* The active step expands with its claim. Height animation
-                      is confined to this one small element. */}
-                  <AnimatePresence initial={false}>
-                    {isActive && (
-                      <motion.span
-                        key="body"
-                        initial={reduce ? false : { height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={reduce ? undefined : { height: 0, opacity: 0 }}
-                        transition={reduce ? { duration: 0 } : { duration: 0.3, ease: EASE }}
-                        className="block overflow-hidden pl-10"
-                      >
-                        <span className="block pt-2 font-medium text-foreground">{stage.title}</span>
-                        <span className="mt-1 block text-[14px] leading-relaxed text-muted-foreground">
-                          {stage.body}
-                        </span>
-                      </motion.span>
-                    )}
-                  </AnimatePresence>
+                      className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-[hsl(var(--brand-to))]"
+                    />
+                  )}
                 </button>
               );
             })}
@@ -494,7 +656,15 @@ export function SignalPath() {
               // similar to tell apart by their tab's label alone.
               aria-label="Resume transformation stage"
               tabIndex={0}
-              className="surface-obsidian relative overflow-hidden rounded-2xl border border-white/[0.08] shadow-float focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              // A FIXED HEIGHT from `sm` up. The panel used to be sized by
+              // whatever step was showing - a two-line claim over a short
+              // sheet, then a three-line claim over a five-row list - so the
+              // whole stage grew and shrank as the stepper advanced and the
+              // section visibly jittered. The height is now constant and the
+              // illustration area absorbs the difference, so only the content
+              // inside changes. Left auto on phones, where the panel is
+              // full-width and the copy needs however many lines it needs.
+              className="surface-obsidian relative flex flex-col overflow-hidden rounded-2xl border border-white/[0.08] shadow-float focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:h-[404px]"
             >
               {/* Controlled glow: one soft cyan bloom, static, never a loop. */}
               <span
@@ -505,7 +675,7 @@ export function SignalPath() {
                     'radial-gradient(closest-side, hsl(var(--brand-to) / 0.13), transparent 70%)',
                 }}
               />
-              <div className="relative flex items-center justify-between gap-3 border-b border-white/[0.07] px-4 py-2.5">
+              <div className="relative flex shrink-0 items-center justify-between gap-3 border-b border-white/[0.07] px-4 py-2.5">
                 <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.13em] text-muted-foreground">
                   Illustrative
                 </span>
@@ -523,7 +693,37 @@ export function SignalPath() {
                 </span>
               </div>
 
-              <div className="relative min-h-[290px] p-4 sm:min-h-[320px] sm:p-5">
+              {/* The claim for the active step, seated with the illustration
+                  that demonstrates it rather than inside the step button. Its
+                  own fixed height keeps a two-line body and a three-line one
+                  from moving the illustration below them. */}
+              <div className="relative shrink-0 border-b border-white/[0.07] px-4 py-3 sm:h-[92px] sm:px-5">
+                {reduce ? (
+                  <>
+                    <p className="font-medium text-foreground">{STAGES[display].title}</p>
+                    <p className="mt-1 text-[13.5px] leading-relaxed text-muted-foreground">
+                      {STAGES[display].body}
+                    </p>
+                  </>
+                ) : (
+                  <AnimatePresence mode="wait" initial={false}>
+                    <motion.div
+                      key={`claim-${STAGES[display].id}`}
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -6 }}
+                      transition={{ duration: 0.22, ease: EASE }}
+                    >
+                      <p className="font-medium text-foreground">{STAGES[display].title}</p>
+                      <p className="mt-1 text-[13.5px] leading-relaxed text-muted-foreground">
+                        {STAGES[display].body}
+                      </p>
+                    </motion.div>
+                  </AnimatePresence>
+                )}
+              </div>
+
+              <div className="relative min-h-[248px] flex-1 overflow-hidden p-4 sm:min-h-0 sm:p-5">
                 {reduce ? (
                   <StageVisual id={STAGES[display].id} />
                 ) : (

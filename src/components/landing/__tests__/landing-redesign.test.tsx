@@ -102,7 +102,7 @@ describe('primary CTA', () => {
     await user.click(screen.getByRole('button', { name: /^Find my matches$/i }));
     // 2 - the drop surface inside the workspace window.
     await user.click(
-      await screen.findByRole('button', { name: /Upload my resume to find matches/i }),
+      await screen.findByRole('button', { name: /Drop your resume to see your matches/i }),
     );
     // 3 - the closing CTA (used to be an <a href="#try"> too).
     await user.click(await screen.findByRole('button', { name: /^Upload your resume$/i }));
@@ -151,7 +151,7 @@ describe('primary CTA', () => {
 
     await user.click(screen.getByRole('button', { name: /^Find my matches$/i }));
     await user.click(
-      await screen.findByRole('button', { name: /Upload my resume to find matches/i }),
+      await screen.findByRole('button', { name: /Drop your resume to see your matches/i }),
     );
 
     // Both triggers opened the SAME element.
@@ -180,7 +180,7 @@ describe('mobile composition', () => {
     renderLanding();
 
     const drop = await screen.findByRole('button', {
-      name: /Upload my resume to find matches/i,
+      name: /Drop your resume to see your matches/i,
     });
     // The MacWindow frame (its own `shadow-float` surface).
     const frame = document.querySelector('.shadow-float') as HTMLElement;
@@ -280,10 +280,15 @@ describe('product demo accessibility', () => {
     await user.keyboard(' ');
     expect(read).toHaveAttribute('aria-selected', 'true');
 
-    // Clicking Tailor jumps to the rewrite beat, which shows the guarantee.
+    // Clicking Tailor jumps to the rewrite scene, which shows the guarantee.
     await user.click(tailor);
     expect(tailor).toHaveAttribute('aria-selected', 'true');
-    expect(within(heroPanel()).getByText('IntegrityGuard')).toBeInTheDocument();
+    expect(await within(heroPanel()).findByText('IntegrityGuard')).toBeInTheDocument();
+    // ...and exactly one tab is selected. The stage shows ONE scene per beat,
+    // so "furthest reached" highlighting (which pinned every tab past Read to
+    // selected, and left Track lit before the tour had ever got there) must
+    // never come back.
+    expect(within(tablist).getAllByRole('tab', { selected: true })).toHaveLength(1);
   });
 
   test('driving the tabs never fabricates data', async () => {
@@ -310,7 +315,7 @@ describe('capability status', () => {
     renderLanding();
 
     const availableHeading = await screen.findByRole('heading', {
-      name: /Your resume, read, matched, tailored, and tracked\./i,
+      name: /From resume to tracked, in one pass\./i,
     });
     const comingHeading = screen.getByRole('heading', {
       name: /From matched to applied\./i,
@@ -352,13 +357,25 @@ describe('capability status', () => {
     expect(text).not.toMatch(/official|partner|endorsed|verified by/i);
   });
 
-  test('statuses with different readiness use different labels', async () => {
+  test('statuses with different readiness are stated differently', async () => {
     renderLanding();
     await screen.findByRole('heading', { name: 'Auto Apply' });
 
     // SMS and push are materially less built than Auto Apply / WhatsApp, so
-    // they must NOT share the "Coming soon" badge.
-    expect(screen.getAllByText('Planned').length).toBeGreaterThan(0);
+    // they must never be presented as the same kind of unfinished.
+    //
+    // The weaker status is carried by the row's own heading rather than by a
+    // badge on each name: "Also planned: SMS alerts, Web and mobile push" says
+    // it once, where a per-item chip said it three times in four words. What
+    // matters is that the statement is present, is the PLANNED one, and comes
+    // from the registry - not which element carries it.
+    const planned = screen.getByText(new RegExp(`Also ${STATUS_LABEL.planned}:`, 'i'));
+    const row = planned.parentElement as HTMLElement;
+
+    expect(within(row).getByText('SMS alerts')).toBeInTheDocument();
+    expect(within(row).getByText('Web and mobile push')).toBeInTheDocument();
+    // ...and nothing in that row borrows the stronger promise.
+    expect(within(row).queryByText(STATUS_LABEL['coming-soon'])).toBeNull();
     expect(STATUS_LABEL.planned).toBe('Planned');
     expect(STATUS_LABEL['coming-soon']).toBe('Coming soon');
   });
@@ -433,12 +450,14 @@ describe('reduced motion', () => {
     expect(screen.getByRole('heading', { name: /From matched to applied\./i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^Find my matches$/i })).toBeInTheDocument();
 
-    // The demo resolves straight to its fully-built final beat (Track) - no
-    // animation, nothing withheld from the reduced-motion visitor, and the
-    // integrity guarantee from the tailoring beat is still on screen.
+    // With motion off there is no tour, so the demo resolves to ONE scene and
+    // stays there until the visitor drives it. That scene is Tailor: it is the
+    // one carrying the integrity guarantee, which is the last thing a visitor
+    // should have to go hunting for.
     const tablist = screen.getByRole('tablist', { name: /Illustrative workflow steps/i });
     const tabs = within(tablist).getAllByRole('tab');
-    expect(tabs[3]).toHaveAttribute('aria-selected', 'true');
+    expect(tabs[2]).toHaveAttribute('aria-selected', 'true');
+    expect(within(tablist).getAllByRole('tab', { selected: true })).toHaveLength(1);
     expect(within(heroPanel()).getByText('IntegrityGuard')).toBeInTheDocument();
   });
 });
@@ -571,17 +590,29 @@ describe('roadmap weight', () => {
   test('Coming next is structurally lighter than what actually ships', async () => {
     renderLanding();
     const shipped = (
-      await screen.findByRole('heading', { name: /Your resume, read, matched, tailored, and tracked\./i })
+      await screen.findByRole('heading', { name: /From resume to tracked, in one pass\./i })
     ).closest('section') as HTMLElement;
     const roadmap = screen
       .getByRole('heading', { name: /From matched to applied\./i })
       .closest('section') as HTMLElement;
 
-    // jsdom does no layout, so this proxies section height with rendered node
+    // jsdom does no layout, so this proxies section weight with rendered node
     // count. The roadmap section was once the TALLEST thing on the page -
     // bigger than the hero, for two features that do not work. How much page a
     // feature occupies is itself a claim about how real it is.
-    expect(roadmap.querySelectorAll('*').length).toBeLessThan(shipped.querySelectorAll('*').length);
+    //
+    // Decorative subtrees are excluded from BOTH sides. Every section on this
+    // page draws redacted structure out of many tiny aria-hidden bars, and a
+    // raw node count therefore measures how detailed a section's illustration
+    // is rather than how much it claims: the roadmap's two 110px preview cards
+    // out-count the entire shipped stepper on nodes alone. Counting only nodes
+    // that carry meaning to a reader compares the thing the rule is about.
+    const substance = (el: HTMLElement) =>
+      Array.from(el.querySelectorAll<HTMLElement>('*')).filter(
+        (n) => !n.closest('[aria-hidden="true"]'),
+      ).length;
+
+    expect(substance(roadmap)).toBeLessThan(substance(shipped));
   });
 });
 

@@ -34,21 +34,21 @@ export function TrustClose({
     <section
       id="trust"
       aria-label="Get started"
-      className="surface-obsidian relative scroll-mt-24 overflow-hidden py-20 sm:py-24 lg:py-28"
+      className="surface-obsidian relative scroll-mt-4 overflow-hidden py-14 sm:py-16 lg:py-20"
     >
       <AmbientGlow />
       <Grain />
       <Container className="relative max-w-3xl text-center">
         <Reveal>
-          <h2 className="text-balance font-display text-[2.25rem] font-extrabold leading-[1.08] tracking-[-0.03em] text-foreground sm:text-5xl">
+          <h2 className="text-balance font-display text-[2rem] font-extrabold leading-[1.08] tracking-[-0.03em] text-foreground sm:text-[2.75rem]">
             See the jobs that fit you.
           </h2>
-          <p className="mx-auto mt-5 max-w-lg text-pretty text-lg leading-relaxed text-muted-foreground">
+          <p className="mx-auto mt-4 max-w-lg text-pretty text-base leading-relaxed text-muted-foreground sm:text-lg">
             One resume, up to 5 best-fit openings, and one tailored rewrite. No account required to
             start.
           </p>
 
-          <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
             {onUpload ? (
               <Button
                 size="lg"
@@ -76,7 +76,7 @@ export function TrustClose({
             </Button>
           </div>
 
-          <p className="mt-6 text-[13px] font-medium text-muted-foreground">
+          <p className="mt-5 text-[13px] font-medium text-muted-foreground">
             PDF or DOCX · up to 5 MB · private and time-limited
           </p>
         </Reveal>
