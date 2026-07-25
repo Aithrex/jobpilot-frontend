@@ -1,4 +1,21 @@
+import { Blocks, Cpu, Rocket, ShieldCheck, Terminal, Trophy } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import type { DayState } from "@/types/hub";
+
+// Tasteful line-icon per curriculum theme (NOT emoji) — drives the trail
+// medallions. Falls back to Terminal for any unmapped theme.
+export const THEME_ICONS: Record<string, LucideIcon> = {
+  setup: Terminal,
+  build: Blocks,
+  quality: ShieldCheck,
+  ops: Rocket,
+  advanced: Cpu,
+  capstone: Trophy,
+};
+
+export function themeIcon(theme?: string): LucideIcon {
+  return (theme && THEME_ICONS[theme]) || Terminal;
+}
 
 // Per-state visual language for timeline nodes. Uses semantic tokens only.
 export const STATE_META: Record<

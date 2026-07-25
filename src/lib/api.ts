@@ -489,7 +489,15 @@ class ApiService {
   // (/resume/learning/*) — different backend, different data model. Types live
   // in ../types/hub, consumed by hooks/useHub.ts.
 
-  /** Resolve the user's sprint path, kicking off generation if none exists yet.
+  /** The campaign map — ordered chapters with locked/active/completed state. */
+  async getHubJourney(params?: import("../types/hub").HubPathParams) {
+    return this.request<import("../types/hub").HubJourney>(
+      `/resume/hub/journey${this.hubQuery(params)}`,
+    );
+  }
+
+  /** Resolve a chapter's sprint path, kicking off generation if none exists yet.
+   *  `season_id` picks a specific (unlocked) chapter; omitted → the active one.
    *  Returns the full path when ready, or {status:"generating", job_id} while
    *  the async job runs — useHubPath polls on the non-ready shape. */
   async getHubPath(params?: import("../types/hub").HubPathParams) {
@@ -497,10 +505,7 @@ class ApiService {
       import("../types/hub").HubPath | import("../types/hub").HubPathPending
     >("/resume/hub/start", {
       method: "POST",
-      body: JSON.stringify({
-        ...(params?.role ? { role: params.role } : {}),
-        ...(params?.difficulty ? { difficulty: params.difficulty } : {}),
-      }),
+      body: JSON.stringify(this.hubBody(params)),
     }, 30000);
   }
 
@@ -537,10 +542,9 @@ class ApiService {
       {
         method: "POST",
         body: JSON.stringify({
+          ...this.hubBody(params),
           ...(note ? { note } : {}),
           ...(repoUrl ? { repo_url: repoUrl } : {}),
-          ...(params?.role ? { role: params.role } : {}),
-          ...(params?.difficulty ? { difficulty: params.difficulty } : {}),
         }),
       },
       30000,
@@ -565,6 +569,7 @@ class ApiService {
     history?: import("../types/hub").MentorMessage[];
     role?: string;
     difficulty?: string;
+    season_id?: string;
   }) {
     return this.request<import("../types/hub").MentorAnswer>(
       "/resume/hub/mentor",
@@ -573,13 +578,30 @@ class ApiService {
     );
   }
 
-  /** Admin role/difficulty preview travels as query params on hub GETs. */
+  /** Minutes ahead of UTC (IST=+330) — the app's tz_offset_minutes convention.
+   *  Drives the backend's local-midnight day-unlock math. */
+  private hubTz() {
+    return -new Date().getTimezoneOffset();
+  }
+
+  /** Chapter selection + admin preview + timezone, as a POST body. */
+  private hubBody(params?: import("../types/hub").HubPathParams) {
+    return {
+      tz_offset_minutes: this.hubTz(),
+      ...(params?.season_id ? { season_id: params.season_id } : {}),
+      ...(params?.role ? { role: params.role } : {}),
+      ...(params?.difficulty ? { difficulty: params.difficulty } : {}),
+    };
+  }
+
+  /** Same, as a query string for hub GETs. */
   private hubQuery(params?: import("../types/hub").HubPathParams) {
     const qs = new URLSearchParams();
+    qs.set("tz_offset_minutes", String(this.hubTz()));
+    if (params?.season_id) qs.set("season_id", params.season_id);
     if (params?.role) qs.set("role", params.role);
     if (params?.difficulty) qs.set("difficulty", params.difficulty);
-    const s = qs.toString();
-    return s ? `?${s}` : "";
+    return `?${qs.toString()}`;
   }
 
   // ── §6.6 Learning loop: "Your edge" ──────────────────────────

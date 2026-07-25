@@ -4,6 +4,7 @@ import { apiService } from "@/lib/api";
 import type {
   HubAchievement,
   HubAnalytics,
+  HubJourney,
   HubPath,
   HubPathParams,
   HubSubmitResult,
@@ -19,12 +20,28 @@ const keyFor = (params?: HubPathParams) => [
   "path",
   params?.role ?? null,
   params?.difficulty ?? null,
+  params?.season_id ?? null,
 ];
 
-/** Master query — resolves/generates the sprint path (admin override reruns). */
-export function useHubPath(params?: HubPathParams) {
+/** The campaign map — chapters with locked/active/completed state. */
+export function useHubJourney(params?: HubPathParams) {
+  return useQuery<HubJourney | null>({
+    queryKey: ["hub", "journey", params?.role ?? null, params?.difficulty ?? null],
+    queryFn: async () => {
+      const res = await apiService.getHubJourney(params);
+      if (res.error) throw new Error(res.error);
+      return res.data ?? null;
+    },
+    staleTime: 30_000,
+  });
+}
+
+/** Master query — resolves/generates a chapter's sprint path (season/admin
+ *  override reruns). `enabled` lets callers wait until the chapter is known. */
+export function useHubPath(params?: HubPathParams, enabled = true) {
   return useQuery<HubPath>({
     queryKey: keyFor(params),
+    enabled,
     queryFn: async () => {
       const res = await apiService.getHubPath(params);
       if (res.error) throw new Error(res.error || "Could not load your sprint");
@@ -36,14 +53,16 @@ export function useHubPath(params?: HubPathParams) {
       return data as HubPath;
     },
     staleTime: 30_000,
-    retry: (count, err) => (err as Error)?.message === "generating" && count < 30,
+    // Poll while generating. A first-time multi-day sprint can take ~2 min to
+    // generate (cached forever after), so allow up to ~150s of polling.
+    retry: (count, err) => (err as Error)?.message === "generating" && count < 50,
     retryDelay: 3000,
   });
 }
 
 export function useHubAnalytics(params?: HubPathParams, enabled = true) {
   return useQuery<HubAnalytics | null>({
-    queryKey: ["hub", "analytics", params?.role ?? null, params?.difficulty ?? null],
+    queryKey: ["hub", "analytics", params?.role ?? null, params?.difficulty ?? null, params?.season_id ?? null],
     queryFn: async () => {
       const res = await apiService.getHubAnalytics(params);
       if (res.error) throw new Error(res.error);
@@ -102,6 +121,8 @@ export function useSubmitDay(params?: HubPathParams) {
       if (data.path) qc.setQueryData(keyFor(params), data.path);
       qc.invalidateQueries({ queryKey: ["hub", "analytics"] });
       qc.invalidateQueries({ queryKey: ["hub", "achievements"] });
+      // Completing a day may finish the chapter → next chapter unlocks.
+      qc.invalidateQueries({ queryKey: ["hub", "journey"] });
     },
   });
 }
@@ -125,6 +146,7 @@ export function useMentor(dayKey?: string, params?: HubPathParams) {
         history,
         role: params?.role,
         difficulty: params?.difficulty,
+        season_id: params?.season_id,
       });
       setPending(false);
       if (res.error || !res.data) {

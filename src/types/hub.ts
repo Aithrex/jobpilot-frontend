@@ -62,6 +62,9 @@ export interface HubPath {
   difficulty_label: string;
   season_id: string;
   season_length: number;
+  season_title?: string;
+  season_premise?: string;
+  season_order?: number;
   curriculum_version: number;
   is_preview: boolean;
   published_through_day: number;
@@ -72,6 +75,25 @@ export interface HubPath {
   next_level_xp: number;
   current_streak: number;
   longest_streak: number;
+}
+
+/** One chapter in the campaign (GET /hub/journey). */
+export type HubSeasonState = "locked" | "active" | "available" | "completed" | "coming_soon";
+
+export interface HubSeasonSummary {
+  season_id: string;
+  order: number;
+  title: string;
+  premise: string;
+  length_days: number;
+  published_days: number;
+  completed_count: number;
+  state: HubSeasonState;
+}
+
+export interface HubJourney {
+  seasons: HubSeasonSummary[];
+  active_season_id: string;
 }
 
 /** GET /hub/path may return a non-ready status while generating. */
@@ -148,8 +170,10 @@ export interface HubRolesResponse {
   is_admin: boolean;
 }
 
-/** Admin-only preview override; absent/ignored for non-admins. */
+/** Which chapter to view + admin-only preview override. `season_id` selects a
+ *  specific (unlocked) chapter; omitted → the user's active chapter. */
 export interface HubPathParams {
   role?: string;
   difficulty?: string;
+  season_id?: string;
 }
