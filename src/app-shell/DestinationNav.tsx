@@ -1,6 +1,7 @@
 import { NavLink } from "react-router-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { useMailboxUnread } from "@/hooks/useMailboxUnread";
 import { NAV_ITEMS, navHref } from "./nav.config";
 
 /** Shared framer layoutId so the active pill slides between destinations. */
@@ -17,12 +18,14 @@ const ACTIVE_PILL_ID = "app-shell-topnav-active";
  */
 export function DestinationNav() {
   const reduceMotion = useReducedMotion();
+  const unread = useMailboxUnread();
 
   return (
     <nav aria-label="Primary" className="hidden min-w-0 lg:block">
       <ul className="scrollbar-hide flex items-center gap-1 overflow-x-auto">
         {NAV_ITEMS.map((item) => {
           const { icon: Icon, label } = item;
+          const badge = item.to === "applications" && unread > 0 ? unread : 0;
           return (
             <li key={item.to} className="shrink-0">
               <NavLink
@@ -58,6 +61,14 @@ export function DestinationNav() {
                       aria-hidden="true"
                     />
                     <span className="relative z-10 whitespace-nowrap">{label}</span>
+                    {badge > 0 && (
+                      <span
+                        className="relative z-10 ml-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold leading-none text-primary-foreground"
+                        aria-label={`${badge} unread`}
+                      >
+                        {badge > 9 ? "9+" : badge}
+                      </span>
+                    )}
                   </>
                 )}
               </NavLink>

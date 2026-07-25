@@ -1,6 +1,7 @@
 import { NavLink } from "react-router-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { useMailboxUnread } from "@/hooks/useMailboxUnread";
 import { NAV_ITEMS, navHref } from "./nav.config";
 
 /** Shared framer layoutId so the active highlight slides between mobile tabs. */
@@ -24,6 +25,7 @@ const MOBILE_ITEMS = NAV_ITEMS.slice(0, 4);
  */
 export function MobileNav() {
   const reduceMotion = useReducedMotion();
+  const unread = useMailboxUnread();
 
   return (
     <nav
@@ -33,6 +35,7 @@ export function MobileNav() {
       <ul className="mx-auto flex max-w-md items-stretch justify-around px-1">
         {MOBILE_ITEMS.map((item) => {
           const { icon: Icon, label } = item;
+          const badge = item.to === "applications" && unread > 0 ? unread : 0;
           return (
             <li key={item.to} className="flex-1">
               <NavLink
@@ -61,11 +64,19 @@ export function MobileNav() {
                     )}
                     <span
                       className={cn(
-                        "flex h-8 w-8 items-center justify-center rounded-full transition-colors duration-200 ease-expo",
+                        "relative flex h-8 w-8 items-center justify-center rounded-full transition-colors duration-200 ease-expo",
                         isActive && "bg-primary/10",
                       )}
                     >
                       <Icon className="h-5 w-5" aria-hidden="true" />
+                      {badge > 0 && (
+                        <span
+                          className="absolute -right-1 -top-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-bold leading-none text-primary-foreground"
+                          aria-label={`${badge} unread`}
+                        >
+                          {badge > 9 ? "9+" : badge}
+                        </span>
+                      )}
                     </span>
                     <span className="max-w-full truncate text-[10px] font-semibold leading-none">
                       {label}

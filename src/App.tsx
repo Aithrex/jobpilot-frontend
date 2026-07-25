@@ -39,7 +39,9 @@ const WorkspaceProviders = lazy(() => import('./components/workspace/WorkspacePr
 // self-gates on AuthContext and redirects to /login without a session.
 const AppShell = lazy(() => import('@/app-shell/AppShell'));
 const TodayPage = lazy(() => import('@/app-shell/pages/TodayPage'));
+const ApplicationsPage = lazy(() => import('@/app-shell/pages/ApplicationsPage'));
 const ApplicationsTab = lazy(() => import('@/components/resume/ApplicationsTab'));
+const MailboxInboxTab = lazy(() => import('@/components/mailbox/MailboxInboxTab'));
 const GrowPage = lazy(() => import('@/app-shell/pages/GrowPage'));
 const DiscoverPage = lazy(() => import('@/app-shell/pages/DiscoverPage'));
 const CraftPage = lazy(() => import('@/app-shell/pages/CraftPage'));
@@ -74,6 +76,8 @@ const IntegrationsPanel = lazy(() => import('@/app-shell/settings/IntegrationsPa
 const AutonomyPanel = lazy(() => import('@/app-shell/settings/AutonomyPanel'));
 const BillingTab = lazy(() => import('@/components/billing/BillingTab'));
 const NotificationsTab = lazy(() => import('@/components/resume/NotificationsTab'));
+const MailboxSettingsPanel = lazy(() => import('@/app-shell/settings/MailboxSettingsPanel'));
+const VerifyForwardPanel = lazy(() => import('@/app-shell/settings/VerifyForwardPanel'));
 
 const queryClient = new QueryClient();
 
@@ -195,7 +199,11 @@ function AppContent() {
               {/* Roles-first: land on the job feed (Discover) after login. */}
               <Route index element={<Navigate to="discover" replace />} />
               <Route path="today" element={<TodayPage />} />
-              <Route path="applications" element={<ApplicationsTab embedded />} />
+              <Route path="applications" element={<ApplicationsPage />}>
+                <Route index element={<Navigate to="tracker" replace />} />
+                <Route path="tracker" element={<ApplicationsTab embedded />} />
+                <Route path="inbox" element={<MailboxInboxTab />} />
+              </Route>
               <Route path="grow" element={<GrowPage />}>
                 <Route index element={<Navigate to="learning" replace />} />
                 <Route path="learning" element={<LearningHubTab />} />
@@ -223,6 +231,8 @@ function AppContent() {
                 <Route path="integrations" element={<IntegrationsPanel />} />
                 <Route path="autonomy" element={<AutonomyPanel />} />
                 <Route path="visa" element={<VisaTimelineTab />} />
+                <Route path="mailbox" element={<MailboxSettingsPanel />} />
+                <Route path="mailbox/verify-forward" element={<VerifyForwardPanel />} />
                 <Route path="billing" element={<BillingTab />} />
                 <Route path="notifications" element={<NotificationsTab />} />
               </Route>
