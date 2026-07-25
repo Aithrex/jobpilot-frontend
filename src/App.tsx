@@ -47,7 +47,11 @@ const SettingsPage = lazy(() => import('@/app-shell/pages/SettingsPage'));
 
 // Grow + Discover mount existing standalone tab components as deep-linkable
 // nested sections under their destination layout - the monolith is untouched.
-const LearningHubTab = lazy(() => import('@/components/resume/LearningHubTab'));
+// Sprint Learning Hub — the 14-day Jira-ticket sprint (components/hub).
+// Main restructured navigation to route-based pages, so /grow/learning renders
+// THIS route (not ResumeParser's ?tab=learning). The old study-plan/quiz UI is
+// still at "@/components/resume/LearningHubTab" — swap this line to restore it.
+const LearningHubTab = lazy(() => import('@/components/hub/LearningHubTab'));
 const NetworkTab = lazy(() => import('@/components/resume/NetworkTab'));
 const EventsTab = lazy(() => import('@/components/resume/EventsTab'));
 const JobOpportunitiesTab = lazy(() => import('@/components/resume/JobOpportunitiesTab'));
