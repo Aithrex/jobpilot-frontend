@@ -3,9 +3,9 @@ import { Button } from '@/components/ui/button';
 import { AmbientGlow, Container, Grain, Reveal } from './_shared';
 
 /**
- * The close: the page returns to the obsidian product world for its final
- * action, so the last thing a visitor sees is the surface they are about to
- * step into rather than more marketing paper.
+ * The close: the final action, on the page's own surface. It gets its presence
+ * from the ambient glow and the grain rather than from flipping to a different
+ * colour world, so a light-theme page stays light all the way to the footer.
  *
  * The closing CTA opens the page's ONE file dialog on this click via the
  * shared picker (`onUpload`) rather than scrolling back up to the hero and
@@ -34,7 +34,10 @@ export function TrustClose({
     <section
       id="trust"
       aria-label="Get started"
-      className="surface-obsidian relative scroll-mt-4 overflow-hidden py-14 sm:py-16 lg:py-20"
+      // No surface of its own: the close inherits the page's theme like every
+      // other section. It used to force obsidian, which is why a light-theme
+      // page still ended on a black band.
+      className="relative scroll-mt-4 overflow-hidden py-14 sm:py-16 lg:py-20"
     >
       <AmbientGlow />
       <Grain />

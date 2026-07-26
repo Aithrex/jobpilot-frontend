@@ -238,7 +238,15 @@ export function WorkspaceHero({
               </div>
 
               {/* The live workspace window - illustration ABOVE, real upload
-                  surface INSIDE, whole body droppable. */}
+                  surface INSIDE, whole body droppable.
+
+                  It carries NO surface of its own. It was briefly pinned to
+                  obsidian on the theory that a picture of the product should
+                  stay dark like a code block, but a light-theme visitor then
+                  got a black slab as the largest object on their page - the
+                  exact inconsistency the theme control exists to remove. The
+                  window is built from semantic tokens throughout, so it simply
+                  renders in whichever theme the page is in. */}
               <div className="relative lg:col-span-7">
                 <MacWindow
                   status={status}
@@ -282,7 +290,7 @@ export function WorkspaceHero({
                     />
 
                     {/* The real thing, seated in the product window. */}
-                    <div className="relative z-10 border-t border-white/[0.07] bg-white/[0.03] p-3 sm:p-4">
+                    <div className="relative z-10 border-t border-border bg-foreground/[0.03] p-3 sm:p-4">
                       {uploadSurface}
                     </div>
 

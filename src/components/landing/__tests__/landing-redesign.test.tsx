@@ -21,6 +21,7 @@ import { beforeEach, describe, expect, test, vi, type Mock } from 'vitest';
 
 import { apiService } from '@/lib/api';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { ThemeProvider } from '@/components/theme-provider';
 import LandingExperience from '@/components/landing/LandingExperience';
 import { RouteLoadingFallback } from '@/App';
 import { setReducedMotion } from '@/test/setup';
@@ -61,10 +62,17 @@ const api = apiService as unknown as Record<string, Mock>;
 
 function renderLanding() {
   return render(
+    // ThemeProvider is part of the real tree (App.tsx wraps everything in it)
+    // and the landing now reads the resolved theme to pick its surface, so
+    // rendering without it would exercise a page whose theme control is a
+    // no-op. localStorage is cleared per test, so every run starts at
+    // "system", which this suite's matchMedia reports as light.
     <MemoryRouter initialEntries={['/']}>
-      <TooltipProvider>
-        <LandingExperience />
-      </TooltipProvider>
+      <ThemeProvider>
+        <TooltipProvider>
+          <LandingExperience />
+        </TooltipProvider>
+      </ThemeProvider>
     </MemoryRouter>,
   );
 }
@@ -112,13 +120,16 @@ describe('primary CTA', () => {
     expect(document.querySelectorAll('a[href="#try"]')).toHaveLength(0);
   });
 
-  test('the header is brand-only: no upload or sign-in control lives in the nav', () => {
+  test('the header carries no upload or sign-in control', () => {
     renderLanding();
     const banner = screen.getByRole('banner');
     // Both CTAs moved to the hero; the sticky bar no longer repeats them, so a
     // visitor never sees Sign in / Upload twice in the first viewport.
-    expect(within(banner).queryByRole('button')).toBeNull();
     expect(within(banner).queryByRole('link', { name: /sign in|upload/i })).toBeNull();
+    expect(within(banner).queryByRole('button')).toBeNull();
+    // The one control it does carry is chrome - a setting, not an action on
+    // the product - which is why it is a switch rather than a button.
+    expect(within(banner).getByRole('switch', { name: /dark theme/i })).toBeInTheDocument();
     // It still carries the wordmark home link.
     expect(within(banner).getByRole('link', { name: /Aspirely home/i })).toBeInTheDocument();
   });
@@ -481,41 +492,70 @@ describe('route loading fallback', () => {
   });
 });
 
-// ── 7b. The two-surface visual language ──────────────────────────
+// ── 7b. One surface per page, chosen by the theme ────────────────
 
 describe('surface language', () => {
-  test('the product world is obsidian and the marketing world is pearl', async () => {
+  test('ONE surface owns the page, and it is the visitor theme', async () => {
     const { container } = renderLanding();
     await screen.findByText('Career Workspace');
 
-    // The page root IS the product surface, so the hero and its window are
-    // obsidian without opting in.
+    // The suite runs with matchMedia reporting light, so the page resolves to
+    // the pearl reading surface. The page used to be obsidian at the top and
+    // bottom with a pearl band bolted through the middle, which meant the
+    // theme toggle changed nothing and scrolling went dark, light, dark.
     const root = container.firstElementChild as HTMLElement;
-    expect(root.className).toContain('surface-obsidian');
+    expect(root.className).toContain('surface-editorial');
+    expect(root.className).not.toContain('surface-obsidian');
+    expect(root.style.colorScheme).toBe('light');
 
-    // The editorial band exists and wraps the marketing movements.
-    const editorial = container.querySelector('.surface-editorial') as HTMLElement;
-    expect(editorial).not.toBeNull();
-    expect(
-      editorial.contains(screen.getByRole('heading', { name: /From matched to applied\./i })),
-    ).toBe(true);
-
-    // ...and the hero product window is NOT inside it. If the editorial
-    // wrapper ever swallowed the workspace, the product surface would go pearl
-    // and the contrast that carries the whole design would be gone.
-    expect(editorial.contains(screen.getByText('Career Workspace'))).toBe(false);
+    // Every marketing section inherits it - none re-declares a surface, and
+    // there is no band boundary left inside the page.
+    for (const name of [/From matched to applied\./i, /Real openings\./i]) {
+      const section = screen.getByRole('heading', { name }).closest('section') as HTMLElement;
+      expect(section.className).not.toContain('surface-obsidian');
+      expect(section.className).not.toContain('surface-editorial');
+    }
   });
 
-  test('the transformation stage stays obsidian INSIDE the pearl section', async () => {
+  test('the illustrations follow the theme instead of pinning themselves dark', async () => {
+    renderLanding();
+    await screen.findByText('Career Workspace');
+
+    // Both product windows were briefly held at obsidian regardless of theme,
+    // which left a light page carrying black slabs. Neither may re-declare a
+    // surface, and nothing inside them may be drawn with a literal white or
+    // black - those are the two ways an illustration stops inverting.
+    const frame = document.querySelector('.shadow-float') as HTMLElement;
+    expect(frame.closest('.surface-obsidian')).toBeNull();
+    expect(signalPanel().className).not.toContain('surface-obsidian');
+
+    for (const root of [frame, signalPanel()]) {
+      const literals = Array.from(root.querySelectorAll<HTMLElement>('*')).filter((el) => {
+        const c = typeof el.className === 'string' ? el.className : '';
+        return /(^|\s)(bg|border|text)-(white|black)(\/|\s|$)/.test(c);
+      });
+      expect(literals.map((el) => el.className)).toEqual([]);
+    }
+  });
+
+  test('the theme control is a switch, and it flips the whole page', async () => {
+    const user = userEvent.setup();
     const { container } = renderLanding();
     await screen.findByText('Career Workspace');
-    const panel = signalPanel();
-    const editorial = container.querySelector('.surface-editorial') as HTMLElement;
+    const root = container.firstElementChild as HTMLElement;
 
-    // The nested-surface case: a dark product stage seated in a light
-    // editorial section. Both must resolve their own tokens.
-    expect(editorial.contains(panel)).toBe(true);
-    expect(panel.className).toContain('surface-obsidian');
+    // A switch, not a button: this is an on/off setting, and the control has
+    // to expose which state it is in rather than only what it will do next.
+    const control = screen.getByRole('switch', { name: /dark theme/i });
+    expect(control).toHaveAttribute('aria-checked', 'false');
+
+    await user.click(control);
+
+    expect(control).toHaveAttribute('aria-checked', 'true');
+    expect(root.className).toContain('surface-obsidian');
+    expect(root.className).toContain('dark');
+    expect(root.className).not.toContain('surface-editorial');
+    expect(root.style.colorScheme).toBe('dark');
   });
 });
 

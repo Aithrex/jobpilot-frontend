@@ -1,8 +1,7 @@
 import { useState, type FocusEvent, type PointerEvent, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
-import { Sparkles } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { BrandMark } from '@/components/BrandMark';
 import { AuthAtlas, type AuthPhase, type AuthZone } from './AuthAtlas';
 
 /**
@@ -84,26 +83,13 @@ function zoneFor(target: EventTarget | null): AuthZone | null {
   return null;
 }
 
-function BrandMark({ className }: { className?: string }) {
-  return (
-    <span
-      className={cn(
-        'brand-gradient flex h-9 w-9 shrink-0 items-center justify-center rounded-xl shadow-soft',
-        className,
-      )}
-    >
-      <Sparkles className="h-[18px] w-[18px] text-white" strokeWidth={2.2} aria-hidden />
-    </span>
-  );
-}
-
 function Wordmark() {
   return (
     <Link
       to="/"
       className="inline-flex min-h-11 items-center gap-2.5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
     >
-      <BrandMark />
+      <BrandMark className="h-9 w-9 rounded-xl shadow-soft" iconClassName="h-[18px] w-[18px]" strokeWidth={2.2} />
       <span className="font-display text-lg font-extrabold tracking-tight text-foreground">
         Aspirely
       </span>

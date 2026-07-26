@@ -9,6 +9,7 @@ import { QuotaLimitDialog } from "@/components/quota/QuotaLimitDialog";
 import { useFeedback } from "@/components/feedback/FeedbackWidget";
 import { buildCoverLetterFilename, titleCaseName } from "@/lib/filename";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { BrandMark } from "@/components/BrandMark";
 import { Bot, Building2, CreditCard, GraduationCap, Trophy, Users, Mic, Menu, PanelLeftClose, PanelLeftOpen, X, Eye, TrendingUp, Bell, ShieldCheck, Home, Compass, PenTool, Send, Sprout, MessageSquarePlus, ChevronRight, Search, Settings, LogOut } from "lucide-react";
 import {
   DropdownMenu,
@@ -4665,9 +4666,7 @@ export default function ResumeParser() {
 
               {/* Logo */}
               <a href="/" className="flex items-center gap-2.5 shrink-0" aria-label="Aspirely home">
-                <div className="brand-gradient w-8 h-8 rounded-lg flex items-center justify-center shadow-soft shadow-primary/25">
-                  <SparklesIcon className="w-4 h-4 text-white" />
-                </div>
+                <BrandMark className="h-8 w-8 rounded-lg shadow-soft" iconClassName="h-4 w-4" />
                 <h1 className="font-display text-lg font-extrabold tracking-tight hidden sm:block">
                   Aspirely
                 </h1>

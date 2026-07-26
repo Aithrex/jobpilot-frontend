@@ -38,10 +38,12 @@ import { Container, SectionHead } from './_shared';
  * invented company, job title, score, count or logo anywhere in this file, and
  * the stage says "Illustrative" in plain sight.
  *
- * SURFACE CONTRAST (the Aspirely language): the section is warm pearl
- * editorial; the stage inside it is deep obsidian, the real product surface.
- * Both are named token surfaces, so every child resolves semantic tokens with
- * no `dark:` variant.
+ * SURFACE: the stage follows the page's theme like everything else. It used to
+ * be pinned to obsidian - a dark product panel seated in a pearl section - and
+ * that reversed correctly right up until the visitor asked for a light page
+ * and got a black rectangle in the middle of it. Every shape below is drawn
+ * from semantic tokens (`bg-card`, `border-border`, `bg-foreground/x`), so the
+ * whole illustration inverts with the theme and needs no `dark:` variant.
  */
 
 interface Stage {
@@ -129,7 +131,7 @@ function Sheet({ scanning = false }: { scanning?: boolean }) {
     // ROW with the panel beside it. Below that the stages stack in a column,
     // and a zero height-basis plus `overflow-hidden` collapsed the sheet to a
     // single visible line on every phone.
-    <div className="relative w-full min-w-0 overflow-hidden rounded-xl border border-white/10 bg-card p-3 shadow-panel sm:flex-1 sm:basis-0">
+    <div className="relative w-full min-w-0 overflow-hidden rounded-xl border border-border bg-card p-3 shadow-panel sm:flex-1 sm:basis-0">
       {/* A single scanning pass on arrival at "Understood" - not a loop. */}
       {scanning && !reduce && (
         <motion.span
@@ -171,7 +173,7 @@ function Structure() {
   return (
     <div className="w-full min-w-0 space-y-2 sm:flex-1 sm:basis-0">
       <MiniLabel>Understood as</MiniLabel>
-      <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-2.5">
+      <div className="rounded-xl border border-border bg-foreground/[0.03] p-2.5">
         <div className="mb-2 flex items-center gap-1.5">
           <span
             aria-hidden
@@ -182,7 +184,7 @@ function Structure() {
             <Bar w="52%" />
           </span>
         </div>
-        <div className="my-2 space-y-1.5 border-l border-white/10 pl-2">
+        <div className="my-2 space-y-1.5 border-l border-border pl-2">
           {[86, 72, 58].map((w, i) => (
             <Bar key={w} w={`${w}%`} lit={i === 0} />
           ))}
@@ -216,7 +218,7 @@ function Opportunities() {
               'flex items-center gap-2 rounded-lg border px-2 py-1.5',
               chosen
                 ? 'border-[hsl(var(--brand-to)/0.5)] bg-[hsl(var(--brand-to)/0.10)]'
-                : 'border-white/[0.07] bg-white/[0.02]',
+                : 'border-border bg-foreground/[0.02]',
             )}
           >
             {/* Empty slot: no logo, no company, no title, no score. */}
@@ -248,7 +250,7 @@ function Opportunities() {
 /** Original vs Tailored, with the facts IntegrityGuard keeps locked. */
 function TailoredPanel() {
   return (
-    <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-3">
+    <div className="rounded-xl border border-border bg-foreground/[0.03] p-3">
       <div className="grid grid-cols-2 gap-3">
         <div className="min-w-0 space-y-1.5">
           <MiniLabel>Original</MiniLabel>
@@ -267,15 +269,15 @@ function TailoredPanel() {
           <Bar w="88%" lit />
         </div>
       </div>
-      <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-white/[0.07] pt-2.5">
-        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-400">
+      <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-border pt-2.5">
+        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-success">
           <ShieldCheck className="h-3 w-3" aria-hidden />
           IntegrityGuard
         </span>
         {['Dates', 'Employers', 'Titles', 'Claims'].map((f) => (
           <span
             key={f}
-            className="inline-flex items-center gap-0.5 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-1.5 py-[1px] text-[9px] font-medium text-emerald-300/90"
+            className="inline-flex items-center gap-0.5 rounded-full border border-success/30 bg-success/10 px-1.5 py-[1px] text-[9px] font-medium text-success"
           >
             <Lock className="h-2.5 w-2.5" aria-hidden />
             {f}
@@ -315,7 +317,7 @@ function TrackBoard() {
                   'rounded-lg border p-2',
                   col.lit && i === 0
                     ? 'border-[hsl(var(--brand-to)/0.5)] bg-[hsl(var(--brand-to)/0.10)]'
-                    : 'border-white/[0.07] bg-white/[0.02]',
+                    : 'border-border bg-foreground/[0.02]',
                 )}
               >
                 <div className="mb-1.5 flex items-center gap-1.5">
@@ -336,8 +338,8 @@ function TrackBoard() {
 /** An opt-in digest card: a mail summary of new matches and pipeline moves. */
 function DigestCard() {
   return (
-    <div className="mx-auto max-w-md rounded-xl border border-white/[0.08] bg-white/[0.03] p-3">
-      <div className="flex items-center gap-2 border-b border-white/[0.07] pb-2.5">
+    <div className="mx-auto max-w-md rounded-xl border border-border bg-foreground/[0.03] p-3">
+      <div className="flex items-center gap-2 border-b border-border pb-2.5">
         <span
           aria-hidden
           className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-[hsl(var(--brand-to)/0.14)] text-[hsl(var(--brand-to))]"
@@ -348,7 +350,7 @@ function DigestCard() {
           <Bar w="46%" lit />
           <Bar w="30%" />
         </span>
-        <span className="shrink-0 rounded-full border border-white/10 bg-white/[0.04] px-2 py-[2px] text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+        <span className="shrink-0 rounded-full border border-border bg-foreground/[0.04] px-2 py-[2px] text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
           Morning
         </span>
       </div>
@@ -534,7 +536,7 @@ export function SignalPath() {
                     // A FIXED 48px row. The rail behind these markers is drawn
                     // from the first marker's centre to the last one's, which
                     // only lines up if every row is exactly the same height.
-                    'group relative flex h-12 items-center gap-3 rounded-xl px-3 text-left transition-colors duration-200',
+                    'group relative flex h-12 items-center gap-3 rounded-xl px-3 text-left transition-colors duration-500',
                     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
                     isActive ? 'bg-card shadow-soft' : 'hover:bg-card/60',
                   )}
@@ -587,10 +589,20 @@ export function SignalPath() {
                             independent lines changing shade at once. */}
                         <span
                           className={cn(
-                            'block h-full w-full origin-top bg-[hsl(var(--brand-to))] transition-transform duration-300 ease-out',
+                            // SLOW AND EVEN, not fast and settling. The
+                            // editorial easing here is a hard ease-OUT - it
+                            // covers most of the distance immediately and then
+                            // crawls, which is right for something arriving on
+                            // screen and wrong for a line drawing itself: the
+                            // fill appeared to snap and then linger. A gentle
+                            // ease-in-out over 700ms travels at a readable
+                            // speed the whole way, and the wider stagger lets
+                            // each segment overlap its neighbour so the rail
+                            // reads as one continuous pour down the list.
+                            'block h-full w-full origin-top bg-primary transition-transform duration-700 ease-[cubic-bezier(0.33,0,0.2,1)]',
                             seg.filled ? 'scale-y-100' : 'scale-y-0',
                           )}
-                          style={{ transitionDelay: reduce ? '0ms' : `${i * 40}ms` }}
+                          style={{ transitionDelay: reduce ? '0ms' : `${i * 45}ms` }}
                         />
                       </span>
                     ) : null,
@@ -602,22 +614,25 @@ export function SignalPath() {
                       steps used `bg-primary/15`) let the rail show straight
                       through the circle, so the first three step numbers
                       looked struck through. */}
-                  {/* The stepper wears the SIGNAL accent - the same
-                      `--brand-to` as "in one pass" in the heading above it and
-                      the lit state inside the product stage beside it. Indigo
-                      is the page's action colour (the CTAs); this rail is not
-                      an action, it is the thread running through the section,
-                      so it takes the thread's colour. On the pearl surface
-                      that token resolves to a deep teal, so white numerals on
-                      a filled marker stay well clear of AA. */}
+                  {/* `--primary`, not the raw signal token. In light they are
+                      the same deep teal, which is what pairs the rail with
+                      "in one pass" in the heading above it. In DARK they are
+                      not: the signal token is tuned to be read as text on
+                      near-black, so it is very light and very saturated, and
+                      six filled markers plus a rail in it lit up the section
+                      like neon. `--primary` is the calmer action teal on dark
+                      and identical on light, so the pairing survives and the
+                      glare does not. */}
                   <span
                     aria-hidden
                     className={cn(
-                      'relative z-20 grid h-7 w-7 shrink-0 place-items-center rounded-full border text-[11px] font-bold tabular-nums transition-colors duration-300',
-                      i < display &&
-                        'border-[hsl(var(--brand-to))] bg-[hsl(var(--brand-to))] text-white',
+                      // `transition-all` on the same curve and duration as the
+                      // rail, so the marker filling and the line reaching it
+                      // are one movement rather than two that nearly agree.
+                      'relative z-20 grid h-7 w-7 shrink-0 place-items-center rounded-full border text-[11px] font-bold tabular-nums transition-all duration-700 ease-[cubic-bezier(0.33,0,0.2,1)]',
+                      i < display && 'border-primary bg-primary text-primary-foreground',
                       isActive &&
-                        'border-[hsl(var(--brand-to))] bg-[hsl(var(--brand-to))] text-white shadow-[0_0_0_4px_hsl(var(--brand-to)/0.16)]',
+                        'border-primary bg-primary text-primary-foreground shadow-[0_0_0_4px_hsl(var(--primary)/0.16)]',
                       i > display && 'border-border bg-background text-muted-foreground',
                     )}
                   >
@@ -625,7 +640,7 @@ export function SignalPath() {
                   </span>
                   <span
                     className={cn(
-                      'font-display text-[17px] font-bold tracking-[-0.015em] transition-colors duration-200',
+                      'font-display text-[17px] font-bold tracking-[-0.015em] transition-colors duration-500',
                       isActive ? 'text-foreground' : 'text-muted-foreground',
                     )}
                   >
@@ -636,7 +651,7 @@ export function SignalPath() {
                   {isActive && (
                     <span
                       aria-hidden
-                      className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-[hsl(var(--brand-to))]"
+                      className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-primary"
                     />
                   )}
                 </button>
@@ -664,7 +679,10 @@ export function SignalPath() {
               // illustration area absorbs the difference, so only the content
               // inside changes. Left auto on phones, where the panel is
               // full-width and the copy needs however many lines it needs.
-              className="surface-obsidian relative flex flex-col overflow-hidden rounded-2xl border border-white/[0.08] shadow-float focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:h-[404px]"
+              // `bg-background` for the same reason the workspace window uses
+              // it: the sheet and the panels on this stage are card-coloured,
+              // so the stage itself has to be the surface underneath them.
+              className="relative flex flex-col overflow-hidden rounded-2xl border border-border bg-background shadow-float focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:h-[404px]"
             >
               {/* Controlled glow: one soft cyan bloom, static, never a loop. */}
               <span
@@ -675,11 +693,11 @@ export function SignalPath() {
                     'radial-gradient(closest-side, hsl(var(--brand-to) / 0.13), transparent 70%)',
                 }}
               />
-              <div className="relative flex shrink-0 items-center justify-between gap-3 border-b border-white/[0.07] px-4 py-2.5">
+              <div className="relative flex shrink-0 items-center justify-between gap-3 border-b border-border px-4 py-2.5">
                 <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.13em] text-muted-foreground">
                   Illustrative
                 </span>
-                <span className="flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-black/25 px-2 py-[3px]">
+                <span className="flex items-center gap-1.5 rounded-full border border-border bg-foreground/[0.06] px-2 py-[3px]">
                   <span
                     aria-hidden
                     className={cn(
@@ -697,7 +715,7 @@ export function SignalPath() {
                   that demonstrates it rather than inside the step button. Its
                   own fixed height keeps a two-line body and a three-line one
                   from moving the illustration below them. */}
-              <div className="relative shrink-0 border-b border-white/[0.07] px-4 py-3 sm:h-[92px] sm:px-5">
+              <div className="relative shrink-0 border-b border-border px-4 py-3 sm:h-[92px] sm:px-5">
                 {reduce ? (
                   <>
                     <p className="font-medium text-foreground">{STAGES[display].title}</p>

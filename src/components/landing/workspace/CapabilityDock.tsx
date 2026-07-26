@@ -65,7 +65,7 @@ function DockItem({ cap }: { cap: Capability }) {
   return (
     <span
       title={cap.blurb}
-      className="flex items-center gap-1.5 rounded-lg border border-white/[0.06] bg-white/[0.02] px-2 py-1.5 backdrop-blur-sm"
+      className="flex items-center gap-1.5 rounded-lg border border-border bg-foreground/[0.02] px-2 py-1.5 backdrop-blur-sm"
     >
       <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60" aria-hidden />
       <span className="whitespace-nowrap text-[11px] font-semibold text-muted-foreground/80">
@@ -90,7 +90,10 @@ export function CapabilityDock({ show }: CapabilityDockProps) {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-      className="relative z-10 border-t border-white/[0.07] bg-white/[0.03] px-3 py-2 backdrop-blur-xl"
+      // A touch more room underneath than above: this is the last band in the
+      // window, and a dock sitting on the frame's bottom edge read as clipped
+      // rather than seated.
+      className="relative z-10 border-t border-border bg-foreground/[0.03] px-3 pb-3 pt-2.5 backdrop-blur-xl"
     >
       {/* Wraps rather than scrolls: a clipped capability with its status badge
   cut off is exactly the ambiguity this dock exists to prevent. */}

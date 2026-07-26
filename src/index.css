@@ -27,7 +27,7 @@
     --indigo-300-hsl: 230 94% 82%;
     --indigo-400-hsl: 234 89% 74%;
     --indigo-500-hsl: 239 84% 67%; /* tints ONLY - white on it = 4.47:1 */
-    --indigo-600-hsl: 243 75% 59%; /* gradient start (= --brand-from) */
+    --indigo-600-hsl: 243 75% 59%; /* legacy accent; no longer the brand pair */
     --indigo-primary-hsl: 238 70% 57%; /* --primary, 6.41:1 AA - KEEP */
     --indigo-dark-hsl: 235 84% 72%; /* dark --primary - KEEP */
 
@@ -58,7 +58,20 @@
   success ONLY and is never used decoratively. Two values because a cyan
   legible on pearl is not the cyan that glows on obsidian. */
     --signal-on-light-hsl: 192 88% 27%; /* 6.6:1 on pearl-50 */
-    --signal-on-dark-hsl: 188 92% 62%; /* 9.8:1 on obsidian-900 */
+    /* Legible without being electric. At 92% saturation this read as neon on
+  a dark canvas - fine for one lit bar, a glare once the stepper, the
+  headings and every lit state on the page carried it. 14 points of
+  saturation off and 4 of lightness still measures ~9.7:1 on obsidian, so
+  nothing was traded for the calm. */
+    --signal-on-dark-hsl: 189 78% 58%; /* 9.7:1 on obsidian-900 */
+    /* The ACTION teal on dark, and deliberately not `--signal-on-dark-hsl`.
+  That one is tuned to be READ as text on a near-black canvas, so it is very
+  light and very saturated; poured into every button, badge and focus ring it
+  glares - a wall of near-neon on a dark page. Dropped ~16 points of lightness
+  and ~20 of saturation, which lands at 6.8:1 against the dark foreground it
+  carries, so it is calmer AND still comfortably AA. Text keeps the bright
+  one; fills take this. */
+    --signal-action-dark-hsl: 188 72% 46%;
 
     /* Status - light foreground + tint (fixes the failing success/warning). */
     --success-600-hsl: 142 72% 29%;
@@ -154,7 +167,14 @@
     --card-foreground: var(--slate-900-hsl);
     --popover: var(--slate-0-hsl);
     --popover-foreground: var(--slate-900-hsl);
-    --primary: var(--indigo-primary-hsl); /* KEEP - 6.41:1 AA */
+    /* Teal is the brand's action colour. It is the SAME token the signal
+  accent uses ("in one pass", the lit states inside the product stages), so
+  the page now speaks with one voice instead of an indigo one for buttons and
+  a teal one for everything the product actually does. 6.6:1 on pearl and
+  white-on-teal is comfortably past AA, so it is safe as both a fill and a
+  text colour. The indigo primitives stay defined for anything still pointing
+  at them, but they are no longer the brand pair or the action colour. */
+    --primary: var(--signal-on-light-hsl); /* teal - 6.6:1 AA */
     --primary-foreground: var(--slate-0-hsl);
     --secondary: var(--slate-100-hsl);
     --secondary-foreground: var(--slate-700-hsl);
@@ -172,7 +192,7 @@
     --info-foreground: var(--slate-0-hsl);
     --border: var(--slate-200-hsl);
     --input: var(--slate-300-hsl);
-    --ring: var(--indigo-primary-hsl);
+    --ring: var(--signal-on-light-hsl); /* focus follows the action colour */
     --radius: 0.75rem;
 
     /* ── Elevation scale (Compass §7) ──────────────────────────────────────
@@ -185,18 +205,23 @@
     --shadow-float:
       0 8px 24px -6px hsl(222 47% 11% / 0.14), 0 28px 56px -12px hsl(222 47% 11% / 0.16);
 
-    --brand-from: var(--indigo-600-hsl); /* indigo - gradient (decorative) */
-    --brand-to: 199 89% 48%; /* sky - "growth / learning" accent */
+    /* THE brand gradient: one pair, every mark. It used to open on indigo,
+  which was right while indigo was the action colour and wrong the moment
+  teal took over - the wordmark then belonged to a palette the rest of the
+  page had left. Light teal into the deep signal teal, so the mark, the
+  headline gradient and every avatar dot are the same object. */
+    --brand-from: 187 82% 42%;
+    --brand-to: var(--signal-on-light-hsl);
 
     /* Sidebar */
     --sidebar-background: var(--slate-50-hsl);
     --sidebar-foreground: var(--slate-700-hsl);
-    --sidebar-primary: var(--indigo-primary-hsl);
+    --sidebar-primary: var(--signal-on-light-hsl);
     --sidebar-primary-foreground: var(--slate-0-hsl);
     --sidebar-accent: var(--slate-100-hsl);
     --sidebar-accent-foreground: var(--slate-700-hsl);
     --sidebar-border: var(--slate-200-hsl);
-    --sidebar-ring: var(--indigo-primary-hsl);
+    --sidebar-ring: var(--signal-on-light-hsl);
   }
 
   .dark {
@@ -209,7 +234,7 @@
     --card-foreground: var(--slate-100-hsl);
     --popover: var(--slate-800-hsl);
     --popover-foreground: var(--slate-100-hsl);
-    --primary: var(--indigo-dark-hsl); /* lifted indigo - KEEP, 5.45:1 on card */
+    --primary: var(--signal-action-dark-hsl); /* action teal - 6.8:1 */
     --primary-foreground: var(--slate-900-hsl);
     --secondary: var(--slate-800-hsl);
     --secondary-foreground: var(--slate-100-hsl);
@@ -227,10 +252,17 @@
     --info-foreground: var(--slate-900-hsl);
     --border: var(--slate-700-hsl);
     --input: var(--slate-700-hsl);
-    --ring: var(--indigo-dark-hsl);
+    --ring: var(--signal-on-dark-hsl);
 
-    --brand-from: 243 84% 72%;
-    --brand-to: 199 90% 60%;
+    /* Same gradient, lifted for a dark canvas. */
+    /* The light end has to travel FURTHER on dark, not less. `--brand-to` is
+  already a light colour here (it has to be legible on near-black), so a
+  from-stop only 12 points above it produced a gradient with nowhere to go -
+  the headline and the mark both flattened into one shade of cyan while the
+  same pair on light read as a proper gradient. 20 points of lightness and
+  ~20 degrees of hue gives dark the same journey light gets. */
+    --brand-from: 170 80% 78%;
+    --brand-to: var(--signal-on-dark-hsl);
 
     /* Elevation - deeper, softer halos on dark so cards lift without a black
   ring. Tinted toward true black since the canvas is already deep slate. */
@@ -242,12 +274,12 @@
     /* Sidebar */
     --sidebar-background: var(--slate-900-hsl);
     --sidebar-foreground: var(--slate-300-hsl);
-    --sidebar-primary: var(--indigo-dark-hsl);
+    --sidebar-primary: var(--signal-action-dark-hsl);
     --sidebar-primary-foreground: var(--slate-900-hsl);
     --sidebar-accent: var(--slate-800-hsl);
     --sidebar-accent-foreground: var(--slate-100-hsl);
     --sidebar-border: var(--slate-700-hsl);
-    --sidebar-ring: var(--indigo-dark-hsl);
+    --sidebar-ring: var(--signal-on-dark-hsl);
   }
 
   /* ── The Aspirely visual language: two named surfaces ────────────────────
@@ -269,7 +301,7 @@
     --card-foreground: var(--ink-900-hsl);
     --popover: var(--pearl-0-hsl);
     --popover-foreground: var(--ink-900-hsl);
-    --primary: var(--indigo-primary-hsl);
+    --primary: var(--signal-on-light-hsl);
     --primary-foreground: var(--slate-0-hsl);
     --secondary: var(--pearl-100-hsl);
     --secondary-foreground: var(--ink-700-hsl);
@@ -287,9 +319,9 @@
     --info-foreground: var(--slate-0-hsl);
     --border: var(--pearl-200-hsl);
     --input: var(--pearl-300-hsl);
-    --ring: var(--indigo-primary-hsl);
+    --ring: var(--signal-on-light-hsl);
 
-    --brand-from: var(--indigo-600-hsl);
+    --brand-from: 187 82% 42%;
     --brand-to: var(--signal-on-light-hsl);
 
     /* Warm-tinted elevation: shadows on ivory must read as warm shade, never
@@ -313,7 +345,7 @@
     --card-foreground: var(--obsidian-fg-hsl);
     --popover: var(--obsidian-900-hsl);
     --popover-foreground: var(--obsidian-fg-hsl);
-    --primary: var(--indigo-dark-hsl);
+    --primary: var(--signal-action-dark-hsl);
     --primary-foreground: var(--obsidian-950-hsl);
     --secondary: var(--obsidian-800-hsl);
     --secondary-foreground: var(--obsidian-fg-hsl);
@@ -331,9 +363,15 @@
     --info-foreground: var(--obsidian-950-hsl);
     --border: var(--obsidian-700-hsl);
     --input: var(--obsidian-700-hsl);
-    --ring: var(--indigo-dark-hsl);
+    --ring: var(--signal-on-dark-hsl);
 
-    --brand-from: 243 84% 74%;
+    /* The light end has to travel FURTHER on dark, not less. `--brand-to` is
+  already a light colour here (it has to be legible on near-black), so a
+  from-stop only 12 points above it produced a gradient with nowhere to go -
+  the headline and the mark both flattened into one shade of cyan while the
+  same pair on light read as a proper gradient. 20 points of lightness and
+  ~20 degrees of hue gives dark the same journey light gets. */
+    --brand-from: 170 80% 78%;
     --brand-to: var(--signal-on-dark-hsl);
 
     --shadow-soft: 0 1px 2px hsl(0 0% 0% / 0.34), 0 1px 3px hsl(0 0% 0% / 0.26);

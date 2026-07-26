@@ -61,7 +61,10 @@ const PROOF: readonly Proof[] = [
   },
 ] as const;
 
-const ROTATE_MS = 4200;
+/** 4.2s was long enough that the carousel read as stalled - you finish a
+ *  two-line claim well before the card moves, and a control that appears
+ *  stuck invites a click it did not need. */
+const ROTATE_MS = 3100;
 const N = PROOF.length;
 
 /** One proof, as a card. Shared by the coverflow and the reduced-motion grid. */
@@ -176,7 +179,10 @@ export function ProofStrip() {
                       onClick={() => go(index + dir)}
                       onFocus={() => setPaused(true)}
                       onBlur={() => setPaused(false)}
-                      className="grid h-10 w-10 place-items-center rounded-full border border-border bg-background text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card"
+                      // Solid fill, no outline. A hairline ring around a
+                      // hairline chevron gave these two controls almost no
+                      // presence on a pale surface - they read as disabled.
+                      className="grid h-10 w-10 place-items-center rounded-full bg-muted text-foreground transition-colors hover:bg-primary hover:text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card"
                     >
                       <Icon className="h-4 w-4" aria-hidden />
                     </button>

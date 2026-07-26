@@ -1,4 +1,6 @@
 import { useCallback, useState } from 'react';
+import { cn } from '@/lib/utils';
+import { useResolvedTheme } from '@/components/theme-provider';
 import { useAuth } from '@/contexts/AuthContext';
 import { isGuestOnboardingEnabled, markGuestOnboardingUnavailable } from '@/lib/guest';
 import { useGuestFlow } from '@/hooks/useGuestFlow';
@@ -33,23 +35,38 @@ import { LandingFooter } from './LandingFooter';
  * the marketing sections collapse so the guest never scrolls through
  * marketing while waiting; nav and footer stay for recovery.
  *
- * SURFACE LANGUAGE (index.css). The page is built from TWO real named token
+ * SURFACE LANGUAGE (index.css). The page is built from real named token
  * surfaces, never from one-off colour classes:
  *
- *  `.surface-obsidian` - the PRODUCT world. The hero, the workspace window,
- *  the closing action and the footer. This is the surface a signed-in user
- *  actually works on, so it never goes light.
- *  `.surface-editorial` - the warm pearl MARKETING world: the transformation
- *  sequence, the proof, the roadmap. Paper you read, not software you use.
+ *  `.surface-editorial` - the warm pearl reading surface.
+ *  `.surface-obsidian` - the deep product surface.
  *
- * The contrast between them is the brand. Each class re-points the entire
- * semantic layer for its own subtree, so they nest freely (the pearl section
- * holds an obsidian product stage) and every child resolves `bg-card`,
- * `text-muted-foreground`, `border-border` correctly without one `dark:`
- * variant. `dark` stays on the root so shared primitives that DO ship dark
- * variants keep behaving inside the product world.
+ * ONE OF THEM OWNS THE WHOLE PAGE, chosen by the visitor's theme. The landing
+ * used to hard-code obsidian for the hero and the close, with a pearl band
+ * bolted through the middle for the marketing sections, so scrolling the page
+ * went dark, light, dark - and the theme toggle changed nothing, because
+ * neither surface was listening to it. A visitor who has told us they want a
+ * light interface should not be handed a black hero, and a page that alternates
+ * reads as three pages stapled together rather than one. The toggle in the nav
+ * now drives the whole page.
+ *
+ * THAT INCLUDES THE PRODUCT WINDOWS. The hero's workspace and the
+ * transformation stage were briefly held at obsidian in both themes, on the
+ * theory that a picture of the product should stay dark the way a code block
+ * does. It made a light page carry a black slab as its largest object, which
+ * is the same inconsistency in a smaller box. They are drawn entirely from
+ * semantic tokens now (`bg-card`, `border-border`, `bg-foreground/x`, never a
+ * literal white or black), so they invert with everything else.
+ *
+ * Each surface class re-points the entire semantic layer for its own subtree,
+ * so they nest freely and every child resolves `bg-card`,
+ * `text-muted-foreground` and `border-border` correctly without one `dark:`
+ * variant. `dark` rides along on the root in the dark theme so shared
+ * primitives that DO ship `dark:` variants keep behaving.
  */
 export default function LandingExperience() {
+  const resolvedTheme = useResolvedTheme();
+  const darkTheme = resolvedTheme === 'dark';
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [runtimeDisabled, setRuntimeDisabled] = useState(() => !isGuestOnboardingEnabled());
 
@@ -79,8 +96,11 @@ export default function LandingExperience() {
 
   return (
     <div
-      className="dark surface-obsidian min-h-screen overflow-x-clip"
-      style={{ colorScheme: 'dark' }}
+      className={cn(
+        'min-h-screen overflow-x-clip',
+        darkTheme ? 'dark surface-obsidian' : 'surface-editorial',
+      )}
+      style={{ colorScheme: resolvedTheme }}
     >
       <a
         href="#main"
@@ -115,33 +135,14 @@ export default function LandingExperience() {
   they are waiting on something real. */}
         {!flowActive && (
           <>
-            {/* The editorial world. One wrapper, so the surface switch is a
-  single declared boundary rather than three sections each
-  remembering to opt in. */}
-            <div className="surface-editorial relative">
-              {/* The seam between the two worlds: a short fade out of obsidian
-  plus one energy hairline, so the change of surface reads as
-  intentional craft rather than a missing background. */}
-              <span
-                aria-hidden
-                className="pointer-events-none absolute inset-x-0 top-0 h-8"
-                style={{
-                  background:
-                    'linear-gradient(to bottom, hsl(var(--obsidian-950-hsl) / 0.5), transparent)',
-                }}
-              />
-              <span
-                aria-hidden
-                className="pointer-events-none absolute inset-x-0 top-0 h-px"
-                style={{
-                  background:
-                    'linear-gradient(to right, transparent, hsl(var(--signal-on-dark-hsl) / 0.5), transparent)',
-                }}
-              />
-              <SignalPath />
-              <ProofStrip />
-              <ComingNext />
-            </div>
+            {/* No surface wrapper and no seam: these sections inherit the
+  page's one surface. The wrapper used to switch them to pearl and
+  needed a fade plus an energy hairline to make the jump look
+  intentional - craft spent covering for a boundary that should
+  not have been there. */}
+            <SignalPath />
+            <ProofStrip />
+            <ComingNext />
             <TrustClose
               onUpload={onUpload}
               fallbackHref={fallbackHref}

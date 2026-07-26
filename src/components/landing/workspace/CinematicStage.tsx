@@ -115,7 +115,7 @@ function ResumeSheet({ scanning = false, compact = false }: { scanning?: boolean
   // overflow-x-clip. `flex-1 basis-0 min-w-0` gives each panel a definite
   // computed width the percentage bars can resolve against at any viewport.
   return (
-    <div className="relative min-w-0 flex-1 basis-0 overflow-hidden rounded-lg border border-white/10 bg-[hsl(var(--card))] p-2.5 shadow-panel">
+    <div className="relative min-w-0 flex-1 basis-0 overflow-hidden rounded-lg border border-border bg-[hsl(var(--card))] p-2.5 shadow-panel">
       {/* Scanning light - a single pass on arrival, then gone. */}
       {scanning && !still && (
         <motion.span
@@ -169,7 +169,7 @@ function ProfilePanel() {
       initial={still ? false : { opacity: 0, x: -12 }}
       animate={{ opacity: 1, x: 0 }}
       transition={still ? { duration: 0 } : { duration: 0.5, ease: EASE, delay: 0.15 }}
-      className="min-w-0 flex-1 basis-0 rounded-lg border border-white/[0.08] bg-white/[0.03] p-2.5"
+      className="min-w-0 flex-1 basis-0 rounded-lg border border-border bg-foreground/[0.03] p-2.5"
     >
       <RegionLabel>Understood as</RegionLabel>
       <div className="mb-2 mt-1.5 flex items-center gap-1.5">
@@ -184,7 +184,7 @@ function ProfilePanel() {
       </div>
 
       {/* Experience becomes a concise timeline. */}
-      <div className="my-2 space-y-1.5 border-l border-white/10 pl-2">
+      <div className="my-2 space-y-1.5 border-l border-border pl-2">
         {[0, 1, 2].map((i) => (
           <Bar key={i} w={`${86 - i * 14}%`} lit={i === 0} delay={0.3 + i * 0.08} />
         ))}
@@ -231,7 +231,7 @@ function MatchScene() {
               'flex items-center gap-2 rounded-md border px-2 py-1.5',
               i === 0
                 ? 'border-[hsl(var(--brand-to)/0.5)] bg-[hsl(var(--brand-to)/0.10)]'
-                : 'border-white/[0.07] bg-white/[0.02]',
+                : 'border-border bg-foreground/[0.02]',
             )}
           >
             {/* Empty slot: no logo, no company, no title, no score. */}
@@ -266,7 +266,7 @@ function MatchScene() {
 function TailorScene() {
   const still = useStill();
   return (
-    <div className="rounded-lg border border-white/[0.08] bg-white/[0.03] p-3">
+    <div className="rounded-lg border border-border bg-foreground/[0.03] p-3">
       <div className="grid grid-cols-2 gap-3">
         <div className="min-w-0 space-y-1.5">
           <RegionLabel>Original</RegionLabel>
@@ -291,9 +291,9 @@ function TailorScene() {
         initial={still ? false : { opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={still ? { duration: 0 } : { duration: 0.4, delay: 0.4 }}
-        className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-white/[0.07] pt-2.5"
+        className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-border pt-2.5"
       >
-        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-400">
+        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-success">
           <ShieldCheck className="h-3 w-3" aria-hidden />
           IntegrityGuard
         </span>
@@ -303,7 +303,7 @@ function TailorScene() {
             initial={still ? false : { opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={still ? { duration: 0 } : { duration: 0.3, delay: 0.5 + i * 0.07 }}
-            className="inline-flex items-center gap-0.5 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-1.5 py-[1px] text-[9px] font-medium text-emerald-300/90"
+            className="inline-flex items-center gap-0.5 rounded-full border border-success/30 bg-success/10 px-1.5 py-[1px] text-[9px] font-medium text-success"
           >
             <Lock className="h-2.5 w-2.5" aria-hidden />
             {f}
@@ -321,7 +321,7 @@ function TailorScene() {
         {['PDF', 'DOCX'].map((f) => (
           <span
             key={f}
-            className="rounded-md border border-white/10 bg-white/[0.05] px-2 py-[3px] text-[10px] font-semibold text-foreground/70"
+            className="rounded-md border border-border bg-foreground/[0.05] px-2 py-[3px] text-[10px] font-semibold text-foreground/70"
           >
             {f}
           </span>
@@ -342,7 +342,7 @@ function TrackScene() {
     { label: 'Interview', cards: 1, lit: true },
   ];
   return (
-    <div className="grid grid-cols-3 gap-2 rounded-lg border border-white/[0.08] bg-white/[0.03] p-3">
+    <div className="grid grid-cols-3 gap-2 rounded-lg border border-border bg-foreground/[0.03] p-3">
       {columns.map((col, c) => (
         <div key={col.label} className="min-w-0 space-y-2">
           <div className="flex items-center justify-between gap-1">
@@ -368,7 +368,7 @@ function TrackScene() {
                   'rounded-md border p-1.5',
                   col.lit && i === 0
                     ? 'border-[hsl(var(--brand-to)/0.5)] bg-[hsl(var(--brand-to)/0.10)]'
-                    : 'border-white/[0.07] bg-white/[0.02]',
+                    : 'border-border bg-foreground/[0.02]',
                 )}
               >
                 <div className="flex items-center gap-1.5">
@@ -484,7 +484,7 @@ export function CinematicStage({
         {/* Says out loud what this is, so nobody reads redacted shapes as
             their own data or as somebody else's real matches. */}
         <div className="mb-2.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-2 py-[3px] text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-foreground/[0.04] px-2 py-[3px] text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
             <Shapes className="h-3 w-3 shrink-0" aria-hidden />
             Illustrative workflow
           </span>
@@ -506,7 +506,7 @@ export function CinematicStage({
             onBlur={(e) => {
               if (!e.currentTarget.contains(e.relatedTarget as Node | null)) onHold?.(false);
             }}
-            className="flex items-center gap-0.5 rounded-full border border-white/10 bg-black/20 p-1"
+            className="flex items-center gap-0.5 rounded-full border border-border bg-foreground/[0.06] p-1"
           >
             {STEPS.map((step, i) => {
               const selected = i === activeIndex;

@@ -1,6 +1,7 @@
 import { NavLink } from "react-router-dom";
 import { motion, useReducedMotion } from "framer-motion";
-import { PanelLeftClose, PanelLeftOpen, Sparkles } from "lucide-react";
+import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { BrandMark } from "@/components/BrandMark";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
@@ -42,9 +43,7 @@ export function Sidebar({ collapsed, onToggleCollapse }: SidebarProps) {
           className="flex items-center gap-2.5 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar"
           aria-label="Aspirely home"
         >
-          <span className="brand-gradient flex h-8 w-8 shrink-0 items-center justify-center rounded-lg shadow-soft">
-            <Sparkles className="h-4 w-4 text-white" aria-hidden="true" />
-          </span>
+          <BrandMark className="h-8 w-8 rounded-lg shadow-soft" iconClassName="h-4 w-4" />
           {!collapsed && (
             <span className="font-display text-lg font-extrabold tracking-tight text-sidebar-foreground">
               Aspirely

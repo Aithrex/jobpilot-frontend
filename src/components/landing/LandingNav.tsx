@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Sparkles } from 'lucide-react';
+import { motion, useReducedMotion } from 'framer-motion';
+import { Moon, Sun } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useResolvedTheme, useTheme } from '@/components/theme-provider';
+import { BrandMark } from '@/components/BrandMark';
 import { SECTION_LINKS, useSectionJump } from './_shared';
 
 /**
@@ -106,6 +109,74 @@ function useSectionSpy(): string | null {
   return active;
 }
 
+/**
+ * The theme control: a real switch, not an icon that swaps.
+ *
+ * An icon button here was ambiguous in the way icon buttons usually are - a
+ * moon could equally mean "you are in dark mode" or "press for dark mode", and
+ * the icon flipping on click is the only feedback you get. A track with a knob
+ * has a position, so it shows the current state and the available one at the
+ * same time, and both end icons stay visible so the choice never has to be
+ * inferred from a single glyph.
+ *
+ * `role="switch"` with `aria-checked` is the accurate semantic - this is an
+ * on/off setting, not a command - and it is a real <button>, so Enter and
+ * Space work natively. Deliberately NOT the app's `ThemeToggle`: that is a
+ * 40px icon Button built for the workspace top bar, and dropping it into this
+ * glass rail read as the page's primary action.
+ */
+function ThemeControl() {
+  const { setTheme } = useTheme();
+  const reduce = useReducedMotion();
+  const resolved = useResolvedTheme();
+  const dark = resolved === 'dark';
+
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={dark}
+      aria-label="Dark theme"
+      title={`Switch to ${dark ? 'light' : 'dark'} theme`}
+      onClick={() => setTheme(dark ? 'light' : 'dark')}
+      className="focus-ring-visible relative ml-1 flex h-7 w-[52px] shrink-0 items-center rounded-full border border-foreground/15 bg-foreground/[0.06] px-[3px] transition-colors hover:border-foreground/25"
+    >
+      {/* THE KNOB CARRIES THE CURRENT STATE, the track carries the other one.
+          Both icons used to sit on the track, which meant the knob parked on
+          top of whichever one described the state you were actually in - in
+          dark mode the moon was underneath the knob and the only visible glyph
+          was the sun, i.e. the control appeared to be showing light mode. */}
+      <Moon
+        className={cn(
+          'pointer-events-none absolute right-[7px] h-3.5 w-3.5 text-muted-foreground transition-opacity',
+          dark ? 'opacity-0' : 'opacity-100',
+        )}
+        aria-hidden
+      />
+      <Sun
+        className={cn(
+          'pointer-events-none absolute left-[7px] h-3.5 w-3.5 text-muted-foreground transition-opacity',
+          dark ? 'opacity-100' : 'opacity-0',
+        )}
+        aria-hidden
+      />
+      <motion.span
+        aria-hidden
+        initial={false}
+        animate={{ x: dark ? 24 : 0 }}
+        transition={reduce ? { duration: 0 } : { type: 'spring', stiffness: 500, damping: 34 }}
+        className="grid h-[22px] w-[22px] place-items-center rounded-full bg-primary text-primary-foreground shadow-soft"
+      >
+        {dark ? (
+          <Moon className="h-3 w-3" aria-hidden />
+        ) : (
+          <Sun className="h-3 w-3" aria-hidden />
+        )}
+      </motion.span>
+    </button>
+  );
+}
+
 export function LandingNav() {
   const active = useSectionSpy();
   const onJump = useSectionJump();
@@ -118,38 +189,40 @@ export function LandingNav() {
           aria-label="Aspirely home"
           className="focus-ring-visible flex h-11 items-center gap-2 rounded-control font-semibold text-foreground"
         >
-          <span className="brand-gradient grid h-8 w-8 place-items-center rounded-control text-white">
-            <Sparkles className="h-[1.15rem] w-[1.15rem]" aria-hidden />
-          </span>
+          <BrandMark />
           <span className="hidden font-display text-lg tracking-tight min-[380px]:inline">
             Aspirely
           </span>
         </Link>
 
-        <nav aria-label="Sections" className="flex items-center gap-1">
-          {SECTION_LINKS.map((link) => {
-            const isActive = active === link.href.slice(1);
-            return (
-              <a
-                key={link.href}
-                href={link.href}
-                onClick={(e) => onJump(e, link.href)}
-                // `page` is the correct token for "the section of this document
-                // you are looking at"; it is also never colour-only, since the
-                // active link carries a filled pill as well.
-                aria-current={isActive ? 'page' : undefined}
-                className={cn(
-                  'focus-ring-visible hidden rounded-full px-3 py-2 text-sm font-medium transition-colors sm:inline-flex',
-                  isActive
-                    ? 'bg-foreground/[0.08] text-foreground'
-                    : 'text-muted-foreground hover:text-foreground',
-                )}
-              >
-                {link.label}
-              </a>
-            );
-          })}
-        </nav>
+        <div className="flex items-center gap-1">
+          <nav aria-label="Sections" className="flex items-center gap-1">
+            {SECTION_LINKS.map((link) => {
+              const isActive = active === link.href.slice(1);
+              return (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  onClick={(e) => onJump(e, link.href)}
+                  // `page` is the correct token for "the section of this
+                  // document you are looking at"; it is also never colour-only,
+                  // since the active link carries a filled pill as well.
+                  aria-current={isActive ? 'page' : undefined}
+                  className={cn(
+                    'focus-ring-visible hidden rounded-full px-3 py-2 text-sm font-medium transition-colors sm:inline-flex',
+                    isActive
+                      ? 'bg-foreground/[0.08] text-foreground'
+                      : 'text-muted-foreground hover:text-foreground',
+                  )}
+                >
+                  {link.label}
+                </a>
+              );
+            })}
+          </nav>
+
+          <ThemeControl />
+        </div>
       </div>
     </header>
   );

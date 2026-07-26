@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
-import { ExternalLink, LogOut, Monitor, Moon, Search, Settings, Sparkles, Sun } from "lucide-react";
+import { ExternalLink, LogOut, Monitor, Moon, Search, Settings, Sun } from "lucide-react";
+import { BrandMark } from "@/components/BrandMark";
 import { openCommandPalette } from "./CommandPalette";
 import { DestinationNav } from "./DestinationNav";
 import {
@@ -48,9 +49,7 @@ export function TopBar() {
         aria-label="Aspirely home"
         className="flex shrink-0 items-center gap-2.5 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >
-        <span className="brand-gradient flex h-8 w-8 items-center justify-center rounded-lg shadow-soft">
-          <Sparkles className="h-4 w-4 text-white" aria-hidden="true" />
-        </span>
+        <BrandMark className="h-8 w-8 rounded-lg shadow-soft" iconClassName="h-4 w-4" />
         <span className="hidden font-display text-lg font-extrabold tracking-tight text-foreground sm:inline lg:hidden xl:inline">
           Aspirely
         </span>
