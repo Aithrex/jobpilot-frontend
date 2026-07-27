@@ -80,7 +80,7 @@ export interface OnboardingQuestions {
   ready_for_autoapply: boolean;
   /** null until onboarding forces the pick (no implicit default). */
   mode: AutoApplyMode | null;
-  /** The READY set the FE blocks completion on (contact + work_auth). */
+  /** The READY set the FE blocks completion on (contact, address, work_auth, experience). */
   required_fields: string[];
 }
 

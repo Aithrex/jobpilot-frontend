@@ -44,8 +44,9 @@ const CATEGORY_META: Record<
   { title: string; blurb: string; icon: typeof User; voluntary?: boolean }
 > = {
   identity: {
-    title: "Contact details",
-    blurb: "How employers reach you. Pulled from your resume. Confirm or edit.",
+    title: "Contact & address",
+    blurb:
+      "Name, phone, email, and mailing address used on every application. Confirm or edit what we pulled from your resume.",
     icon: User,
   },
   work_auth: {
@@ -66,14 +67,15 @@ const CATEGORY_META: Record<
     icon: SlidersHorizontal,
   },
   screening: {
-    title: "Background",
-    blurb: "Education and experience, pre-filled from your resume.",
+    title: "Experience & background",
+    blurb:
+      "Job title, company, dates, and a short role description — required so we can fill Workday and similar forms.",
     icon: GraduationCap,
   },
   legal: {
     title: "Legal attestations",
     blurb:
-      "Optional. We never auto-affirm these. They default to decline until you set them yourself.",
+      "Age confirmation is required. Other attestations stay optional and default to decline until you set them.",
     icon: Scale,
     voluntary: true,
   },
@@ -110,7 +112,7 @@ const MODE_OPTIONS: {
     detail:
       "We queue new matching postings daily and submit high-confidence applications on your behalf. Sensitive or unclear fields still pause for you.",
     icon: Rocket,
-    note: "Uses your daily auto-apply quota. You can still switch back to Auto or Manual anytime.",
+    note: "Uses your monthly auto-apply quota. You can still switch back to Auto or Manual anytime.",
   },
 ];
 

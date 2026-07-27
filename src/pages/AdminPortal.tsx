@@ -1907,7 +1907,7 @@ function AccessOverrideCard({ email, storedPlan }: { email: string; storedPlan?:
 
       <div className="flex flex-wrap items-center gap-2 text-[11px] text-gray-400">
         <label className="inline-flex items-center gap-1.5">
-          Daily auto_submit limit
+          Monthly auto_submit limit
           <input
             value={autoSubmitLimit}
             onChange={(e) => setAutoSubmitLimit(e.target.value)}

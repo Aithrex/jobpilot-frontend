@@ -11,6 +11,7 @@ const USAGE_LABEL: Record<string, string> = {
   tailor: 'Resume tailors',
   ats_scores: 'ATS scores',
   cover_letter: 'Cover letters',
+  auto_submit: 'Auto-apply submissions',
   autoapply_answer: 'Auto-apply answers',
   quiz: 'Quizzes',
   practice_question: 'Practice questions',
@@ -20,7 +21,19 @@ const USAGE_LABEL: Record<string, string> = {
   learning_plan_generate: 'Learning plans',
 };
 
-const USAGE_ORDER = ['tailor', 'ats_scores', 'cover_letter', 'autoapply_answer', 'mock_evaluate', 'practice_question', 'quiz', 'salary', 'post_draft', 'learning_plan_generate'];
+const USAGE_ORDER = [
+  'tailor',
+  'ats_scores',
+  'cover_letter',
+  'auto_submit',
+  'autoapply_answer',
+  'mock_evaluate',
+  'practice_question',
+  'quiz',
+  'salary',
+  'post_draft',
+  'learning_plan_generate',
+];
 
 export default function BillingTab() {
   const { data, isLoading } = useBillingPlan();

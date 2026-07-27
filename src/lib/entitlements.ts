@@ -52,6 +52,25 @@ export function formatLimit(v: number | null | undefined): string {
   return String(v);
 }
 
+/** Display caps for Auto Apply (mirrors backend PLAN_LIMITS; period = month). */
+export const AUTO_APPLY_SUBMIT_LIMITS: Record<PlanId, number | null> = {
+  free: 25,
+  premium: 200,
+  premium_plus: null,
+};
+
+export const AUTO_APPLY_ANSWER_LIMITS: Record<PlanId, number | null> = {
+  free: 25,
+  premium: 300,
+  premium_plus: null,
+};
+
+export function autoApplyQuotaLabel(plan: string | undefined): string {
+  const lim = AUTO_APPLY_SUBMIT_LIMITS[(plan as PlanId) ?? 'free'];
+  if (lim == null) return 'Unlimited auto-applies / month';
+  return `${lim} auto-applies / month`;
+}
+
 export function planRank(plan: string | undefined): number {
   const i = PLAN_ORDER.indexOf((plan as PlanId) ?? 'free');
   return i < 0 ? 0 : i;

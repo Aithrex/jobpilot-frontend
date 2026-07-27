@@ -27,6 +27,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { useAutoSubmit, type ApproveOutcome } from "@/hooks/useAutoSubmit";
+import { useAutoApplyOnboarding } from "@/hooks/useAutoApplyOnboarding";
+import { useBillingPlan, useEntitlements } from "@/hooks/useEntitlements";
+import { QuotaMeter } from "@/components/billing/QuotaMeter";
+import { autoApplyQuotaLabel } from "@/lib/entitlements";
 import type { AutoSubmitApprovalView } from "@/types/autoSubmit";
 import type { AutoApplyMode } from "@/types/onboarding";
 import AutoApplyOnboarding from "./AutoApplyOnboarding";
@@ -621,6 +625,9 @@ export default function AutoApplyTab() {
     approve,
     cancel,
   } = useAutoSubmit();
+  const onboarding = useAutoApplyOnboarding(true);
+  const { plan } = useEntitlements();
+  const billing = useBillingPlan(true);
 
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [onboardingFocusMode, setOnboardingFocusMode] = useState(false);
@@ -629,6 +636,16 @@ export default function AutoApplyTab() {
     setOnboardingFocusMode(focusMode);
     setOnboardingOpen(true);
   };
+
+  const ready = onboarding.questions?.ready_for_autoapply === true;
+  const missingCount = useMemo(() => {
+    const qs = onboarding.questions;
+    if (!qs) return 0;
+    return qs.groups
+      .flatMap((g) => g.fields)
+      .filter((f) => f.required && f.missing).length;
+  }, [onboarding.questions]);
+  const autoSubmitUsage = billing.data?.usage?.auto_submit;
 
   // Defect H: partition the merged pending queue. First peel off the canonical
   // "needs you / held" states (waiting_human / needs_input / submission_unknown):
@@ -672,6 +689,13 @@ export default function AutoApplyTab() {
   const now = useNow(hasLiveCountdown);
 
   const onToggle = async (next: boolean) => {
+    if (next && !ready) {
+      toast.message("Complete your auto-apply profile first", {
+        description: "We need your contact, address, work auth, and experience answers before submitting.",
+      });
+      openOnboarding(false);
+      return;
+    }
     const ok = await setEnabled(next);
     if (!ok) {
       toast.error("Couldn't update setting", {
@@ -715,6 +739,7 @@ export default function AutoApplyTab() {
   // No explicit mode set yet (mode === null): the executor refuses to act until
   // the user picks one, so route them to the onboarding mode picker first.
   const needsMode = mode == null;
+  const needsProfile = !ready;
 
   const reviewTitle = copilot ? "Ready to apply" : "Ready to submit";
 
@@ -742,6 +767,9 @@ export default function AutoApplyTab() {
                 ? "Auto Aggressive queues new matches daily and submits when confident. Sensitive fields still pause for you."
                 : "You stay in control. Nothing is sent until you approve it, and you can cancel within a short window."}
           </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {autoApplyQuotaLabel(plan)}
+          </p>
         </div>
         <Button
           variant="outline"
@@ -753,7 +781,41 @@ export default function AutoApplyTab() {
         </Button>
       </header>
 
+      {autoSubmitUsage && (
+        <Card className="surface p-4">
+          <QuotaMeter
+            label="Auto-apply submissions this month"
+            used={autoSubmitUsage.used ?? 0}
+            limit={autoSubmitUsage.limit ?? null}
+            feature="auto_submit"
+          />
+        </Card>
+      )}
+
       <AutoApplyModeControls />
+
+      {/* Profile incomplete — collect fill answers before opt-in / submit. */}
+      {needsProfile && (
+        <Card className="surface flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            <ClipboardList className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+            <div>
+              <h3 className="font-display text-base font-semibold">
+                Complete your application profile
+              </h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Tell us the details ATS forms ask for — contact, address, work
+                authorization, and experience
+                {missingCount > 0 ? ` (${missingCount} required left)` : ""}.
+                We fill applications from these answers only.
+              </p>
+            </div>
+          </div>
+          <Button className="shrink-0" onClick={() => openOnboarding(false)}>
+            Fill profile
+          </Button>
+        </Card>
+      )}
 
       {/* Mode not chosen yet - block until the user picks one. */}
       {needsMode && (
@@ -762,11 +824,10 @@ export default function AutoApplyTab() {
             <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
             <div>
               <h3 className="font-display text-base font-semibold">
-                Finish setting up auto-apply
+                Choose how auto-apply works
               </h3>
               <p className="mt-1 text-sm text-muted-foreground">
-                Confirm your details and choose how auto-apply works. Nothing runs
-                until you do.
+                Manual, Auto, or Auto Aggressive. Nothing runs until you pick one.
               </p>
             </div>
           </div>

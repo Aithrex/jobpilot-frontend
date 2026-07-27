@@ -77,8 +77,8 @@ export default function AutoApplyModeControls() {
         <div>
           <h3 className="font-display text-base font-semibold">Auto Apply mode</h3>
           <p className="text-sm text-muted-foreground">
-            Choose how Aspirely handles matching applications. Available on Free and paid plans
-            (daily quota applies).
+            Choose how Aspirely handles matching applications. Free includes 25
+            auto-applies per month; upgrade for a larger pool.
           </p>
         </div>
         <div className="flex items-center gap-2">
