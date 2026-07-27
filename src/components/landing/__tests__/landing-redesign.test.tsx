@@ -347,7 +347,7 @@ describe('capability status', () => {
 
     expect(within(card).getByText('Coming soon')).toBeInTheDocument();
     expect(within(card).queryByText('Available')).not.toBeInTheDocument();
-    expect(AUTO_APPLY.status).toBe('coming-soon');
+    expect(AUTO_APPLY.status).toBe('beta');
   });
 
   test('WhatsApp is labelled Coming soon, and described as alerts + approvals (not "messages")', async () => {

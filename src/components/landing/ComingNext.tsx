@@ -145,8 +145,11 @@ const ROADMAP: readonly RoadmapEntry[] = [
   {
     cap: AUTO_APPLY,
     icon: Send,
-    qualifier: 'Approval-first',
-    guardrails: ['Your approval is required for every submission', 'Supported applications only'],
+    qualifier: 'Beta · mode-gated',
+    guardrails: [
+      'Manual prepares only; Auto waits for your approval; Aggressive submits matching jobs within daily quota',
+      'Workday and other multi-step ATS may still hit account/OTP walls',
+    ],
     Preview: ApprovalPreview,
   },
   {
@@ -304,8 +307,8 @@ export function ComingNext() {
               From matched to applied.
             </h2>
             <p className="mt-3 text-pretty text-[14px] leading-relaxed text-muted-foreground">
-              Aspirely is growing into an approval-first application assistant. Nothing below is
-              available yet, and none of it will ever act without you.
+              Aspirely is growing into an application assistant you control — Manual, Auto, or
+              Auto Aggressive. Sensitive fields still pause for you.
             </p>
           </Reveal>
 

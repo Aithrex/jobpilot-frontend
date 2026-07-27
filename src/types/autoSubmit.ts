@@ -22,6 +22,11 @@ export interface AutoSubmitSettings {
    * this is null (the executor refuses to auto-act until it is set).
    */
   mode?: AutoApplyMode | null;
+  /**
+   * When true (default), auto-apply pins a tailored resume before submit.
+   * When false, submits with the user's base resume (no tailor quota spend).
+   */
+  use_tailored_resume?: boolean;
   updated_at?: string | null;
 }
 

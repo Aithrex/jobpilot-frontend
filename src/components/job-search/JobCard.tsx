@@ -3,6 +3,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import {
   MapPin, ExternalLink, BookmarkPlus, BookmarkCheck, Sparkles, Target,
   FileText, Wand2, ChevronDown, Users, ShieldCheck, Plane, Wifi, FileSignature,
+  Zap,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
@@ -26,6 +27,9 @@ interface JobCardProps {
   onSave: () => void;
   onUnsave: () => void;
   onQuickApply: () => void;
+  /** Optional: queue into auto-apply ledger (per-job Auto Apply CTA). */
+  onAutoApply?: () => void | Promise<unknown>;
+  autoApplying?: boolean;
 }
 
 /** Match band → ring stroke + label color, using the app's a11y-verified
@@ -138,7 +142,7 @@ function SignalPill({ icon: Icon, label, tone }: {
   );
 }
 
-export function JobCard({ job, saved, jobStatus, onSave, onUnsave, onQuickApply }: JobCardProps) {
+export function JobCard({ job, saved, jobStatus, onSave, onUnsave, onQuickApply, onAutoApply, autoApplying }: JobCardProps) {
   const reduceMotion = useReducedMotion();
   const [expanded, setExpanded] = useState(false);
   const [analysisOpen, setAnalysisOpen] = useState(false);
@@ -319,6 +323,20 @@ export function JobCard({ job, saved, jobStatus, onSave, onUnsave, onQuickApply 
                   </a>
                 )}
               </Button>
+
+              {onAutoApply && (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => void onAutoApply()}
+                  disabled={autoApplying || jobStatus === 'applied'}
+                  title="Queue this job for Aspirely auto-apply"
+                  className="h-9 gap-1.5 px-3 text-xs font-semibold"
+                >
+                  <Zap className="h-3.5 w-3.5" />
+                  {autoApplying ? 'Queuing…' : 'Auto Apply'}
+                </Button>
+              )}
 
               <Button
                 size="sm"

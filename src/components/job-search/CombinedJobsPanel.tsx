@@ -127,6 +127,8 @@ interface CombinedJobsPanelProps {
   saveJob: (job: Job) => void | Promise<unknown>;
   unsaveJob: (jobId: string) => void | Promise<unknown>;
   quickApply: (job: Job) => void | Promise<unknown>;
+  autoApply?: (job: Job) => void | Promise<unknown>;
+  autoApplyingId?: string | null;
 }
 
 export function CombinedJobsPanel({
@@ -135,6 +137,8 @@ export function CombinedJobsPanel({
   saveJob,
   unsaveJob,
   quickApply,
+  autoApply,
+  autoApplyingId,
 }: CombinedJobsPanelProps) {
   const reduceMotion = useReducedMotion();
   // Feed state + view filters live in a provider ABOVE the router outlet, so a
@@ -273,6 +277,8 @@ export function CombinedJobsPanel({
         onSave={() => saveJob(toJob(job, 'career portal'))}
         onUnsave={() => unsaveJob(job.job_id)}
         onQuickApply={() => quickApply(toJob(job, 'career portal'))}
+        onAutoApply={autoApply ? () => autoApply(toJob(job, 'career portal')) : undefined}
+        autoApplying={autoApplyingId === job.job_id}
       />
     </motion.div>
   );

@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import { toast } from 'sonner';
 import { apiService } from '@/lib/api';
 import type { Job, SavedJob, JobSearchFilters, JobSearchOptions, BatchSearchResponse, VisaFlags, VisaFilters } from '@/types/jobs';
 
@@ -321,6 +322,50 @@ export function useJobSearch() {
     }
   }, [savedJobs]);
 
+  // --- Auto Apply: queue into ledger (prepare/gather/submit per user mode) ---
+  const [autoApplyingId, setAutoApplyingId] = useState<string | null>(null);
+  const autoApply = useCallback(async (job: Job) => {
+    setAutoApplyingId(job.job_id);
+    try {
+      if (!savedJobs.some(j => j.job_id === job.job_id)) {
+        await apiService.saveJob(job);
+      }
+      const ats = (job.source || '').toLowerCase().includes('workday')
+        ? 'workday'
+        : (job.source || '').toLowerCase().includes('greenhouse')
+          ? 'greenhouse'
+          : (job.source || '').toLowerCase().includes('lever')
+            ? 'lever'
+            : (job.source || '').toLowerCase().includes('ashby')
+              ? 'ashby'
+              : undefined;
+      const resp = await apiService.queueAutoApply({
+        company: job.company || 'Unknown',
+        title: job.title || 'Role',
+        jd_text: job.description || '',
+        apply_url: job.apply_link || '',
+        ats_family: ats,
+        source: 'job_card',
+        job_id: job.job_id,
+        posting_job_id: job.job_id,
+      });
+      if (resp.error) {
+        toast.error('Could not queue Auto Apply', { description: resp.error });
+        return resp;
+      }
+      if (resp.data?.skipped) {
+        toast.message('Already in your Auto Apply queue');
+      } else {
+        toast.success('Queued for Auto Apply', {
+          description: 'Track progress in Auto-Apply. Mode controls whether we submit or wait for you.',
+        });
+      }
+      return resp;
+    } finally {
+      setAutoApplyingId(null);
+    }
+  }, [savedJobs]);
+
   // --- Get saved status for a job ---
   const getJobStatus = useCallback((jobId: string): string | null => {
     const saved = savedJobs.find(j => j.job_id === jobId);
@@ -355,6 +400,8 @@ export function useJobSearch() {
     updateJobStatus,
     isJobSaved,
     quickApply,
+    autoApply,
+    autoApplyingId,
     getJobStatus,
     batchMeta,
     hasSearched,

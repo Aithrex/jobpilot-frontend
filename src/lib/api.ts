@@ -57,8 +57,8 @@ export interface AdminUserOverride {
   user_email?: string;
   overrides?: {
     plan?: string;
-    limits?: Record<string, number>;
-    features?: Record<string, unknown>;
+    limits?: Record<string, number | null>;
+    features?: string[] | Record<string, unknown>;
   };
   updated_at?: string;
   updated_by?: string;
@@ -3760,14 +3760,39 @@ class ApiService {
     // never blanks a mode the onboarding flow already set (the mode is the
     // single source of truth; a bad value is a business 400, never 401).
     mode?: import('../types/onboarding').AutoApplyMode,
+    useTailoredResume?: boolean,
   ) {
     const body: Record<string, unknown> = { auto_submit_enabled: enabled };
     if (autonomyThreshold !== undefined) body.autonomy_threshold = autonomyThreshold;
     if (mode !== undefined) body.mode = mode;
+    if (useTailoredResume !== undefined) body.use_tailored_resume = useTailoredResume;
     return this.request<import('../types/autoSubmit').AutoSubmitSettings>(
       '/apply/auto-submit/settings',
       { method: 'PUT', body: JSON.stringify(body) },
     );
+  }
+
+  /**
+   * Queue a job into the auto-apply ledger and kick off gather. Used by the
+   * per-job Auto Apply CTA on Discover / job cards.
+   */
+  async queueAutoApply(body: {
+    company: string;
+    title: string;
+    jd_text?: string;
+    apply_url?: string;
+    ats_family?: string;
+    source?: string;
+    job_id?: string;
+    posting_job_id?: string;
+  }) {
+    return this.request<{
+      application?: { application_id?: string; status?: string };
+      outcome?: string;
+      skipped?: boolean;
+      reason?: string;
+      error?: string;
+    }>('/apply/queue', { method: 'POST', body: JSON.stringify(body) });
   }
 
   // ── Auto-Apply onboarding (declared-profile) — /api/apply/onboarding/* ──

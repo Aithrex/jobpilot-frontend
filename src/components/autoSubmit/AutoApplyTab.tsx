@@ -30,6 +30,7 @@ import { useAutoSubmit, type ApproveOutcome } from "@/hooks/useAutoSubmit";
 import type { AutoSubmitApprovalView } from "@/types/autoSubmit";
 import type { AutoApplyMode } from "@/types/onboarding";
 import AutoApplyOnboarding from "./AutoApplyOnboarding";
+import AutoApplyModeControls from "./AutoApplyModeControls";
 
 // ── display helpers ─────────────────────────────────────────────────────────
 
@@ -650,6 +651,7 @@ export default function AutoApplyTab() {
     [pending],
   );
   const copilot = mode === "copilot";
+  const aggressive = mode === "aggressive" || mode === "autopilot";
   // The approved/submitting queue merges the System-A hand-offs with the
   // canonical already-approved ledger rows.
   const approvedQueue = useMemo(
@@ -727,12 +729,18 @@ export default function AutoApplyTab() {
             </span>
           </div>
           <h2 className="font-display text-2xl font-extrabold tracking-tight">
-            {copilot ? "We prepare, you apply" : "Approve, then Aspirely submits"}
+            {copilot
+              ? "We prepare, you apply"
+              : aggressive
+                ? "Matching jobs apply for you"
+                : "Approve, then Aspirely submits"}
           </h2>
           <p className="text-sm text-muted-foreground">
             {copilot
               ? "Aspirely tailors and fills every answer. You open the job and apply."
-              : "You stay in control. Nothing is sent until you approve it, and you can cancel within a short window."}
+              : aggressive
+                ? "Auto Aggressive queues new matches daily and submits when confident. Sensitive fields still pause for you."
+                : "You stay in control. Nothing is sent until you approve it, and you can cancel within a short window."}
           </p>
         </div>
         <Button
@@ -744,6 +752,8 @@ export default function AutoApplyTab() {
           <Settings2 className="h-4 w-4" /> Setup
         </Button>
       </header>
+
+      <AutoApplyModeControls />
 
       {/* Mode not chosen yet - block until the user picks one. */}
       {needsMode && (

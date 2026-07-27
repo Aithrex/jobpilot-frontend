@@ -31,6 +31,7 @@ interface AutoSubmitApi {
     enabled: boolean,
     autonomyThreshold?: number,
     mode?: import("@/types/onboarding").AutoApplyMode,
+    useTailoredResume?: boolean,
   ): Promise<ApiResp<AutoSubmitSettings>>;
   approveAutoSubmit(
     body: AutoSubmitApproveBody,
@@ -158,6 +159,33 @@ export function useAutoSubmit() {
     [qc],
   );
 
+  /** Full settings write used by mode / tailor controls. */
+  const updateSettings = useCallback(
+    async (
+      enabled: boolean,
+      autonomyThreshold?: number,
+      mode?: import("@/types/onboarding").AutoApplyMode,
+      useTailoredResume?: boolean,
+    ): Promise<{ ok: boolean; error?: string }> => {
+      setSavingSettings(true);
+      const res = await api.updateAutoSubmitSettings(
+        enabled,
+        autonomyThreshold,
+        mode,
+        useTailoredResume,
+      );
+      setSavingSettings(false);
+      if (res.error || !res.data) return { ok: false, error: res.error };
+      qc.setQueryData<SettingsState>(SETTINGS_KEY, {
+        unavailable: false,
+        settings: res.data,
+      });
+      qc.invalidateQueries({ queryKey: PENDING_KEY });
+      return { ok: true };
+    },
+    [qc],
+  );
+
   const approve = useCallback(
     async (body: AutoSubmitApproveBody): Promise<ApproveOutcome> => {
       const res = await api.approveAutoSubmit(body);
@@ -213,6 +241,7 @@ export function useAutoSubmit() {
     savingSettings,
     setEnabled,
     saveSettings,
+    updateSettings,
 
     pending: pendingQuery.data?.pending ?? [],
     waiting: pendingQuery.data?.waiting ?? [],

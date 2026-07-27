@@ -89,7 +89,7 @@ const MODE_OPTIONS: {
 }[] = [
   {
     mode: "copilot",
-    title: "Copilot",
+    title: "Manual",
     tagline: "We prepare, you apply",
     detail:
       "We tailor your resume and resolve every answer, then hand you a ready answer sheet. Nothing is ever submitted for you.",
@@ -97,20 +97,20 @@ const MODE_OPTIONS: {
   },
   {
     mode: "approval",
-    title: "Approval-first",
+    title: "Auto",
     tagline: "We prepare and submit after you approve each one",
     detail:
       "Every application waits for your explicit go-ahead. We only submit once you have reviewed and approved it.",
     icon: Send,
   },
   {
-    mode: "autopilot",
-    title: "Autopilot",
-    tagline: "We auto-submit when we are confident",
+    mode: "aggressive",
+    title: "Auto Aggressive",
+    tagline: "Submit matching jobs every day",
     detail:
-      "We submit high-confidence applications on your behalf and pause on anything sensitive or unclear.",
+      "We queue new matching postings daily and submit high-confidence applications on your behalf. Sensitive or unclear fields still pause for you.",
     icon: Rocket,
-    note: "Unlocks after 10 reviewed applications. Until then we hold each one for your approval.",
+    note: "Uses your daily auto-apply quota. You can still switch back to Auto or Manual anytime.",
   },
 ];
 

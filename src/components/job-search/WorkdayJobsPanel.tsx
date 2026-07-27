@@ -383,6 +383,8 @@ interface WorkdayJobsPanelProps {
   saveJob: (job: Job) => void | Promise<unknown>;
   unsaveJob: (jobId: string) => void | Promise<unknown>;
   quickApply: (job: Job) => void | Promise<unknown>;
+  autoApply?: (job: Job) => void | Promise<unknown>;
+  autoApplyingId?: string | null;
   /** 'workday' (default) scans the Workday tenant catalog; 'careers' scans
    *  companies' own career sites (Greenhouse/Lever/Ashby/...); 'mncs' scans a
    *  curated FAANG+ / Fortune-500 MNC board catalog grouped by sector. Same
@@ -401,6 +403,8 @@ export function WorkdayJobsPanel({
   saveJob,
   unsaveJob,
   quickApply,
+  autoApply,
+  autoApplyingId,
   variant = 'workday',
   active = true,
 }: WorkdayJobsPanelProps) {
@@ -783,6 +787,8 @@ export function WorkdayJobsPanel({
         onSave={() => saveJob(toJob(job, fallbackSource))}
         onUnsave={() => unsaveJob(job.job_id)}
         onQuickApply={() => quickApply(toJob(job, fallbackSource))}
+        onAutoApply={autoApply ? () => autoApply(toJob(job, fallbackSource)) : undefined}
+        autoApplying={autoApplyingId === job.job_id}
       />
     </motion.div>
   );

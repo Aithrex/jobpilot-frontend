@@ -116,11 +116,11 @@ export const EMAIL_UPDATES: Capability = {
 export const AUTO_APPLY: Capability = {
   id: 'auto-apply',
   name: 'Auto Apply',
-  status: 'coming-soon',
+  status: 'beta',
   blurb:
-    'Approve once, and Aspirely will prepare and submit supported applications, then keep your pipeline updated.',
+    'Manual, Auto, or Auto Aggressive — queue any job, tailor or plain resume, and Aspirely prepares or submits within your daily quota.',
   evidence:
-    'Internal-beta / dark in prod. AUTO_APPLY_EXECUTOR defaults to "stub" and is unset in lambda.tf:24-63, so nothing submits. EXECUTOR_REMOTE_ENABLED + AUTO_SUBMIT_ENABLED also unset (apply routes 404 when off - apply.py:329-335). apply_hourly scheduler marked DRAFT (schedulers.tf:20-21). Only Greenhouse recon is real and its is_available() hardcodes false (ats_executor.py:176-179). Playwright submit path has ZERO CI coverage. The assistive autofill path IS shipped, but only via an UNPUBLISHED developer-mode extension (manifest v0.3.1, no store listing) - so it is not something a visitor can obtain, and is not claimed here.',
+    'Ledger queue (/api/apply/queue), modes (copilot/approval/aggressive), tailor toggle, entitlements auto_apply on all tiers + auto_submit meter. Per-job Auto Apply CTA on job cards. Admin entitlement_overrides for plan/limits/features. Executor still tenant-dependent (Workday account/OTP walls); Greenhouse/Lever/Ashby cleaner.',
 };
 
 export const WHATSAPP: Capability = {

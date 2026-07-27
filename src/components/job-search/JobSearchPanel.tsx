@@ -64,6 +64,8 @@ interface JobSearchPanelProps {
   unsaveJob: (jobId: string) => Promise<any>;
   isJobSaved: (jobId: string) => boolean;
   quickApply: (job: Job) => Promise<void>;
+  autoApply?: (job: Job) => Promise<unknown>;
+  autoApplyingId?: string | null;
   getJobStatus: (jobId: string) => string | null;
   batchMeta: BatchMeta | null;
   hasSearched: boolean;
@@ -75,7 +77,7 @@ interface JobSearchPanelProps {
 export function JobSearchPanel({
   jobs, filters, setFilters, page, totalPages,
   loading, error, searchJobs, batchSearch, saveJob, unsaveJob, isJobSaved,
-  quickApply, getJobStatus, batchMeta, hasSearched, filtersLoaded, savingFilters, saveFilters,
+  quickApply, autoApply, autoApplyingId, getJobStatus, batchMeta, hasSearched, filtersLoaded, savingFilters, saveFilters,
 }: JobSearchPanelProps) {
   const [localQuery, setLocalQuery] = useState(filters.query);
   const [showFilters, setShowFilters] = useState(true);
@@ -525,6 +527,8 @@ export function JobSearchPanel({
                 onSave={() => saveJob(job)}
                 onUnsave={() => unsaveJob(job.job_id)}
                 onQuickApply={() => quickApply(job)}
+                onAutoApply={autoApply ? () => autoApply(job) : undefined}
+                autoApplying={autoApplyingId === job.job_id}
               />
             ))}
           </div>

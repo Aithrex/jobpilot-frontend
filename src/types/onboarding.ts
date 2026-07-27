@@ -35,11 +35,14 @@ export type OnboardingValueType =
   | 'essay';
 
 /**
- * The three explicit autonomy modes (defect plan §"Autonomy MODES"). There is
- * NO implicit default - onboarding forces an explicit pick, and the executor
- * refuses to act while `mode` is null.
+ * The autonomy modes. Product labels:
+ *   Manual          → copilot
+ *   Auto            → approval
+ *   Auto Aggressive → aggressive (legacy `autopilot` still accepted)
+ * There is NO implicit default - onboarding forces an explicit pick, and the
+ * executor refuses to act while `mode` is null.
  */
-export type AutoApplyMode = 'copilot' | 'approval' | 'autopilot';
+export type AutoApplyMode = 'copilot' | 'approval' | 'autopilot' | 'aggressive';
 
 /** A scalar answer value. Booleans for Yes/No fields, numbers for years/money. */
 export type OnboardingAnswerValue = string | boolean | number;

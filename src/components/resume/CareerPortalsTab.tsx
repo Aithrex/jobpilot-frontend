@@ -29,7 +29,7 @@ export default function CareerPortalsTab() {
   );
   // One saved-jobs store for both variants - save/apply state stays in sync
   // when the same posting shows up in either catalog.
-  const { isJobSaved, getJobStatus, saveJob, unsaveJob, quickApply } = useJobSearch();
+  const { isJobSaved, getJobStatus, saveJob, unsaveJob, quickApply, autoApply, autoApplyingId } = useJobSearch();
 
   const select = (key: CareerPortalVariant) => {
     setActive(key);
@@ -98,6 +98,8 @@ export default function CareerPortalsTab() {
               saveJob={saveJob}
               unsaveJob={unsaveJob}
               quickApply={quickApply}
+              autoApply={autoApply}
+              autoApplyingId={autoApplyingId}
             />
           </div>
         ) : null,

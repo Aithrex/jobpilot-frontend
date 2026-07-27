@@ -154,6 +154,8 @@ export default function JobOpportunitiesTab({ embedded }: JobOpportunitiesTabPro
           saveJob={jobSearch.saveJob}
           unsaveJob={jobSearch.unsaveJob}
           quickApply={jobSearch.quickApply}
+          autoApply={jobSearch.autoApply}
+          autoApplyingId={jobSearch.autoApplyingId}
         />
       </div>
       <div style={{ display: view === 'saved' ? undefined : 'none' }}>

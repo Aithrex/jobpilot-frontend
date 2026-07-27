@@ -34,6 +34,7 @@ export const FEATURE_LABEL: Record<string, string> = {
   salary_percentiles: 'Salary percentiles',
   salary_negotiation: 'Negotiation scripts',
   post_history: 'Post history',
+  auto_apply: 'Auto Apply',
 };
 
 export function hasFeature(ent: AuthEntitlements | undefined, feature: string): boolean {

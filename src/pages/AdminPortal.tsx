@@ -1792,10 +1792,12 @@ function UserDetailDrawer({ detail, onBack }: { detail: UserDetail; onBack: () =
 
 // Runtime full-access grant for testers/devs. Overlays `overrides.plan` on top
 // of the user's stored plan server-side; clearing the override restores it.
+// Also supports limits/features overrides for Auto Apply testing.
 function AccessOverrideCard({ email, storedPlan }: { email: string; storedPlan?: string | null }) {
   const [override, setOverride] = useState<AdminUserOverride | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [autoSubmitLimit, setAutoSubmitLimit] = useState('999');
 
   const fetchOverride = useCallback(async () => {
     setLoading(true);
@@ -1805,6 +1807,8 @@ function AccessOverrideCard({ email, storedPlan }: { email: string; storedPlan?:
       setOverride(null);
     } else {
       setOverride(res.data ?? null);
+      const lim = res.data?.overrides?.limits?.auto_submit;
+      if (lim != null) setAutoSubmitLimit(String(lim));
     }
     setLoading(false);
   }, [email]);
@@ -1813,7 +1817,9 @@ function AccessOverrideCard({ email, storedPlan }: { email: string; storedPlan?:
 
   const overridePlan = override?.overrides?.plan;
   const fullAccess = !!overridePlan; // any override plan lifts the user above their stored plan
-  const effectivePlan = storedPlan || overridePlan || 'free';
+  const effectivePlan = overridePlan || storedPlan || 'free';
+  const ovLimits = override?.overrides?.limits || {};
+  const ovFeatures = override?.overrides?.features;
 
   const write = useCallback(async (overrides: Record<string, unknown>, successMsg: string) => {
     setSaving(true);
@@ -1832,14 +1838,14 @@ function AccessOverrideCard({ email, storedPlan }: { email: string; storedPlan?:
     <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-5 space-y-4">
       <SectionHeading
         title="Access override"
-        subtitle="Grants all premium features immediately. Use for testers/devs."
+        subtitle="Grant plan / Auto Apply limits / features for testing. Clears restore the stored plan."
         action={
           <span className={`text-[11px] px-2 py-0.5 rounded-full border ${
-            fullAccess
+            fullAccess || Object.keys(ovLimits).length > 0
               ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300'
               : 'bg-white/[0.03] border-white/[0.06] text-gray-500'
           }`}>
-            {loading ? 'Loading...' : fullAccess ? 'Full access active' : 'No override'}
+            {loading ? 'Loading...' : fullAccess ? 'Full access active' : 'No plan override'}
           </span>
         }
       />
@@ -1847,14 +1853,12 @@ function AccessOverrideCard({ email, storedPlan }: { email: string; storedPlan?:
       <div className="flex flex-wrap items-center gap-4 text-[11px] text-gray-500">
         <span className="inline-flex items-center gap-1.5">
           <span className="text-gray-600">Stored plan</span>
-          <span className="font-mono text-gray-300">{effectivePlan}</span>
+          <span className="font-mono text-gray-300">{storedPlan || 'free'}</span>
         </span>
-        {fullAccess && (
-          <span className="inline-flex items-center gap-1.5">
-            <span className="text-gray-600">Override</span>
-            <span className="font-mono text-emerald-300">{overridePlan}</span>
-          </span>
-        )}
+        <span className="inline-flex items-center gap-1.5">
+          <span className="text-gray-600">Effective</span>
+          <span className="font-mono text-emerald-300">{effectivePlan}</span>
+        </span>
         {override?.updated_by && (
           <span className="inline-flex items-center gap-1.5">
             <span className="text-gray-600">By</span>
@@ -1866,19 +1870,50 @@ function AccessOverrideCard({ email, storedPlan }: { email: string; storedPlan?:
       <div className="flex flex-wrap items-center gap-2 pt-1">
         <button
           onClick={() => write({ plan: 'premium_plus' }, 'Full access granted (Premium+).')}
-          disabled={saving || loading || fullAccess}
+          disabled={saving || loading || overridePlan === 'premium_plus'}
           className="h-9 px-4 rounded-lg bg-gradient-to-r from-indigo-500 to-violet-500 text-white text-xs font-medium inline-flex items-center gap-1.5 hover:from-indigo-400 hover:to-violet-400 transition disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <Icon.Bolt c="w-3.5 h-3.5" />
-          {fullAccess ? 'Full access granted' : 'Grant full access (Premium+)'}
+          Grant Premium+
+        </button>
+        <button
+          onClick={() => write({ plan: 'premium' }, 'Premium override set.')}
+          disabled={saving || loading}
+          className="h-9 px-4 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-gray-300 text-xs font-medium border border-white/[0.06] transition disabled:opacity-40"
+        >
+          Grant Premium
+        </button>
+        <button
+          onClick={() => write({
+            plan: effectivePlan === 'free' ? 'premium' : effectivePlan,
+            features: Array.isArray(ovFeatures)
+              ? [...new Set([...(ovFeatures as string[]), 'auto_apply'])]
+              : { ...(typeof ovFeatures === 'object' && ovFeatures ? ovFeatures : {}), auto_apply: true },
+            limits: { ...ovLimits, auto_submit: Number(autoSubmitLimit) || 999 },
+          }, 'Auto Apply testing unlock applied.')}
+          disabled={saving || loading}
+          className="h-9 px-4 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 text-xs font-medium border border-emerald-500/30 transition disabled:opacity-40"
+        >
+          Unlock Auto Apply (test)
         </button>
         <button
           onClick={() => write({}, 'Override cleared - reset to stored plan.')}
-          disabled={saving || loading || !fullAccess}
+          disabled={saving || loading || !override?.overrides}
           className="h-9 px-4 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-gray-300 text-xs font-medium border border-white/[0.06] inline-flex items-center gap-1.5 transition disabled:opacity-40 disabled:cursor-not-allowed"
         >
           Reset to plan
         </button>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2 text-[11px] text-gray-400">
+        <label className="inline-flex items-center gap-1.5">
+          Daily auto_submit limit
+          <input
+            value={autoSubmitLimit}
+            onChange={(e) => setAutoSubmitLimit(e.target.value)}
+            className="h-8 w-20 rounded-md border border-white/[0.08] bg-black/30 px-2 font-mono text-gray-200"
+          />
+        </label>
       </div>
     </div>
   );
