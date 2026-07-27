@@ -8,7 +8,7 @@ import { isGuestOnboardingEnabled } from '@/lib/guest';
  * The live guest experience now runs directly on the landing (`/#try`) with a
  * single useGuestFlow controller, so this route only routes:
  *
- * - authed users → /next/today (unchanged)
+ * - authed users → /app/home (unchanged)
  * - guests → /#try (guest state lives in localStorage + the backend session,
  *   so nothing is lost by redirecting)
  * - feature off → / (the account-first landing)
@@ -24,7 +24,7 @@ export default function Start() {
       </div>
     );
   }
-  if (isAuthenticated) return <Navigate to="/next/today" replace />;
+  if (isAuthenticated) return <Navigate to="/app/home" replace />;
   if (!isGuestOnboardingEnabled()) return <Navigate to="/" replace />;
   return <Navigate to={{ pathname: '/', hash: '#try' }} replace />;
 }

@@ -3862,7 +3862,7 @@ class ApiService {
 
   /**
    * Confirm an emailed approval link. The email's GET link is NON-mutating - it
-   * 302s the browser to `/next/applications?approve=<token>`; the signed-in SPA
+   * 302s the browser to `/app/apply?approve=<token>`; the signed-in SPA
    * then POSTs the token HERE to actually approve (CSRF-safe: authorization is
    * the Bearer header, never an ambient cookie). Outcomes are read off the
    * status by the caller: 200 (approved / not-ready via `approved`), 409

@@ -46,7 +46,7 @@ function CopyButton({ value }: { value: string }) {
 }
 
 /**
- * Managed-mailbox settings (`/next/settings/mailbox`). Shows the private
+ * Managed-mailbox settings (`/app/settings/mailbox`). Shows the private
  * application address (copy), the provision CTA (with a privacy-alias option),
  * a pause toggle, rotate (confirmed - rotating changes the address forever),
  * and forwarding (on/off + destination + verification state). All writes go

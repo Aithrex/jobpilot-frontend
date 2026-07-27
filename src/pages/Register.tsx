@@ -55,7 +55,7 @@ export default function Register() {
   const returnTo = sanitizeReturnTo(
     from ? `${from.pathname ?? ''}${from.search ?? ''}${from.hash ?? ''}` : null,
   );
-  const destination = returnTo ?? '/next/today';
+  const destination = returnTo ?? '/app/home';
 
   // Social sign-up leaves the SPA - stash the deep link for AuthCallback.
   useEffect(() => {

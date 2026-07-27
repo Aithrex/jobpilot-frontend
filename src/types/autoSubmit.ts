@@ -156,7 +156,7 @@ export interface AutoSubmitApproveResult {
 /**
  * Result of confirming an emailed approve link via the CSRF-safe
  * `POST /api/apply/approve-link`. The emailed GET is non-mutating and 302s to
- * `/next/applications?approve=<token>`; the signed-in SPA then POSTs the token.
+ * `/app/apply?approve=<token>`; the signed-in SPA then POSTs the token.
  * Outcome is read from the HTTP status + these fields:
  *   200 { ok:true, approved:1, ready:true }   -> approved
  *   200 { ok:true, approved:0, ready:false }  -> NOT ready yet (no error)

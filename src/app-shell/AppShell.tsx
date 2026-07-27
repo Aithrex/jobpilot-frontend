@@ -6,11 +6,8 @@ import { TopBar } from "./TopBar";
 import { MobileNav } from "./MobileNav";
 import { CommandPalette } from "./CommandPalette";
 
-// First-run onboarding. All auth successes land on /next/today, so the shell
-// must host the wizard too (it self-gates: renders null unless the signed-in
-// user still lacks onboarding). Lazy so onboarded users never fetch the chunk.
-// No double-mount risk: /app mounts its own instance, but /app and /next/* are
-// mutually exclusive routes - exactly one instance can exist at a time.
+// First-run onboarding. Auth lands on /app/home; the shell hosts the wizard
+// (self-gates unless the signed-in user still lacks onboarding).
 const OnboardingWizard = lazy(() => import("@/components/onboarding/OnboardingWizard"));
 
 function FullScreenLoader() {
@@ -36,13 +33,11 @@ function OutletFallback() {
 }
 
 /**
- * Isolated shell for the migrated app (`/next/*`). Coexists with the
- * ResumeParser monolith at `/app` during the strangler-fig migration.
+ * Canonical product shell (`/app/*`).
  *
- * Auth is gated the same way the monolith gates via AuthContext: while the
- * profile is verifying we show a loader; with no valid session we redirect to
- * `/login` (the monolith renders an in-place wall - here the task calls for a
- * redirect so deep links land on a real sign-in page and bounce back).
+ * Auth is gated via AuthContext: while the profile is verifying we show a
+ * loader; with no valid session we redirect to `/login` so deep links land on
+ * a real sign-in page and bounce back.
  */
 export default function AppShell() {
   const { isAuthenticated, isLoading } = useAuth();

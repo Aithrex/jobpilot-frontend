@@ -8,9 +8,8 @@ import { NAV_ITEMS, navHref } from "./nav.config";
 const ACTIVE_TAB_ID = "app-shell-mobilenav-active";
 
 /**
- * The four roles-first destinations that fit a bottom tab bar: Roles, Tailor,
- * Apply, Grow. Overview (the daily briefing) is the secondary destination and
- * is reached from the desktop bar / command palette, keeping mobile uncluttered.
+ * Bottom tabs: Home, Jobs, Resume, Apply. Grow + Settings live in the top bar
+ * / command palette on small screens.
  */
 const MOBILE_ITEMS = NAV_ITEMS.slice(0, 4);
 
@@ -35,7 +34,7 @@ export function MobileNav() {
       <ul className="mx-auto flex max-w-md items-stretch justify-around px-1">
         {MOBILE_ITEMS.map((item) => {
           const { icon: Icon, label } = item;
-          const badge = item.to === "applications" && unread > 0 ? unread : 0;
+          const badge = item.to === "apply" && unread > 0 ? unread : 0;
           return (
             <li key={item.to} className="flex-1">
               <NavLink

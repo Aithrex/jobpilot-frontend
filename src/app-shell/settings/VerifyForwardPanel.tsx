@@ -9,7 +9,7 @@ import { navHref } from '@/app-shell/nav.config';
 type VerifyState = 'verifying' | 'ok' | 'error' | 'missing';
 
 /**
- * Forwarding-verification landing (`/next/settings/mailbox/verify-forward?token=`).
+ * Forwarding-verification landing (`/app/settings/mailbox/verify-forward?token=`).
  * The link mailed to the user's original inbox lands here; we POST the token via
  * apiService.verifyForwarding and report success or failure. Runs exactly once
  * per token. A failure is 400/404/409 (never 401) - a bad token is not a

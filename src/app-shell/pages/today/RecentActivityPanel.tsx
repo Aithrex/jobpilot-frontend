@@ -20,8 +20,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { PanelCard, PanelEmpty, PanelError, ZoneHeading, StatusPill, Stat } from './primitives';
 
 /** Full pipeline lives in Applications; job search in Discover. */
-const APPLICATIONS_HREF = '/next/applications';
-const FIND_ROLES_HREF = '/next/discover/jobs';
+const APPLICATIONS_HREF = '/app/apply';
+const FIND_ROLES_HREF = '/app/jobs/for-you';
 const MAX_ROWS = 8;
 
 function shortDate(iso: string | undefined): string {

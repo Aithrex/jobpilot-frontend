@@ -1,6 +1,6 @@
 /**
  * TailoredPage - the tailoring history browser in the Craft section
- * (lazy-mounted at /next/craft/tailored).
+ * (lazy-mounted at /app/resume/tailored).
  *
  * Extracted verbatim (behaviour-preserving) from the ResumeParser monolith's
  * `TailoredResumesTab` for the app shell. Self-fetching + prop-less: it lists

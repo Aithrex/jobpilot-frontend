@@ -368,7 +368,7 @@ export default function BatchTailor() {
       source_url: job.sourceUrl || '',
     });
     // Open the app-shell Tailor route (not the legacy /?tab=tailor entry).
-    const url = `${window.location.origin}/next/craft/tailor?load_batch=${encodeURIComponent(job.jobId)}`;
+    const url = `${window.location.origin}/app/resume/tailor?load_batch=${encodeURIComponent(job.jobId)}`;
     window.open(url, '_blank', 'noopener,noreferrer');
   }, []);
 

@@ -64,7 +64,7 @@ const KIND_ICON: Record<TodayInboxKind, LucideIcon> = {
 };
 
 /** "Find roles" lands on Discover › Jobs - the shell's own job search. */
-const FIND_ROLES_HREF = '/next/discover/jobs';
+const FIND_ROLES_HREF = '/app/jobs/for-you';
 
 /** Absolute http(s) links leave the SPA; everything else is an in-app route. */
 function isExternal(href: string): boolean {
@@ -72,7 +72,7 @@ function isExternal(href: string): boolean {
 }
 
 /** The shell is mounted under this base during the strangler-fig migration. */
-const SHELL_BASE = '/next';
+const SHELL_BASE = '/app';
 
 /**
  * The backend emits base-agnostic in-app paths (e.g. "/applications") - it

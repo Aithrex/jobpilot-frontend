@@ -348,7 +348,7 @@ export default function OnboardingWizard() {
     // Cinematic resolve: a brief "your workspace is ready" beat, then in.
     setPhase('resolve');
     resolveTimer.current = window.setTimeout(
-      () => navigate('/next/today', { replace: true }),
+      () => navigate('/app/home', { replace: true }),
       reduce ? 900 : 1700,
     );
   };

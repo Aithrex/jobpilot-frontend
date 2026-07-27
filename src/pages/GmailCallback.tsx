@@ -5,7 +5,7 @@ import { apiService } from "@/lib/api";
 /**
  * Lands here after the user consents on Google. We POST { code, state } to
  * the backend (which validates the state, exchanges for tokens, and stores
- * the encrypted refresh token), then bounce them back to the resume parser
+ * the encrypted refresh token), then bounce them back to Applications
  * with a query flag the Applications tab listens for.
  */
 export default function GmailCallback() {
@@ -42,9 +42,9 @@ export default function GmailCallback() {
         return;
       }
       setStatus("done");
-      // Hop back into the Applications tab. The ?gmail=linked flag lets
+      // Hop back into the Applications tracker. The ?gmail=linked flag lets
       // ApplicationsTab refresh its Gmail status without a full reload.
-      setTimeout(() => navigate("/resume-parser?tab=applications&gmail=linked", { replace: true }), 600);
+      setTimeout(() => navigate("/app/apply/tracker?gmail=linked", { replace: true }), 600);
     })();
   }, [params, navigate]);
 
@@ -71,7 +71,7 @@ export default function GmailCallback() {
             <p className="mt-3 text-sm font-semibold text-gray-800 dark:text-gray-100">Couldn't link Gmail</p>
             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{error}</p>
             <button
-              onClick={() => navigate("/resume-parser?tab=applications", { replace: true })}
+              onClick={() => navigate("/app/apply/tracker", { replace: true })}
               className="mt-4 text-xs font-medium px-3 py-1.5 rounded-md bg-purple-600 text-white hover:bg-purple-500"
             >
               Back to Applications

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Building2, Moon, Plane, RefreshCw, Search, Sun, Wand2 } from 'lucide-react';
+import { Building2, Moon, Plane, RefreshCw, Search, Send, Sun, Wand2 } from 'lucide-react';
 import {
   CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem,
   CommandList, CommandSeparator, CommandShortcut,
@@ -16,9 +16,10 @@ export function openCommandPalette() {
 }
 
 const JUMP = [
-  { label: 'Browse jobs', to: 'discover/jobs', icon: Search },
-  { label: 'Career portals', to: 'discover/portals', icon: Building2 },
-  { label: 'Tailor a resume', to: 'craft/tailor', icon: Wand2 },
+  { label: 'Browse jobs', to: 'jobs/for-you', icon: Search },
+  { label: 'Career portals', to: 'jobs/portals', icon: Building2 },
+  { label: 'Tailor a resume', to: 'resume/tailor', icon: Wand2 },
+  { label: 'Auto-Apply', to: 'apply/auto-apply', icon: Send },
   { label: 'Visa timeline', to: 'settings/visa', icon: Plane },
 ];
 
@@ -58,7 +59,7 @@ export function CommandPalette() {
   const runJobSearch = () => {
     jobs.setSearch(query.trim());
     jobs.ensureStarted();
-    go(navHref('discover/jobs'));
+    go(navHref('jobs/for-you'));
   };
 
   return (

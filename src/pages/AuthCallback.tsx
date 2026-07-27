@@ -63,7 +63,7 @@ export default function AuthCallback() {
         toast.success('Signed in');
         // Honor a deep link stashed before the OAuth round-trip (the provider
         // redirect drops router state); falls back to the post-login default.
-        navigate(consumeAuthReturnTo() ?? '/next/today', { replace: true });
+        navigate(consumeAuthReturnTo() ?? '/app/home', { replace: true });
       }
     });
   }, [hydrateFromToken, navigate]);

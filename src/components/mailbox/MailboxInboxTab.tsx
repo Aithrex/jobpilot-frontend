@@ -32,7 +32,7 @@ function ListSkeleton() {
 }
 
 /**
- * INBOX tab of the /next/applications workspace: a master-detail view over the
+ * INBOX tab of the /app/apply workspace: a master-detail view over the
  * managed mailbox. Selection + the unread filter live in the URL so a thread is
  * deep-linkable (?thread=<id>). Reads flow through React Query against the real
  * /api/resume/mailbox endpoints - no fabricated progress.

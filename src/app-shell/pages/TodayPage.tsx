@@ -1,16 +1,7 @@
 /**
- * TodayPage - the "Today" mission-control dashboard (lazy-mounted at
- * /next/today by the app shell).
+ * Home — daily briefing at `/app/home`.
  *
- * A scanned tool, not a document. Three zones, top to bottom:
- *   Zone A "Are we OK?" - one hero indicator (the needs-your-input queue, or
- *                            today's application status) + a KPI row.
- *   Zone B "What's changing?" - a 30-day application trend and the funnel.
- *   Zone C "Why?" - a drill-down table of recent roles.
- *
- * Data comes exclusively through `apiService`. Every async surface owns its
- * own loading (skeleton) / empty / error state. Tokens only; verified in both
- * themes and at mobile widths.
+ * Zones: resume entry → feature launchpad → status/KPIs → trends → recent roles.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
@@ -26,6 +17,7 @@ import type { TodayInbox } from '@/types/todayInbox';
 
 import { HeroPanel, type HeroModel, type HeroInputItem } from './today/HeroPanel';
 import { ResumeEntryPanel } from './today/ResumeEntryPanel';
+import { FeatureLaunchpad } from './today/FeatureLaunchpad';
 import { KpiRow } from './today/KpiCards';
 import { ApplicationTrend, ConversionFunnel } from './today/PipelinePanels';
 import { RecentActivityPanel } from './today/RecentActivityPanel';
@@ -173,7 +165,7 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
       {/* Page header */}
       <motion.header {...rise(0)} className="flex flex-wrap items-end justify-between gap-3">
         <div className="space-y-1">
-          <p className="overline leading-none">Today</p>
+          <p className="overline leading-none">Home</p>
           <h1 className="text-title font-display text-foreground">
             {greeting()}, {name}
           </h1>
@@ -206,8 +198,12 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
         <ResumeEntryPanel onUploaded={() => void load()} />
       </motion.div>
 
+      <motion.div {...rise(2)}>
+        <FeatureLaunchpad />
+      </motion.div>
+
       {/* Zone A - Are we OK? */}
-      <motion.section {...rise(2)} aria-label="Today's status" className="space-y-4">
+      <motion.section {...rise(3)} aria-label="Today's status" className="space-y-4">
         <HeroPanel model={hero} onRetry={() => void load()} />
         <KpiRow
           loading={firstLoad && loading}
@@ -219,7 +215,7 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
       </motion.section>
 
       {/* Zone B - What's changing? */}
-      <motion.section {...rise(3)} aria-label="Trends" className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <motion.section {...rise(4)} aria-label="Trends" className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <ApplicationTrend
             state={panelState(err.streak)}
@@ -237,7 +233,7 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
       </motion.section>
 
       {/* Zone C - Why? */}
-      <motion.section {...rise(4)} aria-label="Recent roles">
+      <motion.section {...rise(5)} aria-label="Recent roles">
         <RecentActivityPanel
           state={panelState(err.saved)}
           jobs={savedJobs}

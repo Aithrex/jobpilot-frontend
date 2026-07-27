@@ -1,9 +1,9 @@
 import { Suspense, lazy, useState } from 'react';
 import { Outlet, useSearchParams } from 'react-router-dom';
-import { Inbox, LayoutList, Loader2 } from 'lucide-react';
+import { Inbox, LayoutList, Loader2, Send, TrendingUp } from 'lucide-react';
 import { SubNav, type SubNavItem } from '../SubNav';
 
-// Emailed approve/review links 302 into `/next/applications?approve=<token>`.
+// Emailed approve/review links 302 into `/app/apply?approve=<token>`.
 // Lazy so the confirmation surface only loads for users who arrive via a link.
 const ApproveLinkConfirm = lazy(
   () => import('@/components/autoSubmit/ApproveLinkConfirm'),
@@ -11,7 +11,9 @@ const ApproveLinkConfirm = lazy(
 
 const APPLICATION_SECTIONS: SubNavItem[] = [
   { to: 'tracker', label: 'Tracker', icon: LayoutList },
+  { to: 'auto-apply', label: 'Auto-Apply', icon: Send },
   { to: 'inbox', label: 'Inbox', icon: Inbox },
+  { to: 'pipeline', label: 'Pipeline', icon: TrendingUp },
 ];
 
 function SectionFallback() {
@@ -26,10 +28,7 @@ function SectionFallback() {
 }
 
 /**
- * "Apply" destination in the app shell (`/next/applications`). A layout route: a
- * horizontal sub-nav over deep-linkable nested sections - the application
- * tracker and the managed-mailbox Inbox. Sections are lazy-loaded via the
- * nested routes in App.tsx.
+ * "Apply" destination (`/app/apply`): tracker, Auto-Apply, inbox, pipeline.
  */
 export default function ApplicationsPage() {
   // Capture the approve token on the FIRST render, before the index route's
@@ -46,7 +45,7 @@ export default function ApplicationsPage() {
         <p className="overline mb-1">Apply</p>
         <h1 className="text-title font-display text-foreground">Your applications</h1>
         <p className="mt-1 text-caption text-muted-foreground">
-          Track every application and read replies to your managed address.
+          Track applications, run Auto-Apply, and read replies to your managed address.
         </p>
       </header>
 

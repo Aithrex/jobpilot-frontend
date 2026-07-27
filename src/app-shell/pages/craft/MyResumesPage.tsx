@@ -1,6 +1,6 @@
 /**
  * MyResumesPage - base-resume manager in the Craft section
- * (lazy-mounted at /next/craft/my-resumes).
+ * (lazy-mounted at /app/resume/library).
  *
  * Extracted from the ResumeParser monolith and rebuilt on the design system
  * (semantic tokens + shadcn). Manages the base resumes used as the source for

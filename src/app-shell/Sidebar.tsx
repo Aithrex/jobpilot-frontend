@@ -39,7 +39,7 @@ export function Sidebar({ collapsed, onToggleCollapse }: SidebarProps) {
       {/* Brand */}
       <div className={cn("flex h-16 items-center border-b border-sidebar-border/70", collapsed ? "justify-center px-2" : "px-4")}>
         <NavLink
-          to={navHref("today")}
+          to={navHref("home")}
           className="flex items-center gap-2.5 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar"
           aria-label="Aspirely home"
         >

@@ -17,8 +17,6 @@ import NotFound from './pages/NotFound';
 const Login = lazy(() => import('./pages/Login'));
 const Register = lazy(() => import('./pages/Register'));
 const Start = lazy(() => import('./pages/Start'));
-const OnboardingWizard = lazy(() => import('./components/onboarding/OnboardingWizard'));
-const ResumeParser = lazy(() => import('./pages/ResumeParser'));
 const AdminPortal = lazy(() => import('./pages/AdminPortal'));
 const GmailCallback = lazy(() => import('./pages/GmailCallback'));
 const AuthCallback = lazy(() => import('./pages/AuthCallback'));
@@ -28,40 +26,42 @@ const Privacy = lazy(() => import('./pages/Privacy'));
 const Terms = lazy(() => import('./pages/Terms'));
 
 // The authenticated workspace's provider stack (upgrade modal + feedback dialog
-// + combined-jobs controller). Mounted as a pathless layout route around `/app`
-// and `/next/*` ONLY - at the App root it forced billing UI, ui/dialog and the
-// whole jobs controller into the eager landing payload. Lazy so Rollup splits
-// it (and its deps) out of the entry chunk.
+// + combined-jobs controller). Mounted as a pathless layout route around
+// `/next/*` (and legacy `/app` redirects) ONLY - at the App root it forced
+// billing UI, ui/dialog and the whole jobs controller into the eager landing
+// payload. Lazy so Rollup splits it (and its deps) out of the entry chunk.
 const WorkspaceProviders = lazy(() => import('./components/workspace/WorkspaceProviders'));
 
-// New app shell (`/next/*`) - the migrated main app. Coexists with the
-// ResumeParser monolith at `/app` during the strangler-fig migration; AppShell
-// self-gates on AuthContext and redirects to /login without a session.
+// Canonical app shell (`/next/*`). Classic `/app` ResumeParser is retired —
+// those URLs redirect into `/next` via ClassicWorkspaceRedirect.
 const AppShell = lazy(() => import('@/app-shell/AppShell'));
+const ClassicWorkspaceRedirect = lazy(() => import('@/app-shell/ClassicWorkspaceRedirect'));
+const LegacyNextRedirect = lazy(() =>
+  import('@/app-shell/ClassicWorkspaceRedirect').then((m) => ({ default: m.LegacyNextRedirect })),
+);
 const TodayPage = lazy(() => import('@/app-shell/pages/TodayPage'));
 const ApplicationsPage = lazy(() => import('@/app-shell/pages/ApplicationsPage'));
 const ApplicationsTab = lazy(() => import('@/components/resume/ApplicationsTab'));
 const MailboxInboxTab = lazy(() => import('@/components/mailbox/MailboxInboxTab'));
+const AutoApplyTab = lazy(() => import('@/components/autoSubmit/AutoApplyTab'));
+const PipelineSection = lazy(() => import('@/app-shell/pages/PipelineSection'));
 const GrowPage = lazy(() => import('@/app-shell/pages/GrowPage'));
 const DiscoverPage = lazy(() => import('@/app-shell/pages/DiscoverPage'));
 const CraftPage = lazy(() => import('@/app-shell/pages/CraftPage'));
 const SettingsPage = lazy(() => import('@/app-shell/pages/SettingsPage'));
 
 // Grow + Discover mount existing standalone tab components as deep-linkable
-// nested sections under their destination layout - the monolith is untouched.
+// nested sections under their destination layout.
 // Sprint Learning Hub — the 14-day Jira-ticket sprint (components/hub).
-// Main restructured navigation to route-based pages, so /grow/learning renders
-// THIS route (not ResumeParser's ?tab=learning). The old study-plan/quiz UI is
-// still at "@/components/resume/LearningHubTab" — swap this line to restore it.
 const LearningHubTab = lazy(() => import('@/components/hub/LearningHubTab'));
 const NetworkTab = lazy(() => import('@/components/resume/NetworkTab'));
 const EventsTab = lazy(() => import('@/components/resume/EventsTab'));
+const InterviewPrepTab = lazy(() => import('@/components/resume/InterviewPrepTab'));
+const CareerCopilotTab = lazy(() => import('@/components/resume/CareerCopilotTab'));
 const JobOpportunitiesTab = lazy(() => import('@/components/resume/JobOpportunitiesTab'));
 const CareerPortalsTab = lazy(() => import('@/components/resume/CareerPortalsTab'));
 
-// Craft mounts the resume tools directly as nested sections. Tailor / My
-// Resumes / Tailored are extracted into the app shell; Batch / Six Seconds /
-// Voice are standalone components. No fallback cards remain - migration complete.
+// Craft mounts the resume tools directly as nested sections.
 const TailorPage = lazy(() => import('@/app-shell/pages/craft/TailorPage'));
 const MyResumesPage = lazy(() => import('@/app-shell/pages/craft/MyResumesPage'));
 const TailoredPage = lazy(() => import('@/app-shell/pages/craft/TailoredPage'));
@@ -71,13 +71,14 @@ const VoiceGraphTab = lazy(() => import('@/components/resume/VoiceGraphTab'));
 
 // Settings hub sections.
 const VisaTimelineTab = lazy(() => import('@/components/visa/VisaTimelineTab'));
-const ProfilePanel = lazy(() => import('@/app-shell/settings/ProfilePanel'));
+const ProfileTab = lazy(() => import('@/app-shell/settings/ProfileTab'));
 const IntegrationsPanel = lazy(() => import('@/app-shell/settings/IntegrationsPanel'));
 const AutonomyPanel = lazy(() => import('@/app-shell/settings/AutonomyPanel'));
 const BillingTab = lazy(() => import('@/components/billing/BillingTab'));
 const NotificationsTab = lazy(() => import('@/components/resume/NotificationsTab'));
 const MailboxSettingsPanel = lazy(() => import('@/app-shell/settings/MailboxSettingsPanel'));
 const VerifyForwardPanel = lazy(() => import('@/app-shell/settings/VerifyForwardPanel'));
+const BetaLabTab = lazy(() => import('@/components/beta/BetaLabTab'));
 
 const queryClient = new QueryClient();
 
@@ -116,7 +117,7 @@ export function RouteLoadingFallback({ pinnedDark = false }: { pinnedDark?: bool
  * Root route: the landing IS the product's front door - the full guest flow
  * (upload → up to 5 matches → one tailored resume → download → signup gate)
  * runs directly on `/` inside the hero workspace. /start survives only as a
- * backward-compatible redirect (authed → /next/today, guests → /#try). Deep
+ * backward-compatible redirect (authed → /app/home, guests → /#try). Deep
  * links to /login, /register, /privacy, /terms etc. are untouched.
  */
 function RootRoute() {
@@ -132,7 +133,7 @@ function AppContent() {
           {/* Public */}
           <Route path="/" element={<RootRoute />} />
           {/* Legacy guest-onboarding entry - now a pure redirect (authed →
-  /next/today; guests → /#try; feature off → /). Guest state
+  /app/home; guests → /#try; feature off → /). Guest state
   lives in localStorage + the backend session, so nothing is
   lost crossing this redirect. */}
           {/* These render on AuthShell's forced-dark stage - the fallback is
@@ -162,10 +163,7 @@ function AppContent() {
             }
           />
 
-          {/* Authenticated workspace. The pathless layout route mounts the
-  workspace provider stack ONCE around both `/app` and `/next/*`,
-  so the combined-jobs scan + auto-sync survive navigating between
-  them - while keeping all of it out of the landing's payload. */}
+          {/* Authenticated workspace providers wrap the product shell. */}
           <Route
             element={
               <Suspense fallback={<RouteLoadingFallback />}>
@@ -173,61 +171,49 @@ function AppContent() {
               </Suspense>
             }
           >
-            {/* Product workspace (AuthGate handles the sign-in wall). The
-  OnboardingWizard self-gates to authed users who haven't onboarded. */}
+            {/* Canonical product shell at /app (industry-standard SaaS prefix). */}
             <Route
               path="/app"
-              element={
-                <Suspense fallback={<RouteLoadingFallback />}>
-                  <ResumeParser />
-                  <OnboardingWizard />
-                </Suspense>
-              }
-            />
-
-            {/* New app shell - isolated from the /app monolith. AppShell wraps
-  its lazy children in its own Suspense, so nested routes render the
-  lazy page directly. Deep-linkable (e.g. /next/applications). */}
-            <Route
-              path="/next"
               element={
                 <Suspense fallback={<RouteLoadingFallback />}>
                   <AppShell />
                 </Suspense>
               }
             >
-              {/* Roles-first: land on the job feed (Discover) after login. */}
-              <Route index element={<Navigate to="discover" replace />} />
-              <Route path="today" element={<TodayPage />} />
-              <Route path="applications" element={<ApplicationsPage />}>
+              <Route index element={<Navigate to="home" replace />} />
+              <Route path="home" element={<TodayPage />} />
+              <Route path="apply" element={<ApplicationsPage />}>
                 <Route index element={<Navigate to="tracker" replace />} />
                 <Route path="tracker" element={<ApplicationsTab embedded />} />
+                <Route path="auto-apply" element={<AutoApplyTab />} />
                 <Route path="inbox" element={<MailboxInboxTab />} />
+                <Route path="pipeline" element={<PipelineSection />} />
               </Route>
               <Route path="grow" element={<GrowPage />}>
                 <Route index element={<Navigate to="learning" replace />} />
                 <Route path="learning" element={<LearningHubTab />} />
+                <Route path="interview" element={<InterviewPrepTab />} />
+                <Route path="copilot" element={<CareerCopilotTab />} />
                 <Route path="network" element={<NetworkTab />} />
                 <Route path="events" element={<EventsTab />} />
               </Route>
-              <Route path="discover" element={<DiscoverPage />}>
-                <Route index element={<Navigate to="jobs" replace />} />
-                <Route path="jobs" element={<JobOpportunitiesTab />} />
+              <Route path="jobs" element={<DiscoverPage />}>
+                <Route index element={<Navigate to="for-you" replace />} />
+                <Route path="for-you" element={<JobOpportunitiesTab />} />
                 <Route path="portals" element={<CareerPortalsTab />} />
               </Route>
-              <Route path="craft" element={<CraftPage />}>
-                {/* Land on Tailor - the flagship tool - as the Craft default. */}
+              <Route path="resume" element={<CraftPage />}>
                 <Route index element={<Navigate to="tailor" replace />} />
                 <Route path="tailor" element={<TailorPage />} />
                 <Route path="batch" element={<BatchTailor />} />
-                <Route path="my-resumes" element={<MyResumesPage />} />
+                <Route path="library" element={<MyResumesPage />} />
                 <Route path="tailored" element={<TailoredPage />} />
                 <Route path="six-seconds" element={<SixSecondsTab />} />
-                <Route path="voicegraph" element={<VoiceGraphTab />} />
+                <Route path="voice" element={<VoiceGraphTab />} />
               </Route>
               <Route path="settings" element={<SettingsPage />}>
                 <Route index element={<Navigate to="profile" replace />} />
-                <Route path="profile" element={<ProfilePanel />} />
+                <Route path="profile" element={<ProfileTab />} />
                 <Route path="integrations" element={<IntegrationsPanel />} />
                 <Route path="autonomy" element={<AutonomyPanel />} />
                 <Route path="visa" element={<VisaTimelineTab />} />
@@ -235,8 +221,36 @@ function AppContent() {
                 <Route path="mailbox/verify-forward" element={<VerifyForwardPanel />} />
                 <Route path="billing" element={<BillingTab />} />
                 <Route path="notifications" element={<NotificationsTab />} />
+                <Route path="beta" element={<BetaLabTab />} />
               </Route>
             </Route>
+
+            {/* Legacy classic ?tab= entry (old /home and /resume-parser bookmarks). */}
+            <Route
+              path="/home"
+              element={
+                <Suspense fallback={<RouteLoadingFallback />}>
+                  <ClassicWorkspaceRedirect />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/resume-parser"
+              element={
+                <Suspense fallback={<RouteLoadingFallback />}>
+                  <ClassicWorkspaceRedirect />
+                </Suspense>
+              }
+            />
+            {/* Temporary /next/* strangler → /app/* */}
+            <Route
+              path="/next/*"
+              element={
+                <Suspense fallback={<RouteLoadingFallback />}>
+                  <LegacyNextRedirect />
+                </Suspense>
+              }
+            />
           </Route>
 
           {/* Utility routes */}
@@ -298,9 +312,6 @@ function AppContent() {
             }
           />
 
-          {/* Legacy redirects → product-first paths */}
-          <Route path="/resume-parser" element={<Navigate to="/app" replace />} />
-          <Route path="/home" element={<Navigate to="/app" replace />} />
           <Route path="/welcome" element={<Navigate to="/" replace />} />
 
           <Route path="*" element={<NotFound />} />

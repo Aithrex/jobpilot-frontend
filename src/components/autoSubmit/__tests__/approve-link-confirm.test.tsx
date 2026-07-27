@@ -1,5 +1,5 @@
 /**
- * ApproveLinkConfirm - the /next/applications?approve=<token> confirmation
+ * ApproveLinkConfirm - the /app/apply?approve=<token> confirmation
  * surface. The apiService boundary + useAuth are mocked. Covers the four
  * outcomes (200 approved · 200 not-ready · 409 already-used · 403 wrong-account)
  * plus the signed-out bounce to /login that preserves the token. NEVER a 401.
@@ -38,10 +38,10 @@ function renderConfirm(token = 'tok-123') {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
-      <MemoryRouter initialEntries={[`/next/applications?approve=${token}`]}>
+      <MemoryRouter initialEntries={[`/app/apply?approve=${token}`]}>
         <Routes>
           <Route
-            path="/next/applications"
+            path="/app/apply"
             element={<ApproveLinkConfirm token={token} />}
           />
           <Route path="/login" element={<LoginProbe />} />
@@ -110,7 +110,7 @@ describe('ApproveLinkConfirm', () => {
     renderConfirm('tok-xyz');
 
     expect(await screen.findByText(/login-page:/)).toHaveTextContent(
-      '/next/applications?approve=tok-xyz',
+      '/app/apply?approve=tok-xyz',
     );
     expect(api.confirmApproveLink).not.toHaveBeenCalled();
   });

@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ExternalLink, LogOut, Monitor, Moon, Search, Settings, Sun } from "lucide-react";
+import { LogOut, Monitor, Moon, Search, Settings, Sun } from "lucide-react";
 import { BrandMark } from "@/components/BrandMark";
 import { openCommandPalette } from "./CommandPalette";
 import { DestinationNav } from "./DestinationNav";
@@ -45,7 +45,7 @@ export function TopBar() {
     <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border/70 glass-nav glass-specular px-4 shadow-soft transition-colors duration-200 ease-expo sm:px-6">
       {/* Brand mark - always visible now the sidebar is gone. */}
       <Link
-        to={navHref("discover")}
+        to={navHref("home")}
         aria-label="Aspirely home"
         className="flex shrink-0 items-center gap-2.5 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >
@@ -128,12 +128,6 @@ export function TopBar() {
               <Link to={navHref("settings")} className="cursor-pointer">
                 <Settings className="mr-2 h-4 w-4" aria-hidden="true" />
                 Settings
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link to="/app" className="cursor-pointer">
-                <ExternalLink className="mr-2 h-4 w-4" aria-hidden="true" />
-                Classic workspace
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />

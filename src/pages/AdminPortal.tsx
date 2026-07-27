@@ -1015,7 +1015,7 @@ export default function AdminPortal() {
         <div className="text-center space-y-4">
           <div className="text-7xl font-bold bg-gradient-to-b from-gray-400 to-gray-700 bg-clip-text text-transparent">403</div>
           <p className="text-gray-400">You are not authorized to access this page.</p>
-          <button onClick={() => navigate('/home')} className="text-sm text-indigo-400 hover:text-indigo-300">← Back to homepage</button>
+          <button onClick={() => navigate('/app/home')} className="text-sm text-indigo-400 hover:text-indigo-300">← Back to homepage</button>
         </div>
       </div>
     );
@@ -1033,15 +1033,15 @@ export default function AdminPortal() {
       <Sidebar
         tab={tab} setTab={setTab} counts={counts}
         user={user}
-        onSignOut={() => { logout(); navigate('/home'); }}
-        onBackToApp={() => navigate('/home')}
+        onSignOut={() => { logout(); navigate('/app/home'); }}
+        onBackToApp={() => navigate('/app/home')}
       />
 
       <main className="flex-1 min-w-0 flex flex-col">
         <MobileTopNav
           tab={tab} setTab={setTab}
-          onSignOut={() => { logout(); navigate('/home'); }}
-          onBackToApp={() => navigate('/home')}
+          onSignOut={() => { logout(); navigate('/app/home'); }}
+          onBackToApp={() => navigate('/app/home')}
         />
         <Topbar
           title={tabMeta[tab].title}

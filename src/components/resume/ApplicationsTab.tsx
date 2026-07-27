@@ -380,7 +380,7 @@ export default function ApplicationsTab({ embedded = false }: ApplicationsTabPro
           with no guessing which stage you're in.
         </p>
         <Button asChild className="mt-4 min-h-11">
-          <Link to="/next/craft/tailor">Tailor a resume</Link>
+          <Link to="/app/resume/tailor">Tailor a resume</Link>
         </Button>
       </div>
     );
@@ -438,7 +438,7 @@ export default function ApplicationsTab({ embedded = false }: ApplicationsTabPro
         <GmailIntegration onSyncComplete={fetchSilent} />
         <p className="text-right text-xs text-muted-foreground">
           <Link
-            to="/next/settings/integrations"
+            to="/app/settings/integrations"
             className="rounded underline-offset-2 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
             Manage Gmail in Settings

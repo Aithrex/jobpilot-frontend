@@ -91,7 +91,7 @@ export default function LandingExperience() {
   // A CTA may only open a file dialog when there is genuinely something to
   // upload into. Otherwise it becomes a link that says what it does.
   const onUpload = guestEnabled ? picker.open : undefined;
-  const fallbackHref = authed ? '/next/today' : '/register';
+  const fallbackHref = authed ? '/app/home' : '/register';
   const fallbackLabel = authed ? 'Open my workspace' : 'Create free account';
 
   return (

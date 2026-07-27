@@ -97,7 +97,7 @@ export const TRACK: Capability = {
   status: 'available',
   blurb: 'Keep every application, status and follow-up in one pipeline.',
   evidence:
-    'tailoring_records-backed (pipeline_intel_service.py:9-11); routes resume.py:796,1059,2048+; "applications" is a _CORE free entitlement (entitlements_service.py:158); shipped in the DEFAULT shell at /next/applications (App.tsx:134, nav.config.ts:37).',
+    'tailoring_records-backed (pipeline_intel_service.py:9-11); routes resume.py:796,1059,2048+; "applications" is a _CORE free entitlement (entitlements_service.py:158); shipped in the DEFAULT shell at /app/apply (App.tsx:134, nav.config.ts:37).',
 };
 
 export const EMAIL_UPDATES: Capability = {

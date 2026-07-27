@@ -45,7 +45,7 @@ export default function Login() {
   const returnTo = sanitizeReturnTo(
     from ? `${from.pathname ?? ''}${from.search ?? ''}${from.hash ?? ''}` : null,
   );
-  const destination = returnTo ?? '/next/today';
+  const destination = returnTo ?? '/app/home';
 
   // Social sign-in leaves the SPA entirely - stash the deep link so
   // AuthCallback can honor it when the OAuth round-trip returns.

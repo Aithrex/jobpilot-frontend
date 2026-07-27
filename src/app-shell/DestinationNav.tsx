@@ -25,7 +25,7 @@ export function DestinationNav() {
       <ul className="scrollbar-hide flex items-center gap-1 overflow-x-auto">
         {NAV_ITEMS.map((item) => {
           const { icon: Icon, label } = item;
-          const badge = item.to === "applications" && unread > 0 ? unread : 0;
+          const badge = item.to === "apply" && unread > 0 ? unread : 0;
           return (
             <li key={item.to} className="shrink-0">
               <NavLink

@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { Outlet } from "react-router-dom";
-import { Bell, CreditCard, Gauge, Loader2, Mail, Plane, PlugZap, UserCircle } from "lucide-react";
+import { Beaker, Bell, CreditCard, Gauge, Loader2, Mail, Plane, PlugZap, UserCircle } from "lucide-react";
 import { SubNav, type SubNavItem } from "../SubNav";
 
 const SETTINGS_SECTIONS: SubNavItem[] = [
@@ -11,6 +11,7 @@ const SETTINGS_SECTIONS: SubNavItem[] = [
   { to: "autonomy", label: "Autonomy", icon: Gauge },
   { to: "billing", label: "Billing", icon: CreditCard },
   { to: "notifications", label: "Notifications", icon: Bell },
+  { to: "beta", label: "Beta Lab", icon: Beaker },
 ];
 
 function SectionFallback() {

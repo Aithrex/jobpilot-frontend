@@ -191,7 +191,7 @@ export function SmartFiltersPanel({ onApply, compact = false }: SmartFiltersPane
               </Button>
               {error.toLowerCase().includes('no resume') && (
                 <Button asChild size="sm" variant="outline" className="gap-1.5">
-                  <a href="/resume-parser">Upload resume</a>
+                  <a href="/app/resume/library">Upload resume</a>
                 </Button>
               )}
             </div>

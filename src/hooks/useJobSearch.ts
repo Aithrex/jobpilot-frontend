@@ -357,7 +357,7 @@ export function useJobSearch() {
         toast.message('Already in your Auto Apply queue');
       } else {
         toast.success('Queued for Auto Apply', {
-          description: 'Track progress in Auto-Apply. Mode controls whether we submit or wait for you.',
+          description: 'Track progress under Apply → Auto-Apply. Mode controls whether we submit or wait for you.',
         });
       }
       return resp;

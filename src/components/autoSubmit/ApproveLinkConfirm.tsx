@@ -19,7 +19,7 @@ import { useAuth } from "@/contexts/AuthContext";
  * Confirmation surface for an emailed approval link.
  *
  * The email link's GET is NON-mutating - the backend 302s the browser to
- * `/next/applications?approve=<token>`. This component (mounted on that page,
+ * `/app/apply?approve=<token>`. This component (mounted on that page,
  * inside the authed app shell) completes the action via the CSRF-safe
  * `POST /api/apply/approve-link`, reading the outcome off the HTTP status:
  *   200 approved (`approved > 0`) · 200 not-ready (`approved === 0`) ·
@@ -180,7 +180,7 @@ export default function ApproveLinkConfirm({
         replace
         state={{
           from: {
-            pathname: "/next/applications",
+            pathname: "/app/apply",
             search: `?approve=${encodeURIComponent(token)}`,
           },
         }}

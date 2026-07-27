@@ -122,7 +122,7 @@ export function WorkspaceHero({
       </span>
       <p className="min-w-0 flex-1 text-sm font-semibold">You're signed in</p>
       <Button asChild size="sm" className="h-11 w-full rounded-control font-semibold sm:w-auto">
-        <Link to="/next/today">Open my workspace</Link>
+        <Link to="/app/home">Open my workspace</Link>
       </Button>
     </div>
   ) : guestEnabled ? (
@@ -196,7 +196,7 @@ export function WorkspaceHero({
                       size="lg"
                       className="h-12 w-full rounded-full px-7 text-base font-semibold shadow-panel sm:w-auto"
                     >
-                      <Link to={authed ? '/next/today' : '/register'}>
+                      <Link to={authed ? '/app/home' : '/register'}>
                         {authed ? 'Open my workspace' : 'Create free account'}
                       </Link>
                     </Button>

@@ -1,6 +1,6 @@
 /**
  * TailorPage - the flagship "Tailor" tool in the Craft section
- * (lazy-mounted at /next/craft/tailor by the app shell).
+ * (lazy-mounted at /app/resume/tailor by the app shell).
  *
  * Extracted from the ResumeParser monolith and rebuilt on the design system:
  * semantic tokens, shadcn primitives, a REAL backend-driven progress indicator
