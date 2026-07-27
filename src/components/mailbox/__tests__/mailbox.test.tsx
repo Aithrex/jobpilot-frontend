@@ -218,20 +218,62 @@ describe('ThreadDetailView', () => {
 });
 
 describe('MailboxSettingsPanel', () => {
-  test('provision calls provisionMailbox with the privacy-alias flag', async () => {
+  // AUTOAPPLY_REPAIR_SPEC §6: provisioning is automatic at sign-up, so the panel
+  // must NEVER prompt the user to create an address (nor pick a privacy alias).
+  test('never prompts the user to create an address', async () => {
     api.getMailbox.mockResolvedValue({ data: { provisioned: false }, status: 200 });
-    api.provisionMailbox.mockResolvedValue({
-      data: { provisioned: true, address: 'harshith.manne@pilotmail.co' },
+
+    renderWithProviders(<MailboxSettingsPanel />);
+
+    expect(await screen.findByText(/setting up your private address/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /create my address/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+    expect(api.provisionMailbox).not.toHaveBeenCalled();
+  });
+
+  // §6: the destination is the registered email, server-side. No input, no Save,
+  // no verification badge - just a read-only line.
+  test('shows a read-only forwarding destination and never asks for one', async () => {
+    api.getMailbox.mockResolvedValue({
+      data: {
+        provisioned: true,
+        address: 'harshith.manne@pilotmail.co',
+        paused: false,
+        forwarding_enabled: true,
+        forward_to: 'harshith@aithrex.tech',
+        forward_to_verified: true,
+        unread_count: 0,
+      },
       status: 200,
     });
 
     renderWithProviders(<MailboxSettingsPanel />);
 
-    const cta = await screen.findByRole('button', { name: /create my address/i });
-    await userEvent.click(cta);
-    await waitFor(() =>
-      expect(api.provisionMailbox).toHaveBeenCalledWith({ privacy_alias: false }),
-    );
+    expect(await screen.findByText(/forwarding to/i)).toBeInTheDocument();
+    expect(screen.getByText('harshith@aithrex.tech')).toBeInTheDocument();
+    expect(screen.queryByLabelText(/forwarding destination email/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^save$/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/verification sent/i)).not.toBeInTheDocument();
+  });
+
+  test('the forwarding switch posts enabled only - never a forward_to', async () => {
+    api.getMailbox.mockResolvedValue({
+      data: {
+        provisioned: true,
+        address: 'harshith.manne@pilotmail.co',
+        paused: false,
+        forwarding_enabled: true,
+        forward_to: 'harshith@aithrex.tech',
+        forward_to_verified: true,
+        unread_count: 0,
+      },
+      status: 200,
+    });
+    api.setForwarding.mockResolvedValue({ data: {}, status: 200 });
+
+    renderWithProviders(<MailboxSettingsPanel />);
+    await userEvent.click(await screen.findByLabelText('Enable forwarding'));
+    await waitFor(() => expect(api.setForwarding).toHaveBeenCalledWith({ enabled: false }));
   });
 
   test('pause toggle calls pauseMailbox(true)', async () => {

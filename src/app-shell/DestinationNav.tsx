@@ -1,6 +1,7 @@
 import { NavLink } from "react-router-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { indicatorSpring } from "@/lib/motion";
 import { useMailboxUnread } from "@/hooks/useMailboxUnread";
 import { NAV_ITEMS, navHref } from "./nav.config";
 
@@ -48,11 +49,7 @@ export function DestinationNav() {
                       <motion.span
                         layoutId={ACTIVE_PILL_ID}
                         className="absolute inset-0 z-0 rounded-full bg-accent shadow-soft ring-1 ring-border/60"
-                        transition={
-                          reduceMotion
-                            ? { duration: 0 }
-                            : { type: "spring", stiffness: 520, damping: 40, mass: 0.7 }
-                        }
+                        transition={indicatorSpring(reduceMotion)}
                         aria-hidden="true"
                       />
                     )}

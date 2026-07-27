@@ -43,8 +43,13 @@ export type AutoSubmitStatus =
   | "ready_for_review"
   | "queued_for_execution"
   | "running"
-  // Copilot (prepare-only) disposition: JobPilot resolved the answer sheet but
-  // never submits - the user applies manually.
+  /**
+   * @deprecated NO backend writer ever emits this as a row `status`.
+   * `manual_apply` is a BOOLEAN on the auto-apply answers doc
+   * (auto_apply_service.py:656/698/738) and is never surfaced on the pending
+   * payload. Copilot rows are identified by `mode === "copilot"` instead.
+   * Kept in the union only so older persisted payloads still type-check.
+   */
   | "manual_apply"
   // Canonical execution states that hand a row BACK to the human (worker.py /
   // application_ledger_service). None is an error or a success - they are
@@ -57,7 +62,26 @@ export type AutoSubmitStatus =
   //                      HELD, never auto-retried (P1-ENC / worker boundary).
   | "waiting_human"
   | "needs_input"
-  | "submission_unknown";
+  | "submission_unknown"
+  // Canonical ledger statuses that were MISSING from this union. Rows in these
+  // states reach the FE (or will, as the fold widens) and must never fall
+  // through to "render as an approvable review card" / silently vanish.
+  //   unsupported  the employer's ATS is not automatable by us (spec §4). NOT
+  //                an error - an honest, calm "apply manually" hand-off.
+  //   failed       a pre-submit failure. Nothing was sent. MUST be visible: a
+  //                failed row silently disappearing is why applications "vanish".
+  // The rest are in-flight / terminal labels we render read-only.
+  | "unsupported"
+  | "failed"
+  | "failed_pre_submit"
+  | "draft"
+  | "queued"
+  | "gathering"
+  | "preparing"
+  | "waiting_otp"
+  | "confirmed"
+  | "withdrawn"
+  | "external";
 
 /**
  * A single approval "view" as returned by /pending. Company / role / match%
@@ -114,14 +138,74 @@ export interface AutoSubmitApprovalView {
   reason?: string | null;
 }
 
-/** One field the executor could not resolve on a `needs_input` row. */
+/**
+ * One item on a `needs_input` row. TWO very different things are funnelled into
+ * this list by the backend and they need OPPOSITE user experiences:
+ *
+ *  1. A QUESTION we could not resolve — the user answers it IN THE APP
+ *     (`POST /api/apply/needs-input/answer`) and the run resumes. Emitted by
+ *     `auto_apply_service._needs_item` with `kind` = "legal_attestation" |
+ *     "screening" | "low_confidence" | <fill-driver reason>.
+ *  2. A WALL on the employer's site — captcha / email-verification / forced
+ *     password reset / login+account gate. Nothing can be typed here; the user
+ *     must finish it in their own logged-in browser. Emitted by
+ *     `auto_apply_service._park_verify` with `kind` = "oracle_verify" |
+ *     "oracle_captcha" | "oracle_reset" and `action` = "complete_in_browser",
+ *     and by the `_fold_needs_input` account gate with `kind` = "account".
+ *
+ * Use `isBrowserWallItem()` (components/autoSubmit/needsInput.ts) to branch -
+ * never render a wall as a text box, and never send the user to the employer's
+ * portal for a question they could have typed here.
+ */
 export interface NeedsInputItem {
   /** The prompt shown to the user (e.g. "We need your answer to continue (...)"). */
   question?: string | null;
-  /** Why it stalled (e.g. "legal_attestation", "low_confidence"). */
+  /** Why it stalled, OR the wall kind. See the doc comment above. */
   kind?: string | null;
-  /** The canonical field the answer maps to. */
+  /** The canonical field the answer maps to (the `answers` key on submit). */
   field_id?: string | null;
+  /**
+   * Set to "complete_in_browser" by `_park_verify` for Oracle walls. Its
+   * presence is the strongest signal that this item is NOT answerable in-app.
+   */
+  action?: string | null;
+  /** Deep link for a wall item (`_park_verify` copies the row's apply URL). */
+  apply_url?: string | null;
+  /**
+   * OPTIONAL enrichment. The backend does not send these today, so the FE
+   * infers a control from `field_id`/`question` (see `inferControl`). The
+   * moment the backend starts echoing the question-bank metadata these take
+   * over verbatim - that is the intended, one-line upgrade path.
+   */
+  value_type?: import("./onboarding").OnboardingValueType | string | null;
+  options?: string[] | null;
+  required?: boolean | null;
+}
+
+/** A scalar answer the user supplies for a `needs_input` question. */
+export type NeedsInputAnswerValue = string | boolean | number;
+
+/**
+ * `POST /api/apply/needs-input/answer` (AUTOAPPLY_REPAIR_SPEC §3).
+ * Only field_ids the user actually filled are sent - an empty value would be
+ * persisted by `answer_library_service.remember()` and poison future runs.
+ */
+export interface NeedsInputAnswerBody {
+  application_id: string;
+  answers: Record<string, NeedsInputAnswerValue>;
+}
+
+/**
+ * 200 response for the same. `remaining` is the AUTHORITATIVE post-merge gap
+ * list: non-empty -> still `needs_input`, show only what is left; empty ->
+ * the row resumed and `application_status` says where it went.
+ * Business failures are 400 (validation) / 403 (`upgrade_required`) /
+ * 409 (`not_in_needs_input`) / 429 (quota) - NEVER 401.
+ */
+export interface NeedsInputAnswerResult {
+  status?: string;
+  application_status?: AutoSubmitStatus | string;
+  remaining?: NeedsInputItem[] | null;
 }
 
 export interface AutoSubmitUsage {

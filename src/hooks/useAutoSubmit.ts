@@ -9,6 +9,9 @@ import type {
   AutoSubmitPending,
   AutoSubmitSettings,
   AutoSubmitUsage,
+  NeedsInputAnswerBody,
+  NeedsInputAnswerResult,
+  NeedsInputItem,
 } from "@/types/autoSubmit";
 
 /**
@@ -43,6 +46,9 @@ interface AutoSubmitApi {
   markAutoSubmitSubmitted(
     applicationId: string,
   ): Promise<ApiResp<{ approval: AutoSubmitApprovalView }>>;
+  answerNeedsInput(
+    body: NeedsInputAnswerBody,
+  ): Promise<ApiResp<NeedsInputAnswerResult>>;
 }
 
 const api = apiService as unknown as AutoSubmitApi;
@@ -59,6 +65,27 @@ export interface ApproveOutcome {
   quota?: AutoSubmitUsage;
   usage?: AutoSubmitUsage;
   created?: boolean;
+  error?: string;
+}
+
+/**
+ * Result surface for answering a `needs_input` row in-app (SPEC §3). The whole
+ * point is that the user NEVER gets told to go apply manually for a question
+ * they just answered, so every branch here is a business outcome, not an error
+ * page: `remaining` non-empty means "keep going, here's what's left".
+ */
+export interface NeedsInputAnswerOutcome {
+  ok: boolean;
+  /** 403 `upgrade_required` - the plan doesn't include this. */
+  needsUpgrade?: boolean;
+  /** 409 `not_in_needs_input` - the row already moved on (usually benign). */
+  notInNeedsInput?: boolean;
+  /** 429 - quota exhausted. */
+  quota?: AutoSubmitUsage;
+  /** Where the row landed after the merge. Empty `remaining` => it resumed. */
+  applicationStatus?: string;
+  /** The gaps STILL unresolved. Empty/absent = the application is proceeding. */
+  remaining?: NeedsInputItem[];
   error?: string;
 }
 
@@ -219,6 +246,47 @@ export function useAutoSubmit() {
     [qc],
   );
 
+  /**
+   * Submit the user's answers for a parked `needs_input` row and resume it.
+   * Thin on purpose: the ONLY shape knowledge lives here + in api.ts, so if the
+   * backend contract lands slightly different this is a one-line change.
+   */
+  const answerNeedsInput = useCallback(
+    async (
+      applicationId: string,
+      answers: NeedsInputAnswerBody["answers"],
+    ): Promise<NeedsInputAnswerOutcome> => {
+      const res = await api.answerNeedsInput({
+        application_id: applicationId,
+        answers,
+      });
+      if (res.status === 403) {
+        return { ok: false, needsUpgrade: true, error: res.error };
+      }
+      if (res.status === 409) {
+        // The row left needs_input under us (a sweep resolved it, or the user
+        // answered in another tab). Refresh rather than shout at them.
+        qc.invalidateQueries({ queryKey: PENDING_KEY });
+        return { ok: false, notInNeedsInput: true, error: res.error };
+      }
+      if (res.status === 429) {
+        const usage = (res.errorPayload?.usage as AutoSubmitUsage) ?? undefined;
+        return { ok: false, quota: usage, error: res.error };
+      }
+      if (res.error || !res.data) {
+        return { ok: false, error: res.error ?? "Could not save your answer" };
+      }
+      // The row moved (or shed some gaps) - the queue must re-read.
+      qc.invalidateQueries({ queryKey: PENDING_KEY });
+      return {
+        ok: true,
+        applicationStatus: res.data.application_status,
+        remaining: Array.isArray(res.data.remaining) ? res.data.remaining : [],
+      };
+    },
+    [qc],
+  );
+
   const markSubmitted = useCallback(
     async (applicationId: string): Promise<{ ok: boolean; error?: string }> => {
       const res = await api.markAutoSubmitSubmitted(applicationId);
@@ -252,5 +320,6 @@ export function useAutoSubmit() {
     approve,
     cancel,
     markSubmitted,
+    answerNeedsInput,
   };
 }

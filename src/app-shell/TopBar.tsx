@@ -68,7 +68,7 @@ export function TopBar() {
           onClick={openCommandPalette}
           aria-label="Open command palette"
           title="Search & jump (Ctrl/⌘ K)"
-          className="hidden h-10 items-center gap-2 rounded-full border border-border/70 bg-muted/40 pl-3 pr-2 text-caption text-muted-foreground outline-none transition-colors duration-200 ease-expo hover:border-border hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:flex"
+          className="hidden h-10 items-center gap-2 rounded-full border border-border/70 bg-muted/40 pl-3 pr-2 text-caption text-muted-foreground interactive interactive-press hover:border-border hover:text-foreground sm:flex"
         >
           <Search className="h-4 w-4" aria-hidden="true" />
           <span>Search...</span>
@@ -79,7 +79,7 @@ export function TopBar() {
           onClick={openCommandPalette}
           aria-label="Open command palette"
           title="Search & jump"
-          className="flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground outline-none transition-colors duration-200 ease-expo hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:hidden"
+          className="flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground interactive interactive-press hover:bg-accent hover:text-foreground sm:hidden"
         >
           <Search className="h-5 w-5" aria-hidden="true" />
         </button>
@@ -90,7 +90,7 @@ export function TopBar() {
           onClick={() => setTheme(nextTheme)}
           aria-label={themeToggleLabel}
           title={themeToggleLabel}
-          className="flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground outline-none transition-colors duration-200 ease-expo hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:bg-accent/80"
+          className="flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground interactive interactive-press hover:bg-accent hover:text-foreground active:bg-accent/80"
         >
           <ThemeIcon className="h-5 w-5" aria-hidden="true" />
         </button>
@@ -100,7 +100,7 @@ export function TopBar() {
           to={navHref("settings")}
           aria-label="Settings"
           title="Settings"
-          className="hidden h-11 w-11 items-center justify-center rounded-full text-muted-foreground outline-none transition-colors duration-200 ease-expo hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:bg-accent/80 sm:flex"
+          className="hidden h-11 w-11 items-center justify-center rounded-full text-muted-foreground interactive interactive-press hover:bg-accent hover:text-foreground active:bg-accent/80 sm:flex"
         >
           <Settings className="h-5 w-5" aria-hidden="true" />
         </Link>
@@ -111,7 +111,7 @@ export function TopBar() {
             <button
               type="button"
               aria-label="Open account menu"
-              className="flex h-11 w-11 items-center justify-center rounded-full outline-none transition-colors duration-200 ease-expo hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:bg-accent/80"
+              className="flex h-11 w-11 items-center justify-center rounded-full interactive interactive-press hover:bg-accent active:bg-accent/80"
             >
               <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
                 {initials(name, email)}

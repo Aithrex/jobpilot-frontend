@@ -1,3 +1,15 @@
+/**
+ * DEAD CODE as of the app-shell migration - zero importers.
+ *
+ * This was the bottom bar for the retired `pages/ResumeParser.tsx` monolith
+ * (it takes ResumeParser's `NavTab`-shaped items/rooms as props). The live
+ * mobile navigation is `src/app-shell/MobileNav.tsx` + `MoreSheet.tsx`, which
+ * derive from `src/app-shell/nav.config.ts`.
+ *
+ * Kept rather than deleted because deletion is a `staff-engineer` call, but do
+ * NOT extend this file: any mobile-nav change belongs in the app-shell pair
+ * above, or it will silently not ship.
+ */
 import { useState } from "react";
 import { MoreHorizontal } from "lucide-react";
 import {

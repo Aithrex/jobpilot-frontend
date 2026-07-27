@@ -565,6 +565,41 @@
     @apply hover:-translate-y-0.5 hover:shadow-panel hover:border-border/80;
   }
 
+  /* ── Interaction states (the one hover / focus / press vocabulary) ──────
+  Four recipes, composed onto hand-rolled interactive elements so every
+  clickable thing in the product responds the same way. All of them animate
+  ONLY colour, shadow and transform, and all of them inherit the global
+  reduced-motion net at the bottom of this file.
+
+    .interactive       base: pointer, token focus ring, 120ms colour tween
+    .interactive-row   a list row / menu item: accent wash on hover
+    .interactive-lift  a card: 2px rise + shadow step on hover
+    .interactive-press adds the 98% press acknowledgement
+
+  Press is deliberately a scale and not a colour change: it reads on touch,
+  where there is no hover state to fall back on. */
+  .interactive {
+    @apply cursor-pointer transition-[color,background-color,border-color,box-shadow,transform] duration-fast ease-standard;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+  }
+  .interactive-row {
+    @apply interactive hover:bg-accent hover:text-accent-foreground;
+  }
+  .interactive-lift {
+    @apply interactive duration-base ease-expo hover:-translate-y-0.5 hover:shadow-panel;
+  }
+  .interactive-press {
+    @apply active:scale-[0.98];
+  }
+  /* A pressed transform must not fight the reduced-motion net: with motion
+  off the scale still applies instantly, which is the correct feedback. */
+
+  /* Icon that advances with its row/button on hover (arrow, chevron). Pair
+  with `group` on the parent. */
+  .icon-advance {
+    @apply transition-[transform,color,opacity] duration-fast ease-standard group-hover:translate-x-0.5;
+  }
+
   /* Editorial eyebrow / section label - the quiet uppercase kicker used on
   nav group headers and card overlines. */
   .overline {

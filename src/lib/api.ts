@@ -3843,6 +3843,28 @@ class ApiService {
   }
 
   /**
+   * Answer the open questions on a `needs_input` row IN THE APP and resume the
+   * run (AUTOAPPLY_REPAIR_SPEC §3). This is the fix for the worst UX bug in the
+   * product: the user used to be dumped on the employer's portal to answer a
+   * question we could have taken here.
+   *
+   * The backend merges the answers, calls `answer_library_service.remember()`
+   * so the same question is never asked twice, re-runs resolution, and either
+   * returns the still-missing `remaining` gaps or transitions the row onward
+   * (`ready_for_review` / `approved` / `queued_for_execution`).
+   *
+   * Rides the existing ANY /api/apply/{proxy+} edge route - no new Terraform.
+   * Business failures are 400 (validation) / 403 (`upgrade_required`) / 409
+   * (`not_in_needs_input`) / 429 (quota); never a 401.
+   */
+  async answerNeedsInput(body: import('../types/autoSubmit').NeedsInputAnswerBody) {
+    return this.request<import('../types/autoSubmit').NeedsInputAnswerResult>(
+      '/apply/needs-input/answer',
+      { method: 'POST', body: JSON.stringify(body) },
+    );
+  }
+
+  /**
    * Unified "Today" inbox - one backend-composed feed of everything that may
    * need the user today (approvals, auto-submit hand-offs, inbox suggestions,
    * "did you apply?" nudges). Newest-first, capped at 50 server-side.

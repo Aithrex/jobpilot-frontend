@@ -122,8 +122,20 @@ export default {
         pop: "var(--shadow-pop)",
         float: "var(--shadow-float)",
       },
+      // Motion tokens surfaced as utilities so a component never hardcodes a
+      // duration or a curve. `duration-base ease-standard` is the default
+      // pairing; `ease-expo` (= decelerate) is for entrances, `ease-accelerate`
+      // for exits. Mirrors src/lib/motion.ts for framer-motion.
       transitionTimingFunction: {
         expo: "var(--ease-out-expo)",
+        standard: "var(--ease-standard)",
+        decelerate: "var(--ease-decelerate)",
+        accelerate: "var(--ease-accelerate)",
+      },
+      transitionDuration: {
+        fast: "var(--motion-fast)",
+        base: "var(--motion-base)",
+        slow: "var(--motion-slow)",
       },
       keyframes: {
         "accordion-down": {

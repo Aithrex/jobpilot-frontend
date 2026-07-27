@@ -1,12 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import {
-  BadgeCheck, Check, Copy, Loader2, Mail, MailCheck, MailX, RefreshCw, ShieldQuestion,
-} from 'lucide-react';
+import { Check, Copy, Loader2, MailCheck, MailX, RefreshCw } from 'lucide-react';
 import { apiService } from '@/lib/api';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -47,16 +44,18 @@ function CopyButton({ value }: { value: string }) {
 
 /**
  * Managed-mailbox settings (`/app/settings/mailbox`). Shows the private
- * application address (copy), the provision CTA (with a privacy-alias option),
- * a pause toggle, rotate (confirmed - rotating changes the address forever),
- * and forwarding (on/off + destination + verification state). All writes go
- * through apiService; a 404 hides the surface (feature flag off).
+ * application address (copy), a pause toggle, rotate (confirmed - rotating
+ * changes the address forever), and the forwarding on/off switch.
+ *
+ * There is deliberately NO "create my address" CTA and NO forward-to input:
+ * per AUTOAPPLY_REPAIR_SPEC §6 the backend provisions the mailbox at sign-up and
+ * forwards to the registered email by default, so the user is never asked to
+ * create a private email or to choose where mail goes. All writes go through
+ * apiService; a 404 hides the surface (feature flag off).
  */
 export default function MailboxSettingsPanel() {
   const queryClient = useQueryClient();
-  const [privacyAlias, setPrivacyAlias] = useState(false);
-  const [busy, setBusy] = useState<null | 'provision' | 'pause' | 'rotate' | 'forwarding'>(null);
-  const [forwardTo, setForwardTo] = useState('');
+  const [busy, setBusy] = useState<null | 'pause' | 'rotate' | 'forwarding'>(null);
 
   const mailboxQuery = useQuery<MailboxData>({
     queryKey: ['mailbox', 'settings'],
@@ -70,27 +69,10 @@ export default function MailboxSettingsPanel() {
 
   const mailbox = mailboxQuery.data?.mailbox ?? null;
 
-  // Seed the forward_to field from the loaded mailbox (once per change).
-  useEffect(() => {
-    if (mailbox?.forward_to) setForwardTo(mailbox.forward_to);
-  }, [mailbox?.forward_to]);
-
   const applyMailbox = (m?: Mailbox) => {
     if (m) queryClient.setQueryData<MailboxData>(['mailbox', 'settings'], { disabled: false, mailbox: m });
     // Keep the inbox badge + list in sync.
     queryClient.invalidateQueries({ queryKey: ['mailbox'] });
-  };
-
-  const provision = async () => {
-    setBusy('provision');
-    const res = await apiService.provisionMailbox({ privacy_alias: privacyAlias });
-    setBusy(null);
-    if (res.error) {
-      toast.error("Couldn't create your mailbox", { description: res.error });
-      return;
-    }
-    applyMailbox(res.data);
-    toast.success('Your managed address is ready');
   };
 
   const togglePause = async (next: boolean) => {
@@ -116,23 +98,17 @@ export default function MailboxSettingsPanel() {
     toast.success('New address minted. The old one is retired.');
   };
 
+  // The destination is always the registered email (set server-side at sign-up),
+  // so this only ever flips the switch - we never send a forward_to.
   const saveForwarding = async (enabled: boolean) => {
     setBusy('forwarding');
-    const res = await apiService.setForwarding({
-      enabled,
-      forward_to: forwardTo.trim() || undefined,
-    });
+    const res = await apiService.setForwarding({ enabled });
     setBusy(null);
     if (res.error) {
       toast.error("Couldn't update forwarding", { description: res.error });
       return;
     }
     applyMailbox(res.data);
-    if (enabled && res.data && !res.data.forward_to_verified) {
-      toast.success('Verification email sent', {
-        description: 'Open the link we sent to your inbox to finish.',
-      });
-    }
   };
 
   if (mailboxQuery.isLoading) {
@@ -153,37 +129,17 @@ export default function MailboxSettingsPanel() {
     );
   }
 
-  // Not provisioned -> CTA.
+  // Provisioning is automatic (§6): the backend mints the address at sign-up and
+  // self-heals on read, so this is only the brief window before that lands - a
+  // status line, never a "create my address" prompt.
   if (!mailbox?.provisioned) {
     return (
-      <div className="rounded-container border border-border bg-card p-6 shadow-soft">
-        <div className="mb-3 flex items-center gap-2">
-          <span className="grid h-9 w-9 place-items-center rounded-lg bg-primary/10 text-primary">
-            <Mail className="h-4 w-4" aria-hidden="true" />
-          </span>
-          <div>
-            <h2 className="text-sm font-semibold text-foreground">Managed application mailbox</h2>
-            <p className="text-xs text-muted-foreground">
-              A private address recruiters reply to - replies land in your Inbox.
-            </p>
-          </div>
-        </div>
-        <label className="mb-4 flex items-start gap-2 text-xs text-muted-foreground">
-          <input
-            type="checkbox"
-            checked={privacyAlias}
-            onChange={(e) => setPrivacyAlias(e.target.checked)}
-            className="mt-0.5 h-3.5 w-3.5 rounded border-border text-primary focus-visible:ring-2 focus-visible:ring-ring"
-          />
-          <span>
-            Use a privacy alias (an opaque <code className="font-mono">career.xxxxxx@</code> address)
-            instead of your name.
-          </span>
-        </label>
-        <Button className="gap-1.5" disabled={busy === 'provision'} onClick={provision}>
-          {busy === 'provision' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
-          Create my address
-        </Button>
+      <div className="rounded-container border border-border bg-card p-6 text-center shadow-soft">
+        <Loader2 className="mx-auto mb-2 h-5 w-5 animate-spin text-primary" aria-hidden="true" />
+        <p className="text-sm font-medium text-foreground">Setting up your private address</p>
+        <p className="mx-auto mt-1 max-w-sm text-xs text-muted-foreground">
+          We create it for you automatically - refresh in a moment.
+        </p>
       </div>
     );
   }
@@ -252,9 +208,11 @@ export default function MailboxSettingsPanel() {
       <section className="rounded-container border border-border bg-card p-5 shadow-soft">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-sm font-semibold text-foreground">Forward to my inbox</h2>
+            <h2 className="text-sm font-semibold text-foreground">Heads-up in my inbox</h2>
             <p className="text-xs text-muted-foreground">
-              Also send a copy of important updates to your own email.
+              When an employer gets back to you - an interview invite, an assessment, an
+              offer or a rejection - we email you a short heads-up with a link. The full
+              message stays here in your Inbox, so your personal inbox stays clean.
             </p>
           </div>
           <Switch
@@ -265,44 +223,16 @@ export default function MailboxSettingsPanel() {
           />
         </div>
 
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <label htmlFor="forward-to" className="sr-only">
-            Forwarding destination email
-          </label>
-          <Input
-            id="forward-to"
-            type="email"
-            value={forwardTo}
-            onChange={(e) => setForwardTo(e.target.value)}
-            placeholder="you@example.com"
-            className="h-9 min-w-0 flex-1"
-          />
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-9 shrink-0 gap-1.5"
-            disabled={busy === 'forwarding' || !forwardTo.trim()}
-            onClick={() => saveForwarding(mailbox.forwarding_enabled)}
-          >
-            {busy === 'forwarding' ? <Loader2 className="h-4 w-4 animate-spin" /> : <MailCheck className="h-4 w-4" />}
-            Save
-          </Button>
-        </div>
-
         {mailbox.forward_to && (
-          <div className="mt-3">
-            {mailbox.forward_to_verified ? (
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-success/30 bg-success/10 px-2.5 py-1 text-xs font-semibold text-success">
-                <BadgeCheck className="h-3.5 w-3.5" aria-hidden="true" />
-                Verified: {mailbox.forward_to}
-              </span>
+          <p className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
+            {busy === 'forwarding' ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
             ) : (
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-warning/30 bg-warning/10 px-2.5 py-1 text-xs font-semibold text-warning">
-                <ShieldQuestion className="h-3.5 w-3.5" aria-hidden="true" />
-                Verification sent to {mailbox.forward_to} - check your inbox
-              </span>
+              <MailCheck className="h-3.5 w-3.5 text-success" aria-hidden="true" />
             )}
-          </div>
+            Forwarding to{' '}
+            <span className="font-medium text-foreground">{mailbox.forward_to}</span>
+          </p>
         )}
       </section>
     </div>

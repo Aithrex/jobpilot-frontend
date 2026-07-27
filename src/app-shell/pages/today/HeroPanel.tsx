@@ -28,6 +28,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { DURATION, EASE_STANDARD } from '@/lib/motion';
 import type { TodayInboxKind } from '@/types/todayInbox';
 import { PanelError, Stat } from './primitives';
 
@@ -126,7 +127,7 @@ export function HeroPanel({ model, onRetry }: { model: HeroModel; onRetry: () =>
     <motion.div
       initial={reduce ? false : { opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25, ease: [0.2, 0, 0, 1] }}
+      transition={{ duration: reduce ? 0 : DURATION.base, ease: EASE_STANDARD }}
       className="relative overflow-hidden rounded-container border border-border bg-card p-6 shadow-soft sm:p-8"
     >
       {hasQueue ? (
@@ -152,7 +153,7 @@ export function HeroPanel({ model, onRetry }: { model: HeroModel; onRetry: () =>
                 return (
                   <li
                     key={it.id}
-                    className="flex flex-col gap-3 rounded-control border border-border bg-background/40 p-3 sm:flex-row sm:items-center sm:justify-between"
+                    className="flex flex-col gap-3 rounded-control border border-border bg-background/40 p-3 transition-[background-color,border-color] duration-fast ease-standard hover:border-primary/30 hover:bg-accent/40 sm:flex-row sm:items-center sm:justify-between"
                   >
                     <div className="flex min-w-0 items-start gap-3">
                       <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
@@ -166,7 +167,7 @@ export function HeroPanel({ model, onRetry }: { model: HeroModel; onRetry: () =>
                     <button
                       type="button"
                       onClick={() => go(resolveDeepLink(it.deepLink))}
-                      className="inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-control border border-border bg-card px-4 text-caption font-semibold text-foreground shadow-soft transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                      className="interactive interactive-press inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-control border border-border bg-card px-4 text-caption font-semibold text-foreground shadow-soft hover:bg-muted"
                     >
                       {it.actionLabel}
                       {external ? (
@@ -232,10 +233,10 @@ export function HeroPanel({ model, onRetry }: { model: HeroModel; onRetry: () =>
             <button
               type="button"
               onClick={() => go(FIND_ROLES_HREF)}
-              className="inline-flex min-h-11 items-center gap-2 rounded-control bg-primary px-5 text-body font-semibold text-primary-foreground shadow-soft transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              className="group interactive interactive-press inline-flex min-h-11 items-center gap-2 rounded-control bg-primary px-5 text-body font-semibold text-primary-foreground shadow-soft hover:bg-primary/90"
             >
               Find roles
-              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              <ArrowRight className="icon-advance h-4 w-4" aria-hidden="true" />
             </button>
           </div>
         </div>

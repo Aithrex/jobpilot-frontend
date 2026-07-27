@@ -249,6 +249,27 @@ export interface Job {
   // payloads may omit them, so keep both optional.
   sponsorship?: SponsorshipSignal | null;
   visa_flags?: VisaFlags;
+  /**
+   * FitScore v2 explanation block (ADR-002, `shared/python/services/fit_score.py`).
+   * Written by `inventory_feed._score_rows`; ABSENT on the career-portal scan
+   * rows the shell's Jobs feed uses today. The UI must therefore treat this as
+   * a bonus, never a requirement - `JobFitDetails` degrades to the evidence
+   * that always exists (matched/missing skills, seniority, title match).
+   */
+  fit?: import('./guest').GuestFitScore;
+  // ── Career-portal row metadata ─────────────────────────────────────────
+  // `lib/careerJobs.ts::toJob` spreads the whole portal row, so these survive
+  // at runtime; declaring them keeps the score-explanation UI type-safe.
+  /** Title-derived seniority band. */
+  seniority?: CareerPortalSeniority;
+  /** Frank "can the base resume be honestly tailored into this JD?" verdict. */
+  tailor_feasibility?: CareerPortalFeasibility;
+  feasibility_reason?: string;
+  /** True when the job title covers all core tokens of one of the user's
+   *  search titles - the strongest cheap role-alignment signal we have. */
+  title_matched?: boolean;
+  /** Which search terms (title families and/or resume skills) retrieved this. */
+  matched_terms?: string[];
 }
 
 export interface JobTrustResult {

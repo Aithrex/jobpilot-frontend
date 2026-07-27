@@ -1,12 +1,8 @@
 import { Suspense } from "react";
 import { Outlet } from "react-router-dom";
-import { Briefcase, Globe, Loader2 } from "lucide-react";
-import { SubNav, type SubNavItem } from "../SubNav";
-
-const DISCOVER_SECTIONS: SubNavItem[] = [
-  { to: "for-you", label: "For you", icon: Briefcase },
-  { to: "portals", label: "Career Portals", icon: Globe },
-];
+import { Loader2 } from "lucide-react";
+import { SubNav } from "../SubNav";
+import { JOBS_SECTIONS } from "../nav.config";
 
 function SectionFallback() {
   return (
@@ -35,7 +31,7 @@ export default function DiscoverPage() {
         </p>
       </header>
 
-      <SubNav ariaLabel="Jobs sections" items={DISCOVER_SECTIONS} />
+      <SubNav ariaLabel="Jobs sections" items={JOBS_SECTIONS} />
 
       <Suspense fallback={<SectionFallback />}>
         {/* Sections are mounted by App.tsx routes; `embedded` tells the
