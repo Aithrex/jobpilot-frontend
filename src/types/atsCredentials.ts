@@ -46,3 +46,34 @@ export interface AtsCredentialSecret {
   username: string;
   password: string;
 }
+
+/**
+ * Step-up re-auth factors, from `GET /api/apply/credentials/reauth-methods`
+ * (backend: `shared/python/services/reveal_reauth_service.py`).
+ *
+ * The ACCOUNT decides, not the client. Google is the primary signup path and
+ * those accounts have no `password_hash` at all, so `password` is absent for
+ * them and `email_code` is the way in. `email_code` is always available - the
+ * account IS an email address - and password users get it as a fallback.
+ */
+export type AtsReauthMethod = 'password' | 'email_code';
+
+export interface AtsReauthMethods {
+  /** In UI preference order. Never empty. */
+  methods: AtsReauthMethod[];
+  /** Masked registered address, e.g. `s*****p@example.com`. */
+  email_hint: string;
+  code_ttl_seconds: number;
+  code_length: number;
+  /** A code already in flight, if any. Never contains the code. */
+  challenge: { expires_at: string | null; attempts_remaining: number } | null;
+}
+
+/** Response to `POST /api/apply/credentials/reveal/challenge`. No code in it. */
+export interface AtsRevealChallengeSent {
+  sent: boolean;
+  method: 'email_code';
+  email_hint: string;
+  expires_in_seconds: number;
+  code_length: number;
+}

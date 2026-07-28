@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
-  Building2, Check, Copy, ExternalLink, Eye, KeyRound, Loader2, ShieldCheck,
+  Building2, Check, Copy, ExternalLink, Eye, KeyRound, Loader2, Mail, ShieldCheck,
 } from 'lucide-react';
 import { apiService } from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -14,7 +14,9 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { PanelError } from '@/app-shell/pages/today/primitives';
-import type { AtsCredential, AtsCredentialSecret } from '@/types/atsCredentials';
+import type {
+  AtsCredential, AtsCredentialSecret, AtsReauthMethod, AtsReauthMethods,
+} from '@/types/atsCredentials';
 
 /** Copy-to-clipboard, matching MailboxSettingsPanel's button. */
 function CopyButton({ value, label }: { value: string; label: string }) {
@@ -67,18 +69,30 @@ function employerLabel(c: AtsCredential) {
  *
  * Security posture, mirrored from the backend and deliberately visible here:
  *   - the LIST never contains a password (metadata only);
- *   - revealing ONE password is an explicit click plus the user's own account
- *     password (fresh re-auth), rate-limited server-side and audited BEFORE the
- *     backend decrypts anything;
+ *   - revealing ONE password is an explicit click plus a FRESH step-up re-auth,
+ *     rate-limited server-side and audited BEFORE the backend decrypts anything;
  *   - the revealed value lives in component state for this view only - it is
  *     never cached in react-query, never written to storage, and is dropped as
  *     soon as the row is collapsed.
+ *
+ * The step-up factor is whatever the ACCOUNT supports, published by
+ * `GET /apply/credentials/reauth-methods`. Google is the primary signup path
+ * and those accounts have no JobPilot password at all - demanding one made the
+ * reveal permanently unreachable for them. So: password box for a password
+ * account (unchanged), emailed one-time code for an OAuth-only account, and the
+ * code as a fallback for everyone.
  */
 export default function EmployerLoginsPanel() {
   const [openFor, setOpenFor] = useState<AtsCredential | null>(null);
   const [accountPassword, setAccountPassword] = useState('');
+  const [emailCode, setEmailCode] = useState('');
+  /** null until the account's methods load, then the factor being used. */
+  const [method, setMethod] = useState<AtsReauthMethod | null>(null);
+  const [codeSent, setCodeSent] = useState(false);
+  const [sendingCode, setSendingCode] = useState(false);
   const [revealing, setRevealing] = useState(false);
   const [revealError, setRevealError] = useState<string | null>(null);
+  const [revealNotice, setRevealNotice] = useState<string | null>(null);
   // Revealed secrets, keyed by row. NEVER persisted anywhere.
   const [secrets, setSecrets] = useState<Record<string, AtsCredentialSecret>>({});
 
@@ -113,20 +127,98 @@ export default function EmployerLoginsPanel() {
     [query.data],
   );
 
+  // What this account can actually do. Fetched only while the dialog is open,
+  // and never cached (gcTime: 0) - it names the user's own address.
+  const reauth = useQuery<AtsReauthMethods>({
+    queryKey: ['ats-reauth-methods'],
+    enabled: !!openFor,
+    gcTime: 0,
+    staleTime: 0,
+    retry: false,
+    queryFn: async () => {
+      const res = await apiService.getAtsReauthMethods();
+      if (res.error || !res.data) throw new Error(res.error ?? 'unavailable');
+      return res.data;
+    },
+  });
+
+  // Default to the account's preferred factor once we know it. An OAuth-only
+  // account never sees a password box it cannot fill.
+  useEffect(() => {
+    if (!openFor || method) return;
+    const first = reauth.data?.methods?.[0];
+    if (!first) return;
+    setMethod(first);
+    // A code is already in flight (dialog reopened, tab reloaded): go straight
+    // to the code box rather than burning another send off the user's budget.
+    if (first === 'email_code' && reauth.data?.challenge) setCodeSent(true);
+  }, [openFor, method, reauth.data]);
+
+  const methods = reauth.data?.methods ?? [];
+  const canUsePassword = methods.includes('password');
+  const canUseEmailCode = methods.includes('email_code');
+  const codeLength = reauth.data?.code_length ?? 6;
+
   const closeDialog = () => {
     setOpenFor(null);
     setAccountPassword('');
+    setEmailCode('');
+    setMethod(null);
+    setCodeSent(false);
+    setSendingCode(false);
     setRevealError(null);
+    setRevealNotice(null);
+  };
+
+  const switchMethod = (next: AtsReauthMethod) => {
+    setMethod(next);
+    setRevealError(null);
+    setRevealNotice(null);
+    if (next === 'password') {
+      setEmailCode('');
+    } else {
+      setAccountPassword('');
+      if (reauth.data?.challenge) setCodeSent(true);
+    }
+  };
+
+  const sendCode = async () => {
+    setSendingCode(true);
+    setRevealError(null);
+    setRevealNotice(null);
+    const res = await apiService.sendAtsRevealCode();
+    setSendingCode(false);
+    if (res.error || !res.data?.sent) {
+      const code = String(
+        (res.errorPayload as { error?: string } | undefined)?.error ?? '',
+      );
+      setRevealError(
+        code === 'code_send_rate_limited'
+          ? 'Too many codes requested. Try again in a few minutes.'
+          : code === 'email_unavailable'
+            ? "We couldn't send the code right now. Please try again later."
+            : (res.error ?? "Couldn't send the code."),
+      );
+      return;
+    }
+    setCodeSent(true);
+    setEmailCode('');
+    setRevealNotice(`Code sent to ${res.data.email_hint}. It expires in ${Math.round(
+      (res.data.expires_in_seconds ?? 600) / 60,
+    )} minutes.`);
   };
 
   const doReveal = async () => {
-    if (!openFor || !accountPassword) return;
+    if (!openFor || !method) return;
+    const usingCode = method === 'email_code';
+    if (usingCode ? !emailCode : !accountPassword) return;
     setRevealing(true);
     setRevealError(null);
+    setRevealNotice(null);
     const res = await apiService.revealAtsCredential({
       ats_family: openFor.ats_family,
       tenant: openFor.tenant,
-      password: accountPassword,
+      ...(usingCode ? { code: emailCode } : { password: accountPassword }),
     });
     setRevealing(false);
     if (res.error || !res.data) {
@@ -134,9 +226,21 @@ export default function EmployerLoginsPanel() {
         (res.errorPayload as { error?: string } | undefined)?.error ?? '',
       );
       if (code === 'reauth_unavailable') {
+        // Shouldn't happen (we branch on the published methods) - but if it
+        // does, move the user onto the factor that CAN work instead of dead-ending.
+        setMethod('email_code');
+        setAccountPassword('');
         setRevealError(
-          'This account signs in with Google, so there is no JobPilot password to check. Set one with "Forgot password" first.',
+          'This account signs in with a connected provider, so there is no JobPilot password to check. Use an emailed code instead.',
         );
+      } else if (code === 'reauth_failed') {
+        setRevealError("That password isn't right.");
+      } else if (code === 'code_invalid') {
+        setRevealError("That code isn't right. Check the email and try again.");
+      } else if (code === 'code_expired' || code === 'code_attempts_exceeded') {
+        setCodeSent(false);
+        setEmailCode('');
+        setRevealError('That code is no longer usable. Send yourself a new one.');
       } else if (res.status === 429) {
         setRevealError('Too many attempts. Try again in a few minutes.');
       } else {
@@ -185,7 +289,8 @@ export default function EmployerLoginsPanel() {
             </h2>
             <p className="mt-1 text-xs text-muted-foreground">
               We generate a strong password, store it encrypted, and never show it
-              until you ask. Revealing one needs your JobPilot password and is
+              until you ask. Revealing one needs a fresh check that it's you -
+              your JobPilot password, or a one-time code emailed to you - and is
               recorded in your account's audit trail.
               {sharedVendors.length > 0 && (
                 <>
@@ -297,9 +402,13 @@ export default function EmployerLoginsPanel() {
                         className="h-9 shrink-0 gap-1.5 px-3 text-xs"
                         disabled={!c.has_password}
                         onClick={() => {
-                          setOpenFor(c);
                           setAccountPassword('');
+                          setEmailCode('');
+                          setMethod(null);
+                          setCodeSent(false);
                           setRevealError(null);
+                          setRevealNotice(null);
+                          setOpenFor(c);
                         }}
                       >
                         <Eye className="h-3.5 w-3.5" aria-hidden="true" />
@@ -325,49 +434,151 @@ export default function EmployerLoginsPanel() {
         })}
       </ul>
 
-      {/* One explicit reveal at a time, behind a fresh account-password check. */}
+      {/* One explicit reveal at a time, behind a fresh step-up check whose
+          factor is whatever THIS account supports. */}
       <Dialog open={!!openFor} onOpenChange={(o) => (o ? null : closeDialog())}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Reveal this password?</DialogTitle>
             <DialogDescription>
-              Confirm it's you. Enter your JobPilot account password - not the
-              employer's. We record every reveal.
+              {method === 'email_code'
+                ? "Confirm it's you with a one-time code we email you. We record every reveal."
+                : "Confirm it's you. Enter your JobPilot account password - not the employer's. We record every reveal."}
             </DialogDescription>
           </DialogHeader>
-          <form
-            className="space-y-3"
-            onSubmit={(e) => {
-              e.preventDefault();
-              void doReveal();
-            }}
-          >
-            <div className="space-y-1.5">
-              <Label htmlFor="ats-reauth-password">JobPilot password</Label>
-              <Input
-                id="ats-reauth-password"
-                type="password"
-                autoComplete="current-password"
-                value={accountPassword}
-                onChange={(e) => setAccountPassword(e.target.value)}
-                autoFocus
-              />
+
+          {reauth.isLoading && (
+            <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              Checking how to verify you...
             </div>
-            {revealError && (
-              <p role="alert" className="text-xs text-destructive">
-                {revealError}
-              </p>
-            )}
-            <DialogFooter className="gap-2">
-              <Button type="button" variant="outline" onClick={closeDialog}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={!accountPassword || revealing}>
-                {revealing && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
-                Reveal password
-              </Button>
-            </DialogFooter>
-          </form>
+          )}
+
+          {reauth.isError && (
+            <p role="alert" className="py-2 text-xs text-destructive">
+              We couldn't check how to verify you. Close this and try again.
+            </p>
+          )}
+
+          {!reauth.isLoading && !reauth.isError && method && (
+            <form
+              className="space-y-3"
+              onSubmit={(e) => {
+                e.preventDefault();
+                void doReveal();
+              }}
+            >
+              {method === 'password' ? (
+                <div className="space-y-1.5">
+                  <Label htmlFor="ats-reauth-password">JobPilot password</Label>
+                  <Input
+                    id="ats-reauth-password"
+                    type="password"
+                    autoComplete="current-password"
+                    value={accountPassword}
+                    onChange={(e) => setAccountPassword(e.target.value)}
+                    autoFocus
+                  />
+                  {canUseEmailCode && (
+                    <button
+                      type="button"
+                      className="text-xs font-medium text-primary underline-offset-2 hover:underline"
+                      onClick={() => switchMethod('email_code')}
+                    >
+                      Email me a code instead
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-xs text-muted-foreground">
+                    We'll email a {codeLength}-digit code to{' '}
+                    <strong className="text-foreground">
+                      {reauth.data?.email_hint || 'your account email'}
+                    </strong>
+                    .
+                  </p>
+                  {!codeSent ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full gap-2"
+                      onClick={() => void sendCode()}
+                      disabled={sendingCode}
+                    >
+                      {sendingCode ? (
+                        <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                      ) : (
+                        <Mail className="h-4 w-4" aria-hidden="true" />
+                      )}
+                      Send me a code
+                    </Button>
+                  ) : (
+                    <div className="space-y-1.5">
+                      <Label htmlFor="ats-reauth-code">Verification code</Label>
+                      <Input
+                        id="ats-reauth-code"
+                        inputMode="numeric"
+                        autoComplete="one-time-code"
+                        maxLength={codeLength}
+                        placeholder={'0'.repeat(codeLength)}
+                        value={emailCode}
+                        onChange={(e) =>
+                          setEmailCode(e.target.value.replace(/\D/g, '').slice(0, codeLength))
+                        }
+                        autoFocus
+                      />
+                      <button
+                        type="button"
+                        className="text-xs font-medium text-primary underline-offset-2 hover:underline disabled:opacity-60"
+                        onClick={() => void sendCode()}
+                        disabled={sendingCode}
+                      >
+                        Send a new code
+                      </button>
+                    </div>
+                  )}
+                  {canUsePassword && (
+                    <button
+                      type="button"
+                      className="block text-xs font-medium text-primary underline-offset-2 hover:underline"
+                      onClick={() => switchMethod('password')}
+                    >
+                      Use my JobPilot password instead
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {revealNotice && (
+                <p role="status" className="text-xs text-muted-foreground">
+                  {revealNotice}
+                </p>
+              )}
+              {revealError && (
+                <p role="alert" className="text-xs text-destructive">
+                  {revealError}
+                </p>
+              )}
+              <DialogFooter className="gap-2">
+                <Button type="button" variant="outline" onClick={closeDialog}>
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={
+                    revealing ||
+                    (method === 'password'
+                      ? !accountPassword
+                      : !codeSent || emailCode.length !== codeLength)
+                  }
+                >
+                  {revealing && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+                  Reveal password
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
         </DialogContent>
       </Dialog>
     </div>

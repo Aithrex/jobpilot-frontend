@@ -3323,10 +3323,17 @@ class ApiService {
 
   // ============================================
   // Employer (ATS) logins (/api/apply/credentials*)
-  // Backend: shared/python/services/ats_credential_service.py. The list is
-  // METADATA ONLY - a password is never in a list response. Revealing one is a
-  // separate POST that re-authenticates with the account password, is rate
-  // limited (5 / 5 min -> 429) and is audited BEFORE the backend decrypts.
+  // Backend: shared/python/services/ats_credential_service.py +
+  // shared/python/services/reveal_reauth_service.py. The list is METADATA ONLY
+  // - a password is never in a list response. Revealing one is a separate POST
+  // behind a fresh step-up re-auth, rate limited (5 / 5 min -> 429) and audited
+  // BEFORE the backend decrypts.
+  //
+  // The step-up factor depends on the ACCOUNT, not the client: a Google-only
+  // signup has no password at all, so `getAtsReauthMethods` publishes what this
+  // account can actually do and the UI renders that. Never infer capability
+  // from an error.
+  //
   // Failures are 400/403/404/409/429/503 - never 401 (invariant #1). Rides the
   // already-routed /api/apply edge prefix, so no new Terraform route.
   // ============================================
@@ -3339,15 +3346,41 @@ class ApiService {
   }
 
   /**
-   * Reveal ONE stored password. `password` is the user's own JobPilot account
-   * password (fresh re-auth). 403 `reauth_failed` = wrong password;
-   * 403 `reauth_unavailable` = OAuth-only account with no password to check
-   * against; 429 = rate limited. Never store the result.
+   * Which re-auth factors THIS account can complete before a reveal:
+   * `password` only when the account has one, `email_code` always. Reads the
+   * caller's own account (JWT identity) - it cannot probe another address.
+   */
+  async getAtsReauthMethods() {
+    return this.request<import('../types/atsCredentials').AtsReauthMethods>(
+      '/apply/credentials/reauth-methods',
+    );
+  }
+
+  /**
+   * Mail a single-use code to the account's registered address. The backend
+   * picks the destination from the JWT - this call carries no address.
+   * 429 `code_send_rate_limited` = too many codes; 503 `email_unavailable` =
+   * we could not send (no code was minted, or it was invalidated).
+   */
+  async sendAtsRevealCode() {
+    return this.request<import('../types/atsCredentials').AtsRevealChallengeSent>(
+      '/apply/credentials/reveal/challenge',
+      { method: 'POST', body: '{}' },
+    );
+  }
+
+  /**
+   * Reveal ONE stored password with exactly one factor: the user's own JobPilot
+   * account `password`, or the emailed one-time `code`. 403 `reauth_failed` =
+   * wrong password; 403 `reauth_unavailable` = this account has no password
+   * (use the code); 403 `code_invalid` / `code_expired`; 429
+   * `code_attempts_exceeded` or `rate_limited`. Never store the result.
    */
   async revealAtsCredential(args: {
     ats_family: string;
     tenant?: string;
-    password: string;
+    password?: string;
+    code?: string;
   }) {
     return this.request<import('../types/atsCredentials').AtsCredentialSecret>(
       '/apply/credentials/reveal',
@@ -3356,7 +3389,8 @@ class ApiService {
         body: JSON.stringify({
           ats_family: args.ats_family,
           tenant: args.tenant ?? '',
-          password: args.password,
+          // Send exactly the factor the user completed - never both.
+          ...(args.code ? { code: args.code } : { password: args.password ?? '' }),
         }),
       },
     );
