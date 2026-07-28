@@ -15,7 +15,7 @@ import { JobTrustBadge } from './JobTrustBadge';
 import { VisaFlagChips } from './JobVisaSignals';
 import { ReferralModal } from './ReferralModal';
 import { WhyThisScoreButton } from './JobFitDetails';
-import { fitBand } from './fitBands';
+import { fitBandOf } from './fitBands';
 import { apiService, companyLogoSrc } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { hueFromString, toTitleCase } from '@/lib/format';
@@ -43,15 +43,22 @@ interface JobCardProps {
  * 66 - a "good match", the exact threshold Auto-Apply queues on - rendered in
  * caution amber.
  *
+ * Takes the whole ROW, not the number: `fitBandOf` refuses to attach fit_score's
+ * band words to a `match_score` that did not come from fit_score. This card is
+ * rendered by `JobSearchPanel`, `WorkdayJobsPanel` and `CombinedJobsPanel`, which
+ * historically fed it three different engines' numbers under that one key, and
+ * streamed scan previews still carry a provisional value with no version stamp.
+ * An unstamped row reads "Not scored" - true, rather than confidently wrong.
+ *
  * Colour is never the only cue: the band LABEL sits directly under the number,
  * and the whole dial is labelled for assistive tech.
  */
-function MatchScoreRing({ score }: { score: number }) {
+function MatchScoreRing({ job }: { job: Job }) {
   const reduce = useReducedMotion();
   const radius = 20;
   const circumference = 2 * Math.PI * radius;
-  const clamped = Math.max(0, Math.min(100, score));
-  const band = fitBand(score);
+  const clamped = Math.max(0, Math.min(100, job.match_score ?? 0));
+  const band = fitBandOf(job);
   const scored = band.key !== 'unscored';
   const offset = circumference - ((scored ? clamped : 0) / 100) * circumference;
   const shown = useCountUp(clamped);
@@ -198,7 +205,7 @@ export function JobCard({ job, saved, jobStatus, onSave, onUnsave, onQuickApply,
   const apply = buildApplyUrl(job);
   const hue = hueFromString(job.company || job.title || 'JobPilot');
   const hasDescription = !!job.description && job.description.trim().length > 0;
-  const band = fitBand(job.match_score);
+  const band = fitBandOf(job);
 
   const title = toTitleCase(job.title);
   const company = toTitleCase(job.company);
@@ -240,7 +247,7 @@ export function JobCard({ job, saved, jobStatus, onSave, onUnsave, onQuickApply,
                 <span className="truncate">{location || 'Location undisclosed'}</span>
               </p>
             </div>
-            <MatchScoreRing score={job.match_score} />
+            <MatchScoreRing job={job} />
           </div>
 
           {/* Title */}

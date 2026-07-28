@@ -80,7 +80,11 @@ export interface NeedsInputAnswerOutcome {
   needsUpgrade?: boolean;
   /** 409 `not_in_needs_input` - the row already moved on (usually benign). */
   notInNeedsInput?: boolean;
-  /** 429 - quota exhausted. */
+  /**
+   * 429 - the auto-submit quota is exhausted. Comes back WITH `ok: true`: the
+   * answers were saved and the row advanced, it just can't auto-submit, so the
+   * card renders the resumed state PLUS this notice (never "it failed").
+   */
   quota?: AutoSubmitUsage;
   /** Where the row landed after the merge. Empty `remaining` => it resumed. */
   applicationStatus?: string;
@@ -270,8 +274,29 @@ export function useAutoSubmit() {
         return { ok: false, notInNeedsInput: true, error: res.error };
       }
       if (res.status === 429) {
-        const usage = (res.errorPayload?.usage as AutoSubmitUsage) ?? undefined;
-        return { ok: false, quota: usage, error: res.error };
+        // A 429 HERE IS NOT A FAILURE. The backend deliberately merges the full
+        // result into the quota body (services/jobs/blueprints/apply.py
+        // `needs_input_answer`), so it carries `application_status` +
+        // `remaining`: the answers WERE saved and the row DID advance - the user
+        // is only out of auto-submit slots, so it waits for a manual approve or
+        // an upgrade instead of submitting itself.
+        //
+        // Short-circuiting to {ok:false} made the card say "you've reached your
+        // auto-apply limit" and NOTHING else: it never set `resumed`, never
+        // cleared the form (that only happens in the ok branch), so the user
+        // resubmitted the same answers and got 409 "this application already
+        // moved on". Three contradictory messages for one successful save.
+        const payload = (res.errorPayload ?? {}) as Record<string, unknown>;
+        const status = payload.application_status;
+        qc.invalidateQueries({ queryKey: PENDING_KEY });
+        return {
+          ok: true,
+          quota: (payload.usage as AutoSubmitUsage) ?? undefined,
+          applicationStatus: typeof status === "string" ? status : undefined,
+          remaining: Array.isArray(payload.remaining)
+            ? (payload.remaining as NeedsInputItem[])
+            : [],
+        };
       }
       if (res.error || !res.data) {
         return { ok: false, error: res.error ?? "Could not save your answer" };

@@ -54,6 +54,13 @@ import {
 type Values = Record<string, NeedsInputAnswerValue>;
 
 /**
+ * Appended when the backend answered 429: the save landed, the row advanced,
+ * and the ONLY thing missing is an auto-submit slot. Never phrased as a failure.
+ */
+const QUOTA_NOTE =
+  "You're out of auto-apply submissions for now, so it waits for your go-ahead (or an upgrade) instead of being sent automatically.";
+
+/**
  * Where the row landed once the last gap closed. NONE of these ever tells the
  * user to go apply manually - that is the whole point of the fix.
  */
@@ -263,19 +270,32 @@ export default function NeedsInputCard({
 
     if (out.ok) {
       const left = out.remaining ?? [];
+      // A 429 arrives with ok:true (the save SUCCEEDED - see the hook). The row
+      // is in review; it just can't auto-submit, so we say both things at once
+      // rather than claiming the answer was lost.
+      const quotaNote = out.quota ? ` ${QUOTA_NOTE}` : "";
       setValues({});
       if (left.length === 0) {
         setRemaining([]);
         setResumed(true);
         setResumedStatus(out.applicationStatus ?? null);
-        setNotice(resumedCopy(out.applicationStatus));
+        setNotice(resumedCopy(out.applicationStatus) + quotaNote);
       } else {
         setRemaining(left);
         setNotice(
           `Saved. ${left.length} ${left.length === 1 ? "question" : "questions"} still ${
             left.length === 1 ? "needs" : "need"
-          } an answer.`,
+          } an answer.${quotaNote}`,
         );
+      }
+      if (out.quota) {
+        toast.info("Saved - but you're out of auto-apply submissions", {
+          description: out.quota.resets_at
+            ? `Approve it yourself, or upgrade. Your quota resets ${new Date(
+                out.quota.resets_at,
+              ).toLocaleDateString()}.`
+            : "Approve it yourself, or upgrade for more submissions.",
+        });
       }
       return;
     }
@@ -289,15 +309,6 @@ export default function NeedsInputCard({
     if (out.needsUpgrade) {
       setNotice("Answering in-app isn't included in your current plan.");
       upgrade.open({ feature: "auto_submit" });
-      return;
-    }
-    if (out.quota) {
-      setNotice("You've reached your auto-apply limit for now.");
-      toast.error("Auto-apply limit reached", {
-        description: out.quota.resets_at
-          ? `Resets ${new Date(out.quota.resets_at).toLocaleDateString()}.`
-          : "Try again after your quota resets.",
-      });
       return;
     }
     setNotice(out.error ?? "We couldn't save that. Please try again.");

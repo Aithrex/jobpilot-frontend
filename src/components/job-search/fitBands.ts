@@ -12,6 +12,11 @@
  * this product, not a vibe. If the engine's bands ever move, move them HERE and
  * nowhere else.
  *
+ * Because these words belong to ONE engine, they may only be applied to that
+ * engine's numbers: use `fitBandOf(row)` / `isFitScored(row)` for anything the
+ * server sent, and keep the bare `fitBand(score)` for a number already known to
+ * be a fit score.
+ *
  * Colour policy (docs/DESIGN_SYSTEM_MAP.md section 3): `success` is reserved
  * for positive evidence, `warning` for caution, and the brand `primary` for
  * "we recommend this". Colour is never the only cue - every consumer renders
@@ -111,6 +116,10 @@ export const AUTO_APPLY_GATE = GOOD.min;
 /**
  * Band for a raw score. `null`/`undefined`/`0` resolve to the honest
  * "not scored" band rather than to "unlikely".
+ *
+ * Takes a NUMBER, so it cannot tell whether that number came from the engine
+ * whose cut-offs are written above. Prefer `fitBandOf(row)` on any surface that
+ * renders a server row - see below.
  */
 export function fitBand(score: number | null | undefined): FitBand {
   if (typeof score !== 'number' || !Number.isFinite(score) || score <= 0) return UNSCORED;
@@ -120,6 +129,49 @@ export function fitBand(score: number | null | undefined): FitBand {
 /** True when the number is a real verdict we can talk about. */
 export function isScored(score: number | null | undefined): boolean {
   return fitBand(score).key !== 'unscored';
+}
+
+/**
+ * A row that carries the scoring engine's own version stamp.
+ *
+ * The backend writes it in two shapes: nested under `fit` (`inventory_feed`,
+ * `job_service.match_jobs`, the guest path) and flat on the row
+ * (`workday_jobs_service._score_jobs`). Either proves the number beside it came
+ * from `fit_score`.
+ */
+export interface ScoredRow {
+  match_score?: number | null;
+  score_version?: string | null;
+  fit?: { score_version?: string | null } | null;
+}
+
+/**
+ * Did THIS row's number come from the engine these bands describe?
+ *
+ * The words above ("Good match", "This is the bar Auto-Apply uses to queue a
+ * role") are copied from `shared/python/services/fit_score.py`. For a while they
+ * were being applied to whatever integer happened to arrive as `match_score`,
+ * and three different backend engines wrote that key: `/api/jobs/search` ran a
+ * `title*35 + skill*30 + domain*20 + experience*15` blend plus flat bonuses, the
+ * career-portal scans post-processed fit_score's output, and a résumé-less
+ * account got a hardcoded-skill-list score that reached 100. On identical
+ * (résumé, posting) pairs that meant 66 here and 98 there - and a green "Strong
+ * match" on a posting the platform itself rated "unlikely".
+ *
+ * The engines are consolidated server-side now. This is the guard that keeps it
+ * that way: a row with no version stamp gets NO band words, because we cannot
+ * say what its number means. It reads as "Not scored", which is the truth.
+ */
+export function isFitScored(row: ScoredRow | null | undefined): boolean {
+  if (!row) return false;
+  const stamp = row.fit?.score_version ?? row.score_version;
+  return typeof stamp === 'string' && stamp.trim().length > 0;
+}
+
+/** `fitBand`, but gated on the row actually carrying a fit_score verdict. */
+export function fitBandOf(row: ScoredRow | null | undefined): FitBand {
+  if (!isFitScored(row)) return UNSCORED;
+  return fitBand(row?.match_score);
 }
 
 /** Seniority band labels for career-portal rows (`WorkdayJob.seniority`). */

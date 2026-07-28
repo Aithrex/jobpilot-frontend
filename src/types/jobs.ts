@@ -257,6 +257,18 @@ export interface Job {
    * that always exists (matched/missing skills, seniority, title match).
    */
   fit?: import('./guest').GuestFitScore;
+  /**
+   * The scoring engine's own version stamp (`fit_score.FIT_SCORE_VERSION`,
+   * "fit-v2.0"), written FLAT by `workday_jobs_service._score_jobs` and nested
+   * under `fit` everywhere else. Its PRESENCE is what licenses the UI to attach
+   * fit_score's band words to `match_score` - see `fitBands.isFitScored`.
+   * Absent on streamed scan previews (a provisional pre-detail estimate) and on
+   * accounts with no parsed resume, both of which must read "Not scored".
+   */
+  score_version?: string;
+  /** Ordering-only score: fit plus preference bonuses (H1B / remote / new-grad)
+   *  that are deliberately kept OUT of `match_score`. Never display it. */
+  rank_score?: number;
   // ── Career-portal row metadata ─────────────────────────────────────────
   // `lib/careerJobs.ts::toJob` spreads the whole portal row, so these survive
   // at runtime; declaring them keeps the score-explanation UI type-safe.
@@ -439,6 +451,14 @@ export interface WorkdayJob {
   match_score?: number;
   matched_skills?: string[];
   missing_skills?: string[];
+  /** `fit_score.FIT_SCORE_VERSION` - set by `_score_jobs` on the final payload
+   *  and ABSENT on streamed provisional rows, so the card can tell a real fit
+   *  verdict from a mid-scan estimate. `toJob` spreads it onto `Job`. */
+  score_version?: string;
+  /** Fit + retrieval/preference bonuses. Ordering only, never displayed. */
+  rank_score?: number;
+  /** FitScore v2 explanation block, when the row carries one. */
+  fit?: import('./guest').GuestFitScore;
   /** True when the job title covers all core tokens of one of the user's
    *  search titles - drives the ranking boost. */
   title_matched?: boolean;
