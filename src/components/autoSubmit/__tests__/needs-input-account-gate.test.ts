@@ -66,3 +66,38 @@ describe('account gate items', () => {
     expect(wallHelp(captcha)).toMatch(/human-verification challenge/i);
   });
 });
+
+describe('fill_failed — we hold the answer, the form would not take it', () => {
+  // The backend names the exact field ("We have your answer for “Country”, but
+  // this employer's form wouldn't accept it from us…"). Dropping that sentence
+  // and falling back to generic wall copy reads as though we never had the
+  // answer — which is what made the user re-answer `country` six times on the
+  // same Adyen application.
+  const held: NeedsInputItem = {
+    kind: 'fill_failed',
+    field_id: 'country',
+    action: 'complete_in_browser',
+    question:
+      'We have your answer for “Country”, but this employer’s form wouldn’t ' +
+      'accept it from us. Open the application and set that one field yourself.',
+  };
+
+  test("the backend's field-specific sentence is shown verbatim", () => {
+    expect(wallHelp(held)).toBe(held.question);
+  });
+
+  test('it is a hand-off, not an answerable question', () => {
+    // If this ever became answerable the user could "answer" it again and the
+    // row would re-drive into the identical fill failure — the loop itself.
+    expect(isBrowserWallItem(held)).toBe(true);
+    expect(isAnswerableItem(held)).toBe(false);
+    expect(wallNeedsUser(held)).toBe(true);
+  });
+
+  test('a legacy fill_failed row with no copy still says something useful', () => {
+    const legacy: NeedsInputItem = {
+      kind: 'fill_failed', field_id: 'country', action: 'complete_in_browser',
+    };
+    expect(wallHelp(legacy).trim().length).toBeGreaterThan(0);
+  });
+});

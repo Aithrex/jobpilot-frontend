@@ -96,7 +96,20 @@ export function wallHelp(item: NeedsInputItem): string {
   // can register at this vendor - Workday we can, Greenhouse/Lever/Ashby we
   // cannot. Prefer it verbatim; the string below is the pre-fix fallback for
   // rows parked before that landed.
-  if (kind === "account") {
+  // Two kinds carry copy only the BACKEND can write, so prefer it verbatim:
+  //
+  //   account      — only the backend knows whether we can register at this
+  //                  vendor (Workday we can; Greenhouse/Lever/Ashby we cannot).
+  //   fill_failed  — we HOLD the user's vetted answer but the employer's form
+  //                  would not accept it from us, so the message names the exact
+  //                  field ("we have your answer for Country, but…"). Without
+  //                  this the specific sentence is dropped and the card falls
+  //                  back to generic wall copy, which reads as though we never
+  //                  had the answer — the precise confusion that made the user
+  //                  re-answer the same question six times.
+  //
+  // The literals below stay as the fallback for rows parked before this landed.
+  if (kind === "account" || kind === "fill_failed") {
     const fromBackend = (item.question ?? "").trim();
     if (fromBackend) return fromBackend;
   }
