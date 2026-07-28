@@ -14,6 +14,7 @@ import {
   Globe,
   Home,
   Inbox,
+  KeyRound,
   Layers,
   LayoutList,
   Mail,
@@ -266,6 +267,13 @@ export const SETTINGS_SECTIONS: NavSection[] = [
     icon: Mail,
     hint: "Your managed application address and forwarding",
     keywords: "email forwarding address",
+  },
+  {
+    to: "employer-logins",
+    label: "Employer logins",
+    icon: KeyRound,
+    hint: "Accounts we created for you on employer career sites",
+    keywords: "ats password workday credentials login portal reveal account",
   },
   {
     to: "integrations",

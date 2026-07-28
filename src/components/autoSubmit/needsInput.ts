@@ -65,14 +65,41 @@ export function wallLabel(item: NeedsInputItem): string {
   const kind = lower(item.kind).replace(/^oracle_/, "");
   if (kind === "captcha") return "Human check required";
   if (kind === "reset") return "Password reset required";
-  if (kind === "account") return "Employer account required";
+  if (kind === "account") {
+    // We register for the user where we can (Workday today); the heading must
+    // not read like a chore they were handed.
+    return wallNeedsUser(item)
+      ? "Employer account required"
+      : "Setting up your employer account";
+  }
   if (kind === "verify") return "Verification required";
   return "Finish on the employer's site";
+}
+
+/**
+ * TRUE when the wall is one the user must physically go and clear. The backend
+ * sets `action: "complete_in_browser"` for exactly those; an ACCOUNT gate that
+ * we are handling ourselves deliberately omits it, so the card can say "we're
+ * on it" instead of shipping the user off to the employer's site.
+ */
+export function wallNeedsUser(item: NeedsInputItem): boolean {
+  if (lower(item.action) === "complete_in_browser") return true;
+  // Everything except a self-served account gate is a real hand-off.
+  return lower(item.kind) !== "account";
 }
 
 /** What the user actually has to go do. Never implies JobPilot failed. */
 export function wallHelp(item: NeedsInputItem): string {
   const kind = lower(item.kind).replace(/^oracle_/, "");
+  // The ACCOUNT gate's copy is written by the backend
+  // (`auto_apply_service.account_gate_item`) because only it knows whether we
+  // can register at this vendor - Workday we can, Greenhouse/Lever/Ashby we
+  // cannot. Prefer it verbatim; the string below is the pre-fix fallback for
+  // rows parked before that landed.
+  if (kind === "account") {
+    const fromBackend = (item.question ?? "").trim();
+    if (fromBackend) return fromBackend;
+  }
   if (kind === "captcha") {
     return "This employer showed a human-verification challenge. We can't solve those for you - open the site, clear the check, and we'll pick the application back up.";
   }

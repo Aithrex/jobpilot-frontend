@@ -3322,6 +3322,47 @@ class ApiService {
   }
 
   // ============================================
+  // Employer (ATS) logins (/api/apply/credentials*)
+  // Backend: shared/python/services/ats_credential_service.py. The list is
+  // METADATA ONLY - a password is never in a list response. Revealing one is a
+  // separate POST that re-authenticates with the account password, is rate
+  // limited (5 / 5 min -> 429) and is audited BEFORE the backend decrypts.
+  // Failures are 400/403/404/409/429/503 - never 401 (invariant #1). Rides the
+  // already-routed /api/apply edge prefix, so no new Terraform route.
+  // ============================================
+
+  /** Every employer login we manage for the user. No secrets in this payload. */
+  async getAtsCredentials() {
+    return this.request<{ credentials: import('../types/atsCredentials').AtsCredential[] }>(
+      '/apply/credentials',
+    );
+  }
+
+  /**
+   * Reveal ONE stored password. `password` is the user's own JobPilot account
+   * password (fresh re-auth). 403 `reauth_failed` = wrong password;
+   * 403 `reauth_unavailable` = OAuth-only account with no password to check
+   * against; 429 = rate limited. Never store the result.
+   */
+  async revealAtsCredential(args: {
+    ats_family: string;
+    tenant?: string;
+    password: string;
+  }) {
+    return this.request<import('../types/atsCredentials').AtsCredentialSecret>(
+      '/apply/credentials/reveal',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          ats_family: args.ats_family,
+          tenant: args.tenant ?? '',
+          password: args.password,
+        }),
+      },
+    );
+  }
+
+  // ============================================
   // Managed Application Mailbox (/api/resume/mailbox/*)
   // Contract: jobpilot-backend/docs/specs/managed-mailbox-v1.md §5. Field names
   // are VERBATIM from that spec. A 404 on any of these = the feature flag

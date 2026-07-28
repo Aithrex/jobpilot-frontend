@@ -16,10 +16,12 @@
  *                        "go apply manually".
  */
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import {
   CheckCircle2,
   ExternalLink,
+  KeyRound,
   Loader2,
   Lock,
   Pencil,
@@ -48,6 +50,7 @@ import {
   serializeAnswer,
   wallHelp,
   wallLabel,
+  wallNeedsUser,
   type NeedsInputControl,
 } from "./needsInput";
 
@@ -348,13 +351,25 @@ export default function NeedsInputCard({
             >
               <p className="text-sm font-medium">{wallLabel(w)}</p>
               <p className="mt-1 text-sm text-muted-foreground">{wallHelp(w)}</p>
-              {(w.apply_url || url) && (
-                <Button asChild size="sm" variant="outline" className="mt-2.5">
-                  <a href={w.apply_url || url || "#"} target="_blank" rel="noreferrer">
-                    <ExternalLink className="h-4 w-4" /> Open the employer's site
-                  </a>
-                </Button>
-              )}
+              <div className="mt-2.5 flex flex-wrap gap-2">
+                {/* Only offer the hand-off when the user really has to go do
+                    it - an account gate we are clearing ourselves must not
+                    read as a chore. */}
+                {wallNeedsUser(w) && (w.apply_url || url) && (
+                  <Button asChild size="sm" variant="outline">
+                    <a href={w.apply_url || url || "#"} target="_blank" rel="noreferrer">
+                      <ExternalLink className="h-4 w-4" /> Open the employer's site
+                    </a>
+                  </Button>
+                )}
+                {(w.kind ?? "").toLowerCase() === "account" && (
+                  <Button asChild size="sm" variant="ghost">
+                    <Link to="/app/settings/employer-logins">
+                      <KeyRound className="h-4 w-4" /> See your login
+                    </Link>
+                  </Button>
+                )}
+              </div>
             </div>
           ))}
         </div>
