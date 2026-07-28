@@ -235,7 +235,13 @@ describe('in-flight rows stay visible (fold: queued / gathering / running)', () 
     expect(
       await screen.findByText('Site Reliability Engineer'),
     ).toBeInTheDocument();
-    expect(screen.getByText(/Handed to your browser to submit/i)).toBeInTheDocument();
+    // Was "Handed to your browser to submit" — extension-era copy that is false
+    // on the server-side apply path, where nothing is handed to the user's
+    // browser. `submitting` only means "approved, undo window elapsed".
+    expect(screen.getByText(/Submitting your application/i)).toBeInTheDocument();
+    expect(
+      screen.queryByText(/handed to your browser/i),
+    ).not.toBeInTheDocument();
     expect(
       screen.queryByRole('button', { name: /approve & submit/i }),
     ).not.toBeInTheDocument();

@@ -428,10 +428,16 @@ function WaitingCard({
         </div>
       )}
 
+      {/* `submitting` is the FALLBACK state — approved, undo window elapsed. It
+          says nothing about WHO submits. The old copy here read "Handed to your
+          browser to submit", which was left over from the extension-era design:
+          on the server-side apply path (AUTO_APPLY_EXECUTOR=remote) nothing is
+          handed to the user's browser at all, so the line sent people looking
+          for a tab that was never going to open. Keep it true for both paths. */}
       {state === "submitting" && (
         <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
-          Handed to your browser to submit.
+          Submitting your application…
         </div>
       )}
     </div>
