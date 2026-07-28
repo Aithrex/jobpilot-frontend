@@ -1,15 +1,8 @@
 import { Suspense } from "react";
 import { Outlet } from "react-router-dom";
-import { BookOpen, Bot, CalendarDays, ClipboardList, Loader2, Users } from "lucide-react";
-import { SubNav, type SubNavItem } from "../SubNav";
-
-const GROW_SECTIONS: SubNavItem[] = [
-  { to: "learning", label: "Learning Hub", icon: BookOpen },
-  { to: "interview", label: "Interview Prep", icon: ClipboardList },
-  { to: "copilot", label: "Career Copilot", icon: Bot },
-  { to: "network", label: "Network", icon: Users },
-  { to: "events", label: "Events", icon: CalendarDays },
-];
+import { Loader2 } from "lucide-react";
+import { SubNav } from "../SubNav";
+import { GROW_SECTIONS } from "../nav.config";
 
 function SectionFallback() {
   return (

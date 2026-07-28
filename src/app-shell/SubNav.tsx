@@ -1,7 +1,9 @@
-import { useCallback, useRef, type KeyboardEvent } from "react";
+import { useCallback, useId, useRef, type KeyboardEvent } from "react";
 import { NavLink } from "react-router-dom";
+import { motion, useReducedMotion } from "framer-motion";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { indicatorSpring } from "@/lib/motion";
 
 export interface SubNavItem {
   /** URL segment relative to the destination (e.g. "learning"). */
@@ -18,13 +20,21 @@ interface SubNavProps {
 
 /**
  * Horizontal sub-navigation for an app-shell destination - a row of route
- * links styled as a segmented/underline tab strip. Each item is a ≥44px
+ * links styled as a segmented/underline tab strip. Each item is a >=44px
  * target with a focus-visible ring, an `aria-current` + underline-bar active
  * affordance (never color alone), and roving arrow-key operability. Scrolls
  * horizontally on small screens instead of overflowing the body.
+ *
+ * The active underline is a single shared element that SLIDES between tabs
+ * (framer `layoutId`), matching the top bar's destination pill and the mobile
+ * tab bar - so "where am I" is expressed the same way at all three levels of
+ * the IA. `useId` scopes the layoutId per mounted strip, so two SubNavs can
+ * never fight over one indicator. Honors `prefers-reduced-motion`.
  */
 export function SubNav({ ariaLabel, items }: SubNavProps) {
   const listRef = useRef<HTMLDivElement>(null);
+  const reduceMotion = useReducedMotion();
+  const indicatorId = `subnav-active-${useId()}`;
 
   const onKeyDown = useCallback((event: KeyboardEvent<HTMLDivElement>) => {
     const { key } = event;
@@ -71,16 +81,23 @@ export function SubNav({ ariaLabel, items }: SubNavProps) {
             data-subnav-link
             className={({ isActive }) =>
               cn(
-                "group relative flex min-h-[44px] shrink-0 items-center gap-2 whitespace-nowrap border-b-2 px-4 text-sm font-medium outline-none transition-colors",
-                "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                "group interactive relative flex min-h-[44px] shrink-0 items-center gap-2 whitespace-nowrap border-b-2 border-transparent px-4 text-sm font-medium",
                 isActive
-                  ? "border-primary font-semibold text-foreground"
-                  : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",
+                  ? "font-semibold text-foreground"
+                  : "text-muted-foreground hover:border-border hover:text-foreground",
               )
             }
           >
             {({ isActive }) => (
               <>
+                {isActive && (
+                  <motion.span
+                    layoutId={indicatorId}
+                    className="absolute inset-x-0 -bottom-0.5 h-0.5 rounded-full bg-primary"
+                    transition={indicatorSpring(reduceMotion)}
+                    aria-hidden="true"
+                  />
+                )}
                 <Icon
                   className={cn("h-4 w-4 shrink-0", isActive && "text-primary")}
                   aria-hidden="true"

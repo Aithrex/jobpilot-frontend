@@ -15,7 +15,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { beforeEach, describe, expect, test, vi, type Mock } from 'vitest';
 
 import { apiService } from '@/lib/api';
-import type { AutoSubmitPending, AutoSubmitSettings } from '@/types/autoSubmit';
+import type {
+  AutoSubmitPending,
+  AutoSubmitSettings,
+  NeedsInputItem,
+} from '@/types/autoSubmit';
 import AutoApplyTab from '@/components/autoSubmit/AutoApplyTab';
 
 vi.mock('@/lib/api', () => ({
@@ -28,6 +32,7 @@ vi.mock('@/lib/api', () => ({
     markAutoSubmitSubmitted: vi.fn(),
     getOnboardingQuestions: vi.fn(),
     saveOnboardingAnswers: vi.fn(),
+    answerNeedsInput: vi.fn(),
   },
 }));
 
@@ -190,13 +195,18 @@ describe('AutoApplyTab (defect H)', () => {
     // The attention section renders, ahead of the review queue.
     expect(await screen.findByText('Needs your attention')).toBeInTheDocument();
 
-    // waiting_human: "Needs you: <pending action>" + a Take-over CTA.
+    // waiting_human: "Needs you: <pending action>" + a Take-over CTA. This one
+    // legitimately links out - only a person can clear a wall on their site.
     expect(screen.getByText('a verification wall')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /take over/i })).toBeInTheDocument();
 
-    // needs_input: names the exact field + a Review CTA.
-    expect(screen.getByText('Years of Python?')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /review & answer/i })).toBeInTheDocument();
+    // needs_input: the question is a REAL, LABELLED INPUT in the app. The old
+    // "Review & answer" link (which dumped the user on the employer's portal to
+    // redo the whole application by hand) must be gone for good.
+    expect(screen.getByLabelText('Years of Python?')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', { name: /review & answer/i }),
+    ).not.toBeInTheDocument();
 
     // submission_unknown: neutral HELD copy - not an error, not a success.
     expect(screen.getByText(/won't retry automatically/i)).toBeInTheDocument();
@@ -234,5 +244,220 @@ describe('AutoApplyTab (defect H)', () => {
     expect(screen.queryByRole('button', { name: /approve & submit/i })).not.toBeInTheDocument();
     expect(screen.getByText('Your answers')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /open job to apply/i })).toBeInTheDocument();
+  });
+});
+
+/**
+ * AUTOAPPLY_REPAIR_SPEC §3 - the in-app answer surface.
+ *
+ * The row is answered HERE and the run resumes. The user is never sent to the
+ * employer's portal for a question they could have typed in one box.
+ */
+function needsInputPending(items: NeedsInputItem[]): AutoSubmitPending {
+  return {
+    pending: [
+      {
+        application_id: 'a-ni',
+        status: 'needs_input',
+        url: 'https://boards.greenhouse.io/acme/jobs/7',
+        title: 'Platform Engineer',
+        company: 'Acme',
+        needs_input: items,
+      },
+    ],
+    waiting: [],
+  };
+}
+
+describe('needs_input answer surface (spec §3)', () => {
+  beforeEach(() => {
+    api.getAutoSubmitSettings.mockResolvedValue({ data: settings('approval'), status: 200 });
+  });
+
+  test('answers a question in-app and resumes the application', async () => {
+    api.getAutoSubmitPending.mockResolvedValue({
+      data: needsInputPending([
+        { question: 'Years of Python?', kind: 'screening', field_id: 'years_python' },
+      ]),
+      status: 200,
+    });
+    api.answerNeedsInput.mockResolvedValue({
+      data: {
+        status: 'resumed',
+        application_status: 'ready_for_review',
+        remaining: [],
+      },
+      status: 200,
+    });
+
+    renderTab();
+
+    const input = await screen.findByLabelText('Years of Python?');
+    await userEvent.type(input, '5');
+    await userEvent.click(screen.getByRole('button', { name: /save & continue/i }));
+
+    await waitFor(() => expect(api.answerNeedsInput).toHaveBeenCalledTimes(1));
+    expect(api.answerNeedsInput).toHaveBeenCalledWith({
+      application_id: 'a-ni',
+      answers: { years_python: 5 },
+    });
+
+    // It resumed - and the copy NEVER tells the user to go apply manually.
+    const resumed = await screen.findByText(/back in your review queue/i);
+    expect(resumed).toBeInTheDocument();
+    expect(screen.queryByText(/apply manually/i)).not.toBeInTheDocument();
+  });
+
+  test('shows only what is still missing when the backend returns `remaining`', async () => {
+    api.getAutoSubmitPending.mockResolvedValue({
+      data: needsInputPending([
+        { question: 'Years of Python?', kind: 'screening', field_id: 'years_python' },
+        { question: 'Desired salary?', kind: 'screening', field_id: 'desired_salary' },
+      ]),
+      status: 200,
+    });
+    api.answerNeedsInput.mockResolvedValue({
+      data: {
+        status: 'resumed',
+        application_status: 'needs_input',
+        remaining: [
+          { question: 'Desired salary?', kind: 'screening', field_id: 'desired_salary' },
+        ],
+      },
+      status: 200,
+    });
+
+    renderTab();
+
+    await userEvent.type(await screen.findByLabelText('Years of Python?'), '5');
+    await userEvent.click(screen.getByRole('button', { name: /save & continue/i }));
+
+    // The answered question is gone; only the outstanding one remains.
+    await waitFor(() =>
+      expect(screen.queryByLabelText('Years of Python?')).not.toBeInTheDocument(),
+    );
+    expect(screen.getByLabelText('Desired salary?')).toBeInTheDocument();
+    expect(screen.getByText(/1 question still needs an answer/i)).toBeInTheDocument();
+  });
+
+  test('a legal attestation renders as Yes/No with NOTHING preselected', async () => {
+    api.getAutoSubmitPending.mockResolvedValue({
+      data: needsInputPending([
+        {
+          question: 'Are you legally authorized to work in the United States?',
+          kind: 'legal_attestation',
+          field_id: 'work_authorized_us',
+        },
+      ]),
+      status: 200,
+    });
+
+    renderTab();
+
+    const yes = await screen.findByRole('button', { name: 'Yes' });
+    const no = screen.getByRole('button', { name: 'No' });
+    // Safety rule 1: a legal attestation is NEVER pre-answered for the user.
+    expect(yes).toHaveAttribute('aria-pressed', 'false');
+    expect(no).toHaveAttribute('aria-pressed', 'false');
+    // Nothing filled -> nothing to submit.
+    expect(screen.getByRole('button', { name: /save & continue/i })).toBeDisabled();
+  });
+
+  test('an Oracle wall is a browser hand-off, NOT a text box', async () => {
+    api.getAutoSubmitPending.mockResolvedValue({
+      data: needsInputPending([
+        {
+          question: 'Verification required (captcha) to finish this application',
+          kind: 'oracle_captcha',
+          field_id: 'oracle_captcha',
+          apply_url: 'https://boards.greenhouse.io/acme/jobs/7',
+          action: 'complete_in_browser',
+        },
+      ]),
+      status: 200,
+    });
+
+    renderTab();
+
+    expect(await screen.findByText('Human check required')).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: /open the employer's site/i }),
+    ).toBeInTheDocument();
+    // A captcha is not answerable in-app: no input, no save action.
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /save & continue/i }),
+    ).not.toBeInTheDocument();
+  });
+});
+
+/**
+ * Spec §4 + the missing half of the status union: rows in these states used to
+ * fall through every branch and either vanish or render as an approvable review
+ * card.
+ */
+describe('unsupported / failed rows (spec §4)', () => {
+  beforeEach(() => {
+    api.getAutoSubmitSettings.mockResolvedValue({ data: settings('approval'), status: 200 });
+  });
+
+  test('unsupported renders calmly as "apply manually", never as an error', async () => {
+    api.getAutoSubmitPending.mockResolvedValue({
+      data: {
+        pending: [
+          {
+            application_id: 'a-uns',
+            status: 'unsupported',
+            url: 'https://jobs.example.com/apply/1',
+            title: 'Systems Engineer',
+            company: 'Delta',
+            ats: 'icims',
+          },
+        ],
+        waiting: [],
+      },
+      status: 200,
+    });
+
+    renderTab();
+
+    expect(
+      await screen.findByText(/can't auto-apply to this employer's system yet/i),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Apply manually')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /open job to apply/i })).toBeInTheDocument();
+    // Informational, not actionable.
+    expect(
+      screen.queryByRole('button', { name: /approve & submit/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  test('a failed row is VISIBLE instead of silently vanishing', async () => {
+    api.getAutoSubmitPending.mockResolvedValue({
+      data: {
+        pending: [
+          {
+            application_id: 'a-fail',
+            status: 'failed',
+            url: 'https://boards.lever.co/echo/jobs/2',
+            title: 'SRE',
+            company: 'Echo',
+            reason: 'form_timeout',
+          },
+        ],
+        waiting: [],
+      },
+      status: 200,
+    });
+
+    renderTab();
+
+    expect(await screen.findByText('SRE')).toBeInTheDocument();
+    expect(screen.getByText("Didn't go through")).toBeInTheDocument();
+    expect(screen.getByText(/Nothing was submitted/i)).toBeInTheDocument();
+    expect(screen.getByText(/form_timeout/)).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /approve & submit/i }),
+    ).not.toBeInTheDocument();
   });
 });

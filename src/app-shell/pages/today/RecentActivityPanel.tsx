@@ -17,6 +17,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
+import { fitBand } from '@/components/job-search/fitBands';
+import { cn } from '@/lib/utils';
 import { PanelCard, PanelEmpty, PanelError, ZoneHeading, StatusPill, Stat } from './primitives';
 
 /** Full pipeline lives in Applications; job search in Discover. */
@@ -102,7 +104,7 @@ export function RecentActivityPanel({
               <TableRow className="hover:bg-transparent">
                 <TableHead className="text-caption">Role</TableHead>
                 <TableHead className="text-caption">Status</TableHead>
-                <TableHead className="text-right text-caption">Match</TableHead>
+                <TableHead className="text-right text-caption">Fit</TableHead>
                 <TableHead className="text-right text-caption">Saved</TableHead>
               </TableRow>
             </TableHeader>
@@ -124,9 +126,15 @@ export function RecentActivityPanel({
                     </TableCell>
                     <TableCell className="py-3 text-right">
                       {m === null ? (
-                        <span className="text-caption text-muted-foreground"> - </span>
+                        // A missing score is "we never scored this", NOT a zero.
+                        // Saying so out loud beats a bare dash that reads as a
+                        // failure. Verbose only for assistive tech.
+                        <span className="text-caption text-muted-foreground">
+                          <span aria-hidden>--</span>
+                          <span className="sr-only">Not scored</span>
+                        </span>
                       ) : (
-                        <Stat className="text-body font-medium text-foreground">{m}%</Stat>
+                        <Stat className={cn('text-body font-medium', fitBand(m).text)}>{m}</Stat>
                       )}
                     </TableCell>
                     <TableCell className="py-3 text-right">

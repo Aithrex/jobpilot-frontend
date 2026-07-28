@@ -16,6 +16,7 @@ import {
   Settings2,
   Hand,
   HelpCircle,
+  ListChecks,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
@@ -35,6 +36,8 @@ import type { AutoSubmitApprovalView } from "@/types/autoSubmit";
 import type { AutoApplyMode } from "@/types/onboarding";
 import AutoApplyOnboarding from "./AutoApplyOnboarding";
 import AutoApplyModeControls from "./AutoApplyModeControls";
+import NeedsInputCard from "./NeedsInputCard";
+import StatusRowCard, { statusRowKind } from "./StatusRowCard";
 
 // ── display helpers ─────────────────────────────────────────────────────────
 
@@ -69,9 +72,17 @@ function isReadOnlyApproved(v: AutoSubmitApprovalView): boolean {
 // Canonical "hand it back to the human" states. None is an error or a success:
 // they must never render as a re-approvable review card, so we partition them
 // out of the actionable queue and surface them in their own attention section.
-type AttentionKind = "waiting_human" | "needs_input" | "submission_unknown";
+type AttentionKind =
+  | "waiting_human"
+  | "waiting_otp"
+  | "needs_input"
+  | "submission_unknown";
 const ATTENTION_STATUSES = new Set<string>([
   "waiting_human",
+  // An OTP wall mid-run is the same shape of hold as `waiting_human`: only a
+  // person can clear it. It was missing from the union and the partition, so
+  // these rows rendered as approvable review cards.
+  "waiting_otp",
   "needs_input",
   "submission_unknown",
 ]);
@@ -79,13 +90,6 @@ const ATTENTION_STATUSES = new Set<string>([
 function attentionKind(v: AutoSubmitApprovalView): AttentionKind | null {
   const s = String(v.status);
   return ATTENTION_STATUSES.has(s) ? (s as AttentionKind) : null;
-}
-
-/** The named field a `needs_input` row is stalled on (best-effort, defensive). */
-function needsInputLabel(v: AutoSubmitApprovalView): string | null {
-  const first = Array.isArray(v.needs_input) ? v.needs_input[0] : null;
-  const label = first?.question || first?.field_id || null;
-  return label ? label.trim() || null : null;
 }
 
 /** The short reason a `waiting_human` row is paused (best-effort, defensive). */
@@ -97,8 +101,13 @@ function waitingHumanAction(v: AutoSubmitApprovalView): string | null {
 // Copilot (prepare-only) rows are never submitted for the user - we surface the
 // resolved answer sheet so they can apply manually. A row is copilot when the
 // account mode is copilot, or the row is explicitly labeled so.
+//
+// NOTE: the old third clause `v.status === "manual_apply"` was DEAD. No backend
+// writer ever emits that as a status - `manual_apply` is a BOOLEAN on the
+// auto-apply answers doc (auto_apply_service.py:656/698/738) and is never put on
+// the pending payload. The per-row label the backend DOES send is `mode`.
 function isCopilotRow(v: AutoSubmitApprovalView, mode: AutoApplyMode | null): boolean {
-  return mode === "copilot" || v.mode === "copilot" || v.status === "manual_apply";
+  return mode === "copilot" || v.mode === "copilot";
 }
 
 function rowKey(v: AutoSubmitApprovalView): string {
@@ -493,18 +502,46 @@ function AnswerSheetCard({ view }: { view: AutoSubmitApprovalView }) {
 
 // ── attention (needs-you / held) card ───────────────────────────────────────
 
+/** `useAutoSubmit().answerNeedsInput`, threaded down to the needs_input form. */
+type NeedsInputAnswerFn = ReturnType<typeof useAutoSubmit>["answerNeedsInput"];
+
 /**
  * A row the executor handed back to the human. We render each canonical state
  * from the REAL payload - never fabricated progress:
- *   waiting_human      "Needs you: <pending action>" + a Take-over CTA.
- *   needs_input        "Needs your answer: <field label>" + a Review CTA.
+ *   needs_input        the user ANSWERS IT HERE (NeedsInputCard, spec §3). This
+ *                      card used to render "Needs your answer" plus a link that
+ *                      dumped the user on the employer's portal - i.e. it asked
+ *                      them to redo the whole application by hand because we
+ *                      couldn't resolve one field. That is now fixed.
+ *   waiting_human /    a wall on the employer's site (verification, MFA,
+ *   waiting_otp        account gate). Nothing is typeable, so a hand-off to the
+ *                      user's own browser IS the right answer here.
  *   submission_unknown neutral "status unknown - we won't retry" (NOT an error,
  *                      NOT a success) + an Open-job CTA to check the employer.
  */
-function AttentionCard({ view }: { view: AutoSubmitApprovalView }) {
+function AttentionCard({
+  view,
+  onAnswer,
+}: {
+  view: AutoSubmitApprovalView;
+  onAnswer: NeedsInputAnswerFn;
+}) {
   const kind = attentionKind(view);
   const url = bestUrl(view);
   if (!kind) return null;
+
+  // needs_input: the whole point of the repair - answer it IN THE APP.
+  if (kind === "needs_input") {
+    return (
+      <NeedsInputCard
+        view={view}
+        url={url}
+        role={displayRole(view)}
+        company={displayCompany(view)}
+        onAnswer={onAnswer}
+      />
+    );
+  }
 
   // submission_unknown: strictly neutral - the click landed but the outcome is
   // ambiguous and it is HELD (never auto-retried). Muted, not destructive.
@@ -540,14 +577,17 @@ function AttentionCard({ view }: { view: AutoSubmitApprovalView }) {
     );
   }
 
-  const isWaiting = kind === "waiting_human";
-  const Icon = isWaiting ? Hand : Pencil;
-  const lead = isWaiting ? "Needs you" : "Needs your answer";
-  const cta = isWaiting ? "Take over" : "Review & answer";
-  const detail = isWaiting
+  // waiting_human / waiting_otp: a wall only a person can clear on the
+  // employer's site. The link out is legitimate here - there is nothing to type.
+  const isOtp = kind === "waiting_otp";
+  const Icon = Hand;
+  const lead = "Needs you";
+  const cta = "Take over";
+  const detail = isOtp
     ? waitingHumanAction(view) ??
-      "a step on the employer's site needs a person (e.g. a verification wall)."
-    : needsInputLabel(view) ?? "an application question needs your answer.";
+      "the employer sent a one-time code. Enter it on their site and we'll pick this back up."
+    : waitingHumanAction(view) ??
+      "a step on the employer's site needs a person (e.g. a verification wall). Clear it and we'll pick this back up.";
 
   return (
     <div className="rounded-xl border border-[hsl(var(--warning)/0.4)] bg-[hsl(var(--warning)/0.06)] p-4">
@@ -624,6 +664,7 @@ export default function AutoApplyTab() {
     refetchPending,
     approve,
     cancel,
+    answerNeedsInput,
   } = useAutoSubmit();
   const onboarding = useAutoApplyOnboarding(true);
   const { plan } = useEntitlements();
@@ -655,16 +696,39 @@ export default function AutoApplyTab() {
   // submitting" cards (reuse WaitingCard); only not-yet-approved rows are
   // actionable. Copilot mode is prepare-only, so its actionable rows become
   // read-only answer sheets.
+  //
+  // A FOURTH bucket was missing entirely: `unsupported` / `failed` / `preparing`
+  // / `confirmed` / `cancelled` / `withdrawn` / `external`. Those statuses were
+  // absent from AutoSubmitStatus and from every branch below, so such rows fell
+  // into `actionable` and rendered as an "Approve & submit" review card with no
+  // answers - or, once the caller filtered them, vanished with no explanation at
+  // all. They now get their own honest, read-only section.
   const attention = useMemo(
     () => pending.filter((p) => attentionKind(p) !== null),
     [pending],
   );
+  const informational = useMemo(
+    () => pending.filter((p) => attentionKind(p) === null && statusRowKind(p) !== null),
+    [pending],
+  );
   const readOnlyApproved = useMemo(
-    () => pending.filter((p) => attentionKind(p) === null && isReadOnlyApproved(p)),
+    () =>
+      pending.filter(
+        (p) =>
+          attentionKind(p) === null &&
+          statusRowKind(p) === null &&
+          isReadOnlyApproved(p),
+      ),
     [pending],
   );
   const actionable = useMemo(
-    () => pending.filter((p) => attentionKind(p) === null && !isReadOnlyApproved(p)),
+    () =>
+      pending.filter(
+        (p) =>
+          attentionKind(p) === null &&
+          statusRowKind(p) === null &&
+          !isReadOnlyApproved(p),
+      ),
     [pending],
   );
   const copilot = mode === "copilot";
@@ -852,7 +916,11 @@ export default function AutoApplyTab() {
           />
           <div className="space-y-3">
             {attention.map((v) => (
-              <AttentionCard key={rowKey(v)} view={v} />
+              <AttentionCard
+                key={rowKey(v)}
+                view={v}
+                onAnswer={answerNeedsInput}
+              />
             ))}
           </div>
         </section>
@@ -922,6 +990,36 @@ export default function AutoApplyTab() {
           </motion.div>
         )}
       </section>
+
+      {/* Rows we can't (or no longer) act on: unsupported ATS, failures,
+          in-flight prep, and terminal bookkeeping. Read-only and never
+          approvable - but VISIBLE, so nothing silently disappears. */}
+      {informational.length > 0 && (
+        <section className="space-y-3">
+          <SectionHeading
+            icon={<ListChecks className="h-4 w-4 text-muted-foreground" />}
+            title="Other applications"
+            count={informational.length}
+          />
+          <div className="space-y-3">
+            {informational.map((v) => {
+              const kind = statusRowKind(v);
+              if (!kind) return null;
+              return (
+                <StatusRowCard
+                  key={rowKey(v)}
+                  kind={kind}
+                  role={displayRole(v)}
+                  company={displayCompany(v)}
+                  url={bestUrl(v)}
+                  reason={v.reason}
+                  ats={v.ats}
+                />
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {/* Approved - read-only, snapshot frozen (defect H: never re-approvable). */}
       {approvedQueue.length > 0 && (

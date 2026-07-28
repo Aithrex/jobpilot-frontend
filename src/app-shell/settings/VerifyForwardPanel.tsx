@@ -10,10 +10,15 @@ type VerifyState = 'verifying' | 'ok' | 'error' | 'missing';
 
 /**
  * Forwarding-verification landing (`/app/settings/mailbox/verify-forward?token=`).
- * The link mailed to the user's original inbox lands here; we POST the token via
+ * The link mailed to the user's inbox lands here; we POST the token via
  * apiService.verifyForwarding and report success or failure. Runs exactly once
  * per token. A failure is 400/404/409 (never 401) - a bad token is not a
  * session problem.
+ *
+ * This is now the OVERRIDE path only: per AUTOAPPLY_REPAIR_SPEC §6 the default
+ * destination is the user's own registered email, already verified at sign-up,
+ * so nobody reaches this page unless a destination was changed to some other
+ * address (which the backend still re-verifies - `set_forwarding`).
  */
 export default function VerifyForwardPanel() {
   const [params] = useSearchParams();
@@ -61,7 +66,8 @@ export default function VerifyForwardPanel() {
           </span>
           <h1 className="text-base font-semibold text-foreground">Forwarding verified</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Important application updates will now also reach your own inbox.
+            When an employer gets back to you, we'll email this address a short heads-up
+            with a link. The full message stays in your Inbox.
           </p>
           <Button asChild className="mt-4">
             <Link to={`${navHref('settings')}/mailbox`}>Back to mailbox settings</Link>

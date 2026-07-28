@@ -14,6 +14,8 @@ import { ResumeTailorModal } from './ResumeTailorModal';
 import { JobTrustBadge } from './JobTrustBadge';
 import { VisaFlagChips } from './JobVisaSignals';
 import { ReferralModal } from './ReferralModal';
+import { WhyThisScoreButton } from './JobFitDetails';
+import { fitBandOf } from './fitBands';
 import { apiService, companyLogoSrc } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { hueFromString, toTitleCase } from '@/lib/format';
@@ -32,38 +34,59 @@ interface JobCardProps {
   autoApplying?: boolean;
 }
 
-/** Match band → ring stroke + label color, using the app's a11y-verified
- *  semantic tokens (auto-adapt across light/dark). Strong fit = success,
- *  partial = warning. */
-function matchBand(score: number): { stroke: string; text: string } {
-  if (score >= 70) return { stroke: 'hsl(var(--success))', text: 'text-success' };
-  if (score >= 40) return { stroke: 'hsl(var(--warning))', text: 'text-warning' };
-  return { stroke: 'hsl(var(--muted-foreground))', text: 'text-muted-foreground' };
-}
-
-function MatchScoreRing({ score }: { score: number }) {
+/**
+ * The score dial.
+ *
+ * Bands come from `./fitBands`, which mirrors the scoring engine's real cut-offs
+ * (80 strong / 65 good / 50 possible / 35 weak). The previous 70/40 split here
+ * was invented on the client and disagreed with the number's own meaning, so a
+ * 66 - a "good match", the exact threshold Auto-Apply queues on - rendered in
+ * caution amber.
+ *
+ * Takes the whole ROW, not the number: `fitBandOf` refuses to attach fit_score's
+ * band words to a `match_score` that did not come from fit_score. This card is
+ * rendered by `JobSearchPanel`, `WorkdayJobsPanel` and `CombinedJobsPanel`, which
+ * historically fed it three different engines' numbers under that one key, and
+ * streamed scan previews still carry a provisional value with no version stamp.
+ * An unstamped row reads "Not scored" - true, rather than confidently wrong.
+ *
+ * Colour is never the only cue: the band LABEL sits directly under the number,
+ * and the whole dial is labelled for assistive tech.
+ */
+function MatchScoreRing({ job }: { job: Job }) {
   const reduce = useReducedMotion();
   const radius = 20;
   const circumference = 2 * Math.PI * radius;
-  const clamped = Math.max(0, Math.min(100, score));
-  const offset = circumference - (clamped / 100) * circumference;
-  const band = matchBand(score);
+  const clamped = Math.max(0, Math.min(100, job.match_score ?? 0));
+  const band = fitBandOf(job);
+  const scored = band.key !== 'unscored';
+  const offset = circumference - ((scored ? clamped : 0) / 100) * circumference;
   const shown = useCountUp(clamped);
   return (
-    <div className="relative h-12 w-12 flex-shrink-0" title={`${score}% resume match`}>
-      <svg className="h-12 w-12 -rotate-90" viewBox="0 0 48 48">
+    <div
+      className="relative h-12 w-12 flex-shrink-0"
+      role="img"
+      aria-label={scored ? `${clamped} out of 100. ${band.label}.` : 'Not scored against your resume'}
+    >
+      <svg className="h-12 w-12 -rotate-90" viewBox="0 0 48 48" aria-hidden>
         <circle cx="24" cy="24" r={radius} fill="none" stroke="currentColor" strokeWidth="3.5" className="text-muted/30" />
-        <motion.circle
-          cx="24" cy="24" r={radius} fill="none" stroke={band.stroke} strokeWidth="3.5"
-          strokeDasharray={circumference} strokeLinecap="round"
-          initial={reduce ? false : { strokeDashoffset: circumference }}
-          animate={{ strokeDashoffset: offset }}
-          transition={{ duration: 0.85, ease: [0.22, 1, 0.36, 1] }}
-        />
+        {scored && (
+          <motion.circle
+            cx="24" cy="24" r={radius} fill="none" stroke={band.stroke} strokeWidth="3.5"
+            strokeDasharray={circumference} strokeLinecap="round"
+            initial={reduce ? false : { strokeDashoffset: circumference }}
+            animate={{ strokeDashoffset: offset }}
+            transition={{ duration: reduce ? 0 : 0.5, ease: [0.16, 1, 0.3, 1] }}
+          />
+        )}
       </svg>
-      <span className="absolute inset-0 flex flex-col items-center justify-center leading-none">
-        <span className={cn('font-mono text-[12px] font-bold tabular-nums', band.text)}>{shown}</span>
-        <span className="text-[7px] font-medium uppercase tracking-wide text-muted-foreground">match</span>
+      <span className="absolute inset-0 flex flex-col items-center justify-center leading-none" aria-hidden>
+        <span className={cn('font-mono text-[12px] font-bold tabular-nums', band.text)}>
+          {scored ? shown : '--'}
+        </span>
+        <span className="text-[7px] font-medium uppercase tracking-wide text-muted-foreground">
+          {scored ? 'fit' : 'n/a'}
+        </span>
       </span>
     </div>
   );
@@ -182,6 +205,7 @@ export function JobCard({ job, saved, jobStatus, onSave, onUnsave, onQuickApply,
   const apply = buildApplyUrl(job);
   const hue = hueFromString(job.company || job.title || 'JobPilot');
   const hasDescription = !!job.description && job.description.trim().length > 0;
+  const band = fitBandOf(job);
 
   const title = toTitleCase(job.title);
   const company = toTitleCase(job.company);
@@ -223,13 +247,28 @@ export function JobCard({ job, saved, jobStatus, onSave, onUnsave, onQuickApply,
                 <span className="truncate">{location || 'Location undisclosed'}</span>
               </p>
             </div>
-            <MatchScoreRing score={job.match_score} />
+            <MatchScoreRing job={job} />
           </div>
 
           {/* Title */}
           <h3 className="line-clamp-2 text-[15px] font-bold leading-snug text-foreground" title={title}>
             {title}
           </h3>
+
+          {/* Fit verdict - the ring's number said in words, with its receipts
+              one click away. The band label is what makes the dial readable
+              without decoding a colour. */}
+          <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
+            <span
+              className={cn(
+                'inline-flex items-center rounded-full border px-2 py-0.5 text-[10.5px] font-semibold',
+                band.chip,
+              )}
+            >
+              {band.label}
+            </span>
+            <WhyThisScoreButton job={job} />
+          </div>
 
           {/* Primary signal row */}
           {hasSignals && (
@@ -255,9 +294,11 @@ export function JobCard({ job, saved, jobStatus, onSave, onUnsave, onQuickApply,
             </div>
           )}
 
-          {/* Matched skills */}
+          {/* Matched skills - the positive half of the score, on the card so
+              the number is legible at a glance. The gaps live in "Why this
+              score" so the card stays encouraging rather than a deficit list. */}
           {job.matched_skills.length > 0 && (
-            <div className="flex flex-wrap gap-1">
+            <div className="flex flex-wrap items-center gap-1">
               {job.matched_skills.slice(0, 7).map((skill) => (
                 <span key={skill} className="rounded-md bg-success/10 px-1.5 py-0.5 text-[10px] font-medium text-success">
                   {skill}
@@ -265,6 +306,11 @@ export function JobCard({ job, saved, jobStatus, onSave, onUnsave, onQuickApply,
               ))}
               {job.matched_skills.length > 7 && (
                 <span className="self-center text-[10px] text-muted-foreground">+{job.matched_skills.length - 7} more</span>
+              )}
+              {job.missing_skills?.length > 0 && (
+                <span className="self-center text-[10px] text-muted-foreground">
+                  · {job.missing_skills.length} gap{job.missing_skills.length === 1 ? '' : 's'}
+                </span>
               )}
             </div>
           )}

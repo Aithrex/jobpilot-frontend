@@ -1,18 +1,8 @@
 import { Suspense } from "react";
 import { Outlet } from "react-router-dom";
-import { Beaker, Bell, CreditCard, Gauge, Loader2, Mail, Plane, PlugZap, UserCircle } from "lucide-react";
-import { SubNav, type SubNavItem } from "../SubNav";
-
-const SETTINGS_SECTIONS: SubNavItem[] = [
-  { to: "profile", label: "Profile", icon: UserCircle },
-  { to: "visa", label: "Visa Timeline", icon: Plane },
-  { to: "mailbox", label: "Mailbox", icon: Mail },
-  { to: "integrations", label: "Integrations", icon: PlugZap },
-  { to: "autonomy", label: "Autonomy", icon: Gauge },
-  { to: "billing", label: "Billing", icon: CreditCard },
-  { to: "notifications", label: "Notifications", icon: Bell },
-  { to: "beta", label: "Beta Lab", icon: Beaker },
-];
+import { Loader2 } from "lucide-react";
+import { SubNav } from "../SubNav";
+import { SETTINGS_SECTIONS } from "../nav.config";
 
 function SectionFallback() {
   return (

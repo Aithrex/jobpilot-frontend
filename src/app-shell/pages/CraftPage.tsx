@@ -1,16 +1,8 @@
 import { Suspense } from "react";
 import { Outlet } from "react-router-dom";
-import { Eye, FileCheck2, FolderOpen, Layers, Loader2, Mic, Wand2 } from "lucide-react";
-import { SubNav, type SubNavItem } from "../SubNav";
-
-const CRAFT_SECTIONS: SubNavItem[] = [
-  { to: "tailor", label: "Tailor", icon: Wand2 },
-  { to: "batch", label: "Batch", icon: Layers },
-  { to: "library", label: "Library", icon: FolderOpen },
-  { to: "tailored", label: "Tailored", icon: FileCheck2 },
-  { to: "six-seconds", label: "Six Seconds", icon: Eye },
-  { to: "voice", label: "Voice", icon: Mic },
-];
+import { Loader2 } from "lucide-react";
+import { SubNav } from "../SubNav";
+import { RESUME_SECTIONS } from "../nav.config";
 
 function SectionFallback() {
   return (
@@ -40,7 +32,7 @@ export default function CraftPage() {
         </p>
       </header>
 
-      <SubNav ariaLabel="Resume sections" items={CRAFT_SECTIONS} />
+      <SubNav ariaLabel="Resume sections" items={RESUME_SECTIONS} />
 
       <Suspense fallback={<SectionFallback />}>
         {/* Sections are mounted by App.tsx routes; `embedded` tells the

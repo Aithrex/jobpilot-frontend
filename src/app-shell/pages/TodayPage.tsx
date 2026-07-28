@@ -1,12 +1,29 @@
 /**
- * Home — daily briefing at `/app/home`.
+ * Home - daily briefing at `/app/home`.
  *
- * Zones: resume entry → feature launchpad → status/KPIs → trends → recent roles.
+ * Reading order is the 9am question order, most urgent first:
+ *
+ *   1. WHAT NEEDS ME?    HeroPanel - the Today inbox: approvals, hand-offs,
+ *                        nudges. If anything is blocking, it is the first
+ *                        thing on the screen.
+ *   2. WHERE DO I STAND? KpiRow - sent today, streak, funnel, readiness.
+ *   3. WHAT'S NEW?       TopMatchesPanel - the strongest roles scored against
+ *                        this resume, with one obvious way into the full list.
+ *   4. SET-UP GAP        ResumeEntryPanel - self-gating; loud only when there
+ *                        is no base resume, quiet once there is.
+ *   5. WHERE ELSE?       FeatureLaunchpad - the product tour, below the fold.
+ *   6. WHAT'S CHANGING?  Trend + funnel.
+ *   7. WHY?              Recent roles table.
+ *
+ * The launchpad and the resume prompt used to sit ABOVE the status panels, so a
+ * user with three approvals waiting opened Home and saw four static marketing
+ * tiles first. Status now wins the fold; the tour is where a tour belongs.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { rise as riseIn } from '@/lib/motion';
 import { apiService } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import type { DashboardOverview } from '@/types/overview';
@@ -21,6 +38,7 @@ import { FeatureLaunchpad } from './today/FeatureLaunchpad';
 import { KpiRow } from './today/KpiCards';
 import { ApplicationTrend, ConversionFunnel } from './today/PipelinePanels';
 import { RecentActivityPanel } from './today/RecentActivityPanel';
+import { TopMatchesPanel } from './today/TopMatchesPanel';
 
 interface StreakData {
   current_streak: number;
@@ -46,9 +64,6 @@ function greeting(): string {
   if (h < 18) return 'Good afternoon';
   return 'Good evening';
 }
-
-/** Entrance easing shared with HeroPanel - a calm, decelerating rise. */
-const RISE_EASE: [number, number, number, number] = [0.16, 1, 0.3, 1];
 
 export default function TodayPage({ userName }: TodayPageProps = {}) {
   const { user } = useAuth();
@@ -153,12 +168,9 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
    * Staggered entrance, top to bottom - opacity + a small rise only, so
    * nothing reflows. Skeletons occupy the same slots, so there is zero layout
    * shift when data lands. Disabled entirely under prefers-reduced-motion.
+   * Values come from the shared motion system (`@/lib/motion`).
    */
-  const rise = (order: number) => ({
-    initial: reduceMotion ? false : ({ opacity: 0, y: 8 } as const),
-    animate: { opacity: 1, y: 0 },
-    transition: { duration: 0.3, delay: order * 0.06, ease: RISE_EASE },
-  });
+  const rise = (order: number) => riseIn({ reduce: reduceMotion, index: order });
 
   return (
     <div className="space-y-8">
@@ -192,18 +204,8 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
         </button>
       </motion.header>
 
-      {/* Resume upload entry point - the primary onboarding action when the
-          user has no base resume; a quiet, discoverable affordance once they do. */}
-      <motion.div {...rise(1)}>
-        <ResumeEntryPanel onUploaded={() => void load()} />
-      </motion.div>
-
-      <motion.div {...rise(2)}>
-        <FeatureLaunchpad />
-      </motion.div>
-
-      {/* Zone A - Are we OK? */}
-      <motion.section {...rise(3)} aria-label="Today's status" className="space-y-4">
+      {/* Zone A - What needs me, and where do I stand? */}
+      <motion.section {...rise(1)} aria-label="Today's status" className="space-y-4">
         <HeroPanel model={hero} onRetry={() => void load()} />
         <KpiRow
           loading={firstLoad && loading}
@@ -214,8 +216,25 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
         />
       </motion.section>
 
+      {/* Zone A2 - What's new and strong? The founder's "top jobs on landing".
+          Owns its own async states off the shared job feed, so it never blocks
+          (or is blocked by) the dashboard fetches above. */}
+      <motion.section {...rise(2)} aria-label="Top matches">
+        <TopMatchesPanel />
+      </motion.section>
+
+      {/* Resume upload entry point - the primary onboarding action when the
+          user has no base resume; a quiet, discoverable affordance once they do. */}
+      <motion.div {...rise(3)}>
+        <ResumeEntryPanel onUploaded={() => void load()} />
+      </motion.div>
+
+      <motion.div {...rise(4)}>
+        <FeatureLaunchpad />
+      </motion.div>
+
       {/* Zone B - What's changing? */}
-      <motion.section {...rise(4)} aria-label="Trends" className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <motion.section {...rise(5)} aria-label="Trends" className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <ApplicationTrend
             state={panelState(err.streak)}
@@ -233,7 +252,7 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
       </motion.section>
 
       {/* Zone C - Why? */}
-      <motion.section {...rise(5)} aria-label="Recent roles">
+      <motion.section {...rise(6)} aria-label="Recent roles">
         <RecentActivityPanel
           state={panelState(err.saved)}
           jobs={savedJobs}

@@ -1,20 +1,14 @@
 import { Suspense, lazy, useState } from 'react';
 import { Outlet, useSearchParams } from 'react-router-dom';
-import { Inbox, LayoutList, Loader2, Send, TrendingUp } from 'lucide-react';
-import { SubNav, type SubNavItem } from '../SubNav';
+import { Loader2 } from 'lucide-react';
+import { SubNav } from '../SubNav';
+import { APPLY_SECTIONS } from '../nav.config';
 
 // Emailed approve/review links 302 into `/app/apply?approve=<token>`.
 // Lazy so the confirmation surface only loads for users who arrive via a link.
 const ApproveLinkConfirm = lazy(
   () => import('@/components/autoSubmit/ApproveLinkConfirm'),
 );
-
-const APPLICATION_SECTIONS: SubNavItem[] = [
-  { to: 'tracker', label: 'Tracker', icon: LayoutList },
-  { to: 'auto-apply', label: 'Auto-Apply', icon: Send },
-  { to: 'inbox', label: 'Inbox', icon: Inbox },
-  { to: 'pipeline', label: 'Pipeline', icon: TrendingUp },
-];
 
 function SectionFallback() {
   return (
@@ -58,7 +52,7 @@ export default function ApplicationsPage() {
         </Suspense>
       )}
 
-      <SubNav ariaLabel="Applications sections" items={APPLICATION_SECTIONS} />
+      <SubNav ariaLabel="Applications sections" items={APPLY_SECTIONS} />
 
       <Suspense fallback={<SectionFallback />}>
         {/* `embedded` tells the tracker tab the shell already renders the page

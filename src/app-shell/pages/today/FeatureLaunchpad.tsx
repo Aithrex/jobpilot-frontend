@@ -59,12 +59,11 @@ export function FeatureLaunchpad() {
               <Link
                 to={to}
                 className={cn(
-                  "group flex min-h-[44px] gap-3 rounded-xl border border-border bg-card p-4",
-                  "transition-colors hover:border-primary/40 hover:bg-accent/40",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  "group interactive interactive-press flex min-h-[44px] gap-3 rounded-xl border border-border bg-card p-4",
+                  "hover:border-primary/40 hover:bg-accent/40 hover:shadow-panel",
                 )}
               >
-                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary transition-colors duration-fast ease-standard group-hover:bg-primary/20">
                   <Icon className="h-4 w-4" aria-hidden />
                 </span>
                 <span className="min-w-0 flex-1 space-y-0.5">
@@ -79,7 +78,7 @@ export function FeatureLaunchpad() {
                   <span className="block text-caption text-muted-foreground">{blurb}</span>
                 </span>
                 <ArrowRight
-                  className="mt-1 h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
+                  className="icon-advance mt-1 h-4 w-4 shrink-0 text-muted-foreground group-hover:text-primary"
                   aria-hidden
                 />
               </Link>
