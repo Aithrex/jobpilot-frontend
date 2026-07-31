@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aspirely · Design book</title>
+<link rel="stylesheet" href="css/aspirely.css">
+<style>
+  body { background: var(--paper-sunk); }
+  .book { display: grid; grid-template-columns: 220px 1fr; align-items: start; }
+
+  .book-rail {
+    position: sticky; top: 0; height: 100vh; padding: var(--s5);
+    border-right: 1px solid var(--rule); background: var(--paper);
+    display: flex; flex-direction: column; gap: var(--s6);
+  }
+  .book-rail nav { display: grid; gap: 1px; }
+  .book-rail nav a {
+    font-family: var(--mono); font-size: 12px; color: var(--gray);
+    padding: 7px 0 7px 16px; position: relative;
+  }
+  .book-rail nav a::before { content: ''; position: absolute; left: 0; top: 13px; width: 8px; height: 1px; background: var(--rule-firm); }
+  .book-rail nav a:hover { color: var(--ink); }
+  .book-rail .end { margin-top: auto; display: grid; gap: var(--s3); }
+
+  .book-main { padding: var(--s6) var(--s6) var(--s10); min-width: 0; }
+
+  .screen { padding-block: var(--s7); border-top: 1px solid var(--rule); }
+  .screen:first-of-type { border-top: 0; padding-top: 0; }
+  .screen-head { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--s5); flex-wrap: wrap; margin-bottom: var(--s5); }
+  .screen-head h2 { font-family: var(--serif); font-size: 30px; letter-spacing: -0.025em; }
+  .screen-head .note { font-size: 14.5px; color: var(--gray); max-width: 46ch; margin-top: 6px; }
+
+  .controls { display: flex; gap: var(--s2); align-items: center; }
+  .controls button, .controls a {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase;
+    border: 1px solid var(--rule); border-radius: 999px; padding: 6px 12px; color: var(--gray);
+    background: var(--paper);
+  }
+  .controls button[aria-pressed='true'] { color: var(--ink); border-color: var(--ink); }
+
+  .frames { display: flex; gap: var(--s6); align-items: flex-start; overflow-x: auto; padding-bottom: var(--s4); }
+  .frames::-webkit-scrollbar { height: 3px; }
+  .frames::-webkit-scrollbar-track { background: var(--rule); }
+  .frames::-webkit-scrollbar-thumb { background: var(--rule-firm); }
+  .frames::-webkit-scrollbar-button { display: none; }
+
+  .frame { flex: none; }
+  .frame .cap {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--gray); margin-bottom: 9px; display: block;
+  }
+  .viewport {
+    border: 1px solid var(--rule-firm); border-radius: 8px; overflow: hidden;
+    background: var(--paper); position: relative;
+  }
+  .viewport iframe { border: 0; display: block; transform-origin: top left; }
+
+  /* desktop 1440 x 900 at 0.68 */
+  .vp-desktop { width: 979px; height: 612px; }
+  .vp-desktop iframe { width: 1440px; height: 900px; transform: scale(0.68); }
+
+  /* mobile 390 x 844 at 0.68 */
+  .vp-mobile { width: 265px; height: 574px; }
+  .vp-mobile iframe { width: 390px; height: 844px; transform: scale(0.68); }
+
+  .legend { display: grid; gap: 4px; margin-top: var(--s4); }
+  .legend span { font-family: var(--mono); font-size: 10.5px; color: var(--gray); }
+
+  @media (max-width: 1100px) {
+    .book { grid-template-columns: 1fr; }
+    .book-rail { position: static; height: auto; flex-direction: row; align-items: center; justify-content: space-between; border-right: 0; border-bottom: 1px solid var(--rule); }
+    .book-rail nav { grid-auto-flow: column; overflow-x: auto; gap: var(--s3); }
+    .book-rail .end { margin: 0; }
+    .book-main { padding: var(--s5) var(--s4) var(--s8); }
+  }
+</style>
+</head>
+<body>
+
+<div class="book">
+
+  <aside class="book-rail">
+    <div>
+      <div class="wordmark">Aspirely<span class="dot">.</span></div>
+      <span class="mono-sm" style="display:block;margin-top:4px">design book v1</span>
+    </div>
+
+    <nav>
+      <a href="#style">00 style guide</a>
+      <a href="#landing">01 landing</a>
+      <a href="#upload">02 upload, guest</a>
+      <a href="#matches">03 match results</a>
+      <a href="#dashboard">04 dashboard</a>
+      <a href="#auto">05 auto apply</a>
+      <a href="#whatsapp">06 whatsapp alerts</a>
+    </nav>
+
+    <div class="end">
+      <button class="theme-toggle" data-toggle-theme>book in <span data-theme-label>ink</span></button>
+      <span class="mono-sm">frames are live pages,<br>scroll inside them</span>
+    </div>
+  </aside>
+
+  <main class="book-main">
+
+    <header style="padding-bottom:var(--s6)">
+      <span class="kicker">aspirely &nbsp;·&nbsp; resume to job matcher</span>
+      <h1 class="d3" style="max-width:22ch">A magazine that happens to be a product.</h1>
+      <p class="body" style="margin-top:var(--s4)">
+        Seven live pages, framed at 1440 and 390. Every frame scrolls. Use the paper and ink buttons on each screen to
+        swap the variant, or open a screen standalone to walk it at full size.
+      </p>
+      <div class="receipt" style="margin-top:var(--s5)">
+        <span>7 pages</span><span>14 frames</span><span>4 components</span><span class="ok">0 stock photos</span>
+      </div>
+    </header>
+
+    <!-- 00 -->
+    <section class="screen" id="style">
+      <div class="screen-head">
+        <div>
+          <span class="kicker" style="margin-bottom:6px">00 &nbsp;·&nbsp; foundation</span>
+          <h2>Style guide</h2>
+          <p class="note">Palette in both variants, the full type ramp, the spacing scale, motion rules, and the four components the product is built from.</p>
+        </div>
+        <div class="controls" data-frame="sg">
+          <button aria-pressed="true" data-theme-set="light">paper</button>
+          <button aria-pressed="false" data-theme-set="dark">ink</button>
+          <a href="00-style-guide.html" target="_blank">open</a>
+        </div>
+      </div>
+      <div class="frames">
+        <div class="frame">
+          <span class="cap">desktop 1440</span>
+          <div class="viewport vp-desktop"><iframe data-src="00-style-guide.html" data-group="sg" title="Style guide, desktop"></iframe></div>
+        </div>
+        <div class="frame">
+          <span class="cap">mobile 390</span>
+          <div class="viewport vp-mobile"><iframe data-src="00-style-guide.html" data-group="sg" title="Style guide, mobile"></iframe></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 01 -->
+    <section class="screen" id="landing">
+      <div class="screen-head">
+        <div>
+          <span class="kicker" style="margin-bottom:6px">01 &nbsp;·&nbsp; front door</span>
+          <h2>Landing</h2>
+          <p class="note">Left aligned hero with the card stack preview, the scroll locked six step ribbon, three standards columns, coming next, proof strip, editorial pricing table and FAQ.</p>
+        </div>
+        <div class="controls" data-frame="landing">
+          <button aria-pressed="true" data-theme-set="light">paper</button>
+          <button aria-pressed="false" data-theme-set="dark">ink</button>
+          <a href="01-landing.html" target="_blank">open</a>
+        </div>
+      </div>
+      <div class="frames">
+        <div class="frame">
+          <span class="cap">desktop 1440</span>
+          <div class="viewport vp-desktop"><iframe data-src="01-landing.html" data-group="landing" title="Landing, desktop"></iframe></div>
+        </div>
+        <div class="frame">
+          <span class="cap">mobile 390</span>
+          <div class="viewport vp-mobile"><iframe data-src="01-landing.html" data-group="landing" title="Landing, mobile"></iframe></div>
+        </div>
+      </div>
+      <div class="legend">
+        <span>hero headline is d1, capped at 13 characters per line</span>
+        <span>the ribbon advances on scroll, one step at a time, no scrubbing</span>
+      </div>
+    </section>
+
+    <!-- 02 -->
+    <section class="screen" id="upload">
+      <div class="screen-head">
+        <div>
+          <span class="kicker" style="margin-bottom:6px">02 &nbsp;·&nbsp; guest</span>
+          <h2>Upload flow</h2>
+          <p class="note">Single column, 640 max. Dashed target on paper, editorial timeline down the left with mono timestamps, private badge pinned to the corner.</p>
+        </div>
+        <div class="controls" data-frame="upload">
+          <button aria-pressed="true" data-theme-set="light">paper</button>
+          <button aria-pressed="false" data-theme-set="dark">ink</button>
+          <a href="02-upload.html" target="_blank">open</a>
+        </div>
+      </div>
+      <div class="frames">
+        <div class="frame">
+          <span class="cap">desktop 1440</span>
+          <div class="viewport vp-desktop"><iframe data-src="02-upload.html" data-group="upload" title="Upload, desktop"></iframe></div>
+        </div>
+        <div class="frame">
+          <span class="cap">mobile 390</span>
+          <div class="viewport vp-mobile"><iframe data-src="02-upload.html" data-group="upload" title="Upload, mobile"></iframe></div>
+        </div>
+      </div>
+      <div class="legend"><span>the timeline animates on load: parsing, understanding, matching, ready</span></div>
+    </section>
+
+    <!-- 03 -->
+    <section class="screen" id="matches">
+      <div class="screen-head">
+        <div>
+          <span class="kicker" style="margin-bottom:6px">03 &nbsp;·&nbsp; results</span>
+          <h2>Match results</h2>
+          <p class="note">Five full width editorial cards, each with the ring and the three fixed reasons. The tailor panel below shows a live diff with ochre keywords.</p>
+        </div>
+        <div class="controls" data-frame="matches">
+          <button aria-pressed="true" data-theme-set="light">paper</button>
+          <button aria-pressed="false" data-theme-set="dark">ink</button>
+          <a href="03-matches.html" target="_blank">open</a>
+        </div>
+      </div>
+      <div class="frames">
+        <div class="frame">
+          <span class="cap">desktop 1440</span>
+          <div class="viewport vp-desktop"><iframe data-src="03-matches.html" data-group="matches" title="Matches, desktop"></iframe></div>
+        </div>
+        <div class="frame">
+          <span class="cap">mobile 390</span>
+          <div class="viewport vp-mobile"><iframe data-src="03-matches.html" data-group="matches" title="Matches, mobile"></iframe></div>
+        </div>
+      </div>
+      <div class="legend"><span>percentages count up and the ring arc draws with them</span></div>
+    </section>
+
+    <!-- 04 -->
+    <section class="screen" id="dashboard">
+      <div class="screen-head">
+        <div>
+          <span class="kicker" style="margin-bottom:6px">04 &nbsp;·&nbsp; signed in</span>
+          <h2>Dashboard</h2>
+          <p class="note">Minimal left rail, three stacked modules. Today's matches scroll horizontally, in flight is a hairline table with text only status, this week is four serif counters.</p>
+        </div>
+        <div class="controls" data-frame="dash">
+          <button aria-pressed="true" data-theme-set="light">paper</button>
+          <button aria-pressed="false" data-theme-set="dark">ink</button>
+          <a href="04-dashboard.html" target="_blank">open</a>
+        </div>
+      </div>
+      <div class="frames">
+        <div class="frame">
+          <span class="cap">desktop 1440</span>
+          <div class="viewport vp-desktop"><iframe data-src="04-dashboard.html" data-group="dash" title="Dashboard, desktop"></iframe></div>
+        </div>
+        <div class="frame">
+          <span class="cap">mobile 390</span>
+          <div class="viewport vp-mobile"><iframe data-src="04-dashboard.html" data-group="dash" title="Dashboard, mobile"></iframe></div>
+        </div>
+      </div>
+      <div class="legend"><span>no donuts, no gradients, no shadows. dividers and whitespace only</span></div>
+    </section>
+
+    <!-- 05 -->
+    <section class="screen" id="auto">
+      <div class="screen-head">
+        <div>
+          <span class="kicker" style="margin-bottom:6px">05 &nbsp;·&nbsp; teaser</span>
+          <h2>Auto Apply setup</h2>
+          <p class="note">Three editorial columns with mono quota sliders, the oversized italic pull quote, four guardrails and a real send receipt.</p>
+        </div>
+        <div class="controls" data-frame="auto">
+          <button aria-pressed="true" data-theme-set="light">paper</button>
+          <button aria-pressed="false" data-theme-set="dark">ink</button>
+          <a href="05-auto-apply.html" target="_blank">open</a>
+        </div>
+      </div>
+      <div class="frames">
+        <div class="frame">
+          <span class="cap">desktop 1440</span>
+          <div class="viewport vp-desktop"><iframe data-src="05-auto-apply.html" data-group="auto" title="Auto apply, desktop"></iframe></div>
+        </div>
+        <div class="frame">
+          <span class="cap">mobile 390</span>
+          <div class="viewport vp-mobile"><iframe data-src="05-auto-apply.html" data-group="auto" title="Auto apply, mobile"></iframe></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 06 -->
+    <section class="screen" id="whatsapp">
+      <div class="screen-head">
+        <div>
+          <span class="kicker" style="margin-bottom:6px">06 &nbsp;·&nbsp; opt in</span>
+          <h2>WhatsApp alerts</h2>
+          <p class="note">Split layout. Four numbered consent terms on the left, a stylized thread on the right with two inbound messages and the apply reply.</p>
+        </div>
+        <div class="controls" data-frame="wa">
+          <button aria-pressed="true" data-theme-set="light">paper</button>
+          <button aria-pressed="false" data-theme-set="dark">ink</button>
+          <a href="06-whatsapp-alerts.html" target="_blank">open</a>
+        </div>
+      </div>
+      <div class="frames">
+        <div class="frame">
+          <span class="cap">desktop 1440</span>
+          <div class="viewport vp-desktop"><iframe data-src="06-whatsapp-alerts.html" data-group="wa" title="WhatsApp alerts, desktop"></iframe></div>
+        </div>
+        <div class="frame">
+          <span class="cap">mobile 390</span>
+          <div class="viewport vp-mobile"><iframe data-src="06-whatsapp-alerts.html" data-group="wa" title="WhatsApp alerts, mobile"></iframe></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="footer" style="margin-top:var(--s7)">
+      <span>Aspirely design book &nbsp;·&nbsp; v1 &nbsp;·&nbsp; july 2026</span>
+      <span>company names and match data are placeholders</span>
+    </div>
+  </main>
+</div>
+
+<script src="js/aspirely.js"></script>
+<script>
+/* Lazy load each frame, and swap its theme via the query string. */
+(function () {
+  var themes = {};
+
+  function load(group, theme) {
+    themes[group] = theme;
+    document.querySelectorAll('iframe[data-group="' + group + '"]').forEach(function (f) {
+      f.src = f.dataset.src + '?theme=' + theme;
+    });
+  }
+
+  document.querySelectorAll('.controls').forEach(function (c) {
+    var group = c.dataset.frame;
+    c.querySelectorAll('button[data-theme-set]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        c.querySelectorAll('button[data-theme-set]').forEach(function (x) { x.setAttribute('aria-pressed', 'false'); });
+        b.setAttribute('aria-pressed', 'true');
+        load(group, b.dataset.themeSet);
+      });
+    });
+  });
+
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      var f = e.target;
+      if (!f.src) f.src = f.dataset.src + '?theme=' + (themes[f.dataset.group] || 'light');
+      io.unobserve(f);
+    });
+  }, { rootMargin: '400px' });
+
+  document.querySelectorAll('iframe[data-src]').forEach(function (f) { io.observe(f); });
+})();
+</script>
+</body>
+</html>

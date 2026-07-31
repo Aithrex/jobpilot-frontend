@@ -1,0 +1,538 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aspirely · Landing</title>
+<link rel="stylesheet" href="css/aspirely.css">
+<style>
+  /* ---- hero ---- */
+  .hero { padding-block: var(--s9) var(--s10); }
+  .hero .d1 { max-width: 13ch; }
+  .trust { display: flex; flex-wrap: wrap; gap: var(--s3); margin-top: var(--s6); }
+  .cta-row { display: flex; align-items: center; gap: var(--s5); margin-top: var(--s7); flex-wrap: wrap; }
+
+  /* ---- hero card stack ---- */
+  .stack { display: grid; gap: 10px; }
+  .file-card {
+    display: flex; align-items: center; gap: 14px;
+    padding: 16px 18px; border: 1px solid var(--rule-firm); border-radius: 10px;
+    background: var(--paper-raised);
+  }
+  .file-glyph {
+    width: 34px; height: 42px; border: 1px solid var(--rule-firm); border-radius: 3px;
+    position: relative; flex: none; background: var(--paper);
+  }
+  .file-glyph::before, .file-glyph::after {
+    content: ''; position: absolute; left: 7px; right: 9px; height: 1px; background: var(--rule-firm);
+  }
+  .file-glyph::before { top: 13px; }
+  .file-glyph::after { top: 20px; right: 15px; }
+  .flow-arrow { display: grid; place-items: center; height: 34px; color: var(--rule-firm); }
+  .flow-arrow span { font-family: var(--mono); font-size: 13px; letter-spacing: 0.2em; }
+
+  .mini {
+    display: grid; grid-template-columns: 30px 1fr auto; gap: 12px; align-items: center;
+    padding: 13px 16px; border: 1px solid var(--rule); border-radius: 9px;
+    background: var(--paper-raised);
+  }
+  .mini .role { font-size: 14.5px; font-weight: 500; letter-spacing: -0.005em; }
+  .mini .co { font-family: var(--mono); font-size: 11px; color: var(--gray); }
+  .mini .why { grid-column: 2 / -1; font-size: 13px; color: var(--gray); line-height: 1.45; }
+  .mini .pc { font-family: var(--serif); font-size: 22px; letter-spacing: -0.03em; }
+  .mini .pc sup { font-size: 10px; color: var(--gray); }
+  .mini.lead { border-color: var(--indigo); box-shadow: inset 0 0 0 1px var(--indigo-wash); }
+  .mini.lead .pc { color: var(--indigo); }
+
+  /* ---- ribbon ---- */
+  .ribbon-sticky { position: sticky; top: 10vh; }
+  .ribbon {
+    display: grid; grid-template-columns: repeat(6, 1fr); gap: 2px;
+    border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule);
+    padding: var(--s4) 0; margin-bottom: var(--s7);
+  }
+  .ribbon li { font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--gray); transition: color 300ms var(--ease); position: relative; padding-left: 14px; }
+  .ribbon li::before {
+    content: ''; position: absolute; left: 0; top: 6px; width: 5px; height: 5px; border-radius: 50%;
+    background: var(--rule-firm); transition: background 300ms var(--ease), box-shadow 300ms var(--ease);
+  }
+  .ribbon li[data-on='1'] { color: var(--ink); }
+  .ribbon li[data-on='1']::before { background: var(--indigo); box-shadow: 0 0 0 3px var(--indigo-wash); }
+
+  .panels { position: relative; min-height: 300px; }
+  .panel {
+    position: absolute; inset: 0;
+    display: grid; grid-template-columns: 1fr 1.15fr; gap: var(--s7); align-items: start;
+    opacity: 0; transform: translateY(10px);
+    transition: opacity 460ms var(--ease), transform 460ms var(--ease);
+    pointer-events: none;
+  }
+  .panel[data-on='1'] { opacity: 1; transform: none; pointer-events: auto; }
+  .panel .num { font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; color: var(--gray); display: block; margin-bottom: var(--s3); }
+  .ribbon-steps > div { height: 56vh; }
+
+  .kv { display: grid; gap: 9px; font-family: var(--mono); font-size: 12px; }
+  .kv div { display: flex; justify-content: space-between; gap: 16px; color: var(--gray); }
+  .kv b { color: var(--ink); font-weight: 500; }
+  .tagrow { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tag { font-family: var(--mono); font-size: 11px; padding: 4px 9px; border: 1px solid var(--rule); border-radius: 4px; color: var(--ink-soft); }
+  .tag.hit { border-color: var(--indigo); color: var(--indigo); }
+
+  /* ---- three columns ---- */
+  .col-h { font-family: var(--serif); font-size: 26px; letter-spacing: -0.02em; line-height: 1.2; margin-bottom: var(--s3); }
+
+  /* ---- coming next ---- */
+  .next-card { border: 1px solid var(--rule); border-radius: 12px; padding: var(--s6); background: var(--paper-raised); }
+  .modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--rule); border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; margin-top: var(--s5); }
+  .modes button { padding: 12px 8px; background: var(--paper); font-family: var(--mono); font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--gray); }
+  .modes button[aria-pressed='true'] { background: var(--paper-raised); color: var(--indigo); }
+  .bubble { max-width: 300px; padding: 12px 15px; border-radius: 12px 12px 12px 3px; background: var(--paper); border: 1px solid var(--rule); font-size: 14px; line-height: 1.5; }
+  .bubble + .bubble { margin-top: 8px; }
+  .bubble.out { margin-left: auto; border-radius: 12px 12px 3px 12px; border-color: var(--indigo); color: var(--indigo); }
+  .bubble .t { font-family: var(--mono); font-size: 10px; color: var(--gray); display: block; margin-top: 6px; }
+
+  /* ---- proof strip ---- */
+  .proof { display: flex; flex-wrap: wrap; gap: var(--s7); align-items: center; opacity: 0.62; }
+  .proof span { font-family: var(--serif); font-size: 19px; letter-spacing: -0.01em; }
+
+  /* ---- pricing ---- */
+  .price th, .price td { text-align: left; padding: 20px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  .price thead th { border-bottom: 1px solid var(--ink); padding-bottom: 14px; }
+  .price .plan { font-family: var(--serif); font-size: 28px; letter-spacing: -0.02em; }
+  .price .amt { font-family: var(--serif); font-size: 20px; letter-spacing: -0.02em; }
+  .price .amt small { font-family: var(--mono); font-size: 11px; color: var(--gray); letter-spacing: 0.04em; }
+  .price td:not(:first-child) { font-family: var(--mono); font-size: 12.5px; color: var(--ink-soft); }
+  .price .feat { font-size: 15px; color: var(--ink); font-family: var(--sans); }
+
+  @media (max-width: 900px) {
+    .ribbon-sticky { position: static; }
+    .ribbon { grid-template-columns: 1fr 1fr 1fr; gap: 10px 0; }
+    .ribbon-steps { display: none; }
+    .panels { position: static; min-height: 0; display: grid; gap: var(--s7); }
+    .panel { position: static; opacity: 1; transform: none; pointer-events: auto; grid-template-columns: 1fr; gap: var(--s4); }
+    .modes { grid-template-columns: 1fr; }
+    .proof { gap: var(--s5); }
+    .price thead { display: none; }
+    .price tr { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; padding: 16px 0; border-bottom: 1px solid var(--rule); }
+    .price td { border: 0; padding: 0; }
+    .price .feat { grid-column: 1 / -1; }
+  }
+</style>
+</head>
+<body>
+
+<header class="shell">
+  <div class="topbar">
+    <div class="wordmark">Aspirely<span class="dot">.</span></div>
+    <nav style="display:flex;align-items:center;gap:var(--s5)">
+      <a class="mono" href="#how">how it works</a>
+      <a class="mono" href="#pricing">pricing</a>
+      <button class="theme-toggle" data-toggle-theme>view in <span data-theme-label>ink</span></button>
+    </nav>
+  </div>
+</header>
+
+<!-- ================= HERO ================= -->
+<main class="shell">
+  <section class="hero grid" data-stagger>
+    <div class="span-7">
+      <span class="kicker" data-reveal><span class="idx">00</span> &nbsp;·&nbsp; resume to matches</span>
+      <h1 class="d1" data-reveal>Upload your resume. Meet the 5 jobs actually looking for you.</h1>
+      <p class="lede" style="margin-top:var(--s5)" data-reveal>
+        We read what you have already done, then find the openings that need it.
+        No keyword soup. No invented experience. Five real roles, with the reason each one fits.
+      </p>
+
+      <div class="cta-row" data-reveal>
+        <a class="btn btn-primary" href="02-upload.html">Find my matches</a>
+        <a class="btn btn-text" href="#how">See how it reads a resume</a>
+      </div>
+
+      <div class="trust" data-reveal>
+        <span class="chip"><i class="dot"></i>posted within 7 days</span>
+        <span class="chip"><i class="dot"></i>direct employer sources</span>
+        <span class="chip"><i class="dot"></i>nothing invented</span>
+      </div>
+    </div>
+
+    <div class="span-5" data-reveal style="--d:200ms">
+      <div class="stack">
+        <div class="file-card">
+          <div class="file-glyph"></div>
+          <div>
+            <div style="font-size:14.5px;font-weight:500">priya-raman-resume.pdf</div>
+            <div class="mono-sm">218 kb &nbsp;·&nbsp; 2 pages &nbsp;·&nbsp; read in 6.4s</div>
+          </div>
+        </div>
+
+        <div class="flow-arrow"><span>&darr;</span></div>
+
+        <div class="mini lead">
+          <span class="mark sm">N</span>
+          <div><div class="role">Senior Data Engineer</div><div class="co">Northwind Grid &nbsp;·&nbsp; Austin, TX</div></div>
+          <div class="pc">94<sup>%</sup></div>
+          <p class="why">Their pipeline is Airflow on Snowflake. That is four years of your last role.</p>
+        </div>
+        <div class="mini">
+          <span class="mark sm">H</span>
+          <div><div class="role">Analytics Engineer</div><div class="co">Halcyon Labs &nbsp;·&nbsp; Remote, US</div></div>
+          <div class="pc">91<sup>%</sup></div>
+        </div>
+        <div class="mini">
+          <span class="mark sm">V</span>
+          <div><div class="role">Data Platform Engineer</div><div class="co">Verity Health &nbsp;·&nbsp; Chicago, IL</div></div>
+          <div class="pc">88<sup>%</sup></div>
+        </div>
+        <div class="mini">
+          <span class="mark sm">O</span>
+          <div><div class="role">Senior ETL Developer</div><div class="co">Orbit Freight &nbsp;·&nbsp; Dallas, TX</div></div>
+          <div class="pc">84<sup>%</sup></div>
+        </div>
+        <div class="mini">
+          <span class="mark sm">C</span>
+          <div><div class="role">Data Engineer II</div><div class="co">Cadence Systems &nbsp;·&nbsp; Seattle, WA</div></div>
+          <div class="pc">79<sup>%</sup></div>
+        </div>
+
+        <div class="receipt" style="margin-top:6px">
+          <span>read <b>1</b> resume</span>
+          <span>scanned <b>4,180</b> openings</span>
+          <span>kept <b>5</b></span>
+          <span class="ok">0 invented facts</span>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ================= 01 · ONE PASS ================= -->
+<section id="how" class="shell tall">
+  <div data-ribbon>
+    <div class="ribbon-sticky">
+      <div class="grid" style="margin-bottom:var(--s7)">
+        <div class="span-7">
+          <span class="kicker"><span class="idx">01</span> &nbsp;·&nbsp; one pass</span>
+          <h2 class="d3">From resume to tracked, in one pass.</h2>
+        </div>
+        <div class="span-5" style="align-self:end">
+          <p class="body small">Six stages. You watch every one of them. Nothing happens to your resume that you did not see happen.</p>
+        </div>
+      </div>
+
+      <ol class="ribbon">
+        <li data-ribbon-label data-on="1">Read</li>
+        <li data-ribbon-label>Understood</li>
+        <li data-ribbon-label>Matched</li>
+        <li data-ribbon-label>Tailored</li>
+        <li data-ribbon-label>Tracked</li>
+        <li data-ribbon-label>Updates</li>
+      </ol>
+
+      <div class="panels">
+        <!-- 1 -->
+        <div class="panel" data-panel data-on="1">
+          <div>
+            <span class="num">01 &nbsp;·&nbsp; read</span>
+            <h3 class="h2">Your file, not a form.</h3>
+            <p class="body" style="margin-top:var(--s4)">PDF or DOCX. We pull structure, not just words: which company, which years, which system you actually owned.</p>
+          </div>
+          <div class="ui">
+            <div class="ui-bar"><span>parse</span><span>6.4s</span></div>
+            <div class="ui-body">
+              <div class="kv">
+                <div><span>file</span><b>priya-raman-resume.pdf</b></div>
+                <div><span>sections found</span><b>5</b></div>
+                <div><span>roles</span><b>3</b></div>
+                <div><span>date range</span><b>2018 to present</b></div>
+                <div><span>skills listed by you</span><b>19</b></div>
+              </div>
+              <div class="receipt" style="margin-top:var(--s5)"><span class="ok">0 fields guessed</span><span>19 of 19 skills kept</span></div>
+            </div>
+          </div>
+        </div>
+        <!-- 2 -->
+        <div class="panel" data-panel>
+          <div>
+            <span class="num">02 &nbsp;·&nbsp; understood</span>
+            <h3 class="h2">What you are, in your own words.</h3>
+            <p class="body" style="margin-top:var(--s4)">A short read of your level, your stack and your last four years. Editable. Nothing is added that you did not write.</p>
+          </div>
+          <div class="ui">
+            <div class="ui-bar"><span>profile</span><span>editable</span></div>
+            <div class="ui-body">
+              <p style="font-family:var(--serif);font-size:19px;line-height:1.4;letter-spacing:-0.015em">
+                Senior data engineer, six years, batch and streaming. Owns Airflow. Ships to Snowflake.
+              </p>
+              <div class="tagrow" style="margin-top:var(--s5)">
+                <span class="tag">Airflow</span><span class="tag">Snowflake</span><span class="tag">dbt</span>
+                <span class="tag">Kafka</span><span class="tag">Python</span><span class="tag">Terraform</span>
+                <span class="tag">Spark</span><span class="tag">SQL</span>
+              </div>
+              <div class="receipt" style="margin-top:var(--s5)"><span>seniority read as <b>senior</b></span><span class="ok">confirmed by you</span></div>
+            </div>
+          </div>
+        </div>
+        <!-- 3 -->
+        <div class="panel" data-panel>
+          <div>
+            <span class="num">03 &nbsp;·&nbsp; matched</span>
+            <h3 class="h2">Five, with reasons.</h3>
+            <p class="body" style="margin-top:var(--s4)">Not fifty. Five openings posted in the last seven days, from the employer, each with the sentence that earned the match.</p>
+          </div>
+          <div class="ui">
+            <div class="ui-bar"><span>match 1 of 5</span><span>posted 2d ago</span></div>
+            <div class="ui-body">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:var(--s5)">
+                <div>
+                  <div style="font-family:var(--serif);font-size:23px;letter-spacing:-0.02em">Senior Data Engineer</div>
+                  <div class="mono" style="margin-top:4px">Northwind Grid &nbsp;·&nbsp; Austin, TX</div>
+                </div>
+                <div style="font-family:var(--serif);font-size:44px;letter-spacing:-0.04em;color:var(--indigo)">94<sup style="font-size:15px;color:var(--gray)">%</sup></div>
+              </div>
+              <p class="body small" style="margin-top:var(--s4)">Why it fits. Their pipeline is Airflow on Snowflake, which is what you have run since 2022.</p>
+              <div class="receipt" style="margin-top:var(--s4)"><span>source <b>employer site</b></span><span>7 of 9 requirements met</span></div>
+            </div>
+          </div>
+        </div>
+        <!-- 4 -->
+        <div class="panel" data-panel>
+          <div>
+            <span class="num">04 &nbsp;·&nbsp; tailored</span>
+            <h3 class="h2">Reworded. Never rewritten.</h3>
+            <p class="body" style="margin-top:var(--s4)">We change emphasis and vocabulary. We do not change what happened. Every edit shows you the before.</p>
+          </div>
+          <div class="ui">
+            <div class="ui-bar"><span>diff</span><span>bullet 3 of 11</span></div>
+            <div class="ui-body">
+              <div class="diff">
+                <div><span class="gutter">was</span><p class="was">Built data pipelines for the reporting team.</p></div>
+                <div><span class="gutter">now</span><p class="now">Built and owned <mark>Airflow</mark> pipelines feeding <mark>Snowflake</mark> reporting for 40 analysts.</p></div>
+              </div>
+              <div class="receipt" style="margin-top:var(--s5)"><span class="ok">0 invented facts</span><span>4 keywords matched</span><span>8 words &rarr; 16</span></div>
+            </div>
+          </div>
+        </div>
+        <!-- 5 -->
+        <div class="panel" data-panel>
+          <div>
+            <span class="num">05 &nbsp;·&nbsp; tracked</span>
+            <h3 class="h2">One row per application.</h3>
+            <p class="body" style="margin-top:var(--s4)">Which resume went where, on what day, and what came back. No spreadsheet to maintain.</p>
+          </div>
+          <div class="ui">
+            <div class="ui-bar"><span>in flight</span><span>4 open</span></div>
+            <div class="ui-body">
+              <table class="apps">
+                <tr><td class="role"><span class="mark sm">N</span><span><strong>Senior Data Engineer</strong> <span class="co">Northwind Grid</span></span></td><td class="file">v3-northwind.pdf</td><td class="pill-status active">submitted</td><td class="file">jul 28</td></tr>
+                <tr><td class="role"><span class="mark sm">H</span><span><strong>Analytics Engineer</strong> <span class="co">Halcyon Labs</span></span></td><td class="file">v2-halcyon.pdf</td><td class="pill-status attn">needs you</td><td class="file">jul 29</td></tr>
+              </table>
+            </div>
+          </div>
+        </div>
+        <!-- 6 -->
+        <div class="panel" data-panel>
+          <div>
+            <span class="num">06 &nbsp;·&nbsp; updates</span>
+            <h3 class="h2">You hear when something moves.</h3>
+            <p class="body" style="margin-top:var(--s4)">A reply, a reject, a new opening that beats your current five. Quiet by default, and you set the hours.</p>
+          </div>
+          <div class="ui">
+            <div class="ui-bar"><span>activity</span><span>today</span></div>
+            <div class="ui-body">
+              <div class="kv">
+                <div><span>09:12</span><b>Northwind Grid moved you to screen</b></div>
+                <div><span>11:40</span><b>New 92% match posted, Lantern Bio</b></div>
+                <div><span>16:05</span><b>Orbit Freight closed the req</b></div>
+              </div>
+              <div class="receipt" style="margin-top:var(--s5)"><span>3 updates</span><span>quiet hours <b>22:00 to 08:00</b></span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ribbon-steps">
+      <div data-step="0"></div><div data-step="1"></div><div data-step="2"></div>
+      <div data-step="3"></div><div data-step="4"></div><div data-step="5"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 02 · REAL OPENINGS ================= -->
+<section class="shell">
+  <div class="grid" style="margin-bottom:var(--s8)">
+    <div class="span-8">
+      <span class="kicker"><span class="idx">02</span> &nbsp;·&nbsp; the standard</span>
+      <h2 class="d3">Real openings. No invented experience.</h2>
+    </div>
+  </div>
+  <div class="grid" data-stagger>
+    <div class="span-4" data-reveal>
+      <h3 class="col-h">Posted within 7 days</h3>
+      <p class="body small">A req that has been open since March has already been filled by someone internal. We only show you what is still moving.</p>
+      <div class="receipt" style="margin-top:var(--s5)"><span>median age of a match</span><span><b>2.4 days</b></span></div>
+    </div>
+    <div class="span-4" data-reveal>
+      <h3 class="col-h">Direct sources</h3>
+      <p class="body small">Every match links to the employer's own posting. No aggregator reposts, no staffing firm listing the same role four times.</p>
+      <div class="receipt" style="margin-top:var(--s5)"><span>aggregator duplicates removed</span><span><b>0 shown</b></span></div>
+    </div>
+    <div class="span-4" data-reveal>
+      <h3 class="col-h">No invented experience</h3>
+      <p class="body small">Tailoring changes wording and order. It never adds a tool you have not used or a year you did not work.</p>
+      <div class="receipt" style="margin-top:var(--s5)"><span>facts added by us</span><span class="ok"><b>0</b></span></div>
+    </div>
+  </div>
+
+  <blockquote class="grid" style="margin-top:var(--s10)">
+    <p class="span-8 serif-italic" style="font-size:clamp(26px,3vw,42px);line-height:1.24">
+      A resume that says something you did not do is not a better resume. It is a shorter interview.
+    </p>
+  </blockquote>
+</section>
+
+<!-- ================= 03 · COMING NEXT ================= -->
+<section class="shell">
+  <div class="grid" style="margin-bottom:var(--s7)">
+    <div class="span-8">
+      <span class="kicker"><span class="idx">03</span> &nbsp;·&nbsp; coming next</span>
+      <h2 class="d3">Two things we are building.</h2>
+    </div>
+  </div>
+
+  <div class="grid" data-stagger>
+    <div class="span-6" data-reveal>
+      <div class="next-card">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:var(--s4)">
+          <h3 class="h2">Auto Apply</h3>
+          <span class="chip"><i class="dot"></i>in build</span>
+        </div>
+        <p class="body small" style="margin-top:var(--s4)">Pick how much you want to hold. Manual queues the application for your review. Auto submits the ones above your match floor. Aggressive widens the floor and the radius.</p>
+        <div class="modes" role="group" aria-label="Autonomy">
+          <button aria-pressed="false">Manual</button>
+          <button aria-pressed="true">Auto</button>
+          <button aria-pressed="false">Auto Aggressive</button>
+        </div>
+        <div class="receipt" style="margin-top:var(--s5)"><span>daily cap <b>6</b></span><span>match floor <b>85%</b></span><span>sensitive fields <b>always paused</b></span></div>
+        <a class="btn btn-quiet btn-sm" style="margin-top:var(--s5)" href="05-auto-apply.html">See the setup</a>
+      </div>
+    </div>
+
+    <div class="span-6" data-reveal>
+      <div class="next-card">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:var(--s4)">
+          <h3 class="h2">WhatsApp alerts</h3>
+          <span class="chip"><i class="dot"></i>in build</span>
+        </div>
+        <p class="body small" style="margin-top:var(--s4)">One message when a match beats your current five, or when an employer replies. You opt in, you set quiet hours, one word turns it off.</p>
+        <div style="margin-top:var(--s5)">
+          <div class="bubble">Lantern Bio just posted Senior Data Engineer, Boston. 92% match, 3 hours old.<span class="t">11:40</span></div>
+          <div class="bubble">Tailored resume is ready. Reply <b>apply</b> to send it.<span class="t">11:40</span></div>
+          <div class="bubble out">apply<span class="t">11:52</span></div>
+        </div>
+        <div class="receipt" style="margin-top:var(--s5)"><span>opt in <b>explicit</b></span><span>quiet hours <b>yours</b></span><span>stop <b>one word</b></span></div>
+        <a class="btn btn-quiet btn-sm" style="margin-top:var(--s5)" href="06-whatsapp-alerts.html">See the opt in</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= PROOF ================= -->
+<section class="shell" style="padding-block:var(--s8)">
+  <hr class="hairline">
+  <div style="padding-top:var(--s6)">
+    <span class="kicker">where matches have led to interviews</span>
+    <div class="proof">
+      <span>Northwind Grid</span><span>Halcyon Labs</span><span>Verity Health</span>
+      <span>Orbit Freight</span><span>Lantern Bio</span><span>Cadence Systems</span>
+    </div>
+    <p class="mono-sm" style="margin-top:var(--s5)">placeholder marks. replace only with employers where a real interview happened.</p>
+  </div>
+</section>
+
+<!-- ================= PRICING ================= -->
+<section id="pricing" class="shell">
+  <div class="grid" style="margin-bottom:var(--s7)">
+    <div class="span-7">
+      <span class="kicker"><span class="idx">04</span> &nbsp;·&nbsp; pricing</span>
+      <h2 class="d3">Two plans. No credits to decode.</h2>
+    </div>
+  </div>
+
+  <table class="price">
+    <thead>
+      <tr>
+        <th style="width:40%"><span class="mono">what you get</span></th>
+        <th><div class="plan">Free</div><div class="amt">0 <small>/ forever</small></div></th>
+        <th><div class="plan" style="color:var(--indigo)">Pro</div><div class="amt">19 <small>/ month</small></div></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td class="feat">Matches</td><td>5 per week</td><td>5 per day, refreshed</td></tr>
+      <tr><td class="feat">Tailored resumes</td><td>1</td><td>unlimited</td></tr>
+      <tr><td class="feat">Application tracking</td><td>10 rows</td><td>unlimited</td></tr>
+      <tr><td class="feat">Sources</td><td>direct employer</td><td>direct employer</td></tr>
+      <tr><td class="feat">Alerts</td><td>email</td><td>email and WhatsApp</td></tr>
+      <tr><td class="feat">Auto Apply</td><td>not included</td><td>included at launch</td></tr>
+      <tr><td class="feat">Invented facts</td><td>0</td><td>0</td></tr>
+    </tbody>
+  </table>
+  <p class="mono-sm" style="margin-top:var(--s5)">cancel from settings. no exit interview.</p>
+</section>
+
+<!-- ================= FAQ ================= -->
+<section class="shell">
+  <div class="grid">
+    <div class="span-4">
+      <span class="kicker"><span class="idx">05</span> &nbsp;·&nbsp; questions</span>
+      <h2 class="h1">Asked before.</h2>
+    </div>
+    <div class="span-8">
+      <div class="faq-item" open-state="1">
+        <button class="faq-q" aria-expanded="true">Why only five matches?<span class="tog">+</span></button>
+        <div class="faq-a"><div><p>Because a list of two hundred is a list you do not read. Five is the number you can actually apply to well in a week, and we would rather be judged on those five.</p></div></div>
+      </div>
+      <div class="faq-item" open-state="0">
+        <button class="faq-q" aria-expanded="false">Do you rewrite my resume?<span class="tog">+</span></button>
+        <div class="faq-a"><div><p>We reword. Emphasis, order and vocabulary change so the right things are visible first. Facts do not change. Every edit is shown as a before and after before it is saved.</p></div></div>
+      </div>
+      <div class="faq-item" open-state="0">
+        <button class="faq-q" aria-expanded="false">Where do the openings come from?<span class="tog">+</span></button>
+        <div class="faq-a"><div><p>The employer's own careers page and their applicant tracking system. If the only copy we can find is on an aggregator, we do not show it.</p></div></div>
+      </div>
+      <div class="faq-item" open-state="0">
+        <button class="faq-q" aria-expanded="false">Do I need an account to try it?<span class="tog">+</span></button>
+        <div class="faq-a"><div><p>No. Upload, see your five, tailor one. The guest session holds your file for 24 hours and then deletes it. An account is only needed to keep the tracking.</p></div></div>
+      </div>
+      <div class="faq-item" open-state="0">
+        <button class="faq-q" aria-expanded="false">What happens to my resume?<span class="tog">+</span></button>
+        <div class="faq-a"><div><p>It is stored encrypted, used to match and tailor, and never sent to an employer without you pressing the button. It is not sold, and it is not used to train a public model.</p></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= CTA ================= -->
+<section class="shell" style="padding-block:var(--s8) var(--s9)">
+  <div class="cta-editorial">
+    <div>
+      <span class="kicker">start</span>
+      <h2 class="d2" style="max-width:16ch">Five openings. One upload. No account.</h2>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:var(--s4);align-items:flex-start">
+      <a class="btn btn-primary" href="02-upload.html">Find my matches</a>
+      <span class="mono-sm">takes about 40 seconds</span>
+    </div>
+  </div>
+</section>
+
+<footer class="shell">
+  <div class="footer">
+    <span>Aspirely &nbsp;·&nbsp; a JobPilot product by Aithrex</span>
+    <span>privacy &nbsp;·&nbsp; terms &nbsp;·&nbsp; sources &nbsp;·&nbsp; contact</span>
+  </div>
+</footer>
+
+<script src="js/aspirely.js"></script>
+</body>
+</html>

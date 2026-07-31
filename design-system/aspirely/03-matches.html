@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aspirely · Match results</title>
+<link rel="stylesheet" href="css/aspirely.css">
+<style>
+  .results-head { padding-block: var(--s8) var(--s7); }
+  .filters { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s4); margin-top: var(--s4); }
+  .filters span { font-family: var(--mono); font-size: 12px; color: var(--gray); }
+  .filters b { color: var(--ink); font-weight: 500; }
+
+  .ring { width: 128px; height: 128px; }
+  .ring .center .match-pct { font-size: 44px; }
+  .ring .center .match-pct sup { font-size: 15px; }
+
+  .co-line { display: flex; align-items: flex-start; gap: 14px; }
+  .role-title { font-family: var(--serif); font-size: 27px; letter-spacing: -0.025em; line-height: 1.15; }
+  .role-meta { font-family: var(--mono); font-size: 11.5px; color: var(--gray); margin-top: 7px; display: block; }
+  .role-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: var(--s4); }
+
+  .sponsor.yes { color: var(--indigo); }
+  .sponsor.no  { color: var(--gray); }
+
+  .tailor-panel { border: 1px solid var(--rule); border-radius: 12px; background: var(--paper-raised); padding: var(--s7); margin-top: var(--s8); }
+  .tailor-grid { display: grid; grid-template-columns: 1fr 1.3fr; gap: var(--s7); align-items: start; }
+
+  @media (max-width: 900px) {
+    .ring { width: 104px; height: 104px; }
+    .ring .center .match-pct { font-size: 34px; }
+    .tailor-panel { padding: var(--s5); }
+    .tailor-grid { grid-template-columns: 1fr; gap: var(--s5); }
+    .role-title { font-size: 22px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="shell">
+  <div class="topbar">
+    <a class="wordmark" href="01-landing.html">Aspirely<span class="dot">.</span></a>
+    <div style="display:flex;align-items:center;gap:var(--s4)">
+      <span class="chip"><i class="dot"></i>guest &nbsp;·&nbsp; 23h left</span>
+      <button class="theme-toggle" data-toggle-theme>view in <span data-theme-label>ink</span></button>
+    </div>
+  </div>
+</header>
+
+<main class="shell">
+  <section class="results-head grid">
+    <div class="span-8">
+      <span class="kicker"><span class="idx">02</span> &nbsp;·&nbsp; matches</span>
+      <h1 class="d3">5 openings that fit you.</h1>
+      <div class="filters">
+        <span>posted <b>&le; 7d</b></span>
+        <span>source <b>direct</b></span>
+        <span>location <b>austin, tx and remote us</b></span>
+        <span>seniority <b>senior</b></span>
+      </div>
+    </div>
+    <div class="span-4" style="align-self:end;text-align:right">
+      <p class="mono-sm">scanned 4,180 &nbsp;·&nbsp; kept 5 &nbsp;·&nbsp; refreshed 11:40</p>
+    </div>
+  </section>
+
+  <section style="padding-block:0 var(--s8)" data-stagger>
+
+    <!-- MATCH 1 -->
+    <article class="match" data-reveal>
+      <div>
+        <div class="co-line">
+          <span class="mark">N</span>
+          <div>
+            <h2 class="role-title">Senior Data Engineer</h2>
+            <span class="role-meta">Northwind Grid &nbsp;·&nbsp; Austin, TX &nbsp;·&nbsp; hybrid</span>
+          </div>
+        </div>
+        <div class="role-tags">
+          <span class="chip fresh"><i class="dot"></i>posted 2d ago</span>
+          <span class="chip">165k to 195k</span>
+        </div>
+      </div>
+
+      <div data-ring-host style="justify-self:center">
+        <div class="ring">
+          <svg viewBox="0 0 128 128" width="128" height="128"><circle class="track" cx="64" cy="64" r="60"/><circle class="arc" cx="64" cy="64" r="60"/></svg>
+          <div class="center"><span class="match-pct"><span data-count="94">0</span><sup>%</sup></span></div>
+        </div>
+      </div>
+
+      <div class="reasons">
+        <div class="reason"><span class="label">Why it fits</span><p>Their stack is <mark>Airflow</mark> on <mark>Snowflake</mark>, which you have owned since 2022.</p></div>
+        <div class="reason"><span class="label">What is missing</span><p>They ask for Databricks. You have Spark, which reads across but is not the same word.</p></div>
+        <div class="reason"><span class="label">Sponsorship signal</span><p class="sponsor yes">Posting says sponsorship available for this req.</p></div>
+      </div>
+
+      <div class="match-actions">
+        <a class="btn btn-primary btn-sm" href="#tailor">Tailor resume</a>
+        <a class="btn btn-quiet btn-sm" href="#">Open role</a>
+        <button class="btn btn-text btn-sm">Skip</button>
+        <span class="mono-sm" style="margin-left:auto">7 of 9 requirements met</span>
+      </div>
+    </article>
+
+    <!-- MATCH 2 -->
+    <article class="match" data-reveal>
+      <div>
+        <div class="co-line">
+          <span class="mark">H</span>
+          <div>
+            <h2 class="role-title">Analytics Engineer</h2>
+            <span class="role-meta">Halcyon Labs &nbsp;·&nbsp; Remote, US &nbsp;·&nbsp; full remote</span>
+          </div>
+        </div>
+        <div class="role-tags">
+          <span class="chip fresh"><i class="dot"></i>posted today</span>
+          <span class="chip">150k to 175k</span>
+        </div>
+      </div>
+
+      <div data-ring-host style="justify-self:center">
+        <div class="ring">
+          <svg viewBox="0 0 128 128" width="128" height="128"><circle class="track" cx="64" cy="64" r="60"/><circle class="arc" cx="64" cy="64" r="60"/></svg>
+          <div class="center"><span class="match-pct"><span data-count="91">0</span><sup>%</sup></span></div>
+        </div>
+      </div>
+
+      <div class="reasons">
+        <div class="reason"><span class="label">Why it fits</span><p>The role is <mark>dbt</mark> modeling for a 40 person analytics org. That is the reporting layer you built.</p></div>
+        <div class="reason"><span class="label">What is missing</span><p>They want someone who has run a semantic layer. Yours stopped at marts.</p></div>
+        <div class="reason"><span class="label">Sponsorship signal</span><p class="sponsor no">Not stated. US work authorization required.</p></div>
+      </div>
+
+      <div class="match-actions">
+        <a class="btn btn-primary btn-sm" href="#tailor">Tailor resume</a>
+        <a class="btn btn-quiet btn-sm" href="#">Open role</a>
+        <button class="btn btn-text btn-sm">Skip</button>
+        <span class="mono-sm" style="margin-left:auto">6 of 8 requirements met</span>
+      </div>
+    </article>
+
+    <!-- MATCH 3 -->
+    <article class="match" data-reveal>
+      <div>
+        <div class="co-line">
+          <span class="mark">V</span>
+          <div>
+            <h2 class="role-title">Data Platform Engineer</h2>
+            <span class="role-meta">Verity Health &nbsp;·&nbsp; Chicago, IL &nbsp;·&nbsp; hybrid, 2 days</span>
+          </div>
+        </div>
+        <div class="role-tags">
+          <span class="chip"><i class="dot"></i>posted 4d ago</span>
+          <span class="chip">160k to 180k</span>
+        </div>
+      </div>
+
+      <div data-ring-host style="justify-self:center">
+        <div class="ring">
+          <svg viewBox="0 0 128 128" width="128" height="128"><circle class="track" cx="64" cy="64" r="60"/><circle class="arc" cx="64" cy="64" r="60"/></svg>
+          <div class="center"><span class="match-pct"><span data-count="88">0</span><sup>%</sup></span></div>
+        </div>
+      </div>
+
+      <div class="reasons">
+        <div class="reason"><span class="label">Why it fits</span><p>Platform ownership, on call, <mark>Terraform</mark>. You have run all three at Cadence.</p></div>
+        <div class="reason"><span class="label">What is missing</span><p>Healthcare data experience. Nothing on your resume touches HIPAA.</p></div>
+        <div class="reason"><span class="label">Sponsorship signal</span><p class="sponsor yes">Company has filed for this title in the last two years.</p></div>
+      </div>
+
+      <div class="match-actions">
+        <a class="btn btn-primary btn-sm" href="#tailor">Tailor resume</a>
+        <a class="btn btn-quiet btn-sm" href="#">Open role</a>
+        <button class="btn btn-text btn-sm">Skip</button>
+        <span class="mono-sm" style="margin-left:auto">6 of 9 requirements met</span>
+      </div>
+    </article>
+
+    <!-- MATCH 4 -->
+    <article class="match" data-reveal>
+      <div>
+        <div class="co-line">
+          <span class="mark">O</span>
+          <div>
+            <h2 class="role-title">Senior ETL Developer</h2>
+            <span class="role-meta">Orbit Freight &nbsp;·&nbsp; Dallas, TX &nbsp;·&nbsp; onsite</span>
+          </div>
+        </div>
+        <div class="role-tags">
+          <span class="chip"><i class="dot"></i>posted 5d ago</span>
+          <span class="chip">145k to 165k</span>
+        </div>
+      </div>
+
+      <div data-ring-host style="justify-self:center">
+        <div class="ring">
+          <svg viewBox="0 0 128 128" width="128" height="128"><circle class="track" cx="64" cy="64" r="60"/><circle class="arc" cx="64" cy="64" r="60"/></svg>
+          <div class="center"><span class="match-pct"><span data-count="84">0</span><sup>%</sup></span></div>
+        </div>
+      </div>
+
+      <div class="reasons">
+        <div class="reason"><span class="label">Why it fits</span><p>Heavy batch, nightly loads, <mark>Python</mark> and SQL. Your first two years exactly.</p></div>
+        <div class="reason"><span class="label">What is missing</span><p>Onsite five days in Dallas. Your resume reads Austin.</p></div>
+        <div class="reason"><span class="label">Sponsorship signal</span><p class="sponsor no">Posting states no sponsorship for this req.</p></div>
+      </div>
+
+      <div class="match-actions">
+        <a class="btn btn-primary btn-sm" href="#tailor">Tailor resume</a>
+        <a class="btn btn-quiet btn-sm" href="#">Open role</a>
+        <button class="btn btn-text btn-sm">Skip</button>
+        <span class="mono-sm" style="margin-left:auto">6 of 10 requirements met</span>
+      </div>
+    </article>
+
+    <!-- MATCH 5 -->
+    <article class="match" data-reveal>
+      <div>
+        <div class="co-line">
+          <span class="mark">C</span>
+          <div>
+            <h2 class="role-title">Data Engineer II</h2>
+            <span class="role-meta">Cadence Systems &nbsp;·&nbsp; Seattle, WA &nbsp;·&nbsp; hybrid</span>
+          </div>
+        </div>
+        <div class="role-tags">
+          <span class="chip"><i class="dot"></i>posted 6d ago</span>
+          <span class="chip">135k to 155k</span>
+        </div>
+      </div>
+
+      <div data-ring-host style="justify-self:center">
+        <div class="ring">
+          <svg viewBox="0 0 128 128" width="128" height="128"><circle class="track" cx="64" cy="64" r="60"/><circle class="arc" cx="64" cy="64" r="60"/></svg>
+          <div class="center"><span class="match-pct"><span data-count="79">0</span><sup>%</sup></span></div>
+        </div>
+      </div>
+
+      <div class="reasons">
+        <div class="reason"><span class="label">Why it fits</span><p>Streaming with <mark>Kafka</mark>, which you ran for two years before the Snowflake move.</p></div>
+        <div class="reason"><span class="label">What is missing</span><p>The level is a step down from your current title and the band reflects it.</p></div>
+        <div class="reason"><span class="label">Sponsorship signal</span><p class="sponsor no">Not stated on the posting.</p></div>
+      </div>
+
+      <div class="match-actions">
+        <a class="btn btn-primary btn-sm" href="#tailor">Tailor resume</a>
+        <a class="btn btn-quiet btn-sm" href="#">Open role</a>
+        <button class="btn btn-text btn-sm">Skip</button>
+        <span class="mono-sm" style="margin-left:auto">5 of 8 requirements met</span>
+      </div>
+    </article>
+  </section>
+
+  <!-- ============ TAILOR ONE FOR FREE ============ -->
+  <section id="tailor" style="padding-block:0 var(--s10)">
+    <div class="tailor-panel">
+      <div class="tailor-grid">
+        <div>
+          <span class="kicker"><span class="idx">03</span> &nbsp;·&nbsp; tailor</span>
+          <h2 class="h1" style="font-family:var(--serif)">Tailor one for free.</h2>
+          <p class="body small" style="margin-top:var(--s4)">
+            Pick a match and we rewrite the wording, not the work. Keywords the posting asks for are marked
+            so you can see exactly what changed and why.
+          </p>
+          <div class="receipt" style="margin-top:var(--s5);border-top:0;padding-top:0">
+            <span class="ok">0 invented facts</span><span>4 keywords matched</span><span>11 bullets reviewed</span>
+          </div>
+          <a class="btn btn-primary" style="margin-top:var(--s6)" href="#">Tailor for Northwind Grid</a>
+        </div>
+
+        <div class="ui">
+          <div class="ui-bar"><span>tailoring &nbsp;·&nbsp; northwind grid</span><span>bullet 3 of 11</span></div>
+          <div class="ui-body">
+            <div class="diff">
+              <div><span class="gutter">was</span><p class="was">Built data pipelines for the reporting team.</p></div>
+              <div><span class="gutter">now</span><p class="now">Built and owned <mark>Airflow</mark> pipelines feeding <mark>Snowflake</mark> reporting for 40 analysts.</p></div>
+            </div>
+            <hr class="hairline" style="margin:var(--s5) 0">
+            <div class="diff">
+              <div><span class="gutter">was</span><p class="was">Worked on infrastructure as code.</p></div>
+              <div><span class="gutter">now</span><p class="now">Provisioned the warehouse and orchestration layer in <mark>Terraform</mark>, reviewed by two engineers.</p></div>
+            </div>
+            <div class="receipt" style="margin-top:var(--s5)">
+              <span class="ok">0 invented facts</span><span>4 keywords matched</span><span>8 words &rarr; 16</span><span>tone unchanged</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cta-editorial" style="margin-top:var(--s9)">
+      <div>
+        <span class="kicker">keep this</span>
+        <h2 class="d2" style="max-width:15ch">Save the five and track what you send.</h2>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:var(--s4);align-items:flex-start">
+        <a class="btn btn-primary" href="04-dashboard.html">Create an account</a>
+        <span class="mono-sm">guest file is deleted in 23h</span>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="shell">
+  <div class="footer">
+    <span>Aspirely &nbsp;·&nbsp; a JobPilot product by Aithrex</span>
+    <span>privacy &nbsp;·&nbsp; terms &nbsp;·&nbsp; sources &nbsp;·&nbsp; contact</span>
+  </div>
+</footer>
+
+<script src="js/aspirely.js"></script>
+</body>
+</html>

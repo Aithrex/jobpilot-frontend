@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aspirely · Style guide</title>
+<link rel="stylesheet" href="css/aspirely.css">
+<style>
+  .sg { padding-block: var(--s7); border-top: 1px solid var(--rule); }
+  .sg:first-of-type { border-top: 0; }
+  .sg-head { display: grid; grid-template-columns: 200px 1fr; gap: var(--s7); margin-bottom: var(--s6); }
+  .sg-head h2 { font-family: var(--serif); font-size: 30px; letter-spacing: -0.025em; }
+
+  .swatches { display: grid; grid-template-columns: repeat(6, 1fr); gap: var(--s4); }
+  .sw { display: grid; gap: 10px; }
+  .sw .chipbox { height: 88px; border-radius: 8px; border: 1px solid var(--rule); }
+  .sw .meta { font-family: var(--mono); font-size: 10.5px; line-height: 1.7; color: var(--gray); }
+  .sw .meta b { display: block; color: var(--ink); font-weight: 500; letter-spacing: 0.02em; }
+
+  .ramp { display: grid; gap: var(--s5); }
+  .ramp-row { display: grid; grid-template-columns: 150px 1fr; gap: var(--s5); align-items: baseline; border-top: 1px solid var(--rule); padding-top: var(--s4); }
+  .ramp-row .spec { font-family: var(--mono); font-size: 10.5px; line-height: 1.8; color: var(--gray); }
+  .ramp-row .spec b { color: var(--ink); font-weight: 500; }
+
+  .scale { display: grid; gap: 7px; }
+  .scale-row { display: grid; grid-template-columns: 70px 60px 1fr; gap: var(--s4); align-items: center; font-family: var(--mono); font-size: 11px; color: var(--gray); }
+  .scale-row b { color: var(--ink); font-weight: 500; }
+  .scale-row .bar { height: 8px; background: var(--indigo-wash); border-left: 1px solid var(--indigo); }
+
+  .comp { border-top: 1px solid var(--ink); padding-top: var(--s5); margin-top: var(--s7); }
+  .comp-label { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s5); margin-bottom: var(--s5); }
+  .comp-label h3 { font-family: var(--serif); font-size: 24px; letter-spacing: -0.02em; }
+  .comp-spec { font-family: var(--mono); font-size: 11px; color: var(--gray); line-height: 1.9; margin-top: var(--s5); border-top: 1px dashed var(--rule); padding-top: var(--s4); }
+  .comp-spec b { color: var(--ink); font-weight: 500; }
+
+  .dont { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s6); }
+  .dont > div { border-top: 1px solid var(--rule); padding-top: var(--s4); }
+  .dont h4 { font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: var(--s3); }
+  .dont ul { display: grid; gap: 7px; font-size: 14.5px; color: var(--ink-soft); }
+  .dont li { padding-left: 16px; position: relative; }
+  .dont li::before { content: ''; position: absolute; left: 0; top: 9px; width: 6px; height: 1px; background: var(--rule-firm); }
+
+  @media (max-width: 900px) {
+    .sg-head { grid-template-columns: 1fr; gap: var(--s3); }
+    .swatches { grid-template-columns: repeat(2, 1fr); }
+    .ramp-row { grid-template-columns: 1fr; gap: var(--s3); }
+    .dont { grid-template-columns: 1fr; gap: var(--s5); }
+  }
+</style>
+</head>
+<body>
+
+<header class="shell">
+  <div class="topbar">
+    <a class="wordmark" href="index.html">Aspirely<span class="dot">.</span></a>
+    <div style="display:flex;align-items:center;gap:var(--s4)">
+      <span class="mono">style guide v1</span>
+      <button class="theme-toggle" data-toggle-theme>view in <span data-theme-label>ink</span></button>
+    </div>
+  </div>
+</header>
+
+<main class="shell">
+
+  <section style="padding-block:var(--s8) var(--s7)">
+    <span class="kicker">one page</span>
+    <h1 class="d3" style="max-width:20ch">Paper and ink. One confident accent.</h1>
+    <p class="lede" style="margin-top:var(--s5)">
+      Hierarchy comes from size and weight, never from color. Indigo is reserved for the one thing you should do next
+      and for a match that is worth your attention. Ochre only ever means recency or a pause that needs you.
+    </p>
+  </section>
+
+  <!-- ============ PALETTE ============ -->
+  <section class="sg">
+    <div class="sg-head">
+      <span class="kicker"><span class="idx">01</span> &nbsp;·&nbsp; palette</span>
+      <div>
+        <h2>Two surfaces, one accent, one signal.</h2>
+        <p class="body small" style="margin-top:var(--s3)">Toggle the header to see the ink variant. Accents desaturate 10% in dark so they sit on the page rather than glow off it.</p>
+      </div>
+    </div>
+
+    <div class="swatches">
+      <div class="sw"><div class="chipbox" style="background:var(--paper)"></div><div class="meta"><b>paper</b>#F7F5F0<br>dark #0B0B0E<br>--paper</div></div>
+      <div class="sw"><div class="chipbox" style="background:var(--paper-raised)"></div><div class="meta"><b>paper raised</b>#FFFDF9<br>dark #131318<br>--paper-raised</div></div>
+      <div class="sw"><div class="chipbox" style="background:var(--ink)"></div><div class="meta"><b>ink</b>#0E0E10<br>dark #EDEBE4<br>--ink</div></div>
+      <div class="sw"><div class="chipbox" style="background:var(--gray)"></div><div class="meta"><b>cool gray</b>#8A8A93<br>dark #7E7E88<br>--gray</div></div>
+      <div class="sw"><div class="chipbox" style="background:var(--indigo)"></div><div class="meta"><b>indigo</b>#4B4BFF<br>dark #5555F6<br>--indigo</div></div>
+      <div class="sw"><div class="chipbox" style="background:var(--ochre)"></div><div class="meta"><b>ochre</b>#E8B33A<br>dark #DDAF45<br>--ochre</div></div>
+    </div>
+
+    <div class="swatches" style="margin-top:var(--s5)">
+      <div class="sw"><div class="chipbox" style="background:var(--rule);height:44px"></div><div class="meta"><b>hairline</b>#E4E1DA / #23232A<br>--rule</div></div>
+      <div class="sw"><div class="chipbox" style="background:var(--rule-firm);height:44px"></div><div class="meta"><b>rule firm</b>#CFCBC1 / #34343D<br>--rule-firm</div></div>
+      <div class="sw"><div class="chipbox" style="background:var(--ink-soft);height:44px"></div><div class="meta"><b>ink soft</b>#3B3B42 / #B5B3AB<br>--ink-soft</div></div>
+      <div class="sw"><div class="chipbox" style="background:var(--indigo-wash);height:44px"></div><div class="meta"><b>indigo wash</b>8% alpha<br>--indigo-wash</div></div>
+      <div class="sw"><div class="chipbox" style="background:var(--ochre-wash);height:44px"></div><div class="meta"><b>ochre wash</b>13% alpha<br>--ochre-wash</div></div>
+      <div class="sw"><div class="chipbox" style="background:var(--paper-sunk);height:44px"></div><div class="meta"><b>paper sunk</b>#F1EEE7 / #08080A<br>--paper-sunk</div></div>
+    </div>
+
+    <div class="receipt" style="margin-top:var(--s6)">
+      <span>body on paper <b>15.8:1</b></span>
+      <span>gray on paper <b>4.6:1</b></span>
+      <span>indigo on paper <b>6.9:1</b></span>
+      <span>white on indigo <b>5.4:1</b></span>
+      <span class="ok">AA at every size used</span>
+    </div>
+  </section>
+
+  <!-- ============ TYPE ============ -->
+  <section class="sg">
+    <div class="sg-head">
+      <span class="kicker"><span class="idx">02</span> &nbsp;·&nbsp; type ramp</span>
+      <div>
+        <h2>Fraunces sets the voice. Inter carries the load.</h2>
+        <p class="body small" style="margin-top:var(--s3)">Display serif never drops below 22px and never goes above 400 weight. Mono is for anything the system is reporting back: timestamps, counts, receipts, filters.</p>
+      </div>
+    </div>
+
+    <div class="ramp">
+      <div class="ramp-row"><div class="spec"><b>d1</b>Fraunces 400<br>96 / 1.02 / -0.02em<br>clamp 44 to 96</div><div class="d1">Meet the 5 jobs</div></div>
+      <div class="ramp-row"><div class="spec"><b>d2</b>Fraunces 400<br>72 / 1.02 / -0.02em</div><div class="d2">From resume to tracked</div></div>
+      <div class="ramp-row"><div class="spec"><b>d3</b>Fraunces 400<br>56 / 1.06 / -0.02em</div><div class="d3">5 openings that fit you</div></div>
+      <div class="ramp-row"><div class="spec"><b>h1</b>Fraunces 400<br>40 / 1.12</div><div class="h1">Today's matches</div></div>
+      <div class="ramp-row"><div class="spec"><b>h2</b>Fraunces 400<br>32 / 1.18</div><div class="h2">Reworded. Never rewritten.</div></div>
+      <div class="ramp-row"><div class="spec"><b>pull quote</b>Fraunces 300 italic<br>42 / 1.24 / -0.03em</div><div class="serif-italic" style="font-size:38px;line-height:1.2">Sensitive fields still pause for you.</div></div>
+      <div class="ramp-row"><div class="spec"><b>lede</b>Inter 400<br>19 / 1.62<br>--ink-soft</div><div class="lede">We read what you have already done, then find the openings that need it.</div></div>
+      <div class="ramp-row"><div class="spec"><b>body</b>Inter 400<br>17 / 1.66<br>max 34em</div><div class="body">Tailoring changes wording and order. It never adds a tool you have not used or a year you did not work.</div></div>
+      <div class="ramp-row"><div class="spec"><b>small</b>Inter 400<br>14 / 1.55<br>--gray</div><div class="small">Median age of a match is 2.4 days.</div></div>
+      <div class="ramp-row"><div class="spec"><b>kicker</b>JetBrains Mono 500<br>11 / uppercase / +0.08em</div><div><span class="kicker" style="margin:0"><span class="idx">03</span> &nbsp;·&nbsp; matched</span></div></div>
+      <div class="ramp-row"><div class="spec"><b>mono</b>JetBrains Mono 400<br>12.5 / +0.01em</div><div class="mono">posted &le; 7d &nbsp;·&nbsp; direct sources &nbsp;·&nbsp; austin, tx</div></div>
+      <div class="ramp-row"><div class="spec"><b>numeral</b>Fraunces 400<br>60 / -0.04em<br>match and counters</div><div><span class="match-pct">94<sup>%</sup></span></div></div>
+    </div>
+  </section>
+
+  <!-- ============ SPACING ============ -->
+  <section class="sg">
+    <div class="sg-head">
+      <span class="kicker"><span class="idx">03</span> &nbsp;·&nbsp; spacing and grid</span>
+      <div>
+        <h2>Twelve columns, 1240 max, air between sections.</h2>
+        <p class="body small" style="margin-top:var(--s3)">Section rhythm is 128px standard and 192px where a section needs to land. Below 900px the grid collapses to four columns and the rhythm halves.</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="span-6">
+        <div class="scale">
+          <div class="scale-row"><b>--s1</b><span>4px</span><span class="bar" style="width:4px"></span></div>
+          <div class="scale-row"><b>--s2</b><span>8px</span><span class="bar" style="width:8px"></span></div>
+          <div class="scale-row"><b>--s3</b><span>12px</span><span class="bar" style="width:12px"></span></div>
+          <div class="scale-row"><b>--s4</b><span>16px</span><span class="bar" style="width:16px"></span></div>
+          <div class="scale-row"><b>--s5</b><span>24px</span><span class="bar" style="width:24px"></span></div>
+          <div class="scale-row"><b>--s6</b><span>32px</span><span class="bar" style="width:32px"></span></div>
+          <div class="scale-row"><b>--s7</b><span>48px</span><span class="bar" style="width:48px"></span></div>
+          <div class="scale-row"><b>--s8</b><span>64px</span><span class="bar" style="width:64px"></span></div>
+          <div class="scale-row"><b>--s9</b><span>96px</span><span class="bar" style="width:96px"></span></div>
+          <div class="scale-row"><b>--s10</b><span>128px</span><span class="bar" style="width:128px"></span></div>
+          <div class="scale-row"><b>--s11</b><span>160px</span><span class="bar" style="width:160px"></span></div>
+          <div class="scale-row"><b>--s12</b><span>192px</span><span class="bar" style="width:192px"></span></div>
+        </div>
+      </div>
+      <div class="span-6">
+        <div class="mono" style="line-height:2.1">
+          <div>max width <b class="ink">1240px</b></div>
+          <div>page padding <b class="ink">40px desktop, 20px mobile</b></div>
+          <div>columns <b class="ink">12 desktop, 4 mobile</b></div>
+          <div>gutter <b class="ink">24px desktop, 16px mobile</b></div>
+          <div>section rhythm <b class="ink">128px, 192px for tall</b></div>
+          <div>radius <b class="ink">8 card, 10 ui, 999 pill</b></div>
+          <div>border <b class="ink">1px only. no shadows.</b></div>
+          <div>breakpoint <b class="ink">900px</b></div>
+        </div>
+        <div class="receipt" style="margin-top:var(--s6)">
+          <span>frames delivered</span><span><b>1440</b> desktop</span><span><b>390</b> mobile</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ MOTION ============ -->
+  <section class="sg">
+    <div class="sg-head">
+      <span class="kicker"><span class="idx">04</span> &nbsp;·&nbsp; motion</span>
+      <div>
+        <h2>Reveal, count, settle. Nothing bounces.</h2>
+      </div>
+    </div>
+    <div class="grid">
+      <div class="span-6">
+        <div class="mono" style="line-height:2.1">
+          <div>easing <b class="ink">cubic-bezier(.22,.72,.16,1)</b></div>
+          <div>reveal <b class="ink">640ms, 16px rise, clip-path mask</b></div>
+          <div>stagger <b class="ink">40ms, capped at 12 items</b></div>
+          <div>count up <b class="ink">1100ms, cubic ease out</b></div>
+          <div>ring draw <b class="ink">1400ms, follows the count</b></div>
+          <div>theme change <b class="ink">400ms on background and color</b></div>
+          <div>reduced motion <b class="ink">everything resolves instantly</b></div>
+        </div>
+      </div>
+      <div class="span-6">
+        <p class="body small">Forbidden: parallax, bounce or spring easing, scale on hover above 1.02, anything that moves while the user is reading. The scroll locked ribbon on the landing page is the only long scroll effect, and it advances one step at a time rather than scrubbing.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ COMPONENTS ============ -->
+  <section class="sg">
+    <div class="sg-head">
+      <span class="kicker"><span class="idx">05</span> &nbsp;·&nbsp; components</span>
+      <div>
+        <h2>Four pieces the product is built from.</h2>
+      </div>
+    </div>
+
+    <!-- 1. match card -->
+    <div class="comp">
+      <div class="comp-label"><h3>01 &nbsp;·&nbsp; Match card</h3><span class="mono-sm">.match &nbsp;·&nbsp; full width, three columns</span></div>
+
+      <article class="match" style="border-bottom:1px solid var(--rule)">
+        <div>
+          <div style="display:flex;gap:14px">
+            <span class="mark">N</span>
+            <div>
+              <h2 style="font-family:var(--serif);font-size:27px;letter-spacing:-0.025em;line-height:1.15">Senior Data Engineer</h2>
+              <span class="mono-sm" style="display:block;margin-top:7px">Northwind Grid &nbsp;·&nbsp; Austin, TX &nbsp;·&nbsp; hybrid</span>
+            </div>
+          </div>
+          <div style="display:flex;gap:6px;margin-top:var(--s4);flex-wrap:wrap">
+            <span class="chip fresh"><i class="dot"></i>posted 2d ago</span>
+            <span class="chip">165k to 195k</span>
+          </div>
+        </div>
+        <div data-ring-host style="justify-self:center">
+          <div class="ring">
+            <svg viewBox="0 0 116 116" width="116" height="116"><circle class="track" cx="58" cy="58" r="54"/><circle class="arc" cx="58" cy="58" r="54"/></svg>
+            <div class="center"><span class="match-pct" style="font-size:40px"><span data-count="94">0</span><sup style="font-size:14px">%</sup></span></div>
+          </div>
+        </div>
+        <div class="reasons">
+          <div class="reason"><span class="label">Why it fits</span><p>Their stack is <mark>Airflow</mark> on <mark>Snowflake</mark>, which you have owned since 2022.</p></div>
+          <div class="reason"><span class="label">What is missing</span><p>They ask for Databricks. You have Spark.</p></div>
+          <div class="reason"><span class="label">Sponsorship signal</span><p style="color:var(--indigo)">Sponsorship available for this req.</p></div>
+        </div>
+        <div class="match-actions">
+          <a class="btn btn-primary btn-sm" href="#">Tailor resume</a>
+          <a class="btn btn-quiet btn-sm" href="#">Open role</a>
+          <button class="btn btn-text btn-sm">Skip</button>
+        </div>
+      </article>
+
+      <div class="comp-spec">
+        <div>grid <b>1fr / 168px / 1.1fr</b>, actions span all three</div>
+        <div>separator <b>1px top border only</b>. no card, no shadow, no fill</div>
+        <div>percentage <b>Fraunces 40 to 60px</b> inside a 1.5px ring, indigo arc on hairline track</div>
+        <div>three reasons are <b>fixed and always present</b>. if one is unknown, say unknown rather than hiding it</div>
+        <div>mobile <b>single column</b>, ring drops to 104px, actions wrap</div>
+      </div>
+    </div>
+
+    <!-- 2. application row -->
+    <div class="comp">
+      <div class="comp-label"><h3>02 &nbsp;·&nbsp; Application row</h3><span class="mono-sm">.apps tr &nbsp;·&nbsp; four columns, text only status</span></div>
+
+      <table class="apps">
+        <thead><tr><th style="width:42%">Position</th><th style="width:22%">Resume</th><th style="width:18%">Status</th><th style="width:18%">Applied</th></tr></thead>
+        <tbody>
+          <tr><td class="role"><span class="mark sm">H</span><span><strong>Analytics Engineer</strong> <span class="co">Halcyon Labs</span></span></td><td class="file">v2-halcyon.pdf</td><td><span class="pill-status attn">needs you</span></td><td class="file">jul 29</td></tr>
+          <tr><td class="role"><span class="mark sm">N</span><span><strong>Senior Data Engineer</strong> <span class="co">Northwind Grid</span></span></td><td class="file">v3-northwind.pdf</td><td><span class="pill-status active">interview</span></td><td class="file">jul 24</td></tr>
+          <tr><td class="role"><span class="mark sm">C</span><span><strong>Data Engineer II</strong> <span class="co">Cadence Systems</span></span></td><td class="file">v1-base.pdf</td><td><span class="pill-status">submitted</span></td><td class="file">jul 26</td></tr>
+        </tbody>
+      </table>
+
+      <div class="comp-spec">
+        <div>status is <b>mono text, lowercase, no pill background</b></div>
+        <div>color only when active: <b>indigo</b> for interview and submitted-and-moving, <b>ochre</b> for needs you</div>
+        <div>queued and archived stay <b>gray</b>. a status is never red</div>
+        <div>row hover raises the surface by one step, <b>no shadow</b></div>
+        <div>mobile collapses to a <b>stacked block per row</b>, header hidden</div>
+      </div>
+    </div>
+
+    <!-- 3. receipt block -->
+    <div class="comp">
+      <div class="comp-label"><h3>03 &nbsp;·&nbsp; Receipt block</h3><span class="mono-sm">.receipt &nbsp;·&nbsp; the integrity primitive</span></div>
+
+      <div class="grid">
+        <div class="span-6">
+          <div class="receipt"><span class="ok">0 invented facts</span><span>4 keywords matched</span><span>8 words &rarr; 16</span></div>
+          <div class="receipt" style="margin-top:var(--s5)"><span>scanned <b>4,180</b></span><span>within 7 days <b>612</b></span><span>direct source <b>318</b></span><span>kept <b>5</b></span></div>
+          <div class="receipt" style="margin-top:var(--s5)"><span>fields answered <b>18</b></span><span>paused for you <b>2</b></span><span>undo until <b>10:14</b></span></div>
+        </div>
+        <div class="span-6">
+          <p class="body small">The receipt is how the product proves it did not lie. It appears under every generative surface: parse, match, tailor, auto apply, alert. It is always mono, always small, always dashed off the block above it, and it always leads with the count that matters most.</p>
+        </div>
+      </div>
+
+      <div class="comp-spec">
+        <div>type <b>JetBrains Mono 11.5px</b>, gray, values in ink 500</div>
+        <div>separator <b>1px dashed top border</b>, 12px padding</div>
+        <div>the <b>zero claim comes first</b> and is the only item allowed indigo</div>
+        <div>never more than <b>four items</b>. if there are more, they belong in an expandable log</div>
+        <div>a receipt is <b>never decorative</b>. every number in it must be real</div>
+      </div>
+    </div>
+
+    <!-- 4. editorial CTA -->
+    <div class="comp">
+      <div class="comp-label"><h3>04 &nbsp;·&nbsp; Editorial CTA</h3><span class="mono-sm">.cta-editorial &nbsp;·&nbsp; closes a page</span></div>
+
+      <div class="cta-editorial">
+        <div>
+          <span class="kicker">start</span>
+          <h2 class="d2" style="max-width:16ch">Five openings. One upload. No account.</h2>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:var(--s4);align-items:flex-start">
+          <a class="btn btn-primary" href="02-upload.html">Find my matches</a>
+          <span class="mono-sm">takes about 40 seconds</span>
+        </div>
+      </div>
+
+      <div class="comp-spec">
+        <div>rule above is <b>1px ink</b>, rule below is <b>1px hairline</b>. the weight difference is the whole effect</div>
+        <div>headline is <b>d2</b>, capped at 16 characters per line</div>
+        <div>one primary action, <b>never two</b>. the mono line under it sets expectation, not urgency</div>
+        <div>no gradient, no box, no glow. the CTA is <b>typography plus two rules</b></div>
+        <div>mobile stacks and left aligns, button stays <b>content width</b></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ RULES ============ -->
+  <section class="sg" style="padding-bottom:var(--s9)">
+    <div class="sg-head">
+      <span class="kicker"><span class="idx">06</span> &nbsp;·&nbsp; house rules</span>
+      <div><h2>What this system does and refuses.</h2></div>
+    </div>
+
+    <div class="dont">
+      <div>
+        <h4 style="color:var(--ink)">Always</h4>
+        <ul>
+          <li>Hierarchy from size and weight before color.</li>
+          <li>Numbered kickers on every major section.</li>
+          <li>Mono for anything the system reports back.</li>
+          <li>Hairline dividers instead of cards where possible.</li>
+          <li>A receipt under every generated surface.</li>
+          <li>Left aligned. The page has a spine.</li>
+          <li>Plain copy. No em dashes, no accented characters.</li>
+        </ul>
+      </div>
+      <div>
+        <h4 style="color:var(--gray)">Never</h4>
+        <ul>
+          <li>Gradient blobs, glassmorphism, neon glow.</li>
+          <li>Drop shadows on product surfaces.</li>
+          <li>Donut charts or any dashboard cliche.</li>
+          <li>Center stacked hero with three feature cards.</li>
+          <li>Stock photography or sparkle iconography.</li>
+          <li>Hype verbs: revolutionize, unleash, supercharge.</li>
+          <li>A logo on the proof strip without a real interview behind it.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="shell">
+  <div class="footer">
+    <span>Aspirely style guide &nbsp;·&nbsp; v1 &nbsp;·&nbsp; july 2026</span>
+    <span>paper and ink</span>
+  </div>
+</footer>
+
+<script src="js/aspirely.js"></script>
+</body>
+</html>

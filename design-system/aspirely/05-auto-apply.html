@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aspirely · Auto Apply</title>
+<link rel="stylesheet" href="css/aspirely.css">
+<style>
+  .modes-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; border-top: 1px solid var(--ink); }
+  .mode {
+    padding: var(--s6) var(--s5) var(--s6) 0;
+    border-right: 1px solid var(--rule);
+    display: grid; gap: var(--s4); align-content: start;
+  }
+  .mode:not(:first-child) { padding-left: var(--s5); }
+  .mode:last-child { border-right: 0; }
+  .mode[aria-selected='true'] { background: var(--paper-raised); }
+  .mode[aria-selected='true'] .mode-name { color: var(--indigo); }
+
+  .mode-num { font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; color: var(--gray); }
+  .mode-name { font-family: var(--serif); font-size: 32px; letter-spacing: -0.025em; line-height: 1.1; }
+  .mode-desc { font-size: 15px; line-height: 1.55; color: var(--ink-soft); }
+
+  .slider { display: grid; gap: 9px; margin-top: var(--s3); }
+  .slider .row { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 11px; letter-spacing: 0.04em; color: var(--gray); }
+  .slider .row b { color: var(--ink); font-weight: 500; }
+  .track {
+    position: relative; height: 1px; background: var(--rule-firm);
+  }
+  .track .fill { position: absolute; left: 0; top: 0; height: 1px; background: var(--indigo); }
+  .track .knob {
+    position: absolute; top: 50%; width: 9px; height: 9px; border-radius: 50%;
+    background: var(--paper); border: 1px solid var(--indigo); transform: translate(-50%, -50%);
+  }
+  .track .ticks { position: absolute; inset: 0; display: flex; justify-content: space-between; }
+  .track .ticks i { width: 1px; height: 5px; background: var(--rule); margin-top: -2px; }
+
+  .pullquote {
+    padding-block: var(--s10);
+    border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule);
+    margin-top: var(--s9);
+  }
+  .pullquote p {
+    font-family: var(--serif); font-style: italic; font-weight: 300;
+    font-size: clamp(30px, 4.4vw, 62px); line-height: 1.16; letter-spacing: -0.03em;
+    max-width: 18ch;
+  }
+
+  .guard { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s7); }
+  .guard-item { border-top: 1px solid var(--rule); padding-top: var(--s4); }
+  .guard-item h3 { font-family: var(--serif); font-size: 21px; letter-spacing: -0.02em; margin-bottom: 6px; }
+
+  .waitlist { display: flex; gap: var(--s3); flex-wrap: wrap; align-items: center; margin-top: var(--s6); }
+  .field {
+    border: 1px solid var(--rule-firm); border-radius: 999px; padding: 13px 22px;
+    font-family: var(--mono); font-size: 12.5px; color: var(--gray); min-width: 260px;
+    background: var(--paper-raised);
+  }
+
+  @media (max-width: 900px) {
+    .modes-3 { grid-template-columns: 1fr; }
+    .mode { border-right: 0; border-bottom: 1px solid var(--rule); padding: var(--s5) 0; }
+    .mode:not(:first-child) { padding-left: 0; }
+    .mode[aria-selected='true'] { background: transparent; }
+    .guard { grid-template-columns: 1fr; gap: var(--s5); }
+    .field { min-width: 0; width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<header class="shell">
+  <div class="topbar">
+    <a class="wordmark" href="01-landing.html">Aspirely<span class="dot">.</span></a>
+    <div style="display:flex;align-items:center;gap:var(--s4)">
+      <span class="chip"><i class="dot"></i>coming soon</span>
+      <button class="theme-toggle" data-toggle-theme>view in <span data-theme-label>ink</span></button>
+    </div>
+  </div>
+</header>
+
+<main class="shell">
+
+  <section class="grid" style="padding-block:var(--s9) var(--s7)">
+    <div class="span-7">
+      <span class="kicker"><span class="idx">05</span> &nbsp;·&nbsp; auto apply</span>
+      <h1 class="d2">Decide once how much you want to hold.</h1>
+    </div>
+    <div class="span-5" style="align-self:end">
+      <p class="body">Auto Apply sends the applications you would have sent anyway, in the wording you already approved. You choose the floor, the cap and the radius. It never chooses them for you.</p>
+    </div>
+  </section>
+
+  <!-- three modes -->
+  <section style="padding-block:0 var(--s8)" data-stagger>
+    <div class="modes-3">
+      <div class="mode" role="tab" aria-selected="false" data-reveal>
+        <span class="mode-num">01</span>
+        <h2 class="mode-name">Manual</h2>
+        <p class="mode-desc">Every application waits in a queue until you press send. Tailoring still runs ahead of time, so the wait is yours, not ours.</p>
+        <div class="slider">
+          <div class="row"><span>daily cap</span><b>you decide each time</b></div>
+          <div class="track"><span class="fill" style="width:0"></span><span class="knob" style="left:0"></span><span class="ticks"><i></i><i></i><i></i><i></i><i></i><i></i></span></div>
+          <div class="row"><span>match floor</span><b>none</b></div>
+        </div>
+        <div class="receipt" style="border-top:1px dashed var(--rule)"><span>0 sent without you</span></div>
+      </div>
+
+      <div class="mode" role="tab" aria-selected="true" data-reveal>
+        <span class="mode-num">02</span>
+        <h2 class="mode-name">Auto</h2>
+        <p class="mode-desc">Anything above your match floor goes out on its own, capped per day. You see the receipt before it lands in the tracker, and you can pull one back for an hour.</p>
+        <div class="slider">
+          <div class="row"><span>daily cap</span><b>6 applications</b></div>
+          <div class="track"><span class="fill" style="width:48%"></span><span class="knob" style="left:48%"></span><span class="ticks"><i></i><i></i><i></i><i></i><i></i><i></i></span></div>
+          <div class="row"><span>match floor</span><b>85%</b></div>
+        </div>
+        <div class="receipt" style="border-top:1px dashed var(--rule)"><span class="ok">undo window 60 min</span></div>
+      </div>
+
+      <div class="mode" role="tab" aria-selected="false" data-reveal>
+        <span class="mode-num">03</span>
+        <h2 class="mode-name">Auto Aggressive</h2>
+        <p class="mode-desc">Lower floor, wider radius, higher cap. For a short search where volume matters more than fit. We will tell you when your reply rate starts falling.</p>
+        <div class="slider">
+          <div class="row"><span>daily cap</span><b>15 applications</b></div>
+          <div class="track"><span class="fill" style="width:88%"></span><span class="knob" style="left:88%"></span><span class="ticks"><i></i><i></i><i></i><i></i><i></i><i></i></span></div>
+          <div class="row"><span>match floor</span><b>70%</b></div>
+        </div>
+        <div class="receipt" style="border-top:1px dashed var(--rule)"><span>reply rate watched daily</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- pull quote -->
+  <section class="pullquote" style="padding-block:var(--s9)">
+    <p class="serif-italic">Sensitive fields still pause for you.</p>
+    <p class="body small" style="margin-top:var(--s6)">
+      Salary expectations, sponsorship, disability and veteran status, notice period, and anything a posting marks as a required free text answer.
+      Auto Apply stops, holds the application, and asks. It does not guess on your behalf, and it does not leave a field blank to get past a form.
+    </p>
+  </section>
+
+  <!-- guardrails -->
+  <section>
+    <span class="kicker"><span class="idx">06</span> &nbsp;·&nbsp; guardrails</span>
+    <h2 class="d3" style="margin-bottom:var(--s7);max-width:18ch">What it will never do.</h2>
+
+    <div class="guard">
+      <div class="guard-item">
+        <h3>Invent an answer</h3>
+        <p class="body small">If the form asks something your resume does not answer, it pauses. There is no default, no best guess, no filler.</p>
+      </div>
+      <div class="guard-item">
+        <h3>Apply twice</h3>
+        <p class="body small">One application per req, per company, per quarter. Reposts of the same role are recognized and skipped.</p>
+      </div>
+      <div class="guard-item">
+        <h3>Send an untailored file</h3>
+        <p class="body small">If tailoring failed or the diff was not approved, the application stays queued rather than going out generic.</p>
+      </div>
+      <div class="guard-item">
+        <h3>Hide what it sent</h3>
+        <p class="body small">Every send writes a receipt: which file, which fields, which timestamp. Exportable, and yours.</p>
+      </div>
+    </div>
+
+    <div class="ui" style="margin-top:var(--s8);max-width:720px">
+      <div class="ui-bar"><span>receipt &nbsp;·&nbsp; auto apply</span><span>jul 30, 09:14</span></div>
+      <div class="ui-body">
+        <div style="font-family:var(--mono);font-size:12px;line-height:2;color:var(--gray)">
+          <div>role <span style="color:var(--ink)">Senior Data Engineer, Northwind Grid</span></div>
+          <div>file <span style="color:var(--ink)">v3-northwind.pdf</span></div>
+          <div>fields answered <span style="color:var(--ink)">18</span></div>
+          <div>fields paused for you <span style="color:var(--ochre)">2</span> <span>salary expectation, sponsorship</span></div>
+          <div>match at send <span style="color:var(--ink)">94%</span></div>
+        </div>
+        <div class="receipt" style="margin-top:var(--s4)"><span class="ok">0 invented facts</span><span>undo available until 10:14</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section style="padding-block:var(--s9)">
+    <div class="cta-editorial">
+      <div>
+        <span class="kicker">not shipped yet</span>
+        <h2 class="d2" style="max-width:14ch">We will tell you when it is real.</h2>
+        <p class="body small" style="margin-top:var(--s5)">One email at launch. Nothing else.</p>
+      </div>
+      <div class="waitlist">
+        <span class="field">you@work.com</span>
+        <button class="btn btn-primary">Tell me at launch</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="shell">
+  <div class="footer">
+    <span>Aspirely &nbsp;·&nbsp; a JobPilot product by Aithrex</span>
+    <span>privacy &nbsp;·&nbsp; terms &nbsp;·&nbsp; sources &nbsp;·&nbsp; contact</span>
+  </div>
+</footer>
+
+<script src="js/aspirely.js"></script>
+</body>
+</html>

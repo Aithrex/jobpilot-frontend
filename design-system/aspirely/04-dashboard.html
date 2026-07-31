@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aspirely · Dashboard</title>
+<link rel="stylesheet" href="css/aspirely.css">
+<style>
+  .app { display: grid; grid-template-columns: 208px 1fr; min-height: 100vh; }
+
+  .rail {
+    border-right: 1px solid var(--rule);
+    padding: var(--s5) var(--s5) var(--s6);
+    display: flex; flex-direction: column; gap: var(--s7);
+    position: sticky; top: 0; align-self: start; height: 100vh;
+  }
+  .rail nav { display: grid; gap: 2px; }
+  .rail nav a {
+    font-family: var(--mono); font-size: 12.5px; letter-spacing: 0.02em;
+    color: var(--gray); padding: 7px 0 7px 14px; position: relative;
+    transition: color 200ms var(--ease);
+  }
+  .rail nav a::before {
+    content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+    width: 4px; height: 4px; border-radius: 50%; background: transparent;
+  }
+  .rail nav a:hover { color: var(--ink); }
+  .rail nav a[aria-current='page'] { color: var(--ink); }
+  .rail nav a[aria-current='page']::before { background: var(--indigo); }
+  .rail .foot { margin-top: auto; display: grid; gap: var(--s4); }
+
+  .main { padding: var(--s5) var(--s7) var(--s9); min-width: 0; }
+  .main-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s5); padding-bottom: var(--s6); }
+
+  .module { padding-block: var(--s7); border-top: 1px solid var(--rule); }
+  .module:first-of-type { border-top: 0; padding-top: 0; }
+  .module-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s5); margin-bottom: var(--s6); }
+  .module-head h2 { font-family: var(--serif); font-size: 28px; letter-spacing: -0.025em; }
+
+  /* today's matches */
+  .rail-scroll {
+    display: grid; grid-auto-flow: column; grid-auto-columns: 300px; gap: var(--s4);
+    overflow-x: auto; padding-bottom: var(--s4); scroll-snap-type: x mandatory;
+    scrollbar-width: thin;
+  }
+  .rail-scroll > * { scroll-snap-align: start; }
+  .rail-scroll::-webkit-scrollbar { height: 3px; }
+  .rail-scroll::-webkit-scrollbar-track { background: var(--rule); }
+  .rail-scroll::-webkit-scrollbar-thumb { background: var(--rule-firm); }
+  .rail-scroll::-webkit-scrollbar-button { display: none; }
+  .m-card { border: 1px solid var(--rule); border-radius: 10px; padding: var(--s5); background: var(--paper-raised); display: grid; gap: var(--s3); }
+  .m-card .top { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--s4); }
+  .m-card .title { font-family: var(--serif); font-size: 19px; letter-spacing: -0.02em; line-height: 1.2; }
+  .m-card .co { font-family: var(--mono); font-size: 11px; color: var(--gray); margin-top: 5px; display: block; }
+  .m-card .pc { font-family: var(--serif); font-size: 34px; letter-spacing: -0.04em; line-height: 1; }
+  .m-card .pc sup { font-size: 12px; color: var(--gray); }
+  .m-card .why { font-size: 13.5px; line-height: 1.5; color: var(--ink-soft); }
+  .m-card .act { display: flex; align-items: center; gap: var(--s4); padding-top: var(--s2); }
+
+  /* this week */
+  .counters { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--gutter); }
+  .counters .counter { border-left: 1px solid var(--rule); padding-left: var(--s4); }
+  .counters .counter:first-child { border-left: 0; padding-left: 0; }
+
+  @media (max-width: 900px) {
+    .app { grid-template-columns: 1fr; }
+    .rail {
+      position: static; height: auto; flex-direction: row; align-items: center; justify-content: space-between;
+      border-right: 0; border-bottom: 1px solid var(--rule); padding: var(--s4) var(--pad); gap: var(--s4);
+    }
+    .rail nav { grid-auto-flow: column; gap: var(--s4); overflow-x: auto; }
+    .rail nav a { padding: 4px 0 4px 12px; }
+    .rail .foot { display: none; }
+    .main { padding: var(--s5) var(--pad) var(--s8); }
+    .rail-scroll { grid-auto-columns: 268px; }
+    .counters { grid-template-columns: 1fr 1fr; gap: var(--s5); }
+    .counters .counter:nth-child(3) { border-left: 0; padding-left: 0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ================= LEFT RAIL ================= -->
+  <aside class="rail">
+    <a class="wordmark" href="01-landing.html">Aspirely<span class="dot">.</span></a>
+
+    <nav>
+      <a href="#" aria-current="page">matches</a>
+      <a href="#">applications</a>
+      <a href="#">resumes</a>
+      <a href="#">alerts</a>
+      <a href="#">settings</a>
+    </nav>
+
+    <div class="foot">
+      <button class="theme-toggle" data-toggle-theme>view in <span data-theme-label>ink</span></button>
+      <span class="mono-sm">priya r. &nbsp;·&nbsp; pro</span>
+    </div>
+  </aside>
+
+  <!-- ================= MAIN ================= -->
+  <main class="main">
+    <div class="main-head">
+      <div>
+        <span class="kicker" style="margin-bottom:var(--s3)">thursday, 31 july</span>
+        <h1 class="h1" style="font-family:var(--serif)">Good morning, Priya.</h1>
+      </div>
+      <span class="mono-sm">last refresh 11:40</span>
+    </div>
+
+    <!-- module 1 -->
+    <section class="module">
+      <div class="module-head">
+        <h2>Today's matches</h2>
+        <span class="mono-sm">5 kept &nbsp;·&nbsp; posted &le; 7d &nbsp;·&nbsp; direct sources</span>
+      </div>
+
+      <div class="rail-scroll" data-stagger>
+        <article class="m-card" data-reveal>
+          <div class="top">
+            <div><span class="mark sm">L</span><div class="title" style="margin-top:10px">Senior Data Engineer</div><span class="co">Lantern Bio &nbsp;·&nbsp; Boston, MA</span></div>
+            <div class="pc" style="color:var(--indigo)">92<sup>%</sup></div>
+          </div>
+          <p class="why">Streaming ingest on Kafka, which you ran for two years.</p>
+          <span class="chip fresh" style="justify-self:start"><i class="dot"></i>posted today</span>
+          <div class="act"><a class="btn btn-primary btn-sm" href="#">Tailor</a><a class="btn btn-text btn-sm" href="#">Open</a></div>
+        </article>
+
+        <article class="m-card" data-reveal>
+          <div class="top">
+            <div><span class="mark sm">N</span><div class="title" style="margin-top:10px">Staff Data Engineer</div><span class="co">Northwind Grid &nbsp;·&nbsp; Austin, TX</span></div>
+            <div class="pc">89<sup>%</sup></div>
+          </div>
+          <p class="why">Same team you already applied to, one level up.</p>
+          <span class="chip" style="justify-self:start"><i class="dot"></i>posted 1d ago</span>
+          <div class="act"><a class="btn btn-primary btn-sm" href="#">Tailor</a><a class="btn btn-text btn-sm" href="#">Open</a></div>
+        </article>
+
+        <article class="m-card" data-reveal>
+          <div class="top">
+            <div><span class="mark sm">V</span><div class="title" style="margin-top:10px">Data Platform Engineer</div><span class="co">Verity Health &nbsp;·&nbsp; Chicago, IL</span></div>
+            <div class="pc">88<sup>%</sup></div>
+          </div>
+          <p class="why">Terraform and on call ownership, both on your resume.</p>
+          <span class="chip" style="justify-self:start"><i class="dot"></i>posted 4d ago</span>
+          <div class="act"><a class="btn btn-primary btn-sm" href="#">Tailor</a><a class="btn btn-text btn-sm" href="#">Open</a></div>
+        </article>
+
+        <article class="m-card" data-reveal>
+          <div class="top">
+            <div><span class="mark sm">C</span><div class="title" style="margin-top:10px">Analytics Engineer</div><span class="co">Cadence Systems &nbsp;·&nbsp; Remote, US</span></div>
+            <div class="pc">85<sup>%</sup></div>
+          </div>
+          <p class="why">dbt modeling for a small analytics org.</p>
+          <span class="chip" style="justify-self:start"><i class="dot"></i>posted 3d ago</span>
+          <div class="act"><a class="btn btn-primary btn-sm" href="#">Tailor</a><a class="btn btn-text btn-sm" href="#">Open</a></div>
+        </article>
+
+        <article class="m-card" data-reveal>
+          <div class="top">
+            <div><span class="mark sm">O</span><div class="title" style="margin-top:10px">Senior ETL Developer</div><span class="co">Orbit Freight &nbsp;·&nbsp; Dallas, TX</span></div>
+            <div class="pc">81<sup>%</sup></div>
+          </div>
+          <p class="why">Nightly batch loads in Python, your first two years.</p>
+          <span class="chip" style="justify-self:start"><i class="dot"></i>posted 5d ago</span>
+          <div class="act"><a class="btn btn-primary btn-sm" href="#">Tailor</a><a class="btn btn-text btn-sm" href="#">Open</a></div>
+        </article>
+      </div>
+    </section>
+
+    <!-- module 2 -->
+    <section class="module">
+      <div class="module-head">
+        <h2>In flight</h2>
+        <span class="mono-sm">9 open &nbsp;·&nbsp; 1 needs you</span>
+      </div>
+
+      <table class="apps">
+        <thead>
+          <tr><th style="width:42%">Position</th><th style="width:22%">Resume</th><th style="width:18%">Status</th><th style="width:18%">Applied</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="role"><span class="mark sm">H</span><span><strong>Analytics Engineer</strong> <span class="co">Halcyon Labs</span></span></td>
+            <td class="file">v2-halcyon.pdf</td>
+            <td><span class="pill-status attn">needs you</span></td>
+            <td class="file">jul 29</td>
+          </tr>
+          <tr>
+            <td class="role"><span class="mark sm">N</span><span><strong>Senior Data Engineer</strong> <span class="co">Northwind Grid</span></span></td>
+            <td class="file">v3-northwind.pdf</td>
+            <td><span class="pill-status active">interview</span></td>
+            <td class="file">jul 24</td>
+          </tr>
+          <tr>
+            <td class="role"><span class="mark sm">V</span><span><strong>Data Platform Engineer</strong> <span class="co">Verity Health</span></span></td>
+            <td class="file">v3-verity.pdf</td>
+            <td><span class="pill-status">submitted</span></td>
+            <td class="file">jul 28</td>
+          </tr>
+          <tr>
+            <td class="role"><span class="mark sm">C</span><span><strong>Data Engineer II</strong> <span class="co">Cadence Systems</span></span></td>
+            <td class="file">v1-base.pdf</td>
+            <td><span class="pill-status">submitted</span></td>
+            <td class="file">jul 26</td>
+          </tr>
+          <tr>
+            <td class="role"><span class="mark sm">O</span><span><strong>Senior ETL Developer</strong> <span class="co">Orbit Freight</span></span></td>
+            <td class="file">v2-orbit.pdf</td>
+            <td><span class="pill-status">queued</span></td>
+            <td class="file">queued for jul 31</td>
+          </tr>
+          <tr>
+            <td class="role"><span class="mark sm">L</span><span><strong>Senior Data Engineer</strong> <span class="co">Lantern Bio</span></span></td>
+            <td class="file">not tailored yet</td>
+            <td><span class="pill-status">queued</span></td>
+            <td class="file">not sent</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="receipt" style="margin-top:var(--s5)">
+        <span>6 rows shown</span><span>3 archived</span><span>every row is a file you approved</span>
+      </div>
+    </section>
+
+    <!-- module 3 -->
+    <section class="module">
+      <div class="module-head">
+        <h2>This week</h2>
+        <span class="mono-sm">mon 28 jul to thu 31 jul</span>
+      </div>
+
+      <div class="counters" data-stagger>
+        <div class="counter" data-reveal>
+          <div class="n" data-count="14">0</div>
+          <span class="lbl">applied</span>
+          <span class="delta">+6 on last week</span>
+        </div>
+        <div class="counter" data-reveal>
+          <div class="n" data-count="4">0</div>
+          <span class="lbl">replied</span>
+          <span class="delta">29% reply rate</span>
+        </div>
+        <div class="counter" data-reveal>
+          <div class="n" data-count="1">0</div>
+          <span class="lbl">interview</span>
+          <span class="delta">northwind grid, screen</span>
+        </div>
+        <div class="counter" data-reveal>
+          <div class="n"><span data-count="9">0</span><small>h 20m</small></div>
+          <span class="lbl">time saved</span>
+          <span class="delta">40m per tailored application</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="footer" style="margin-top:var(--s7)">
+      <span>Aspirely &nbsp;·&nbsp; a JobPilot product by Aithrex</span>
+      <span>privacy &nbsp;·&nbsp; sources &nbsp;·&nbsp; export my data</span>
+    </div>
+  </main>
+</div>
+
+<script src="js/aspirely.js"></script>
+</body>
+</html>
