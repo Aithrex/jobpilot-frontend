@@ -1,0 +1,7 @@
+# Line endings.
+#
+# Scoped deliberately to the Aspirely design book rather than declared repo-wide.
+# A `* text=auto eol=lf` rule would renormalize every tracked file and produce a
+# diff across the whole tree, which is a separate decision from this branch.
+
+design-system/aspirely/** text eol=lf
