@@ -34,6 +34,7 @@ export const FEATURE_LABEL: Record<string, string> = {
   salary_percentiles: 'Salary percentiles',
   salary_negotiation: 'Negotiation scripts',
   post_history: 'Post history',
+  auto_apply: 'Auto Apply',
 };
 
 export function hasFeature(ent: AuthEntitlements | undefined, feature: string): boolean {
@@ -47,8 +48,27 @@ export function limitOf(ent: AuthEntitlements | undefined, key: string): number 
 /** Format a numeric limit for display (null => Unlimited, 0 => off). */
 export function formatLimit(v: number | null | undefined): string {
   if (v === null || v === undefined) return 'Unlimited';
-  if (v === 0) return '—';
+  if (v === 0) return ' - ';
   return String(v);
+}
+
+/** Display caps for Auto Apply (mirrors backend PLAN_LIMITS; period = month). */
+export const AUTO_APPLY_SUBMIT_LIMITS: Record<PlanId, number | null> = {
+  free: 25,
+  premium: 200,
+  premium_plus: null,
+};
+
+export const AUTO_APPLY_ANSWER_LIMITS: Record<PlanId, number | null> = {
+  free: 25,
+  premium: 300,
+  premium_plus: null,
+};
+
+export function autoApplyQuotaLabel(plan: string | undefined): string {
+  const lim = AUTO_APPLY_SUBMIT_LIMITS[(plan as PlanId) ?? 'free'];
+  if (lim == null) return 'Unlimited auto-applies / month';
+  return `${lim} auto-applies / month`;
 }
 
 export function planRank(plan: string | undefined): number {

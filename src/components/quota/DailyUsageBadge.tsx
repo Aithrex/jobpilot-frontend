@@ -19,7 +19,7 @@ export function DailyUsageBadge({ usage, loading, className = "" }: Props) {
         className={`inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-muted/40 px-2.5 py-1 text-xs text-muted-foreground ${className}`}
       >
         <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40 animate-pulse" />
-        Checking quota…
+        Checking quota...
       </span>
     );
   }

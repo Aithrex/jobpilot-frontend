@@ -276,7 +276,7 @@
 
       // Gate 1b — server opt-in / master flag. 404 or non-true ⇒ behave as today.
       const s = await send({ type: "AUTOSUBMIT_SETTINGS" });
-      if (!s || !s.ok || !s.data || s.data.enabled !== true) return no("disabled");
+      if (!s || !s.ok || !s.data || s.data.auto_submit_enabled !== true) return no("disabled");
 
       // Gate 2 — an approved, matching, unexpired, not-yet-submitted record.
       const p = await send({ type: "AUTOSUBMIT_PENDING" });

@@ -1,13 +1,12 @@
 import { useState, type FocusEvent, type PointerEvent, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
-import { Sparkles } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { BrandMark } from '@/components/BrandMark';
 import { AuthAtlas, type AuthPhase, type AuthZone } from './AuthAtlas';
 
 /**
  * Shared auth stage for /login, /register, /reset-password and the AuthGate
- * wall — the same deep-ink Signal Atlas world as the landing. Desktop is an
+ * wall - the same deep-ink Signal Atlas world as the landing. Desktop is an
  * asymmetric 5/7 split: the compact form pane on the left, a large reactive
  * atlas on the right. Mobile keeps the form primary with a shallow animated
  * horizon above it (no viewport-height traps, no keyboard obstruction).
@@ -16,7 +15,7 @@ import { AuthAtlas, type AuthPhase, type AuthZone } from './AuthAtlas';
  * hover are read via event delegation (email → origin node, password →
  * shield ring, provider buttons → social path, submit → convergence).
  * Pages additionally report REAL submission phases through the optional
- * `phase` prop (pending/error/success) — omitted, the scene is purely
+ * `phase` prop (pending/error/success) - omitted, the scene is purely
  * focus-driven, so every existing consumer keeps working unchanged.
  *
  * Fully token-driven; the forced `dark` class re-points the semantic tokens
@@ -30,7 +29,7 @@ export const AUTH_EASE: [number, number, number, number] = [0.16, 1, 0.3, 1];
  * Deep-link return path, preserved across auth. Router `state.from` covers the
  * in-app password flow; sessionStorage covers the social-OAuth full-page
  * round-trip (the provider redirect drops router state). Same-origin paths
- * only — protocol-relative and absolute URLs are rejected.
+ * only - protocol-relative and absolute URLs are rejected.
  */
 export const AUTH_RETURN_TO_KEY = 'auth.return_to';
 
@@ -44,7 +43,7 @@ export function stashAuthReturnTo(path: string | null): void {
   try {
     window.sessionStorage.setItem(AUTH_RETURN_TO_KEY, path);
   } catch {
-    /* storage disabled — deep link just won't survive the OAuth round-trip */
+    /* storage disabled - deep link just won't survive the OAuth round-trip */
   }
 }
 
@@ -84,26 +83,13 @@ function zoneFor(target: EventTarget | null): AuthZone | null {
   return null;
 }
 
-function BrandMark({ className }: { className?: string }) {
-  return (
-    <span
-      className={cn(
-        'brand-gradient flex h-9 w-9 shrink-0 items-center justify-center rounded-xl shadow-soft',
-        className,
-      )}
-    >
-      <Sparkles className="h-[18px] w-[18px] text-white" strokeWidth={2.2} aria-hidden />
-    </span>
-  );
-}
-
 function Wordmark() {
   return (
     <Link
       to="/"
       className="inline-flex min-h-11 items-center gap-2.5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
     >
-      <BrandMark />
+      <BrandMark className="h-9 w-9 rounded-xl shadow-soft" iconClassName="h-[18px] w-[18px]" strokeWidth={2.2} />
       <span className="font-display text-lg font-extrabold tracking-tight text-foreground">
         Aspirely
       </span>
@@ -157,7 +143,7 @@ export function AuthShell({
   };
 
   return (
-    // The `dark` class deliberately forces the dark token set in both themes —
+    // The `dark` class deliberately forces the dark token set in both themes  - 
     // auth and landing share one deep-ink night world.
     <div
       className="dark relative min-h-screen overflow-hidden bg-background text-foreground"
@@ -179,7 +165,7 @@ export function AuthShell({
               <Wordmark />
             </header>
 
-            {/* Mobile: a shallow animated horizon — never a viewport trap. */}
+            {/* Mobile: a shallow animated horizon - never a viewport trap. */}
             <div className="relative -mx-5 mt-2 h-24 sm:-mx-8 lg:hidden" aria-hidden>
               <AuthAtlas variant="horizon" zone={zone} phase={phase} reduce={reduce} />
             </div>
@@ -208,7 +194,7 @@ export function AuthShell({
                 <motion.div variants={fadeUp} className="mt-6 text-center text-sm text-muted-foreground">
                   {footer}
                 </motion.div>
-                {/* House motif — the mono integrity micro-chip. */}
+                {/* House motif - the mono integrity micro-chip. */}
                 <motion.p
                   variants={fadeUp}
                   className="mt-8 text-center font-mono text-[11px] uppercase tracking-wider text-muted-foreground/90"

@@ -1,5 +1,5 @@
 /**
- * ATS score helpers — keeps v1/v2 narrowing out of components.
+ * ATS score helpers - keeps v1/v2 narrowing out of components.
  *
  * v2 = the honest deterministic rubric (schema_version 2): rubric
  * sub-scores + vendor_compat checklists. v1 = stored records from before

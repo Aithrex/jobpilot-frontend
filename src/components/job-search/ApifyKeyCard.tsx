@@ -12,7 +12,7 @@ import { apiService } from '@/lib/api';
 import type { ApifyKeyStatus } from '@/types/jobs';
 
 interface ApifyKeyCardProps {
-  /** Optional callback when the key status changes — lets the parent
+  /** Optional callback when the key status changes - lets the parent
    *  refresh the pipeline UI affordances. */
   onChange?: (status: ApifyKeyStatus) => void;
   /** Force the card open in edit mode (e.g. after credit exhaustion). */
@@ -168,7 +168,7 @@ export function ApifyKeyCard({ onChange, forceOpenSignal }: ApifyKeyCardProps) {
               )}
             </div>
             {loading ? (
-              <p className="text-xs text-muted-foreground">Checking…</p>
+              <p className="text-xs text-muted-foreground">Checking...</p>
             ) : status?.has_key ? (
               <p className="text-xs text-muted-foreground">
                 Using <span className="font-mono">{status.masked}</span>
@@ -256,7 +256,7 @@ export function ApifyKeyCard({ onChange, forceOpenSignal }: ApifyKeyCardProps) {
                 className="gap-1 bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:opacity-90"
               >
                 <Check className="h-3.5 w-3.5" />
-                {saving ? 'Saving…' : 'Save'}
+                {saving ? 'Saving...' : 'Save'}
               </Button>
               <Button
                 size="sm"

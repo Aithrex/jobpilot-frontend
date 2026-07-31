@@ -98,7 +98,7 @@ describe('tailor record_id echo (worker-persisted records)', () => {
     });
     expect(save.data?.record_id).toBe('rec-42');
 
-    // The echoed record_id MUST ride in the save-record request body — that
+    // The echoed record_id MUST ride in the save-record request body - that
     // is what makes the backend settle idempotent instead of duplicating.
     const saveCall = fetchMock.mock.calls.find(([u]) =>
       String(u).includes('/resume/save-record'),

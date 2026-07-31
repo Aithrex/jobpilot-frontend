@@ -8,7 +8,7 @@ import { apiService } from '@/lib/api';
 import { clearSuggestionsCache } from './SmartFiltersPanel';
 import type { SmartFilterSuggestions } from '@/types/jobs';
 
-// Reuse the same module-level cache key as SmartFiltersPanel — both surfaces
+// Reuse the same module-level cache key as SmartFiltersPanel - both surfaces
 // share one cached set of suggestions. Cache logic is duplicated here as a
 // dependency-free read so this file doesn't need to import the storage helpers.
 const SUGGEST_STORAGE_KEY = 'smart_filters_suggestions_v1';
@@ -83,7 +83,7 @@ const PRESET_GRADIENTS: Record<string, string> = {
  */
 export function SmartFiltersInline() {
   const initialState = typeof window !== 'undefined' ? readState() : 'new';
-  // Compute alive *before* anything else — when the card has been used or
+  // Compute alive *before* anything else - when the card has been used or
   // dismissed previously, we render nothing and never make the suggester call.
   const [state, setState] = useState<InlineState>(initialState);
   const alive = state === 'new';
@@ -157,7 +157,7 @@ export function SmartFiltersInline() {
   }
 
   if (error || !suggestions) {
-    return null; // Silent on tailor view — surfaced fully on the dedicated tab.
+    return null; // Silent on tailor view - surfaced fully on the dedicated tab.
   }
 
   return (

@@ -1,5 +1,5 @@
 /**
- * Widget primitives — the calm, editorial building blocks every dashboard
+ * Widget primitives - the calm, editorial building blocks every dashboard
  * widget composes (Compass §7). One card shell, one designed empty state, one
  * skeleton, plus a few small data atoms (bars, chips, stat rows). Semantic
  * tokens only; every state is designed; targets are >= 44px where tappable.
@@ -49,7 +49,7 @@ export function WidgetCard({
   title: string;
   eyebrow?: string;
   tone?: Tone;
-  /** Apply the tone's frame (border/wash) — reserve for genuinely urgent widgets. */
+  /** Apply the tone's frame (border/wash) - reserve for genuinely urgent widgets. */
   accent?: boolean;
   onOpen?: () => void;
   openLabel?: string;
@@ -95,7 +95,7 @@ export function WidgetCard({
   );
 }
 
-/** A designed empty state — an inviting prompt + one action, never a blank card. */
+/** A designed empty state - an inviting prompt + one action, never a blank card. */
 export function WidgetEmpty({
   title,
   body,
@@ -125,7 +125,7 @@ export function WidgetEmpty({
 }
 
 /**
- * A quiet inline failure state — "Couldn't load — Retry". Used when a widget's
+ * A quiet inline failure state - "Couldn't load - Retry". Used when a widget's
  * ctx slice failed to fetch, so we never show a lying empty state instead.
  */
 export function WidgetError({ label = "Couldn't load", onRetry }: { label?: string; onRetry?: () => void }) {
@@ -135,7 +135,7 @@ export function WidgetError({ label = "Couldn't load", onRetry }: { label?: stri
       <span>{label}</span>
       {onRetry && (
         <>
-          <span aria-hidden="true">—</span>
+          <span aria-hidden="true"> - </span>
           <button
             type="button"
             onClick={onRetry}
@@ -167,7 +167,7 @@ export function Bar({ pct, tone = 'primary', className }: { pct: number; tone?: 
   );
 }
 
-/** A small labelled pill (match %, sponsor band, posted-ago …). */
+/** A small labelled pill (match %, sponsor band, posted-ago ...). */
 export function MetaChip({ children, tone = 'default' }: { children: ReactNode; tone?: Tone }) {
   const styles: Record<Tone, string> = {
     default: 'bg-muted text-muted-foreground',

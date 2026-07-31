@@ -1,6 +1,8 @@
-import { Link, useLocation } from "react-router-dom";
-import { ExternalLink, LogOut, Monitor, Moon, Search, Settings, Sparkles, Sun } from "lucide-react";
+import { Link } from "react-router-dom";
+import { LogOut, Monitor, Moon, Search, Settings, Sun } from "lucide-react";
+import { BrandMark } from "@/components/BrandMark";
 import { openCommandPalette } from "./CommandPalette";
+import { DestinationNav } from "./DestinationNav";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,18 +14,19 @@ import {
 import { useTheme } from "@/components/theme-provider";
 import { useAuth } from "@/contexts/AuthContext";
 import { initials } from "./initials";
-import { NAV_ALL, navHref } from "./nav.config";
+import { navHref } from "./nav.config";
 
 /**
- * Global top bar (64px): current-destination context on the left (plus the
- * brand mark below `lg`, where the Sidebar is hidden), then a theme toggle and
- * the account menu. Rendered as the page `<header>` landmark. No dead
- * affordances — every control here does something today.
+ * Global sticky top bar (64px) and the app-shell's sole chrome after the
+ * vertical sidebar was retired: brand mark on the left, the horizontal
+ * primary destination nav next to it (>=lg), then the right cluster - command
+ * palette, theme toggle, a settings gear, and the account menu. Rendered as
+ * the page `<header>` landmark. No dead affordances - every control does
+ * something today.
  */
 export function TopBar() {
   const { theme, setTheme } = useTheme();
   const { user, logout } = useAuth();
-  const { pathname } = useLocation();
 
   // Three-state cycle: light → dark → system → light. Anything unexpected in
   // storage is treated as "system" (the provider's default).
@@ -38,48 +41,37 @@ export function TopBar() {
   const email = user?.email;
   const name = user?.name;
 
-  // Current top-level destination — drives the page-context readout.
-  const current = NAV_ALL.find((item) => {
-    const href = navHref(item.to);
-    return pathname === href || pathname.startsWith(`${href}/`);
-  });
-
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border/70 glass-nav px-4 shadow-soft transition-colors duration-200 ease-expo sm:px-6">
-      {/* Brand mark for small viewports (the Sidebar carries it ≥lg) */}
+    <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border/70 glass-nav glass-specular px-4 shadow-soft transition-colors duration-200 ease-expo sm:px-6">
+      {/* Brand mark - always visible now the sidebar is gone. */}
       <Link
-        to={navHref("today")}
+        to={navHref("home")}
         aria-label="Aspirely home"
-        className="rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background lg:hidden"
+        className="flex shrink-0 items-center gap-2.5 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >
-        <span className="brand-gradient flex h-8 w-8 items-center justify-center rounded-lg shadow-soft">
-          <Sparkles className="h-4 w-4 text-white" aria-hidden="true" />
+        <BrandMark className="h-8 w-8 rounded-lg shadow-soft" iconClassName="h-4 w-4" />
+        <span className="hidden font-display text-lg font-extrabold tracking-tight text-foreground sm:inline lg:hidden xl:inline">
+          Aspirely
         </span>
       </Link>
 
-      {/* Page context */}
-      <div className="min-w-0 flex-1">
-        <p className="truncate font-display text-body font-semibold leading-tight text-foreground">
-          {current?.label ?? "Aspirely"}
-        </p>
-        {current?.hint ? (
-          <p className="hidden truncate text-caption leading-tight text-muted-foreground sm:block">
-            {current.hint}
-          </p>
-        ) : null}
-      </div>
+      {/* Primary destination nav (>=lg; MobileNav covers smaller widths). */}
+      <DestinationNav />
 
-      <div className="flex items-center gap-1.5">
+      {/* Push the action cluster to the right. */}
+      <div className="min-w-0 flex-1" />
+
+      <div className="flex shrink-0 items-center gap-1.5">
         {/* Command palette trigger */}
         <button
           type="button"
           onClick={openCommandPalette}
           aria-label="Open command palette"
           title="Search & jump (Ctrl/⌘ K)"
-          className="hidden h-10 items-center gap-2 rounded-full border border-border/70 bg-muted/40 pl-3 pr-2 text-caption text-muted-foreground outline-none transition-colors duration-200 ease-expo hover:border-border hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:flex"
+          className="hidden h-10 items-center gap-2 rounded-full border border-border/70 bg-muted/40 pl-3 pr-2 text-caption text-muted-foreground interactive interactive-press hover:border-border hover:text-foreground sm:flex"
         >
           <Search className="h-4 w-4" aria-hidden="true" />
-          <span>Search…</span>
+          <span>Search...</span>
           <kbd className="rounded border border-border bg-background px-1.5 py-0.5 font-mono text-[10px] font-semibold text-muted-foreground">⌘K</kbd>
         </button>
         <button
@@ -87,7 +79,7 @@ export function TopBar() {
           onClick={openCommandPalette}
           aria-label="Open command palette"
           title="Search & jump"
-          className="flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground outline-none transition-colors duration-200 ease-expo hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:hidden"
+          className="flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground interactive interactive-press hover:bg-accent hover:text-foreground sm:hidden"
         >
           <Search className="h-5 w-5" aria-hidden="true" />
         </button>
@@ -98,10 +90,20 @@ export function TopBar() {
           onClick={() => setTheme(nextTheme)}
           aria-label={themeToggleLabel}
           title={themeToggleLabel}
-          className="flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground outline-none transition-colors duration-200 ease-expo hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:bg-accent/80"
+          className="flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground interactive interactive-press hover:bg-accent hover:text-foreground active:bg-accent/80"
         >
           <ThemeIcon className="h-5 w-5" aria-hidden="true" />
         </button>
+
+        {/* Settings gear - quick reach without opening the account menu. */}
+        <Link
+          to={navHref("settings")}
+          aria-label="Settings"
+          title="Settings"
+          className="hidden h-11 w-11 items-center justify-center rounded-full text-muted-foreground interactive interactive-press hover:bg-accent hover:text-foreground active:bg-accent/80 sm:flex"
+        >
+          <Settings className="h-5 w-5" aria-hidden="true" />
+        </Link>
 
         {/* User menu */}
         <DropdownMenu>
@@ -109,7 +111,7 @@ export function TopBar() {
             <button
               type="button"
               aria-label="Open account menu"
-              className="flex h-11 w-11 items-center justify-center rounded-full outline-none transition-colors duration-200 ease-expo hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:bg-accent/80"
+              className="flex h-11 w-11 items-center justify-center rounded-full interactive interactive-press hover:bg-accent active:bg-accent/80"
             >
               <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
                 {initials(name, email)}
@@ -126,12 +128,6 @@ export function TopBar() {
               <Link to={navHref("settings")} className="cursor-pointer">
                 <Settings className="mr-2 h-4 w-4" aria-hidden="true" />
                 Settings
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link to="/app" className="cursor-pointer">
-                <ExternalLink className="mr-2 h-4 w-4" aria-hidden="true" />
-                Classic workspace
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />

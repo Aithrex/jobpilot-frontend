@@ -12,6 +12,11 @@ import {
   ExternalLink,
   Info,
   Sparkles,
+  ClipboardList,
+  Settings2,
+  Hand,
+  HelpCircle,
+  ListChecks,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
@@ -23,7 +28,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { useAutoSubmit, type ApproveOutcome } from "@/hooks/useAutoSubmit";
+import { useAutoApplyOnboarding } from "@/hooks/useAutoApplyOnboarding";
+import { useBillingPlan, useEntitlements } from "@/hooks/useEntitlements";
+import { QuotaMeter } from "@/components/billing/QuotaMeter";
+import { autoApplyQuotaLabel } from "@/lib/entitlements";
 import type { AutoSubmitApprovalView } from "@/types/autoSubmit";
+import type { AutoApplyMode } from "@/types/onboarding";
+import AutoApplyOnboarding from "./AutoApplyOnboarding";
+import AutoApplyModeControls from "./AutoApplyModeControls";
+import NeedsInputCard from "./NeedsInputCard";
+import StatusRowCard, { statusRowKind } from "./StatusRowCard";
 
 // ── display helpers ─────────────────────────────────────────────────────────
 
@@ -37,7 +51,67 @@ function hostFromUrl(url?: string | null): string | null {
 }
 
 function bestUrl(v: AutoSubmitApprovalView): string | null {
-  return v.url || v.application_url || null;
+  return v.url || v.application_url || v.apply_url || null;
+}
+
+// Defect H: an approved/queued/running/submitted row is snapshot-frozen and must
+// render READ-ONLY - never re-approvable. We key off the backend's
+// `already_approved` label and fall back to the canonical status set so a row is
+// never actionable just because the flag is missing.
+const READONLY_STATUSES = new Set([
+  "approved",
+  "queued_for_execution",
+  "running",
+  "submitted",
+]);
+
+function isReadOnlyApproved(v: AutoSubmitApprovalView): boolean {
+  return v.already_approved === true || READONLY_STATUSES.has(String(v.status));
+}
+
+// Canonical "hand it back to the human" states. None is an error or a success:
+// they must never render as a re-approvable review card, so we partition them
+// out of the actionable queue and surface them in their own attention section.
+type AttentionKind =
+  | "waiting_human"
+  | "waiting_otp"
+  | "needs_input"
+  | "submission_unknown";
+const ATTENTION_STATUSES = new Set<string>([
+  "waiting_human",
+  // An OTP wall mid-run is the same shape of hold as `waiting_human`: only a
+  // person can clear it. It was missing from the union and the partition, so
+  // these rows rendered as approvable review cards.
+  "waiting_otp",
+  "needs_input",
+  "submission_unknown",
+]);
+
+function attentionKind(v: AutoSubmitApprovalView): AttentionKind | null {
+  const s = String(v.status);
+  return ATTENTION_STATUSES.has(s) ? (s as AttentionKind) : null;
+}
+
+/** The short reason a `waiting_human` row is paused (best-effort, defensive). */
+function waitingHumanAction(v: AutoSubmitApprovalView): string | null {
+  const r = v.reason;
+  return r ? r.trim() || null : null;
+}
+
+// Copilot (prepare-only) rows are never submitted for the user - we surface the
+// resolved answer sheet so they can apply manually. A row is copilot when the
+// account mode is copilot, or the row is explicitly labeled so.
+//
+// NOTE: the old third clause `v.status === "manual_apply"` was DEAD. No backend
+// writer ever emits that as a status - `manual_apply` is a BOOLEAN on the
+// auto-apply answers doc (auto_apply_service.py:656/698/738) and is never put on
+// the pending payload. The per-row label the backend DOES send is `mode`.
+function isCopilotRow(v: AutoSubmitApprovalView, mode: AutoApplyMode | null): boolean {
+  return mode === "copilot" || v.mode === "copilot";
+}
+
+function rowKey(v: AutoSubmitApprovalView): string {
+  return v.approval_id ?? v.application_id;
 }
 
 function displayRole(v: AutoSubmitApprovalView): string {
@@ -123,7 +197,7 @@ function SettingsCard({
               enabled ? "text-primary" : "text-muted-foreground",
             )}
           >
-            {saving ? "Saving…" : enabled ? "On" : "Review only"}
+            {saving ? "Saving..." : enabled ? "On" : "Review only"}
           </span>
         </div>
       </div>
@@ -354,12 +428,203 @@ function WaitingCard({
         </div>
       )}
 
+      {/* `submitting` is the FALLBACK state — approved, undo window elapsed. It
+          says nothing about WHO submits. The old copy here read "Handed to your
+          browser to submit", which was left over from the extension-era design:
+          on the server-side apply path (AUTO_APPLY_EXECUTOR=remote) nothing is
+          handed to the user's browser at all, so the line sent people looking
+          for a tab that was never going to open. Keep it true for both paths. */}
       {state === "submitting" && (
         <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
-          Handed to your browser to submit.
+          Submitting your application…
         </div>
       )}
+    </div>
+  );
+}
+
+// ── copilot answer sheet (prepare-only, read-only) ──────────────────────────
+
+/**
+ * Copilot mode never submits: we resolved the answers and the user applies
+ * themselves. This surfaces the read-only "your answers" sheet + the job link,
+ * with NO approve action (approving would try to submit, which copilot never
+ * does).
+ */
+function AnswerSheetCard({ view }: { view: AutoSubmitApprovalView }) {
+  const url = bestUrl(view);
+  const answers = view.answers_snapshot ?? {};
+  const questions = Object.keys(answers);
+  return (
+    <div className="rounded-xl border border-border bg-card p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h4 className="truncate font-semibold">{displayRole(view)}</h4>
+          <p className="truncate text-sm text-muted-foreground">
+            {displayCompany(view)}
+          </p>
+        </div>
+        <Badge variant="secondary" className="shrink-0">
+          Ready to apply
+        </Badge>
+      </div>
+
+      {questions.length > 0 ? (
+        <div className="mt-4 space-y-2">
+          <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+            <ClipboardList className="h-3 w-3" />
+            Your answers
+          </div>
+          <dl className="space-y-2">
+            {questions.map((q) => (
+              <div key={q} className="rounded-lg border border-border bg-muted/30 px-3 py-2">
+                <dt className="text-xs text-muted-foreground">{q}</dt>
+                <dd className="mt-0.5 whitespace-pre-wrap break-words text-sm">
+                  {answers[q]}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      ) : (
+        <p className="mt-4 text-sm text-muted-foreground">
+          No application questions were detected for this posting.
+        </p>
+      )}
+
+      {url && (
+        <div className="mt-4">
+          <Button asChild size="sm" variant="outline">
+            <a href={url} target="_blank" rel="noreferrer">
+              <ExternalLink className="h-4 w-4" /> Open job to apply
+            </a>
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── attention (needs-you / held) card ───────────────────────────────────────
+
+/** `useAutoSubmit().answerNeedsInput`, threaded down to the needs_input form. */
+type NeedsInputAnswerFn = ReturnType<typeof useAutoSubmit>["answerNeedsInput"];
+
+/**
+ * A row the executor handed back to the human. We render each canonical state
+ * from the REAL payload - never fabricated progress:
+ *   needs_input        the user ANSWERS IT HERE (NeedsInputCard, spec §3). This
+ *                      card used to render "Needs your answer" plus a link that
+ *                      dumped the user on the employer's portal - i.e. it asked
+ *                      them to redo the whole application by hand because we
+ *                      couldn't resolve one field. That is now fixed.
+ *   waiting_human /    a wall on the employer's site (verification, MFA,
+ *   waiting_otp        account gate). Nothing is typeable, so a hand-off to the
+ *                      user's own browser IS the right answer here.
+ *   submission_unknown neutral "status unknown - we won't retry" (NOT an error,
+ *                      NOT a success) + an Open-job CTA to check the employer.
+ */
+function AttentionCard({
+  view,
+  onAnswer,
+}: {
+  view: AutoSubmitApprovalView;
+  onAnswer: NeedsInputAnswerFn;
+}) {
+  const kind = attentionKind(view);
+  const url = bestUrl(view);
+  if (!kind) return null;
+
+  // needs_input: the whole point of the repair - answer it IN THE APP.
+  if (kind === "needs_input") {
+    return (
+      <NeedsInputCard
+        view={view}
+        url={url}
+        role={displayRole(view)}
+        company={displayCompany(view)}
+        onAnswer={onAnswer}
+      />
+    );
+  }
+
+  // submission_unknown: strictly neutral - the click landed but the outcome is
+  // ambiguous and it is HELD (never auto-retried). Muted, not destructive.
+  if (kind === "submission_unknown") {
+    return (
+      <div className="rounded-xl border border-border bg-muted/40 p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h4 className="truncate font-semibold">{displayRole(view)}</h4>
+            <p className="truncate text-sm text-muted-foreground">
+              {displayCompany(view)}
+            </p>
+          </div>
+          <span className="inline-flex shrink-0 items-center gap-1 text-sm font-medium text-muted-foreground">
+            <HelpCircle className="h-4 w-4" />
+            Status unknown
+          </span>
+        </div>
+        <p className="mt-3 text-sm text-muted-foreground">
+          Submission status unknown - we won't retry automatically. Check with the
+          employer to confirm whether your application went through.
+        </p>
+        {url && (
+          <div className="mt-3">
+            <Button asChild size="sm" variant="outline">
+              <a href={url} target="_blank" rel="noreferrer">
+                <ExternalLink className="h-4 w-4" /> Open job
+              </a>
+            </Button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // waiting_human / waiting_otp: a wall only a person can clear on the
+  // employer's site. The link out is legitimate here - there is nothing to type.
+  const isOtp = kind === "waiting_otp";
+  const Icon = Hand;
+  const lead = "Needs you";
+  const cta = "Take over";
+  const detail = isOtp
+    ? waitingHumanAction(view) ??
+      "the employer sent a one-time code. Enter it on their site and we'll pick this back up."
+    : waitingHumanAction(view) ??
+      "a step on the employer's site needs a person (e.g. a verification wall). Clear it and we'll pick this back up.";
+
+  return (
+    <div className="rounded-xl border border-[hsl(var(--warning)/0.4)] bg-[hsl(var(--warning)/0.06)] p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h4 className="truncate font-semibold">{displayRole(view)}</h4>
+          <p className="truncate text-sm text-muted-foreground">
+            {displayCompany(view)}
+          </p>
+        </div>
+        <span className="inline-flex shrink-0 items-center gap-1 text-sm font-medium text-[hsl(var(--warning))]">
+          <Icon className="h-4 w-4" />
+          Action needed
+        </span>
+      </div>
+      <p className="mt-3 text-sm text-foreground">
+        <span className="font-medium">{lead}:</span>{" "}
+        <span className="text-muted-foreground">{detail}</span>
+      </p>
+      <div className="mt-3">
+        <Button asChild size="sm" variant="outline" disabled={!url}>
+          <a
+            href={url ?? "#"}
+            target="_blank"
+            rel="noreferrer"
+            aria-disabled={!url}
+          >
+            <ExternalLink className="h-4 w-4" /> {cta}
+          </a>
+        </Button>
+      </div>
     </div>
   );
 }
@@ -395,6 +660,7 @@ export default function AutoApplyTab() {
   const {
     available,
     enabled,
+    mode,
     savingSettings,
     setEnabled,
     pending,
@@ -404,21 +670,102 @@ export default function AutoApplyTab() {
     refetchPending,
     approve,
     cancel,
+    answerNeedsInput,
   } = useAutoSubmit();
+  const onboarding = useAutoApplyOnboarding(true);
+  const { plan } = useEntitlements();
+  const billing = useBillingPlan(true);
+
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
+  const [onboardingFocusMode, setOnboardingFocusMode] = useState(false);
+
+  const openOnboarding = (focusMode: boolean) => {
+    setOnboardingFocusMode(focusMode);
+    setOnboardingOpen(true);
+  };
+
+  const ready = onboarding.questions?.ready_for_autoapply === true;
+  const missingCount = useMemo(() => {
+    const qs = onboarding.questions;
+    if (!qs) return 0;
+    return qs.groups
+      .flatMap((g) => g.fields)
+      .filter((f) => f.required && f.missing).length;
+  }, [onboarding.questions]);
+  const autoSubmitUsage = billing.data?.usage?.auto_submit;
+
+  // Defect H: partition the merged pending queue. First peel off the canonical
+  // "needs you / held" states (waiting_human / needs_input / submission_unknown):
+  // these are neither approvable nor errors, so they get their own attention
+  // section and must never render as a review card. Of what remains, rows already
+  // approved/queued/running are snapshot-frozen -> READ-ONLY "Approved &
+  // submitting" cards (reuse WaitingCard); only not-yet-approved rows are
+  // actionable. Copilot mode is prepare-only, so its actionable rows become
+  // read-only answer sheets.
+  //
+  // A FOURTH bucket was missing entirely: `unsupported` / `failed` / `preparing`
+  // / `confirmed` / `cancelled` / `withdrawn` / `external`. Those statuses were
+  // absent from AutoSubmitStatus and from every branch below, so such rows fell
+  // into `actionable` and rendered as an "Approve & submit" review card with no
+  // answers - or, once the caller filtered them, vanished with no explanation at
+  // all. They now get their own honest, read-only section.
+  const attention = useMemo(
+    () => pending.filter((p) => attentionKind(p) !== null),
+    [pending],
+  );
+  const informational = useMemo(
+    () => pending.filter((p) => attentionKind(p) === null && statusRowKind(p) !== null),
+    [pending],
+  );
+  const readOnlyApproved = useMemo(
+    () =>
+      pending.filter(
+        (p) =>
+          attentionKind(p) === null &&
+          statusRowKind(p) === null &&
+          isReadOnlyApproved(p),
+      ),
+    [pending],
+  );
+  const actionable = useMemo(
+    () =>
+      pending.filter(
+        (p) =>
+          attentionKind(p) === null &&
+          statusRowKind(p) === null &&
+          !isReadOnlyApproved(p),
+      ),
+    [pending],
+  );
+  const copilot = mode === "copilot";
+  const aggressive = mode === "aggressive" || mode === "autopilot";
+  // The approved/submitting queue merges the System-A hand-offs with the
+  // canonical already-approved ledger rows.
+  const approvedQueue = useMemo(
+    () => [...waiting, ...readOnlyApproved],
+    [waiting, readOnlyApproved],
+  );
 
   const hasLiveCountdown = useMemo(
     () =>
-      waiting.some(
+      approvedQueue.some(
         (w) =>
           w.status !== "submitted" &&
           w.status !== "cancelled" &&
           !!w.undo_until,
       ),
-    [waiting],
+    [approvedQueue],
   );
   const now = useNow(hasLiveCountdown);
 
   const onToggle = async (next: boolean) => {
+    if (next && !ready) {
+      toast.message("Complete your auto-apply profile first", {
+        description: "We need your contact, address, work auth, and experience answers before submitting.",
+      });
+      openOnboarding(false);
+      return;
+    }
     const ok = await setEnabled(next);
     if (!ok) {
       toast.error("Couldn't update setting", {
@@ -446,7 +793,7 @@ export default function AutoApplyTab() {
     );
   }
 
-  // Master flag off — feature unavailable. Kept calm; the nav entry should be
+  // Master flag off - feature unavailable. Kept calm; the nav entry should be
   // gated on `available` so users rarely land here.
   if (available === false) {
     return (
@@ -459,32 +806,138 @@ export default function AutoApplyTab() {
     );
   }
 
+  // No explicit mode set yet (mode === null): the executor refuses to act until
+  // the user picks one, so route them to the onboarding mode picker first.
+  const needsMode = mode == null;
+  const needsProfile = !ready;
+
+  const reviewTitle = copilot ? "Ready to apply" : "Ready to submit";
+
   return (
     <div className="mx-auto max-w-3xl space-y-5 p-4">
-      <header>
-        <div className="flex items-center gap-1.5 text-primary">
-          <Sparkles className="h-4 w-4" />
-          <span className="text-[11px] font-semibold uppercase tracking-[0.18em]">
-            Career · Auto-Apply
-          </span>
+      <header className="flex items-start justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-1.5 text-primary">
+            <Sparkles className="h-4 w-4" />
+            <span className="text-[11px] font-semibold uppercase tracking-[0.18em]">
+              Career · Auto-Apply
+            </span>
+          </div>
+          <h2 className="font-display text-2xl font-extrabold tracking-tight">
+            {copilot
+              ? "We prepare, you apply"
+              : aggressive
+                ? "Matching jobs apply for you"
+                : "Approve, then Aspirely submits"}
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            {copilot
+              ? "Aspirely tailors and fills every answer. You open the job and apply."
+              : aggressive
+                ? "Auto Aggressive queues new matches daily and submits when confident. Sensitive fields still pause for you."
+                : "You stay in control. Nothing is sent until you approve it, and you can cancel within a short window."}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {autoApplyQuotaLabel(plan)}
+          </p>
         </div>
-        <h2 className="font-display text-2xl font-extrabold tracking-tight">
-          Approve, then Aspirely submits
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          You stay in control. Nothing is sent until you approve it, and you can
-          cancel within a short window.
-        </p>
+        <Button
+          variant="outline"
+          size="sm"
+          className="shrink-0"
+          onClick={() => openOnboarding(false)}
+        >
+          <Settings2 className="h-4 w-4" /> Setup
+        </Button>
       </header>
 
-      <SettingsCard enabled={enabled} saving={savingSettings} onToggle={onToggle} />
+      {autoSubmitUsage && (
+        <Card className="surface p-4">
+          <QuotaMeter
+            label="Auto-apply submissions this month"
+            used={autoSubmitUsage.used ?? 0}
+            limit={autoSubmitUsage.limit ?? null}
+            feature="auto_submit"
+          />
+        </Card>
+      )}
 
-      {/* Ready to submit — the review queue */}
+      <AutoApplyModeControls />
+
+      {/* Profile incomplete — collect fill answers before opt-in / submit. */}
+      {needsProfile && (
+        <Card className="surface flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            <ClipboardList className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+            <div>
+              <h3 className="font-display text-base font-semibold">
+                Complete your application profile
+              </h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Tell us the details ATS forms ask for — contact, address, work
+                authorization, and experience
+                {missingCount > 0 ? ` (${missingCount} required left)` : ""}.
+                We fill applications from these answers only.
+              </p>
+            </div>
+          </div>
+          <Button className="shrink-0" onClick={() => openOnboarding(false)}>
+            Fill profile
+          </Button>
+        </Card>
+      )}
+
+      {/* Mode not chosen yet - block until the user picks one. */}
+      {needsMode && (
+        <Card className="surface flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+            <div>
+              <h3 className="font-display text-base font-semibold">
+                Choose how auto-apply works
+              </h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Manual, Auto, or Auto Aggressive. Nothing runs until you pick one.
+              </p>
+            </div>
+          </div>
+          <Button className="shrink-0" onClick={() => openOnboarding(true)}>
+            Choose your mode
+          </Button>
+        </Card>
+      )}
+
+      {!copilot && (
+        <SettingsCard enabled={enabled} saving={savingSettings} onToggle={onToggle} />
+      )}
+
+      {/* Needs-you / held rows - handed back by the executor. Never approvable
+          here, never an error; surfaced ahead of the review queue. */}
+      {attention.length > 0 && (
+        <section className="space-y-3">
+          <SectionHeading
+            icon={<AlertCircle className="h-4 w-4 text-[hsl(var(--warning))]" />}
+            title="Needs your attention"
+            count={attention.length}
+          />
+          <div className="space-y-3">
+            {attention.map((v) => (
+              <AttentionCard
+                key={rowKey(v)}
+                view={v}
+                onAnswer={answerNeedsInput}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* The review / apply queue (actionable rows only). */}
       <section className="space-y-3">
         <SectionHeading
           icon={<Send className="h-4 w-4 text-primary" />}
-          title="Ready to submit"
-          count={pending.length}
+          title={reviewTitle}
+          count={actionable.length}
         />
 
         {pendingLoading ? (
@@ -503,13 +956,16 @@ export default function AutoApplyTab() {
               Retry
             </Button>
           </div>
-        ) : pending.length === 0 ? (
+        ) : actionable.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-border py-12 text-center">
             <ShieldCheck className="mx-auto mb-2 h-5 w-5 text-muted-foreground" />
-            <p className="text-sm font-medium">Nothing waiting for review</p>
+            <p className="text-sm font-medium">
+              {copilot ? "Nothing ready to apply yet" : "Nothing waiting for review"}
+            </p>
             <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
-              When Aspirely prepares an application, it'll appear here for your
-              approval. You're always the one who says go.
+              {copilot
+                ? "When Aspirely prepares an application, its answer sheet appears here for you to apply."
+                : "When Aspirely prepares an application, it'll appear here for your approval. You're always the one who says go."}
             </p>
           </div>
         ) : (
@@ -519,39 +975,80 @@ export default function AutoApplyTab() {
             animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
           >
-            {pending.map((v) => (
-              <ReviewCard
-                key={v.approval_id}
-                view={v}
-                optedIn={enabled}
-                onApprove={(view, answers) =>
-                  approve({
-                    application_id: view.application_id,
-                    url: bestUrl(view) ?? "",
-                    answers,
-                  })
-                }
-              />
-            ))}
+            {actionable.map((v) =>
+              isCopilotRow(v, mode) ? (
+                <AnswerSheetCard key={rowKey(v)} view={v} />
+              ) : (
+                <ReviewCard
+                  key={rowKey(v)}
+                  view={v}
+                  optedIn={enabled}
+                  onApprove={(view, answers) =>
+                    approve({
+                      application_id: view.application_id,
+                      url: bestUrl(view) ?? "",
+                      answers,
+                    })
+                  }
+                />
+              ),
+            )}
           </motion.div>
         )}
       </section>
 
-      {/* Approved — handed to the extension */}
-      {waiting.length > 0 && (
+      {/* Rows we can't (or no longer) act on: unsupported ATS, failures,
+          in-flight prep, and terminal bookkeeping. Read-only and never
+          approvable - but VISIBLE, so nothing silently disappears. */}
+      {informational.length > 0 && (
+        <section className="space-y-3">
+          <SectionHeading
+            icon={<ListChecks className="h-4 w-4 text-muted-foreground" />}
+            title="Other applications"
+            count={informational.length}
+          />
+          <div className="space-y-3">
+            {informational.map((v) => {
+              const kind = statusRowKind(v);
+              if (!kind) return null;
+              return (
+                <StatusRowCard
+                  key={rowKey(v)}
+                  kind={kind}
+                  role={displayRole(v)}
+                  company={displayCompany(v)}
+                  url={bestUrl(v)}
+                  reason={v.reason}
+                  ats={v.ats}
+                />
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* Approved - read-only, snapshot frozen (defect H: never re-approvable). */}
+      {approvedQueue.length > 0 && (
         <section className="space-y-3">
           <SectionHeading
             icon={<Clock className="h-4 w-4 text-primary" />}
             title="Approved & submitting"
-            count={waiting.length}
+            count={approvedQueue.length}
           />
           <div className="space-y-3">
-            {waiting.map((v) => (
-              <WaitingCard key={v.approval_id} view={v} now={now} onCancel={cancel} />
+            {approvedQueue.map((v) => (
+              <WaitingCard key={rowKey(v)} view={v} now={now} onCancel={cancel} />
             ))}
           </div>
         </section>
       )}
+
+      <AutoApplyOnboarding
+        open={onboardingOpen}
+        onOpenChange={setOnboardingOpen}
+        focusMode={onboardingFocusMode}
+        onCompleted={() => refetchPending()}
+      />
     </div>
   );
 }

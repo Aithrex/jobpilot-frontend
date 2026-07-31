@@ -1,7 +1,7 @@
 /**
  * The hero recommended action (Compass §6.2).
  *
- * The dashboard hero is NOT a chart — it's ONE action chosen by a small ranker
+ * The dashboard hero is NOT a chart - it's ONE action chosen by a small ranker
  * over what matters most right now: OPT urgency, the user's strongest match,
  * sponsorship evidence, a ready-to-submit queue, or (for a brand-new user) the
  * single highest-leverage next step. One confident card, one primary button,

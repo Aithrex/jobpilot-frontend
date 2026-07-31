@@ -19,7 +19,7 @@ const HEADLINE: Record<TrustBand, string> = {
 /**
  * Scam-shield trust badge for a job posting. The deterministic band/score/reasons
  * are attached server-side to every search result; the tooltip explains *why* so
- * the signal stays trustworthy. No competitor flags scam/ghost postings — this is
+ * the signal stays trustworthy. No competitor flags scam/ghost postings - this is
  * a core JobPilot differentiator and protects students (the prime scam target).
  */
 export function JobTrustBadge({
@@ -65,7 +65,7 @@ export function JobTrustBadge({
           </ul>
         ) : (
           <p className="mt-1 text-xs text-muted-foreground">
-            Every posting is screened for scam &amp; ghost-job signals. Tap “Deep-scan” for a detailed check.
+            Every posting is screened for scam &amp; ghost-job signals. Tap "Deep-scan" for a detailed check.
           </p>
         )}
       </TooltipContent>

@@ -1,15 +1,15 @@
 /**
- * ActivitySpine — the signed-in Home's honest funnel, drawn as a single line.
+ * ActivitySpine - the signed-in Home's honest funnel, drawn as a single line.
  *
- * Four nodes — scanned → matched → applied → responded — sit on one horizontal
+ * Four nodes - scanned → matched → applied → responded - sit on one horizontal
  * indigo line (the app's landing signature, rebuilt fresh here). Each node is a
  * dot with a tabular-nums count and a small label. Every count is REAL: it comes
  * straight from what DashboardTab already fetched. A node at zero is shown
- * calmly, never hidden — an honest empty funnel still reads as a funnel.
+ * calmly, never hidden - an honest empty funnel still reads as a funnel.
  *
  * On mount the line draws left → right and the counts settle up from zero, all
  * driven by one shared progress value so nothing desyncs. Under
- * prefers-reduced-motion the progress starts (and stays) at 1 — the static
+ * prefers-reduced-motion the progress starts (and stays) at 1 - the static
  * end-state, no animation, no rAF loop.
  */
 import { useEffect, useState } from 'react';

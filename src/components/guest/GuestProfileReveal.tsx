@@ -5,12 +5,13 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { stepTransition } from '@/components/guest/_shared';
 import { cn } from '@/lib/utils';
+import type { GuestExtractedCounts } from '@/hooks/useGuestFlow';
 import type { GuestProfileBlock } from '@/types/guest';
 
 /**
  * The profile reveal between parsing and matches: "here is what we understood
  * from your resume". Renders ONLY genuinely extracted fields (server profile
- * block, or the client-side synthesis for pre-v3 results) — a missing field
+ * block, or the client-side synthesis for pre-v3 results) - a missing field
  * simply does not render; there is no edit UI (the product does not support
  * correction yet). The extracted name is presentation-only, never identity.
  *
@@ -20,6 +21,9 @@ import type { GuestProfileBlock } from '@/types/guest';
  */
 export interface GuestProfileRevealProps {
   profile: GuestProfileBlock;
+  /** What the parser ACTUALLY extracted, counted from the real structured
+   * resume. Absent counts render nothing. */
+  counts?: GuestExtractedCounts;
   fileName?: string | null;
   onContinue: () => void;
   /** Idle auto-advance delay in ms (exposed for tests). */
@@ -27,50 +31,25 @@ export interface GuestProfileRevealProps {
   className?: string;
 }
 
-/** Fields that count toward the completeness ring, in display order. */
-function completenessOf(p: GuestProfileBlock): number {
-  const present = [
-    !!p.first_name,
-    !!p.headline_title,
-    !!(p.experience_level || typeof p.years === 'number'),
-    (p.skills?.length ?? 0) > 0,
-    !!p.location,
-    !!p.work_authorization,
-    !!p.summary_short,
-  ].filter(Boolean).length;
-  return Math.round((present / 7) * 100);
-}
-
-/** Small SVG completeness ring on existing tokens (primary fill, border
- * track). Decorative reinforcement — the percentage is also written out. */
-function CompletenessRing({ pct }: { pct: number }) {
-  const r = 26;
-  const c = 2 * Math.PI * r;
-  return (
-    <div className="relative h-16 w-16 shrink-0" role="img" aria-label={`Profile completeness ${pct} percent`}>
-      <svg viewBox="0 0 64 64" className="h-16 w-16 -rotate-90">
-        <circle cx="32" cy="32" r={r} fill="none" strokeWidth="5" className="stroke-border" />
-        <circle
-          cx="32"
-          cy="32"
-          r={r}
-          fill="none"
-          strokeWidth="5"
-          strokeLinecap="round"
-          strokeDasharray={c}
-          strokeDashoffset={c * (1 - pct / 100)}
-          className="stroke-primary"
-        />
-      </svg>
-      <span className="absolute inset-0 grid place-items-center text-xs font-bold tabular-nums text-foreground">
-        {pct}%
-      </span>
-    </div>
-  );
+/**
+ * Honest extracted counts, e.g. "12 skills · 3 roles · 6 years detected".
+ *
+ * This deliberately replaces the old "profile completeness" ring, which
+ * scored a resume against seven OPTIONAL parser fields and so made a
+ * correctly-parsed resume look defective. Counts are not a score: a count the
+ * parser did not produce is simply omitted, never rendered as a zero.
+ */
+function countPhrases(counts: GuestExtractedCounts): string[] {
+  const out: string[] = [];
+  if (counts.skills) out.push(`${counts.skills} ${counts.skills === 1 ? 'skill' : 'skills'}`);
+  if (counts.roles) out.push(`${counts.roles} ${counts.roles === 1 ? 'role' : 'roles'}`);
+  if (counts.years) out.push(`${counts.years} ${counts.years === 1 ? 'year' : 'years'} detected`);
+  return out;
 }
 
 export function GuestProfileReveal({
   profile,
+  counts = {},
   fileName,
   onContinue,
   autoAdvanceMs = 2500,
@@ -81,7 +60,7 @@ export function GuestProfileReveal({
   const continueRef = useRef(onContinue);
   continueRef.current = onContinue;
 
-  // Idle auto-advance: cancelled by any USER interaction (pointer/keys) —
+  // Idle auto-advance: cancelled by any USER interaction (pointer/keys)  -
   // deliberately not focus, because the flow shell moves focus here itself.
   // Reduced motion: never armed; the button is the only way forward.
   useEffect(() => {
@@ -99,6 +78,7 @@ export function GuestProfileReveal({
     };
   }, [reduceMotion, autoArmed, autoAdvanceMs]);
 
+  const extractedPhrases = countPhrases(counts);
   const skills = (profile.skills ?? []).slice(0, 10);
   const experienceLine =
     profile.experience_level && typeof profile.years === 'number'
@@ -128,7 +108,19 @@ export function GuestProfileReveal({
             Built only from what your resume actually says. Nothing invented.
           </p>
         </div>
-        <CompletenessRing pct={completenessOf(profile)} />
+        {extractedPhrases.length > 0 && (
+          <div
+            className="shrink-0 rounded-xl border border-primary/20 bg-primary/5 px-3.5 py-2.5"
+            data-testid="extracted-counts"
+          >
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-primary">
+              Extracted from your resume
+            </p>
+            <p className="mt-0.5 text-sm font-semibold tabular-nums">
+              {extractedPhrases.join(' · ')}
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="grid gap-4 sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">

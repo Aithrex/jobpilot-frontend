@@ -14,7 +14,7 @@ const SEVERITY_STYLES: Record<NonNullable<LinkedInDiffItem["severity"]>, string>
   major: "border-destructive/30 bg-destructive/10 text-destructive",
 };
 
-/** LinkedIn brand blue — intentional brand literal for the mark only; chrome stays tokenized. */
+/** LinkedIn brand blue - intentional brand literal for the mark only; chrome stays tokenized. */
 const LINKEDIN_TILE = "bg-[#0a66c2]/10 text-[#0a66c2]";
 
 function DiffRow({ item }: { item: LinkedInDiffItem }) {
@@ -35,11 +35,11 @@ function DiffRow({ item }: { item: LinkedInDiffItem }) {
       <div className="mt-2 grid gap-1.5 sm:grid-cols-2">
         <div className="rounded-md bg-muted/50 px-2 py-1.5">
           <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Resume</p>
-          <p className="text-xs text-foreground/85">{item.resume_value || "—"}</p>
+          <p className="text-xs text-foreground/85">{item.resume_value || " - "}</p>
         </div>
         <div className="rounded-md bg-muted/50 px-2 py-1.5">
           <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">LinkedIn</p>
-          <p className="text-xs text-foreground/85">{item.linkedin_value || "—"}</p>
+          <p className="text-xs text-foreground/85">{item.linkedin_value || " - "}</p>
         </div>
       </div>
       {item.suggestion && (

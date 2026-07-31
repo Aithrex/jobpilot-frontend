@@ -9,6 +9,9 @@ import type {
   AutoSubmitPending,
   AutoSubmitSettings,
   AutoSubmitUsage,
+  NeedsInputAnswerBody,
+  NeedsInputAnswerResult,
+  NeedsInputItem,
 } from "@/types/autoSubmit";
 
 /**
@@ -30,6 +33,8 @@ interface AutoSubmitApi {
   updateAutoSubmitSettings(
     enabled: boolean,
     autonomyThreshold?: number,
+    mode?: import("@/types/onboarding").AutoApplyMode,
+    useTailoredResume?: boolean,
   ): Promise<ApiResp<AutoSubmitSettings>>;
   approveAutoSubmit(
     body: AutoSubmitApproveBody,
@@ -41,6 +46,9 @@ interface AutoSubmitApi {
   markAutoSubmitSubmitted(
     applicationId: string,
   ): Promise<ApiResp<{ approval: AutoSubmitApprovalView }>>;
+  answerNeedsInput(
+    body: NeedsInputAnswerBody,
+  ): Promise<ApiResp<NeedsInputAnswerResult>>;
 }
 
 const api = apiService as unknown as AutoSubmitApi;
@@ -57,6 +65,31 @@ export interface ApproveOutcome {
   quota?: AutoSubmitUsage;
   usage?: AutoSubmitUsage;
   created?: boolean;
+  error?: string;
+}
+
+/**
+ * Result surface for answering a `needs_input` row in-app (SPEC §3). The whole
+ * point is that the user NEVER gets told to go apply manually for a question
+ * they just answered, so every branch here is a business outcome, not an error
+ * page: `remaining` non-empty means "keep going, here's what's left".
+ */
+export interface NeedsInputAnswerOutcome {
+  ok: boolean;
+  /** 403 `upgrade_required` - the plan doesn't include this. */
+  needsUpgrade?: boolean;
+  /** 409 `not_in_needs_input` - the row already moved on (usually benign). */
+  notInNeedsInput?: boolean;
+  /**
+   * 429 - the auto-submit quota is exhausted. Comes back WITH `ok: true`: the
+   * answers were saved and the row advanced, it just can't auto-submit, so the
+   * card renders the resumed state PLUS this notice (never "it failed").
+   */
+  quota?: AutoSubmitUsage;
+  /** Where the row landed after the merge. Empty `remaining` => it resumed. */
+  applicationStatus?: string;
+  /** The gaps STILL unresolved. Empty/absent = the application is proceeding. */
+  remaining?: NeedsInputItem[];
   error?: string;
 }
 
@@ -80,7 +113,7 @@ export function useAutoSubmit() {
     queryKey: SETTINGS_KEY,
     queryFn: async () => {
       const res = await api.getAutoSubmitSettings();
-      // Feature master-flag off — hide the whole surface.
+      // Feature master-flag off - hide the whole surface.
       if (res.status === 404) return { unavailable: true };
       if (res.error) throw new Error(res.error);
       return { unavailable: false, settings: res.data };
@@ -95,6 +128,10 @@ export function useAutoSubmit() {
     ? !settingsQuery.data.unavailable
     : undefined;
   const enabled = settingsQuery.data?.settings?.auto_submit_enabled ?? false;
+  // The explicit autonomy mode (null until onboarding forces a pick). The
+  // AutoApplyTab routes the user to the mode picker while this is null, and
+  // renders copilot rows as a prepare-only answer sheet.
+  const mode = settingsQuery.data?.settings?.mode ?? null;
 
   const pendingQuery = useQuery<AutoSubmitPending>({
     queryKey: PENDING_KEY,
@@ -153,6 +190,33 @@ export function useAutoSubmit() {
     [qc],
   );
 
+  /** Full settings write used by mode / tailor controls. */
+  const updateSettings = useCallback(
+    async (
+      enabled: boolean,
+      autonomyThreshold?: number,
+      mode?: import("@/types/onboarding").AutoApplyMode,
+      useTailoredResume?: boolean,
+    ): Promise<{ ok: boolean; error?: string }> => {
+      setSavingSettings(true);
+      const res = await api.updateAutoSubmitSettings(
+        enabled,
+        autonomyThreshold,
+        mode,
+        useTailoredResume,
+      );
+      setSavingSettings(false);
+      if (res.error || !res.data) return { ok: false, error: res.error };
+      qc.setQueryData<SettingsState>(SETTINGS_KEY, {
+        unavailable: false,
+        settings: res.data,
+      });
+      qc.invalidateQueries({ queryKey: PENDING_KEY });
+      return { ok: true };
+    },
+    [qc],
+  );
+
   const approve = useCallback(
     async (body: AutoSubmitApproveBody): Promise<ApproveOutcome> => {
       const res = await api.approveAutoSubmit(body);
@@ -186,6 +250,68 @@ export function useAutoSubmit() {
     [qc],
   );
 
+  /**
+   * Submit the user's answers for a parked `needs_input` row and resume it.
+   * Thin on purpose: the ONLY shape knowledge lives here + in api.ts, so if the
+   * backend contract lands slightly different this is a one-line change.
+   */
+  const answerNeedsInput = useCallback(
+    async (
+      applicationId: string,
+      answers: NeedsInputAnswerBody["answers"],
+    ): Promise<NeedsInputAnswerOutcome> => {
+      const res = await api.answerNeedsInput({
+        application_id: applicationId,
+        answers,
+      });
+      if (res.status === 403) {
+        return { ok: false, needsUpgrade: true, error: res.error };
+      }
+      if (res.status === 409) {
+        // The row left needs_input under us (a sweep resolved it, or the user
+        // answered in another tab). Refresh rather than shout at them.
+        qc.invalidateQueries({ queryKey: PENDING_KEY });
+        return { ok: false, notInNeedsInput: true, error: res.error };
+      }
+      if (res.status === 429) {
+        // A 429 HERE IS NOT A FAILURE. The backend deliberately merges the full
+        // result into the quota body (services/jobs/blueprints/apply.py
+        // `needs_input_answer`), so it carries `application_status` +
+        // `remaining`: the answers WERE saved and the row DID advance - the user
+        // is only out of auto-submit slots, so it waits for a manual approve or
+        // an upgrade instead of submitting itself.
+        //
+        // Short-circuiting to {ok:false} made the card say "you've reached your
+        // auto-apply limit" and NOTHING else: it never set `resumed`, never
+        // cleared the form (that only happens in the ok branch), so the user
+        // resubmitted the same answers and got 409 "this application already
+        // moved on". Three contradictory messages for one successful save.
+        const payload = (res.errorPayload ?? {}) as Record<string, unknown>;
+        const status = payload.application_status;
+        qc.invalidateQueries({ queryKey: PENDING_KEY });
+        return {
+          ok: true,
+          quota: (payload.usage as AutoSubmitUsage) ?? undefined,
+          applicationStatus: typeof status === "string" ? status : undefined,
+          remaining: Array.isArray(payload.remaining)
+            ? (payload.remaining as NeedsInputItem[])
+            : [],
+        };
+      }
+      if (res.error || !res.data) {
+        return { ok: false, error: res.error ?? "Could not save your answer" };
+      }
+      // The row moved (or shed some gaps) - the queue must re-read.
+      qc.invalidateQueries({ queryKey: PENDING_KEY });
+      return {
+        ok: true,
+        applicationStatus: res.data.application_status,
+        remaining: Array.isArray(res.data.remaining) ? res.data.remaining : [],
+      };
+    },
+    [qc],
+  );
+
   const markSubmitted = useCallback(
     async (applicationId: string): Promise<{ ok: boolean; error?: string }> => {
       const res = await api.markAutoSubmitSubmitted(applicationId);
@@ -201,12 +327,14 @@ export function useAutoSubmit() {
     /** undefined = still resolving; false = feature flag off (hide surface). */
     available,
     enabled,
+    mode,
     settings: settingsQuery.data?.settings,
     settingsLoading: settingsQuery.isLoading,
     settingsError: settingsQuery.isError,
     savingSettings,
     setEnabled,
     saveSettings,
+    updateSettings,
 
     pending: pendingQuery.data?.pending ?? [],
     waiting: pendingQuery.data?.waiting ?? [],
@@ -217,5 +345,6 @@ export function useAutoSubmit() {
     approve,
     cancel,
     markSubmitted,
+    answerNeedsInput,
   };
 }

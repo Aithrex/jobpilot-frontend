@@ -140,7 +140,7 @@ export default function ResumeDashboard({ onStartTailoring }: ResumeDashboardPro
     );
   }
 
-  // No active resume — prompt upload
+  // No active resume - prompt upload
   if (!activeResume) {
     return (
       <div className="space-y-5">
@@ -161,7 +161,7 @@ export default function ResumeDashboard({ onStartTailoring }: ResumeDashboardPro
                 : 'bg-primary hover:bg-primary/90 shadow-soft'
             }`}>
               {uploading ? (
-                <><span className="animate-spin rounded-full h-4 w-4 border-2 border-primary-foreground border-t-transparent" /> Uploading…</>
+                <><span className="animate-spin rounded-full h-4 w-4 border-2 border-primary-foreground border-t-transparent" /> Uploading...</>
               ) : (
                 <><UploadIcon className="w-4 h-4" /> Choose file</>
               )}

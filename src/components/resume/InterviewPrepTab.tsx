@@ -46,7 +46,7 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 interface InterviewPrepTabProps {
-  /** Mounted inside the /next app shell — the shell already renders the page
+  /** Mounted inside the /next app shell - the shell already renders the page
       header + SubNav, so suppress the internal hero (the stat grid stays). */
   embedded?: boolean;
 }
@@ -153,7 +153,7 @@ export default function InterviewPrepTab({ embedded }: InterviewPrepTabProps) {
 
   const norm: NormalizedPrep | null = useMemo(() => normalize(content), [content]);
 
-  // ── "Get another" — fetch a fresh question from backend, append to content
+  // ── "Get another" - fetch a fresh question from backend, append to content
   const fetchAnother = useCallback(async (
     category: "behavioral" | "technical" | "company" | "coding" | "system_design" | "case_study" | "data_challenge",
     difficulty: QDifficulty,
@@ -262,7 +262,7 @@ export default function InterviewPrepTab({ embedded }: InterviewPrepTabProps) {
     <div className="space-y-4">
       <div className="rounded-2xl border border-border bg-card p-4 shadow-soft">
         {/* Embedded in the /next shell the page h1 + SubNav already carry the
-            title — keep only the functional stat grid. */}
+            title - keep only the functional stat grid. */}
         {!isEmbedded && (
           <>
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">Career · Interview</p><h2 className="mt-1 font-display text-2xl font-extrabold tracking-tight text-foreground">Interview Prep</h2>
@@ -301,7 +301,7 @@ export default function InterviewPrepTab({ embedded }: InterviewPrepTabProps) {
             <input
               value={search}
               onChange={e => setSearch(e.target.value)}
-              placeholder="Search records…"
+              placeholder="Search records..."
               className="w-full pl-8 pr-2 py-2 rounded-md bg-muted border border-input text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/30"
             />
           </div>
@@ -316,7 +316,7 @@ export default function InterviewPrepTab({ embedded }: InterviewPrepTabProps) {
               >
                 <p className="text-sm font-medium text-foreground truncate">{r.jd_analysis?.job_title || "Untitled"}</p>
                 <p className="text-xs text-muted-foreground truncate mt-0.5">
-                  {r.jd_analysis?.company && r.jd_analysis.company !== "Not specified" ? r.jd_analysis.company : "—"}
+                  {r.jd_analysis?.company && r.jd_analysis.company !== "Not specified" ? r.jd_analysis.company : " - "}
                   <span className="mx-1">·</span>
                   {formatDate(r.created_at || "")}
                 </p>
@@ -370,14 +370,14 @@ export default function InterviewPrepTab({ embedded }: InterviewPrepTabProps) {
                         onClick={() => handleGenerate(true)}
                         disabled={generating}
                         className="px-3.5 py-2 rounded-md text-sm font-medium text-muted-foreground border border-border hover:text-foreground hover:border-muted-foreground/40 disabled:opacity-50"
-                      >{generating ? "Regenerating…" : "Regenerate"}</button>
+                      >{generating ? "Regenerating..." : "Regenerate"}</button>
                     )}
                     {!content && (
                       <button
                         onClick={() => handleGenerate(false)}
                         disabled={generating}
                         className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 disabled:opacity-50 shadow-soft"
-                      >{generating && <Spinner />} {generating ? "Generating prep…" : "Generate prep"}</button>
+                      >{generating && <Spinner />} {generating ? "Generating prep..." : "Generate prep"}</button>
                     )}
                   </div>
                 </div>

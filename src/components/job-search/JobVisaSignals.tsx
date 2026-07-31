@@ -25,7 +25,7 @@ function fmtMoney(n?: number): string | null {
 }
 
 function fmtCount(n?: number): string {
-  if (n == null) return '—';
+  if (n == null) return ' - ';
   return n.toLocaleString();
 }
 

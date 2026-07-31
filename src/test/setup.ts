@@ -1,7 +1,7 @@
 /**
  * Global Vitest setup: jest-dom matchers + the browser API polyfills jsdom
  * lacks (matchMedia, IntersectionObserver, ResizeObserver, scrollTo,
- * scrollIntoView, requestIdleCallback). Everything here is deterministic —
+ * scrollIntoView, requestIdleCallback). Everything here is deterministic  - 
  * no network, no real timers hidden inside polyfills.
  */
 import '@testing-library/jest-dom/vitest';
@@ -121,6 +121,41 @@ Object.defineProperty(window, 'cancelIdleCallback', {
   configurable: true,
   value: (id: number) => window.clearTimeout(id),
 });
+
+// ── Web Storage ──────────────────────────────────────────────────
+// Node 22+ ships its OWN experimental `localStorage`/`sessionStorage` global,
+// and on Node 25 it is live by default. When it exists it shadows jsdom's
+// implementation, and without a `--localstorage-file` it is an inert object
+// with no Storage methods at all - so every `localStorage.clear()` in a test
+// throws "not a function" before a single assertion runs. Replace it with a
+// real in-memory Storage whenever the environment's copy is not usable. A
+// no-op on Node versions that leave jsdom's Storage alone.
+function installMemoryStorage(key: 'localStorage' | 'sessionStorage'): void {
+  const existing = (globalThis as Record<string, unknown>)[key] as Storage | undefined;
+  if (existing && typeof existing.clear === 'function') return;
+
+  const map = new Map<string, string>();
+  const storage: Storage = {
+    get length() {
+      return map.size;
+    },
+    key: (i: number) => Array.from(map.keys())[i] ?? null,
+    getItem: (k: string) => (map.has(String(k)) ? (map.get(String(k)) as string) : null),
+    setItem: (k: string, v: string) => void map.set(String(k), String(v)),
+    removeItem: (k: string) => void map.delete(String(k)),
+    clear: () => map.clear(),
+  };
+
+  for (const target of [globalThis, window] as Array<typeof globalThis | Window>) {
+    Object.defineProperty(target, key, {
+      writable: true,
+      configurable: true,
+      value: storage,
+    });
+  }
+}
+installMemoryStorage('localStorage');
+installMemoryStorage('sessionStorage');
 
 // ── crypto tolerance ─────────────────────────────────────────────
 // jsdom exposes crypto.getRandomValues but not always crypto.subtle. Code

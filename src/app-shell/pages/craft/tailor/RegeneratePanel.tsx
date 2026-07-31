@@ -1,7 +1,7 @@
 /**
  * Regenerate inspector panel (Tailor right column).
  *
- * Presentational only — typed props in, render out. Ported from the classic
+ * Presentational only - typed props in, render out. Ported from the classic
  * "Regenerate" tab in ResumeParser, rebuilt on semantic tokens + shadcn/ui.
  * Owns no data: feedback text + submit are lifted to the orchestrator.
  */
@@ -181,7 +181,7 @@ export function RegeneratePanel({
         {regenerating ? (
           <>
             <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
-            Regenerating…
+            Regenerating...
           </>
         ) : (
           <>

@@ -1,12 +1,8 @@
 import { Suspense } from "react";
 import { Outlet } from "react-router-dom";
-import { Briefcase, Globe, Loader2 } from "lucide-react";
-import { SubNav, type SubNavItem } from "../SubNav";
-
-const DISCOVER_SECTIONS: SubNavItem[] = [
-  { to: "jobs", label: "Job Opportunities", icon: Briefcase },
-  { to: "portals", label: "Career Portals", icon: Globe },
-];
+import { Loader2 } from "lucide-react";
+import { SubNav } from "../SubNav";
+import { JOBS_SECTIONS } from "../nav.config";
 
 function SectionFallback() {
   return (
@@ -20,25 +16,22 @@ function SectionFallback() {
 }
 
 /**
- * "Discover" destination in the app shell (`/next/discover`). A layout route: a
- * horizontal sub-nav over deep-linkable nested sections, each mounting an
- * existing standalone tab component. Sections are lazy-loaded via the nested
- * routes in App.tsx.
+ * "Jobs" destination (`/app/jobs`). For-you feed + career portals.
  */
 export default function DiscoverPage() {
   return (
     <div className="flex flex-col gap-6">
       <header>
-        <p className="overline mb-1">Discover</p>
+        <p className="overline mb-1">Jobs</p>
         <h1 className="text-title font-display text-foreground">
-          Find your next opportunity
+          Find your next role
         </h1>
         <p className="mt-1 text-caption text-muted-foreground">
-          Search roles and explore career portals.
+          Browse roles picked for you and explore career portals.
         </p>
       </header>
 
-      <SubNav ariaLabel="Discover sections" items={DISCOVER_SECTIONS} />
+      <SubNav ariaLabel="Jobs sections" items={JOBS_SECTIONS} />
 
       <Suspense fallback={<SectionFallback />}>
         {/* Sections are mounted by App.tsx routes; `embedded` tells the

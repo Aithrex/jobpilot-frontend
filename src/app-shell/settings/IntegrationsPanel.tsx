@@ -106,7 +106,7 @@ function SectionHeading({ title, description }: { title: string; description: st
 }
 
 /**
- * Unified integrations hub — consolidates the previously scattered connections
+ * Unified integrations hub - consolidates the previously scattered connections
  * (Gmail inbox sync, GitHub + LinkedIn OAuth, and the personal Apify key) into
  * one settings panel. Each connection reuses its existing feature component or
  * the shared connect endpoints via apiService.

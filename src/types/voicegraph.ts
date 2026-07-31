@@ -1,8 +1,8 @@
-// Voice Graph — the writing-capture surface.
+// Voice Graph - the writing-capture surface.
 // Shapes mirror the backend routes under /api/resume/voice-graph.
 
-export type WritingSampleStatus = "draft" | "ready";
-export type WritingSampleSource = "typed" | "voice";
+export type WritingSampleStatus = 'draft' | 'ready';
+export type WritingSampleSource = 'typed' | 'voice';
 
 export interface VoiceConsent {
   granted: boolean;
@@ -53,7 +53,7 @@ export interface SaveSamplePayload {
   text: string;
   source?: WritingSampleSource;
   prompt_id?: string | null;
-  /** Marks the sample "ready" — may 403 upgrade_required / consent_required. */
+  /** Marks the sample "ready" - may 403 upgrade_required / consent_required. */
   finalize?: boolean;
 }
 
@@ -66,7 +66,7 @@ export interface GraphNode {
   label: string;
   canonical_label: string;
   confidence: number;
-  /** True once the user has confirmed the fact — rendered brighter. */
+  /** True once the user has confirmed the fact - rendered brighter. */
   user_confirmed: boolean;
 }
 
@@ -86,7 +86,7 @@ export interface KnowledgeGraph {
 
 /* ─────────────────────────── Voice profile (GET /voice) ─────────────────────────── */
 
-/** Quantitative style signals. Loose — the backend may add more keys over time. */
+/** Quantitative style signals. Loose - the backend may add more keys over time. */
 export interface VoiceFeatures {
   sent_len_mean?: number;
   passive_rate?: number;
@@ -123,12 +123,12 @@ export interface VoiceProfileInsufficient {
 
 export type VoiceProfile = VoiceProfileReady | VoiceProfileInsufficient;
 
-/* ─────────────────────────── Authored résumé (POST /resume/raw, GET /resume[/id]) ─────────────────────────── */
+/* ─────────────────────────── Authored resume (POST /resume/raw, GET /resume[/id]) ─────────────────────────── */
 
-/** Where a single résumé bullet came from — always verbatim from the user's writing. */
+/** Where a single resume bullet came from - always verbatim from the user's writing. */
 export interface Provenance {
   bullet: string;
-  /** "verbatim" for raw résumés. */
+  /** "verbatim" for raw resumes. */
   mode: string;
   /** "writing_sample". */
   source: string;
@@ -170,7 +170,7 @@ export interface AuthoredStructured {
   [key: string]: unknown;
 }
 
-/** Summary row in the prior-résumé list (GET /resume). */
+/** Summary row in the prior-resume list (GET /resume). */
 export interface AuthoredResume {
   resume_id: string;
   mode: string;
@@ -179,7 +179,7 @@ export interface AuthoredResume {
   bullet_count: number;
 }
 
-/** Full authored résumé (POST /resume/raw and GET /resume/<id>). */
+/** Full authored resume (POST /resume/raw and GET /resume/<id>). */
 export interface AuthoredResumeDetail {
   resume_id: string;
   mode: string;

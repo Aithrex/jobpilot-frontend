@@ -35,7 +35,7 @@ export interface VisaMilestone {
   severity: MilestoneSeverity;
 }
 
-/** Restrained visual band for the OPT Clock — never an alarm. */
+/** Restrained visual band for the OPT Clock - never an alarm. */
 export type OptClockBand = 'ok' | 'watch' | 'urgent';
 
 export interface OptClockKeyDate {
@@ -44,7 +44,7 @@ export interface OptClockKeyDate {
 }
 
 /**
- * The OPT Clock — a calm, precise projection of an F-1 student's unemployment
+ * The OPT Clock - a calm, precise projection of an F-1 student's unemployment
  * runway on OPT. `unemployment_days_used` / `days_remaining` / `status_band`
  * are grounded in the saved profile or explicitly null; nothing is guessed.
  */

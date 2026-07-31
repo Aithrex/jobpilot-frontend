@@ -1,5 +1,5 @@
 /**
- * Market pulse — a quiet, live read on what's moving in the field the user is
+ * Market pulse - a quiet, live read on what's moving in the field the user is
  * targeting. Low, steady relevance: always somewhat useful, never loud. Empty
  * state is a gentle "loading soon" rather than a dead card.
  */

@@ -21,7 +21,7 @@ import {
 } from './onboarding';
 
 /**
- * First-run onboarding — the product sequence:
+ * First-run onboarding - the product sequence:
  *   sign in (elsewhere) → 1) upload resume → 2) connect LinkedIn (skippable)
  *   → 3) a FEW resume-derived questions (target role, level, sponsorship,
  *   locations) → profile ready → land in the app.
@@ -142,6 +142,9 @@ export default function OnboardingWizard() {
   const [defaults, setDefaults] = useState<OnboardingDefaults>(EMPTY_DEFAULTS);
   const [answers, setAnswers] = useState<OnboardingAnswers>(EMPTY_ANSWERS);
   const [saving, setSaving] = useState(false);
+  // Safety valve: even the brief preference-save write can never trap the user.
+  // If a save somehow hangs, this flips true and the modal becomes closable.
+  const [saveEscapable, setSaveEscapable] = useState(false);
 
   const [liConnected, setLiConnected] = useState(false);
   const [liName, setLiName] = useState('');
@@ -151,6 +154,9 @@ export default function OnboardingWizard() {
   const fileRef = useRef<HTMLInputElement | null>(null);
   const hydrated = useRef(false);
   const resolveTimer = useRef<number | null>(null);
+  // Controls the in-flight resume parse so Cancel/close/unmount can abort it
+  // (upload fetch + the up-to-120s poll) instead of trapping the user.
+  const parseAbortRef = useRef<AbortController | null>(null);
 
   const update = useCallback(
     (patch: Partial<OnboardingAnswers>) => setAnswers((a) => ({ ...a, ...patch })),
@@ -231,14 +237,23 @@ export default function OnboardingWizard() {
     saveOnboardingState({ stepIndex, resumeDone, defaults, answers });
   }, [ready, pending, stepIndex, resumeDone, defaults, answers]);
 
-  // Clear the resolve → navigate timer if we unmount first.
+  // Clear the resolve → navigate timer and abort any in-flight parse on unmount.
   useEffect(() => () => {
     if (resolveTimer.current) window.clearTimeout(resolveTimer.current);
+    parseAbortRef.current?.abort();
   }, []);
+
+  // A hung preference save must not trap the user: after a few seconds, allow
+  // the modal to close even while `saving`.
+  useEffect(() => {
+    if (!saving) { setSaveEscapable(false); return; }
+    const t = window.setTimeout(() => setSaveEscapable(true), 6000);
+    return () => window.clearTimeout(t);
+  }, [saving]);
 
   // Keep rendering through the resolve moment: savePreferences refreshes the
   // profile (user.onboarded flips true) before we navigate, which drops
-  // `pending` — without this guard the "ready" beat would unmount instantly.
+  // `pending` - without this guard the "ready" beat would unmount instantly.
   if ((!pending && phase !== 'resolve') || dismissed) return null;
 
   const handleFile = async (file: File) => {
@@ -247,16 +262,35 @@ export default function OnboardingWizard() {
       toast.error('Please upload a PDF or Word document.');
       return;
     }
+    // Fresh controller per parse so Cancel/close/unmount can abort it.
+    parseAbortRef.current?.abort();
+    const controller = new AbortController();
+    parseAbortRef.current = controller;
+
     setResumeState('parsing');
-    const res = await apiService.uploadResumeForParser(file);
-    if (res.error) {
-      setResumeState('error');
-      toast.error("Couldn't read that resume", { description: res.error });
-      return;
-    }
+    const res = await apiService.uploadResumeForParser(file, controller.signal);
+
+    // The user canceled/closed mid-parse - don't clobber their state.
+    if (controller.signal.aborted) return;
+    parseAbortRef.current = null;
+
     const parsed = (res.data as { parsed_resume?: unknown; resume?: unknown })?.parsed_resume
       ?? (res.data as { resume?: unknown })?.resume
-      ?? {};
+      ?? null;
+    const hasParsed =
+      !!parsed && typeof parsed === 'object' && Object.keys(parsed as object).length > 0;
+
+    // Treat a failed poll OR an empty/absent parse as a real error - never let
+    // "no usable data" fall through as fake success (root cause: empty-string
+    // errors slipping past `if (res.error)`).
+    if (res.error || !res.data || !hasParsed) {
+      setResumeState('error');
+      toast.error("Couldn't read that resume", {
+        description: res.error || 'We could not read that resume. Please try another file.',
+      });
+      return;
+    }
+
     let d = deriveDefaultsFromParsed(parsed);
     const st = await apiService.getResumeStatus().catch(() => null);
     if (st?.data) d = mergeStatusDefaults(d, st.data);
@@ -266,9 +300,20 @@ export default function OnboardingWizard() {
     setResumeState('parsed');
   };
 
+  /**
+   * Cancel an in-flight parse and return to the upload prompt (stays in the
+   * wizard). Wired to the visible "Cancel" control in the parsing view.
+   */
+  const cancelParse = () => {
+    parseAbortRef.current?.abort();
+    parseAbortRef.current = null;
+    setResumeState('idle');
+    toast('Canceled. You can re-upload or skip for now.');
+  };
+
   const startLinkedin = async () => {
     setLiConnecting(true);
-    // Persist first — the browser fully navigates to LinkedIn and back.
+    // Persist first - the browser fully navigates to LinkedIn and back.
     saveOnboardingState({ stepIndex: LINKEDIN_STEP, resumeDone, defaults, answers });
     const r = await apiService.getConnectAuthorizeUrl('linkedin');
     if (r.data?.authorize_url) {
@@ -303,13 +348,13 @@ export default function OnboardingWizard() {
     // Cinematic resolve: a brief "your workspace is ready" beat, then in.
     setPhase('resolve');
     resolveTimer.current = window.setTimeout(
-      () => navigate('/next/today', { replace: true }),
+      () => navigate('/app/home', { replace: true }),
       reduce ? 900 : 1700,
     );
   };
 
   /**
-   * Session snooze — dismisses the wizard WITHOUT marking onboarding complete,
+   * Session snooze - dismisses the wizard WITHOUT marking onboarding complete,
    * so it returns next login until the user genuinely finishes. Used by both
    * the dialog close and the final step's "Skip for now".
    */
@@ -326,7 +371,23 @@ export default function OnboardingWizard() {
 
   const handleOpenChange = (open: boolean) => {
     if (open) return;
-    if (saving || resumeState === 'parsing' || phase === 'resolve') return; // don't drop mid-work
+    // Never trap the user. If a parse is in flight, abort it first (upload +
+    // poll) so nothing keeps running in the background, then let them out.
+    if (resumeState === 'parsing') {
+      parseAbortRef.current?.abort();
+      parseAbortRef.current = null;
+      snoozeAndClose();
+      return;
+    }
+    // The "workspace is ready" beat auto-navigates, but a manual close must
+    // still work in case navigation is slow or blocked.
+    if (phase === 'resolve') {
+      snoozeAndClose();
+      return;
+    }
+    // Guard only the very brief preference write - and even that gives way
+    // after the safety timeout so it can never trap the user.
+    if (saving && !saveEscapable) return;
     snoozeAndClose();
   };
 
@@ -419,6 +480,7 @@ export default function OnboardingWizard() {
                       onPick={() => fileRef.current?.click()}
                       onDropFile={handleFile}
                       onRetry={() => setResumeState('idle')}
+                      onCancel={cancelParse}
                       onSkip={() => setStepIndex(LINKEDIN_STEP)}
                       onContinue={() => setStepIndex(LINKEDIN_STEP)}
                     />
@@ -478,7 +540,7 @@ export default function OnboardingWizard() {
   );
 }
 
-// ── Cinematic moments (presentation only — no data behavior) ────────────────
+// ── Cinematic moments (presentation only - no data behavior) ────────────────
 
 /** Dark, brand-tinted gradient backdrop shared by the welcome + resolve beats.
     Black overlays over the brand gradient keep it deliberately dark in BOTH
@@ -493,7 +555,7 @@ function CinematicBackdrop() {
   );
 }
 
-/** Full-bleed opening: staged reveals — mark → headline → promise → begin. */
+/** Full-bleed opening: staged reveals - mark → headline → promise → begin. */
 function WelcomeMoment({ onBegin }: { onBegin: () => void }) {
   const reduce = useReducedMotion();
   const container = {
@@ -562,7 +624,7 @@ function ReadyMoment() {
           transition={{ delay: reduce ? 0 : 0.5, duration: reduce ? 0 : 0.4 }}
           className="mt-2 text-sm text-white/80"
         >
-          Taking you to your dashboard…
+          Taking you to your dashboard...
         </motion.p>
       </div>
     </div>
@@ -570,12 +632,13 @@ function ReadyMoment() {
 }
 
 // ── Step 1: Resume ──────────────────────────────────────────────────────────
-function ResumeStep({ state, defaults, onPick, onDropFile, onRetry, onSkip, onContinue }: {
+function ResumeStep({ state, defaults, onPick, onDropFile, onRetry, onCancel, onSkip, onContinue }: {
   state: ResumeState;
   defaults: OnboardingDefaults;
   onPick: () => void;
   onDropFile: (f: File) => void;
   onRetry: () => void;
+  onCancel: () => void;
   onSkip: () => void;
   onContinue: () => void;
 }) {
@@ -617,7 +680,18 @@ function ResumeStep({ state, defaults, onPick, onDropFile, onRetry, onSkip, onCo
           </div>
         )}
 
-        {state === 'parsing' && <MultiAgentProcessing active />}
+        {state === 'parsing' && (
+          <div>
+            <MultiAgentProcessing active />
+            <button
+              type="button"
+              onClick={onCancel}
+              className="mt-4 block w-full text-center text-sm text-muted-foreground hover:text-foreground"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
 
         {state === 'error' && (
           <div className="flex flex-col items-center gap-3 rounded-2xl border border-destructive/30 bg-destructive/5 p-8 text-center">
@@ -714,7 +788,7 @@ function LinkedInStep({ connected, name, checking, connecting, onConnect, onBack
             </ul>
             <Button className="mt-5 w-full" onClick={onConnect} disabled={connecting}>
               {connecting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Linkedin className="h-4 w-4" />}
-              {connecting ? 'Opening LinkedIn…' : 'Connect LinkedIn'}
+              {connecting ? 'Opening LinkedIn...' : 'Connect LinkedIn'}
             </Button>
           </div>
         )}
@@ -744,7 +818,7 @@ function QuestionsStep({ answers, defaults, update, saving, onBack, onSkip, onFi
   update: (patch: Partial<OnboardingAnswers>) => void;
   saving: boolean;
   onBack: () => void;
-  /** Session snooze — does NOT complete onboarding (unlike onFinish). */
+  /** Session snooze - does NOT complete onboarding (unlike onFinish). */
   onSkip: () => void;
   onFinish: () => void;
 }) {

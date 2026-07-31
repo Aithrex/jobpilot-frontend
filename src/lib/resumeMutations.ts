@@ -1,5 +1,5 @@
 /**
- * Immutable mutation helpers for TailoredFullResume — the single home for
+ * Immutable mutation helpers for TailoredFullResume - the single home for
  * bullet/skill edits so the review flow and (eventually) the editor share
  * one implementation instead of duplicating splice logic.
  */

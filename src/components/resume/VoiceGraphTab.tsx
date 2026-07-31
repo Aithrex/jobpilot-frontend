@@ -37,7 +37,7 @@ import type {
   WritingSample,
 } from "@/types/voicegraph";
 
-// The "reveal" surfaces — lazy-loaded, only mounted once the user has a ready
+// The "reveal" surfaces - lazy-loaded, only mounted once the user has a ready
 // sample, so their chunks never load for someone who hasn't written yet.
 const VoiceProfileCard = lazy(() => import("./VoiceProfileCard"));
 const KnowledgeGraphReveal = lazy(() => import("./KnowledgeGraphReveal"));
@@ -75,7 +75,7 @@ const speechCtor = (): SpeechRecognitionConstructor | undefined =>
     : window.SpeechRecognition || window.webkitSpeechRecognition;
 
 interface VoiceGraphTabProps {
-  /** Mounted inside the /next app shell — the shell already renders the page
+  /** Mounted inside the /next app shell - the shell already renders the page
       h1 + SubNav, so demote the internal hero and drop the outer padding. */
   embedded?: boolean;
 }
@@ -135,7 +135,7 @@ export default function VoiceGraphTab({ embedded }: VoiceGraphTabProps) {
 
 function Header({ embedded }: { embedded?: boolean }) {
   // Embedded in the /next shell the page already has an h1 ("Shape your
-  // story") and a "Voice" SubNav item — demote to a section h2 on the shell's
+  // story") and a "Voice" SubNav item - demote to a section h2 on the shell's
   // type scale and drop the duplicative chip so the page keeps a single h1.
   if (embedded) {
     return (
@@ -351,7 +351,7 @@ function WritingSurface({
     lastSavedRef.current = "";
   }, []);
 
-  /* — Prior samples — */
+  /* - Prior samples - */
   const samplesQuery = useQuery({
     queryKey: [...VG_KEY, "samples"],
     queryFn: async (): Promise<WritingSample[]> => {
@@ -361,7 +361,7 @@ function WritingSurface({
     },
   });
 
-  /* — Autosave (debounced, only when text changed) — */
+  /* - Autosave (debounced, only when text changed) - */
   const autosave = useCallback(async () => {
     if (savingRef.current || finalizingRef.current) return;
     const body = text;
@@ -377,7 +377,7 @@ function WritingSurface({
     savingRef.current = false;
     if (res.error || !res.data) {
       setSaveState("idle");
-      // Autosave failures stay quiet — a soft toast, never a blocking dialog.
+      // Autosave failures stay quiet - a soft toast, never a blocking dialog.
       toast.error("Couldn't autosave", { description: res.error });
       return;
     }
@@ -393,7 +393,7 @@ function WritingSurface({
     return () => clearTimeout(handle);
   }, [text, autosave]);
 
-  /* — Auto-grow the writing area — */
+  /* - Auto-grow the writing area - */
   useEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
@@ -401,7 +401,7 @@ function WritingSurface({
     el.style.height = `${Math.max(el.scrollHeight, 288)}px`;
   }, [text]);
 
-  /* — Mic (Web Speech API): transcript only, no audio leaves the device — */
+  /* - Mic (Web Speech API): transcript only, no audio leaves the device - */
   const stopMic = useCallback(() => {
     recognitionRef.current?.stop();
   }, []);
@@ -458,7 +458,7 @@ function WritingSurface({
     else startMic();
   };
 
-  /* — Finalize: "This one's ready" — */
+  /* - Finalize: "This one's ready" - */
   const finalize = async () => {
     if (!text.trim() || finalizing) return;
     finalizingRef.current = true;
@@ -529,7 +529,7 @@ function WritingSurface({
           }}
         />
 
-        {/* The writing area — deliberately minimal chrome. */}
+        {/* The writing area - deliberately minimal chrome. */}
         <Card className="mt-4 overflow-hidden border-border/70 shadow-soft">
           <textarea
             ref={textareaRef}
@@ -545,7 +545,7 @@ function WritingSurface({
             style={{ maxWidth: "65ch", marginInline: "auto" }}
           />
 
-          {/* Calm progress + counter — encourages, never blocks. */}
+          {/* Calm progress + counter - encourages, never blocks. */}
           <div className="border-t border-border/60 px-5 py-4 sm:px-8">
             <Progress
               value={progress}
@@ -587,7 +587,7 @@ function WritingSurface({
               ) : (
                 <Mic className="h-4 w-4" />
               )}
-              {listening ? "Listening…" : "Talk instead"}
+              {listening ? "Listening..." : "Talk instead"}
             </Button>
           )}
 
@@ -620,7 +620,7 @@ function WritingSurface({
         }}
       />
 
-      {/* The reveal — only once there's at least one finished sample to learn from. */}
+      {/* The reveal - only once there's at least one finished sample to learn from. */}
       {readyCount >= 1 && <VoiceReveal reduce={reduce} />}
 
       <ConsentFooter
@@ -770,7 +770,7 @@ function PromptSpark({
           <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
           <p className="font-serif text-base leading-relaxed text-foreground">
             {promptsQuery.isLoading
-              ? "Finding a spark…"
+              ? "Finding a spark..."
               : current?.text ?? "Write about a moment you're proud of."}
           </p>
         </div>

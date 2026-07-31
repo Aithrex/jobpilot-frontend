@@ -1,6 +1,6 @@
 /**
- * TailoredPage — the tailoring history browser in the Craft section
- * (lazy-mounted at /next/craft/tailored).
+ * TailoredPage - the tailoring history browser in the Craft section
+ * (lazy-mounted at /app/resume/tailored).
  *
  * Extracted verbatim (behaviour-preserving) from the ResumeParser monolith's
  * `TailoredResumesTab` for the app shell. Self-fetching + prop-less: it lists
@@ -116,7 +116,7 @@ export default function TailoredPage() {
     setLoading(true);
     setError('');
     // Resume Platform v3: generated files live on tailoring-record version
-    // refs (versions[].files) — the legacy GET /resume/generated list is
+    // refs (versions[].files) - the legacy GET /resume/generated list is
     // dead (always []) and is no longer queried.
     const recResp = await apiService.listTailoringRecords();
     if (recResp.data) setRecords((recResp.data.records || []) as TailoringRecord[]);
@@ -225,7 +225,7 @@ export default function TailoredPage() {
     setQuickPreset(key);
   }, []);
 
-  // Active filter chips — described by a label + a clear callback each
+  // Active filter chips - described by a label + a clear callback each
   const activeChips = useMemo(() => {
     const chips: { key: string; label: string; clear: () => void }[] = [];
     if (search.trim()) chips.push({ key: 'search', label: `"${search.trim()}"`, clear: () => setSearch('') });
@@ -236,7 +236,7 @@ export default function TailoredPage() {
       chips.push({ key: 'status', label: nice, clear: () => setStatusFilter('all') });
     }
     if (dateFrom || dateTo) {
-      chips.push({ key: 'date', label: `${dateFrom || '…'} → ${dateTo || '…'}`, clear: () => { setDateFrom(''); setDateTo(''); } });
+      chips.push({ key: 'date', label: `${dateFrom || '...'} → ${dateTo || '...'}`, clear: () => { setDateFrom(''); setDateTo(''); } });
     }
     if (atsMin > 0) chips.push({ key: 'ats', label: `ATS ≥ ${atsMin}`, clear: () => setAtsMin(0) });
     if (hasRegensOnly) chips.push({ key: 'regens', label: 'Multi-version', clear: () => setHasRegensOnly(false) });
@@ -285,7 +285,7 @@ export default function TailoredPage() {
   ) => {
     const key = `${rec.record_id}-${version.version_id}-${fmt}`;
     setDownloading(key);
-    // Need the full tailored_resume JSON — fetch if we don't have it
+    // Need the full tailored_resume JSON - fetch if we don't have it
     let tailored = (version as any).tailored_resume;
     if (!tailored) {
       const fullResp = await apiService.getTailoringRecord(rec.record_id);
@@ -342,7 +342,7 @@ export default function TailoredPage() {
     setDeleting(null);
     if (resp.error) {
       // 502 deletion_pending: some generated files could not be removed yet;
-      // the backend queued the record for automatic cleanup. Keep the row —
+      // the backend queued the record for automatic cleanup. Keep the row  - 
       // never remove it optimistically.
       const payload = resp.errorPayload as
         | { error?: string; deletion_pending?: boolean }
@@ -374,7 +374,7 @@ export default function TailoredPage() {
     );
   }
 
-  // Records failed and there's nothing to show — full recoverable error state.
+  // Records failed and there's nothing to show - full recoverable error state.
   if (error && records.length === 0) {
     return (
       <PanelError
@@ -424,17 +424,17 @@ export default function TailoredPage() {
         </div>
       )}
 
-      {/* Filter bar — chip-based with smart presets + applied-filter chips */}
+      {/* Filter bar - chip-based with smart presets + applied-filter chips */}
       {records.length > 0 && (
         <div className="rounded-container border border-border surface overflow-hidden">
-          {/* Row 1 — search + sort */}
+          {/* Row 1 - search + sort */}
           <div className="px-4 py-3 flex items-center gap-3 flex-wrap border-b border-border">
             <div className="relative flex-1 min-w-[240px]">
               <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
               <input
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                placeholder="Search role, company, required skills…"
+                placeholder="Search role, company, required skills..."
                 aria-label="Search tailored resumes"
                 className={`w-full h-11 pl-9 pr-11 rounded-control bg-background border border-border text-sm text-foreground placeholder:text-muted-foreground transition-all ${focusRing}`}
               />
@@ -469,7 +469,7 @@ export default function TailoredPage() {
             </div>
           </div>
 
-          {/* Row 2 — quick-preset chips with live counts */}
+          {/* Row 2 - quick-preset chips with live counts */}
           <div className="px-4 py-2.5 flex items-center gap-2 overflow-x-auto border-b border-border">
             <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground shrink-0">Quick</span>
             {([
@@ -509,7 +509,7 @@ export default function TailoredPage() {
             })}
           </div>
 
-          {/* Row 3 — applied-filter chips + advanced toggle + result summary */}
+          {/* Row 3 - applied-filter chips + advanced toggle + result summary */}
           <div className="px-4 py-2.5 flex items-center gap-2 flex-wrap">
             {activeChips.length > 0 ? (
               <>
@@ -684,7 +684,7 @@ export default function TailoredPage() {
                 </div>
                 {isOpen && (
                   <div className="border-t border-border px-4 py-3 space-y-3">
-                    {/* Job description panel — always show key analysis facts; JD text lazy-fetched + collapsible */}
+                    {/* Job description panel - always show key analysis facts; JD text lazy-fetched + collapsible */}
                     <div className="rounded-control border border-border bg-muted/30 p-3">
                       <div className="flex items-center justify-between gap-2 mb-2">
                         <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -706,14 +706,14 @@ export default function TailoredPage() {
                             >{jdOpenFor.has(rec.record_id) ? 'Hide JD' : 'View JD'}</button>
                           ) : (
                             <span role="status" aria-live="polite" className="text-xs text-muted-foreground italic">
-                              Loading job description…
+                              Loading job description...
                             </span>
                           )}
                         </div>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1 text-[11px]">
-                        <div><span className="text-muted-foreground">Role: </span><span className="text-foreground">{rec.jd_analysis?.job_title || '—'}</span></div>
-                        <div><span className="text-muted-foreground">Company: </span><span className="text-foreground">{rec.jd_analysis?.company && rec.jd_analysis.company !== 'Not specified' ? rec.jd_analysis.company : '—'}</span></div>
+                        <div><span className="text-muted-foreground">Role: </span><span className="text-foreground">{rec.jd_analysis?.job_title || ' - '}</span></div>
+                        <div><span className="text-muted-foreground">Company: </span><span className="text-foreground">{rec.jd_analysis?.company && rec.jd_analysis.company !== 'Not specified' ? rec.jd_analysis.company : ' - '}</span></div>
                         {rec.jd_analysis?.location && (
                           <div><span className="text-muted-foreground">Location: </span><span className="text-foreground">{rec.jd_analysis.location}</span></div>
                         )}
@@ -774,7 +774,7 @@ export default function TailoredPage() {
                             <span className="text-xs text-muted-foreground ml-auto">{formatDate(v.created_at)}</span>
                           </div>
                           {v.user_feedback && (
-                            <p className="mt-1.5 text-xs italic text-muted-foreground line-clamp-2">“{v.user_feedback}”</p>
+                            <p className="mt-1.5 text-xs italic text-muted-foreground line-clamp-2">"{v.user_feedback}"</p>
                           )}
                           <div className="mt-2 flex items-center gap-1.5 flex-wrap">
                             <button
@@ -783,7 +783,7 @@ export default function TailoredPage() {
                               className={`inline-flex min-h-11 items-center gap-1.5 px-3 rounded-control text-xs font-medium text-primary-foreground brand-gradient hover:opacity-90 disabled:opacity-50 transition-all ${focusRing}`}
                             >
                               <FileDown className="w-3.5 h-3.5" aria-hidden="true" />
-                              {downloading === dlPdfKey ? 'Preparing…' : cacheP ? 'PDF' : 'PDF (render)'}
+                              {downloading === dlPdfKey ? 'Preparing...' : cacheP ? 'PDF' : 'PDF (render)'}
                             </button>
                             <button
                               onClick={() => handleDownloadVersion(rec, v, 'docx')}
@@ -791,7 +791,7 @@ export default function TailoredPage() {
                               className={`inline-flex min-h-11 items-center gap-1.5 px-3 rounded-control text-xs font-medium text-foreground bg-muted border border-border hover:bg-muted/70 disabled:opacity-50 transition-all ${focusRing}`}
                             >
                               <FileDown className="w-3.5 h-3.5" aria-hidden="true" />
-                              {downloading === dlDocxKey ? 'Preparing…' : cacheD ? 'DOCX' : 'DOCX (render)'}
+                              {downloading === dlDocxKey ? 'Preparing...' : cacheD ? 'DOCX' : 'DOCX (render)'}
                             </button>
                             {!isCurrent && (
                               <button
@@ -829,7 +829,7 @@ export default function TailoredPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete this tailoring record?</AlertDialogTitle>
             <AlertDialogDescription>
-              {`“${pendingDelete?.label ?? ''}” and all its versions will be permanently deleted. This cannot be undone.`}
+              {`"${pendingDelete?.label ?? ''}" and all its versions will be permanently deleted. This cannot be undone.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

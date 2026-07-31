@@ -1,5 +1,5 @@
 /**
- * Today (mission-control) — shared presentational primitives.
+ * Today (mission-control) - shared presentational primitives.
  *
  * These carry the four required async states as first-class, reusable pieces so
  * every panel on the page (KPIs, trend, funnel, table) speaks the same visual
@@ -35,7 +35,7 @@ export function ZoneHeading({
   hint,
   action,
 }: {
-  /** Optional eyebrow — reserve it for headings that need extra framing. */
+  /** Optional eyebrow - reserve it for headings that need extra framing. */
   overline?: string;
   title: string;
   hint?: string;

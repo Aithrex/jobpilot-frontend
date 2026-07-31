@@ -104,7 +104,7 @@ export function PostComposer({
 
         <Button onClick={generate} disabled={loading} className="w-full">
           {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : variants ? <RefreshCw className="h-4 w-4" /> : <Sparkles className="h-4 w-4" />}
-          {loading ? 'Writing…' : variants ? 'Regenerate' : 'Generate 3 variants'}
+          {loading ? 'Writing...' : variants ? 'Regenerate' : 'Generate 3 variants'}
         </Button>
 
         {variants && (

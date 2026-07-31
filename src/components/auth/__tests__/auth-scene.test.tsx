@@ -43,7 +43,7 @@ async function renderLogin() {
     <MemoryRouter initialEntries={['/login']}>
       <Routes>
         <Route path="/login" element={<Login />} />
-        <Route path="/next/today" element={<div>workspace-destination</div>} />
+        <Route path="/app/home" element={<div>workspace-destination</div>} />
       </Routes>
     </MemoryRouter>,
   );

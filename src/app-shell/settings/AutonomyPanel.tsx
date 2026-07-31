@@ -13,14 +13,14 @@ import { cn } from "@/lib/utils";
 const DEFAULT_THRESHOLD = 0.9;
 const MIN_THRESHOLD = 0.5;
 
-/** Clamp a 0–1 confidence to the panel's supported band. */
+/** Clamp a 0-1 confidence to the panel's supported band. */
 function clampThreshold(value: number): number {
   if (Number.isNaN(value)) return DEFAULT_THRESHOLD;
   return Math.min(1, Math.max(MIN_THRESHOLD, value));
 }
 
 /**
- * Autonomy settings — the opt-in auto-apply control. A master toggle plus a
+ * Autonomy settings - the opt-in auto-apply control. A master toggle plus a
  * confidence-threshold dial, both persisted together to the existing
  * /apply/auto-submit/settings endpoint (which now carries `autonomy_threshold`)
  * via the shared useAutoSubmit hook.
@@ -76,7 +76,7 @@ export default function AutonomyPanel() {
     );
   }
 
-  // Feature flag off — explain rather than render an empty page.
+  // Feature flag off - explain rather than render an empty page.
   if (available === false) {
     return (
       <div className="max-w-xl rounded-xl border border-border bg-muted/30 p-5">
@@ -197,7 +197,7 @@ export default function AutonomyPanel() {
       <div className="flex items-center gap-3">
         <Button onClick={onSave} disabled={!dirty || savingSettings} className="min-h-[44px]">
           {savingSettings && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
-          {savingSettings ? "Saving…" : "Save changes"}
+          {savingSettings ? "Saving..." : "Save changes"}
         </Button>
         {dirty && !savingSettings && (
           <span className="text-xs text-muted-foreground">Unsaved changes</span>

@@ -73,7 +73,7 @@ export default function ResetPassword() {
       {done ? (
         <div className="space-y-4">
           <AuthNotice variant="success">
-            Password saved. Redirecting you to sign in…
+            Password saved. Redirecting you to sign in...
           </AuthNotice>
           <Button
             size="lg"
@@ -131,7 +131,7 @@ export default function ResetPassword() {
 
             <Button type="submit" size="lg" className="w-full" disabled={!canSubmit}>
               {submitting && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
-              {submitting ? 'Saving…' : 'Save new password'}
+              {submitting ? 'Saving...' : 'Save new password'}
             </Button>
           </div>
         </form>

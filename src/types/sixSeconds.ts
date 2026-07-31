@@ -1,12 +1,12 @@
 /**
- * Recruiter's Six Seconds — the honest "what a recruiter sees in 6 seconds"
- * read of the user's résumé. Backend: POST /api/resume/six-seconds (async job).
+ * Recruiter's Six Seconds - the honest "what a recruiter sees in 6 seconds"
+ * read of the user's resume. Backend: POST /api/resume/six-seconds (async job).
  */
 
 export interface SixSecondsGazeSection {
   key: string;
   label: string;
-  /** Relative attention weight 0.0–1.0 — drives the heatmap intensity. */
+  /** Relative attention weight 0.0-1.0 - drives the heatmap intensity. */
   weight: number;
   reason: string;
 }
@@ -32,7 +32,7 @@ export interface SixSecondsSuccess {
   impression: SixSecondsImpression;
 }
 
-/** Returned (as the job result) when the user has no parsed résumé yet. */
+/** Returned (as the job result) when the user has no parsed resume yet. */
 export interface SixSecondsNoResume {
   error: 'no_resume';
 }

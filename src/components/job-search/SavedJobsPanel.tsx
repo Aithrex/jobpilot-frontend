@@ -12,7 +12,7 @@ import { KanbanBoard } from '@/components/job-search/KanbanBoard';
 import { cn } from '@/lib/utils';
 import type { SavedJob } from '@/types/jobs';
 
-// The 3D orb pulls in three.js — lazy-load it so the empty state is the only
+// The 3D orb pulls in three.js - lazy-load it so the empty state is the only
 // place that ships the WebGL bundle.
 const ScoutOrb = lazy(() => import('@/components/job-search/ScoutOrb'));
 
@@ -117,7 +117,7 @@ function SavedJobCard({ saved, updateJobStatus, unsaveJob }: {
         {showNotes && (
           <div className="space-y-2">
             <Textarea
-              placeholder="Notes, interviewer names, follow-up dates…"
+              placeholder="Notes, interviewer names, follow-up dates..."
               value={notes}
               onChange={e => setNotes(e.target.value)}
               className="min-h-[70px] text-xs"

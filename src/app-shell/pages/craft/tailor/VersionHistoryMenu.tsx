@@ -1,5 +1,5 @@
 /**
- * VersionHistoryMenu — the in-session version-history dropdown. Rebuilt on the
+ * VersionHistoryMenu - the in-session version-history dropdown. Rebuilt on the
  * shadcn DropdownMenu. Index 0 is the current version (not restorable); the
  * last entry is the uploaded original.
  *

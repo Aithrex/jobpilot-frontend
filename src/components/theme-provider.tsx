@@ -91,3 +91,33 @@ export const useTheme = () => {
 
   return context
 }
+
+/**
+ * The theme actually on screen: "system" resolved to light or dark, and kept
+ * in sync when the OS preference changes under it.
+ *
+ * `useTheme().theme` is the user's CHOICE, which is the right thing to store
+ * and the wrong thing to render from - a component that switches on it treats
+ * "system" as neither light nor dark. Anything that needs to paint differently
+ * per theme (rather than just read a token) should use this.
+ */
+export function useResolvedTheme(): "light" | "dark" {
+  const { theme } = useTheme()
+  const [systemDark, setSystemDark] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches
+  )
+
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") return
+    const mq = window.matchMedia("(prefers-color-scheme: dark)")
+    const sync = () => setSystemDark(mq.matches)
+    sync()
+    mq.addEventListener?.("change", sync)
+    return () => mq.removeEventListener?.("change", sync)
+  }, [])
+
+  return theme === "system" ? (systemDark ? "dark" : "light") : theme
+}

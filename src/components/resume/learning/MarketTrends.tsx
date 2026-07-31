@@ -143,7 +143,7 @@ export function MarketTrends({ window = 90, onPlanCreated }: MarketTrendsProps) 
                         of {trends.data!.role.replace(/_/g, ' ')} roles ask for this
                       </p>
                     </div>
-                    {/* You-have vs gap — icon + label, never colour alone. */}
+                    {/* You-have vs gap - icon + label, never colour alone. */}
                     {item.user_has ? (
                       <Badge variant="secondary" className="shrink-0 gap-1 text-success">
                         <CheckCircle2 className="h-3.5 w-3.5" /> You have this
@@ -185,7 +185,7 @@ export function MarketTrends({ window = 90, onPlanCreated }: MarketTrendsProps) 
                       ) : (
                         <ArrowRight className="h-4 w-4" />
                       )}
-                      {starting === item.plan_topic ? 'Building…' : 'Start a 10-day plan'}
+                      {starting === item.plan_topic ? 'Building...' : 'Start a 10-day plan'}
                     </Button>
                     {hasUnlocked && (
                       <Button

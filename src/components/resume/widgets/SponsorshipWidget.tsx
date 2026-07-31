@@ -1,5 +1,5 @@
 /**
- * Sponsorship signal — for international students only. Aggregates the H-1B
+ * Sponsorship signal - for international students only. Aggregates the H-1B
  * track record across the user's saved companies so "can they even hire me?"
  * has a calm, evidence-backed answer. Hidden entirely for users with no visa
  * profile (relevance 0).

@@ -1,5 +1,5 @@
 /**
- * DashboardTab — the GENERATED dashboard (Compass §6.2).
+ * DashboardTab - the GENERATED dashboard (Compass §6.2).
  *
  * Not a template. This is a tiny client-side widget engine: a catalog of
  * widgets (see `./widgets/registry`), each with a `relevance(ctx) -> 0..1`
@@ -33,6 +33,7 @@ import { LinkedInArchiveCard } from './LinkedInArchiveCard';
 import { DirectiveBlock } from './DirectiveBlock';
 import { ActivitySpine, type SpineNode } from './ActivitySpine';
 import AutoApplyEntryCard from '@/components/autoSubmit/AutoApplyEntryCard';
+import AutoApplyModeControls from '@/components/autoSubmit/AutoApplyModeControls';
 import { WIDGETS } from './widgets/registry';
 import { spanClass, WidgetSkeleton } from './widgets/primitives';
 import { scoredMatches } from './widgets/selectors';
@@ -84,7 +85,7 @@ export default function DashboardTab({ userName, onNavigate }: DashboardTabProps
       apiService.getPosts().catch(() => ({ error: 'x' } as const)),
     ]);
     if ('data' in ovR && ovR.data) setOverview(ovR.data as DashboardOverview);
-    // Guard the backend's {} error-fallback — only accept a real score.
+    // Guard the backend's {} error-fallback - only accept a real score.
     if ('data' in crR && crR.data && Array.isArray((crR.data as CareerReadiness).dimensions)) {
       setReadiness(crR.data as CareerReadiness);
     }
@@ -143,7 +144,7 @@ export default function DashboardTab({ userName, onNavigate }: DashboardTabProps
 
   const name = userName?.split(' ')[0] || userName || 'there';
 
-  // ── Derive the user's activity phase — nudges widget relevance by context.
+  // ── Derive the user's activity phase - nudges widget relevance by context.
   const phase: ActivityPhase = useMemo(() => {
     const totalApps = overview?.applications.total ?? streak?.total_applications ?? 0;
     const interviewing = overview?.applications.interviewing ?? 0;
@@ -163,7 +164,7 @@ export default function DashboardTab({ userName, onNavigate }: DashboardTabProps
     retry: () => void load(),
   };
 
-  // ── The activity spine's four nodes — every count is real ctx data, honest
+  // ── The activity spine's four nodes - every count is real ctx data, honest
   //    zeros included. `scanned` = roles saved/scored into the workspace,
   //    `matched` = those carrying a match score, `applied` = applications sent,
   //    `responded` = employers who moved you forward (interviewing + offers).
@@ -193,7 +194,7 @@ export default function DashboardTab({ userName, onNavigate }: DashboardTabProps
 
   return (
     <div className="space-y-6 sm:space-y-8">
-      {/* Utility row — refresh only. The directive below is the opener. */}
+      {/* Utility row - refresh only. The directive below is the opener. */}
       <div className="flex justify-end">
         <button
           onClick={() => void load()}
@@ -208,11 +209,11 @@ export default function DashboardTab({ userName, onNavigate }: DashboardTabProps
         <DashboardSkeleton />
       ) : (
         <>
-          {/* 1. The directive — concrete roles worth applying to today (or, when
+          {/* 1. The directive - concrete roles worth applying to today (or, when
                 there are none yet, the ranker's single best next step). */}
           <DirectiveBlock ctx={ctx} />
 
-          {/* 2. The activity spine — scanned → matched → applied → responded. */}
+          {/* 2. The activity spine - scanned → matched → applied → responded. */}
           <ActivitySpine nodes={spineNodes} />
 
           {/* 3. Everything else, one level deeper. */}
@@ -221,8 +222,9 @@ export default function DashboardTab({ userName, onNavigate }: DashboardTabProps
               More insights
             </h2>
 
-            {/* Auto-Apply entry point — self-hides when the feature is unavailable */}
+            {/* Auto-Apply entry point - self-hides when the feature is unavailable */}
             <AutoApplyEntryCard onOpen={() => onNavigate('auto-apply')} />
+            <AutoApplyModeControls />
 
             {/* The generated, relevance-ranked widget grid */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 [grid-auto-flow:dense]">
@@ -240,7 +242,7 @@ export default function DashboardTab({ userName, onNavigate }: DashboardTabProps
             </div>
           </section>
 
-          {/* Build your presence — proof that recognizes the building (kept surface) */}
+          {/* Build your presence - proof that recognizes the building (kept surface) */}
           <section>
             <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Build your professional presence
@@ -257,7 +259,7 @@ export default function DashboardTab({ userName, onNavigate }: DashboardTabProps
   );
 }
 
-/** First-load skeleton — mirrors the hero + grid so nothing shifts when data lands. */
+/** First-load skeleton - mirrors the hero + grid so nothing shifts when data lands. */
 function DashboardSkeleton() {
   return (
     <div className="space-y-6 sm:space-y-8" aria-hidden="true">

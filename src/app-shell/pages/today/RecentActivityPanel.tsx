@@ -1,5 +1,5 @@
 /**
- * Zone C — "Why?"  Drill-down table of the most recent roles in play.
+ * Zone C - "Why?"  Drill-down table of the most recent roles in play.
  *
  * Progressive disclosure: a compact summary (the latest handful) with a link to
  * the full workspace. Numbers are right-aligned and tabular; the header is
@@ -17,17 +17,19 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
+import { fitBand } from '@/components/job-search/fitBands';
+import { cn } from '@/lib/utils';
 import { PanelCard, PanelEmpty, PanelError, ZoneHeading, StatusPill, Stat } from './primitives';
 
 /** Full pipeline lives in Applications; job search in Discover. */
-const APPLICATIONS_HREF = '/next/applications';
-const FIND_ROLES_HREF = '/next/discover/jobs';
+const APPLICATIONS_HREF = '/app/apply';
+const FIND_ROLES_HREF = '/app/jobs/for-you';
 const MAX_ROWS = 8;
 
 function shortDate(iso: string | undefined): string {
-  if (!iso) return '—';
+  if (!iso) return ' - ';
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '—';
+  if (Number.isNaN(d.getTime())) return ' - ';
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
@@ -102,7 +104,7 @@ export function RecentActivityPanel({
               <TableRow className="hover:bg-transparent">
                 <TableHead className="text-caption">Role</TableHead>
                 <TableHead className="text-caption">Status</TableHead>
-                <TableHead className="text-right text-caption">Match</TableHead>
+                <TableHead className="text-right text-caption">Fit</TableHead>
                 <TableHead className="text-right text-caption">Saved</TableHead>
               </TableRow>
             </TableHeader>
@@ -124,9 +126,15 @@ export function RecentActivityPanel({
                     </TableCell>
                     <TableCell className="py-3 text-right">
                       {m === null ? (
-                        <span className="text-caption text-muted-foreground">—</span>
+                        // A missing score is "we never scored this", NOT a zero.
+                        // Saying so out loud beats a bare dash that reads as a
+                        // failure. Verbose only for assistive tech.
+                        <span className="text-caption text-muted-foreground">
+                          <span aria-hidden>--</span>
+                          <span className="sr-only">Not scored</span>
+                        </span>
                       ) : (
-                        <Stat className="text-body font-medium text-foreground">{m}%</Stat>
+                        <Stat className={cn('text-body font-medium', fitBand(m).text)}>{m}</Stat>
                       )}
                     </TableCell>
                     <TableCell className="py-3 text-right">

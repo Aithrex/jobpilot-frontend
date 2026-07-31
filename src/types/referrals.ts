@@ -12,7 +12,7 @@ export interface Referral {
   company?: string;
   /** True when this person shares the user's school (alumni signal). */
   is_alumni?: boolean;
-  /** e.g. "Stanford '21" — surfaced next to the alumni flag. */
+  /** e.g. "Stanford '21" - surfaced next to the alumni flag. */
   alumni_of?: string;
   profile_url?: string;
   relationship?: string;
@@ -25,7 +25,7 @@ export interface ReferralsResponse {
   referrals: Referral[];
 }
 
-/** One field that differs between the user's résumé and their LinkedIn export. */
+/** One field that differs between the user's resume and their LinkedIn export. */
 export interface LinkedInDiffItem {
   field: string;
   label?: string;

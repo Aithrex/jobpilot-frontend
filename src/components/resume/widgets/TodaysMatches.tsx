@@ -1,5 +1,5 @@
 /**
- * Today's Matches — the strongest roles waiting for the user, scored and (for
+ * Today's Matches - the strongest roles waiting for the user, scored and (for
  * international students) sponsorship-aware. Reads saved jobs the frontend
  * already has; empty state invites the first search.
  */

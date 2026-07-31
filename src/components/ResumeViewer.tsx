@@ -174,7 +174,7 @@ function ResumeDialogContent({ open: isOpen }: { open: boolean }) {
           {loading && (
             <div className="flex flex-1 flex-col items-center justify-center gap-3 text-muted-foreground">
               <Loader2 className="h-10 w-10 animate-spin" />
-              <span className="text-sm">Loading resume…</span>
+              <span className="text-sm">Loading resume...</span>
             </div>
           )}
           {error && (

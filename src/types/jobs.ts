@@ -18,9 +18,9 @@ export interface DailyPipelineRecord {
   reason?: string;
   /** Visa-sponsorship signal. Useful for F-1 / H-1B candidates. */
   visa_status?: VisaStatus;
-  /** Calibrated sponsorship probability (0.0–1.0). Backend layers this on
+  /** Calibrated sponsorship probability (0.0-1.0). Backend layers this on
    *  top of visa_status so the badge can show "Likely sponsor 62%" instead
-   *  of a binary verdict. Older payloads may omit this — UI falls back to
+   *  of a binary verdict. Older payloads may omit this - UI falls back to
    *  the discrete status label. */
   visa_confidence?: number;
   /**
@@ -90,7 +90,7 @@ export interface SmartFilterIntent {
 export interface SmartFilterGroup {
   intent: string;
   label: string;
-  /** "primary" | "secondary" | "adjacent" — visual styling hint. */
+  /** "primary" | "secondary" | "adjacent" - visual styling hint. */
   kind: 'primary' | 'secondary' | 'adjacent';
   score: number;
   tag: string;
@@ -173,7 +173,7 @@ export interface DailyPipelineResult {
 }
 
 /**
- * Visa-sponsorship signal — a calibrated, evidence-backed read of a company's
+ * Visa-sponsorship signal - a calibrated, evidence-backed read of a company's
  * H-1B track record. Attached to search results (`Job.sponsorship`) and also
  * fetchable per-company via `apiService.getSponsorship`.
  */
@@ -222,7 +222,7 @@ export interface Job {
   title: string;
   company: string;
   logo: string;
-  /** Backend-served favicon path ("/api/jobs/logo/<40-hex>"). May 404 — the
+  /** Backend-served favicon path ("/api/jobs/logo/<40-hex>"). May 404 - the
    *  UI must fall back to the hued monogram. Resolve via `companyLogoSrc`. */
   logo_url?: string;
   location: string;
@@ -240,15 +240,48 @@ export interface Job {
   matched_skills: string[];
   missing_skills: string[];
   // Scam-shield: deterministic trust assessment attached to every search result
-  // (server-side, no LLM). Optional — saved/older payloads may omit it.
+  // (server-side, no LLM). Optional - saved/older payloads may omit it.
   trust_score?: number;
   trust_band?: 'trusted' | 'caution' | 'high_risk';
   trust_flags?: string[];
   trust_reasons?: string[];
-  // Visa surfacing — every fresh search result carries these; older/saved
+  // Visa surfacing - every fresh search result carries these; older/saved
   // payloads may omit them, so keep both optional.
   sponsorship?: SponsorshipSignal | null;
   visa_flags?: VisaFlags;
+  /**
+   * FitScore v2 explanation block (ADR-002, `shared/python/services/fit_score.py`).
+   * Written by `inventory_feed._score_rows`; ABSENT on the career-portal scan
+   * rows the shell's Jobs feed uses today. The UI must therefore treat this as
+   * a bonus, never a requirement - `JobFitDetails` degrades to the evidence
+   * that always exists (matched/missing skills, seniority, title match).
+   */
+  fit?: import('./guest').GuestFitScore;
+  /**
+   * The scoring engine's own version stamp (`fit_score.FIT_SCORE_VERSION`,
+   * "fit-v2.0"), written FLAT by `workday_jobs_service._score_jobs` and nested
+   * under `fit` everywhere else. Its PRESENCE is what licenses the UI to attach
+   * fit_score's band words to `match_score` - see `fitBands.isFitScored`.
+   * Absent on streamed scan previews (a provisional pre-detail estimate) and on
+   * accounts with no parsed resume, both of which must read "Not scored".
+   */
+  score_version?: string;
+  /** Ordering-only score: fit plus preference bonuses (H1B / remote / new-grad)
+   *  that are deliberately kept OUT of `match_score`. Never display it. */
+  rank_score?: number;
+  // ── Career-portal row metadata ─────────────────────────────────────────
+  // `lib/careerJobs.ts::toJob` spreads the whole portal row, so these survive
+  // at runtime; declaring them keeps the score-explanation UI type-safe.
+  /** Title-derived seniority band. */
+  seniority?: CareerPortalSeniority;
+  /** Frank "can the base resume be honestly tailored into this JD?" verdict. */
+  tailor_feasibility?: CareerPortalFeasibility;
+  feasibility_reason?: string;
+  /** True when the job title covers all core tokens of one of the user's
+   *  search titles - the strongest cheap role-alignment signal we have. */
+  title_matched?: boolean;
+  /** Which search terms (title families and/or resume skills) retrieved this. */
+  matched_terms?: string[];
 }
 
 export interface JobTrustResult {
@@ -341,7 +374,7 @@ export interface BatchSearchParams {
   include_company_careers?: boolean;
   use_resume_recommendations?: boolean;
   force_refresh?: boolean;
-  /** Visa/eligibility toggles (sponsors_h1b, cap_exempt, exclude_clearance, …). */
+  /** Visa/eligibility toggles (sponsors_h1b, cap_exempt, exclude_clearance, ...). */
   visa_filters?: VisaFilters;
 }
 
@@ -361,7 +394,7 @@ export interface BatchSearchResponse {
 
 // ── Career portals (direct Workday + career-page ATS fan-out) ──────────────
 // Same engine behind three catalogs: /api/jobs/workday (enterprise Workday
-// tenants), /api/jobs/career-pages (Greenhouse / Lever / Ashby / …) and
+// tenants), /api/jobs/career-pages (Greenhouse / Lever / Ashby / ...) and
 // /api/jobs/mnc (curated FAANG+ / Fortune-500 MNC boards, keyed by sector).
 
 export type CareerPortalVariant = 'workday' | 'careers' | 'mncs';
@@ -373,7 +406,7 @@ export type CareerPortalFeasibility = 'strong' | 'possible' | 'stretch' | 'skip'
 export type CareerPortalSeniority = 'intern' | 'entry' | 'mid' | 'senior';
 
 /**
- * JD-level visa signal for portal rows — a discrete band, NOT the
+ * JD-level visa signal for portal rows - a discrete band, NOT the
  * `SponsorshipSignal` object on `Job.sponsorship`. 'refused' = the posting
  * itself declines sponsorship (strongest signal); 'likely' = the company has
  * a real recent H-1B filing record in public disclosure data; 'rare' = files
@@ -382,13 +415,13 @@ export type CareerPortalSeniority = 'intern' | 'entry' | 'mid' | 'senior';
 export type CareerPortalSponsorship = 'likely' | 'rare' | 'unknown' | 'refused';
 
 /** Job row returned by the portal search endpoints. Intentionally NOT an
- *  extension of `Job` — portal rows carry catalog metadata (tenant/industry),
+ *  extension of `Job` - portal rows carry catalog metadata (tenant/industry),
  *  a string sponsorship band, and several `Job`-required fields only
  *  optionally. The panel normalizes rows into `Job` for `JobCard`. */
 export interface WorkdayJob {
   job_id: string;
   title: string;
-  /** Tolerated source-side variants of `title` — some fetcher rows carry the
+  /** Tolerated source-side variants of `title` - some fetcher rows carry the
    *  role under these keys instead. Normalized at the FE boundary via
    *  `jobTitleOf`/`toJob` (lib/careerJobs.ts); backend normalizes too. */
   job_title?: string;
@@ -406,7 +439,7 @@ export interface WorkdayJob {
    *  ashby, smartrecruiters, workable, recruitee). Absent on Workday rows.
    *  MNC rows may also carry workday, amazon, eightfold, phenom, aggregator. */
   ats?: string;
-  /** MNC rows: curated sector key (big_tech, semiconductors, fintech, …). */
+  /** MNC rows: curated sector key (big_tech, semiconductors, fintech, ...). */
   sector?: string;
   /** Whole days since posting (0 = today). null/undefined = unknown. */
   days_ago?: number | null;
@@ -418,8 +451,16 @@ export interface WorkdayJob {
   match_score?: number;
   matched_skills?: string[];
   missing_skills?: string[];
+  /** `fit_score.FIT_SCORE_VERSION` - set by `_score_jobs` on the final payload
+   *  and ABSENT on streamed provisional rows, so the card can tell a real fit
+   *  verdict from a mid-scan estimate. `toJob` spreads it onto `Job`. */
+  score_version?: string;
+  /** Fit + retrieval/preference bonuses. Ordering only, never displayed. */
+  rank_score?: number;
+  /** FitScore v2 explanation block, when the row carries one. */
+  fit?: import('./guest').GuestFitScore;
   /** True when the job title covers all core tokens of one of the user's
-   *  search titles — drives the ranking boost. */
+   *  search titles - drives the ranking boost. */
   title_matched?: boolean;
   /** Which search terms (title families and/or resume skills) retrieved
    *  this posting. */
@@ -433,12 +474,12 @@ export interface WorkdayJob {
   seniority?: CareerPortalSeniority;
   h1b_sponsor?: boolean;
   sponsorship?: CareerPortalSponsorship;
-  /** Evidence behind the sponsorship band — JD snippet or filings summary. */
+  /** Evidence behind the sponsorship band - JD snippet or filings summary. */
   sponsor_note?: string;
 }
 
 export interface WorkdayJobsParams {
-  /** Viewer's UTC offset in minutes EAST of UTC (MST = -420) — the backend
+  /** Viewer's UTC offset in minutes EAST of UTC (MST = -420) - the backend
    * computes "posted today" in the USER's calendar day. apiService stamps
    * this automatically on every scan; set it only to override. */
   tz_offset_minutes?: number;
@@ -482,7 +523,7 @@ export interface WorkdayJobsResult {
   errors: string[];
   /** Present only on streaming partials while the fan-out is running. */
   progress?: WorkdayJobsProgress;
-  /** True on streaming partials — the jobs list is a provisional top slice. */
+  /** True on streaming partials - the jobs list is a provisional top slice. */
   streaming?: boolean;
 }
 

@@ -1,10 +1,10 @@
 /**
- * TailorPage — the flagship "Tailor" tool in the Craft section
- * (lazy-mounted at /next/craft/tailor by the app shell).
+ * TailorPage - the flagship "Tailor" tool in the Craft section
+ * (lazy-mounted at /app/resume/tailor by the app shell).
  *
  * Extracted from the ResumeParser monolith and rebuilt on the design system:
  * semantic tokens, shadcn primitives, a REAL backend-driven progress indicator
- * (see the phase state machine below — no more wall-clock guessing), unified
+ * (see the phase state machine below - no more wall-clock guessing), unified
  * 403-upgrade + 429-quota gating, and visible failures (no silent catch{}).
  *
  * Orchestrator pattern (mirrors TodayPage): this component owns ALL state,
@@ -107,19 +107,19 @@ export default function TailorPage() {
   const [pendingJobUrl, setPendingJobUrl] = useState('');
   const [retryingJdFetch, setRetryingJdFetch] = useState(false);
 
-  // Real tailoring phase — null = idle. Driven by backend job status +
+  // Real tailoring phase - null = idle. Driven by backend job status +
   // the honest progress markers the backend writes at each pipeline stage.
   const [phase, setPhase] = useState<TailorPhase | null>(null);
   const [tailorPct, setTailorPct] = useState<number | null>(null);
   const [tailorError, setTailorError] = useState('');
   const [result, setResult] = useState<TailorPipelineResult | null>(null);
   const [atsLoading, setAtsLoading] = useState(false);
-  // ATS scoring failed — surfaced beside the ATS panel with a manual retry
+  // ATS scoring failed - surfaced beside the ATS panel with a manual retry
   // (scoring used to fail silently, leaving users staring at a spinnerless gap).
   const [atsError, setAtsError] = useState('');
   const [tailorElapsed, setTailorElapsed] = useState(0);
 
-  // The parsed BASE resume (arrives with the tailor result) — powers the
+  // The parsed BASE resume (arrives with the tailor result) - powers the
   // Base preview segment, diff-vs-base, and "Restore original" in review.
   const [baseResume, setBaseResume] = useState<TailoredFullResume | null>(null);
   // Per-claim review decisions (keyed by structural address).
@@ -216,7 +216,7 @@ export default function TailorPage() {
             }
           })
           .catch(() => {
-            /* silent — user has the manual Retry button */
+            /* silent - user has the manual Retry button */
           });
       }
     } else if (job.jd_text && job.url) {
@@ -242,7 +242,7 @@ export default function TailorPage() {
         activeResumeRef.current = { filename: active.filename, resume_id: active.resume_id };
       }
       if (baseVersions.length > 0) {
-        // Base files exist — /status re-parses from S3 if the parsed doc is
+        // Base files exist - /status re-parses from S3 if the parsed doc is
         // missing, but we show the tailor UI regardless.
         await apiService.getResumeStatus();
         setHasResumes(true);
@@ -286,7 +286,7 @@ export default function TailorPage() {
 
   /* ── Record persistence (now surfaces failures) ──────────────────────────── */
   // Resume Platform v3: the tailor worker persists the record itself and
-  // echoes record_id in the job result — echo it back so save-record settles
+  // echoes record_id in the job result - echo it back so save-record settles
   // idempotently (attaches ats_scores + fires the streak, never duplicates).
   const saveRecord = useCallback(
     async (
@@ -307,7 +307,7 @@ export default function TailorPage() {
         });
         if (resp.error) {
           // The worker-persisted record exists server-side even though the
-          // settle failed — keep the id so downloads/regens still attach.
+          // settle failed - keep the id so downloads/regens still attach.
           if (workerRecordId) recordIdRef.current = workerRecordId;
           toast.error("Couldn't save this tailoring to your history", {
             description: resp.error,
@@ -353,7 +353,7 @@ export default function TailorPage() {
     }
   }, []);
 
-  /* ── ATS scoring — shared by the auto-trigger and the manual retry ───────── */
+  /* ── ATS scoring - shared by the auto-trigger and the manual retry ───────── */
   const runAtsScoring = useCallback(
     (res: TailorPipelineResult) => {
       const ctrl = new AbortController();
@@ -396,7 +396,7 @@ export default function TailorPage() {
     }
   }, [result, atsLoading, runAtsScoring]);
 
-  /* ── The tailoring flow — real phase transitions, no fake timer ──────────── */
+  /* ── The tailoring flow - real phase transitions, no fake timer ──────────── */
   const handleTailoring = useCallback(async () => {
     if (!jdText.trim()) return;
     tailorAbortRef.current?.abort();
@@ -419,7 +419,7 @@ export default function TailorPage() {
       setTailorElapsed(0);
     };
 
-    // Monotonic phase advance — polls can arrive out of order or skip fast
+    // Monotonic phase advance - polls can arrive out of order or skip fast
     // phases entirely; never step backwards, ignore unknown phase strings
     // (forward-compat with newer backends).
     const advancePhase = (next: TailorPhase) => {
@@ -432,7 +432,7 @@ export default function TailorPage() {
 
     // Combined extract-jd + tailor in ONE backend job. onStatus reports the
     // real queued→processing transition; onProgress delivers the honest
-    // per-stage markers (extracting_jd → tailoring → augmenting → …).
+    // per-stage markers (extracting_jd → tailoring → augmenting → ...).
     const combined = await apiService.tailorResumeWithJDText(
       jdText.trim(),
       ctrl.signal,
@@ -718,7 +718,7 @@ export default function TailorPage() {
   /* ── Claim review (human-in-the-loop) + score staleness ──────────────────── */
 
   // Apply an immutable mutation to the working resume and mark the score
-  // stale — the displayed ATS numbers describe the pre-edit document.
+  // stale - the displayed ATS numbers describe the pre-edit document.
   const mutateResume = useCallback(
     (fn: (r: TailoredFullResume) => TailoredFullResume) => {
       setResult((prev) =>
@@ -744,7 +744,7 @@ export default function TailorPage() {
       if (!item || !result) return;
       const anchor = resolveAnchor(result.tailored_resume, address, item.text);
       if (!anchor) {
-        // Text no longer exists — the user already rewrote it themselves.
+        // Text no longer exists - the user already rewrote it themselves.
         decideReview(address, 'edited');
         return;
       }
@@ -809,7 +809,7 @@ export default function TailorPage() {
     [result, mutateResume, decideReview],
   );
 
-  // Manual re-score (scores are paid render+LLM jobs — never automatic on
+  // Manual re-score (scores are paid render+LLM jobs - never automatic on
   // every edit). Clearing ats_scores re-arms the auto-score effect.
   const handleRescore = useCallback(() => {
     if (atsLoading) return;
@@ -892,7 +892,7 @@ export default function TailorPage() {
   const handleRetryFetch = useCallback(async () => {
     if (!pendingJobUrl || retryingJdFetch) return;
     setRetryingJdFetch(true);
-    const fetching = toast.loading('Fetching JD…', { duration: 50000 });
+    const fetching = toast.loading('Fetching JD...', { duration: 50000 });
     try {
       const r = await apiService.fetchJobDescription(pendingJobUrl);
       toast.dismiss(fetching);
@@ -1096,7 +1096,7 @@ export default function TailorPage() {
       </div>
 
       {/* Sticky bottom toolbar. Below lg it sits ABOVE the fixed MobileNav
-          (same bottom-0 z-40 otherwise — the tab bar painted over Download);
+          (same bottom-0 z-40 otherwise - the tab bar painted over Download);
           offsetting here keeps primary navigation reachable while the result
           actions stay visible. ≥lg the Sidebar owns nav, so bottom-0 is safe. */}
       {result && !editing && (
@@ -1188,7 +1188,7 @@ export default function TailorPage() {
                     {downloading !== null ? (
                       <>
                         <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                        <span className="hidden sm:inline">Preparing…</span>
+                        <span className="hidden sm:inline">Preparing...</span>
                       </>
                     ) : (
                       <>
@@ -1231,7 +1231,7 @@ export default function TailorPage() {
         </motion.div>
       )}
 
-      {/* Editor mode — full-screen overlay. A modal Radix Dialog (not a bare
+      {/* Editor mode - full-screen overlay. A modal Radix Dialog (not a bare
           fixed div) so we get the focus trap, Escape-to-close, aria-modal, and
           body scroll-lock for free. Raw primitives because the shadcn
           DialogContent is a centered card with a baked-in close X that would

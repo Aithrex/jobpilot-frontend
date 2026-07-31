@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import type { TailoringRecord, TailoringVersion, TailoredFullResume } from "@/types/resume";
 import { apiService } from "@/lib/api";
 
-// Minimal line-level diff. We avoid pulling in a heavy diff library — simple
+// Minimal line-level diff. We avoid pulling in a heavy diff library - simple
 // longest-common-subsequence over array elements (strings / bullets) gives a
 // clear-enough view for resumes. "diff" package listed in node_modules is not
 // always available at runtime in all build configs, so we roll our own.

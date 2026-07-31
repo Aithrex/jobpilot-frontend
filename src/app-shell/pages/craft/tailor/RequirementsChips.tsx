@@ -1,5 +1,5 @@
 /**
- * RequirementsChips — color-coded matched/missing skill chips extracted from
+ * RequirementsChips - color-coded matched/missing skill chips extracted from
  * the JD analysis. Matched (found in the tailored resume) → success tint;
  * missing → warning tint. Preferred skills stay neutral unless matched.
  *

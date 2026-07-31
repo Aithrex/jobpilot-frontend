@@ -13,7 +13,7 @@ interface ForgotPasswordDialogProps {
 }
 
 /**
- * Forgot-password dialog — collects the user's email and asks the backend
+ * Forgot-password dialog - collects the user's email and asks the backend
  * to issue a reset token. Backend response is deliberately generic ("if that
  * email is registered, a link is on the way") so an attacker can't probe
  * which addresses have accounts.
@@ -120,7 +120,7 @@ export function ForgotPasswordDialog({ open, onClose, initialEmail = '' }: Forgo
                 {submitting ? (
                   <>
                     <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                    Sending…
+                    Sending...
                   </>
                 ) : (
                   'Send reset link'

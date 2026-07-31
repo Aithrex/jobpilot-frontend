@@ -1,5 +1,5 @@
 /**
- * Resume Gaps — the most-wanted skills the user's saved roles ask for that
+ * Resume Gaps - the most-wanted skills the user's saved roles ask for that
  * aren't on their resume yet. For a user with no base resume it becomes a calm
  * nudge to add one (the hero carries the primary ask, so this stays secondary).
  */

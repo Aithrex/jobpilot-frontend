@@ -1,8 +1,8 @@
 /**
- * VisaTimelineTab — F-1 / OPT / STEM / H-1B clock dashboard.
+ * VisaTimelineTab - F-1 / OPT / STEM / H-1B clock dashboard.
  *
  * Two halves:
- *   1. Profile form (small — visa status, key dates, STEM flag, H-1B year)
+ *   1. Profile form (small - visa status, key dates, STEM flag, H-1B year)
  *   2. Computed milestone cards ordered by upcoming cliff date, color-coded
  *      by severity. Auto-refreshes when the profile changes.
  *
@@ -70,7 +70,7 @@ function severityClasses(sev: VisaMilestone['severity']) {
 }
 
 function relativeLabel(days: number | null): string {
-  if (days === null || days === undefined) return '—';
+  if (days === null || days === undefined) return ' - ';
   if (days === 0) return 'today';
   if (days === 1) return 'tomorrow';
   if (days === -1) return 'yesterday';
@@ -126,7 +126,7 @@ export default function VisaTimelineTab() {
     return (
       <div className="flex items-center justify-center py-20 text-sm text-muted-foreground">
         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-        Loading your visa timeline…
+        Loading your visa timeline...
       </div>
     );
   }
@@ -308,7 +308,7 @@ export default function VisaTimelineTab() {
               {saving ? (
                 <>
                   <Loader2 className="h-3 w-3 animate-spin" />
-                  Saving…
+                  Saving...
                 </>
               ) : dirty ? (
                 <>

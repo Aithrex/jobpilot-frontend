@@ -16,7 +16,7 @@ export interface StreakWidgetHandle {
   refresh: () => Promise<void>;
 }
 
-/** Single-tone flame — inherits currentColor so callers pick the token. */
+/** Single-tone flame - inherits currentColor so callers pick the token. */
 function FlameIcon({ className = 'w-5 h-5' }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -136,7 +136,7 @@ const StreakWidget = forwardRef<StreakWidgetHandle, { compact?: boolean }>(({ co
 
   return (
     <div className="group relative overflow-hidden rounded-xl border border-border bg-card shadow-soft">
-      {/* Top accent bar — warm when the streak is alive, quiet when not */}
+      {/* Top accent bar - warm when the streak is alive, quiet when not */}
       <div
         className={`absolute inset-x-0 top-0 h-px ${
           isAlive
@@ -144,7 +144,7 @@ const StreakWidget = forwardRef<StreakWidgetHandle, { compact?: boolean }>(({ co
             : 'bg-gradient-to-r from-transparent via-border to-transparent'
         }`}
       />
-      {/* Ambient glow — only when streak is alive */}
+      {/* Ambient glow - only when streak is alive */}
       {isAlive && (
         <>
           <div className="absolute -top-12 left-4 w-32 h-32 rounded-full bg-warning/10 blur-3xl pointer-events-none" />

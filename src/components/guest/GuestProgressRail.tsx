@@ -14,7 +14,7 @@ const STEP_INDEX: Record<GuestStep, number> = {
 
 /**
  * Compact four-step rail so guests always know where they are in the flow
- * (on the idle hero it previews the journey). Purely presentational — state
+ * (on the idle hero it previews the journey). Purely presentational - state
  * is conveyed by number/check + label, never colour alone. Extracted from
  * pages/Start.tsx so the landing workspace and any future host share ONE
  * implementation.

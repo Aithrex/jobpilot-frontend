@@ -9,7 +9,7 @@ interface UseAutoSyncOptions {
   enabled: boolean;
   /** Refresh cadence in ms (e.g. 30 min). */
   intervalMs: number;
-  /** True while a scan is already in flight — auto ticks skip so we never
+  /** True while a scan is already in flight - auto ticks skip so we never
    *  stack concurrent scans. */
   isBusy: boolean;
   /** Runs the actual search. `force` = bypass cache (used by interval +
@@ -32,7 +32,7 @@ interface AutoSyncState {
 
 /**
  * Drives "it just stays fresh" surfaces: fires an initial load, then quietly
- * re-runs on a fixed cadence — but only while the tab is actually visible and
+ * re-runs on a fixed cadence - but only while the tab is actually visible and
  * no scan is already running. Also exposes a live countdown to the next sync
  * and a manual trigger, so a panel can show "Updated 3m ago · next in 27:00"
  * with a Sync-now button.
@@ -73,14 +73,14 @@ export function useAutoSync({
     }
   }, [intervalMs]);
 
-  // Initial auto-load — once, when auto sync first becomes enabled.
+  // Initial auto-load - once, when auto sync first becomes enabled.
   useEffect(() => {
     if (!enabled || didInitRef.current) return;
     didInitRef.current = true;
     void doSync(false, 'initial');
   }, [enabled, doSync]);
 
-  // Interval refresh — a self-re-arming timeout scheduled from the LAST sync,
+  // Interval refresh - a self-re-arming timeout scheduled from the LAST sync,
   // so the visible countdown always matches when it actually fires (including
   // right after a manual Sync-now). Hidden tabs are skipped and caught up on
   // refocus; an in-flight scan's completion stamps `lastSyncedAt`, which

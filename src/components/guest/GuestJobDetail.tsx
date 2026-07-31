@@ -5,7 +5,8 @@ import { BadgeCheck, Check, ExternalLink, ShieldCheck, Wand2 } from 'lucide-reac
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CompanyLogo } from '@/components/CompanyLogo';
-import { ScoreBadge, stepTransition } from '@/components/guest/_shared';
+import { FreshnessTag, ScoreBadge, stepTransition } from '@/components/guest/_shared';
+import { GuestFitBreakdown, fitOf } from '@/components/guest/GuestFitBreakdown';
 import { cn } from '@/lib/utils';
 import type { GuestJobMatch } from '@/types/guest';
 
@@ -17,10 +18,10 @@ export interface GuestJobDetailProps {
   onConfirmTailor: (match: GuestJobMatch) => void;
   onViewTailored: () => void;
   /** Hovering a matched skill reports it to the host so the OTHER visible
-   * cards can dim (null on leave). Optional — hover is an enhancement. */
+   * cards can dim (null on leave). Optional - hover is an enhancement. */
   onSkillHover?: (skill: string | null) => void;
   /** false when the host already renders the title/company/score header
-   * (the mobile accordion card) — avoids a doubled header. */
+   * (the mobile accordion card) - avoids a doubled header. */
   showHeader?: boolean;
   className?: string;
 }
@@ -28,7 +29,7 @@ export interface GuestJobDetailProps {
 /**
  * Full detail for the selected match: the match reasoning, matched skills,
  * source link, and the sponsorship signal in precise public-filing language.
- * Tailoring requires an EXPLICIT confirmation — a guest gets exactly one free
+ * Tailoring requires an EXPLICIT confirmation - a guest gets exactly one free
  * tailor, so the first click opens a confirm block instead of spending it.
  */
 export function GuestJobDetail({
@@ -43,6 +44,8 @@ export function GuestJobDetail({
   const reduceMotion = useReducedMotion();
   const [confirming, setConfirming] = useState(false);
   const postingLink = match.apply_link || match.url;
+  // FitScore v2 when the server sent it; null degrades to the scalar badge.
+  const fit = fitOf(match);
 
   // Selecting a different job always resets the pending confirmation and any
   // lingering skill-hover highlight.
@@ -60,25 +63,36 @@ export function GuestJobDetail({
       initial={reduceMotion ? false : { opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={stepTransition}
-      className={cn('flex h-full flex-col gap-4 rounded-2xl border border-border bg-card p-5', className)}
+      className={cn(
+        'flex h-full flex-col gap-4 rounded-2xl border border-border bg-card p-5',
+        className,
+      )}
     >
       {showHeader && (
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-start gap-3">
-            <CompanyLogo company={match.company || match.title} logoUrl={match.logo_url} size={40} />
+            <CompanyLogo
+              company={match.company || match.title}
+              logoUrl={match.logo_url}
+              size={40}
+            />
             <div className="min-w-0">
               <h3 className="text-balance font-semibold leading-snug sm:text-lg">{match.title}</h3>
               <p className="mt-0.5 text-sm text-muted-foreground">
                 {match.company}
                 {match.location ? ` · ${match.location}` : ''}
               </p>
+              {/* Server-authoritative freshness - omitted entirely when the
+  backend sent no date for this row. */}
+              <FreshnessTag match={match} className="mt-1" />
             </div>
           </div>
-          <ScoreBadge score={match.match_score} />
+          <ScoreBadge score={match.match_score} band={fit?.band} />
         </div>
       )}
 
       <div className="flex flex-wrap items-center gap-2">
+        {!showHeader && <FreshnessTag match={match} />}
         {match.source && (
           <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
             Direct source · {match.source}
@@ -107,6 +121,10 @@ export function GuestJobDetail({
         </div>
       )}
 
+      {/* FitScore v2 breakdown. Absent block = no breakdown rendered at all;
+  nothing here is ever reconstructed client-side. */}
+      {fit && <GuestFitBreakdown fit={fit} />}
+
       {(match.matched_skills?.length ?? 0) > 0 && (
         <div>
           <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -129,7 +147,7 @@ export function GuestJobDetail({
       )}
 
       {/* Resume-relative score context: the guest's OWN skills this posting
-          does not mention — never framed as requirements they lack. */}
+  does not mention - never framed as requirements they lack. */}
       {(match.gaps?.length ?? 0) > 0 && (
         <div>
           <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -187,8 +205,8 @@ export function GuestJobDetail({
               <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
               <span>
                 This uses your <span className="font-semibold">one free guest tailor</span> on{' '}
-                {match.title} at {match.company}. You get the result as a polished PDF and DOCX,
-                and IntegrityGuard keeps your real employers, titles, dates, and skills.
+                {match.title} at {match.company}. You get the result as a polished PDF and DOCX, and
+                IntegrityGuard keeps your real employers, titles, dates, and skills.
               </span>
             </p>
             <div className="flex flex-col gap-2 sm:flex-row">

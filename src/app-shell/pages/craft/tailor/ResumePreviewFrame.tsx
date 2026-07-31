@@ -1,5 +1,5 @@
 /**
- * ResumePreviewFrame — the left-column preview frame for the Tailor page.
+ * ResumePreviewFrame - the left-column preview frame for the Tailor page.
  *
  * Composes the frame header (status label + Tailored/Original/Diff segmented
  * control + version history + revert) and one of three body states:
@@ -50,7 +50,7 @@ const SEGMENT_STYLES: Record<PreviewMode, { label: string; active: string }> = {
 
 export interface ResumePreviewFrameProps {
   result: TailorPipelineResult | null;
-  /** The user's parsed base resume — enables Base view + diff-vs-base. */
+  /** The user's parsed base resume - enables Base view + diff-vs-base. */
   baseResume: TailoredFullResume | null;
   previousResume: TailoredFullResume | null;
   regenView: PreviewMode;
@@ -83,12 +83,12 @@ export function ResumePreviewFrame({
   const statusLabel = result
     ? 'Tailored Resume'
     : phase !== null
-      ? 'Tailoring…'
+      ? 'Tailoring...'
       : 'Resume Preview';
 
   return (
     <div className="relative surface shadow-soft rounded-container overflow-hidden flex flex-col lg:max-h-[calc(100vh-140px)]">
-      {/* Resume-strength meter — vertical bar hugging the left edge. */}
+      {/* Resume-strength meter - vertical bar hugging the left edge. */}
       {result?.ats_scores &&
         (() => {
           const s = result.ats_scores.overall;
@@ -169,7 +169,7 @@ export function ResumePreviewFrame({
         </div>
       </div>
 
-      {/* Body — scrolls independently. */}
+      {/* Body - scrolls independently. */}
       <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
         {result ? (
           <div className="p-3 sm:p-5 bg-muted/40 space-y-3">

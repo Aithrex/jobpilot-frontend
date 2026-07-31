@@ -1,11 +1,11 @@
 /**
  * ATS score inspector panel (Tailor right column).
  *
- * Presentational only — typed props in, render out. Branches on the score
+ * Presentational only - typed props in, render out. Branches on the score
  * schema version: v2 (honest deterministic rubric + real per-vendor parse
  * checklists) vs v1 (stored records from before the cutover, which still
  * carry the legacy scanner/ai_screener blocks). Old records must render
- * forever — never assume v2 fields.
+ * forever - never assume v2 fields.
  */
 import { CheckCircle2, AlertTriangle, XCircle, Info, ShieldAlert } from 'lucide-react';
 
@@ -41,7 +41,7 @@ export function AtsScorePanel({
   onRescore,
   rescoring = false,
 }: AtsScorePanelProps) {
-  // ── Loading state — mirror the real layout (ring card + bar rows). ──
+  // ── Loading state - mirror the real layout (ring card + bar rows). ──
   if (scores === null) {
     return (
       <div className="space-y-5 p-5 sm:p-6" aria-busy="true">
@@ -81,7 +81,7 @@ export function AtsScorePanel({
 
   return (
     <div className="space-y-5 p-5 sm:p-6">
-      {/* Staleness banner — the score describes a previous version */}
+      {/* Staleness banner - the score describes a previous version */}
       {stale && (
         <div className="flex items-center justify-between gap-3 rounded-container border border-warning/40 bg-warning/10 px-4 py-3">
           <p className="text-xs text-foreground">
@@ -95,13 +95,13 @@ export function AtsScorePanel({
               disabled={rescoring}
               className="shrink-0 rounded-control border border-warning/50 px-2.5 py-1 text-[11px] font-semibold text-warning hover:bg-warning/15 disabled:opacity-50"
             >
-              {rescoring ? 'Re-scoring…' : 'Re-score'}
+              {rescoring ? 'Re-scoring...' : 'Re-score'}
             </button>
           )}
         </div>
       )}
 
-      {/* Render failure — invalidates everything else, lead with it */}
+      {/* Render failure - invalidates everything else, lead with it */}
       {v2 && scores.render_error && (
         <div className="flex items-start gap-2.5 rounded-container border border-destructive/40 bg-destructive/10 px-4 py-3">
           <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
@@ -227,7 +227,7 @@ export function AtsScorePanel({
         />
       )}
 
-      {/* AI screener — v1 records only (v2 removed the pseudo-signal) */}
+      {/* AI screener - v1 records only (v2 removed the pseudo-signal) */}
       {!v2 && scores.ai_screener && (
         <div className={SURFACE}>
           <p className="mb-4 text-sm font-semibold text-foreground">
@@ -284,7 +284,7 @@ export function AtsScorePanel({
         )}
       </div>
 
-      {/* Missing keywords — classification-aware when the backend provides it:
+      {/* Missing keywords - classification-aware when the backend provides it:
           only real SKILLS are one-click addable; logistics terms are
           informational; compliance frameworks need real domain evidence. */}
       {scores.missing_keywords?.length > 0 && (

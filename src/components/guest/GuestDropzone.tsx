@@ -11,15 +11,15 @@ const DEFAULT_PRIVACY_NOTE =
 
 export interface GuestDropzoneProps {
   /**
-   * The page's ONE shared résumé picker (see useResumePicker). When the host
-   * provides it, the drop zone owns no `<input type="file">` of its own — the
+   * The page's ONE shared resume picker (see useResumePicker). When the host
+   * provides it, the drop zone owns no `<input type="file">` of its own - the
    * hero CTA, the nav action and this control all open the same element, so a
    * single click anywhere starts the same upload. Omitted (standalone embeds,
    * tests), the drop zone self-owns a picker + input via `onStarted`.
    */
   picker?: ResumePicker;
   /** Validated-file callback for the SELF-OWNED mode (ignored when `picker`
-   * is provided — the shared picker already carries its own onFile). */
+   * is provided - the shared picker already carries its own onFile). */
   onStarted?: (file: File) => void;
   /** 'full' = a standalone hero card; 'compact' = a slim row for embeds;
    * 'panel' = the landing workspace's primary surface (fills its parent's
@@ -42,7 +42,7 @@ export interface GuestDropzoneProps {
 /**
  * The guest resume upload control: drag-drop + click + keyboard accessible
  * (a real button, so Enter/Space activate natively; visible focus ring).
- * Owns client-side validation only — everything after file selection lives
+ * Owns client-side validation only - everything after file selection lives
  * in useGuestFlow.
  */
 export function GuestDropzone({
@@ -56,7 +56,7 @@ export function GuestDropzone({
   className,
   buttonRef,
 }: GuestDropzoneProps) {
-  // Self-owned fallback picker — created unconditionally (hooks rule), used
+  // Self-owned fallback picker - created unconditionally (hooks rule), used
   // only when the host didn't hand a shared one down.
   const ownPicker = useResumePicker({
     onFile: (file) => onStarted?.(file),
@@ -130,8 +130,8 @@ export function GuestDropzone({
         </span>
       </button>
       {/* With a SHARED picker the page renders exactly one input elsewhere;
-          self-owned mode renders it here (aria-label preserved for tests +
-          assistive tech). */}
+  self-owned mode renders it here (aria-label preserved for tests +
+  assistive tech). */}
       {!picker && (
         <input
           {...ownPicker.inputProps}

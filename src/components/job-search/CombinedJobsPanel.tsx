@@ -1,13 +1,33 @@
 import { useEffect, useMemo } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import {
-  AlertCircle, Check, ChevronDown, Loader2, MapPin, Radar, RefreshCw,
-  Rocket, Search, ShieldAlert, SlidersHorizontal, Sparkles, Wand2,
+  AlertCircle,
+  Check,
+  ChevronDown,
+  Globe,
+  Loader2,
+  MapPin,
+  Radar,
+  RefreshCw,
+  Rocket,
+  RotateCcw,
+  Search,
+  ShieldAlert,
+  SlidersHorizontal,
+  Sparkles,
+  Wand2,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { ChipsInput } from '@/components/job-search/ChipsInput';
@@ -15,6 +35,7 @@ import { JobCard } from '@/components/job-search/JobCard';
 import { SignalField } from '@/components/job-search/SignalField';
 import { useCombinedJobsCtx } from '@/components/job-search/CombinedJobsProvider';
 import { useCountUp } from '@/hooks/useCountUp';
+import { JOB_TITLES_CAP } from '@/hooks/useJobTitles';
 import { RECENCY_OPTIONS, seniorityOf, toJob } from '@/lib/careerJobs';
 import { cn } from '@/lib/utils';
 import type { Job, WorkdayJob } from '@/types/jobs';
@@ -30,6 +51,24 @@ const SENIORITY_OPTIONS = [
 ] as const;
 
 const MIN_SCORE_OPTIONS = [0, 40, 60, 80] as const;
+
+// Sentinel for the state <Select>, since Radix Select items cannot use "".
+const ANY_STATE = '__any__';
+
+// All 50 states + DC, plus a "Remote" narrowing option. Values are the human
+// labels we send straight through as the location narrow, so the backend reads
+// them as-is (e.g. "Texas", "Remote").
+const US_STATES = [
+  'Remote',
+  'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut',
+  'Delaware', 'District of Columbia', 'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois',
+  'Indiana', 'Iowa', 'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland', 'Massachusetts',
+  'Michigan', 'Minnesota', 'Mississippi', 'Missouri', 'Montana', 'Nebraska', 'Nevada',
+  'New Hampshire', 'New Jersey', 'New Mexico', 'New York', 'North Carolina', 'North Dakota',
+  'Ohio', 'Oklahoma', 'Oregon', 'Pennsylvania', 'Rhode Island', 'South Carolina',
+  'South Dakota', 'Tennessee', 'Texas', 'Utah', 'Vermont', 'Virginia', 'Washington',
+  'West Virginia', 'Wisconsin', 'Wyoming',
+] as const;
 
 function formatAgo(ms: number): string {
   const s = Math.max(0, Math.round((Date.now() - ms) / 1000));
@@ -53,8 +92,16 @@ function pageWindow(page: number, count: number): number[] {
 }
 
 /** Segmented pill button. */
-function Seg({ active, onClick, children, title }: {
-  active: boolean; onClick: () => void; children: React.ReactNode; title?: string;
+function Seg({
+  active,
+  onClick,
+  children,
+  title,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+  title?: string;
 }) {
   return (
     <button
@@ -64,7 +111,9 @@ function Seg({ active, onClick, children, title }: {
       aria-pressed={active}
       className={cn(
         'rounded-full px-3 py-1.5 text-[11px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-        active ? 'bg-background text-primary shadow-soft' : 'text-muted-foreground hover:text-foreground',
+        active
+          ? 'bg-background text-primary shadow-soft'
+          : 'text-muted-foreground hover:text-foreground',
       )}
     >
       {children}
@@ -78,28 +127,78 @@ interface CombinedJobsPanelProps {
   saveJob: (job: Job) => void | Promise<unknown>;
   unsaveJob: (jobId: string) => void | Promise<unknown>;
   quickApply: (job: Job) => void | Promise<unknown>;
+  autoApply?: (job: Job) => void | Promise<unknown>;
+  autoApplyingId?: string | null;
 }
 
 export function CombinedJobsPanel({
-  isJobSaved, getJobStatus, saveJob, unsaveJob, quickApply,
+  isJobSaved,
+  getJobStatus,
+  saveJob,
+  unsaveJob,
+  quickApply,
+  autoApply,
+  autoApplyingId,
 }: CombinedJobsPanelProps) {
   const reduceMotion = useReducedMotion();
   // Feed state + view filters live in a provider ABOVE the router outlet, so a
   // running scan (and its 30-min auto-sync) survive navigating between pages.
   const {
-    jobs, loading, states, sourceLabels, progress, ready, resumeSkillCount, hasResult,
-    titles, setTitles, resumeTitles, smartSuggestTitles, suggestingTitles,
-    canSearch, lastScanTitles, titlesPending,
-    lastSyncedAt, secondsUntilNext, sync, ensureStarted,
-    location, setLocation, remoteOnly, setRemoteOnly, customizeOpen, setCustomizeOpen,
-    search, setSearch,
-    recency, setRecency, seniority, setSeniority, minScore, setMinScore,
-    sponsorFilter, setSponsorFilter, sortBy, setSortBy, page, setPage,
+    jobs,
+    loading,
+    states,
+    sourceLabels,
+    progress,
+    ready,
+    resumeSkillCount,
+    hasResult,
+    titles,
+    setTitles,
+    resumeTitles,
+    smartSuggestTitles,
+    suggestingTitles,
+    canSearch,
+    lastScanTitles,
+    titlesPending,
+    lastSyncedAt,
+    secondsUntilNext,
+    sync,
+    ensureStarted,
+    usOnly,
+    setUsOnly,
+    usState,
+    setUsState,
+    city,
+    setCity,
+    location,
+    setLocation,
+    scanLocation,
+    remoteOnly,
+    setRemoteOnly,
+    customizeOpen,
+    setCustomizeOpen,
+    resetScope,
+    search,
+    setSearch,
+    recency,
+    setRecency,
+    seniority,
+    setSeniority,
+    minScore,
+    setMinScore,
+    sponsorFilter,
+    setSponsorFilter,
+    sortBy,
+    setSortBy,
+    page,
+    setPage,
   } = useCombinedJobsCtx();
 
   // Kick off the very first scan when the tab opens (idempotent; the provider
   // keeps it running afterwards even if you leave the page).
-  useEffect(() => { ensureStarted(); }, [ensureStarted]);
+  useEffect(() => {
+    ensureStarted();
+  }, [ensureStarted]);
 
   const maxDays = RECENCY_OPTIONS.find((o) => o.key === recency)?.maxDays ?? 3;
 
@@ -121,14 +220,21 @@ export function CombinedJobsPanel({
     if (sponsorFilter === 'friendly') out = out.filter((j) => j.sponsorship !== 'refused');
     else if (sponsorFilter === 'proven') out = out.filter((j) => j.sponsorship === 'likely');
     if (sortBy === 'newest') {
-      out = [...out].sort((a, b) => (a.days_ago ?? 99) - (b.days_ago ?? 99) || (b.match_score ?? 0) - (a.match_score ?? 0));
+      out = [...out].sort(
+        (a, b) =>
+          (a.days_ago ?? 99) - (b.days_ago ?? 99) || (b.match_score ?? 0) - (a.match_score ?? 0),
+      );
     }
     return out;
   }, [jobs, maxDays, search, seniority, minScore, sponsorFilter, sortBy]);
 
   const pageCount = Math.max(1, Math.ceil(visibleJobs.length / PAGE_SIZE));
-  useEffect(() => { setPage((p) => Math.min(Math.max(1, p), pageCount)); }, [pageCount, setPage]);
-  useEffect(() => { setPage(1); }, [recency, search, seniority, minScore, sponsorFilter, sortBy, setPage]);
+  useEffect(() => {
+    setPage((p) => Math.min(Math.max(1, p), pageCount));
+  }, [pageCount, setPage]);
+  useEffect(() => {
+    setPage(1);
+  }, [recency, search, seniority, minScore, sponsorFilter, sortBy, setPage]);
 
   const pagedJobs = useMemo(
     () => visibleJobs.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
@@ -136,18 +242,32 @@ export function CombinedJobsPanel({
   );
 
   const cardMotion = (index: number) =>
-    reduceMotion ? {} : {
-      initial: { opacity: 0, y: 16, scale: 0.96 },
-      animate: { opacity: 1, y: 0, scale: 1 },
-      transition: { duration: 0.34, ease: [0.22, 1, 0.36, 1] as const, delay: Math.min(index * 0.03, 0.3) },
-    };
+    reduceMotion
+      ? {}
+      : {
+          initial: { opacity: 0, y: 16, scale: 0.96 },
+          animate: { opacity: 1, y: 0, scale: 1 },
+          transition: {
+            duration: 0.34,
+            ease: [0.22, 1, 0.36, 1] as const,
+            delay: Math.min(index * 0.03, 0.3),
+          },
+        };
 
   const renderJob = (job: WorkdayJob, index: number) => (
-    <motion.div key={job.job_id} layout={!reduceMotion} {...cardMotion(index)} className="flex flex-col gap-1.5">
+    <motion.div
+      key={job.job_id}
+      layout={!reduceMotion}
+      {...cardMotion(index)}
+      className="flex flex-col gap-1.5"
+    >
       {job.sponsorship === 'refused' && (
         <p className="flex items-start gap-1.5 rounded-lg border border-destructive/30 bg-destructive/10 px-2.5 py-1.5 text-[11px] font-medium leading-snug text-destructive">
           <ShieldAlert className="mt-0.5 h-3 w-3 shrink-0" aria-hidden />
-          <span>This posting states it won't sponsor a visa{job.sponsor_note ? `: ${job.sponsor_note}` : '.'}</span>
+          <span>
+            This posting states it won't sponsor a visa
+            {job.sponsor_note ? `: ${job.sponsor_note}` : '.'}
+          </span>
         </p>
       )}
       <JobCard
@@ -157,6 +277,8 @@ export function CombinedJobsPanel({
         onSave={() => saveJob(toJob(job, 'career portal'))}
         onUnsave={() => unsaveJob(job.job_id)}
         onQuickApply={() => quickApply(toJob(job, 'career portal'))}
+        onAutoApply={autoApply ? () => autoApply(toJob(job, 'career portal')) : undefined}
+        autoApplying={autoApplyingId === job.job_id}
       />
     </motion.div>
   );
@@ -173,50 +295,86 @@ export function CombinedJobsPanel({
     <div className="space-y-5">
       {/* ── Live-sync command bar ── */}
       <div className="mesh-accent relative overflow-hidden rounded-2xl border border-border/70 p-4 shadow-soft sm:p-5">
-        <SignalField intensity={fieldIntensity} className="pointer-events-none absolute inset-0 h-full w-full opacity-50" />
-        <div className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-primary/10 blur-3xl" aria-hidden />
+        <SignalField
+          intensity={fieldIntensity}
+          className="pointer-events-none absolute inset-0 h-full w-full opacity-50"
+        />
+        <div
+          className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-primary/10 blur-3xl"
+          aria-hidden
+        />
         <div className="relative flex flex-wrap items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
             <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/12 text-primary">
-              {loading ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden /> : <Radar className="h-5 w-5" aria-hidden />}
+              {loading ? (
+                <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
+              ) : (
+                <Radar className="h-5 w-5" aria-hidden />
+              )}
             </span>
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
                 <h3 className="text-sm font-semibold text-foreground">Your job feed</h3>
-                <Badge variant="outline" className="gap-1 border-primary/30 bg-primary/10 px-1.5 py-0 text-[10px] font-semibold text-primary">
+                <Badge
+                  variant="outline"
+                  className="gap-1 border-primary/30 bg-primary/10 px-1.5 py-0 text-[10px] font-semibold text-primary"
+                >
                   <Sparkles className="h-2.5 w-2.5" aria-hidden /> Auto-sync
                 </Badge>
               </div>
               <p className="truncate text-xs text-muted-foreground" aria-live="polite">
-                {loading
-                  ? progress.total > 0
-                    ? `Scanning ${progress.done} of ${progress.total} companies across all sources · ${roleCount} roles so far`
-                    : 'Starting scan across all sources…'
-                  : lastSyncedAt
-                    ? <>Updated {formatAgo(lastSyncedAt)} · {roleCount} roles
-                        {secondsUntilNext != null && (
-                          <span className="ml-1 font-mono tabular-nums text-primary/80">· next sync {formatCountdown(secondsUntilNext)}</span>
-                        )}
-                      </>
-                    : 'Building your feed from every company source…'}
+                {loading ? (
+                  progress.total > 0 ? (
+                    `Scanning ${progress.done} of ${progress.total} companies across all sources · ${roleCount} roles so far`
+                  ) : (
+                    'Starting scan across all sources...'
+                  )
+                ) : lastSyncedAt ? (
+                  <>
+                    Updated {formatAgo(lastSyncedAt)} · {roleCount} roles
+                    {secondsUntilNext != null && (
+                      <span className="ml-1 font-mono tabular-nums text-primary/80">
+                        · next sync {formatCountdown(secondsUntilNext)}
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  'Building your feed from every company source...'
+                )}
               </p>
             </div>
           </div>
 
           <div className="flex shrink-0 items-center gap-2">
-            <Button size="sm" variant="outline" onClick={() => sync(true)} disabled={loading} className="gap-1.5" title="Re-scan every source now">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => sync(true)}
+              disabled={loading}
+              className="gap-1.5"
+              title="Re-scan every source now"
+            >
               <RefreshCw className={cn('h-3.5 w-3.5', loading && 'animate-spin')} aria-hidden />
-              {loading ? 'Syncing…' : 'Sync now'}
+              {loading ? 'Syncing...' : 'Sync now'}
             </Button>
-            <Button size="sm" variant="ghost" onClick={() => setCustomizeOpen((o) => !o)} aria-expanded={customizeOpen} className="gap-1.5">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setCustomizeOpen((o) => !o)}
+              aria-expanded={customizeOpen}
+              className="gap-1.5"
+            >
               <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden />
               Customize
-              <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', customizeOpen && 'rotate-180')} aria-hidden />
+              <ChevronDown
+                className={cn('h-3.5 w-3.5 transition-transform', customizeOpen && 'rotate-180')}
+                aria-hidden
+              />
             </Button>
           </div>
         </div>
 
-        {/* Searched-roles summary — always visible; opens Customize to edit */}
+        {/* Searched-roles summary - always visible; opens Customize to edit */}
         <div className="relative mt-3">
           <button
             type="button"
@@ -237,14 +395,38 @@ export function CombinedJobsPanel({
                     )}
                   </>
                 ) : (
-                  <span className="text-muted-foreground">No role titles yet. Add titles to build your feed.</span>
+                  <span className="text-muted-foreground">
+                    No role titles yet. Add titles to build your feed.
+                  </span>
+                )}
+              </span>
+              {/* Active scope summary - one glance at what's being scanned. */}
+              <span className="mt-1 flex flex-wrap items-center gap-1">
+                <span className="inline-flex items-center gap-1 rounded-full border border-primary/25 bg-primary/8 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+                  <Globe className="h-2.5 w-2.5" aria-hidden />
+                  {usOnly ? 'US only' : 'Global'}
+                </span>
+                {scanLocation && (
+                  <span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/40 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                    <MapPin className="h-2.5 w-2.5" aria-hidden />
+                    {scanLocation}
+                  </span>
+                )}
+                {remoteOnly && (
+                  <span className="inline-flex items-center rounded-full border border-border bg-muted/40 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                    Remote only
+                  </span>
                 )}
               </span>
               {titlesPending && lastScanTitles && (
                 <span className="mt-0.5 flex items-center gap-1.5 text-[11px] font-medium text-warning">
-                  <span className="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-warning" aria-hidden />
+                  <span
+                    className="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-warning"
+                    aria-hidden
+                  />
                   <span className="truncate">
-                    Title changes not yet applied · results below were scanned with {lastScanTitles.length} title{lastScanTitles.length === 1 ? '' : 's'}
+                    Title changes not yet applied · results below were scanned with{' '}
+                    {lastScanTitles.length} title{lastScanTitles.length === 1 ? '' : 's'}
                   </span>
                 </span>
               )}
@@ -265,15 +447,22 @@ export function CombinedJobsPanel({
                 variant="outline"
                 className={cn(
                   'gap-1 text-[10px] font-medium',
-                  st.error ? 'border-destructive/30 bg-destructive/10 text-destructive'
-                    : active ? 'border-primary/30 bg-primary/5 text-primary'
-                    : done ? 'border-success/30 bg-success/10 text-success'
-                    : 'border-border text-muted-foreground',
+                  st.error
+                    ? 'border-destructive/30 bg-destructive/10 text-destructive'
+                    : active
+                      ? 'border-primary/30 bg-primary/5 text-primary'
+                      : done
+                        ? 'border-success/30 bg-success/10 text-success'
+                        : 'border-border text-muted-foreground',
                 )}
               >
-                {active ? <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
-                  : st.error ? <AlertCircle className="h-2.5 w-2.5" aria-hidden />
-                  : done ? <Check className="h-2.5 w-2.5" aria-hidden /> : null}
+                {active ? (
+                  <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
+                ) : st.error ? (
+                  <AlertCircle className="h-2.5 w-2.5" aria-hidden />
+                ) : done ? (
+                  <Check className="h-2.5 w-2.5" aria-hidden />
+                ) : null}
                 {sourceLabels[k]}
                 {active && st.tenantsTotal > 0 ? ` · ${st.tenantsDone}/${st.tenantsTotal}` : ''}
               </Badge>
@@ -290,7 +479,10 @@ export function CombinedJobsPanel({
               transition={{ duration: 0.22 }}
               className="relative mt-3 overflow-hidden"
             >
-              <Progress value={progress.total ? (progress.done / progress.total) * 100 : 8} className="h-1.5" />
+              <Progress
+                value={progress.total ? (progress.done / progress.total) * 100 : 8}
+                className="h-1.5"
+              />
             </motion.div>
           )}
         </AnimatePresence>
@@ -306,6 +498,18 @@ export function CombinedJobsPanel({
               className="relative overflow-hidden"
             >
               <div className="mt-4 space-y-4 rounded-xl border border-border/60 bg-background/40 p-4">
+                <div className="flex items-center gap-2">
+                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-primary/12 text-primary">
+                    <Search className="h-3.5 w-3.5" aria-hidden />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-foreground">Search scope</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      Sets what we scan across every source. Press Search to re-scan.
+                    </p>
+                  </div>
+                </div>
+
                 <div>
                   <p className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
                     <Search className="h-3.5 w-3.5" aria-hidden />
@@ -315,11 +519,13 @@ export function CombinedJobsPanel({
                   <ChipsInput
                     values={titles}
                     onChange={setTitles}
-                    maxItems={40}
-                    placeholder="e.g. Backend Engineer, Data Engineer…"
-                    defaultValues={resumeTitles.length ? resumeTitles.slice(0, 40) : undefined}
+                    maxItems={JOB_TITLES_CAP}
+                    placeholder="e.g. Backend Engineer, Data Engineer..."
+                    defaultValues={
+                      resumeTitles.length ? resumeTitles.slice(0, JOB_TITLES_CAP) : undefined
+                    }
                     accentClass="border-primary/30 bg-primary/10 text-primary"
-                    helperText="The same titles drive all three sources: Workday enterprises, career pages and MNC boards. Your set is saved automatically."
+                    helperText="One shared set: these titles drive Workday enterprises, career pages and MNC boards here, and the Career portals tab too. Saved automatically."
                     emptyState="Add a role title, or upload a resume to prefill."
                   />
                   <Button
@@ -330,31 +536,125 @@ export function CombinedJobsPanel({
                     disabled={suggestingTitles}
                     className="mt-1 gap-1 px-2 text-[11px] text-primary"
                   >
-                    {suggestingTitles ? <Loader2 className="h-3 w-3 animate-spin" /> : <Wand2 className="h-3 w-3" />}
-                    {suggestingTitles ? 'Analyzing resume…' : 'Smart-suggest titles from resume'}
+                    {suggestingTitles ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Wand2 className="h-3 w-3" />
+                    )}
+                    {suggestingTitles ? 'Analyzing resume...' : 'Smart-suggest titles from resume'}
                   </Button>
                 </div>
 
-                <div className="flex flex-wrap items-end gap-4">
-                  <div className="min-w-[200px] flex-1">
-                    <label htmlFor="combined-location" className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
-                      <MapPin className="h-3.5 w-3.5" aria-hidden /> Location
+                {/* Location group - US-only by default, with optional narrowing. */}
+                <div className="space-y-3">
+                  <div className="flex items-start justify-between gap-3 rounded-lg border border-border/60 bg-background/50 p-3">
+                    <label htmlFor="combined-us-only" className="min-w-0 cursor-pointer">
+                      <span className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                        <Globe className="h-3.5 w-3.5 text-primary" aria-hidden />
+                        United States only
+                      </span>
+                      <span className="mt-0.5 block text-[11px] leading-snug text-muted-foreground">
+                        {usOnly
+                          ? 'Keeping only clearly US-based and US-remote roles. Turn off to include other countries.'
+                          : 'Including roles from any country. Turn on to limit to the US.'}
+                      </span>
                     </label>
-                    <Input
-                      id="combined-location"
-                      value={location}
-                      onChange={(e) => setLocation(e.target.value)}
-                      placeholder="Anywhere in the US, e.g. Texas, Austin, Remote"
+                    <Switch
+                      id="combined-us-only"
+                      checked={usOnly}
+                      onCheckedChange={setUsOnly}
+                      className="mt-0.5 shrink-0"
                     />
                   </div>
-                  <label className="flex cursor-pointer items-center gap-2 pb-2 text-xs font-medium text-muted-foreground">
-                    <Switch checked={remoteOnly} onCheckedChange={setRemoteOnly} />
-                    Remote only
-                  </label>
-                  <Button onClick={() => sync(true)} disabled={loading || !canSearch} className="mb-0.5 gap-1.5">
-                    {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Rocket className="h-4 w-4" />}
-                    Apply titles and sync
-                  </Button>
+
+                  {usOnly ? (
+                    <div className="flex flex-wrap items-end gap-3">
+                      <div className="min-w-[180px] flex-1">
+                        <label
+                          htmlFor="combined-state"
+                          className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground"
+                        >
+                          <MapPin className="h-3.5 w-3.5" aria-hidden /> Narrow to a state (optional)
+                        </label>
+                        <Select
+                          value={usState || ANY_STATE}
+                          onValueChange={(v) => setUsState(v === ANY_STATE ? '' : v)}
+                        >
+                          <SelectTrigger id="combined-state" className="h-10">
+                            <SelectValue placeholder="All US states" />
+                          </SelectTrigger>
+                          <SelectContent className="max-h-72">
+                            <SelectItem value={ANY_STATE}>All US states</SelectItem>
+                            {US_STATES.map((s) => (
+                              <SelectItem key={s} value={s}>
+                                {s}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="min-w-[150px] flex-1">
+                        <label
+                          htmlFor="combined-city"
+                          className="mb-1.5 block text-xs font-semibold text-muted-foreground"
+                        >
+                          City (optional)
+                        </label>
+                        <Input
+                          id="combined-city"
+                          value={city}
+                          onChange={(e) => setCity(e.target.value)}
+                          placeholder="e.g. Austin"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <label
+                        htmlFor="combined-location"
+                        className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground"
+                      >
+                        <MapPin className="h-3.5 w-3.5" aria-hidden /> Location
+                      </label>
+                      <Input
+                        id="combined-location"
+                        value={location}
+                        onChange={(e) => setLocation(e.target.value)}
+                        placeholder="City, state, or country - e.g. London, Toronto, Remote"
+                      />
+                    </div>
+                  )}
+
+                  <div className="flex flex-wrap items-center gap-3">
+                    <label className="flex cursor-pointer items-center gap-2 text-xs font-medium text-muted-foreground">
+                      <Switch checked={remoteOnly} onCheckedChange={setRemoteOnly} />
+                      Remote only
+                    </label>
+                    <div className="ml-auto flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={resetScope}
+                        className="gap-1.5 text-muted-foreground"
+                      >
+                        <RotateCcw className="h-3.5 w-3.5" aria-hidden />
+                        Reset
+                      </Button>
+                      <Button
+                        onClick={() => sync(true)}
+                        disabled={loading || !canSearch}
+                        className="gap-1.5"
+                      >
+                        {loading ? (
+                          <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                        ) : (
+                          <Search className="h-4 w-4" aria-hidden />
+                        )}
+                        {loading ? 'Searching...' : 'Search'}
+                      </Button>
+                    </div>
+                  </div>
                 </div>
 
                 {!canSearch && (
@@ -372,13 +672,26 @@ export function CombinedJobsPanel({
       {/* ── Glass filter bar ── */}
       {hasResult && (
         <div className="glass-nav glass-nav-card sticky top-2 z-10 flex flex-wrap items-center gap-2 rounded-2xl border border-border/60 p-2.5 shadow-soft">
+          <span
+            className="flex basis-full items-center gap-1.5 px-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground"
+            title="These filter the roles already loaded - instantly, with no re-scan."
+          >
+            <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden />
+            Refine results
+            <span className="font-normal normal-case tracking-normal opacity-70">
+              instant, no re-scan
+            </span>
+          </span>
           <div className="relative min-w-[180px] flex-1 basis-full sm:basis-56">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" aria-hidden />
+            <Search
+              className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
+              aria-hidden
+            />
             <input
               type="search"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search title or company…"
+              placeholder="Search title or company..."
               aria-label="Search jobs by title or company"
               className="h-8 w-full rounded-full border border-border bg-background pl-8 pr-3 text-[12px] text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-primary/40 focus-visible:ring-2 focus-visible:ring-ring"
             />
@@ -401,7 +714,11 @@ export function CombinedJobsPanel({
             className="h-8 rounded-full border border-border bg-background px-3 text-[11px] font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             aria-label="Seniority filter"
           >
-            {SENIORITY_OPTIONS.map((o) => <option key={o.key} value={o.key}>{o.label}</option>)}
+            {SENIORITY_OPTIONS.map((o) => (
+              <option key={o.key} value={o.key}>
+                {o.label}
+              </option>
+            ))}
           </select>
 
           <div className="inline-flex rounded-full border border-border bg-muted/40 p-0.5">
@@ -416,15 +733,25 @@ export function CombinedJobsPanel({
             className="inline-flex rounded-full border border-border bg-muted/40 p-0.5"
             title='"Sponsor-friendly" hides postings that explicitly decline visa sponsorship; "Proven" keeps only companies with recent H-1B filings.'
           >
-            {([['all', 'All'], ['friendly', 'Sponsor-friendly'], ['proven', 'Proven sponsors']] as const).map(([key, label]) => (
-              <Seg key={key} active={sponsorFilter === key} onClick={() => setSponsorFilter(key)}>{label}</Seg>
+            {(
+              [
+                ['all', 'All'],
+                ['friendly', 'Sponsor-friendly'],
+                ['proven', 'Proven sponsors'],
+              ] as const
+            ).map(([key, label]) => (
+              <Seg key={key} active={sponsorFilter === key} onClick={() => setSponsorFilter(key)}>
+                {label}
+              </Seg>
             ))}
           </div>
 
           <div className="ml-auto flex items-center gap-2">
             <div className="inline-flex rounded-full border border-border bg-muted/40 p-0.5">
               {(['score', 'newest'] as const).map((s) => (
-                <Seg key={s} active={sortBy === s} onClick={() => setSortBy(s)}>{s === 'score' ? 'Best match' : 'Newest'}</Seg>
+                <Seg key={s} active={sortBy === s} onClick={() => setSortBy(s)}>
+                  {s === 'score' ? 'Best match' : 'Newest'}
+                </Seg>
               ))}
             </div>
             <Badge variant="outline" className="gap-1 border-primary/30 bg-primary/10 text-primary">
@@ -438,7 +765,10 @@ export function CombinedJobsPanel({
       {resumeSkillCount === 0 && hasResult && (
         <div className="flex items-start gap-2 rounded-xl border border-warning/40 bg-warning/10 px-4 py-3 text-xs text-foreground/85">
           <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-warning" aria-hidden />
-          <span>No parsed resume on this account, so match scores are unavailable. Upload your resume in the Tailor tab, then sync again.</span>
+          <span>
+            No parsed resume on this account, so match scores are unavailable. Upload your resume in
+            the Tailor tab, then sync again.
+          </span>
         </div>
       )}
 
@@ -449,11 +779,17 @@ export function CombinedJobsPanel({
             <div key={i} className="space-y-3 rounded-2xl border border-border/60 bg-card/60 p-5">
               <div className="flex items-center gap-3">
                 <Skeleton className="h-12 w-12 rounded-xl" />
-                <div className="flex-1 space-y-2"><Skeleton className="h-3.5 w-3/4" /><Skeleton className="h-3 w-1/2" /></div>
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-3.5 w-3/4" />
+                  <Skeleton className="h-3 w-1/2" />
+                </div>
                 <Skeleton className="h-12 w-12 rounded-full" />
               </div>
               <Skeleton className="h-4 w-5/6" />
-              <div className="flex gap-1.5 pt-1"><Skeleton className="h-5 w-16 rounded-full" /><Skeleton className="h-5 w-14 rounded-full" /></div>
+              <div className="flex gap-1.5 pt-1">
+                <Skeleton className="h-5 w-16 rounded-full" />
+                <Skeleton className="h-5 w-14 rounded-full" />
+              </div>
             </div>
           ))}
         </div>
@@ -469,9 +805,21 @@ export function CombinedJobsPanel({
           </motion.div>
 
           {pageCount > 1 && (
-            <nav className="flex flex-wrap items-center justify-center gap-1.5 pt-2" aria-label="Job results pages">
-              <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>Prev</Button>
-              {pageWindow(page, pageCount)[0] > 1 && <span className="px-1 text-xs text-muted-foreground">…</span>}
+            <nav
+              className="flex flex-wrap items-center justify-center gap-1.5 pt-2"
+              aria-label="Job results pages"
+            >
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+              >
+                Prev
+              </Button>
+              {pageWindow(page, pageCount)[0] > 1 && (
+                <span className="px-1 text-xs text-muted-foreground">...</span>
+              )}
               {pageWindow(page, pageCount).map((n) => (
                 <button
                   key={n}
@@ -480,16 +828,28 @@ export function CombinedJobsPanel({
                   aria-current={n === page ? 'page' : undefined}
                   className={cn(
                     'h-8 min-w-8 rounded-md px-2 font-mono text-xs font-semibold tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                    n === page ? 'bg-primary text-primary-foreground shadow-soft'
+                    n === page
+                      ? 'bg-primary text-primary-foreground shadow-soft'
                       : 'border border-border text-muted-foreground hover:border-primary/40 hover:text-primary',
                   )}
                 >
                   {n}
                 </button>
               ))}
-              {pageWindow(page, pageCount).slice(-1)[0] < pageCount && <span className="px-1 text-xs text-muted-foreground">…</span>}
-              <Button variant="outline" size="sm" disabled={page >= pageCount} onClick={() => setPage((p) => Math.min(pageCount, p + 1))}>Next</Button>
-              <span className="ml-2 text-[11px] text-muted-foreground">Page {page} of {pageCount}</span>
+              {pageWindow(page, pageCount).slice(-1)[0] < pageCount && (
+                <span className="px-1 text-xs text-muted-foreground">...</span>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page >= pageCount}
+                onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
+              >
+                Next
+              </Button>
+              <span className="ml-2 text-[11px] text-muted-foreground">
+                Page {page} of {pageCount}
+              </span>
             </nav>
           )}
         </>
@@ -514,11 +874,17 @@ export function CombinedJobsPanel({
           <div className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-full bg-primary/10 text-primary">
             <Radar className="h-5 w-5" aria-hidden />
           </div>
-          <p className="text-sm font-medium text-foreground">Building your combined job feed…</p>
+          <p className="text-sm font-medium text-foreground">Building your combined job feed...</p>
           <p className="mx-auto mt-1 max-w-md text-xs text-muted-foreground">
-            One feed across every source — Workday enterprises, Greenhouse/Lever/Ashby career pages, and curated MNC / Big Tech boards — ranked against your resume.
+            One feed across every source - Workday enterprises, Greenhouse/Lever/Ashby career pages,
+            and curated MNC / Big Tech boards - ranked against your resume.
           </p>
-          <Button size="sm" className="mt-4 gap-1.5" onClick={() => sync(false)} disabled={!ready || !canSearch}>
+          <Button
+            size="sm"
+            className="mt-4 gap-1.5"
+            onClick={() => sync(false)}
+            disabled={!ready || !canSearch}
+          >
             <Rocket className="h-3.5 w-3.5" aria-hidden /> Load my feed
           </Button>
           {ready && !canSearch && (

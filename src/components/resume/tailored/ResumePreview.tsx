@@ -1,10 +1,10 @@
 /**
- * Tailored resume preview — shared across the Tailor flow.
+ * Tailored resume preview - shared across the Tailor flow.
  *
  * Extracted verbatim from the ResumeParser monolith so both the classic
  * workspace (`/app`) and the new app-shell render an identical resume preview
  * from one source. Markup/classes are a parity move (raw purple/gray colors
- * preserved intentionally — this is NOT a re-theme).
+ * preserved intentionally - this is NOT a re-theme).
  */
 import { CopySectionButton } from "./CopySectionButton";
 import { titleCaseName } from "@/lib/filename";

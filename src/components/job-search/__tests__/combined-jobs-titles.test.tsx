@@ -1,12 +1,12 @@
 /**
- * Combined-feed role titles — behavior tests for useCombinedJobs +
+ * Combined-feed role titles - behavior tests for useCombinedJobs +
  * CombinedJobsProvider + CombinedJobsPanel + ChipsInput:
  * hydration (saved prefs vs resume seed vs LLM synth), editing (add/remove/
  * paste-dedup/cap-40/reset), persistence (combined_jobs_prefs_v1), and the
  * titles contract with all three scan endpoints.
  *
  * Only `apiService` is mocked; the hook, provider, panel and chips run real.
- * NOTE: useAutoSync fires ONE initial scan as soon as hydration completes —
+ * NOTE: useAutoSync fires ONE initial scan as soon as hydration completes  -
  * tests that assert call counts settle (and clear) that first scan.
  */
 import { render, screen, waitFor, within } from '@testing-library/react';
@@ -15,6 +15,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, test, vi, type Mock } from 'vitest';
 
 import { apiService } from '@/lib/api';
+import { resetJobTitlesStore } from '@/hooks/useJobTitles';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { CombinedJobsProvider } from '@/components/job-search/CombinedJobsProvider';
 import { CombinedJobsPanel } from '@/components/job-search/CombinedJobsPanel';
@@ -93,6 +94,9 @@ function savedPrefs(): { titles?: string[] } {
 beforeEach(() => {
   vi.clearAllMocks();
   localStorage.clear();
+  // Titles now live in a module-level shared store (one source of truth for
+  // Careers + Opportunities), so each test starts from a clean, unhydrated one.
+  resetJobTitlesStore();
   api.getResume.mockResolvedValue({
     data: { resume: { job_titles: RESUME_TITLES } },
     status: 200,
@@ -113,7 +117,7 @@ describe('combined jobs role titles', () => {
       screen.getByText('Backend Engineer, Data Engineer, Platform Engineer'),
     ).toBeInTheDocument();
     expect(screen.getByText(/\+1/)).toBeInTheDocument();
-    // Resume was the seed — no saved prefs, enough titles → no LLM synth.
+    // Resume was the seed - no saved prefs, enough titles → no LLM synth.
     expect(api.getResume).toHaveBeenCalled();
     expect(api.suggestPipelineFilters).not.toHaveBeenCalled();
   });
@@ -244,7 +248,7 @@ describe('combined jobs role titles', () => {
 
     first.unmount();
 
-    // The resume now claims something different — saved prefs must win.
+    // The resume now claims something different - saved prefs must win.
     api.getResume.mockResolvedValue({
       data: { resume: { job_titles: ['Completely Different'] } },
       status: 200,
@@ -314,7 +318,7 @@ describe('combined jobs role titles', () => {
     expect(await screen.findByText(/Add at least one role title/)).toBeInTheDocument();
     const applyBtn = screen.getByRole('button', { name: /Apply titles and sync/i });
     expect(applyBtn).toBeDisabled();
-    await user.click(applyBtn); // disabled — must be a no-op
+    await user.click(applyBtn); // disabled - must be a no-op
     for (const fn of SEARCH_FNS) expect(api[fn]).not.toHaveBeenCalled();
   });
 

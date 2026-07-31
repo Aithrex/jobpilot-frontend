@@ -131,7 +131,7 @@ export function KanbanBoard({ savedJobs, updateJobStatus, unsaveJob }: KanbanBoa
               ))}
               {items.length === 0 && (
                 <p className="mt-2 px-1 text-center text-[11px] text-muted-foreground/60">
-                  {isOver ? 'Drop here' : '—'}
+                  {isOver ? 'Drop here' : ' - '}
                 </p>
               )}
             </div>

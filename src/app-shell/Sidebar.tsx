@@ -1,6 +1,7 @@
 import { NavLink } from "react-router-dom";
 import { motion, useReducedMotion } from "framer-motion";
-import { PanelLeftClose, PanelLeftOpen, Sparkles } from "lucide-react";
+import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { BrandMark } from "@/components/BrandMark";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
@@ -38,13 +39,11 @@ export function Sidebar({ collapsed, onToggleCollapse }: SidebarProps) {
       {/* Brand */}
       <div className={cn("flex h-16 items-center border-b border-sidebar-border/70", collapsed ? "justify-center px-2" : "px-4")}>
         <NavLink
-          to={navHref("today")}
+          to={navHref("home")}
           className="flex items-center gap-2.5 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar"
           aria-label="Aspirely home"
         >
-          <span className="brand-gradient flex h-8 w-8 shrink-0 items-center justify-center rounded-lg shadow-soft">
-            <Sparkles className="h-4 w-4 text-white" aria-hidden="true" />
-          </span>
+          <BrandMark className="h-8 w-8 rounded-lg shadow-soft" iconClassName="h-4 w-4" />
           {!collapsed && (
             <span className="font-display text-lg font-extrabold tracking-tight text-sidebar-foreground">
               Aspirely
@@ -101,7 +100,7 @@ export function Sidebar({ collapsed, onToggleCollapse }: SidebarProps) {
   );
 }
 
-/** Signed-in affordance pinned to the foot of the rail — links to Settings › Profile. */
+/** Signed-in affordance pinned to the foot of the rail - links to Settings › Profile. */
 function AccountRow({ collapsed }: { collapsed: boolean }) {
   const { user } = useAuth();
   const name = user?.name;
@@ -177,7 +176,7 @@ function SidebarLink({
     >
       {({ isActive }) => (
         <>
-          {/* Animated active pill — a single element shared via layoutId slides
+          {/* Animated active pill - a single element shared via layoutId slides
               behind whichever item is active. Reduced motion → instant. */}
           {isActive && (
             <motion.span

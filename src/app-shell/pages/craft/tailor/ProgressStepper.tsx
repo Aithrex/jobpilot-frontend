@@ -1,5 +1,5 @@
 /**
- * ProgressStepper — the 3-step horizontal stepper for the Tailor page
+ * ProgressStepper - the 3-step horizontal stepper for the Tailor page
  * (Upload Resume → Add Job Description → Review & Download).
  *
  * Presentational: derives per-step status from `currentStep` alone.

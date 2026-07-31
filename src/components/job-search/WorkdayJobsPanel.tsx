@@ -1,9 +1,21 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import {
-  AlertCircle, Building2, Check, ChevronDown, Factory, Loader2,
-  MapPin, Radar, RefreshCw, Rocket, Search, ShieldAlert, SlidersHorizontal,
-  Sparkles, Wand2,
+  AlertCircle,
+  Building2,
+  Check,
+  ChevronDown,
+  Factory,
+  Loader2,
+  MapPin,
+  Radar,
+  RefreshCw,
+  Rocket,
+  Search,
+  ShieldAlert,
+  SlidersHorizontal,
+  Sparkles,
+  Wand2,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -14,13 +26,19 @@ import { Switch } from '@/components/ui/switch';
 import { ChipsInput } from '@/components/job-search/ChipsInput';
 import { JobCard } from '@/components/job-search/JobCard';
 import { useAutoSync } from '@/hooks/useAutoSync';
+import { JOB_TITLES_CAP, useJobTitles } from '@/hooks/useJobTitles';
 import { apiService } from '@/lib/api';
 import { jobTitleOf } from '@/lib/careerJobs';
-// (job listings are free & auth-only — no entitlement/upgrade wiring here)
+// (job listings are free & auth-only - no entitlement/upgrade wiring here)
 import { cn } from '@/lib/utils';
 import type {
-  CareerPortalVariant, Job, WorkdayCatalog, WorkdayJob, WorkdayJobsProgress,
-  WorkdayJobsResult, WorkdayRecency,
+  CareerPortalVariant,
+  Job,
+  WorkdayCatalog,
+  WorkdayJob,
+  WorkdayJobsProgress,
+  WorkdayJobsResult,
+  WorkdayRecency,
 } from '@/types/jobs';
 
 // The engine reports posting age at day granularity ("Posted Today" /
@@ -47,45 +65,133 @@ const SENIORITY_OPTIONS = [
 
 const MIN_SCORE_OPTIONS = [0, 40, 60, 80] as const;
 
-// Background refresh cadence — the listing quietly re-syncs on this interval
+// Background refresh cadence - the listing quietly re-syncs on this interval
 // for every logged-in user without a manual refresh (visibility-aware; see useAutoSync).
 const AUTO_SYNC_MS = 30 * 60 * 1000;
 
-// The backend returns up to 1500 scored roles — paginate so wide windows
+// The backend returns up to 1500 scored roles - paginate so wide windows
 // never mount a thousand JobCards at once.
 const PAGE_SIZE = 24;
 
 const STATE_CODES = new Set([
-  'AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA',
-  'KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ',
-  'NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT',
-  'VA','WA','WV','WI','WY','DC',
+  'AL',
+  'AK',
+  'AZ',
+  'AR',
+  'CA',
+  'CO',
+  'CT',
+  'DE',
+  'FL',
+  'GA',
+  'HI',
+  'ID',
+  'IL',
+  'IN',
+  'IA',
+  'KS',
+  'KY',
+  'LA',
+  'ME',
+  'MD',
+  'MA',
+  'MI',
+  'MN',
+  'MS',
+  'MO',
+  'MT',
+  'NE',
+  'NV',
+  'NH',
+  'NJ',
+  'NM',
+  'NY',
+  'NC',
+  'ND',
+  'OH',
+  'OK',
+  'OR',
+  'PA',
+  'RI',
+  'SC',
+  'SD',
+  'TN',
+  'TX',
+  'UT',
+  'VT',
+  'VA',
+  'WA',
+  'WV',
+  'WI',
+  'WY',
+  'DC',
 ]);
 const STATE_NAMES: Record<string, string> = {
-  alabama: 'AL', alaska: 'AK', arizona: 'AZ', arkansas: 'AR', california: 'CA',
-  colorado: 'CO', connecticut: 'CT', delaware: 'DE', florida: 'FL', georgia: 'GA',
-  hawaii: 'HI', idaho: 'ID', illinois: 'IL', indiana: 'IN', iowa: 'IA',
-  kansas: 'KS', kentucky: 'KY', louisiana: 'LA', maine: 'ME', maryland: 'MD',
-  massachusetts: 'MA', michigan: 'MI', minnesota: 'MN', mississippi: 'MS',
-  missouri: 'MO', montana: 'MT', nebraska: 'NE', nevada: 'NV',
-  'new hampshire': 'NH', 'new jersey': 'NJ', 'new mexico': 'NM',
-  'new york': 'NY', 'north carolina': 'NC', 'north dakota': 'ND', ohio: 'OH',
-  oklahoma: 'OK', oregon: 'OR', pennsylvania: 'PA', 'rhode island': 'RI',
-  'south carolina': 'SC', 'south dakota': 'SD', tennessee: 'TN', texas: 'TX',
-  utah: 'UT', vermont: 'VT', virginia: 'VA', washington: 'WA',
-  'west virginia': 'WV', wisconsin: 'WI', wyoming: 'WY',
-  'washington, d.c.': 'DC', 'district of columbia': 'DC',
+  alabama: 'AL',
+  alaska: 'AK',
+  arizona: 'AZ',
+  arkansas: 'AR',
+  california: 'CA',
+  colorado: 'CO',
+  connecticut: 'CT',
+  delaware: 'DE',
+  florida: 'FL',
+  georgia: 'GA',
+  hawaii: 'HI',
+  idaho: 'ID',
+  illinois: 'IL',
+  indiana: 'IN',
+  iowa: 'IA',
+  kansas: 'KS',
+  kentucky: 'KY',
+  louisiana: 'LA',
+  maine: 'ME',
+  maryland: 'MD',
+  massachusetts: 'MA',
+  michigan: 'MI',
+  minnesota: 'MN',
+  mississippi: 'MS',
+  missouri: 'MO',
+  montana: 'MT',
+  nebraska: 'NE',
+  nevada: 'NV',
+  'new hampshire': 'NH',
+  'new jersey': 'NJ',
+  'new mexico': 'NM',
+  'new york': 'NY',
+  'north carolina': 'NC',
+  'north dakota': 'ND',
+  ohio: 'OH',
+  oklahoma: 'OK',
+  oregon: 'OR',
+  pennsylvania: 'PA',
+  'rhode island': 'RI',
+  'south carolina': 'SC',
+  'south dakota': 'SD',
+  tennessee: 'TN',
+  texas: 'TX',
+  utah: 'UT',
+  vermont: 'VT',
+  virginia: 'VA',
+  washington: 'WA',
+  'west virginia': 'WV',
+  wisconsin: 'WI',
+  wyoming: 'WY',
+  'washington, d.c.': 'DC',
+  'district of columbia': 'DC',
 };
 
-/** Title-based seniority, mirroring the backend classifier — used as a
+/** Title-based seniority, mirroring the backend classifier - used as a
  *  fallback for streamed provisional rows that don't carry the field yet,
  *  so the seniority filter works mid-scan too. */
 function seniorityOf(j: WorkdayJob): string {
   if (j.seniority) return j.seniority;
   const t = (j.title || '').toLowerCase();
   if (/\b(intern|internship|co-?op)\b/.test(t)) return 'intern';
-  if (/\b(senior|sr\.?|staff|principal|lead|architect|director|manager|head|vp|iii|iv)\b/.test(t)) return 'senior';
-  if (/\b(junior|jr\.?|associate|entry|new grad|graduate|early career|i|1)\b/.test(t)) return 'entry';
+  if (/\b(senior|sr\.?|staff|principal|lead|architect|director|manager|head|vp|iii|iv)\b/.test(t))
+    return 'senior';
+  if (/\b(junior|jr\.?|associate|entry|new grad|graduate|early career|i|1)\b/.test(t))
+    return 'entry';
   return 'mid';
 }
 
@@ -130,7 +236,7 @@ const INDUSTRY_LABELS: Record<string, string> = {
 };
 
 // The MNC catalog (/api/jobs/mnc) groups companies by SECTOR, a different
-// taxonomy from the Workday / career-pages industry keys — so it gets its
+// taxonomy from the Workday / career-pages industry keys - so it gets its
 // own label map (note `fintech` / `consulting` collide across taxonomies
 // with different display names).
 const MNC_SECTOR_LABELS: Record<string, string> = {
@@ -146,9 +252,10 @@ const MNC_SECTOR_LABELS: Record<string, string> = {
   media_entertainment: 'Media & Entertainment',
 };
 
-// Panel setup persists per browser so reopening the tab restores titles and
-// filters instantly — the resume fetch only refreshes the Reset defaults.
-// The Workday, career-pages and MNC variants each keep their own saved setup.
+// Per-variant FILTER setup persists per browser so reopening the tab restores
+// industries, recency and the rest instantly. Role TITLES are deliberately not
+// here: they are one shared set (see `useJobTitles`) so editing them in
+// Opportunities or any Career-portal variant is visible everywhere at once.
 const PREFS_KEYS: Record<CareerPortalVariant, string> = {
   workday: 'workday_jobs_prefs_v1',
   careers: 'career_pages_prefs_v1',
@@ -156,6 +263,8 @@ const PREFS_KEYS: Record<CareerPortalVariant, string> = {
 };
 
 interface WorkdayPrefs {
+  /** Legacy: titles used to be stored per variant. Read only, for the
+   *  one-time migration into the shared store; never written again. */
   titles?: string[];
   industries?: string[];
   location?: string;
@@ -179,7 +288,7 @@ function loadPrefs(key: string): WorkdayPrefs {
   }
 }
 
-/** "3m ago" / "just now" — coarse, since the display re-renders each second. */
+/** "3m ago" / "just now" - coarse, since the display re-renders each second. */
 function formatAgo(ms: number): string {
   const s = Math.max(0, Math.round((Date.now() - ms) / 1000));
   if (s < 45) return 'just now';
@@ -206,7 +315,7 @@ function pageWindow(page: number, count: number): number[] {
 }
 
 /** Normalize a portal row into the `Job` shape `JobCard` renders. Portal rows
- *  carry a discrete sponsorship band, not the `SponsorshipSignal` object —
+ *  carry a discrete sponsorship band, not the `SponsorshipSignal` object  -
  *  we surface the honest signal via visa flags (evidence-backed) and a
  *  panel-level note instead of fabricating filing numbers. */
 function toJob(j: WorkdayJob, fallbackSource: string): Job {
@@ -224,15 +333,17 @@ function toJob(j: WorkdayJob, fallbackSource: string): Job {
     missing_skills: j.missing_skills ?? [],
     source: j.source ?? j.ats ?? fallbackSource,
     sponsorship: null,
-    visa_flags: j.sponsorship === 'likely'
-      ? {
-          sponsors_h1b: {
-            value: true,
-            evidence: j.sponsor_note
-              || 'Recent H-1B filings appear in public disclosure data. A track record, not a guarantee.',
-          },
-        }
-      : undefined,
+    visa_flags:
+      j.sponsorship === 'likely'
+        ? {
+            sponsors_h1b: {
+              value: true,
+              evidence:
+                j.sponsor_note ||
+                'Recent H-1B filings appear in public disclosure data. A track record, not a guarantee.',
+            },
+          }
+        : undefined,
   };
 }
 
@@ -256,7 +367,9 @@ function Seg({
       aria-pressed={active}
       className={cn(
         'rounded-md px-2.5 py-1.5 text-[11px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-        active ? 'bg-background text-primary shadow-soft' : 'text-muted-foreground hover:text-foreground',
+        active
+          ? 'bg-background text-primary shadow-soft'
+          : 'text-muted-foreground hover:text-foreground',
       )}
     >
       {children}
@@ -270,10 +383,12 @@ interface WorkdayJobsPanelProps {
   saveJob: (job: Job) => void | Promise<unknown>;
   unsaveJob: (jobId: string) => void | Promise<unknown>;
   quickApply: (job: Job) => void | Promise<unknown>;
+  autoApply?: (job: Job) => void | Promise<unknown>;
+  autoApplyingId?: string | null;
   /** 'workday' (default) scans the Workday tenant catalog; 'careers' scans
-   *  companies' own career sites (Greenhouse/Lever/Ashby/…); 'mncs' scans a
+   *  companies' own career sites (Greenhouse/Lever/Ashby/...); 'mncs' scans a
    *  curated FAANG+ / Fortune-500 MNC board catalog grouped by sector. Same
-   *  engine, filters and scoring — different catalog, endpoints and saved
+   *  engine, filters and scoring - different catalog, endpoints and saved
    *  setup. */
   variant?: CareerPortalVariant;
   /** Whether this variant is the one currently on screen. Only the visible
@@ -283,8 +398,15 @@ interface WorkdayJobsPanelProps {
 }
 
 export function WorkdayJobsPanel({
-  isJobSaved, getJobStatus, saveJob, unsaveJob, quickApply,
-  variant = 'workday', active = true,
+  isJobSaved,
+  getJobStatus,
+  saveJob,
+  unsaveJob,
+  quickApply,
+  autoApply,
+  autoApplyingId,
+  variant = 'workday',
+  active = true,
 }: WorkdayJobsPanelProps) {
   const isCareers = variant === 'careers';
   const isMncs = variant === 'mncs';
@@ -292,13 +414,23 @@ export function WorkdayJobsPanel({
   const prefsKey = PREFS_KEYS[variant];
   const reduceMotion = useReducedMotion();
 
-  // Job listings are free for every logged-in user — the scan endpoints are
+  // Job listings are free for every logged-in user - the scan endpoints are
   // auth-only, never entitlement-gated. So auto-load + background sync run for
   // everyone signed in; there is no premium wall here.
 
   // ── Controls (hydrated from saved prefs so nothing reloads every visit) ──
   const [prefs] = useState<WorkdayPrefs>(() => loadPrefs(prefsKey));
-  const [titles, setTitles] = useState<string[]>(prefs.titles ?? []);
+  // Role titles are SHARED across all three variants and the Opportunities
+  // feed: one hydration, one saved set, one cap. Editing them here is visible
+  // in Opportunities immediately, and vice versa.
+  const {
+    titles,
+    setTitles,
+    resumeTitles,
+    ready: titlesReady,
+    smartSuggestTitles,
+    suggesting,
+  } = useJobTitles();
   const [industries, setIndustries] = useState<string[]>(prefs.industries ?? []);
   const [location, setLocation] = useState(prefs.location ?? '');
   const [remoteOnly, setRemoteOnly] = useState(prefs.remoteOnly ?? false);
@@ -316,30 +448,54 @@ export function WorkdayJobsPanel({
   // 'proven' additionally requires the company to have a real H-1B filing
   // record; 'unknown' companies stay visible in 'friendly' (no evidence
   // either way is not a refusal).
-  const [sponsorFilter, setSponsorFilter] =
-    useState<'all' | 'friendly' | 'proven'>(prefs.sponsorFilter ?? 'friendly');
+  const [sponsorFilter, setSponsorFilter] = useState<'all' | 'friendly' | 'proven'>(
+    prefs.sponsorFilter ?? 'friendly',
+  );
   // Heavy search setup (role titles / industries / location) is collapsed by
-  // default — results stream in on their own, so the "companies search bar"
+  // default - results stream in on their own, so the "companies search bar"
   // stays out of the way until the user wants to retune it.
   const [customizeOpen, setCustomizeOpen] = useState(false);
   // Mobile-only disclosure for the quick-filter row (always open on sm+).
   const [filtersOpen, setFiltersOpen] = useState(false);
   const filtersId = `career-portals-filters-${variant}`;
 
-  // Persist the setup on every change.
+  // Persist the setup on every change. Titles are excluded on purpose: the
+  // shared store persists those once, for every surface.
   useEffect(() => {
     try {
-      window.localStorage.setItem(prefsKey, JSON.stringify({
-        titles, industries, location, remoteOnly, recency, customDays,
-        seniorityFilter, minScore, hideUnrealistic, sortBy, groupByCompany,
-        sponsorFilter,
-      } satisfies WorkdayPrefs));
+      window.localStorage.setItem(
+        prefsKey,
+        JSON.stringify({
+          industries,
+          location,
+          remoteOnly,
+          recency,
+          customDays,
+          seniorityFilter,
+          minScore,
+          hideUnrealistic,
+          sortBy,
+          groupByCompany,
+          sponsorFilter,
+        } satisfies WorkdayPrefs),
+      );
     } catch {
-      /* storage full/unavailable — non-fatal */
+      /* storage full/unavailable - non-fatal */
     }
-  }, [prefsKey, titles, industries, location, remoteOnly, recency, customDays,
-      seniorityFilter, minScore, hideUnrealistic, sortBy, groupByCompany,
-      sponsorFilter]);
+  }, [
+    prefsKey,
+    industries,
+    location,
+    remoteOnly,
+    recency,
+    customDays,
+    seniorityFilter,
+    minScore,
+    hideUnrealistic,
+    sortBy,
+    groupByCompany,
+    sponsorFilter,
+  ]);
 
   const [page, setPage] = useState(1);
 
@@ -349,104 +505,92 @@ export function WorkdayJobsPanel({
   const [result, setResult] = useState<WorkdayJobsResult | null>(null);
   const [progress, setProgress] = useState<WorkdayJobsProgress | null>(null);
   const [loading, setLoading] = useState(false);
-  const [suggesting, setSuggesting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [resumeTitles, setResumeTitles] = useState<string[]>([]);
-  const [needsAutoSuggest, setNeedsAutoSuggest] = useState(false);
 
-  // Catalog metadata (industry chips) + resume titles prefill, once on mount.
+  // Catalog metadata (industry chips), once on mount. The resume seed and the
+  // thin-resume title synth used to run here too - they now live in the shared
+  // `useJobTitles` store, so mounting several panels fires them exactly once.
   useEffect(() => {
     let cancelled = false;
     void (async () => {
       setCatalogLoading(true);
-      const [cat, resume] = await Promise.all([
-        isMncs
-          ? apiService.getMncCatalog()
-          : isCareers
-            ? apiService.getCareerPagesCatalog()
-            : apiService.getWorkdayCatalog(),
-        apiService.getResume(),
-      ]);
+      const cat = await (isMncs
+        ? apiService.getMncCatalog()
+        : isCareers
+          ? apiService.getCareerPagesCatalog()
+          : apiService.getWorkdayCatalog());
       if (cancelled) return;
       setCatalogLoading(false);
       if (cat.data) setCatalog(cat.data);
-      const fromResume = resume.data?.resume?.job_titles ?? [];
-      if (fromResume.length) {
-        setResumeTitles(fromResume);
-        // Prefill with ALL resume titles — but never clobber a saved or
-        // user-edited set (saved prefs make prev non-empty on revisit).
-        setTitles((prev) => (prev.length ? prev : fromResume.slice(0, 40)));
-      }
-      // Parsed resumes often carry only 1-2 (messy) past titles — a weak
-      // search seed. Auto-run the smart synthesizer ONCE to build a proper
-      // title set; the result persists via saved prefs afterwards.
-      if (!prefs.titles?.length && fromResume.length < 4) {
-        setNeedsAutoSuggest(true);
-      }
     })();
     return () => {
       cancelled = true;
     };
-  }, [isCareers, isMncs, prefs]);
+  }, [isCareers, isMncs]);
 
-  const runSearch = useCallback(async (forceRefresh = false) => {
-    setLoading(true);
-    setError(null);
-    setProgress(null);
-    const search = isMncs
-      ? apiService.searchMncJobs.bind(apiService)
-      : isCareers
-        ? apiService.searchCareerPagesJobs.bind(apiService)
-        : apiService.searchWorkdayJobs.bind(apiService);
-    const resp = await search(
-      {
-        titles,
-        industries,
-        location,
-        remote_only: remoteOnly,
-        force_refresh: forceRefresh,
-      },
-      (partial) => {
-        if (partial?.progress) setProgress(partial.progress);
-        // Matches stream in company-by-company — render them immediately
-        // while the scan keeps running (final payload replaces this slice).
-        if (partial?.jobs?.length) {
-          setResult((prev) => ({
-            ok: true,
-            generated_at: prev?.generated_at ?? '',
-            jobs: partial.jobs,
-            total: partial.total ?? partial.jobs.length,
-            window_counts: prev?.window_counts ?? { today: 0, d1: 0, d3: 0, d7: 0, d30: 0 },
-            query_terms: partial.query_terms ?? prev?.query_terms ?? [],
-            tenants_total: partial.progress?.tenants_total ?? prev?.tenants_total ?? 0,
-            tenants_done: partial.progress?.tenants_done ?? 0,
-            tenants_with_results: prev?.tenants_with_results ?? 0,
-            industries_available: prev?.industries_available ?? [],
-            cache_hit: false,
-            errors: [],
-            streaming: true,
-          }));
+  const runSearch = useCallback(
+    async (forceRefresh = false) => {
+      setLoading(true);
+      setError(null);
+      setProgress(null);
+      const search = isMncs
+        ? apiService.searchMncJobs.bind(apiService)
+        : isCareers
+          ? apiService.searchCareerPagesJobs.bind(apiService)
+          : apiService.searchWorkdayJobs.bind(apiService);
+      const resp = await search(
+        {
+          titles,
+          industries,
+          location,
+          remote_only: remoteOnly,
+          force_refresh: forceRefresh,
+        },
+        (partial) => {
+          if (partial?.progress) setProgress(partial.progress);
+          // Matches stream in company-by-company - render them immediately
+          // while the scan keeps running (final payload replaces this slice).
+          if (partial?.jobs?.length) {
+            setResult((prev) => ({
+              ok: true,
+              generated_at: prev?.generated_at ?? '',
+              jobs: partial.jobs,
+              total: partial.total ?? partial.jobs.length,
+              window_counts: prev?.window_counts ?? { today: 0, d1: 0, d3: 0, d7: 0, d30: 0 },
+              query_terms: partial.query_terms ?? prev?.query_terms ?? [],
+              tenants_total: partial.progress?.tenants_total ?? prev?.tenants_total ?? 0,
+              tenants_done: partial.progress?.tenants_done ?? 0,
+              tenants_with_results: prev?.tenants_with_results ?? 0,
+              industries_available: prev?.industries_available ?? [],
+              cache_hit: false,
+              errors: [],
+              streaming: true,
+            }));
+          }
+        },
+      );
+      setLoading(false);
+      setProgress(null);
+      if (resp.error) {
+        // Listings are free & auth-only. A 429 here is IP rate-limiting, not a
+        // paywall - surface it as a transient "slow down" rather than an upgrade.
+        if (resp.status === 429) {
+          setError('You are searching very fast. Give it a few seconds and sync again.');
+        } else {
+          setError(resp.error);
         }
-      },
-    );
-    setLoading(false);
-    setProgress(null);
-    if (resp.error) {
-      // Listings are free & auth-only. A 429 here is IP rate-limiting, not a
-      // paywall — surface it as a transient "slow down" rather than an upgrade.
-      if (resp.status === 429) {
-        setError('You are searching very fast. Give it a few seconds and sync again.');
-      } else {
-        setError(resp.error);
+        return;
       }
-      return;
-    }
-    if (resp.data) setResult(resp.data);
-  }, [titles, industries, location, remoteOnly, isCareers, isMncs]);
+      if (resp.data) setResult(resp.data);
+    },
+    [titles, industries, location, remoteOnly, isCareers, isMncs],
+  );
 
   // ── Auto-sync: every logged-in user gets an initial auto-load + a quiet
-  //    30-min background refresh of the visible variant. ──────────────────
-  const setupReady = !catalogLoading && !needsAutoSuggest && !suggesting;
+  //  30-min background refresh of the visible variant. ──────────────────
+  // Waits on the shared title set so the first scan never runs against the
+  // pre-hydration empty seed.
+  const setupReady = !catalogLoading && titlesReady && !suggesting;
   const autoSync = useAutoSync({
     enabled: active && setupReady,
     intervalMs: AUTO_SYNC_MS,
@@ -455,40 +599,16 @@ export function WorkdayJobsPanel({
   });
   const { lastSyncedAt, secondsUntilNext, autoArmed, sync } = autoSync;
 
-  // Smart-suggest resume-derived titles (same LLM synthesizer the Daily
-  // Pipeline's Smart Filters use).
-  const smartSuggest = useCallback(async () => {
-    setSuggesting(true);
-    const resp = await apiService.suggestPipelineFilters();
-    setSuggesting(false);
-    const suggested = resp.data?.suggestions?.workday_titles ?? [];
-    if (suggested.length) {
-      setTitles((prev) => {
-        const seen = new Set(prev.map((t) => t.toLowerCase()));
-        return [...prev, ...suggested.filter((t) => !seen.has(t.toLowerCase()))].slice(0, 40);
-      });
-    }
-  }, []);
-
-  // Fires once when the parsed resume's own titles were too thin to search.
-  useEffect(() => {
-    if (needsAutoSuggest && !suggesting) {
-      setNeedsAutoSuggest(false);
-      void smartSuggest();
-    }
-  }, [needsAutoSuggest, suggesting, smartSuggest]);
-
   const toggleIndustry = (key: string) => {
-    setIndustries((prev) =>
-      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key],
-    );
+    setIndustries((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
   };
 
   // ── Client-side recency filtering (the backend always returns the full
-  //    30-day window, so switching Today ↔ 30d never refetches). ───────────
-  const maxDays = recency === 'custom'
-    ? Math.min(30, Math.max(0, customDays))
-    : (RECENCY_OPTIONS.find((o) => o.key === recency)?.maxDays ?? 3);
+  //  30-day window, so switching Today ↔ 30d never refetches). ───────────
+  const maxDays =
+    recency === 'custom'
+      ? Math.min(30, Math.max(0, customDays))
+      : (RECENCY_OPTIONS.find((o) => o.key === recency)?.maxDays ?? 3);
 
   const recencyJobs = useMemo(() => {
     const all = result?.jobs ?? [];
@@ -528,11 +648,22 @@ export function WorkdayJobsPanel({
     if (sponsorFilter === 'friendly') out = out.filter((j) => j.sponsorship !== 'refused');
     else if (sponsorFilter === 'proven') out = out.filter((j) => j.sponsorship === 'likely');
     if (sortBy === 'newest') {
-      out = [...out].sort((a, b) =>
-        (a.days_ago ?? 99) - (b.days_ago ?? 99) || (b.match_score ?? 0) - (a.match_score ?? 0));
+      out = [...out].sort(
+        (a, b) =>
+          (a.days_ago ?? 99) - (b.days_ago ?? 99) || (b.match_score ?? 0) - (a.match_score ?? 0),
+      );
     }
     return out;
-  }, [recencyJobs, seniorityFilter, minScore, locationFilter, hideUnrealistic, hasFeasibility, sortBy, sponsorFilter]);
+  }, [
+    recencyJobs,
+    seniorityFilter,
+    minScore,
+    locationFilter,
+    hideUnrealistic,
+    hasFeasibility,
+    sortBy,
+    sponsorFilter,
+  ]);
 
   const pageCount = Math.max(1, Math.ceil(visibleJobs.length / PAGE_SIZE));
   // Clamp the page whenever the visible set changes shape (stream, filters).
@@ -541,7 +672,16 @@ export function WorkdayJobsPanel({
   }, [pageCount]);
   useEffect(() => {
     setPage(1);
-  }, [recency, customDays, seniorityFilter, minScore, locationFilter, hideUnrealistic, sortBy, sponsorFilter]);
+  }, [
+    recency,
+    customDays,
+    seniorityFilter,
+    minScore,
+    locationFilter,
+    hideUnrealistic,
+    sortBy,
+    sponsorFilter,
+  ]);
 
   const pagedJobs = useMemo(
     () => visibleJobs.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
@@ -550,7 +690,13 @@ export function WorkdayJobsPanel({
 
   const recencyCounts = useMemo(() => {
     const all = result?.jobs ?? [];
-    const counts: Record<WorkdayRecency, number> = { today: 0, '24h': 0, '3d': 0, '7d': 0, '30d': 0 };
+    const counts: Record<WorkdayRecency, number> = {
+      today: 0,
+      '24h': 0,
+      '3d': 0,
+      '7d': 0,
+      '30d': 0,
+    };
     for (const j of all) {
       if (j.days_ago == null) continue;
       for (const opt of RECENCY_OPTIONS) {
@@ -581,10 +727,18 @@ export function WorkdayJobsPanel({
   }, [catalog, industries]);
 
   const fallbackSource = isMncs ? 'mnc' : isCareers ? 'career page' : 'workday';
-  const catalogNoun = isMncs ? 'MNC & Big Tech career boards' : isCareers ? 'company career pages' : 'Workday career sites';
-  const searchVerb = isMncs ? 'Search MNC boards' : isCareers ? 'Search career sites' : 'Search Workday';
+  const catalogNoun = isMncs
+    ? 'MNC & Big Tech career boards'
+    : isCareers
+      ? 'company career pages'
+      : 'Workday career sites';
+  const searchVerb = isMncs
+    ? 'Search MNC boards'
+    : isCareers
+      ? 'Search career sites'
+      : 'Search Workday';
 
-  // Motion — a card fades/rises in with a positional stagger. Because React
+  // Motion - a card fades/rises in with a positional stagger. Because React
   // keys are stable (job_id), already-mounted cards never replay when the
   // streaming slice updates; only freshly-arrived rows animate.
   const cardMotion = (index: number) =>
@@ -602,7 +756,12 @@ export function WorkdayJobsPanel({
 
   /** One grid cell: honest sponsorship / feasibility notes above the card. */
   const renderJob = (job: WorkdayJob, index: number) => (
-    <motion.div key={job.job_id} layout={!reduceMotion} {...cardMotion(index)} className="flex flex-col gap-1.5">
+    <motion.div
+      key={job.job_id}
+      layout={!reduceMotion}
+      {...cardMotion(index)}
+      className="flex flex-col gap-1.5"
+    >
       {job.sponsorship === 'refused' && (
         <p className="flex items-start gap-1.5 rounded-lg border border-destructive/30 bg-destructive/10 px-2.5 py-1.5 text-[11px] font-medium leading-snug text-destructive">
           <ShieldAlert className="mt-0.5 h-3 w-3 shrink-0" aria-hidden />
@@ -628,6 +787,8 @@ export function WorkdayJobsPanel({
         onSave={() => saveJob(toJob(job, fallbackSource))}
         onUnsave={() => unsaveJob(job.job_id)}
         onQuickApply={() => quickApply(toJob(job, fallbackSource))}
+        onAutoApply={autoApply ? () => autoApply(toJob(job, fallbackSource)) : undefined}
+        autoApplying={autoApplyingId === job.job_id}
       />
     </motion.div>
   );
@@ -639,31 +800,48 @@ export function WorkdayJobsPanel({
     <div className="space-y-5">
       {/* ── Live-sync command bar ── */}
       <div className="mesh-accent relative overflow-hidden rounded-2xl border border-border/70 p-4 shadow-soft sm:p-5">
-        <div className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-primary/10 blur-3xl" aria-hidden />
+        <div
+          className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-primary/10 blur-3xl"
+          aria-hidden
+        />
         <div className="relative flex flex-wrap items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
             <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/12 text-primary">
-              {loading ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden /> : <Radar className="h-5 w-5" aria-hidden />}
+              {loading ? (
+                <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
+              ) : (
+                <Radar className="h-5 w-5" aria-hidden />
+              )}
             </span>
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
                 <h3 className="text-sm font-semibold text-foreground">Live listings</h3>
-                <Badge variant="outline" className="gap-1 border-primary/30 bg-primary/10 px-1.5 py-0 text-[10px] font-semibold text-primary">
+                <Badge
+                  variant="outline"
+                  className="gap-1 border-primary/30 bg-primary/10 px-1.5 py-0 text-[10px] font-semibold text-primary"
+                >
                   <Sparkles className="h-2.5 w-2.5" aria-hidden /> Auto-sync
                 </Badge>
               </div>
               <p className="truncate text-xs text-muted-foreground" aria-live="polite">
-                {loading
-                  ? progress
-                    ? `Scanning ${progress.tenants_done} of ${progress.tenants_total} companies · ${roleCount} roles so far`
-                    : 'Starting scan…'
-                  : lastSyncedAt
-                    ? <>Updated {formatAgo(lastSyncedAt)} · {roleCount} roles
-                        {secondsUntilNext != null && (
-                          <span className="ml-1 tabular-nums text-primary/80">· next sync {formatCountdown(secondsUntilNext)}</span>
-                        )}
-                      </>
-                    : `Syncing ${catalogNoun} straight to your feed…`}
+                {loading ? (
+                  progress ? (
+                    `Scanning ${progress.tenants_done} of ${progress.tenants_total} companies · ${roleCount} roles so far`
+                  ) : (
+                    'Starting scan...'
+                  )
+                ) : lastSyncedAt ? (
+                  <>
+                    Updated {formatAgo(lastSyncedAt)} · {roleCount} roles
+                    {secondsUntilNext != null && (
+                      <span className="ml-1 tabular-nums text-primary/80">
+                        · next sync {formatCountdown(secondsUntilNext)}
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  `Syncing ${catalogNoun} straight to your feed...`
+                )}
               </p>
             </div>
           </div>
@@ -678,7 +856,7 @@ export function WorkdayJobsPanel({
               title="Re-scan every company now"
             >
               <RefreshCw className={cn('h-3.5 w-3.5', loading && 'animate-spin')} aria-hidden />
-              {loading ? 'Syncing…' : 'Sync now'}
+              {loading ? 'Syncing...' : 'Sync now'}
             </Button>
             <Button
               size="sm"
@@ -690,7 +868,10 @@ export function WorkdayJobsPanel({
             >
               <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden />
               Customize
-              <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', customizeOpen && 'rotate-180')} aria-hidden />
+              <ChevronDown
+                className={cn('h-3.5 w-3.5 transition-transform', customizeOpen && 'rotate-180')}
+                aria-hidden
+              />
             </Button>
           </div>
         </div>
@@ -706,12 +887,14 @@ export function WorkdayJobsPanel({
               className="relative mt-3 overflow-hidden"
             >
               <Progress
-                value={progress ? (progress.tenants_done / Math.max(1, progress.tenants_total)) * 100 : 8}
+                value={
+                  progress ? (progress.tenants_done / Math.max(1, progress.tenants_total)) * 100 : 8
+                }
                 className="h-1.5"
               />
               <p className="mt-1.5 text-[11px] text-muted-foreground">
                 {progress?.phase === 'details'
-                  ? 'Fetching full descriptions for top matches. Refining skill scores…'
+                  ? 'Fetching full descriptions for top matches. Refining skill scores...'
                   : 'Querying company career APIs directly. No scraping, no credits. Matches stream in below.'}
               </p>
             </motion.div>
@@ -741,23 +924,29 @@ export function WorkdayJobsPanel({
                   <ChipsInput
                     values={titles}
                     onChange={setTitles}
-                    maxItems={40}
-                    placeholder="e.g. Backend Engineer, Data Engineer…"
-                    defaultValues={resumeTitles.length ? resumeTitles.slice(0, 40) : undefined}
+                    maxItems={JOB_TITLES_CAP}
+                    placeholder="e.g. Backend Engineer, Data Engineer..."
+                    defaultValues={
+                      resumeTitles.length ? resumeTitles.slice(0, JOB_TITLES_CAP) : undefined
+                    }
                     accentClass="border-primary/30 bg-primary/10 text-primary"
-                    helperText={`The first 4 core title families drive the ${isMncs ? 'MNC board scan' : isCareers ? 'career-site scan' : 'Workday search'}; every title participates in ranking. Your set is saved automatically.`}
+                    helperText={`The first 4 core title families drive the ${isMncs ? 'MNC board scan' : isCareers ? 'career-site scan' : 'Workday search'}; every title participates in ranking. One shared set: these titles also drive Job Opportunities and the other career portals.`}
                     emptyState="Add a role title, or upload a resume to prefill."
                   />
                   <Button
                     type="button"
                     variant="ghost"
                     size="sm"
-                    onClick={smartSuggest}
+                    onClick={() => void smartSuggestTitles()}
                     disabled={suggesting}
                     className="mt-1 gap-1 px-2 text-[11px] text-primary"
                   >
-                    {suggesting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Wand2 className="h-3 w-3" />}
-                    {suggesting ? 'Analyzing resume…' : 'Smart-suggest titles from resume'}
+                    {suggesting ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Wand2 className="h-3 w-3" />
+                    )}
+                    {suggesting ? 'Analyzing resume...' : 'Smart-suggest titles from resume'}
                   </Button>
                 </div>
 
@@ -766,7 +955,10 @@ export function WorkdayJobsPanel({
                     <Factory className="h-3.5 w-3.5" aria-hidden />
                     Industries
                     <span className="font-normal">
-                      · {industries.length ? `${selectedTenantCount} companies selected` : `all ${catalogTotal} companies`}
+                      ·{' '}
+                      {industries.length
+                        ? `${selectedTenantCount} companies selected`
+                        : `all ${catalogTotal} companies`}
                     </span>
                   </p>
                   <div className="flex flex-wrap gap-1.5">
@@ -790,11 +982,11 @@ export function WorkdayJobsPanel({
                         </button>
                       );
                     })}
-                    {catalogLoading && !catalog && (
+                    {catalogLoading &&
+                      !catalog &&
                       Array.from({ length: 8 }).map((_, i) => (
                         <Skeleton key={i} className="h-6 w-20 rounded-full" />
-                      ))
-                    )}
+                      ))}
                     {!catalogLoading && !catalog && (
                       <span className="text-xs text-muted-foreground">
                         Couldn't load the company catalog. Search still works across all companies.
@@ -824,13 +1016,13 @@ export function WorkdayJobsPanel({
                     Remote only
                   </label>
                   <div className="flex gap-2 pb-0.5">
-                    <Button
-                      onClick={() => sync(false)}
-                      disabled={loading}
-                      className="gap-1.5"
-                    >
-                      {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Rocket className="h-4 w-4" />}
-                      {loading ? 'Scanning…' : searchVerb}
+                    <Button onClick={() => sync(false)} disabled={loading} className="gap-1.5">
+                      {loading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Rocket className="h-4 w-4" />
+                      )}
+                      {loading ? 'Scanning...' : searchVerb}
                     </Button>
                   </div>
                 </div>
@@ -883,12 +1075,16 @@ export function WorkdayJobsPanel({
       {result && (
         <div className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            {/* Recency segmented control — filters the cached 30-day set
-                client-side, so switching windows is instant. */}
+            {/* Recency segmented control - filters the cached 30-day set
+  client-side, so switching windows is instant. */}
             <div className="flex flex-wrap items-center gap-1.5">
               <div className="inline-flex flex-wrap rounded-lg border border-border bg-muted/40 p-0.5">
                 {RECENCY_OPTIONS.map((opt) => (
-                  <Seg key={opt.key} active={recency === opt.key} onClick={() => setRecency(opt.key)}>
+                  <Seg
+                    key={opt.key}
+                    active={recency === opt.key}
+                    onClick={() => setRecency(opt.key)}
+                  >
                     {opt.label}
                     <span className="ml-1 tabular-nums opacity-60">{recencyCounts[opt.key]}</span>
                   </Seg>
@@ -918,7 +1114,10 @@ export function WorkdayJobsPanel({
                 <Switch checked={groupByCompany} onCheckedChange={setGroupByCompany} />
                 Group by company
               </label>
-              <Badge variant="outline" className="gap-1 border-primary/30 bg-primary/10 text-primary">
+              <Badge
+                variant="outline"
+                className="gap-1 border-primary/30 bg-primary/10 text-primary"
+              >
                 <Sparkles className="h-3 w-3" aria-hidden />
                 <span className="tabular-nums">{visibleJobs.length}</span> roles
               </Badge>
@@ -926,7 +1125,7 @@ export function WorkdayJobsPanel({
           </div>
 
           {/* Second filter row: seniority / min score / location / realism /
-              sponsorship / sort. Collapses behind a disclosure on mobile. */}
+  sponsorship / sort. Collapses behind a disclosure on mobile. */}
           <Button
             type="button"
             variant="outline"
@@ -953,7 +1152,9 @@ export function WorkdayJobsPanel({
               aria-label="Seniority filter"
             >
               {SENIORITY_OPTIONS.map((o) => (
-                <option key={o.key} value={o.key}>{o.label}</option>
+                <option key={o.key} value={o.key}>
+                  {o.label}
+                </option>
               ))}
             </select>
 
@@ -973,7 +1174,9 @@ export function WorkdayJobsPanel({
             >
               <option value="all">All locations</option>
               {locationOptions.map(([key, count]) => (
-                <option key={key} value={key}>{key} ({count})</option>
+                <option key={key} value={key}>
+                  {key} ({count})
+                </option>
               ))}
             </select>
 
@@ -991,7 +1194,13 @@ export function WorkdayJobsPanel({
               className="inline-flex rounded-lg border border-border bg-muted/40 p-0.5"
               title={`Sponsorship filter for international candidates. "Sponsor-friendly" hides postings whose description explicitly declines visa sponsorship (${refusedCount} here); "Proven sponsors" additionally keeps only companies with recent H-1B filings in public disclosure data. A track record, not a promise.`}
             >
-              {([['all', 'All'], ['friendly', 'Sponsor-friendly'], ['proven', 'Proven sponsors']] as const).map(([key, label]) => (
+              {(
+                [
+                  ['all', 'All'],
+                  ['friendly', 'Sponsor-friendly'],
+                  ['proven', 'Proven sponsors'],
+                ] as const
+              ).map(([key, label]) => (
                 <Seg key={key} active={sponsorFilter === key} onClick={() => setSponsorFilter(key)}>
                   {label}
                 </Seg>
@@ -1012,7 +1221,8 @@ export function WorkdayJobsPanel({
               <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-warning" aria-hidden />
               <span>
                 No parsed resume found for this account. Match scores, skill overlap and
-                tailor-feasibility need one. Upload your resume in the Tailor tab, then re-run the search.
+                tailor-feasibility need one. Upload your resume in the Tailor tab, then re-run the
+                search.
               </span>
             </div>
           )}
@@ -1021,7 +1231,8 @@ export function WorkdayJobsPanel({
             {streaming ? (
               <>
                 <Loader2 className="h-3 w-3 animate-spin text-primary" aria-hidden />
-                Streaming: {result.tenants_done} of {result.tenants_total} companies scanned, best matches so far below
+                Streaming: {result.tenants_done} of {result.tenants_total} companies scanned, best
+                matches so far below
               </>
             ) : (
               <>
@@ -1064,13 +1275,19 @@ export function WorkdayJobsPanel({
                     initial={reduceMotion ? undefined : { opacity: 0, y: 12 }}
                     animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
                     exit={reduceMotion ? undefined : { opacity: 0 }}
-                    transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1], delay: Math.min(gi * 0.05, 0.3) }}
+                    transition={{
+                      duration: 0.3,
+                      ease: [0.22, 1, 0.36, 1],
+                      delay: Math.min(gi * 0.05, 0.3),
+                    }}
                     className="space-y-3"
                   >
                     <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
                       <Building2 className="h-4 w-4 text-primary" aria-hidden />
                       {company}
-                      <Badge variant="outline" className="text-[10px] tabular-nums">{jobs.length}</Badge>
+                      <Badge variant="outline" className="text-[10px] tabular-nums">
+                        {jobs.length}
+                      </Badge>
                       {jobs[0]?.industry && (
                         <span className="text-[10px] font-normal text-muted-foreground">
                           {industryLabels[jobs[0].industry] ?? jobs[0].industry}
@@ -1099,7 +1316,10 @@ export function WorkdayJobsPanel({
 
           {/* ── Pagination ── */}
           {pageCount > 1 && (
-            <nav className="flex flex-wrap items-center justify-center gap-1.5 pt-2" aria-label="Job results pages">
+            <nav
+              className="flex flex-wrap items-center justify-center gap-1.5 pt-2"
+              aria-label="Job results pages"
+            >
               <Button
                 variant="outline"
                 size="sm"
@@ -1110,7 +1330,7 @@ export function WorkdayJobsPanel({
                 Prev
               </Button>
               {pageWindow(page, pageCount)[0] > 1 && (
-                <span className="px-1 text-xs text-muted-foreground">…</span>
+                <span className="px-1 text-xs text-muted-foreground">...</span>
               )}
               {pageWindow(page, pageCount).map((n) => (
                 <button
@@ -1129,7 +1349,7 @@ export function WorkdayJobsPanel({
                 </button>
               ))}
               {pageWindow(page, pageCount).slice(-1)[0] < pageCount && (
-                <span className="px-1 text-xs text-muted-foreground">…</span>
+                <span className="px-1 text-xs text-muted-foreground">...</span>
               )}
               <Button
                 variant="outline"
@@ -1155,21 +1375,17 @@ export function WorkdayJobsPanel({
             <Building2 className="h-5 w-5" aria-hidden />
           </div>
           <p className="text-sm font-medium text-foreground">
-            {`Getting your live feed of ${catalogNoun} ready…`}
+            {`Getting your live feed of ${catalogNoun} ready...`}
           </p>
           <p className="mx-auto mt-1 max-w-md text-xs text-muted-foreground">
             {isMncs
-              ? 'A curated FAANG+ / Fortune-500 MNC universe: Big Tech, semiconductors, banking, consulting and more, queried straight from each company’s official board and ranked by fit against your resume.'
+              ? "A curated FAANG+ / Fortune-500 MNC universe: Big Tech, semiconductors, banking, consulting and more, queried straight from each company's official board and ranked by fit against your resume."
               : isCareers
                 ? 'The non-Workday universe: companies hosting jobs on their own career pages via Greenhouse, Lever, Ashby, SmartRecruiters, Workable and Recruitee. Public JSON APIs; nothing scraped.'
                 : "Most large enterprises hire through Workday. This queries each company's public careers API directly. Fast, free, and fresh."}{' '}
             Defaults to roles posted in the last 3 days; the full 30-day window loads in one scan.
           </p>
-          <Button
-            size="sm"
-            className="mt-4 gap-1.5"
-            onClick={() => sync(false)}
-          >
+          <Button size="sm" className="mt-4 gap-1.5" onClick={() => sync(false)}>
             <Rocket className="h-3.5 w-3.5" aria-hidden />
             {searchVerb}
           </Button>

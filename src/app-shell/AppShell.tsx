@@ -1,20 +1,14 @@
-import { Suspense, lazy, useCallback, useState } from "react";
+import { Suspense, lazy } from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { Sidebar } from "./Sidebar";
 import { TopBar } from "./TopBar";
 import { MobileNav } from "./MobileNav";
 import { CommandPalette } from "./CommandPalette";
 
-// First-run onboarding. All auth successes land on /next/today, so the shell
-// must host the wizard too (it self-gates: renders null unless the signed-in
-// user still lacks onboarding). Lazy so onboarded users never fetch the chunk.
-// No double-mount risk: /app mounts its own instance, but /app and /next/* are
-// mutually exclusive routes — exactly one instance can exist at a time.
+// First-run onboarding. Auth lands on /app/home; the shell hosts the wizard
+// (self-gates unless the signed-in user still lacks onboarding).
 const OnboardingWizard = lazy(() => import("@/components/onboarding/OnboardingWizard"));
-
-const SIDEBAR_COLLAPSED_KEY = "appShellSidebarCollapsed";
 
 function FullScreenLoader() {
   return (
@@ -24,7 +18,7 @@ function FullScreenLoader() {
     >
       <div className="flex items-center gap-2">
         <Loader2 className="h-5 w-5 animate-spin text-primary" aria-hidden="true" />
-        <span className="text-sm">Loading your workspace…</span>
+        <span className="text-sm">Loading your workspace...</span>
       </div>
     </div>
   );
@@ -39,31 +33,15 @@ function OutletFallback() {
 }
 
 /**
- * Isolated shell for the migrated app (`/next/*`). Coexists with the
- * ResumeParser monolith at `/app` during the strangler-fig migration.
+ * Canonical product shell (`/app/*`).
  *
- * Auth is gated the same way the monolith gates via AuthContext: while the
- * profile is verifying we show a loader; with no valid session we redirect to
- * `/login` (the monolith renders an in-place wall — here the task calls for a
- * redirect so deep links land on a real sign-in page and bounce back).
+ * Auth is gated via AuthContext: while the profile is verifying we show a
+ * loader; with no valid session we redirect to `/login` so deep links land on
+ * a real sign-in page and bounce back.
  */
 export default function AppShell() {
   const { isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
-  const [collapsed, setCollapsed] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    return window.localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "true";
-  });
-
-  const toggleCollapsed = useCallback(() => {
-    setCollapsed((prev) => {
-      const next = !prev;
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(next));
-      }
-      return next;
-    });
-  }, []);
 
   if (isLoading) return <FullScreenLoader />;
   // Carry the attempted deep link so Login can bounce back after sign-in.
@@ -78,20 +56,16 @@ export default function AppShell() {
         Skip to content
       </a>
 
-      <div className="flex items-start">
-        <Sidebar collapsed={collapsed} onToggleCollapse={toggleCollapsed} />
+      <div className="flex min-h-screen min-w-0 flex-col">
+        <TopBar />
 
-        <div className="flex min-h-screen min-w-0 flex-1 flex-col">
-          <TopBar />
-
-          <main id="main-content" className="flex-1 pb-24 lg:pb-0">
-            <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
-              <Suspense fallback={<OutletFallback />}>
-                <Outlet />
-              </Suspense>
-            </div>
-          </main>
-        </div>
+        <main id="main-content" className="flex-1 overflow-x-hidden pb-24 lg:pb-0">
+          <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
+            <Suspense fallback={<OutletFallback />}>
+              <Outlet />
+            </Suspense>
+          </div>
+        </main>
       </div>
 
       <MobileNav />

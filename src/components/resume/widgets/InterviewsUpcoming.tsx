@@ -1,5 +1,5 @@
 /**
- * Interviews & prep — surfaces live interviews to prepare for, or the user's
+ * Interviews & prep - surfaces live interviews to prepare for, or the user's
  * mock-interview readiness (avg score + weakest pattern). Empty state invites a
  * first mock so there's something to improve.
  */
@@ -22,7 +22,7 @@ export const interviewsUpcomingWidget: Widget = {
     const iv = o?.interview;
     const interviewing = o?.applications.interviewing ?? 0;
 
-    // Live interviews in the pipeline take priority — prep now.
+    // Live interviews in the pipeline take priority - prep now.
     if (interviewing > 0) {
       return (
         <WidgetCard
@@ -60,7 +60,7 @@ export const interviewsUpcomingWidget: Widget = {
           />
         ) : (
           <div className="flex flex-1 flex-col justify-center gap-3">
-            <Stat value={iv!.avg_score ?? '—'} label={`avg across ${iv!.attempts} ${iv!.attempts === 1 ? 'answer' : 'answers'}`} />
+            <Stat value={iv!.avg_score ?? ' - '} label={`avg across ${iv!.attempts} ${iv!.attempts === 1 ? 'answer' : 'answers'}`} />
             {iv!.weakest && (
               <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <Target className="h-3.5 w-3.5 shrink-0 text-warning" />

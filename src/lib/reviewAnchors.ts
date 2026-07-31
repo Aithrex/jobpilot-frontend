@@ -1,12 +1,12 @@
 /**
- * Verification anchors — resolve a sidecar item's structural address
+ * Verification anchors - resolve a sidecar item's structural address
  * (experience.{i}.bullets.{j} | summary.s{k} | projects.{i}.bullets.{j})
  * against the CURRENT resume.
  *
  * Addresses are valid at delivery time; after any edit we re-anchor by the
  * verbatim `text` snapshot within the same section. An entry whose text no
  * longer exists anywhere is treated as user-edited (dropped from the
- * pending review queue — the user rewrote it themselves).
+ * pending review queue - the user rewrote it themselves).
  */
 import type { TailoredFullResume } from '@/types/resume';
 import type { BulletSection } from '@/lib/resumeMutations';

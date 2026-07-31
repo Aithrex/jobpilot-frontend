@@ -44,7 +44,7 @@ export function QuotasPanel() {
   const load = useCallback(async () => {
     setLoading(true);
     // Pull users and open feedback together so we can surface pending
-    // "request more tailors" asks right next to the limit controls — the
+    // "request more tailors" asks right next to the limit controls - the
     // admin shouldn't have to cross-reference the Feedback tab to act.
     const [resp, fbResp] = await Promise.all([
       apiService.getAdminUsers(),
@@ -174,7 +174,7 @@ export function QuotasPanel() {
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search email or name…"
+            placeholder="Search email or name..."
             className="rounded-md border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-sm text-gray-200 placeholder:text-gray-600 focus:border-purple-400/60 focus:outline-none"
           />
         </div>
@@ -195,7 +195,7 @@ export function QuotasPanel() {
             {loading && (
               <tr>
                 <td colSpan={5} className="px-4 py-6 text-center text-xs text-gray-500">
-                  Loading users…
+                  Loading users...
                 </td>
               </tr>
             )}
@@ -303,7 +303,7 @@ function QuotaRow({
           disabled={saving}
           className="rounded-md border border-purple-400/50 bg-purple-500/10 px-3 py-1 text-xs font-medium text-purple-200 hover:bg-purple-500/20 disabled:opacity-50"
         >
-          {saving ? 'Saving…' : 'Save'}
+          {saving ? 'Saving...' : 'Save'}
         </button>
         {row.daily_tailor_limit_custom !== null && (
           <button

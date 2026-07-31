@@ -216,7 +216,7 @@ export function difficultyChip(d?: QDifficulty | string) {
     case "easy":   return { label: "Easy",   cls: "bg-success/15 text-success border-success/25" };
     case "medium": return { label: "Medium", cls: "bg-warning/15 text-warning border-warning/25" };
     case "hard":   return { label: "Hard",   cls: "bg-destructive/15 text-destructive border-destructive/25" };
-    default:       return { label: "—",      cls: "bg-muted text-muted-foreground border-border" };
+    default:       return { label: " - ",      cls: "bg-muted text-muted-foreground border-border" };
   }
 }
 

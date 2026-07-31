@@ -7,7 +7,7 @@ interface CompanyLogoProps {
   /** Monogram seed + fallback letter. Callers pass the same seed they hue
    *  the rest of the card with (e.g. `job.company || job.title`). */
   company: string;
-  /** Backend-relative logo path ("/api/jobs/logo/<hash>") — may 404. */
+  /** Backend-relative logo path ("/api/jobs/logo/<hash>") - may 404. */
   logoUrl?: string | null;
   /** Square edge in px. Fixed on the container so a 404 never shifts layout. */
   size?: number;
@@ -17,9 +17,9 @@ interface CompanyLogoProps {
 /**
  * Company mark: real favicon served by the backend when `logoUrl` resolves,
  * otherwise the deterministic hued letter-monogram (the same visual JobCard
- * and the Kanban tiles have always used — the per-company hue is a sanctioned
+ * and the Kanban tiles have always used - the per-company hue is a sanctioned
  * design-token exception). Decorative only: the company NAME is always
- * adjacent text, so the mark is `alt=""` + `aria-hidden`. Logos are public —
+ * adjacent text, so the mark is `alt=""` + `aria-hidden`. Logos are public  - 
  * plain <img>, no auth headers.
  *
  * Loading contract: the monogram renders FIRST and the favicon fades in over

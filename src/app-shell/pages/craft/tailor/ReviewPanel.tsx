@@ -1,10 +1,10 @@
 /**
- * ReviewPanel — human-in-the-loop review of AI-written claims.
+ * ReviewPanel - human-in-the-loop review of AI-written claims.
  *
  * Renders the verification sidecar (claim-guard flags + entailment
  * verdicts) as a review queue: flagged claims first (UNSUPPORTED before
  * PARTIAL), each with why-it-was-flagged and the facts that back it, plus
- * Accept / Restore original / Remove / Edit actions. Presentational —
+ * Accept / Restore original / Remove / Edit actions. Presentational  - 
  * all mutations live in the TailorPage orchestrator.
  */
 import { useMemo, useState } from 'react';
@@ -141,7 +141,7 @@ function ReviewCard({
         <p className="mt-1.5 text-[11px] text-muted-foreground">
           Flagged:{' '}
           <span className="font-medium text-foreground">
-            “{item.unsupported_claim}”
+            "{item.unsupported_claim}"
           </span>
           {item.flags.length > 0 && (
             <> ({item.flags.map((f) => FLAG_LABELS[f] ?? f).join('; ')})</>

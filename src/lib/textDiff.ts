@@ -1,5 +1,5 @@
 /**
- * Tiny word-level diff utilities — no dependency.
+ * Tiny word-level diff utilities - no dependency.
  *
  * Powers the inline bullet diff (lightly-edited bullets render as one row
  * with word-level highlights instead of a remove+add pair) and similarity
@@ -13,7 +13,7 @@ function tokenize(s: string): string[] {
 }
 
 /**
- * Word-token LCS diff. O(n·m) with n,m ≤ ~80 words per bullet — negligible.
+ * Word-token LCS diff. O(n·m) with n,m ≤ ~80 words per bullet - negligible.
  * Adjacent segments of the same type are merged.
  */
 export function wordDiff(a: string, b: string): DiffSeg[] {

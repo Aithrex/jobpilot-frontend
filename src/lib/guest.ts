@@ -2,58 +2,58 @@
  * Guest onboarding identity plumbing.
  *
  * - `guest_id`: a persistent uuid stored in localStorage. It is a capability
- *   token for the backend guest session (spec: docs/specs/guest-onboarding.md
- *   in jobpilot-backend) — generated client-side, echoed back by the backend
- *   on /resume/guest/onboard.
+ *  token for the backend guest session (spec: docs/specs/guest-onboarding.md
+ *  in jobpilot-backend) - generated client-side, echoed back by the backend
+ *  on /resume/guest/onboard.
  * - fingerprint hash: a small, stable, canvas-free device hash (UA + language
- *   + timezone + screen dims), sha256'd via SubtleCrypto. Persisted under the
- *   SAME localStorage key AuthGate already reads for register/login context
- *   (`portfolio_fingerprint_hash`) so the existing auth flows start sending it
- *   too. No external fingerprint libs by design.
+ *  + timezone + screen dims), sha256'd via SubtleCrypto. Persisted under the
+ *  SAME localStorage key AuthGate already reads for register/login context
+ *  (`portfolio_fingerprint_hash`) so the existing auth flows start sending it
+ *  too. No external fingerprint libs by design.
  * - feature flag: VITE_GUEST_ONBOARDING is an explicit frontend kill switch
- *   ("false"/"0"/"off" → hard OFF). Unset means "let the frontend probe the
- *   backend" — the backend's own 503/404 (feature disabled / edge route not
- *   deployed) is the authoritative runtime fallback, recorded in a
- *   session-scoped kill marker so the page falls back to the account-first
- *   upload CTA without re-probing every render.
+ *  ("false"/"0"/"off" → hard OFF). Unset means "let the frontend probe the
+ *  backend" - the backend's own 503/404 (feature disabled / edge route not
+ *  deployed) is the authoritative runtime fallback, recorded in a
+ *  session-scoped kill marker so the page falls back to the account-first
+ *  upload CTA without re-probing every render.
  */
 
-import { toast } from "sonner";
-import { apiService } from "@/lib/api";
+import { toast } from 'sonner';
+import { apiService } from '@/lib/api';
 
-export const GUEST_ID_KEY = "guest_id";
-/** Server-issued anti-abuse device token (spec v2) — NOT a capability. */
-export const GUEST_DEVICE_TOKEN_KEY = "guest_device_token";
-/** Shared with AuthGate's login/register context — see AuthGate.tsx readContext(). */
-const FINGERPRINT_KEY = "portfolio_fingerprint_hash";
-const RUNTIME_DISABLED_KEY = "guest_onboarding_unavailable";
+export const GUEST_ID_KEY = 'guest_id';
+/** Server-issued anti-abuse device token (spec v2) - NOT a capability. */
+export const GUEST_DEVICE_TOKEN_KEY = 'guest_device_token';
+/** Shared with AuthGate's login/register context - see AuthGate.tsx readContext(). */
+const FINGERPRINT_KEY = 'portfolio_fingerprint_hash';
+const RUNTIME_DISABLED_KEY = 'guest_onboarding_unavailable';
 
 // ── Feature flag ─────────────────────────────────────────────────
 
 /**
  * Build-time flag: "false"/"0"/"off" is the explicit kill switch; any other
- * set value is ON. UNSET (or empty) is ON in every mode — a production build
+ * set value is ON. UNSET (or empty) is ON in every mode - a production build
  * must probe the backend rather than silently hide a backend-enabled feature;
  * the backend's 503/404 remains the authoritative runtime fallback.
  */
 export function isGuestOnboardingBuildEnabled(): boolean {
   const raw = import.meta.env.VITE_GUEST_ONBOARDING as string | undefined;
-  if (raw !== undefined && raw !== "") {
-    return raw !== "false" && raw !== "0" && raw !== "off";
+  if (raw !== undefined && raw !== '') {
+    return raw !== 'false' && raw !== '0' && raw !== 'off';
   }
   return true;
 }
 
 /**
  * Called when a guest endpoint answers 503 (backend flag off) or 404 (edge
- * route not deployed yet) — disables /start for the rest of this tab session
+ * route not deployed yet) - disables /start for the rest of this tab session
  * so the root route falls back to the existing login-first landing.
  */
 export function markGuestOnboardingUnavailable(): void {
   try {
-    sessionStorage.setItem(RUNTIME_DISABLED_KEY, "1");
+    sessionStorage.setItem(RUNTIME_DISABLED_KEY, '1');
   } catch {
-    /* private mode — worst case we re-probe on next navigation */
+    /* private mode - worst case we re-probe on next navigation */
   }
 }
 
@@ -61,7 +61,7 @@ export function markGuestOnboardingUnavailable(): void {
 export function isGuestOnboardingEnabled(): boolean {
   if (!isGuestOnboardingBuildEnabled()) return false;
   try {
-    return sessionStorage.getItem(RUNTIME_DISABLED_KEY) !== "1";
+    return sessionStorage.getItem(RUNTIME_DISABLED_KEY) !== '1';
   } catch {
     return true;
   }
@@ -71,7 +71,7 @@ export function isGuestOnboardingEnabled(): boolean {
 
 function safeGet(key: string): string | null {
   try {
-    return typeof window !== "undefined" ? localStorage.getItem(key) : null;
+    return typeof window !== 'undefined' ? localStorage.getItem(key) : null;
   } catch {
     return null;
   }
@@ -79,26 +79,26 @@ function safeGet(key: string): string | null {
 
 function safeSet(key: string, value: string): void {
   try {
-    if (typeof window !== "undefined") localStorage.setItem(key, value);
+    if (typeof window !== 'undefined') localStorage.setItem(key, value);
   } catch {
-    /* storage unavailable — guest flow degrades to per-request ids */
+    /* storage unavailable - guest flow degrades to per-request ids */
   }
 }
 
 function uuid(): string {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     return crypto.randomUUID();
   }
   // RFC4122-v4 fallback for older WebViews.
   const bytes = new Uint8Array(16);
-  if (typeof crypto !== "undefined" && crypto.getRandomValues) {
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
     crypto.getRandomValues(bytes);
   } else {
     for (let i = 0; i < 16; i++) bytes[i] = Math.floor(Math.random() * 256);
   }
   bytes[6] = (bytes[6] & 0x0f) | 0x40;
   bytes[8] = (bytes[8] & 0x3f) | 0x80;
-  const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+  const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
@@ -121,7 +121,7 @@ export function ensureGuestId(): string {
 
 export function clearGuestId(): void {
   try {
-    if (typeof window !== "undefined") localStorage.removeItem(GUEST_ID_KEY);
+    if (typeof window !== 'undefined') localStorage.removeItem(GUEST_ID_KEY);
   } catch {
     /* ignore */
   }
@@ -131,7 +131,7 @@ export function clearGuestId(): void {
 //
 // `POST /resume/guest/onboard` returns an opaque `device_token` the server
 // stores only as a sha256 hash. It is a first-party anti-abuse signal (keeps
-// the single free tailor fair across re-uploads), NOT a capability — it
+// the single free tailor fair across re-uploads), NOT a capability - it
 // grants no access to anything. Persist it and echo it on
 // session/matches/tailor calls. Deliberately NOT cleared on claim: it is a
 // durable device signal, not session state.
@@ -149,8 +149,8 @@ export function setDeviceToken(token: string): void {
 
 async function sha256Hex(input: string): Promise<string> {
   const bytes = new TextEncoder().encode(input);
-  const digest = await crypto.subtle.digest("SHA-256", bytes);
-  return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");
+  const digest = await crypto.subtle.digest('SHA-256', bytes);
+  return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('');
 }
 
 /** FNV-1a fallback for non-secure contexts where SubtleCrypto is unavailable. */
@@ -160,33 +160,31 @@ function fnv1aHex(input: string): string {
     h ^= input.charCodeAt(i);
     h = Math.imul(h, 0x01000193) >>> 0;
   }
-  return `fp1-${h.toString(16).padStart(8, "0")}-${input.length.toString(16)}`;
+  return `fp1-${h.toString(16).padStart(8, '0')}-${input.length.toString(16)}`;
 }
 
 function fingerprintSource(): string {
-  let timeZone = "";
+  let timeZone = '';
   try {
-    timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+    timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
   } catch {
-    timeZone = "";
+    timeZone = '';
   }
   const parts = [
-    navigator.userAgent || "",
-    navigator.language || "",
+    navigator.userAgent || '',
+    navigator.language || '',
     timeZone,
-    typeof screen !== "undefined"
-      ? `${screen.width}x${screen.height}x${screen.colorDepth}`
-      : "",
-    String(navigator.hardwareConcurrency ?? ""),
-    String(navigator.maxTouchPoints ?? ""),
+    typeof screen !== 'undefined' ? `${screen.width}x${screen.height}x${screen.colorDepth}` : '',
+    String(navigator.hardwareConcurrency ?? ''),
+    String(navigator.maxTouchPoints ?? ''),
   ];
-  return parts.join("|");
+  return parts.join('|');
 }
 
 let fingerprintPromise: Promise<string> | null = null;
 
 /**
- * Stable device fingerprint hash — cached in localStorage under the key the
+ * Stable device fingerprint hash - cached in localStorage under the key the
  * existing auth flows already read, so register/login send it automatically.
  */
 export function getFingerprintHash(): Promise<string> {
@@ -207,6 +205,74 @@ export function getFingerprintHash(): Promise<string> {
   return fingerprintPromise;
 }
 
+// ── Anti-abuse challenge (progressive CAPTCHA) ───────────────────
+//
+// A guest write can answer 429 { error:"challenge_required", provider,
+// challenge_id }. The backend only ever issues a challenge for a provider it
+// can actually verify, but the FRONTEND still needs a publishable site key to
+// render that provider's widget. If we have no key (or the provider is one we
+// do not implement) we must NOT fake a widget: the flow degrades to an honest
+// "try again shortly" conversion card instead.
+//
+// Site keys are publishable by design (they are visible in the widget markup),
+// so they belong in VITE_* env like any other public value. No secret here.
+
+export type GuestChallengeProviderId = 'turnstile' | 'hcaptcha' | 'recaptcha';
+
+export interface GuestChallengeProviderConfig {
+  id: GuestChallengeProviderId;
+  siteKey: string;
+  scriptSrc: string;
+  /** Global the provider script installs on window, with an explicit
+   * `render(container, params)` API. */
+  globalName: 'turnstile' | 'hcaptcha' | 'grecaptcha';
+}
+
+const CHALLENGE_PROVIDERS: Record<
+  GuestChallengeProviderId,
+  { scriptSrc: string; globalName: GuestChallengeProviderConfig['globalName'] }
+> = {
+  turnstile: {
+    scriptSrc: 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit',
+    globalName: 'turnstile',
+  },
+  hcaptcha: {
+    scriptSrc: 'https://js.hcaptcha.com/1/api.js?render=explicit',
+    globalName: 'hcaptcha',
+  },
+  recaptcha: {
+    scriptSrc: 'https://www.google.com/recaptcha/api.js?render=explicit',
+    globalName: 'grecaptcha',
+  },
+};
+
+function siteKeyFor(id: GuestChallengeProviderId): string {
+  const env = import.meta.env as Record<string, string | undefined>;
+  const specific =
+    id === 'turnstile'
+      ? env.VITE_TURNSTILE_SITE_KEY
+      : id === 'hcaptcha'
+        ? env.VITE_HCAPTCHA_SITE_KEY
+        : env.VITE_RECAPTCHA_SITE_KEY;
+  return (specific || env.VITE_GUEST_CHALLENGE_SITE_KEY || '').trim();
+}
+
+/**
+ * Resolve a server-named provider to something we can honestly render.
+ * Returns null when the provider is unknown to this client or no site key is
+ * configured - the caller then shows the honest fallback, never a fake widget.
+ */
+export function resolveChallengeProvider(
+  provider?: string | null,
+): GuestChallengeProviderConfig | null {
+  const id = (provider || '').trim().toLowerCase() as GuestChallengeProviderId;
+  const entry = CHALLENGE_PROVIDERS[id];
+  if (!entry) return null;
+  const siteKey = siteKeyFor(id);
+  if (!siteKey) return null;
+  return { id, siteKey, ...entry };
+}
+
 // ── Claim (guest → account) ──────────────────────────────────────
 
 let claimInFlight: Promise<void> | null = null;
@@ -215,7 +281,7 @@ let claimInFlight: Promise<void> | null = null;
  * If a guest session exists, claim it into the freshly-authenticated account.
  * Called from AuthContext right after ANY successful login / token hydration.
  * Idempotent server-side; clears guest_id on success (or 404 = unknown/expired
- * session, no point retrying). Never throws — auth must never fail on claim.
+ * session, no point retrying). Never throws - auth must never fail on claim.
  */
 export function claimGuestIfPresent(): Promise<void> {
   if (claimInFlight) return claimInFlight;
@@ -227,7 +293,7 @@ export function claimGuestIfPresent(): Promise<void> {
       if (!resp.error || resp.status === 404) {
         clearGuestId();
       }
-      // v2 response carries transfer + day-1 usage counters — surface a
+      // v2 response carries transfer + day-1 usage counters - surface a
       // one-line confirmation when the claim actually moved work over.
       // Best-effort only: any toast problem must never affect auth.
       const result = resp.data;
@@ -240,9 +306,9 @@ export function claimGuestIfPresent(): Promise<void> {
           const used = result.daily_tailors_used;
           const limit = result.daily_tailors_limit;
           toast.success(
-            typeof used === "number" && typeof limit === "number"
+            typeof used === 'number' && typeof limit === 'number'
               ? `Your guest work is saved to your account. ${used} of ${limit} free tailors used today.`
-              : "Your guest work is saved to your account.",
+              : 'Your guest work is saved to your account.',
           );
         }
       }

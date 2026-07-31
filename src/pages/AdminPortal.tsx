@@ -68,11 +68,11 @@ interface AdminApplication {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
 
-// Defensive ISO parser. Backend now emits UTC-tagged ISO ("…Z"), but legacy
+// Defensive ISO parser. Backend now emits UTC-tagged ISO ("...Z"), but legacy
 // rows in the DB were written before the fix and arrive without a timezone.
 // JS `new Date(...)` treats those as local time which throws off "just now"
 // math (the wall-clock-vs-UTC delta becomes the relative diff). We assume any
-// naive ISO is UTC — that's what the server records, and matches the new
+// naive ISO is UTC - that's what the server records, and matches the new
 // emit path. Returns null for unparseable input.
 function parseISO(iso: string | null | undefined): Date | null {
   if (!iso) return null;
@@ -84,20 +84,20 @@ function parseISO(iso: string | null | undefined): Date | null {
 }
 function fmtDate(iso: string | null | undefined): string {
   const d = parseISO(iso);
-  if (!d) return '—';
+  if (!d) return ' - ';
   return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 }
 // Long, viewer-friendly absolute. Example: "May 12, 2026 · 3:42:18 PM"
 function fmtAbsolute(iso: string | null | undefined): string {
   const d = parseISO(iso);
-  if (!d) return '—';
+  if (!d) return ' - ';
   const date = d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
   const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit' });
   return `${date} · ${time}`;
 }
 function fmtRel(iso: string | null | undefined): string {
   const d = parseISO(iso);
-  if (!d) return '—';
+  if (!d) return ' - ';
   const diffMs = Date.now() - d.getTime();
   // Future-dated entries are surfaced explicitly so admins can spot clock
   // drift or seed data instead of being misled by "just now".
@@ -194,7 +194,7 @@ function Avatar({ seed, size = 'md' }: { seed: string | null | undefined; size?:
 
 function StatusPill({ status, size = 'md' }: { status?: string; size?: 'sm' | 'md' }) {
   const meta = status ? STATUS_COLORS[status] : null;
-  if (!meta) return <span className="text-xs text-gray-600">—</span>;
+  if (!meta) return <span className="text-xs text-gray-600"> - </span>;
   const pad = size === 'sm' ? 'px-1.5 py-0.5 text-[10px]' : 'px-2 py-0.5 text-[11px]';
   return (
     <span className={`inline-flex items-center gap-1 ${pad} rounded-full border font-semibold ${meta.chip}`}>
@@ -400,7 +400,7 @@ function ActivityRow({ a }: { a: Activity }) {
 
 // ─── Recently Active Users ────────────────────────────────────────────────
 // Plain-English snapshot of who used the app most recently. Each row reads
-// like a sentence ("Asha — opened the app 3 minutes ago — uploaded a resume")
+// like a sentence ("Asha - opened the app 3 minutes ago - uploaded a resume")
 // so a non-technical viewer can scan it without decoding tags or jargon.
 
 function presenceFor(iso?: string | null): { dot: string; ring: string; label: string } {
@@ -567,7 +567,7 @@ function TimeStamp({
   return (
     <time
       dateTime={iso || undefined}
-      title={exact === '—' ? undefined : exact}
+      title={exact === ' - ' ? undefined : exact}
       className={`${className} cursor-help underline decoration-dotted decoration-gray-700 underline-offset-2`}
     >
       {prefix ? `${prefix} ` : ''}{rel}
@@ -575,7 +575,7 @@ function TimeStamp({
   );
 }
 
-// Horizontal bar — used in distribution panels (ATS bands, top companies…)
+// Horizontal bar - used in distribution panels (ATS bands, top companies...)
 function HBar({ label, value, max, color = 'indigo', sub }: {
   label: string; value: number; max: number;
   color?: 'indigo' | 'emerald' | 'amber' | 'rose' | 'cyan' | 'violet' | 'sky';
@@ -644,7 +644,7 @@ function MiniBars({ buckets, color = 'indigo' }: {
   );
 }
 
-// Conversion funnel — vertical stages with a contracting bar.
+// Conversion funnel - vertical stages with a contracting bar.
 function Funnel({ stages }: { stages: { label: string; value: number; color?: string }[] }) {
   const max = Math.max(1, ...stages.map(s => s.value));
   return (
@@ -678,7 +678,7 @@ function Funnel({ stages }: { stages: { label: string; value: number; color?: st
   );
 }
 
-// Consistent inner page container — same horizontal padding, max width, and
+// Consistent inner page container - same horizontal padding, max width, and
 // vertical rhythm across every tab so navigation feels stable.
 function PageShell({ children }: { children: React.ReactNode }) {
   return (
@@ -688,7 +688,7 @@ function PageShell({ children }: { children: React.ReactNode }) {
   );
 }
 
-// Surface card — standardized container used everywhere list/analytics content
+// Surface card - standardized container used everywhere list/analytics content
 // lives. Prevents drift between panels (each tab used a slightly different
 // border/background recipe before).
 function Card({
@@ -763,7 +763,7 @@ function Sidebar({
         </div>
       </div>
 
-      {/* Nav — overscroll-contain prevents the sidebar's wheel events from
+      {/* Nav - overscroll-contain prevents the sidebar's wheel events from
           bubbling out and yanking the page; smooth scroll for keyboard nav. */}
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto overscroll-contain scroll-smooth">
         {NAV_ITEMS.map(item => {
@@ -855,7 +855,7 @@ function MobileTopNav({ tab, setTab, onSignOut, onBackToApp }: {
           </button>
         </div>
       </div>
-      {/* Tab strip — horizontally scrollable on small screens, with edge fade
+      {/* Tab strip - horizontally scrollable on small screens, with edge fade
           so users see there's more to swipe. */}
       <div className="relative">
         <div className="overflow-x-auto px-3 pb-2 flex gap-1 scrollbar-hide">
@@ -890,7 +890,7 @@ function Topbar({ title, subtitle, onRefresh, refreshing, right }: {
   title: string; subtitle?: string; onRefresh?: () => void; refreshing?: boolean; right?: React.ReactNode;
 }) {
   // Track page scroll so we can add a real shadow when content slides under
-  // the bar — without it the sticky header reads as part of the page and
+  // the bar - without it the sticky header reads as part of the page and
   // recruiters lose their bearing while scrolling long tables.
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
@@ -901,7 +901,7 @@ function Topbar({ title, subtitle, onRefresh, refreshing, right }: {
   }, []);
 
   return (
-    // Mobile: not sticky — the MobileTopNav already pins to top and a second
+    // Mobile: not sticky - the MobileTopNav already pins to top and a second
     // sticky bar would stack on top of it. Desktop: sticky as before.
     <div
       className={`relative lg:sticky lg:top-0 z-20 lg:z-30 bg-[#0a0a0f]/90 backdrop-blur-xl border-b transition-[border-color,box-shadow] duration-200
@@ -923,7 +923,7 @@ function Topbar({ title, subtitle, onRefresh, refreshing, right }: {
               aria-label="Refresh"
             >
               <Icon.Refresh c={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-              <span className="hidden sm:inline">{refreshing ? 'Refreshing…' : 'Refresh'}</span>
+              <span className="hidden sm:inline">{refreshing ? 'Refreshing...' : 'Refresh'}</span>
             </button>
           )}
         </div>
@@ -950,7 +950,7 @@ export default function AdminPortal() {
 
   // Admin access is now driven by the server `is_admin` flag (set for the
   // seeded admins + anyone promoted in the users collection), not a hardcoded
-  // email — so the real product owner isn't locked out.
+  // email - so the real product owner isn't locked out.
   const isSuperAdmin = isAuthenticated && isAdmin;
 
   const fetchStats = useCallback(async () => {
@@ -1015,7 +1015,7 @@ export default function AdminPortal() {
         <div className="text-center space-y-4">
           <div className="text-7xl font-bold bg-gradient-to-b from-gray-400 to-gray-700 bg-clip-text text-transparent">403</div>
           <p className="text-gray-400">You are not authorized to access this page.</p>
-          <button onClick={() => navigate('/home')} className="text-sm text-indigo-400 hover:text-indigo-300">← Back to homepage</button>
+          <button onClick={() => navigate('/app/home')} className="text-sm text-indigo-400 hover:text-indigo-300">← Back to homepage</button>
         </div>
       </div>
     );
@@ -1033,15 +1033,15 @@ export default function AdminPortal() {
       <Sidebar
         tab={tab} setTab={setTab} counts={counts}
         user={user}
-        onSignOut={() => { logout(); navigate('/home'); }}
-        onBackToApp={() => navigate('/home')}
+        onSignOut={() => { logout(); navigate('/app/home'); }}
+        onBackToApp={() => navigate('/app/home')}
       />
 
       <main className="flex-1 min-w-0 flex flex-col">
         <MobileTopNav
           tab={tab} setTab={setTab}
-          onSignOut={() => { logout(); navigate('/home'); }}
-          onBackToApp={() => navigate('/home')}
+          onSignOut={() => { logout(); navigate('/app/home'); }}
+          onBackToApp={() => navigate('/app/home')}
         />
         <Topbar
           title={tabMeta[tab].title}
@@ -1132,7 +1132,7 @@ function OverviewPanel({ stats, users, onSelectUser }: {
       </div>
     );
   }
-  // Cheap "trend" signal based on 7d vs 30d—no per-day data available
+  // Cheap "trend" signal based on 7d vs 30d - no per-day data available
   const trendFrom = (seven: number, thirty: number): { direction: 'up' | 'down' | 'flat'; pct?: number } => {
     if (thirty <= 0) return { direction: 'flat' };
     const dailySeven = seven / 7;
@@ -1143,7 +1143,7 @@ function OverviewPanel({ stats, users, onSelectUser }: {
     return { direction: pct > 0 ? 'up' : 'down', pct };
   };
 
-  // Fake sparklines derived from rollup counts — just for visual rhythm
+  // Fake sparklines derived from rollup counts - just for visual rhythm
   const mkSpark = (seed: number) => {
     const out: number[] = [];
     let v = Math.max(1, Math.floor(seed / 10));
@@ -1157,7 +1157,7 @@ function OverviewPanel({ stats, users, onSelectUser }: {
   const usersTrend = trendFrom(stats.users_7d, stats.users_30d);
   const tailoringTrend = trendFrom(stats.tailoring_7d, stats.tailoring_30d);
 
-  // ATS score distribution across all tailoring records — buckets of 20.
+  // ATS score distribution across all tailoring records - buckets of 20.
   const atsScores: number[] = tailoring
     .map(r => r.ats_scores?.overall)
     .filter((n: any): n is number => typeof n === 'number');
@@ -1176,7 +1176,7 @@ function OverviewPanel({ stats, users, onSelectUser }: {
     ? Math.round(atsScores.reduce((a, b) => a + b, 0) / atsScores.length)
     : null;
 
-  // Top companies / roles from tailoring records — useful for spotting demand.
+  // Top companies / roles from tailoring records - useful for spotting demand.
   const tally = (key: (r: any) => string | undefined) => {
     const m: Record<string, number> = {};
     for (const r of tailoring) {
@@ -1189,7 +1189,7 @@ function OverviewPanel({ stats, users, onSelectUser }: {
   const topCompanies = tally(r => r.jd_analysis?.company);
   const topRoles = tally(r => r.jd_analysis?.job_title);
 
-  // Daily tailoring volume — last 14 days, by created_at.
+  // Daily tailoring volume - last 14 days, by created_at.
   const days: { label: string; iso: string; value: number }[] = [];
   for (let i = 13; i >= 0; i--) {
     const d = new Date();
@@ -1210,7 +1210,7 @@ function OverviewPanel({ stats, users, onSelectUser }: {
     if (bucket) bucket.value++;
   }
 
-  // Conversion funnel — visualizes the journey through the platform.
+  // Conversion funnel - visualizes the journey through the platform.
   const appliedCount = (applications.length
     ? applications.filter(a => a.status && a.status !== 'draft').length
     : Object.entries(stats.applications_by_status || {})
@@ -1263,7 +1263,7 @@ function OverviewPanel({ stats, users, onSelectUser }: {
           />
           <KPICard
             label="Tailoring Sessions" value={fmtNum(stats.total_tailoring_sessions)}
-            sub={`+${stats.tailoring_7d} this week · avg ATS ${avgAts ?? '—'}`}
+            sub={`+${stats.tailoring_7d} this week · avg ATS ${avgAts ?? ' - '}`}
             icon={<Icon.Bolt c="w-4 h-4" />} color="violet" trend={tailoringTrend}
             sparklineData={days.map(d => d.value)}
           />
@@ -1341,7 +1341,7 @@ function OverviewPanel({ stats, users, onSelectUser }: {
         </div>
       </div>
 
-      {/* Secondary KPIs — infra + storage */}
+      {/* Secondary KPIs - infra + storage */}
       <div>
         <SectionHeading title="Storage & versioning" subtitle="How resume files are cached across the new versioning model." />
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -1363,7 +1363,7 @@ function OverviewPanel({ stats, users, onSelectUser }: {
       </div>
 
       {/* Pipeline + Recently-active two-column. The right column has two
-          tabs (people-first vs event-first) — the people view is the default
+          tabs (people-first vs event-first) - the people view is the default
           because it's easier for a non-technical viewer to scan. */}
       <div className="grid grid-cols-1 xl:grid-cols-[1.2fr_1fr] gap-6">
         <Card>
@@ -1397,7 +1397,7 @@ function OverviewPanel({ stats, users, onSelectUser }: {
 }
 
 // Right-column card on Overview. Two views: "People" (Recently active users
-// — the friendly default) and "Events" (the detailed activity log).
+// - the friendly default) and "Events" (the detailed activity log).
 function RecentActivityCard({
   activities, users, onSelectUser,
 }: {
@@ -1417,7 +1417,7 @@ function RecentActivityCard({
             {view === 'people' ? 'People sorted by their last visit' : 'Last 30 days · every event'}
           </p>
         </div>
-        {/* Segmented toggle — clearly labelled so the viewer knows what
+        {/* Segmented toggle - clearly labelled so the viewer knows what
             switches between the two perspectives. */}
         <div className="shrink-0 inline-flex items-center rounded-lg border border-white/[0.08] bg-white/[0.02] p-0.5 text-[11px]">
           <button
@@ -1455,7 +1455,7 @@ function RecentActivityCard({
         )}
       </div>
 
-      {/* Footer hint — gives the naive viewer a clear next action */}
+      {/* Footer hint - gives the naive viewer a clear next action */}
       <div className="border-t border-white/[0.06] px-4 sm:px-5 py-2.5 text-[11px] text-gray-500 flex items-center justify-between">
         <span>
           {view === 'people'
@@ -1515,7 +1515,7 @@ function UsersPanel({ users, loading, search, setSearch, onSelect }: {
 
       {/* Search */}
       <div className="flex items-center gap-3">
-        <div className="flex-1"><SearchBox value={search} onChange={setSearch} placeholder="Search by name, email, or role…" /></div>
+        <div className="flex-1"><SearchBox value={search} onChange={setSearch} placeholder="Search by name, email, or role..." /></div>
         <span className="text-xs text-gray-500 tabular-nums whitespace-nowrap">{filtered.length} shown</span>
       </div>
 
@@ -1552,7 +1552,7 @@ function UsersPanel({ users, loading, search, setSearch, onSelect }: {
                   <div className="hidden md:flex flex-col gap-0.5">
                     {u.role ? (
                       <span className="text-xs text-gray-300 truncate">{u.role}</span>
-                    ) : <span className="text-xs text-gray-600">—</span>}
+                    ) : <span className="text-xs text-gray-600"> - </span>}
                     {u.sector && <span className="text-[10px] text-gray-600 truncate">{u.sector}</span>}
                   </div>
                   <span className="hidden md:block text-xs text-gray-500 whitespace-nowrap" title={fmtAbsolute(u.created_at)}>{fmtDate(u.created_at)}</span>
@@ -1661,7 +1661,7 @@ function UserDetailDrawer({ detail, onBack }: { detail: UserDetail; onBack: () =
           <div className="hidden md:grid grid-cols-3 gap-3 shrink-0">
             <MiniStat label="Resumes" value={base_resumes.length} />
             <MiniStat label="Tailored" value={tailoring_records.length} />
-            <MiniStat label="Parsed" value={parsed_resume ? '✓' : '—'} />
+            <MiniStat label="Parsed" value={parsed_resume ? '✓' : ' - '} />
           </div>
         </div>
       </div>
@@ -1701,10 +1701,10 @@ function UserDetailDrawer({ detail, onBack }: { detail: UserDetail; onBack: () =
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-5 space-y-3">
                   <SectionHeading title="Account" />
-                  <Info label="Session ID" value={u.session_id || '—'} mono />
-                  <Info label="Fingerprint" value={u.fingerprint_hash ? u.fingerprint_hash.slice(0, 16) + '…' : '—'} mono />
+                  <Info label="Session ID" value={u.session_id || ' - '} mono />
+                  <Info label="Fingerprint" value={u.fingerprint_hash ? u.fingerprint_hash.slice(0, 16) + '...' : ' - '} mono />
                   <Info label="Login attempts" value={String(u.login_attempts)} />
-                  <Info label="Parsed resume" value={parsed_resume ? '✓ Yes' : '—'} />
+                  <Info label="Parsed resume" value={parsed_resume ? '✓ Yes' : ' - '} />
                 </div>
                 <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-5 space-y-3">
                   <SectionHeading title="Activity" />
@@ -1756,7 +1756,7 @@ function UserDetailDrawer({ detail, onBack }: { detail: UserDetail; onBack: () =
         )}
       </AnimatePresence>
 
-      {/* PDF viewer modal — uses blob: URLs to sidestep CSP frame-src */}
+      {/* PDF viewer modal - uses blob: URLs to sidestep CSP frame-src */}
       <AnimatePresence>
         {viewerUrl && (
           <motion.div
@@ -1792,10 +1792,12 @@ function UserDetailDrawer({ detail, onBack }: { detail: UserDetail; onBack: () =
 
 // Runtime full-access grant for testers/devs. Overlays `overrides.plan` on top
 // of the user's stored plan server-side; clearing the override restores it.
+// Also supports limits/features overrides for Auto Apply testing.
 function AccessOverrideCard({ email, storedPlan }: { email: string; storedPlan?: string | null }) {
   const [override, setOverride] = useState<AdminUserOverride | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [autoSubmitLimit, setAutoSubmitLimit] = useState('999');
 
   const fetchOverride = useCallback(async () => {
     setLoading(true);
@@ -1805,6 +1807,8 @@ function AccessOverrideCard({ email, storedPlan }: { email: string; storedPlan?:
       setOverride(null);
     } else {
       setOverride(res.data ?? null);
+      const lim = res.data?.overrides?.limits?.auto_submit;
+      if (lim != null) setAutoSubmitLimit(String(lim));
     }
     setLoading(false);
   }, [email]);
@@ -1813,7 +1817,9 @@ function AccessOverrideCard({ email, storedPlan }: { email: string; storedPlan?:
 
   const overridePlan = override?.overrides?.plan;
   const fullAccess = !!overridePlan; // any override plan lifts the user above their stored plan
-  const effectivePlan = storedPlan || overridePlan || 'free';
+  const effectivePlan = overridePlan || storedPlan || 'free';
+  const ovLimits = override?.overrides?.limits || {};
+  const ovFeatures = override?.overrides?.features;
 
   const write = useCallback(async (overrides: Record<string, unknown>, successMsg: string) => {
     setSaving(true);
@@ -1832,14 +1838,14 @@ function AccessOverrideCard({ email, storedPlan }: { email: string; storedPlan?:
     <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-5 space-y-4">
       <SectionHeading
         title="Access override"
-        subtitle="Grants all premium features immediately. Use for testers/devs."
+        subtitle="Grant plan / Auto Apply limits / features for testing. Clears restore the stored plan."
         action={
           <span className={`text-[11px] px-2 py-0.5 rounded-full border ${
-            fullAccess
+            fullAccess || Object.keys(ovLimits).length > 0
               ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300'
               : 'bg-white/[0.03] border-white/[0.06] text-gray-500'
           }`}>
-            {loading ? 'Loading…' : fullAccess ? 'Full access active' : 'No override'}
+            {loading ? 'Loading...' : fullAccess ? 'Full access active' : 'No plan override'}
           </span>
         }
       />
@@ -1847,14 +1853,12 @@ function AccessOverrideCard({ email, storedPlan }: { email: string; storedPlan?:
       <div className="flex flex-wrap items-center gap-4 text-[11px] text-gray-500">
         <span className="inline-flex items-center gap-1.5">
           <span className="text-gray-600">Stored plan</span>
-          <span className="font-mono text-gray-300">{effectivePlan}</span>
+          <span className="font-mono text-gray-300">{storedPlan || 'free'}</span>
         </span>
-        {fullAccess && (
-          <span className="inline-flex items-center gap-1.5">
-            <span className="text-gray-600">Override</span>
-            <span className="font-mono text-emerald-300">{overridePlan}</span>
-          </span>
-        )}
+        <span className="inline-flex items-center gap-1.5">
+          <span className="text-gray-600">Effective</span>
+          <span className="font-mono text-emerald-300">{effectivePlan}</span>
+        </span>
         {override?.updated_by && (
           <span className="inline-flex items-center gap-1.5">
             <span className="text-gray-600">By</span>
@@ -1866,19 +1870,50 @@ function AccessOverrideCard({ email, storedPlan }: { email: string; storedPlan?:
       <div className="flex flex-wrap items-center gap-2 pt-1">
         <button
           onClick={() => write({ plan: 'premium_plus' }, 'Full access granted (Premium+).')}
-          disabled={saving || loading || fullAccess}
+          disabled={saving || loading || overridePlan === 'premium_plus'}
           className="h-9 px-4 rounded-lg bg-gradient-to-r from-indigo-500 to-violet-500 text-white text-xs font-medium inline-flex items-center gap-1.5 hover:from-indigo-400 hover:to-violet-400 transition disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <Icon.Bolt c="w-3.5 h-3.5" />
-          {fullAccess ? 'Full access granted' : 'Grant full access (Premium+)'}
+          Grant Premium+
         </button>
         <button
-          onClick={() => write({}, 'Override cleared — reset to stored plan.')}
-          disabled={saving || loading || !fullAccess}
+          onClick={() => write({ plan: 'premium' }, 'Premium override set.')}
+          disabled={saving || loading}
+          className="h-9 px-4 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-gray-300 text-xs font-medium border border-white/[0.06] transition disabled:opacity-40"
+        >
+          Grant Premium
+        </button>
+        <button
+          onClick={() => write({
+            plan: effectivePlan === 'free' ? 'premium' : effectivePlan,
+            features: Array.isArray(ovFeatures)
+              ? [...new Set([...(ovFeatures as string[]), 'auto_apply'])]
+              : { ...(typeof ovFeatures === 'object' && ovFeatures ? ovFeatures : {}), auto_apply: true },
+            limits: { ...ovLimits, auto_submit: Number(autoSubmitLimit) || 999 },
+          }, 'Auto Apply testing unlock applied.')}
+          disabled={saving || loading}
+          className="h-9 px-4 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 text-xs font-medium border border-emerald-500/30 transition disabled:opacity-40"
+        >
+          Unlock Auto Apply (test)
+        </button>
+        <button
+          onClick={() => write({}, 'Override cleared - reset to stored plan.')}
+          disabled={saving || loading || !override?.overrides}
           className="h-9 px-4 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-gray-300 text-xs font-medium border border-white/[0.06] inline-flex items-center gap-1.5 transition disabled:opacity-40 disabled:cursor-not-allowed"
         >
           Reset to plan
         </button>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2 text-[11px] text-gray-400">
+        <label className="inline-flex items-center gap-1.5">
+          Monthly auto_submit limit
+          <input
+            value={autoSubmitLimit}
+            onChange={(e) => setAutoSubmitLimit(e.target.value)}
+            className="h-8 w-20 rounded-md border border-white/[0.08] bg-black/30 px-2 font-mono text-gray-200"
+          />
+        </label>
       </div>
     </div>
   );
@@ -1940,7 +1975,7 @@ function FileBlock({ title, items, dateKey, onView, onDownload, downloadingKey }
                 onClick={() => onView(f.s3_key, f.filename)}
                 disabled={busy}
                 className="h-8 px-3 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-[11px] text-gray-300 border border-white/[0.06] inline-flex items-center gap-1.5 disabled:opacity-50"
-              ><Icon.Eye c="w-3.5 h-3.5" />{busy ? '…' : 'View'}</button>
+              ><Icon.Eye c="w-3.5 h-3.5" />{busy ? '...' : 'View'}</button>
               <button
                 onClick={() => onDownload(f.s3_key, f.filename)}
                 disabled={busy}
@@ -2127,7 +2162,7 @@ function AdminLoginForm() {
             {loading ? (
               <span className="inline-flex items-center justify-center gap-2">
                 <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Signing in…
+                Signing in...
               </span>
             ) : 'Sign In'}
           </button>
