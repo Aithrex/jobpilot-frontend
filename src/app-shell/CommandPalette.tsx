@@ -10,7 +10,14 @@ import { useTheme } from '@/components/theme-provider';
 import { useCombinedJobsCtx } from '@/components/job-search/CombinedJobsProvider';
 import { ALL_DESTINATIONS, NAV_ALL, navHref } from './nav.config';
 
-/** Fire from anywhere (e.g. the TopBar button) to open the palette. */
+/**
+ * Fire from anywhere (e.g. the mobile search button) to open the palette.
+ *
+ * This briefly took a `seed` argument, back when the desktop top bar was a
+ * button dressed as a search field and had to forward the keystroke that
+ * opened it. The top bar is a real input now, so nothing seeds the palette and
+ * the parameter is gone.
+ */
 export function openCommandPalette() {
   window.dispatchEvent(new CustomEvent('jobpilot:cmdk'));
 }

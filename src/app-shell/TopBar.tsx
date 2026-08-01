@@ -1,8 +1,9 @@
 import { Link } from "react-router-dom";
-import { LogOut, Monitor, Moon, Search, Settings, Sun } from "lucide-react";
+import { LogOut, Search, Settings } from "lucide-react";
 import { BrandMark } from "@/components/BrandMark";
 import { openCommandPalette } from "./CommandPalette";
 import { DestinationNav } from "./DestinationNav";
+import { TopBarSearch } from "./TopBarSearch";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useTheme } from "@/components/theme-provider";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { useAuth } from "@/contexts/AuthContext";
 import { initials } from "./initials";
 import { navHref } from "./nav.config";
@@ -25,18 +26,7 @@ import { navHref } from "./nav.config";
  * something today.
  */
 export function TopBar() {
-  const { theme, setTheme } = useTheme();
   const { user, logout } = useAuth();
-
-  // Three-state cycle: light → dark → system → light. Anything unexpected in
-  // storage is treated as "system" (the provider's default).
-  const themeState: "light" | "dark" | "system" =
-    theme === "light" || theme === "dark" ? theme : "system";
-  const nextTheme =
-    themeState === "light" ? "dark" : themeState === "dark" ? "system" : "light";
-  const ThemeIcon =
-    themeState === "light" ? Sun : themeState === "dark" ? Moon : Monitor;
-  const themeToggleLabel = `Theme: ${themeState}. Switch to ${nextTheme} theme`;
 
   const email = user?.email;
   const name = user?.name;
@@ -62,21 +52,17 @@ export function TopBar() {
       <div className="min-w-0 flex-1" />
 
       <div className="flex shrink-0 items-center gap-1.5">
-        {/* Command palette trigger */}
+        {/* A real, typable search field with inline suggestions. Ctrl/Cmd-K
+            still opens the full palette; the hint is no longer printed inside
+            the field, where it read as part of the input. */}
+        <TopBarSearch />
+        {/* Mobile keeps the palette: there is no room for an inline field with
+            a dropdown on a phone. Wrapped, not passed by reference - bare
+            `onClick={openCommandPalette}` hands React's MouseEvent to the
+            `seed` parameter and pre-fills the search with an event object. */}
         <button
           type="button"
-          onClick={openCommandPalette}
-          aria-label="Open command palette"
-          title="Search & jump (Ctrl/⌘ K)"
-          className="hidden h-10 items-center gap-2 rounded-full border border-border/70 bg-muted/40 pl-3 pr-2 text-caption text-muted-foreground interactive interactive-press hover:border-border hover:text-foreground sm:flex"
-        >
-          <Search className="h-4 w-4" aria-hidden="true" />
-          <span>Search...</span>
-          <kbd className="rounded border border-border bg-background px-1.5 py-0.5 font-mono text-[10px] font-semibold text-muted-foreground">⌘K</kbd>
-        </button>
-        <button
-          type="button"
-          onClick={openCommandPalette}
+          onClick={() => openCommandPalette()}
           aria-label="Open command palette"
           title="Search & jump"
           className="flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground interactive interactive-press hover:bg-accent hover:text-foreground sm:hidden"
@@ -84,27 +70,12 @@ export function TopBar() {
           <Search className="h-5 w-5" aria-hidden="true" />
         </button>
 
-        {/* Theme toggle */}
-        <button
-          type="button"
-          onClick={() => setTheme(nextTheme)}
-          aria-label={themeToggleLabel}
-          title={themeToggleLabel}
-          className="flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground interactive interactive-press hover:bg-accent hover:text-foreground active:bg-accent/80"
-        >
-          <ThemeIcon className="h-5 w-5" aria-hidden="true" />
-        </button>
+        {/* Theme toggle - shared with the landing nav and the auth stage. */}
+        <ThemeToggle />
 
-        {/* Settings gear - quick reach without opening the account menu. */}
-        <Link
-          to={navHref("settings")}
-          aria-label="Settings"
-          title="Settings"
-          className="hidden h-11 w-11 items-center justify-center rounded-full text-muted-foreground interactive interactive-press hover:bg-accent hover:text-foreground active:bg-accent/80 sm:flex"
-        >
-          <Settings className="h-5 w-5" aria-hidden="true" />
-        </Link>
-
+        {/* No standalone settings gear: the account menu below already offers
+            Settings, and two controls one click apart leading to the same route
+            is a redundant target, not a shortcut. */}
         {/* User menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -118,7 +89,12 @@ export function TopBar() {
               </span>
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
+          {/* `align="end"` alone put the panel's right edge exactly on the
+              avatar's, i.e. flush with the bar's 24px gutter. Correct, but a
+              floating panel reads tighter against the window edge than in-flow
+              content does. A small inward nudge gives it room without breaking
+              the visual tie to the trigger it belongs to. */}
+          <DropdownMenuContent align="end" alignOffset={8} className="w-56">
             <DropdownMenuLabel className="min-w-0">
               <p className="truncate text-sm font-semibold text-foreground">{name || "Your account"}</p>
               {email && <p className="truncate text-xs font-normal text-muted-foreground">{email}</p>}

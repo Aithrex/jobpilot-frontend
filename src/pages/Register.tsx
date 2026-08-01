@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2, Check, ArrowLeft, ArrowRight, Mail } from 'lucide-react';
+import { Loader2, Check, ArrowLeft, ArrowRight, ChevronDown, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import {
@@ -229,18 +229,30 @@ export default function Register() {
                   What role are you targeting?{' '}
                   <span className="text-muted-foreground">(optional)</span>
                 </Label>
-                <select
-                  id="role"
-                  value={role}
-                  onChange={(e) => setRole(e.target.value)}
-                  disabled={isLoading}
-                  className="flex h-11 w-full cursor-pointer rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <option value="">Select a role...</option>
-                  {ROLE_OPTIONS.map((r) => (
-                    <option key={r} value={r}>{r}</option>
-                  ))}
-                </select>
+                {/* Native <select> for the OS picker on touch, but with the
+                    browser's own arrow suppressed. That arrow is positioned by
+                    the UA, not by our padding, so it sat off the field's `px-3`
+                    rhythm and did not match the ChevronDown every other control
+                    in the app uses. `pr-10` reserves room so a long role never
+                    runs under the icon. */}
+                <div className="relative">
+                  <select
+                    id="role"
+                    value={role}
+                    onChange={(e) => setRole(e.target.value)}
+                    disabled={isLoading}
+                    className="flex h-11 w-full cursor-pointer appearance-none rounded-md border border-input bg-background pl-3 pr-10 py-2 text-sm text-foreground ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <option value="">Select a role...</option>
+                    {ROLE_OPTIONS.map((r) => (
+                      <option key={r} value={r}>{r}</option>
+                    ))}
+                  </select>
+                  <ChevronDown
+                    aria-hidden
+                    className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                  />
+                </div>
                 <p className="text-xs text-muted-foreground">
                   Used to rank roles for your field. You can change it later.
                 </p>

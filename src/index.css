@@ -1012,6 +1012,48 @@ body,
   max-width: 100vw;
 }
 
+/* Reserve the scrollbar track permanently.
+
+  Radix locks body scroll whenever a dropdown, dialog or the command palette
+  opens. Without a reserved gutter that removes the scrollbar, the page gets
+  ~15px wider for as long as the menu is open, and the whole layout jumps
+  sideways - visible every time the account menu or Ctrl/Cmd-K was clicked.
+  Reserving the track means opening an overlay changes nothing about width. */
+html {
+  scrollbar-gutter: stable;
+}
+
+/* ...and stop Radix compensating for a scrollbar that never left.
+
+  `react-remove-scroll` (under every Radix dropdown/dialog/palette) measures
+  `innerWidth - documentElement.clientWidth`, sees the gutter's 10px, assumes
+  locking will reclaim it, and injects:
+
+      body[data-scroll-locked] { margin-right: 10px !important }
+
+  With the gutter reserved above, that space was never going to be reclaimed,
+  so the margin is pure over-correction: body narrows 1897 -> 1887px and every
+  child - including the sticky top bar - slides left, leaving a strip of bare
+  page down the right edge for as long as the menu is open.
+
+  Only cancel it where the gutter is actually honoured. Without
+  `scrollbar-gutter` support the scrollbar really does disappear on lock, and
+  then that margin is the correct compensation - removing it would introduce
+  the very shift it prevents.
+
+  The `html` prefix is load-bearing: react-remove-scroll injects its rule into
+  <head> at RUNTIME, so it lands after this file in document order. At equal
+  specificity the later `!important` wins, so a plain `body[data-scroll-locked]`
+  selector loses; `html body[...]` outranks it.
+
+  NOTE: headless Chromium uses overlay scrollbars and cannot reproduce any of
+  this - verify in a headed browser. */
+@supports (scrollbar-gutter: stable) {
+  html body[data-scroll-locked] {
+    margin-right: 0 !important;
+  }
+}
+
 /* Selection color */
 ::selection {
   background: hsl(var(--primary) / 0.3);
