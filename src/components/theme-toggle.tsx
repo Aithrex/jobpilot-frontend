@@ -1,52 +1,45 @@
-import { Moon, Sun } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Monitor, Moon, Sun } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { useTheme } from '@/components/theme-provider';
 
-export function ThemeToggle() {
+/**
+ * The app's ONE theme control, used by every surface: the workspace top bar,
+ * the landing nav, and the auth stage.
+ *
+ * There used to be two - this icon button in the top bar, and a track-and-knob
+ * switch on the landing page - which meant the same setting looked like two
+ * different controls depending on where you found it. One control everywhere
+ * is worth more than either shape being individually optimal.
+ *
+ * Three-state cycle (light → dark → system → light) rather than a binary flip,
+ * because "system" is a real, distinct choice and a two-position switch cannot
+ * express it. The icon names the state you are IN, and the label spells out
+ * both that state and the one a press moves you to, so the control never has
+ * to be inferred from a single glyph.
+ */
+export function ThemeToggle({ className }: { className?: string }) {
   const { theme, setTheme } = useTheme();
 
-  // Resolve effective theme for icon display
-  const effective =
-    theme === 'system'
-      ? (typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
-      : theme;
-
-  const toggleTheme = () => setTheme(effective === 'dark' ? 'light' : 'dark');
+  // Anything unexpected in storage is treated as "system" (provider default).
+  const themeState: 'light' | 'dark' | 'system' =
+    theme === 'light' || theme === 'dark' ? theme : 'system';
+  const nextTheme =
+    themeState === 'light' ? 'dark' : themeState === 'dark' ? 'system' : 'light';
+  const Icon = themeState === 'light' ? Sun : themeState === 'dark' ? Moon : Monitor;
+  const label = `Theme: ${themeState}. Switch to ${nextTheme} theme`;
 
   return (
-    <Button
-      variant="ghost"
-      size="icon"
-      onClick={toggleTheme}
-      className="relative rounded-full w-10 h-10 bg-secondary/50 hover:bg-secondary overflow-hidden transition-colors duration-300"
-      aria-label={`Switch to ${effective === 'dark' ? 'light' : 'dark'} mode`}
+    <button
+      type="button"
+      onClick={() => setTheme(nextTheme)}
+      aria-label={label}
+      title={label}
+      className={cn(
+        'flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground interactive interactive-press hover:bg-accent hover:text-foreground active:bg-accent/80',
+        className,
+      )}
     >
-      <AnimatePresence mode="wait" initial={false}>
-        {effective === 'dark' ? (
-          <motion.div
-            key="sun"
-            initial={{ rotate: 90, opacity: 0, scale: 0 }}
-            animate={{ rotate: 0, opacity: 1, scale: 1 }}
-            exit={{ rotate: -90, opacity: 0, scale: 0 }}
-            transition={{ duration: 0.3, ease: 'easeInOut' }}
-            className="absolute inset-0 flex items-center justify-center"
-          >
-            <Sun className="h-5 w-5 text-foreground" />
-          </motion.div>
-        ) : (
-          <motion.div
-            key="moon"
-            initial={{ rotate: -90, opacity: 0, scale: 0 }}
-            animate={{ rotate: 0, opacity: 1, scale: 1 }}
-            exit={{ rotate: 90, opacity: 0, scale: 0 }}
-            transition={{ duration: 0.3, ease: 'easeInOut' }}
-            className="absolute inset-0 flex items-center justify-center"
-          >
-            <Moon className="h-5 w-5 text-foreground" />
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </Button>
+      <Icon className="h-5 w-5" aria-hidden="true" />
+    </button>
   );
 }

@@ -3,7 +3,6 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
-import { cn } from '@/lib/utils';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { ThemeProvider } from './components/theme-provider';
 import { AuthProvider } from './contexts/AuthContext';
@@ -86,21 +85,19 @@ const queryClient = new QueryClient();
 /**
  * Route-level Suspense fallback.
  *
- * `pinnedDark` matches the routes that render themselves on the pinned deep-ink
- * token set (landing + every auth surface). Without it the fallback paints in
- * the *app* theme - so a light-themed user hitting /login saw a bright flash
- * for the duration of the chunk fetch, then a dark page. Pinning the same
- * `.dark` scope + `bg-background` makes the fallback and the page it precedes
- * one continuous surface.
+ * Theme-neutral on every route: it declares no surface of its own, so it
+ * inherits the active theme and the page it precedes paints the same way.
+ *
+ * This used to take a `pinnedDark` flag for the auth routes, back when
+ * `AuthShell` forced the dark token set regardless of the user's choice - the
+ * fallback had to be pinned to match or /login flashed light then went dark.
+ * Auth now follows the global theme, so pinning would cause the inverse flash
+ * (dark fallback → light page) and the flag is gone.
  */
-export function RouteLoadingFallback({ pinnedDark = false }: { pinnedDark?: boolean }) {
+export function RouteLoadingFallback() {
   return (
     <div
-      className={cn(
-        'flex min-h-screen items-center justify-center',
-        pinnedDark && 'dark bg-background',
-      )}
-      style={pinnedDark ? { colorScheme: 'dark' } : undefined}
+      className="flex min-h-screen items-center justify-center"
       aria-live="polite"
     >
       <div className="flex items-center gap-2 text-muted-foreground">
@@ -137,12 +134,12 @@ function AppContent() {
   /app/home; guests → /#try; feature off → /). Guest state
   lives in localStorage + the backend session, so nothing is
   lost crossing this redirect. */}
-          {/* These render on AuthShell's forced-dark stage - the fallback is
-  pinned dark too so there is no light flash before the page paints. */}
+          {/* These render on the AuthShell stage, which follows the global
+  theme - so the theme-neutral fallback matches it in both light and dark. */}
           <Route
             path="/start"
             element={
-              <Suspense fallback={<RouteLoadingFallback pinnedDark />}>
+              <Suspense fallback={<RouteLoadingFallback />}>
                 <Start />
               </Suspense>
             }
@@ -150,7 +147,7 @@ function AppContent() {
           <Route
             path="/login"
             element={
-              <Suspense fallback={<RouteLoadingFallback pinnedDark />}>
+              <Suspense fallback={<RouteLoadingFallback />}>
                 <Login />
               </Suspense>
             }
@@ -158,7 +155,7 @@ function AppContent() {
           <Route
             path="/register"
             element={
-              <Suspense fallback={<RouteLoadingFallback pinnedDark />}>
+              <Suspense fallback={<RouteLoadingFallback />}>
                 <Register />
               </Suspense>
             }
@@ -268,7 +265,7 @@ function AppContent() {
           <Route
             path="/oauth/callback"
             element={
-              <Suspense fallback={<RouteLoadingFallback pinnedDark />}>
+              <Suspense fallback={<RouteLoadingFallback />}>
                 <AuthCallback />
               </Suspense>
             }
@@ -284,7 +281,7 @@ function AppContent() {
           <Route
             path="/reset-password"
             element={
-              <Suspense fallback={<RouteLoadingFallback pinnedDark />}>
+              <Suspense fallback={<RouteLoadingFallback />}>
                 <ResetPassword />
               </Suspense>
             }
