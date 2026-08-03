@@ -18,12 +18,26 @@ import { initials } from "./initials";
 import { navHref } from "./nav.config";
 
 /**
- * Global sticky top bar (64px) and the app-shell's sole chrome after the
+ * Global fixed top bar (64px) and the app-shell's sole chrome after the
  * vertical sidebar was retired: brand mark on the left, the horizontal
  * primary destination nav next to it (>=lg), then the right cluster - command
  * palette, theme toggle, a settings gear, and the account menu. Rendered as
  * the page `<header>` landmark. No dead affordances - every control does
  * something today.
+ *
+ * FIXED, NOT STICKY, and that is load-bearing. Typing in the search box while
+ * scrolled down used to walk the page upward ~41px per keystroke. The cause is
+ * not this app: browsers scroll the focused editable back into view as its
+ * value changes, and against a `sticky` ancestor that never settles - the
+ * browser scrolls toward the bar's UNSTUCK layout position (the top of the
+ * document), sticky immediately re-pins it, and the next keystroke does it
+ * again. Measured at the page bottom: sticky drifted -41px per key, fixed
+ * holds position exactly. A plain input elsewhere on the page never drifts,
+ * because it scrolls into view once and then stops - which is what told us the
+ * search box was not the problem.
+ *
+ * Being out of flow, the bar no longer reserves its own 64px, hence the spacer
+ * below it. Keep the two heights equal.
  */
 export function TopBar() {
   const { user, logout } = useAuth();
@@ -32,14 +46,15 @@ export function TopBar() {
   const name = user?.name;
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border/70 glass-nav glass-specular px-4 shadow-soft transition-colors duration-200 ease-expo sm:px-6">
+    <>
+      <header className="fixed inset-x-0 top-0 z-30 flex h-16 items-center gap-3 border-b border-border/70 glass-nav glass-specular px-4 shadow-soft transition-colors duration-200 ease-expo sm:px-6">
       {/* Brand mark - always visible now the sidebar is gone. */}
       <Link
         to={navHref("home")}
         aria-label="Aspirely home"
         className="flex shrink-0 items-center gap-2.5 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >
-        <BrandMark className="h-8 w-8 rounded-lg shadow-soft" iconClassName="h-4 w-4" />
+        <BrandMark />
         <span className="hidden font-display text-lg font-extrabold tracking-tight text-foreground sm:inline lg:hidden xl:inline">
           Aspirely
         </span>
@@ -117,6 +132,11 @@ export function TopBar() {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-    </header>
+      </header>
+
+      {/* Replaces the 64px the fixed bar no longer occupies in flow. Without
+          it the first screenful of every page slides under the chrome. */}
+      <div aria-hidden className="h-16 shrink-0" />
+    </>
   );
 }
