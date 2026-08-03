@@ -18,6 +18,7 @@ import {
 import { SocialQuietRow } from '@/components/auth/SocialQuietRow';
 import { PasswordInput } from '@/components/auth/PasswordInput';
 import { PasswordChecklist, isPasswordValid } from '@/components/auth/PasswordChecklist';
+import { AuthShield } from '@/components/auth/AuthShield';
 import { AuthNotice, errorVariant } from '@/components/auth/AuthNotice';
 
 const ROLE_OPTIONS = [
@@ -160,6 +161,10 @@ export default function Register() {
     <AuthShell
       title="Create your account"
       subtitle="Free to start. Your plan takes shape in minutes."
+      // On the password beat the pane stops advertising the product and starts
+      // reflecting what the person is doing: a shield that charges as the
+      // policy is satisfied. Same rule source as the checklist beside it.
+      aside={beat === 1 ? <AuthShield password={password} /> : undefined}
       footer={
         <span className="inline-flex min-h-11 items-center gap-1.5">
           Already have an account?{' '}

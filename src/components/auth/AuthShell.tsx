@@ -107,6 +107,7 @@ export function AuthShell({
   footer,
   banner,
   phase = 'idle',
+  aside,
 }: {
   title: string;
   subtitle: string;
@@ -116,6 +117,16 @@ export function AuthShell({
   banner?: ReactNode;
   /** REAL submission phase from the page (never inferred, never faked). */
   phase?: AuthPhase;
+  /**
+   * Replaces the default journey graphic in the desktop pane.
+   *
+   * The default is about the product, which is the right thing to show while
+   * someone signs in. When a page has something more specific to say about
+   * what the person is doing right now - register's password step showing a
+   * strength shield - it passes that instead. Desktop only; the pane is hidden
+   * below `lg` either way.
+   */
+  aside?: ReactNode;
 }) {
   const reduce = !!useReducedMotion();
 
@@ -244,7 +255,7 @@ export function AuthShell({
             the shallow decorative strip it was always best at. */}
         <div className="relative hidden lg:col-span-7 lg:block" aria-hidden>
           <div className="absolute inset-y-0 left-0 w-px bg-border/60" />
-          <AuthShowcase zone={zone} phase={phase} />
+          {aside ?? <AuthShowcase zone={zone} phase={phase} />}
         </div>
       </div>
     </div>
