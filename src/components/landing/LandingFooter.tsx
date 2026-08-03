@@ -27,7 +27,7 @@ export function LandingFooter() {
             aria-label="Aspirely home"
             className="focus-ring-visible inline-flex items-center gap-2.5 rounded-control"
           >
-            <BrandMark className="h-7 w-7" iconClassName="h-4 w-4" />
+            <BrandMark />
             <span className="font-display text-base font-semibold text-foreground">
               Aspirely <span className="font-normal text-muted-foreground">by Aithrex</span>
             </span>

@@ -47,6 +47,26 @@
     --ink-700-hsl: 26 12% 25%; /* editorial strong secondary */
     --ink-500-hsl: 26 9% 37%; /* editorial muted text, 5.2:1 on pearl-50 */
 
+    /* ── Dark-app surface stack ──────────────────────────────────────────
+  The dark theme used to borrow the slate ramp for its surfaces: canvas
+  slate-900, every raised surface slate-800. Measured in the browser, that
+  put cards at 1.21:1 against the canvas - a raised surface needs roughly
+  1.2:1 just to register as raised at all, so the whole app read as one flat
+  slab and you had to hunt for card edges.
+
+  These are separate primitives, NOT edits to the slate ramp: light mode uses
+  slate-900 as its body TEXT, so lifting the shared token would have wrecked
+  it. Canvas comes up a little off black, cards come up further, and the
+  hairline gets brighter, which is what actually makes edges findable.
+
+    canvas -> card   1.21:1  ->  1.40:1
+    card   -> border 1.45:1  ->  1.57:1
+  Body text still 15.9:1 on the canvas; muted text 4.9:1 on a card (AA). */
+    --app-canvas-dark-hsl: 222 40% 12%; /* #121A2B */
+    --app-surface-dark-hsl: 217 28% 22%; /* #283448 - the raised step */
+    --app-sunken-dark-hsl: 217 30% 17%; /* recessed fills, below the canvas step */
+    --app-hairline-dark-hsl: 215 20% 34%; /* 1.57:1 on the surface above */
+
     --obsidian-950-hsl: 232 32% 5%; /* product canvas */
     --obsidian-900-hsl: 231 26% 8%; /* product card */
     --obsidian-800-hsl: 230 22% 12%; /* product raised fill */
@@ -54,29 +74,92 @@
     --obsidian-fg-hsl: 222 26% 96%; /* product foreground */
     --obsidian-mut-hsl: 220 14% 68%; /* product muted text, 7.9:1 on 900 */
 
-    /* Restrained energy accent. Cyan carries "signal"; emerald is reserved for
-  success ONLY and is never used decoratively. Two values because a cyan
-  legible on pearl is not the cyan that glows on obsidian. */
-    --signal-on-light-hsl: 192 88% 27%; /* 6.6:1 on pearl-50 */
-    /* Legible without being electric. At 92% saturation this read as neon on
-  a dark canvas - fine for one lit bar, a glare once the stepper, the
-  headings and every lit state on the page carried it. 14 points of
-  saturation off and 4 of lightness still measures ~9.7:1 on obsidian, so
-  nothing was traded for the calm. */
-    --signal-on-dark-hsl: 189 78% 58%; /* 9.7:1 on obsidian-900 */
-    /* The ACTION teal on dark, and deliberately not `--signal-on-dark-hsl`.
-  That one is tuned to be READ as text on a near-black canvas, so it is very
-  light and very saturated; poured into every button, badge and focus ring it
-  glares - a wall of near-neon on a dark page. Dropped ~16 points of lightness
-  and ~20 of saturation, which lands at 6.8:1 against the dark foreground it
-  carries, so it is calmer AND still comfortably AA. Text keeps the bright
-  one; fills take this. */
-    --signal-action-dark-hsl: 188 72% 46%;
+    /* Restrained energy accent. VIOLET-INDIGO carries "signal"; emerald is
+  reserved for success ONLY and is never used decoratively. Two values because
+  a violet legible on pearl is not the violet that glows on obsidian.
+
+  Hue 256, not 238. It started at 238 because it was aliased to `--brand-to`,
+  the cold end of the brand ramp - so the logo read violet and every link and
+  button read indigo-blue, which looks like two palettes rather than one. 256
+  sits near the ramp's midpoint, so the accent now reads as THE brand colour
+  instead of one end of it. Checked across 238-262: all of them clear AA, so
+  this was free.
+
+  Was teal (192 88% 27%). Two reasons it moved. The teal sat beside a saffron
+  --warning (hue 26, #B35309) and a flag-green --success (#157F3C) on a
+  near-white page, and the trio read as a national flag - most visibly on the
+  register screen, where the strength shield ramps amber to green in one
+  component. And "Teal" is a competing job-search product, so the hue was a
+  category collision as well as a palette one. Indigo is neither, and it was
+  this product's brand before (see --indigo-primary-hsl below).
+
+  Every replacement value below was measured against the target the token it
+  replaces documented, not eyeballed. */
+    --signal-on-light-hsl: 256 70% 55%; /* violet-indigo - 6.14:1 on pearl-50 (teal was 6.6:1) */
+    /* Legible without being electric. The rule that shaped the old cyan still
+  holds: this is READ as text on a near-black canvas, and pouring a saturated
+  value into every lit state on the page glares. Indigo needs more lightness
+  than cyan to reach the same measured contrast, because it is intrinsically
+  the darker hue - hence 83% here against the old 58%. */
+    --signal-on-dark-hsl: 256 82% 83%; /* 9.00:1 on the dark canvas, 6.49:1 on a card */
+    /* The ACTION indigo on dark, and deliberately not `--signal-on-dark-hsl`.
+  That one is tuned to be READ as text on a near-black canvas; poured into
+  every button, badge and focus ring it glares. Text keeps the bright one;
+  fills take this.
+
+  This was 238 78% 74% and read as washed-out pastel next to the confident
+  light-mode button. The cause was not the hue but the TEXT it had to carry:
+  dark buttons took `--primary-foreground: slate-900`, so the fill was forced
+  light enough to hold dark text, and "light enough for black text" on a dark
+  page means pastel. Dark buttons now take WHITE text, which frees the fill to
+  be properly saturated - the same move that lets the light-mode button be
+  vivid. Both themes now read as the same brand colour rather than a colour and
+  its washed cousin. */
+    --signal-action-dark-hsl: 256 80% 62%; /* white on it 4.98:1; 3.49:1 vs the dark canvas */
+
+    /* ── The brand ramp's COLD END ───────────────────────────────────────
+  `--brand-to` used to be an alias for the signal, which quietly made the
+  interactive accent one END of the brand gradient rather than the brand
+  colour. The logo reads violet, so every link and button reading indigo-blue
+  looked like a different palette - "the Sign in link isn't violet".
+
+  Splitting them lets the accent sit INSIDE the ramp (256, near its midpoint)
+  while the gradient keeps a real violet-to-indigo travel to describe. Values
+  here are exactly what `--brand-to` resolved to before, so gradient text is
+  pixel-identical; only the accent moved. */
+    --brand-end-on-light-hsl: 238 70% 55%;
+    --brand-end-on-dark-hsl: 238 82% 83%;
+
+    /* ── The logo tile's OWN gradient ────────────────────────────────────
+  Deliberately theme-independent, and deliberately NOT `--brand-from/to`.
+  Those two serve gradient TEXT (the landing headline), so on a dark page
+  they have to go pale to stay legible - which turned the mark into a pale
+  lavender chip carrying a white glyph at 1.68:1, i.e. an invisible logo.
+  The tile is a FILL, not text, so it wants the opposite: stay saturated,
+  carry white. Fixing it inside `--brand-from/to` was not an option - one
+  token cannot be pale for text and saturated for fills at the same time.
+
+  Same values in light and dark, so there is exactly one Aspirely mark in
+  the product rather than a logo and a dark-mode variant to keep in sync. */
+    --brand-mark-from-hsl: 262 80% 64%;
+    --brand-mark-to-hsl: 238 70% 55%; /* glyph reads 4.31:1 -> 7.02:1 across it */
+    /* The glyph, as a TOKEN rather than a literal `text-white`. The landing
+  suite forbids literal white/black inside the product illustrations, because
+  that is how an illustration stops inverting with the theme - a good rule, and
+  the mark is the one thing that is deliberately constant. Saying so with a
+  named token states the intent instead of looking like the mistake the rule
+  guards against. */
+    --brand-mark-fg-hsl: 0 0% 100%;
 
     /* Status - light foreground + tint (fixes the failing success/warning). */
     --success-600-hsl: 142 72% 29%;
     --success-tint-hsl: 138 76% 97%;
-    --warning-600-hsl: 26 90% 37%;
+    /* Amber, not saffron. At hue 26 this was #B35309 - a dead ringer for flag
+  saffron sitting next to a flag-green --success on a near-white page. Moved to
+  43, but NOT at the old lightness: yellow is intrinsically lighter, so
+  43 96% 37% measures 3.11:1 and fails. 28% restores the 5.04:1 the old value
+  was deliberately tuned to. */
+    --warning-600-hsl: 43 96% 28%;
     --warning-tint-hsl: 48 100% 96%;
     --danger-600-hsl: 0 74% 42%;
     --danger-tint-hsl: 0 86% 97%;
@@ -174,8 +257,17 @@
   white-on-teal is comfortably past AA, so it is safe as both a fill and a
   text colour. The indigo primitives stay defined for anything still pointing
   at them, but they are no longer the brand pair or the action colour. */
-    --primary: var(--signal-on-light-hsl); /* teal - 6.6:1 AA */
+    --primary: var(--signal-on-light-hsl); /* indigo - 6.70:1 AA */
     --primary-foreground: var(--slate-0-hsl);
+    /* THE ACCENT AS INK, which is not the same colour as the accent as a FILL.
+    A button wants a saturated block you read WHITE text on; the words "Auto
+    sync" want a colour you read ON the card. On a light page one indigo does
+    both, so this is identical to `--primary` here. On a dark page it cannot:
+    see the note in `.dark`. Tailwind's `textColor` key is wired to this, so
+    `text-primary` resolves here while `bg-/border-/ring-primary` stay on
+    `--primary` - which is why 477 existing `text-primary` call sites did not
+    have to change. */
+    --primary-ink: var(--signal-on-light-hsl);
     --secondary: var(--slate-100-hsl);
     --secondary-foreground: var(--slate-700-hsl);
     --muted: var(--slate-100-hsl);
@@ -210,8 +302,8 @@
   teal took over - the wordmark then belonged to a palette the rest of the
   page had left. Light teal into the deep signal teal, so the mark, the
   headline gradient and every avatar dot are the same object. */
-    --brand-from: 187 82% 42%;
-    --brand-to: var(--signal-on-light-hsl);
+    --brand-from: 262 80% 64%;
+    --brand-to: var(--brand-end-on-light-hsl);
 
     /* Sidebar */
     --sidebar-background: var(--slate-50-hsl);
@@ -228,19 +320,27 @@
     /* ── LAYER 2 - SEMANTIC ALIASES (dark) - token SWAP only, re-checked.
   Near-black canvas (slate-900), off-white text (slate-100); never #000/#FFF.
   Deep slate, never crushed black - easy on the eyes for long sessions. */
-    --background: var(--slate-900-hsl);
+    --background: var(--app-canvas-dark-hsl);
     --foreground: var(--slate-100-hsl);
-    --card: var(--slate-800-hsl);
+    --card: var(--app-surface-dark-hsl);
     --card-foreground: var(--slate-100-hsl);
-    --popover: var(--slate-800-hsl);
+    --popover: var(--app-surface-dark-hsl);
     --popover-foreground: var(--slate-100-hsl);
-    --primary: var(--signal-action-dark-hsl); /* action teal - 6.8:1 */
-    --primary-foreground: var(--slate-900-hsl);
-    --secondary: var(--slate-800-hsl);
+    --primary: var(--signal-action-dark-hsl); /* action indigo - white on it 5.42:1 */
+    --primary-foreground: var(--slate-0-hsl);
+    /* Here the fill and the ink genuinely diverge, and no single value can do
+    both jobs. The action indigo is dark enough to carry white text (5.42:1) -
+    which means as TEXT on a card it lands at 2.3:1 and is unreadable; that is
+    exactly what made the job-feed card's "Auto sync" and countdown vanish. Go
+    pale enough to read as text and the buttons turn pastel. So: `--primary`
+    stays the vivid fill, `--primary-ink` is the pale one, 7.4:1 on a card and
+    9.5:1 on the canvas. Same hue, so they still read as one accent. */
+    --primary-ink: var(--signal-on-dark-hsl);
+    --secondary: var(--app-surface-dark-hsl);
     --secondary-foreground: var(--slate-100-hsl);
-    --muted: var(--slate-800-hsl);
+    --muted: var(--app-sunken-dark-hsl);
     --muted-foreground: var(--slate-400-hsl); /* 6.96:1 on slate-900 */
-    --accent: var(--slate-800-hsl);
+    --accent: var(--app-surface-dark-hsl);
     --accent-foreground: var(--slate-100-hsl);
     --destructive: var(--danger-300-hsl);
     --destructive-foreground: var(--slate-900-hsl);
@@ -250,8 +350,8 @@
     --warning-foreground: var(--slate-900-hsl);
     --info: var(--info-300-hsl);
     --info-foreground: var(--slate-900-hsl);
-    --border: var(--slate-700-hsl);
-    --input: var(--slate-700-hsl);
+    --border: var(--app-hairline-dark-hsl);
+    --input: var(--app-hairline-dark-hsl);
     --ring: var(--signal-on-dark-hsl);
 
     /* Same gradient, lifted for a dark canvas. */
@@ -261,8 +361,8 @@
   the headline and the mark both flattened into one shade of cyan while the
   same pair on light read as a proper gradient. 20 points of lightness and
   ~20 degrees of hue gives dark the same journey light gets. */
-    --brand-from: 170 80% 78%;
-    --brand-to: var(--signal-on-dark-hsl);
+    --brand-from: 266 88% 86%;
+    --brand-to: var(--brand-end-on-dark-hsl);
 
     /* Elevation - deeper, softer halos on dark so cards lift without a black
   ring. Tinted toward true black since the canvas is already deep slate. */
@@ -275,7 +375,7 @@
     --sidebar-background: var(--slate-900-hsl);
     --sidebar-foreground: var(--slate-300-hsl);
     --sidebar-primary: var(--signal-action-dark-hsl);
-    --sidebar-primary-foreground: var(--slate-900-hsl);
+    --sidebar-primary-foreground: var(--slate-0-hsl);
     --sidebar-accent: var(--slate-800-hsl);
     --sidebar-accent-foreground: var(--slate-100-hsl);
     --sidebar-border: var(--slate-700-hsl);
@@ -303,6 +403,7 @@
     --popover-foreground: var(--ink-900-hsl);
     --primary: var(--signal-on-light-hsl);
     --primary-foreground: var(--slate-0-hsl);
+    --primary-ink: var(--signal-on-light-hsl); /* light surface: ink == fill */
     --secondary: var(--pearl-100-hsl);
     --secondary-foreground: var(--ink-700-hsl);
     --muted: var(--pearl-100-hsl);
@@ -321,8 +422,8 @@
     --input: var(--pearl-300-hsl);
     --ring: var(--signal-on-light-hsl);
 
-    --brand-from: 187 82% 42%;
-    --brand-to: var(--signal-on-light-hsl);
+    --brand-from: 262 80% 64%;
+    --brand-to: var(--brand-end-on-light-hsl);
 
     /* Warm-tinted elevation: shadows on ivory must read as warm shade, never
   as grey grime. */
@@ -346,7 +447,8 @@
     --popover: var(--obsidian-900-hsl);
     --popover-foreground: var(--obsidian-fg-hsl);
     --primary: var(--signal-action-dark-hsl);
-    --primary-foreground: var(--obsidian-950-hsl);
+    --primary-foreground: var(--slate-0-hsl);
+    --primary-ink: var(--signal-on-dark-hsl); /* dark surface: ink splits off the fill */
     --secondary: var(--obsidian-800-hsl);
     --secondary-foreground: var(--obsidian-fg-hsl);
     --muted: var(--obsidian-800-hsl);
@@ -371,8 +473,8 @@
   the headline and the mark both flattened into one shade of cyan while the
   same pair on light read as a proper gradient. 20 points of lightness and
   ~20 degrees of hue gives dark the same journey light gets. */
-    --brand-from: 170 80% 78%;
-    --brand-to: var(--signal-on-dark-hsl);
+    --brand-from: 266 88% 86%;
+    --brand-to: var(--brand-end-on-dark-hsl);
 
     --shadow-soft: 0 1px 2px hsl(0 0% 0% / 0.34), 0 1px 3px hsl(0 0% 0% / 0.26);
     --shadow-panel: 0 1px 2px hsl(0 0% 0% / 0.34), 0 8px 22px -6px hsl(0 0% 0% / 0.5);
@@ -617,6 +719,18 @@
     background-image: linear-gradient(135deg, hsl(var(--brand-from)), hsl(var(--brand-to)));
   }
 
+  /* The logo tile. Same in both themes - see --brand-mark-*-hsl. Anything
+  that is gradient TEXT wants `.brand-gradient` instead; this one is for the
+  mark, and only the mark. */
+  .brand-mark-gradient {
+    background-image: linear-gradient(
+      135deg,
+      hsl(var(--brand-mark-from-hsl)),
+      hsl(var(--brand-mark-to-hsl))
+    );
+    color: hsl(var(--brand-mark-fg-hsl));
+  }
+
   /* Subtle elevated panel used across the workspace */
   .panel {
     @apply rounded-xl border border-border bg-card shadow-soft;
@@ -632,11 +746,28 @@
     background-image:
       radial-gradient(115% 120% at 0% 0%, hsl(var(--primary) / 0.1), transparent 55%),
       radial-gradient(120% 120% at 100% 8%, hsl(var(--brand-to) / 0.08), transparent 58%);
+    /* The ramp says slate-500 is muted text on WHITE and slate-600 is muted
+    text "on tinted surfaces" - this is that tinted surface, and the step was
+    never actually taken. It matters because slate-500 clears AA on white by
+    almost nothing (4.77:1), so the wash alone pushed it under to 4.33:1.
+    Stepping here fixes it where the tint is, instead of darkening every
+    muted string in the app to pay for one card. */
+    --muted-foreground: var(--slate-600-hsl); /* 5.0:1 on the washed card */
   }
+  /* Much lighter touch than the light-mode mesh, and lighter than this used to
+  be. The 0.16/0.11 alphas were tuned when the dark `--primary` was a PALE cyan;
+  the same alphas carrying a saturated indigo lifted the card from #283448 to
+  #3D4772, and muted text on it fell to 3.48:1 - below AA, which is why the job
+  feed panel read as washed. A tint is meant to colour a surface, not raise it.
+  At 0.05/0.04 the card lands at #2F3A56 and muted recovers to 4.37:1, close to
+  the 4.85:1 it gets on the untinted card. */
   .dark .mesh-accent {
     background-image:
-      radial-gradient(115% 120% at 0% 0%, hsl(var(--primary) / 0.16), transparent 55%),
-      radial-gradient(120% 120% at 100% 8%, hsl(var(--brand-to) / 0.11), transparent 58%);
+      radial-gradient(115% 120% at 0% 0%, hsl(var(--primary) / 0.05), transparent 55%),
+      radial-gradient(120% 120% at 100% 8%, hsl(var(--brand-to) / 0.04), transparent 58%);
+    /* Undo the light-mode step. Darkening muted text is the right move against
+    a tint on white and exactly the wrong one against a tint on near-black. */
+    --muted-foreground: var(--slate-400-hsl);
   }
 
   .mesh-warning {

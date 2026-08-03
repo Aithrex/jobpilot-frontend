@@ -133,8 +133,14 @@ export const MacWindow = forwardRef<HTMLDivElement, MacWindowProps>(function Mac
           <span className="flex min-w-0 flex-1 items-center justify-center gap-2">
             {/* The page's ONE mark. This title bar used to draw its own - a
                 chevron on a hand-rolled gradient - so the product window was
-                branded differently from the header sitting above it. */}
-            <BrandMark className="h-[18px] w-[18px] rounded-[5px]" iconClassName="h-3 w-3" />
+                branded differently from the header sitting above it.
+
+                The ONLY instance that sets a size. Every real placement of the
+                logo is 32px; this is not a placement, it is a picture OF the
+                app's own top bar inside a mock window, so it scales down with
+                the screenshot it lives in. Do not "fix" it to 32 - that would
+                make the illustration's chrome bigger than the illustration. */}
+            <BrandMark size={18} />
             <span className="truncate text-[13px] font-semibold tracking-[-0.01em] text-foreground/90">
               {title}
             </span>

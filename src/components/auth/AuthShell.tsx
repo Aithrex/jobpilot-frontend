@@ -92,7 +92,7 @@ function Wordmark() {
       to="/"
       className="inline-flex min-h-11 items-center gap-2.5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
     >
-      <BrandMark className="h-9 w-9 rounded-xl shadow-soft" iconClassName="h-[18px] w-[18px]" strokeWidth={2.2} />
+      <BrandMark />
       <span className="font-display text-lg font-extrabold tracking-tight text-foreground">
         Aspirely
       </span>
