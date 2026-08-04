@@ -36,9 +36,13 @@ export function DestinationNav() {
                   cn(
                     "group relative flex min-h-[44px] items-center gap-2 rounded-full px-3.5 text-sm font-medium outline-none transition-colors duration-200 ease-expo",
                     "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                    // Inactive items had NO hover surface - only a text-colour
+                    // shift - so the row read as flat text until something was
+                    // already selected. A quiet fill on hover gives every item
+                    // the same affordance the active one has.
                     isActive
                       ? "text-foreground"
-                      : "text-muted-foreground hover:text-foreground",
+                      : "text-muted-foreground hover:bg-accent/60 hover:text-foreground",
                   )
                 }
               >
@@ -46,9 +50,13 @@ export function DestinationNav() {
                   <>
                     {/* Single shared element slides behind the active item. */}
                     {isActive && (
+                      // Branded, not neutral: `bg-accent` + a border ring was a
+                      // pale grey lozenge that read as a disabled chip rather
+                      // than the current location. Tinting it with the primary
+                      // makes "where am I" legible at a glance in both themes.
                       <motion.span
                         layoutId={ACTIVE_PILL_ID}
-                        className="absolute inset-0 z-0 rounded-full bg-accent shadow-soft ring-1 ring-border/60"
+                        className="absolute inset-0 z-0 rounded-full bg-primary/12 ring-1 ring-inset ring-primary/25"
                         transition={indicatorSpring(reduceMotion)}
                         aria-hidden="true"
                       />

@@ -8,6 +8,7 @@ import { apiService } from '@/lib/api';
 import { AuthShell } from '@/components/auth/AuthShell';
 import { PasswordInput } from '@/components/auth/PasswordInput';
 import { PasswordChecklist, isPasswordValid } from '@/components/auth/PasswordChecklist';
+import { AuthShield } from '@/components/auth/AuthShield';
 import { AuthNotice, errorVariant } from '@/components/auth/AuthNotice';
 
 /**
@@ -61,6 +62,11 @@ export default function ResetPassword() {
     <AuthShell
       title="Set a new password"
       subtitle="Choose a strong password. You will sign in fresh once it is saved."
+      // Same task as register's password beat, against the same five rules from
+      // the same checkPasswordRules - so it gets the same shield rather than the
+      // product journey. Suppressed once saved (the form is gone) and when the
+      // link has no token (there is nothing to type into).
+      aside={!done && token ? <AuthShield password={password} /> : undefined}
       footer={
         <Link
           to="/login"

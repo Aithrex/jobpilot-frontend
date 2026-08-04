@@ -86,6 +86,19 @@ export default {
           ring: "hsl(var(--sidebar-ring))",
         },
       },
+      // `textColor` overrides ONLY the text-* utilities; every other family
+      // (bg-, border-, ring-, fill-) still resolves from `colors` above. That
+      // split is deliberate: the accent as a FILL and the accent as INK want
+      // opposite lightness on a dark page, and one token cannot be both. So
+      // `bg-primary` keeps the vivid button and `text-primary` gets a value
+      // that is actually readable on a card. See --primary-ink in index.css.
+      // Identical to --primary in light mode, so light rendering is unchanged.
+      textColor: {
+        primary: {
+          DEFAULT: "hsl(var(--primary-ink))",
+          foreground: "hsl(var(--primary-foreground))",
+        },
+      },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",

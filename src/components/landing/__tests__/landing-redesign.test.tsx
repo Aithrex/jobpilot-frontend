@@ -126,10 +126,12 @@ describe('primary CTA', () => {
     // Both CTAs moved to the hero; the sticky bar no longer repeats them, so a
     // visitor never sees Sign in / Upload twice in the first viewport.
     expect(within(banner).queryByRole('link', { name: /sign in|upload/i })).toBeNull();
-    expect(within(banner).queryByRole('button')).toBeNull();
-    // The one control it does carry is chrome - a setting, not an action on
-    // the product - which is why it is a switch rather than a button.
-    expect(within(banner).getByRole('switch', { name: /dark theme/i })).toBeInTheDocument();
+    // The one control it does carry is chrome - a setting, not an action on the
+    // product. It is the SAME control as the workspace top bar and the auth
+    // stage: one setting should not look like three different affordances.
+    const controls = within(banner).getAllByRole('button');
+    expect(controls).toHaveLength(1);
+    expect(controls[0]).toHaveAccessibleName(/theme/i);
     // It still carries the wordmark home link.
     expect(within(banner).getByRole('link', { name: /Aspirely home/i })).toBeInTheDocument();
   });
@@ -476,17 +478,14 @@ describe('reduced motion', () => {
 // ── 7. Login fallback theme ──────────────────────────────────────
 
 describe('route loading fallback', () => {
-  test('the auth fallback is pinned dark so /login does not flash light', () => {
-    const { container } = render(<RouteLoadingFallback pinnedDark />);
-    const root = container.firstElementChild as HTMLElement;
-    expect(root.className).toContain('dark');
-    expect(root.className).toContain('bg-background');
-    expect(root.style.colorScheme).toBe('dark');
-  });
-
-  test('the default fallback stays theme-neutral for in-app routes', () => {
+  // It used to take a `pinnedDark` flag, because AuthShell forced dark on both
+  // themes and an unpinned fallback made /login flash light before going dark.
+  // Auth follows the global theme now, so pinning would cause the INVERSE
+  // flash for a light-mode user. Neutral on every route is the fix.
+  test('stays theme-neutral so it never flashes against the page it precedes', () => {
     const { container } = render(<RouteLoadingFallback />);
     const root = container.firstElementChild as HTMLElement;
+    expect(root.className).not.toContain('dark');
     expect(root.className).not.toContain('bg-background');
     expect(root.style.colorScheme).toBe('');
   });
@@ -538,20 +537,24 @@ describe('surface language', () => {
     }
   });
 
-  test('the theme control is a switch, and it flips the whole page', async () => {
+  test('the theme control flips the whole page', async () => {
     const user = userEvent.setup();
     const { container } = renderLanding();
     await screen.findByText('Career Workspace');
     const root = container.firstElementChild as HTMLElement;
 
-    // A switch, not a button: this is an on/off setting, and the control has
-    // to expose which state it is in rather than only what it will do next.
-    const control = screen.getByRole('switch', { name: /dark theme/i });
-    expect(control).toHaveAttribute('aria-checked', 'false');
+    // The shared three-state control cycles light → dark → system → light, and
+    // its label names both the state you are in and the one a press moves you
+    // to. Every run starts at "system" (localStorage is cleared), so the first
+    // press lands on the EXPLICIT light choice - which this suite's matchMedia
+    // already resolved to, hence no visible change - and the second reaches
+    // dark. That second press is the one that must repaint the whole page.
+    await user.click(screen.getByRole('button', { name: /theme: system/i }));
+    expect(root.className).toContain('surface-editorial');
 
-    await user.click(control);
+    await user.click(screen.getByRole('button', { name: /theme: light/i }));
 
-    expect(control).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByRole('button', { name: /theme: dark/i })).toBeInTheDocument();
     expect(root.className).toContain('surface-obsidian');
     expect(root.className).toContain('dark');
     expect(root.className).not.toContain('surface-editorial');

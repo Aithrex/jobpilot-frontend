@@ -131,7 +131,11 @@ export default function MailboxInboxTab() {
               type="checkbox"
               checked={unreadOnly}
               onChange={toggleUnreadFilter}
-              className="h-3.5 w-3.5 rounded border-border text-primary focus-visible:ring-2 focus-visible:ring-ring"
+              // `accent-primary` is what actually themes a NATIVE checkbox.
+              // `text-primary` only sets the text colour - the browser paints
+              // the checked box with its own default (blue on Chrome/Edge), so
+              // this control ignored the theme in BOTH light and dark.
+              className="h-3.5 w-3.5 rounded border-border accent-primary focus-visible:ring-2 focus-visible:ring-ring"
             />
             Unread only
           </label>

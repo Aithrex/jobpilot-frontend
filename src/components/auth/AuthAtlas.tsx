@@ -1,11 +1,17 @@
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { useResolvedTheme } from '@/components/theme-provider';
 
 /**
- * The auth stage's Signal Atlas: the same night-sky visual world as the
- * landing, reduced to one story - a signal travelling from the person's
- * document (origin) into their secured workspace (destination ring). It
- * REACTS to the real form:
+ * The auth stage's MOBILE horizon band - a shallow strip above the form, on
+ * phones only. One story: a signal travelling from the person's document
+ * (origin) into their secured workspace (destination ring).
+ *
+ * It used to also serve the tall desktop pane via a `variant` prop. That pane
+ * is now {@link AuthShowcase}, so the panel variant was dead code and the
+ * geometry is fixed to the horizon crop.
+ *
+ * It REACTS to the real form:
  *
  *   zone 'origin'  (email focus)     → the origin node illuminates
  *   zone 'secure'  (password focus)  → the destination shield ring activates
@@ -27,8 +33,6 @@ export interface AuthAtlasProps {
   zone: AuthZone;
   phase: AuthPhase;
   reduce: boolean;
-  /** 'panel' = the tall desktop pane; 'horizon' = the shallow mobile band. */
-  variant?: 'panel' | 'horizon';
   className?: string;
 }
 
@@ -50,7 +54,7 @@ const STARS: Array<[number, number]> = [
   [420, 820], [120, 860], [60, 480], [320, 200], [580, 560], [200, 560],
 ];
 
-export function AuthAtlas({ zone, phase, reduce, variant = 'panel', className }: AuthAtlasProps) {
+export function AuthAtlas({ zone, phase, reduce, className }: AuthAtlasProps) {
   const busy = phase === 'pending';
   const failed = phase === 'error';
   const won = phase === 'success';
@@ -58,7 +62,22 @@ export function AuthAtlas({ zone, phase, reduce, variant = 'panel', className }:
   // How much of the main path is "lit": resting glow, more when the user is
   // working the form, full on success.
   const litLength = won ? 1 : busy ? 1 : zone === 'origin' ? 0.4 : zone === 'submit' ? 0.85 : 0.6;
-  const litOpacity = failed ? 0.15 : won ? 1 : busy ? 0.9 : zone === 'idle' ? 0.45 : 0.75;
+
+  // Every value below was tuned against near-black, where a 0.28-opacity hairline
+  // still reads. On the light surface the identical numbers wash out to almost
+  // nothing and the panel looks empty, so the faint STRUCTURAL elements (track,
+  // stars, field glow) get a lift. The lit path and nodes are already saturated
+  // enough to carry themselves - they only need a nudge.
+  const light = useResolvedTheme() === 'light';
+  const trackOpacity = light ? 0.45 : 0.28;
+  const trackWidth = light ? 1.5 : 1.2;
+  const starOpacity = light ? 0.5 : 0.3;
+  const fieldGlow = light
+    ? 'radial-gradient(45% 40% at 72% 24%, hsl(var(--primary) / 0.20), transparent 70%), radial-gradient(50% 45% at 20% 80%, hsl(var(--brand-to) / 0.14), transparent 70%)'
+    : 'radial-gradient(45% 40% at 72% 24%, hsl(var(--primary) / 0.16), transparent 70%), radial-gradient(50% 45% at 20% 80%, hsl(var(--brand-to) / 0.10), transparent 70%)';
+
+  const baseLit = failed ? 0.15 : won ? 1 : busy ? 0.9 : zone === 'idle' ? 0.45 : 0.75;
+  const litOpacity = Math.min(1, light ? baseLit * 1.2 : baseLit);
 
   const t = (duration: number, delay = 0) => (reduce ? { duration: 0 } : { duration, delay });
 
@@ -66,8 +85,7 @@ export function AuthAtlas({ zone, phase, reduce, variant = 'panel', className }:
     <div
       aria-hidden
       className={cn(
-        'pointer-events-none relative h-full w-full overflow-hidden',
-        variant === 'horizon' && 'max-h-40',
+        'pointer-events-none relative h-full w-full max-h-40 overflow-hidden',
         className,
       )}
     >
@@ -75,13 +93,12 @@ export function AuthAtlas({ zone, phase, reduce, variant = 'panel', className }:
       <div
         className="absolute inset-0"
         style={{
-          background:
-            'radial-gradient(45% 40% at 72% 24%, hsl(var(--primary) / 0.16), transparent 70%), radial-gradient(50% 45% at 20% 80%, hsl(var(--brand-to) / 0.10), transparent 70%)',
+          background: fieldGlow,
         }}
       />
       <svg
-        viewBox={variant === 'horizon' ? '0 260 700 380' : '0 0 700 900'}
-        preserveAspectRatio={variant === 'horizon' ? 'xMidYMid slice' : 'xMidYMid meet'}
+        viewBox="0 260 700 380"
+        preserveAspectRatio="xMidYMid slice"
         className="absolute inset-0 h-full w-full"
         focusable="false"
       >
@@ -93,11 +110,11 @@ export function AuthAtlas({ zone, phase, reduce, variant = 'panel', className }:
         </defs>
 
         {STARS.map(([x, y]) => (
-          <circle key={`${x}-${y}`} cx={x} cy={y} r={1.5} fill="hsl(var(--muted-foreground))" opacity={0.3} />
+          <circle key={`${x}-${y}`} cx={x} cy={y} r={1.5} fill="hsl(var(--muted-foreground))" opacity={starOpacity} />
         ))}
 
         {/* Base track (always faintly present). */}
-        <path d={MAIN_PATH} fill="none" stroke="hsl(var(--primary))" strokeOpacity={0.28} strokeWidth={1.2} />
+        <path d={MAIN_PATH} fill="none" stroke="hsl(var(--primary))" strokeOpacity={trackOpacity} strokeWidth={trackWidth} />
 
         {/* Lit portion of the journey. */}
         <motion.path

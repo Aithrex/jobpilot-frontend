@@ -332,8 +332,11 @@ export function CombinedJobsPanel({
                 ) : lastSyncedAt ? (
                   <>
                     Updated {formatAgo(lastSyncedAt)} · {roleCount} roles
+                    {/* Full strength, not /80: at 12px on the washed card the
+                    faded variant measured 4.4:1, just under AA, and a live
+                    countdown is the one thing here you actually read. */}
                     {secondsUntilNext != null && (
-                      <span className="ml-1 font-mono tabular-nums text-primary/80">
+                      <span className="ml-1 font-mono tabular-nums text-primary">
                         · next sync {formatCountdown(secondsUntilNext)}
                       </span>
                     )}

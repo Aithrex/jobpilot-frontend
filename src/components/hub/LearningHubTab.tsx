@@ -41,6 +41,61 @@ function GeneratingState({ days }: { days: number }) {
   );
 }
 
+/**
+ * Placeholder for {@link JourneyMap}, built from the SAME structure it stands
+ * in for: the "Your journey" header row, the spine, and one node dot + chapter
+ * card per row.
+ *
+ * The previous version was three bare rounded blocks in a plain stack. It read
+ * as a different screen from the one that replaced it - no spine, no dots, no
+ * header - so the layout visibly reassembled itself when the data landed.
+ * Reusing the real wrapper classes (`flex gap-3`, `h-9 w-9` dot, `flex-1`
+ * card) means the placeholder occupies the same geometry by construction
+ * rather than by a hand-tuned height that drifts the moment a card changes.
+ */
+function JourneyMapSkeleton() {
+  return (
+    <div role="status" aria-label="Loading your journey">
+      <div className="mb-3 flex items-baseline justify-between">
+        <Skeleton className="h-4 w-28" />
+        <Skeleton className="h-3 w-20" />
+      </div>
+
+      <div className="relative">
+        {/* Same spine geometry as the real map, so it does not appear later. */}
+        <div aria-hidden className="pointer-events-none absolute bottom-6 left-[18px] top-3 w-0.5 bg-border" />
+
+        <ul className="relative space-y-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <li key={i} className="relative flex gap-3">
+              <div
+                aria-hidden
+                className="z-10 mt-2 grid h-9 w-9 shrink-0 place-items-center rounded-full border-2 border-border bg-muted"
+              />
+              <div data-hub-skeleton-card className="flex-1 rounded-2xl border bg-card p-4">
+                <div className="flex items-center justify-between gap-2">
+                  <Skeleton className="h-3 w-24" />
+                  <Skeleton className="h-5 w-24 rounded-full" />
+                </div>
+                <Skeleton className="mt-2 h-5 w-2/3" />
+                <Skeleton className="mt-2 h-3 w-full" />
+                <Skeleton className="mt-1.5 h-3 w-5/6" />
+                <Skeleton className="mt-3 h-3 w-16" />
+                <Skeleton className="mt-2 h-1.5 w-full rounded-full" />
+              </div>
+            </li>
+          ))}
+        </ul>
+
+        <div className="relative mt-1 flex items-center gap-3 pl-[7px]">
+          <span aria-hidden className="h-6 w-6 rounded-full border border-dashed border-border" />
+          <Skeleton className="h-3 w-56" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function FutureUpdateBanner({ path }: { path: HubPath }) {
   // Only shown while the curriculum is partially released.
   if (path.published_through_day >= path.season_length) return null;
@@ -130,7 +185,13 @@ export default function LearningHubTab() {
   const chapterComplete = selectedSummary?.state === "completed";
 
   return (
-    <div className={cn("space-y-6 pb-16", view === "roadmap" ? "mx-auto max-w-3xl" : "w-full")}>
+    // `w-full` is load-bearing, not decoration. GrowPage renders this inside a
+    // `flex flex-col`, and an auto cross-axis margin (`mx-auto`) overrides the
+    // default `align-items: stretch` - so without an explicit width the box is
+    // sized by its CONTENT. That made the column ~269px while the skeleton was
+    // up and 768px once the chapter cards arrived, jumping the heading 254px
+    // sideways the moment loading finished.
+    <div className={cn("space-y-6 pb-16", view === "roadmap" ? "mx-auto w-full max-w-3xl" : "w-full")}>
       {view === "roadmap" ? (
         /* ─── Campaign roadmap ─── */
         <>
@@ -151,11 +212,7 @@ export default function LearningHubTab() {
           {journey ? (
             <JourneyMap journey={journey} onSelect={enterChapter} />
           ) : (
-            <div className="space-y-3">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <Skeleton key={i} className="h-28 w-full rounded-2xl" />
-              ))}
-            </div>
+            <JourneyMapSkeleton />
           )}
         </>
       ) : view === "ticket" && activeDay && activeDay.ticket ? (
