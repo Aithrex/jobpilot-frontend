@@ -44,7 +44,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PanelError } from '@/app-shell/pages/today/primitives';
-import StreakWidget from '@/components/resume/StreakWidget';
 import { SmartFiltersInline } from '@/components/job-search/SmartFiltersInline';
 import OnboardingHero from '@/components/resume/OnboardingHero';
 import { buildCoverLetterFilename } from '@/lib/filename';
@@ -947,7 +946,9 @@ export default function TailorPage() {
 
   return (
     <div className="space-y-5">
-      <StreakWidget />
+      {/* StreakWidget moved to the Resume overview panel (`/app/resume`): a
+          per-account stat belongs on the section landing, not buried inside
+          one tool. */}
       {/* APIFY DISABLED (temporary): <SmartFiltersInline /> feeds the hidden Apify pipeline. Restore to re-enable. */}
 
       <ProgressStepper currentStep={currentStep} />

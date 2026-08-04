@@ -177,6 +177,41 @@ export const RESUME_SECTIONS: NavSection[] = [
   },
 ];
 
+/**
+ * Resume's sections grouped by intent, for the contextual left rail on
+ * `/app/resume/*`. Purely a VIEW over {@link RESUME_SECTIONS}: the flat list
+ * above stays the single source of truth for routing, the command palette and
+ * the mobile More sheet, so a section can never appear in one and not the
+ * other. Membership is by `to`, and the rail asserts the mapping is total.
+ */
+export interface NavGroup {
+  /** Rail heading. Rendered uppercase via the `.overline` recipe. */
+  label: string;
+  /** `NavSection.to` values, in display order. */
+  items: string[];
+}
+
+export const RESUME_GROUPS: NavGroup[] = [
+  { label: "Create", items: ["tailor", "batch"] },
+  { label: "Manage", items: ["library", "tailored"] },
+  { label: "Insights", items: ["six-seconds", "voice"] },
+];
+
+/**
+ * Rail-only labels. The tab strip had to stay terse to fit horizontally; a
+ * vertical rail has room for the words a user would actually say. Sections
+ * absent from this map keep their {@link RESUME_SECTIONS} label - "Six
+ * Seconds" is deliberately one of them, it is a product name, not a
+ * description.
+ */
+export const RESUME_RAIL_LABELS: Record<string, string> = {
+  tailor: "Tailor a resume",
+  batch: "Batch tailor",
+  library: "Resume library",
+  tailored: "Tailored versions",
+  voice: "Voice analysis",
+};
+
 export const APPLY_SECTIONS: NavSection[] = [
   {
     to: "tracker",

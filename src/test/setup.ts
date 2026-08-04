@@ -157,6 +157,26 @@ function installMemoryStorage(key: 'localStorage' | 'sessionStorage'): void {
 installMemoryStorage('localStorage');
 installMemoryStorage('sessionStorage');
 
+// ── Object URLs ──────────────────────────────────────────────────
+// jsdom implements neither `URL.createObjectURL` nor `revokeObjectURL`, so any
+// component that turns a Blob into a src (the resume file preview, download
+// buttons) throws a TypeError in tests for an environment reason rather than a
+// product one. Hand back a unique, inert URL and track revocation so tests can
+// assert cleanup if they care.
+if (typeof URL.createObjectURL !== 'function') {
+  let n = 0;
+  Object.defineProperty(URL, 'createObjectURL', {
+    writable: true,
+    configurable: true,
+    value: () => `blob:jsdom/${++n}`,
+  });
+  Object.defineProperty(URL, 'revokeObjectURL', {
+    writable: true,
+    configurable: true,
+    value: () => undefined,
+  });
+}
+
 // ── crypto tolerance ─────────────────────────────────────────────
 // jsdom exposes crypto.getRandomValues but not always crypto.subtle. Code
 // paths that need hashing are stubbed at the module level in tests; this

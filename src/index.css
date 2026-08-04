@@ -47,6 +47,39 @@
     --ink-700-hsl: 26 12% 25%; /* editorial strong secondary */
     --ink-500-hsl: 26 9% 37%; /* editorial muted text, 5.2:1 on pearl-50 */
 
+    /* ── Resume Studio (the /app/resume workspace) ─────────────────────────
+  Indigo glass: a deliberately different register from the app's teal chrome,
+  so the Resume tab reads as its own polished space. Every one of the six
+  Resume tool routes mounts under `/app/resume`, so this palette is fully
+  contained - nothing here can reach Home / Jobs / Apply / Grow.
+
+  Contrast is MEASURED, not eyeballed (values quoted against their own
+  canvas): ink 16.7:1, muted text 5.9:1, accent-text 7.3:1, white-on-accent
+  6.3:1. Dark: fg 16.3:1, muted 8.0:1, accent 6.2:1, canvas-on-accent 6.2:1.
+  All comfortably past AA, which is why the accent has two values per theme -
+  a fill tone and a (darker) text tone on light. */
+    --studio-canvas-hsl: 231 47% 97%; /* #F4F5FB */
+    --studio-card-hsl: 0 0% 100%;
+    --studio-muted-hsl: 231 37% 93%; /* #E7E9F4 */
+    --studio-border-hsl: 230 36% 90%; /* #DDE0EF */
+    --studio-ink-hsl: 235 40% 12%; /* #12142A - foreground */
+    --studio-muted-text-hsl: 231 16% 41%; /* #585D7A */
+    --studio-accent-hsl: 243 75% 59%; /* #4F46E5 - fills, active */
+    --studio-accent-text-hsl: 245 58% 51%; /* #4338CA - accent AS TEXT on light */
+    --studio-accent-tint-hsl: 243 75% 94%; /* #E4E3FB - active nav fill */
+
+    /* Dark counterparts. The canvas keeps the indigo cast rather than the
+  app's neutral near-black, and the accent LIFTS - a 59%-lightness indigo is
+  unreadable on a #0F1225 canvas. */
+    --studio-canvas-dark-hsl: 232 42% 10%; /* #0F1225 */
+    --studio-card-dark-hsl: 232 37% 16%; /* #1A1E38 */
+    --studio-raised-dark-hsl: 231 31% 21%; /* #242945 */
+    --studio-border-dark-hsl: 229 25% 27%; /* #333955 */
+    --studio-fg-dark-hsl: 230 55% 96%; /* #EEF0FA */
+    --studio-muted-text-dark-hsl: 231 26% 71%; /* #A3A9C9 */
+    --studio-accent-dark-hsl: 234 89% 74%; /* #818CF8 */
+    --studio-accent-tint-dark-hsl: 231 34% 24%; /* #282E52 - active nav fill */
+
     --obsidian-950-hsl: 232 32% 5%; /* product canvas */
     --obsidian-900-hsl: 231 26% 8%; /* product card */
     --obsidian-800-hsl: 230 22% 12%; /* product raised fill */
@@ -383,6 +416,98 @@
     color: hsl(var(--foreground));
   }
 
+  /* ── Resume Studio: the /app/resume workspace surface ────────────────────
+  Third named surface, same contract as `.surface-editorial` /
+  `.surface-obsidian`: it re-points the SEMANTIC token names for its subtree,
+  so every shadcn primitive and `bg-card` / `text-muted-foreground` utility
+  inside it follows without a single `dark:` variant or hex in a component.
+
+  Why a surface and not a handful of one-off classes: the Resume area gets its
+  own indigo identity. Doing that with bespoke classes would leave shadcn
+  Buttons, Skeletons, Textareas and AlertDialogs still speaking the app's teal
+  - re-pointing the tokens is what keeps one voice across the whole subtree.
+
+  Two extra tokens beyond the standard set, consumed by the studio recipes
+  further down this file:
+    --nav-active    accent tint marking the current destination
+    --accent-text   the accent AS TEXT. Deliberately NOT `--primary`: an
+                    indigo tuned to carry white at 6.3:1 only reaches 5.8:1
+                    when used as text on the canvas, so the text tone is a
+                    darker step. On dark both roles collapse to one value.
+
+  Contrast, measured. Light: ink 16.7:1, muted text 5.9:1, accent-text 7.3:1,
+  white-on-accent 6.3:1. Dark: fg 16.3:1, muted 8.0:1, accent 6.2:1,
+  canvas-on-accent 6.2:1. */
+  .surface-studio {
+    color-scheme: light;
+
+    --background: var(--studio-canvas-hsl);
+    --foreground: var(--studio-ink-hsl);
+    --card: var(--studio-card-hsl);
+    --card-foreground: var(--studio-ink-hsl);
+    --popover: var(--studio-card-hsl);
+    --popover-foreground: var(--studio-ink-hsl);
+    --primary: var(--studio-accent-hsl);
+    --primary-foreground: 0 0% 100%;
+    --secondary: var(--studio-muted-hsl);
+    --secondary-foreground: var(--studio-muted-text-hsl);
+    --muted: var(--studio-muted-hsl);
+    --muted-foreground: var(--studio-muted-text-hsl);
+    --accent: var(--studio-muted-hsl);
+    --accent-foreground: var(--studio-ink-hsl);
+    --destructive: var(--danger-600-hsl);
+    --destructive-foreground: 0 0% 100%;
+    --success: var(--success-600-hsl);
+    --success-foreground: 0 0% 100%;
+    --warning: var(--warning-600-hsl);
+    --warning-foreground: 0 0% 100%;
+    --info: var(--info-600-hsl);
+    --info-foreground: 0 0% 100%;
+    --border: var(--studio-border-hsl);
+    --input: var(--studio-border-hsl);
+    --ring: var(--studio-accent-hsl);
+
+    --nav-active: var(--studio-accent-tint-hsl);
+    --accent-text: var(--studio-accent-text-hsl);
+
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
+
+  .dark .surface-studio {
+    color-scheme: dark;
+
+    --background: var(--studio-canvas-dark-hsl);
+    --foreground: var(--studio-fg-dark-hsl);
+    --card: var(--studio-card-dark-hsl);
+    --card-foreground: var(--studio-fg-dark-hsl);
+    --popover: var(--studio-card-dark-hsl);
+    --popover-foreground: var(--studio-fg-dark-hsl);
+    --primary: var(--studio-accent-dark-hsl);
+    --primary-foreground: var(--studio-canvas-dark-hsl);
+    --secondary: var(--studio-raised-dark-hsl);
+    --secondary-foreground: var(--studio-fg-dark-hsl);
+    --muted: var(--studio-raised-dark-hsl);
+    --muted-foreground: var(--studio-muted-text-dark-hsl);
+    --accent: var(--studio-raised-dark-hsl);
+    --accent-foreground: var(--studio-fg-dark-hsl);
+    --destructive: var(--danger-300-hsl);
+    --destructive-foreground: var(--studio-canvas-dark-hsl);
+    --success: var(--success-300-hsl);
+    --success-foreground: var(--studio-canvas-dark-hsl);
+    --warning: var(--warning-300-hsl);
+    --warning-foreground: var(--studio-canvas-dark-hsl);
+    --info: var(--info-300-hsl);
+    --info-foreground: var(--studio-canvas-dark-hsl);
+    --border: var(--studio-border-dark-hsl);
+    --input: var(--studio-border-dark-hsl);
+    --ring: var(--studio-accent-dark-hsl);
+
+    --nav-active: var(--studio-accent-tint-dark-hsl);
+    /* On dark the accent is already light enough to serve both roles. */
+    --accent-text: var(--studio-accent-dark-hsl);
+  }
+
   * {
     @apply border-border;
   }
@@ -601,9 +726,20 @@
   }
 
   /* Editorial eyebrow / section label - the quiet uppercase kicker used on
-  nav group headers and card overlines. */
-  .overline {
+  nav group headers and card overlines.
+
+  The doubled `.overline.overline` selector is load-bearing, not a typo.
+  Tailwind ships a built-in utility of the same name that sets
+  `text-decoration-line: overline`, and utilities are emitted AFTER components
+  - so at equal specificity it won, drawing a literal rule above every eyebrow
+  in the app. Doubling the class raises this to (0,2,0) so it wins on
+  specificity instead of order, and `text-decoration-line: none` cancels the
+  utility for elements that also match it. Fixes all call sites at once; a
+  `blocklist` entry would have deleted THIS rule too, since Tailwind filters
+  by class name across every layer. */
+  .overline.overline {
     @apply text-[0.6875rem] font-semibold uppercase tracking-[0.06em] text-muted-foreground;
+    text-decoration-line: none;
   }
 
   /* Gradient text helper - uses the brand gradient (indigo → sky) */
@@ -615,6 +751,145 @@
   /* Brand gradient background surface */
   .brand-gradient {
     background-image: linear-gradient(135deg, hsl(var(--brand-from)), hsl(var(--brand-to)));
+  }
+
+  /* ── Page width recipes ─────────────────────────────────────────────────
+  The app shell contributes the scroll container and vertical rhythm only;
+  each page states its own measure as its outermost element. Two options:
+
+    .page-measure  the standard centred reading column (72rem). This is what
+                   every page got implicitly before, so it is the default
+                   choice for single-column pages.
+    .page-full     full-bleed: the page spans the viewport and supplies its
+                   own padding. For workspaces with side columns, where a
+                   72rem cap strands the content in a narrow strip while the
+                   window keeps wide empty gutters.
+
+  Both include the shell's original horizontal padding, so pages are visually
+  unchanged unless they opt into `.page-full`. Neither uses negative margins:
+  the shell's `main` is `overflow-x-hidden`, so anything wider than its box is
+  silently clipped off the right edge - which is where primary actions live. */
+  .page-measure,
+  .page-full {
+    width: 100%;
+    padding-inline: 1rem;
+    padding-block: 1.5rem;
+  }
+  .page-measure {
+    max-width: 72rem;
+    margin-inline: auto;
+  }
+  /* Capped generously so text lines never run the full width of an ultrawide
+  display, but far above the reading measure so side columns fit.
+
+  A full-bleed page that also paints its own canvas (see `.studio-canvas`)
+  gets the tint to the viewport edges via `box-shadow` spread - the shadow
+  paints outside the border box without widening it, so it cannot reintroduce
+  the horizontal overflow this recipe exists to avoid. Deliberately NOT
+  `clip-path`, which would establish a clipping context and break the sticky
+  side columns inside. The shell's `main` is already `overflow-x-hidden`, so
+  the spread never produces a scrollbar. */
+  .page-full {
+    max-width: 120rem;
+    margin-inline: auto;
+  }
+  .page-full.studio-canvas {
+    box-shadow: 0 0 0 100vmax hsl(var(--background));
+  }
+  @media (min-width: 640px) {
+    .page-measure,
+    .page-full {
+      padding-inline: 1.5rem;
+    }
+  }
+  @media (min-width: 1024px) {
+    .page-measure,
+    .page-full {
+      padding-inline: 2rem;
+    }
+  }
+
+  /* ── Resume Studio recipes ──────────────────────────────────────────────
+  Three layers, deliberately distinct so "clickable destination" and "content
+  to read" never look alike:
+    .studio-canvas    page atmosphere - indigo wash, never flat white
+    .studio-panel     the frosted surface (dock, overview panels, preview)
+    .studio-nav-row   a navigable destination (hover fill, active indicator)
+
+  Glass is spent ONLY on those panels. List rows, the resume preview body and
+  nested cards stay solid `bg-card`: blur behind dense text costs legibility
+  for nothing.
+
+  There is deliberately no full-page glass wrapper. Drawing the "coherent
+  workspace" as one bordered pane re-introduced the framing it was meant to
+  dissolve - a hard edge inside the app shell's hard edge, holding content
+  away from the viewport. Coherence comes from the shared canvas instead. */
+
+  /* Very subtle tonal wash. Two wide, low-opacity radial stops - no visible
+  banding, no decoration; it just stops the canvas reading as a flat sheet. */
+  .studio-canvas {
+    background-color: hsl(var(--background));
+    background-image:
+      radial-gradient(120% 90% at 10% 0%, hsl(var(--primary) / 0.07), transparent 60%),
+      radial-gradient(110% 80% at 100% 6%, hsl(var(--primary) / 0.05), transparent 58%);
+  }
+
+  /* THE frosted surface. One blur value for the whole Resume tab so panels
+  read as the same material. The inset top hairline is what makes it look
+  like a lit pane rather than a flat translucent box. */
+  .studio-panel {
+    background-color: hsl(var(--card) / 0.62);
+    -webkit-backdrop-filter: blur(18px) saturate(120%);
+    backdrop-filter: blur(18px) saturate(120%);
+    border: 1px solid hsl(var(--foreground) / 0.1);
+    border-radius: 1.125rem;
+    box-shadow:
+      inset 0 1px 0 0 hsl(var(--card) / 0.75),
+      var(--shadow-soft);
+  }
+  /* Interactive variant - only for panels that are themselves controls. */
+  .studio-panel-interactive:hover {
+    background-color: hsl(var(--card) / 0.88);
+    border-color: hsl(var(--primary) / 0.35);
+  }
+
+  /* Load-bearing: without the solid fallback, a browser with no
+  backdrop-filter renders these at 62% opacity and the page scrolls THROUGH
+  the panel behind the text. */
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .studio-panel {
+      background-color: hsl(var(--card));
+    }
+  }
+
+  /* A navigable row in the function dock. The affordance is deliberately
+  loud relative to content: a full-width hit area, a hover fill, and on the
+  active row an accent tint plus a slim accent left indicator (never colour
+  alone - `aria-current` carries the meaning for assistive tech). */
+  .studio-nav-row {
+    @apply relative flex min-h-[44px] w-full items-center gap-2.5 rounded-control py-2 pl-3.5 pr-2.5 text-sm;
+    @apply transition-colors duration-fast ease-standard;
+    color: hsl(var(--muted-foreground));
+  }
+  .studio-nav-row:hover {
+    background-color: hsl(var(--foreground) / 0.05);
+    color: hsl(var(--foreground));
+  }
+  .studio-nav-row[aria-current='page'] {
+    background-color: hsl(var(--nav-active));
+    color: hsl(var(--foreground));
+    font-weight: 600;
+  }
+  /* The indicator: 3px, inset, only on the active row. */
+  .studio-nav-row[aria-current='page']::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.375rem;
+    bottom: 0.375rem;
+    width: 3px;
+    border-radius: 9999px;
+    background-color: hsl(var(--primary));
   }
 
   /* Subtle elevated panel used across the workspace */

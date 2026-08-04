@@ -59,12 +59,23 @@ export default function AppShell() {
       <div className="flex min-h-screen min-w-0 flex-col">
         <TopBar />
 
+        {/* Pages own their own measure.
+
+            This used to hard-code `max-w-6xl` + padding here, which is right
+            for single-column reading and wrong for anything with side columns:
+            a page could only escape it with negative margins, and those
+            overflowed this `overflow-x-hidden` and silently clipped the right
+            edge - taking the page's primary action with it.
+
+            The shell now contributes only vertical rhythm and the scroll
+            container. Each page applies its own width recipe as its outermost
+            element: `.page-measure` for the standard centred column (what
+            every page had before), or `.page-full` for a full-bleed workspace
+            that supplies its own padding. */}
         <main id="main-content" className="flex-1 overflow-x-hidden pb-24 lg:pb-0">
-          <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
-            <Suspense fallback={<OutletFallback />}>
-              <Outlet />
-            </Suspense>
-          </div>
+          <Suspense fallback={<OutletFallback />}>
+            <Outlet />
+          </Suspense>
         </main>
       </div>
 

@@ -173,7 +173,7 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
   const rise = (order: number) => riseIn({ reduce: reduceMotion, index: order });
 
   return (
-    <div className="space-y-8">
+    <div className="page-measure space-y-8">
       {/* Page header */}
       <motion.header {...rise(0)} className="flex flex-wrap items-end justify-between gap-3">
         <div className="space-y-1">

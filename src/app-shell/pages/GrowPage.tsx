@@ -23,7 +23,7 @@ function SectionFallback() {
  */
 export default function GrowPage() {
   return (
-    <div className="flex flex-col gap-6">
+    <div className="page-measure flex flex-col gap-6">
       <header>
         <p className="overline mb-1">Grow</p>
         <h1 className="text-title font-display text-foreground">

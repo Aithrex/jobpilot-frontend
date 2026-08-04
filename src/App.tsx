@@ -62,6 +62,7 @@ const JobOpportunitiesTab = lazy(() => import('@/components/resume/JobOpportunit
 const CareerPortalsTab = lazy(() => import('@/components/resume/CareerPortalsTab'));
 
 // Craft mounts the resume tools directly as nested sections.
+const ResumeOverviewPage = lazy(() => import('@/app-shell/pages/craft/ResumeOverviewPage'));
 const TailorPage = lazy(() => import('@/app-shell/pages/craft/TailorPage'));
 const MyResumesPage = lazy(() => import('@/app-shell/pages/craft/MyResumesPage'));
 const TailoredPage = lazy(() => import('@/app-shell/pages/craft/TailoredPage'));
@@ -204,7 +205,9 @@ function AppContent() {
                 <Route path="portals" element={<CareerPortalsTab />} />
               </Route>
               <Route path="resume" element={<CraftPage />}>
-                <Route index element={<Navigate to="tailor" replace />} />
+                {/* The Resume workspace overview. This used to redirect to
+                    Tailor, leaving the section with no landing surface. */}
+                <Route index element={<ResumeOverviewPage />} />
                 <Route path="tailor" element={<TailorPage />} />
                 <Route path="batch" element={<BatchTailor />} />
                 <Route path="library" element={<MyResumesPage />} />

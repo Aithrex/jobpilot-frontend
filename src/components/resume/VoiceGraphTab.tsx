@@ -134,8 +134,8 @@ export default function VoiceGraphTab({ embedded }: VoiceGraphTabProps) {
 /* ─────────────────────────── Header ─────────────────────────── */
 
 function Header({ embedded }: { embedded?: boolean }) {
-  // Embedded in the /next shell the page already has an h1 ("Shape your
-  // story") and a "Voice" SubNav item - demote to a section h2 on the shell's
+  // Embedded in the app shell the page already has an h1 ("Shape your story")
+  // and a "Voice analysis" rail item - demote to a section h2 on the shell's
   // type scale and drop the duplicative chip so the page keeps a single h1.
   if (embedded) {
     return (

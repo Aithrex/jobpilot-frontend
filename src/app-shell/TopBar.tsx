@@ -20,9 +20,10 @@ import { navHref } from "./nav.config";
  * Global sticky top bar (64px) and the app-shell's sole chrome after the
  * vertical sidebar was retired: brand mark on the left, the horizontal
  * primary destination nav next to it (>=lg), then the right cluster - command
- * palette, theme toggle, a settings gear, and the account menu. Rendered as
- * the page `<header>` landmark. No dead affordances - every control does
- * something today.
+ * palette, theme toggle, and the account menu. Rendered as the page `<header>`
+ * landmark. No dead affordances - every control does something today, and no
+ * duplicates: Settings lives in the account menu only (plus the command
+ * palette and the mobile More sheet), not also as a standalone gear.
  */
 export function TopBar() {
   const { theme, setTheme } = useTheme();
@@ -95,17 +96,8 @@ export function TopBar() {
           <ThemeIcon className="h-5 w-5" aria-hidden="true" />
         </button>
 
-        {/* Settings gear - quick reach without opening the account menu. */}
-        <Link
-          to={navHref("settings")}
-          aria-label="Settings"
-          title="Settings"
-          className="hidden h-11 w-11 items-center justify-center rounded-full text-muted-foreground interactive interactive-press hover:bg-accent hover:text-foreground active:bg-accent/80 sm:flex"
-        >
-          <Settings className="h-5 w-5" aria-hidden="true" />
-        </Link>
-
-        {/* User menu */}
+        {/* User menu - also the single home for Settings (a standalone gear
+            here was a second control for the same destination). */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
