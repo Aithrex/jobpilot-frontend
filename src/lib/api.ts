@@ -342,6 +342,25 @@ class ApiService {
     });
   }
 
+  /**
+   * Set or change the password for the signed-in account. Social-only accounts
+   * (created with "Continue with Google") omit currentPassword - the session
+   * itself is the proof - which is how they gain email+password sign-in without
+   * depending on the reset email.
+   */
+  async setPassword(newPassword: string, currentPassword?: string) {
+    return this.request<{ ok: boolean; message: string; auth_providers?: string[] }>(
+      '/auth/set-password',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          new_password: newPassword,
+          ...(currentPassword ? { current_password: currentPassword } : {}),
+        }),
+      },
+    );
+  }
+
   // ── Social sign-in ("Continue with ...") ───────────────────────
   async getOAuthProviders() {
     return this.request<{ providers: string[] }>('/auth/oauth/providers');

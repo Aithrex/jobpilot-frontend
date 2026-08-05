@@ -17,6 +17,10 @@ export interface AuthUser {
   plan?: string;
   onboarded?: boolean;
   isAdmin?: boolean;
+  /** Sign-in methods attached to this account, e.g. ['google'] or ['password','google'].
+   * Absence of 'password' means the account is social-only and cannot use the
+   * email + password form until a password is set. */
+  authProviders?: string[];
   preferences?: Record<string, unknown>;
   entitlements?: AuthEntitlements;
 }
@@ -32,6 +36,7 @@ function mapProfile(data: ProfileData): AuthUser {
     plan: data.plan,
     onboarded: data.onboarded,
     isAdmin: !!data.is_admin,
+    authProviders: data.auth_providers ?? [],
     preferences: data.preferences,
     entitlements: data.entitlements,
   };
