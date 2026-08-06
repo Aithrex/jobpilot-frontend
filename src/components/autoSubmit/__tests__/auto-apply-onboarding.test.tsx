@@ -186,7 +186,7 @@ describe('AutoApplyOnboarding', () => {
     expect(finish).toBeDisabled();
 
     // Picking a mode is not enough while required contact/work-auth are missing.
-    await userEvent.click(screen.getByRole('radio', { name: /^Auto\b(?! Aggressive)/i }));
+    await userEvent.click(screen.getByRole('radio', { name: /^Ask me first/i }));
     expect(screen.getByRole('button', { name: /save . finish/i })).toBeDisabled();
     expect(api.saveOnboardingAnswers).not.toHaveBeenCalled();
   });
@@ -204,7 +204,7 @@ describe('AutoApplyOnboarding', () => {
     const finish = await screen.findByRole('button', { name: /save . finish/i });
     expect(finish).toBeDisabled();
 
-    await userEvent.click(screen.getByRole('radio', { name: /^Auto\b(?! Aggressive)/i }));
+    await userEvent.click(screen.getByRole('radio', { name: /^Ask me first/i }));
     await waitFor(() =>
       expect(screen.getByRole('button', { name: /save . finish/i })).toBeEnabled(),
     );

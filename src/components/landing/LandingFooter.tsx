@@ -33,7 +33,22 @@ export function LandingFooter() {
             </span>
           </Link>
 
-          <nav className="flex items-center gap-8" aria-label="Footer">
+          <nav
+            className="flex flex-wrap items-center justify-center gap-x-7 gap-y-3"
+            aria-label="Footer"
+          >
+            <Link to="/pricing" className={LINK_CLASS}>
+              Pricing
+            </Link>
+            {/* The route keeps its `/trust` path; only the label followed the
+                merged section. Privacy and Terms stay their own entries - the
+                decision section links to them, it does not replace them. */}
+            <Link to="/trust" className={LINK_CLASS}>
+              Before you begin
+            </Link>
+            <Link to="/login" className={LINK_CLASS}>
+              Sign in
+            </Link>
             <Link to="/privacy" className={LINK_CLASS}>
               Privacy
             </Link>

@@ -16,20 +16,20 @@ const MODES: {
 }[] = [
   {
     mode: "copilot",
-    title: "Manual",
-    blurb: "Prepare answers — you submit",
+    title: "Prepare only",
+    blurb: "Aspirely fills the application. You press submit.",
     icon: Sparkles,
   },
   {
     mode: "approval",
-    title: "Auto",
-    blurb: "Submit only after you approve",
+    title: "Ask me first",
+    blurb: "Nothing goes out until you approve it.",
     icon: Send,
   },
   {
     mode: "aggressive",
-    title: "Auto Aggressive",
-    blurb: "Queue & submit matching jobs daily",
+    title: "Apply within my rules",
+    blurb: "Submits matching jobs inside your daily limit.",
     icon: Rocket,
   },
 ];

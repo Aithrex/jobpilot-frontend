@@ -22,6 +22,12 @@ const AuthCallback = lazy(() => import('./pages/AuthCallback'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const ApplyPilotPrivacy = lazy(() => import('./pages/ApplyPilotPrivacy'));
 const Privacy = lazy(() => import('./pages/Privacy'));
+// Public marketing sub-routes. Every component they render is already in the
+// eager landing chunk, so these lazy chunks are the page files and nothing
+// else - the route is close to free, and it is what makes pricing and trust
+// linkable and survivable once a guest upload collapses the landing sections.
+const Pricing = lazy(() => import('./pages/Pricing'));
+const Trust = lazy(() => import('./pages/Trust'));
 const Terms = lazy(() => import('./pages/Terms'));
 
 // The authenticated workspace's provider stack (upgrade modal + feedback dialog
@@ -286,6 +292,22 @@ function AppContent() {
             element={
               <Suspense fallback={<RouteLoadingFallback />}>
                 <ResetPassword />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/pricing"
+            element={
+              <Suspense fallback={<RouteLoadingFallback />}>
+                <Pricing />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/trust"
+            element={
+              <Suspense fallback={<RouteLoadingFallback />}>
+                <Trust />
               </Suspense>
             }
           />

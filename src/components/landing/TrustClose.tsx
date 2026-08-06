@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { AmbientGlow, Container, Grain, Reveal } from './_shared';
+import { cn } from '@/lib/utils';
+import { AmbientGlow, Container, Grain, Reveal, SECTION_Y } from './_shared';
 
 /**
  * The close: the final action, on the page's own surface. It gets its presence
@@ -32,31 +33,42 @@ export function TrustClose({
 }: TrustCloseProps = {}) {
   return (
     <section
-      id="trust"
+      id="get-started"
       aria-label="Get started"
-      // No surface of its own: the close inherits the page's theme like every
-      // other section. It used to force obsidian, which is why a light-theme
-      // page still ended on a black band.
-      className="relative scroll-mt-4 overflow-hidden py-14 sm:py-16 lg:py-20"
+      // `id` moved off `trust`, which now belongs to the real trust answers
+      // section. No surface of its own: the close inherits the page's theme
+      // like every other section.
+      className={cn('relative scroll-mt-4 overflow-hidden', SECTION_Y)}
     >
       <AmbientGlow />
       <Grain />
       <Container className="relative max-w-3xl text-center">
         <Reveal>
           <h2 className="text-balance font-display text-[2rem] font-extrabold leading-[1.08] tracking-[-0.03em] text-foreground sm:text-[2.75rem]">
-            See the jobs that fit you.
+            Start the search that keeps going.
           </h2>
           <p className="mx-auto mt-4 max-w-lg text-pretty text-base leading-relaxed text-muted-foreground sm:text-lg">
-            One resume, up to 5 best-fit openings, and one tailored rewrite. No account required to
-            start.
+            Create a free account and set your direction. Aspirely takes it from there, and you stay
+            in charge of every step that leaves your hands.
           </p>
 
           <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <Button
+              asChild
+              size="lg"
+              className="h-12 w-full rounded-full px-8 text-base font-semibold shadow-pop sm:w-auto"
+            >
+              <Link to={fallbackHref}>{fallbackLabel}</Link>
+            </Button>
+            {/* Keeps the exact accessible name `Upload your resume`: it is one
+                of the three triggers that share the page's single file input,
+                and the count is asserted. */}
             {onUpload ? (
               <Button
                 size="lg"
+                variant="outline"
                 onClick={onUpload}
-                className="h-12 w-full rounded-full px-8 text-base font-semibold shadow-pop sm:w-auto"
+                className="h-12 w-full rounded-full bg-card/50 px-8 text-base sm:w-auto"
               >
                 Upload your resume
               </Button>
@@ -64,23 +76,16 @@ export function TrustClose({
               <Button
                 asChild
                 size="lg"
-                className="h-12 w-full rounded-full px-8 text-base font-semibold shadow-pop sm:w-auto"
+                variant="outline"
+                className="h-12 w-full rounded-full bg-card/50 px-8 text-base sm:w-auto"
               >
-                <Link to={fallbackHref}>{fallbackLabel}</Link>
+                <Link to="/login">Sign in</Link>
               </Button>
             )}
-            <Button
-              asChild
-              size="lg"
-              variant="outline"
-              className="h-12 w-full rounded-full bg-card/50 px-8 text-base sm:w-auto"
-            >
-              <Link to="/login">Sign in</Link>
-            </Button>
           </div>
 
           <p className="mt-5 text-[13px] font-medium text-muted-foreground">
-            PDF or DOCX · up to 5 MB · private and time-limited
+            Free to start · No card · Private upload
           </p>
         </Reveal>
       </Container>

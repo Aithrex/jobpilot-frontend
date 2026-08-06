@@ -1,5 +1,12 @@
 # Architecture
 
+> **PARTLY STALE.** The architecture below still describes the retired `ResumeParser`
+> `?tab=` workspace. The shipped model is a route tree mounted at `/app` with
+> five destinations (home / jobs / resume / apply / grow) plus settings.
+> **`src/App.tsx` and `src/app-shell/nav.config.ts` are the source of truth**
+> for routes and information architecture; trust them over this file.
+
+
 A tour of how the JobPilot frontend is structured and how data flows.
 
 ## Stack

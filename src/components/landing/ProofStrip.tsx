@@ -10,7 +10,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Container, EASE, Reveal } from './_shared';
+import { Container, EASE, Reveal, SECTION_Y } from './_shared';
 
 /**
  * ProofStrip - three claims that are true, shown as a three-up coverflow.
@@ -146,7 +146,7 @@ export function ProofStrip() {
       id="proof"
       ref={sectionRef}
       aria-labelledby="proof-heading"
-      className="relative scroll-mt-4 pb-16 sm:pb-20 lg:pb-24"
+      className={cn('relative scroll-mt-4', SECTION_Y)}
     >
       <Container>
         <Reveal>

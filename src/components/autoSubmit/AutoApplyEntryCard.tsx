@@ -17,7 +17,7 @@ export default function AutoApplyEntryCard({ onOpen }: { onOpen?: () => void }) 
   const subtitle = count > 0
     ? `${count} application${count === 1 ? "" : "s"} ready for your approval`
     : enabled
-    ? "On — Manual, Auto, or Auto Aggressive"
+    ? "On - Prepare only, Ask me first, or Apply within my rules"
     : "Set mode + tailor preference, then queue jobs";
 
   return (

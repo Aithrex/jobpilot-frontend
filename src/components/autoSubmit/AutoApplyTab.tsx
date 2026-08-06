@@ -834,7 +834,7 @@ export default function AutoApplyTab() {
             {copilot
               ? "Aspirely tailors and fills every answer. You open the job and apply."
               : aggressive
-                ? "Auto Aggressive queues new matches daily and submits when confident. Sensitive fields still pause for you."
+                ? "Apply within my rules queues new matches daily and submits when confident, inside your daily limit. Sensitive fields still stop and ask you."
                 : "You stay in control. Nothing is sent until you approve it, and you can cancel within a short window."}
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
@@ -897,7 +897,7 @@ export default function AutoApplyTab() {
                 Choose how auto-apply works
               </h3>
               <p className="mt-1 text-sm text-muted-foreground">
-                Manual, Auto, or Auto Aggressive. Nothing runs until you pick one.
+                Prepare only, Ask me first, or Apply within my rules. Nothing runs until you pick one.
               </p>
             </div>
           </div>

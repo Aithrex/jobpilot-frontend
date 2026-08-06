@@ -31,8 +31,8 @@ import {
   DOCK_CAPABILITIES,
   STATUS_LABEL,
   WHATSAPP,
-  isLive,
 } from '@/lib/capabilities';
+import { PLAN_LABEL, PLAN_ORDER } from '@/lib/entitlements';
 
 vi.mock('@/lib/api', () => ({
   companyLogoSrc: (logoUrl?: string | null) => logoUrl ?? null,
@@ -77,9 +77,6 @@ function renderLanding() {
   );
 }
 
-/** The hero's illustrative demo panel (Read / Match / Tailor / Track). */
-const heroPanel = () => screen.getByRole('tabpanel', { name: /^(Read|Match|Tailor|Track)$/ });
-
 /** The editorial transformation stage (Resume / Understood / Matched / Tailored). */
 const signalPanel = () => screen.getByRole('tabpanel', { name: /Resume transformation stage/i });
 
@@ -104,11 +101,12 @@ describe('primary CTA', () => {
     const input = inputs[0] as HTMLInputElement;
     const clickSpy = vi.spyOn(input, 'click').mockImplementation(() => {});
 
-    // The nav no longer carries an upload CTA - the page's upload actions live
-    // in the hero and the closing section, so the bar does not repeat them.
-    // 1 - hero CTA.
+    // The nav carries no upload CTA - the page's upload actions live in the
+    // hero and the closing section, so the bar does not repeat them.
+    // 1 - the hero's secondary CTA.
     await user.click(screen.getByRole('button', { name: /^Find my matches$/i }));
-    // 2 - the drop surface inside the workspace window.
+    // 2 - the drop surface under the product film. It moved out of the mock
+    // window when the mock window went, but it is the SAME picker.
     await user.click(
       await screen.findByRole('button', { name: /Drop your resume to see your matches/i }),
     );
@@ -120,18 +118,56 @@ describe('primary CTA', () => {
     expect(document.querySelectorAll('a[href="#try"]')).toHaveLength(0);
   });
 
-  test('the header carries no upload or sign-in control', () => {
+  test('the header exposes the public IA and one account action, and never an upload control', () => {
     renderLanding();
     const banner = screen.getByRole('banner');
-    // Both CTAs moved to the hero; the sticky bar no longer repeats them, so a
-    // visitor never sees Sign in / Upload twice in the first viewport.
-    expect(within(banner).queryByRole('link', { name: /sign in|upload/i })).toBeNull();
-    // The one control it does carry is chrome - a setting, not an action on the
-    // product. It is the SAME control as the workspace top bar and the auth
-    // stage: one setting should not look like three different affordances.
+
+    // This test used to assert the OPPOSITE - that the bar carried no sign-in
+    // and exactly one button - on the reasoning that both CTAs already sat in
+    // the hero and repeating them was noise. That was right for the page it
+    // was written against: a single-purpose guest-upload page whose only
+    // meaningful action was upload.
+    //
+    // It is wrong for this one. The public site now has five destinations and
+    // two sub-routes; a visitor can land mid-page or arrive on /pricing, and
+    // under the old rule such a visitor had no path to sign in at all. And
+    // "pricing must be discoverable before account creation" cannot be
+    // satisfied by a header that does not navigate to pricing.
+    expect(within(banner).getByRole('link', { name: /How it works/i })).toBeInTheDocument();
+    expect(within(banner).getByRole('link', { name: /^Pricing$/i })).toHaveAttribute(
+      'href',
+      '/pricing',
+    );
+    // Was "Trust and FAQ", pointing at two sections that answered the same
+    // questions twice. One section, one label; the ROUTE is unchanged, because
+    // renaming a public URL to match a heading costs readers, not us.
+    expect(within(banner).getByRole('link', { name: /Before you begin/i })).toHaveAttribute(
+      'href',
+      '/trust',
+    );
+    expect(within(banner).getByRole('link', { name: /^Sign in$/i })).toHaveAttribute(
+      'href',
+      '/login',
+    );
+    expect(within(banner).getByRole('link', { name: /^Create free account$/i })).toHaveAttribute(
+      'href',
+      '/register',
+    );
+
+    // What SURVIVES from the old rule, and is the part that was actually
+    // load-bearing: the bar is not a fourth upload trigger. The CTA test above
+    // counts exactly three, and a nav upload control would break that contract
+    // from a distance.
+    expect(within(banner).queryByRole('button', { name: /upload|resume|find my matches/i })).toBeNull();
+    expect(within(banner).queryByRole('link', { name: /upload|resume/i })).toBeNull();
+
+    // Chrome is still chrome: the theme setting plus the mobile disclosure.
     const controls = within(banner).getAllByRole('button');
-    expect(controls).toHaveLength(1);
-    expect(controls[0]).toHaveAccessibleName(/theme/i);
+    expect(controls).toHaveLength(2);
+    expect(controls.map((c) => c.getAttribute('aria-label'))).toEqual(
+      expect.arrayContaining([expect.stringMatching(/theme/i), expect.stringMatching(/menu/i)]),
+    );
+
     // It still carries the wordmark home link.
     expect(within(banner).getByRole('link', { name: /Aspirely home/i })).toBeInTheDocument();
   });
@@ -151,66 +187,29 @@ describe('primary CTA', () => {
     expect(clickSpy).toHaveBeenCalledTimes(1);
   });
 
-  test('the drop zone and the CTA share ONE file input', async () => {
-    const user = userEvent.setup();
-    renderLanding();
+  test('the hero loop is a backdrop: behind the content, and it displaces nothing', () => {
+    const { container } = renderLanding();
+    const hero = document.getElementById('try') as HTMLElement;
 
-    // Exactly one file input exists on the page.
-    const inputs = document.querySelectorAll('input[type="file"]');
-    expect(inputs).toHaveLength(1);
+    // The loop used to be a named `group` with a play control. It is a pure
+    // background now, so it is aria-hidden and has no accessible handle at
+    // all - which is why this queries the DOM rather than the a11y tree.
+    const backdrop = hero.querySelector('[aria-hidden="true"].absolute.inset-0');
+    expect(backdrop).toBeTruthy();
+    expect((backdrop as HTMLElement).className).toContain('pointer-events-none');
 
-    const input = inputs[0] as HTMLInputElement;
-    const clickSpy = vi.spyOn(input, 'click').mockImplementation(() => {});
-
-    await user.click(screen.getByRole('button', { name: /^Find my matches$/i }));
-    await user.click(
-      await screen.findByRole('button', { name: /Drop your resume to see your matches/i }),
-    );
-
-    // Both triggers opened the SAME element.
-    expect(clickSpy).toHaveBeenCalledTimes(2);
+    // The hero copy sits above it, not inside it.
+    const cta = within(hero).getByRole('link', { name: /^Create free account$/i });
+    expect(backdrop!.contains(cta)).toBe(false);
+    void container;
   });
+
 });
-
-// ── 2. Mobile ordering ───────────────────────────────────────────
-
-describe('mobile composition', () => {
-  test('the hero CTA precedes the workspace window in DOM order', async () => {
-    renderLanding();
-
-    const cta = await screen.findByRole('button', { name: /^Find my matches$/i });
-    const windowTitle = screen.getByText('Career Workspace');
-
-    // On a phone the columns stack in source order, so the real action must
-    // come first in the DOM. A visitor should never scroll past artwork to
-    // reach the thing they came to do.
-    expect(
-      cta.compareDocumentPosition(windowTitle) & Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
-  });
-
-  test('the drop surface lives INSIDE the workspace window, not beside it', async () => {
-    renderLanding();
-
-    const drop = await screen.findByRole('button', {
-      name: /Drop your resume to see your matches/i,
-    });
-    // The MacWindow frame (its own `shadow-float` surface).
-    const frame = document.querySelector('.shadow-float') as HTMLElement;
-
-    expect(frame).not.toBeNull();
-    expect(frame.contains(screen.getByText('Career Workspace'))).toBe(true);
-    // The product window IS the uploader: the real control is its own child.
-    expect(frame.contains(drop)).toBe(true);
-  });
-});
-
-// ── 3. Nothing fabricated ────────────────────────────────────────
 
 describe('honesty of the pre-upload composition', () => {
   test('no fabricated company, job title, or match score is rendered', async () => {
     renderLanding();
-    await screen.findByText('Career Workspace');
+    await screen.findByRole('heading', { level: 1 });
 
     const text = document.body.textContent ?? '';
 
@@ -224,104 +223,40 @@ describe('honesty of the pre-upload composition', () => {
     expect(text).not.toMatch(/Senior (Frontend|Backend|Software) Engineer at/i);
   });
 
-  test('the pre-upload demo is labelled "Illustrative workflow"', async () => {
+  test('the hero backdrop carries no copy, so it can claim nothing', () => {
     renderLanding();
-    // Nobody may mistake redacted structure for their own data or for real
-    // openings, so the demo says what it is, visibly.
-    expect(await screen.findByText('Illustrative workflow')).toBeInTheDocument();
-  });
-});
+    const hero = document.getElementById('try') as HTMLElement;
+    const backdrop = hero.querySelector('[aria-hidden="true"].absolute.inset-0') as HTMLElement;
 
-// ── 3b. The product demo is reachable by assistive tech ──────────
+    // The previous hero visual was an illustrative mockup that had to be
+    // labelled "Illustrative" precisely because it drew fake product UI. This
+    // one is abstract and wordless: there is nothing in it to be true or false
+    // about, which is a stronger guarantee than a disclaimer.
+    expect((backdrop.textContent ?? '').trim()).toBe('');
+    expect(backdrop.querySelector('img, video')).toBeTruthy();
+  });
+
+});
 
 describe('product demo accessibility', () => {
-  test('the demo is NOT hidden from assistive tech, only its decorations are', async () => {
+  test('the backdrop is hidden from assistive tech, because it is decorative', () => {
     renderLanding();
-    const tablist = await screen.findByRole('tablist', {
-      name: /Illustrative workflow steps/i,
-    });
+    const hero = document.getElementById('try') as HTMLElement;
 
-    // The stage root must not be inside an aria-hidden subtree - a blanket
-    // aria-hidden on the demo told screen-reader users nothing about the
-    // product at all.
-    expect(tablist.closest('[aria-hidden="true"]')).toBeNull();
-    // Its region labels are readable.
-    expect(within(heroPanel()).getByText('Experience')).toBeInTheDocument();
-    // Decorative shapes still are hidden.
-    expect(document.querySelector('[aria-hidden="true"]')).toBeTruthy();
+    // This assertion is the REVERSE of what it used to be, and deliberately.
+    // When the film was a foreground module with a play button, hiding it from
+    // screen readers would have removed a real feature. As a wordless
+    // background it carries no information the headline does not already
+    // state, so exposing it would only add noise to the a11y tree.
+    const media = hero.querySelector('video, img[src*="poster"]');
+    expect(media).toBeTruthy();
+    expect(media!.closest('[aria-hidden="true"]')).toBeTruthy();
+
+    // And it is not focusable or clickable.
+    expect(hero.querySelector('[aria-hidden="true"] button, [aria-hidden="true"] a')).toBeNull();
   });
 
-  test('Read / Match / Tailor / Track are real focusable tabs', async () => {
-    renderLanding();
-    const tablist = await screen.findByRole('tablist', {
-      name: /Illustrative workflow steps/i,
-    });
-    const tabs = within(tablist).getAllByRole('tab');
-
-    expect(tabs.map((t) => t.textContent)).toEqual(['Read', 'Match', 'Tailor', 'Track']);
-    tabs.forEach((t) => expect(t.tagName).toBe('BUTTON'));
-    // Roving tabindex: exactly one tab is in the tab order.
-    expect(tabs.filter((t) => t.getAttribute('tabindex') === '0')).toHaveLength(1);
-    // And they drive a real panel.
-    expect(heroPanel()).toBeInTheDocument();
-  });
-
-  test('the tabs are operable by keyboard: arrows move, Enter/Space select', async () => {
-    const user = userEvent.setup();
-    renderLanding();
-    const tablist = await screen.findByRole('tablist', {
-      name: /Illustrative workflow steps/i,
-    });
-    const [read, match, tailor, track] = within(tablist).getAllByRole('tab');
-
-    read.focus();
-    expect(read).toHaveFocus();
-
-    // Arrow keys move focus AND jump the illustration to that beat.
-    await user.keyboard('{ArrowRight}');
-    expect(match).toHaveFocus();
-    expect(match).toHaveAttribute('aria-selected', 'true');
-    expect(read).toHaveAttribute('aria-selected', 'false');
-
-    await user.keyboard('{End}');
-    expect(track).toHaveFocus();
-    expect(track).toHaveAttribute('aria-selected', 'true');
-
-    // Space activates the focused tab natively (it is a real button).
-    await user.keyboard('{Home}');
-    expect(read).toHaveFocus();
-    await user.keyboard(' ');
-    expect(read).toHaveAttribute('aria-selected', 'true');
-
-    // Clicking Tailor jumps to the rewrite scene, which shows the guarantee.
-    await user.click(tailor);
-    expect(tailor).toHaveAttribute('aria-selected', 'true');
-    expect(await within(heroPanel()).findByText('IntegrityGuard')).toBeInTheDocument();
-    // ...and exactly one tab is selected. The stage shows ONE scene per beat,
-    // so "furthest reached" highlighting (which pinned every tab past Read to
-    // selected, and left Track lit before the tour had ever got there) must
-    // never come back.
-    expect(within(tablist).getAllByRole('tab', { selected: true })).toHaveLength(1);
-  });
-
-  test('driving the tabs never fabricates data', async () => {
-    const user = userEvent.setup();
-    renderLanding();
-    const tablist = await screen.findByRole('tablist', {
-      name: /Illustrative workflow steps/i,
-    });
-    for (const tab of within(tablist).getAllByRole('tab')) await user.click(tab);
-
-    const text = document.body.textContent ?? '';
-    for (const brand of ['Stripe', 'Google', 'Meta', 'Amazon', 'Netflix', 'Acme', 'TechCorp']) {
-      expect(text).not.toContain(brand);
-    }
-    expect(text).not.toMatch(/\d{1,3}\s*%\s*(match|fit)/i);
-    expect(text).not.toMatch(/Senior (Frontend|Backend|Software) Engineer at/i);
-  });
 });
-
-// ── 4. Current vs future are separated and correctly labelled ────
 
 describe('capability status', () => {
   test('Available-now and Coming-next are distinct sections', async () => {
@@ -342,14 +277,19 @@ describe('capability status', () => {
     expect(availableSection).not.toBe(comingSection);
   });
 
-  test('Auto Apply is labelled Coming soon and never Available', async () => {
+  test('Auto Apply carries its registry status, and never reads as Available', async () => {
     renderLanding();
     const heading = await screen.findByRole('heading', { name: 'Auto Apply' });
     const card = heading.closest('div')?.parentElement as HTMLElement;
 
-    expect(within(card).getByText('Coming soon')).toBeInTheDocument();
-    expect(within(card).queryByText('Available')).not.toBeInTheDocument();
-    expect(AUTO_APPLY.status).toBe('beta');
+    // This used to assert the literal string 'Coming soon'. That froze a
+    // snapshot of the registry rather than testing it: Auto Apply moved to
+    // 'beta' and the card correctly started rendering 'Beta', so the test
+    // failed while the code was right. The point of the test is that a
+    // roadmap capability must never read as shipped - assert THAT, against
+    // whatever the registry currently says.
+    expect(within(card).getByText(STATUS_LABEL[AUTO_APPLY.status])).toBeInTheDocument();
+    expect(within(card).queryByText(STATUS_LABEL.available)).not.toBeInTheDocument();
   });
 
   test('WhatsApp is labelled Coming soon, and described as alerts + approvals (not "messages")', async () => {
@@ -395,7 +335,7 @@ describe('capability status', () => {
 
   test('every rendered status string comes from the registry', async () => {
     renderLanding();
-    await screen.findByText('Career Workspace');
+    await screen.findByRole('heading', { level: 1 });
 
     const allowed = new Set(Object.values(STATUS_LABEL));
     // Any badge-like status word on the page must be one the registry defines.
@@ -403,10 +343,16 @@ describe('capability status', () => {
       expect(allowed.has(STATUS_LABEL[cap.status])).toBe(true);
     }
     // And the dock reflects registry order/state rather than hardcoded copy.
-    expect(DOCK_CAPABILITIES.filter((c) => !isLive(c.status)).map((c) => c.id)).toEqual([
-      'auto-apply',
-      'whatsapp',
-    ]);
+    // The filter here used to be `!isLive(c.status)`, which encoded an
+    // assumption that nothing in the dock was live. Auto Apply is 'beta',
+    // which IS live, so the filter silently dropped it and the assertion
+    // failed on a correct dock. What the dock promises is that it lists the
+    // not-yet-shipped capabilities in registry order and labels each from the
+    // registry - so assert the contents and the labels, not the liveness.
+    expect(DOCK_CAPABILITIES.map((c) => c.id)).toEqual(['auto-apply', 'whatsapp']);
+    for (const cap of DOCK_CAPABILITIES) {
+      expect(screen.getAllByText(STATUS_LABEL[cap.status]).length).toBeGreaterThan(0);
+    }
   });
 });
 
@@ -453,29 +399,24 @@ describe('future-feature controls', () => {
 // ── 6. Reduced motion ────────────────────────────────────────────
 
 describe('reduced motion', () => {
-  test('the composition renders fully resolved with motion off', async () => {
+  test('with motion off the hero is fully resolved and serves the poster, not a video', async () => {
     setReducedMotion(true);
     renderLanding();
+    const hero = document.getElementById('try') as HTMLElement;
 
-    // The window, its settled dock, and both roadmap sections are all present
-    // without ever playing the sequence.
-    expect(await screen.findByText('Career Workspace')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /From matched to applied\./i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /^Find my matches$/i })).toBeInTheDocument();
+    // The promise and both actions paint immediately.
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/run your job search/i);
+    expect(within(hero).getByRole('link', { name: /^Create free account$/i })).toBeInTheDocument();
+    expect(within(hero).getByRole('button', { name: /^Find my matches$/i })).toBeInTheDocument();
 
-    // With motion off there is no tour, so the demo resolves to ONE scene and
-    // stays there until the visitor drives it. That scene is Tailor: it is the
-    // one carrying the integrity guarantee, which is the last thing a visitor
-    // should have to go hunting for.
-    const tablist = screen.getByRole('tablist', { name: /Illustrative workflow steps/i });
-    const tabs = within(tablist).getAllByRole('tab');
-    expect(tabs[2]).toHaveAttribute('aria-selected', 'true');
-    expect(within(tablist).getAllByRole('tab', { selected: true })).toHaveLength(1);
-    expect(within(heroPanel()).getByText('IntegrityGuard')).toBeInTheDocument();
+    // No <video> at all - not a paused one. A paused video still downloads and
+    // still decodes a frame; an <img> is the unambiguous answer to "no motion".
+    expect(hero.querySelector('video')).toBeNull();
+    const poster = hero.querySelector('img');
+    expect(poster).toHaveAttribute('src', '/media/aspirely-hero-poster.webp');
   });
-});
 
-// ── 7. Login fallback theme ──────────────────────────────────────
+});
 
 describe('route loading fallback', () => {
   // It used to take a `pinnedDark` flag, because AuthShell forced dark on both
@@ -494,16 +435,16 @@ describe('route loading fallback', () => {
 // ── 7b. One surface per page, chosen by the theme ────────────────
 
 describe('surface language', () => {
-  test('ONE surface owns the page, and it is the visitor theme', async () => {
+  test('ONE surface owns the page, and it is the bright public canvas', async () => {
     const { container } = renderLanding();
-    await screen.findByText('Career Workspace');
+    await screen.findByRole('heading', { level: 1 });
 
-    // The suite runs with matchMedia reporting light, so the page resolves to
-    // the pearl reading surface. The page used to be obsidian at the top and
-    // bottom with a pearl band bolted through the middle, which meant the
-    // theme toggle changed nothing and scrolling went dark, light, dark.
+    // The page used to be obsidian at the top and bottom with a pearl band
+    // bolted through the middle, which meant the theme toggle changed nothing
+    // and scrolling went dark, light, dark.
     const root = container.firstElementChild as HTMLElement;
-    expect(root.className).toContain('surface-editorial');
+    expect(root.className).toContain('surface-lumen');
+    expect(root.className).not.toContain('surface-nocturne');
     expect(root.className).not.toContain('surface-obsidian');
     expect(root.style.colorScheme).toBe('light');
 
@@ -511,14 +452,54 @@ describe('surface language', () => {
     // there is no band boundary left inside the page.
     for (const name of [/From matched to applied\./i, /Real openings\./i]) {
       const section = screen.getByRole('heading', { name }).closest('section') as HTMLElement;
-      expect(section.className).not.toContain('surface-obsidian');
-      expect(section.className).not.toContain('surface-editorial');
+      expect(section.className).not.toContain('surface-nocturne');
+      expect(section.className).not.toContain('surface-lumen');
+    }
+  });
+
+  test('an OS preference for dark does NOT hand a stranger a dark marketing page', async () => {
+    // THE REGRESSION THIS EXISTS FOR. The public shells read
+    // `useResolvedTheme()`, which folds `theme: 'system'` - what every
+    // first-time visitor has - into light or dark from the operating system.
+    // So a visitor whose laptop is set to dark chrome was served a near-black
+    // plum landing page, with the hero film's readability wash painted in that
+    // same near-black: the dark panel down the left of the hero and the
+    // fade-to-black at its foot were one token resolving dark, not a design.
+    //
+    // Preferring dark application chrome is not a request for a dark marketing
+    // page, and `/` is the one route where the first frame is the whole
+    // impression. Only an explicit press of the theme control may darken it.
+    const real = window.matchMedia;
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      configurable: true,
+      value: (query: string) => {
+        const mql = real(query);
+        if (!query.includes('prefers-color-scheme')) return mql;
+        return { ...mql, matches: query.includes('dark') } as MediaQueryList;
+      },
+    });
+
+    try {
+      const { container } = renderLanding();
+      await screen.findByRole('heading', { level: 1 });
+      const root = container.firstElementChild as HTMLElement;
+
+      expect(root.className).toContain('surface-lumen');
+      expect(root.className).not.toContain('dark');
+      expect(root.style.colorScheme).toBe('light');
+    } finally {
+      Object.defineProperty(window, 'matchMedia', {
+        writable: true,
+        configurable: true,
+        value: real,
+      });
     }
   });
 
   test('the illustrations follow the theme instead of pinning themselves dark', async () => {
     renderLanding();
-    await screen.findByText('Career Workspace');
+    await screen.findByRole('heading', { level: 1 });
 
     // Both product windows were briefly held at obsidian regardless of theme,
     // which left a light page carrying black slabs. Neither may re-declare a
@@ -540,7 +521,7 @@ describe('surface language', () => {
   test('the theme control flips the whole page', async () => {
     const user = userEvent.setup();
     const { container } = renderLanding();
-    await screen.findByText('Career Workspace');
+    await screen.findByRole('heading', { level: 1 });
     const root = container.firstElementChild as HTMLElement;
 
     // The shared three-state control cycles light → dark → system → light, and
@@ -550,14 +531,17 @@ describe('surface language', () => {
     // already resolved to, hence no visible change - and the second reaches
     // dark. That second press is the one that must repaint the whole page.
     await user.click(screen.getByRole('button', { name: /theme: system/i }));
-    expect(root.className).toContain('surface-editorial');
+    expect(root.className).toContain('surface-lumen');
 
     await user.click(screen.getByRole('button', { name: /theme: light/i }));
 
     expect(screen.getByRole('button', { name: /theme: dark/i })).toBeInTheDocument();
-    expect(root.className).toContain('surface-obsidian');
+    // Charcoal, never the plum-black obsidian: pressing the toggle on the
+    // public page lands in the same dark world the product uses rather than in
+    // a third one.
+    expect(root.className).toContain('surface-nocturne');
     expect(root.className).toContain('dark');
-    expect(root.className).not.toContain('surface-editorial');
+    expect(root.className).not.toContain('surface-lumen');
     expect(root.style.colorScheme).toBe('dark');
   });
 });
@@ -664,7 +648,7 @@ describe('roadmap weight', () => {
 describe('copy rules', () => {
   test('no user-visible string uses a long dash, curly quote or accented letter', async () => {
     renderLanding();
-    await screen.findByText('Career Workspace');
+    await screen.findByRole('heading', { level: 1 });
 
     const text = document.body.textContent ?? '';
     // Long dashes and smart punctuation render inconsistently across the
@@ -685,33 +669,398 @@ describe('copy rules', () => {
 describe('layout', () => {
   test('the page root clips horizontal overflow', async () => {
     const { container } = renderLanding();
-    await screen.findByText('Career Workspace');
+    await screen.findByRole('heading', { level: 1 });
     const root = container.firstElementChild as HTMLElement;
     // jsdom performs no layout, so this asserts the guard is in place rather
     // than measuring real overflow (that is covered by browser verification).
     expect(root.className).toContain('overflow-x-clip');
   });
 
-  test('the demo stage carries no un-shrinkable fixed-pixel panel (the 320px clip)', async () => {
+});
+
+// ── 12. The public IA, the daily-agent preview, pricing and trust ────
+//
+// These cover the sections added when the landing stopped being a
+// single-purpose guest-upload page. Note that the honesty assertions in
+// section 3 sweep the WHOLE document, so they already cover these sections
+// too: a fabricated company or a match percentage in the briefing preview
+// fails there rather than needing its own test here.
+
+describe('public IA', () => {
+  test('the marketing movements render in the required reading order', async () => {
     renderLanding();
-    await screen.findByText('Career Workspace');
-    const panel = heroPanel();
+    await screen.findByRole('heading', { level: 1 });
 
-    // The clip was caused by `w-[168px] shrink-0` + `w-[128px] shrink-0` needing
-    // ~376px inside a 320px viewport. jsdom does no layout, so this asserts the
-    // CAUSE is gone: no arbitrary pixel width that also refuses to shrink.
-    const offenders = Array.from(panel.querySelectorAll<HTMLElement>('*')).filter((el) => {
-      const c = typeof el.className === 'string' ? el.className : '';
-      return /(^|\s)w-\[\d+px\]/.test(c) && /(^|\s)shrink-0/.test(c);
+    const ids = [
+      'try',
+      'how-it-works',
+      'how',
+      'pricing',
+      'proof',
+      // `trust` and `faq` merged into one decision section here.
+      'before-you-begin',
+      'coming-next',
+      'get-started',
+    ];
+    const nodes = ids.map((id) => {
+      const el = document.getElementById(id);
+      expect(el, `#${id} is missing`).toBeTruthy();
+      return el as HTMLElement;
     });
-    expect(offenders.map((el) => el.className)).toEqual([]);
+    for (let i = 1; i < nodes.length; i += 1) {
+      const rel = nodes[i - 1].compareDocumentPosition(nodes[i]);
+      expect(
+        rel & Node.DOCUMENT_POSITION_FOLLOWING,
+        `${ids[i]} should follow ${ids[i - 1]}`,
+      ).toBeTruthy();
+    }
+  });
 
-    // The resume sheet and the panels beside it are fluid instead.
-    const fluid = Array.from(panel.querySelectorAll<HTMLElement>('.basis-0'));
-    expect(fluid.length).toBeGreaterThan(0);
-    fluid.forEach((el) => {
-      expect(el.className).toContain('min-w-0');
-      expect(el.className).toContain('flex-1');
+  test('exactly one h1, and it is the hero', async () => {
+    renderLanding();
+    await screen.findByRole('heading', { level: 1 });
+    const h1s = screen.getAllByRole('heading', { level: 1 });
+    expect(h1s).toHaveLength(1);
+    expect(h1s[0]).toHaveTextContent(/run your job search with clarity/i);
+  });
+
+  test('every new marketing section is labelled by its own heading', async () => {
+    renderLanding();
+    await screen.findByRole('heading', { level: 1 });
+    for (const id of ['how-it-works', 'pricing', 'before-you-begin']) {
+      const section = document.getElementById(id) as HTMLElement;
+      const labelledBy = section.getAttribute('aria-labelledby');
+      expect(labelledBy, `#${id} has no aria-labelledby`).toBeTruthy();
+      expect(document.getElementById(labelledBy as string)).toBeTruthy();
+    }
+  });
+});
+
+describe('the workday loop', () => {
+  const section = () => document.getElementById('how-it-works') as HTMLElement;
+
+  test('one section now carries the whole product story, in order', () => {
+    renderLanding();
+    const headings = within(section())
+      .getAllByRole('heading', { level: 3 })
+      .map((h) => h.textContent);
+
+    // This used to be two sections three apart - "How it works" (three
+    // numbered steps) and "A day with Aspirely" (three chapters of a day) -
+    // telling the same loop twice in two visual languages. They are one
+    // walkthrough now, and it keeps the `how-it-works` id so the header link
+    // and the scroll-spy need no change.
+    expect(headings).toEqual([
+      'Start with the work only you can do.',
+      'It finds the signal and prepares the work.',
+      'You stay in control of every important move.',
+      // The fourth is the coda: applying is half a job search, and the
+      // section would under-sell the platform without it.
+      'And the next day starts stronger.',
+    ]);
+  });
+
+  test('each chapter is anchored to a point in the day, without inventing a schedule', () => {
+    renderLanding();
+    const text = section().textContent ?? '';
+    expect(text).toContain('Set direction');
+    expect(text).toContain('While you are away / Aspirely works');
+    expect(text).toContain('When you return / Your judgment');
+
+    // The labels are RELATIVE on purpose. An earlier draft opened with
+    // "09:00 / Set direction", which reads as a promise that Aspirely runs on a
+    // clock - a schedule the product does not guarantee and no endpoint backs.
+    // "While you are away" and "When you return" say the same thing about
+    // sequence while claiming nothing about timing.
+    expect(text).not.toMatch(/\b\d{1,2}:\d{2}\s*(am|pm)?\b/i);
+  });
+
+  test('the merged-away section is gone, and nothing links to it', () => {
+    renderLanding();
+    expect(document.getElementById('daily-briefing')).toBeNull();
+    expect(document.querySelectorAll('a[href="#daily-briefing"]')).toHaveLength(0);
+    // The old copy went with it rather than being duplicated into the merge.
+    expect(document.body.textContent).not.toMatch(/three steps, then it runs/i);
+    expect(document.body.textContent).not.toMatch(/a day with aspirely/i);
+  });
+
+  test('it is labelled as an example, and the approval control is inert', () => {
+    renderLanding();
+    expect(
+      within(section()).getByText(/an example of the aspirely workflow/i),
+    ).toBeInTheDocument();
+
+    // A picture of a control, not a control. A real button here would be a
+    // dead control on a marketing page, which this suite refuses elsewhere.
+    expect(within(section()).queryByRole('button', { name: /approve/i })).toBeNull();
+    expect(within(section()).queryByRole('link', { name: /approve/i })).toBeNull();
+  });
+
+  test('the preview frames fabricate no data', () => {
+    renderLanding();
+    const text = section().textContent ?? '';
+    // The frames carry OUR ui labels over bar-and-pill placeholders. What they
+    // must never carry is a value that looks like a real match, count or
+    // outcome. (The document-wide company/score sweep in section 3 covers the
+    // rest.)
+    expect(text).not.toMatch(/\d+\s*%/);
+    expect(text).not.toMatch(/\b\d+\s+(new\s+)?(roles|matches|jobs|applications)\b/i);
+    expect(text).not.toMatch(/guarantee|guaranteed|hired/i);
+  });
+
+  test('it states plainly that nothing is submitted without permission', () => {
+    renderLanding();
+    expect(section().textContent).toMatch(/nothing is submitted without your permission/i);
+  });
+
+  test('the story does not stop at applying - it closes the loop', () => {
+    renderLanding();
+    const text = section().textContent ?? '';
+
+    // Without this beat the section reads as a better auto-apply. Aspirely
+    // also carries interview prep, the skill gaps applications reveal, and a
+    // weekly read - all shipped surfaces under /app/grow.
+    expect(text).toMatch(/and the next day starts stronger/i);
+    expect(text).toMatch(/interview preparation/i);
+    expect(text).toMatch(/gaps your applications reveal/i);
+    expect(text).toMatch(/weekly read/i);
+
+    // And it still claims nothing about outcomes.
+    expect(text).not.toMatch(/hired|guarantee|success rate|faster than/i);
+  });
+
+  test('the approval state carries the Auto Apply registry status', () => {
+    renderLanding();
+    expect(within(section()).getByText(STATUS_LABEL[AUTO_APPLY.status])).toBeInTheDocument();
+  });
+});
+
+describe('pricing on the public page', () => {
+  test('the three plan names come from the entitlements contract, in order', () => {
+    renderLanding();
+    const section = document.getElementById('pricing') as HTMLElement;
+    const names = within(section)
+      .getAllByRole('heading', { level: 3 })
+      .map((h) => h.textContent);
+    expect(names).toEqual(PLAN_ORDER.map((id) => PLAN_LABEL[id]));
+  });
+
+  test('no price, currency symbol or per-month string renders anywhere on the page', async () => {
+    renderLanding();
+    await screen.findByRole('heading', { level: 1 });
+    const text = document.body.textContent ?? '';
+    expect(text).not.toMatch(/[$\u20ac\u00a3\u20b9]/);
+    expect(text).not.toMatch(/\b\d+\.\d{2}\b/);
+    expect(text).not.toMatch(/\/\s*mo\b/i);
+  });
+
+  test('the only pricing CTA is account creation, and paid tiers carry no control at all', () => {
+    renderLanding();
+    const section = document.getElementById('pricing') as HTMLElement;
+    const ctas = within(section)
+      .getAllByRole('link')
+      .filter((a) => /create free account/i.test(a.textContent ?? ''));
+    expect(ctas).toHaveLength(1);
+    expect(ctas[0]).toHaveAttribute('href', '/register');
+    // A disabled "coming soon" button is exactly what the roadmap sections
+    // refuse to ship, so pricing may not grow one either.
+    expect(within(section).queryAllByRole('button')).toHaveLength(0);
+    expect(within(section).getAllByText(/included when paid plans open/i)).toHaveLength(2);
+  });
+});
+
+describe('before you begin', () => {
+  const section = () => document.getElementById('before-you-begin') as HTMLElement;
+
+  test('the two duplicated sections are gone, and nothing links to them', () => {
+    renderLanding();
+
+    // `#trust` (six open answers under "Before you sign up") and `#faq` (seven
+    // disclosures) sat next to each other saying the same six things twice in
+    // two visual languages: what this is, who it is for, that nothing submits
+    // without permission, that the free plan exists, and that you can leave.
+    // A reader who had just been told something does not trust it more for
+    // being told it again one section later.
+    expect(document.getElementById('trust')).toBeNull();
+    expect(document.getElementById('faq')).toBeNull();
+    expect(document.querySelectorAll('a[href="#trust"], a[href="#faq"]')).toHaveLength(0);
+
+    // The old headings went with them rather than being carried into the merge.
+    const text = document.body.textContent ?? '';
+    expect(text).not.toMatch(/the questions worth asking first/i);
+    expect(text).not.toMatch(/common questions\./i);
+    expect(text).not.toMatch(/read all six answers/i);
+  });
+
+  test('one section carries the decision: the offer, the control line, and one CTA', () => {
+    renderLanding();
+
+    expect(
+      within(section()).getByRole('heading', {
+        name: /Everything you need to know before you begin\./i,
+      }),
+    ).toBeInTheDocument();
+    expect(section().textContent).toMatch(
+      /You stay in control of your information, your applications, and every important decision\./i,
+    );
+
+    // ONE primary action, and a quiet sign-in beside it. A decision section
+    // with two competing commands is asking the reader to decide twice.
+    const ctas = within(section())
+      .getAllByRole('link')
+      .filter((a) => /^create free account$/i.test(a.textContent ?? ''));
+    expect(ctas).toHaveLength(1);
+    expect(ctas[0]).toHaveAttribute('href', '/register');
+    expect(within(section()).getByRole('link', { name: /sign in/i })).toHaveAttribute(
+      'href',
+      '/login',
+    );
+
+    // The legal detail is linked, never restated in the answers.
+    expect(within(section()).getByRole('link', { name: /privacy policy/i })).toHaveAttribute(
+      'href',
+      '/privacy',
+    );
+    expect(within(section()).getByRole('link', { name: /^terms$/i })).toHaveAttribute(
+      'href',
+      '/terms',
+    );
+  });
+
+  test('the answers are grouped, and every one is a native disclosure', () => {
+    renderLanding();
+
+    const groups = within(section())
+      .getAllByRole('heading', { level: 3 })
+      .map((h) => h.textContent);
+    expect(groups).toEqual([
+      'Who Aspirely is for',
+      'What Aspirely helps with',
+      'Control and automation',
+      'Plans, privacy, and flexibility',
+    ]);
+
+    // Native <details>/<summary>: focusable, Enter/Space-operable and
+    // state-exposing for free, with no Radix accordion in the eager chunk.
+    const summaries = section().querySelectorAll('summary');
+    expect(summaries).toHaveLength(12);
+    summaries.forEach((el) => {
+      expect(el.getAttribute('tabindex')).not.toBe('-1');
     });
+
+    // ALL CLOSED on arrival. One pre-opened panel makes the other eleven read
+    // as less important versions of it.
+    expect(section().querySelectorAll('details[open]')).toHaveLength(0);
+  });
+
+  test('the load-bearing answers survived the merge intact', async () => {
+    const user = userEvent.setup();
+    renderLanding();
+
+    // The automation answer is the one a nervous visitor is actually here for,
+    // and it may never be softened into "you are in control" alone.
+    expect(
+      within(section()).getByRole('heading', { name: /Will Aspirely apply without my permission\?/i }),
+    ).toBeInTheDocument();
+    expect(section().textContent).toMatch(/no setting at all until you choose one/i);
+
+    // ...and it still carries the registry's status rather than a hand-typed one.
+    expect(within(section()).getByText(STATUS_LABEL[AUTO_APPLY.status])).toBeInTheDocument();
+
+    // Opening one is a real disclosure, not a link somewhere else.
+    const summary = within(section()).getByRole('heading', {
+      name: /Can I start for free\?/i,
+    }).parentElement as HTMLElement;
+    await user.click(summary);
+    expect((summary.closest('details') as HTMLDetailsElement).open).toBe(true);
+  });
+});
+
+// ── 13. The redesigned hero: two real actions, and a real film ──────────
+
+describe('hero composition', () => {
+  const hero = () => document.getElementById('try') as HTMLElement;
+
+  test('the headline is the promise, and it is the only h1', async () => {
+    renderLanding();
+    const h1 = screen.getByRole('heading', { level: 1 });
+    expect(h1).toHaveTextContent('Run your job search with clarity, consistency, and control.');
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
+  });
+
+  test('the two hero actions are Create free account and Find my matches, and both are real', async () => {
+    const user = userEvent.setup();
+    renderLanding();
+
+    const account = within(hero()).getByRole('link', { name: /^Create free account$/i });
+    expect(account).toHaveAttribute('href', '/register');
+
+    // The second action must START something, not scroll somewhere. The hero
+    // briefly paired the account CTA with "See how it works", which spent the
+    // second-most valuable control on the page moving the viewport.
+    const matches = within(hero()).getByRole('button', { name: /^Find my matches$/i });
+    const input = (await screen.findByLabelText(/^Resume file/)) as HTMLInputElement;
+    const clickSpy = vi.spyOn(input, 'click').mockImplementation(() => {});
+    await user.click(matches);
+    expect(clickSpy).toHaveBeenCalledTimes(1);
+
+    expect(within(hero()).queryByText(/see how it works/i)).toBeNull();
+  });
+
+  test('the hero carries ONE trust line, not a stack of reassurances', () => {
+    renderLanding();
+    expect(
+      within(hero()).getByText(/Free to start\. Nothing is submitted without your approval\./i),
+    ).toBeInTheDocument();
+    // The three separate micro-notes that used to sit under the CTAs are gone;
+    // each one made the next one cheaper.
+    expect(within(hero()).queryByText(/no account needed/i)).toBeNull();
+    expect(within(hero()).queryByText(/Private upload/i)).toBeNull();
+  });
+
+  test('the existing-user path is present but does not compete with the CTAs', () => {
+    renderLanding();
+    const signIn = within(hero()).getByRole('link', { name: /^Sign in$/i });
+    expect(signIn).toHaveAttribute('href', '/login');
+    // It follows both primary actions in reading order rather than sitting
+    // between them.
+    const account = within(hero()).getByRole('link', { name: /^Create free account$/i });
+    expect(account.compareDocumentPosition(signIn) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  test('the illustrative product mockup is gone', () => {
+    renderLanding();
+    // No fake window chrome, no invented status pill, no fake tablist.
+    expect(screen.queryByText('Career Workspace')).toBeNull();
+    expect(screen.queryByRole('tablist', { name: /Illustrative workflow steps/i })).toBeNull();
+  });
+});
+
+describe('hero product film', () => {
+  test('the hero loads the generated loop and poster from /media', () => {
+    renderLanding();
+    const hero = document.getElementById('try') as HTMLElement;
+    const video = hero.querySelector('video') as HTMLVideoElement;
+
+    expect(video).toBeTruthy();
+    expect(hero.querySelector('source')).toHaveAttribute('src', '/media/aspirely-hero-loop.webm');
+    expect(video).toHaveAttribute('poster', '/media/aspirely-hero-poster.webp');
+    // A poster on the element means the first paint is the still, so a slow
+    // network never shows an empty rectangle where the hero should be.
+    expect(video.getAttribute('preload')).toBe('metadata');
+  });
+
+  test('the loop is silent, looping and inline - it never asks for audio', () => {
+    renderLanding();
+    const video = (document.getElementById('try') as HTMLElement).querySelector(
+      'video',
+    ) as HTMLVideoElement;
+    expect(video.muted).toBe(true);
+    expect(video.loop).toBe(true);
+    expect(video.autoplay).toBe(true);
+    expect(video.playsInline).toBe(true);
+    // No controls: it is a background, and a control on it would invite a
+    // click that does nothing useful.
+    expect(video.controls).toBe(false);
   });
 });

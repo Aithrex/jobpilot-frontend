@@ -1,10 +1,14 @@
-import { useTheme } from 'next-themes';
+import { useResolvedTheme } from '@/components/theme-provider';
 import { Toaster as Sonner, toast } from 'sonner';
 
 type ToasterProps = React.ComponentProps<typeof Sonner>;
 
 const Toaster = ({ ...props }: ToasterProps) => {
-  const { theme = 'system' } = useTheme();
+  // Reads the app's OWN provider. This used to call next-themes' useTheme(),
+  // but there is no next-themes provider in the tree - the real one is
+  // components/theme-provider - so it always resolved 'system' and toasts
+  // ignored an explicit light/dark choice.
+  const theme = useResolvedTheme();
 
   return (
     <Sonner

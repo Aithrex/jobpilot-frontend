@@ -87,9 +87,20 @@ describe('BrandMark call sites', () => {
     expect(offenders).toEqual([]);
   });
 
-  test('only the mock product window scales the mark down', () => {
-    const sized = usages.filter((u) => /size=/.test(u.tag));
-    expect(sized.map((u) => u.file)).toEqual(['components/landing/workspace/MacWindow.tsx']);
+  test('the mark is scaled by `size` and only where a placement genuinely differs', () => {
+    // `size` is the ONLY sanctioned dial (the test above bans className
+    // geometry), so this asserts the exception list rather than banning the
+    // prop. Two placements legitimately differ from the 32px default:
+    //   - MacWindow shrinks it to a title-bar miniature,
+    //   - the public header enlarges it, because that header is the one place
+    //     the mark is doing brand work rather than labelling a surface.
+    // Anything else appearing here means a call site is drifting again, which
+    // is the whole reason this file exists.
+    const sized = usages.filter((u) => /size=/.test(u.tag)).map((u) => u.file);
+    expect([...sized].sort()).toEqual([
+      'components/landing/LandingNav.tsx',
+      'components/landing/workspace/MacWindow.tsx',
+    ]);
   });
 
   test('the mark carries no elevation of its own', () => {

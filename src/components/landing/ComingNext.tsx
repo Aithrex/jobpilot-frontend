@@ -12,7 +12,7 @@ import {
 } from '@/lib/capabilities';
 import { cn } from '@/lib/utils';
 import { StatusBadge } from './workspace/CapabilityDock';
-import { Container, EASE, Reveal } from './_shared';
+import { Container, EASE, Reveal, Section } from './_shared';
 
 /**
  * "Coming next" - the roadmap. Still the QUIETEST movement on the page, but it
@@ -147,7 +147,7 @@ const ROADMAP: readonly RoadmapEntry[] = [
     icon: Send,
     qualifier: 'Beta · mode-gated',
     guardrails: [
-      'Manual prepares only; Auto waits for your approval; Aggressive submits matching jobs within daily quota',
+      'Prepare only never submits; Ask me first waits for your approval; Apply within my rules submits inside the daily limit you set',
       'Workday and other multi-step ATS may still hit account/OTP walls',
     ],
     Preview: ApprovalPreview,
@@ -288,14 +288,13 @@ export function ComingNext() {
   }, [reduce, inView, hover]);
 
   return (
-    <section
-      id="coming-next"
-      aria-labelledby="coming-next-heading"
-      className="relative scroll-mt-4 pb-16 sm:pb-20 lg:pb-24"
-    >
+    <Section id="coming-next" labelledBy="coming-next-heading">
       <Container>
-        <div aria-hidden className="rule-fade" />
-        <div ref={sectionRef} className="mt-10 lg:mt-12">
+        {/* The boundary above this section is drawn by the page's shared
+            `SectionRule`, like every other boundary. There used to be a second
+            `rule-fade` here as well, so the roadmap was fenced off by two
+            hairlines a few pixels apart while every other seam had one. */}
+        <div ref={sectionRef}>
           <Reveal className="max-w-2xl">
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
               Coming next
@@ -307,8 +306,9 @@ export function ComingNext() {
               From matched to applied.
             </h2>
             <p className="mt-3 text-pretty text-[14px] leading-relaxed text-muted-foreground">
-              Aspirely is growing into an application assistant you control — Manual, Auto, or
-              Auto Aggressive. Sensitive fields still pause for you.
+              Aspirely is growing into an application assistant you control. You pick how much it
+              may do: prepare only, prepare and wait for your approval, or submit inside a daily
+              limit you set. Sensitive fields still stop and ask you.
             </p>
           </Reveal>
 
@@ -361,7 +361,7 @@ export function ComingNext() {
           </Reveal>
         </div>
       </Container>
-    </section>
+    </Section>
   );
 }
 

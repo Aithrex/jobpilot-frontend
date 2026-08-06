@@ -91,28 +91,28 @@ const MODE_OPTIONS: {
 }[] = [
   {
     mode: "copilot",
-    title: "Manual",
-    tagline: "We prepare, you apply",
+    title: "Prepare only",
+    tagline: "Aspirely prepares, you apply",
     detail:
       "We tailor your resume and resolve every answer, then hand you a ready answer sheet. Nothing is ever submitted for you.",
     icon: Sparkles,
   },
   {
     mode: "approval",
-    title: "Auto",
-    tagline: "We prepare and submit after you approve each one",
+    title: "Ask me first",
+    tagline: "Aspirely prepares and submits only after you approve each one",
     detail:
       "Every application waits for your explicit go-ahead. We only submit once you have reviewed and approved it.",
     icon: Send,
   },
   {
     mode: "aggressive",
-    title: "Auto Aggressive",
-    tagline: "Submit matching jobs every day",
+    title: "Apply within my rules",
+    tagline: "Submits matching jobs daily, inside the limit you set",
     detail:
       "We queue new matching postings daily and submit high-confidence applications on your behalf. Sensitive or unclear fields still pause for you.",
     icon: Rocket,
-    note: "Uses your monthly auto-apply quota. You can still switch back to Auto or Manual anytime.",
+    note: "Uses your monthly auto-apply quota. You can switch back to Ask me first or Prepare only at any time.",
   },
 ];
 

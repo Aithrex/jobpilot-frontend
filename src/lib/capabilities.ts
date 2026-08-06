@@ -118,7 +118,7 @@ export const AUTO_APPLY: Capability = {
   name: 'Auto Apply',
   status: 'beta',
   blurb:
-    'Manual, Auto, or Auto Aggressive — queue any job, tailor or plain resume, and Aspirely prepares or submits within your daily quota.',
+    'Prepare only, Ask me first, or Apply within my rules - queue any job, tailor or plain resume, and Aspirely prepares or submits inside the daily limit you set.',
   evidence:
     'Ledger queue (/api/apply/queue), modes (copilot/approval/aggressive), tailor toggle, entitlements auto_apply on all tiers + auto_submit meter. Per-job Auto Apply CTA on job cards. Admin entitlement_overrides for plan/limits/features. Executor still tenant-dependent (Workday account/OTP walls); Greenhouse/Lever/Ashby cleaner.',
 };

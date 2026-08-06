@@ -35,10 +35,13 @@ export type OnboardingValueType =
   | 'essay';
 
 /**
- * The autonomy modes. Product labels:
- *   Manual          → copilot
- *   Auto            → approval
- *   Auto Aggressive → aggressive (legacy `autopilot` still accepted)
+ * The autonomy modes. Product labels, renamed off the old internal jargon -
+ * "Auto Aggressive" is not a phrase to put in front of a nervous job seeker.
+ * The stored VALUES are unchanged, so there is no migration and no backend
+ * impact; only the labels moved.
+ *   Prepare only          -> copilot
+ *   Ask me first          -> approval
+ *   Apply within my rules -> aggressive (legacy `autopilot` still accepted)
  * There is NO implicit default - onboarding forces an explicit pick, and the
  * executor refuses to act while `mode` is null.
  */

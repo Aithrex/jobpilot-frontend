@@ -8,7 +8,7 @@ import {
 } from 'framer-motion';
 import { Bell, FileText, Lock, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Container, SectionHead } from './_shared';
+import { Container, HEAD_GAP, SECTION_Y, SectionHead } from './_shared';
 
 /**
  * SignalPath - the shipped product, shown as ONE interactive stepper.
@@ -114,7 +114,7 @@ function Bar({ w, lit, className }: { w: string; lit?: boolean; className?: stri
 
 function MiniLabel({ children }: { children: string }) {
   return (
-    <span className="block text-[9px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/60">
+    <span className="block text-[9px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
       {children}
     </span>
   );
@@ -475,7 +475,7 @@ export function SignalPath() {
       id="how"
       ref={sectionRef}
       aria-labelledby="signal-path-heading"
-      className="relative scroll-mt-4 py-16 sm:py-20 lg:py-24"
+      className={cn('relative scroll-mt-4', SECTION_Y)}
     >
       <Container>
         <SectionHead
@@ -494,7 +494,7 @@ export function SignalPath() {
             fixed-height product panel, and top-aligning two columns of very
             different heights read as a mistake rather than a choice. They now
             share a centre line. */}
-        <div className="mt-10 grid gap-6 lg:mt-12 lg:grid-cols-12 lg:items-center lg:gap-10">
+        <div className={cn(HEAD_GAP, 'grid gap-6 lg:grid-cols-12 lg:items-center lg:gap-10')}>
           {/* ALL SIX STEPS FIT ON ONE SCREEN. Each step used to expand in place
               with its title and body, which pushed the list to roughly 700px:
               a visitor saw four or five rows and had no way to know the

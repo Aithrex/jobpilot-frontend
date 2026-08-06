@@ -23,6 +23,11 @@ export default {
         foreground: "hsl(var(--foreground))",
         primary: {
           DEFAULT: "hsl(var(--primary))",
+          // Hover/pressed as a real token rather than `bg-primary/90`. An
+          // opacity step lets the surface underneath bleed through, so the
+          // same "hover" looks different on a card than on the canvas; a
+          // named colour does not.
+          hover: "hsl(var(--primary-hover))",
           foreground: "hsl(var(--primary-foreground))",
         },
         secondary: {
@@ -75,6 +80,10 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        // The ACTIVE/selected fill. Defined in all six token scopes (it used
+        // to exist only inside `.surface-studio`), so it is safe to expose as
+        // a utility rather than being reached for via inline `hsl(var())`.
+        "nav-active": "hsl(var(--nav-active))",
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",

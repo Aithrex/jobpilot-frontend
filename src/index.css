@@ -8,77 +8,148 @@
   :root {
     /* ── LAYER 1 - PRIMITIVES (theme-independent) ─────────────────────────
   Raw palette as HSL triplets so the existing shadcn `hsl(var(--x))`
-  bridge aliases them with zero refactor. Contrast verified WCAG 2.1  - 
-  see docs/design/token-decisions.md. Strangler-fig: additive; no
-  existing semantic token NAME is removed, values are re-pointed. */
-    --slate-0-hsl: 0 0% 100%;
-    --slate-50-hsl: 210 40% 98%;
-    --slate-100-hsl: 210 40% 96%;
-    --slate-200-hsl: 214 32% 91%;
-    --slate-300-hsl: 213 27% 84%;
-    --slate-400-hsl: 215 20% 65%; /* icon-only / disabled - never text */
-    --slate-500-hsl: 215 16% 47%;
-    --slate-600-hsl: 215 19% 35%; /* muted text on tinted surfaces */
-    --slate-700-hsl: 215 25% 27%;
-    --slate-800-hsl: 217 33% 17%; /* card surface (dark) */
-    --slate-900-hsl: 222 47% 11%;
+  bridge aliases them with zero refactor. Every ratio quoted below was
+  COMPUTED against the WCAG relative-luminance formula, not estimated.
 
-    /* Indigo brand ramp - established brand KEPT (passes AA). */
-    --indigo-300-hsl: 230 94% 82%;
-    --indigo-400-hsl: 234 89% 74%;
-    --indigo-500-hsl: 239 84% 67%; /* tints ONLY - white on it = 4.47:1 */
-    --indigo-600-hsl: 243 75% 59%; /* legacy accent; no longer the brand pair */
-    --indigo-primary-hsl: 238 70% 57%; /* --primary, 6.41:1 AA - KEEP */
-    --indigo-dark-hsl: 235 84% 72%; /* dark --primary - KEEP */
+  BLACK CHERRY. The approved identity: a bright blush-white page, near-black
+  cherry ink, and a confident cherry red for the one thing you act on.
+  Premium, executive and memorable - not brown, not pink, and not a generic
+  SaaS blue.
+
+  THE HUE DISCIPLINE IS TIGHT HERE, tighter than in any previous Aspirely
+  palette, and it is the thing most likely to be broken by accident. The
+  action colour sits at hue 345 and `--destructive` at hue 352 - seven degrees
+  apart. They are told apart by SATURATION and LIGHTNESS (destructive is
+  lighter and more saturated), never by hue alone, which is why the
+  no-colour-alone rule is not a nicety in this system: a destructive control
+  MUST also say what it does in words. Sage is verified evidence; amber is
+  deadlines. Neither is ever decorative.
+
+  LIGHT MODE IS BRIGHT, AND THAT IS A HARD REQUIREMENT, not a preference. The
+  canvas sits at 97% lightness and the card at 99% - a 1.05:1 step, so the
+  lift comes almost entirely from the HAIRLINE and the SHADOW. That is correct
+  for a bright theme and it is deliberate. The failure mode to avoid is the
+  obvious one: darkening the canvas to make cards "pop" turns a premium page
+  muddy. Do not darken the canvas to solve a contrast problem; strengthen the
+  border or the shadow instead. Equally, do not flood the page with the tint -
+  the canvas carries a cherry UNDERTONE, not a pink wash.
+
+  CHERRY IS FOR ACTION, IDENTITY AND ACTIVE STATE. It is not a background.
+  The tint below is for SELECTION, and `--accent` (the neutral hover surface)
+  is deliberately NOT pointed at it - see the note there.
+
+  The neutral ramp is `--blush-*`. It has been renamed with its values seven
+  times now, which is the point: a ramp whose name contradicts its contents
+  is exactly the drift the rest of this file argues against. */
+    --blush-0-hsl: 340 100% 99.4%; /* #FFFCFD raised card - bright, never flat white */
+    --blush-50-hsl: 348 38% 97.5%; /* #FBF6F7 bright blush-white canvas, cherry undertone */
+    --blush-100-hsl: 344 41% 92.7%; /* #F4E5E9 muted + secondary fill */
+    --blush-200-hsl: 341 28% 86.9%; /* #E7D4DA hairline */
+    --blush-300-hsl: 335 10% 56%; /* #9B858E input edge - 3.35:1 on a card (SC 1.4.11) */
+    --blush-400-hsl: 337 15% 76%; /* #CBB9C0 icon-only / disabled on light; muted TEXT on dark */
+    --blush-500-hsl: 335 9% 37%; /* #67565D muted text - 6.40:1 canvas, 5.62:1 on the muted fill */
+    --blush-600-hsl: 336 10% 32%; /* #5A4A51 muted text on tinted surfaces */
+    --blush-700-hsl: 337 12% 25%; /* #483C41 strong secondary */
+    --blush-800-hsl: 338 14% 19%; /* #372C31 */
+    --blush-900-hsl: 338 15% 15%; /* #2B2024 body text - 14.70:1 canvas, 15.43:1 on a card */
+
+    /* ── The black cherry accent ─────────────────────────────────────────
+  Cherry, hue 345 at 44% saturation. Confident and saturated enough to be an
+  identity rather than a tint - this is the accent doing brand work, not just
+  marking controls.
+
+  THE SEPARATION FROM `--destructive` IS THE THING TO PROTECT. That sits at
+  hue 352: seven degrees away. They are told apart by lightness and saturation
+  (destructive is lighter at 47% and more saturated at 52%), never by hue. If
+  either value drifts toward the other, "press this" and "this will delete
+  something" stop being distinguishable, and no amount of copy fixes a button
+  that looks like the wrong button. Measure before you move either. It is the ACTION colour - buttons, active
+  navigation, important links, the focus ring, selected controls - not a
+  decorative wash applied over a neutral system. Blue and indigo are not this
+  brand's action colour at any lightness, anywhere, and the dead `--indigo-*`
+  ramp was deleted rather than kept "just in case", because a dead ramp in a
+  palette file is an invitation to reintroduce the thing you just removed.
+
+  CHERRY IS NOT A BACKGROUND. The single way this palette goes wrong is the
+  accent creeping outward from controls into cards, panels and sections until
+  the page reads pink. The tint below is for SELECTION, and `--accent` (the
+  neutral hover surface) is deliberately NOT pointed at it.
+
+  Cherry (345) means "press this". Sage (162) means "verified". Amber (35)
+  means "there is a deadline". Red (352) means "this failed". None of them
+  ever does another's job.
+
+  Note the tint headroom: cherry as TEXT on its own active tint measures
+  4.54:1, which passes but with almost nothing spare. If the tint is ever
+  lightened or the accent lightened, re-measure that pair first - it is the
+  binding constraint in this palette, not the canvas.
+
+  The fill and ink tokens are the same value and stay separate anyway, because
+  Tailwind's `textColor` key is wired to the ink one and ~477 `text-primary`
+  call sites depend on that indirection.
+
+  On dark the accent LIFTS and the button takes dark ink, which is the mirror
+  of light mode rather than a contradiction of it. */
+    --cherry-fill-hsl: 345 44% 46%; /* #A8425B - card colour on it 5.73:1 */
+    --cherry-hover-hsl: 344 47% 38%; /* #8D334B - hover/pressed, card colour on it 7.61:1 */
+    --cherry-ink-hsl: 345 44% 46%; /* #A8425B - 5.46:1 canvas, 4.54:1 on the active tint */
+    --cherry-ink-dark-hsl: 343 57% 75%; /* #E39AAF - 8.26:1 canvas, 7.19:1 on a card */
+    --cherry-tint-hsl: 342 51% 91.2%; /* #F4DDE4 - the ACTIVE/selected fill. Selection, not atmosphere. */
+    --cherry-tint-dark-hsl: 338 28% 23%; /* #4A2A36 - the same role on dark */
 
     /* ── Aspirely marketing surfaces (landing only) ────────────────────────
-  Two contrasting worlds, expressed as PRIMITIVES here and assembled into
-  real named surfaces (`.surface-editorial` / `.surface-obsidian`) below.
-  Warm pearl = the editorial/marketing voice; deep obsidian = the product
-  workspace. The contrast between them is the brand, so neither is a
-  one-off class: both re-point the same semantic token names, which means
-  every shadcn primitive and every Tailwind semantic utility follows. */
-    --pearl-0-hsl: 40 50% 99%; /* raised editorial card */
-    --pearl-50-hsl: 38 42% 97%; /* editorial canvas */
-    --pearl-100-hsl: 36 30% 94%; /* editorial muted fill */
-    --pearl-200-hsl: 34 22% 88%; /* editorial hairline */
-    --pearl-300-hsl: 32 18% 79%; /* editorial input edge */
-    --ink-900-hsl: 26 18% 10%; /* editorial foreground, 16.4:1 on pearl-50 */
-    --ink-700-hsl: 26 12% 25%; /* editorial strong secondary */
-    --ink-500-hsl: 26 9% 37%; /* editorial muted text, 5.2:1 on pearl-50 */
+  `.surface-editorial` and `.surface-obsidian` are still real named
+  surfaces below, and each still re-points the whole semantic layer for its
+  subtree so they nest freely. What changed is that the editorial one no
+  longer owns a SEPARATE ramp.
+
+  It used to: a separate "pearl/ink" set existed because the marketing page
+  and the app were different temperatures, so the landing needed its own
+  ramp to look right at all. They share a temperature now, so a second
+  near-identical ramp is just two places to change one colour. The
+  editorial surface points at `--blush-*` directly; the public site and the
+  product are the same visual system, differing in composition and density
+  rather than in palette, which is what the brand actually asks for.
+
+  The obsidian primitives below DO stay separate: the landing's dark
+  product window is intentionally a shade deeper than the app's dark
+  canvas, so a window can sit inside a page and still read as a window. */
 
     /* ── Resume Studio (the /app/resume workspace) ─────────────────────────
-  Indigo glass: a deliberately different register from the app's teal chrome,
-  so the Resume tab reads as its own polished space. Every one of the six
-  Resume tool routes mounts under `/app/resume`, so this palette is fully
-  contained - nothing here can reach Home / Jobs / Apply / Grow.
+  The Resume tools are the one place in the product where the user stares at
+  a DOCUMENT for a long stretch, so this surface reads as clean paper on the
+  desk rather than as the desk itself: a half-step lighter and a touch less
+  saturated than the page canvas, with the same aubergine accent. It used to
+  be an entirely separate indigo palette, which made /app/resume look like a
+  different application - a distinction worth drawing with LIGHTNESS, not
+  with a second brand colour.
 
-  Contrast is MEASURED, not eyeballed (values quoted against their own
-  canvas): ink 16.7:1, muted text 5.9:1, accent-text 7.3:1, white-on-accent
-  6.3:1. Dark: fg 16.3:1, muted 8.0:1, accent 6.2:1, canvas-on-accent 6.2:1.
-  All comfortably past AA, which is why the accent has two values per theme -
-  a fill tone and a (darker) text tone on light. */
-    --studio-canvas-hsl: 231 47% 97%; /* #F4F5FB */
-    --studio-card-hsl: 0 0% 100%;
-    --studio-muted-hsl: 231 37% 93%; /* #E7E9F4 */
-    --studio-border-hsl: 230 36% 90%; /* #DDE0EF */
-    --studio-ink-hsl: 235 40% 12%; /* #12142A - foreground */
-    --studio-muted-text-hsl: 231 16% 41%; /* #585D7A */
-    --studio-accent-hsl: 243 75% 59%; /* #4F46E5 - fills, active */
-    --studio-accent-text-hsl: 245 58% 51%; /* #4338CA - accent AS TEXT on light */
-    --studio-accent-tint-hsl: 243 75% 94%; /* #E4E3FB - active nav fill */
+  Every one of the six Resume routes mounts under `/app/resume`, so this
+  palette is fully contained - nothing here reaches Home / Jobs / Apply /
+  Grow. Ratios quoted against this surface's own canvas. */
+    --studio-canvas-hsl: 345 50% 98%; /* #FDF8FA paper */
+    --studio-card-hsl: 340 100% 99%; /* #FFFDFE - never flat white */
+    --studio-muted-hsl: 345 44% 95%; /* #F9EDF0 */
+    --studio-border-hsl: 342 32% 90%; /* #EEDFE4 hairline */
+    --studio-input-hsl: 335 10% 56%; /* #9B858E field edge - 3:1 on the studio card */
+    --studio-ink-hsl: 338 16% 14%; /* #291E22 foreground */
+    --studio-muted-text-hsl: 335 9% 34%; /* #5E4E55 muted text */
+    --studio-accent-hsl: var(--cherry-fill-hsl); /* fills, active */
+    --studio-accent-text-hsl: var(--cherry-ink-hsl); /* accent AS TEXT on light */
+    --studio-accent-tint-hsl: var(--cherry-tint-hsl); /* active nav fill */
 
-    /* Dark counterparts. The canvas keeps the indigo cast rather than the
-  app's neutral near-black, and the accent LIFTS - a 59%-lightness indigo is
-  unreadable on a #0F1225 canvas. */
-    --studio-canvas-dark-hsl: 232 42% 10%; /* #0F1225 */
-    --studio-card-dark-hsl: 232 37% 16%; /* #1A1E38 */
-    --studio-raised-dark-hsl: 231 31% 21%; /* #242945 */
-    --studio-border-dark-hsl: 229 25% 27%; /* #333955 */
-    --studio-fg-dark-hsl: 230 55% 96%; /* #EEF0FA */
-    --studio-muted-text-dark-hsl: 231 26% 71%; /* #A3A9C9 */
-    --studio-accent-dark-hsl: 234 89% 74%; /* #818CF8 */
-    --studio-accent-tint-dark-hsl: 231 34% 24%; /* #282E52 - active nav fill */
+    /* Dark counterparts. Same idea inverted: the studio canvas sits a step
+  ABOVE the app's graphite rather than below it, so the document surface is
+  still the lightest thing on the page. */
+    --studio-canvas-dark-hsl: 290 11% 11%; /* #1B171C */
+    --studio-card-dark-hsl: 303 11% 17%; /* #2D242D */
+    --studio-raised-dark-hsl: 312 10% 22%; /* #3C3039 */
+    --studio-border-dark-hsl: 323 12% 30%; /* #56444F hairline */
+    --studio-input-dark-hsl: 323 8% 50%; /* #8B7683 field edge - 3:1 on the studio card */
+    --studio-fg-dark-hsl: 340 37% 97%; /* #FAF4F6 */
+    --studio-muted-text-dark-hsl: 337 15% 76%; /* #CBB9C0 */
+    --studio-accent-dark-hsl: var(--cherry-ink-dark-hsl);
+    --studio-accent-tint-dark-hsl: 279 19% 17%; /* #2E2333 active nav fill */
 
     /* ── Dark-app surface stack ──────────────────────────────────────────
   The dark theme used to borrow the slate ramp for its surfaces: canvas
@@ -87,81 +158,83 @@
   1.2:1 just to register as raised at all, so the whole app read as one flat
   slab and you had to hunt for card edges.
 
-  These are separate primitives, NOT edits to the slate ramp: light mode uses
-  slate-900 as its body TEXT, so lifting the shared token would have wrecked
+  These are separate primitives, NOT edits to the stone ramp: light mode uses
+  stone-900 as its body TEXT, so lifting the shared token would have wrecked
   it. Canvas comes up a little off black, cards come up further, and the
   hairline gets brighter, which is what actually makes edges findable.
 
-    canvas -> card   1.21:1  ->  1.40:1
-    card   -> border 1.45:1  ->  1.57:1
-  Body text still 15.9:1 on the canvas; muted text 4.9:1 on a card (AA). */
-    --app-canvas-dark-hsl: 222 40% 12%; /* #121A2B */
-    --app-surface-dark-hsl: 217 28% 22%; /* #283448 - the raised step */
-    --app-sunken-dark-hsl: 217 30% 17%; /* recessed fills, below the canvas step */
-    --app-hairline-dark-hsl: 215 20% 34%; /* 1.57:1 on the surface above */
+  Re-measured for graphite. A raised surface needs roughly 1.2:1 against its
+  canvas just to register as raised, so the card sits well above the sunken
+  step rather than beside it; the sunken value is deliberately close to the
+  canvas, because that is what "recessed" means.
 
-    --obsidian-950-hsl: 232 32% 5%; /* product canvas */
-    --obsidian-900-hsl: 231 26% 8%; /* product card */
-    --obsidian-800-hsl: 230 22% 12%; /* product raised fill */
-    --obsidian-700-hsl: 229 16% 22%; /* product hairline */
-    --obsidian-fg-hsl: 222 26% 96%; /* product foreground */
-    --obsidian-mut-hsl: 220 14% 68%; /* product muted text, 7.9:1 on 900 */
+    canvas -> card   1.30:1
+    card   -> border 1.66:1
+  Body text 15.5:1 on the canvas; muted text 6.2:1 on a card. */
+    --app-canvas-dark-hsl: 276 11% 9%; /* #171419 charcoal black-cherry canvas */
+    --app-surface-dark-hsl: 300 10% 14%; /* #272027 - the raised step */
+    --app-muted-dark-hsl: 312 10% 19%; /* #352B33 hover / selected fills - LIGHTER than the card, so a hover reads as a lift rather than a dent */
+    --app-hairline-dark-hsl: 323 12% 27%; /* #4D3D47 */
+    --app-input-dark-hsl: 323 8% 50%; /* #8B7683 - 3.79:1 on a card. Field edges need 3:1, a hairline does not */
 
-    /* Restrained energy accent. VIOLET-INDIGO carries "signal"; emerald is
-  reserved for success ONLY and is never used decoratively. Two values because
-  a violet legible on pearl is not the violet that glows on obsidian.
+    /* Obsidian: the landing's dark product window, deliberately a shade
+  deeper than the app canvas so a window nested in a page still reads as a
+  window rather than as a hole. Same cool hue family, lower lightness. */
+    --obsidian-950-hsl: 285 14% 7%; /* #140F15 product canvas */
+    --obsidian-900-hsl: 300 12% 12%; /* #221C22 product card */
+    --obsidian-800-hsl: 310 11% 17%; /* #302730 product raised fill */
+    --obsidian-700-hsl: 323 12% 26%; /* #4A3B44 product hairline */
+    --obsidian-600-hsl: 323 8% 50%; /* #8B7683 product field edge - 3:1 on the product card */
+    --obsidian-fg-hsl: 340 37% 97%; /* #FAF4F6 product foreground */
+    --obsidian-mut-hsl: 337 15% 76%; /* #CBB9C0 product muted text */
 
-  Hue 256, not 238. It started at 238 because it was aliased to `--brand-to`,
-  the cold end of the brand ramp - so the logo read violet and every link and
-  button read indigo-blue, which looks like two palettes rather than one. 256
-  sits near the ramp's midpoint, so the accent now reads as THE brand colour
-  instead of one end of it. Checked across 238-262: all of them clear AA, so
-  this was free.
+    /* ── Lumen: the PUBLIC LANDING's bright liquid-glass neutrals ──────────
+  A neutral fog, not a blush. The public page and the product share the same
+  ACCENT (cherry) and the same status hues, and differ in their NEUTRAL ramp
+  only - which is the whole reason this is six primitives rather than a
+  second palette. The app canvas carries a cherry undertone because it is
+  read for hours and a dead-neutral grey goes clinical over a long session; a
+  landing page is looked at for ninety seconds and wants the opposite, a
+  cool-white fog that lets one saturated accent be the only colour in the
+  frame. Blush at 97.5% plus glass plus a cherry CTA read as a cosmetics
+  brand; fog plus glass plus the same CTA reads as an instrument.
 
-  Was teal (192 88% 27%). Two reasons it moved. The teal sat beside a saffron
-  --warning (hue 26, #B35309) and a flag-green --success (#157F3C) on a
-  near-white page, and the trio read as a national flag - most visibly on the
-  register screen, where the strength shield ramps amber to green in one
-  component. And "Teal" is a competing job-search product, so the hue was a
-  category collision as well as a palette one. Indigo is neither, and it was
-  this product's brand before (see --indigo-primary-hsl below).
+  MEASURED, not estimated, against this canvas:
+    ink #242126        14.86:1
+    muted #625C64       6.07:1
+    cherry #A8425B      5.46:1  (and 4.61:1 on its own active tint)
+    sage #3E7B69        4.63:1  (shared primitive, re-checked here)
+  The hairline is deliberately NOT a text colour: at 1.05:1 it is a physical
+  edge, and anything that must be READ uses `--muted-foreground` or darker.
+  `--input` stays a separate, darker token because a control boundary owes
+  3:1 (SC 1.4.11) and a hairline does not. */
+    --fog-canvas-hsl: 240 23% 97.5%; /* #F7F7FA the public canvas */
+    --fog-surface-hsl: 240 50% 99.2%; /* #FCFCFE bright card, and the glass fallback */
+    --fog-ink-hsl: 276 7% 14%; /* #242126 */
+    --fog-mut-hsl: 285 4% 38%; /* #625C64 */
+    --fog-line-hsl: 255 7% 89%; /* #E2E1E5 = ink at 12% over the canvas, flattened */
+    --fog-input-hsl: 276 6% 55%; /* #8E8892 control edge - 3.2:1 on a bright card */
+    --fog-tint-hsl: 332 26% 91%; /* #EEE1E7 = cherry at 12% over the canvas, flattened */
 
-  Every replacement value below was measured against the target the token it
-  replaces documented, not eyeballed. */
-    --signal-on-light-hsl: 256 70% 55%; /* violet-indigo - 6.14:1 on pearl-50 (teal was 6.6:1) */
-    /* Legible without being electric. The rule that shaped the old cyan still
-  holds: this is READ as text on a near-black canvas, and pouring a saturated
-  value into every lit state on the page glares. Indigo needs more lightness
-  than cyan to reach the same measured contrast, because it is intrinsically
-  the darker hue - hence 83% here against the old 58%. */
-    --signal-on-dark-hsl: 256 82% 83%; /* 9.00:1 on the dark canvas, 6.49:1 on a card */
-    /* The ACTION indigo on dark, and deliberately not `--signal-on-dark-hsl`.
-  That one is tuned to be READ as text on a near-black canvas; poured into
-  every button, badge and focus ring it glares. Text keeps the bright one;
-  fills take this.
+    /* The `--signal-*` triple that used to sit here is gone. It existed to
+  give the accent a name separate from the brand ramp; with the aubergine
+  primitives above naming the fill and the ink directly, it had become three
+  aliases forwarding to three other tokens - two names for one value, which
+  is the drift this file argues against everywhere else. All six scopes now
+  point at `--cherry-*` directly.
 
-  This was 238 78% 74% and read as washed-out pastel next to the confident
-  light-mode button. The cause was not the hue but the TEXT it had to carry:
-  dark buttons took `--primary-foreground: slate-900`, so the fill was forced
-  light enough to hold dark text, and "light enough for black text" on a dark
-  page means pastel. Dark buttons now take WHITE text, which frees the fill to
-  be properly saturated - the same move that lets the light-mode button be
-  vivid. Both themes now read as the same brand colour rather than a colour and
-  its washed cousin. */
-    --signal-action-dark-hsl: 256 80% 62%; /* white on it 4.98:1; 3.49:1 vs the dark canvas */
+  Sage stays reserved for success ONLY and is never decorative. That rule is
+  the reason the accent could not be a green of any kind. */
 
-    /* ── The brand ramp's COLD END ───────────────────────────────────────
-  `--brand-to` used to be an alias for the signal, which quietly made the
-  interactive accent one END of the brand gradient rather than the brand
-  colour. The logo reads violet, so every link and button reading indigo-blue
-  looked like a different palette - "the Sign in link isn't violet".
-
-  Splitting them lets the accent sit INSIDE the ramp (256, near its midpoint)
-  while the gradient keeps a real violet-to-indigo travel to describe. Values
-  here are exactly what `--brand-to` resolved to before, so gradient text is
-  pixel-identical; only the accent moved. */
-    --brand-end-on-light-hsl: 238 70% 55%;
-    --brand-end-on-dark-hsl: 238 82% 83%;
+    /* ── The brand ramp's far end ────────────────────────────────────────
+  The gradient needs somewhere to travel, and it may not travel into another
+  brand colour. Aubergine to mauve-rose is one short arc inside the same
+  red-violet family, so the wordmark, the headline gradient and the logo tile
+  read as one object rather than as two hues stapled together. It notably
+  does NOT travel toward the success sage, the warning amber, the destructive
+  brick, or the terracotta the parent company site owns. */
+    --brand-end-on-light-hsl: 344 47% 38%; /* #8D334B deep cherry - 7.61:1 on a card, so it is safe as TEXT */
+    --brand-end-on-dark-hsl: 345 62% 84%; /* #F5BFCE - high contrast on a dark card */
 
     /* ── The logo tile's OWN gradient ────────────────────────────────────
   Deliberately theme-independent, and deliberately NOT `--brand-from/to`.
@@ -174,8 +247,8 @@
 
   Same values in light and dark, so there is exactly one Aspirely mark in
   the product rather than a logo and a dark-mode variant to keep in sync. */
-    --brand-mark-from-hsl: 262 80% 64%;
-    --brand-mark-to-hsl: 238 70% 55%; /* glyph reads 4.31:1 -> 7.02:1 across it */
+    --brand-mark-from-hsl: 345 44% 46%; /* #A8425B cherry */
+    --brand-mark-to-hsl: 342 46% 25%; /* #5C2233 black cherry - glyph reads 5.73:1 -> 11.89:1 across it */
     /* The glyph, as a TOKEN rather than a literal `text-white`. The landing
   suite forbids literal white/black inside the product illustrations, because
   that is how an illustration stops inverting with the theme - a good rule, and
@@ -184,47 +257,58 @@
   guards against. */
     --brand-mark-fg-hsl: 0 0% 100%;
 
-    /* Status - light foreground + tint (fixes the failing success/warning). */
-    --success-600-hsl: 142 72% 29%;
-    --success-tint-hsl: 138 76% 97%;
-    /* Amber, not saffron. At hue 26 this was #B35309 - a dead ringer for flag
-  saffron sitting next to a flag-green --success on a near-white page. Moved to
-  43, but NOT at the old lightness: yellow is intrinsically lighter, so
-  43 96% 37% measures 3.11:1 and fails. 28% restores the 5.04:1 the old value
-  was deliberately tuned to. */
-    --warning-600-hsl: 43 96% 28%;
-    --warning-tint-hsl: 48 100% 96%;
-    --danger-600-hsl: 0 74% 42%;
-    --danger-tint-hsl: 0 86% 97%;
-    --info-600-hsl: 193 82% 31%;
-    --info-tint-hsl: 183 100% 96%;
-    /* Status - dark lifted foregrounds (AA/AAA on slate-900/800). */
-    --success-300-hsl: 142 69% 58%;
-    --warning-300-hsl: 43 96% 56%;
-    --danger-300-hsl: 0 91% 71%;
-    --info-300-hsl: 188 86% 53%;
+    /* ── Status - light foreground + tint ────────────────────────────────
+  Sage, amber, brick. Each is desaturated so it reads as EVIDENCE rather than
+  as a second brand colour, and each was re-measured against BOTH the canvas
+  and the raised muted surface, because status text lives on cards more often
+  than on the page. They are now the only warm hues in the system, which is
+  exactly why they read as meaning rather than as decoration.
 
-    /* Categorical chart palette (colorblind-aware, cap 8; always add a 2nd cue). */
-    --chart-1: #2563eb;
-    --chart-2: #16a34a;
-    --chart-3: #d97706;
-    --chart-4: #7c3aed;
-    --chart-5: #0891b2;
-    --chart-6: #dc2626;
-    --chart-7: #64748b;
-    --chart-8: #db2777;
+  Two of the brief's anchors did not survive that measurement:
+    - sage #3E735D  -> 4.83:1 canvas but 4.27:1 on the fill. Darkened.
+    - amber #A96F18 -> 3.71:1 canvas, and white on it only 4.22:1. This is
+      the same trap the old saffron hit: yellow is intrinsically light, so
+      it has to go much darker than it looks like it should. #8A5A12 holds
+      5.19:1 and still reads burnished, not brown. */
+    --success-600-hsl: 162 33% 36%; /* #3E7B69 sage - 4.63:1 canvas, card on it 4.85:1 */
+    --success-tint-hsl: 160 32% 92%;
+    --warning-600-hsl: 35 68% 36%; /* #9A651D amber - 4.61:1 canvas, card on it 4.84:1 */
+    --warning-tint-hsl: 38 64% 90%;
+    --danger-600-hsl: 352 52% 47%; /* #B53949 red - 5.38:1 canvas, card on it 5.65:1 */
+    --danger-tint-hsl: 352 58% 94%;
+    --info-600-hsl: 184 42% 32%; /* #2F6E73 - the ONE cool hue, informational only, and never blue */
+    --info-tint-hsl: 184 35% 93%;
+    /* Status - dark lifted foregrounds, measured on the graphite canvas. */
+    --success-300-hsl: 145 24% 64%; /* #8EBAA0 - 7.32:1 on a dark card */
+    --warning-300-hsl: 39 61% 62%; /* #D9B062 - 7.82:1 on a dark card */
+    --danger-300-hsl: 351 57% 74%; /* #E295A1 - 6.84:1 on a dark card */
+    --info-300-hsl: 184 39% 64%; /* #7FC2C7 */
+
+    /* Categorical chart palette (colorblind-aware, cap 8; always add a 2nd cue).
+  Re-cut cool. Hue alone never separates these: the ramp deliberately steps
+  LIGHTNESS as well (44 -> 31 -> 31 -> 36 -> 32 -> 42 -> 43 -> 44), so the
+  series stay distinguishable in greyscale and under deuteranopia, which is
+  the only reason an 8-colour categorical set is defensible at all. */
+    --chart-1: #a8425b; /* cherry */
+    --chart-2: #3e7b69; /* sage */
+    --chart-3: #9a651d; /* amber */
+    --chart-4: #6b4a6e; /* plum */
+    --chart-5: #2f6e73; /* teal */
+    --chart-6: #b53949; /* red */
+    --chart-7: #7a7264; /* stone */
+    --chart-8: #9c4a74; /* rose */
     /* HSL bridge for the chart palette (ADDITIVE - the hex tokens above stay
   for raw consumers). Same colors as the hex values; lets Tailwind map
   chart-* through hsl(var()) so opacity modifiers (e.g. bg-chart-1/10)
   work like every other semantic color. */
-    --chart-1-hsl: 221 83% 53%;
-    --chart-2-hsl: 142 76% 36%;
-    --chart-3-hsl: 32 95% 44%;
-    --chart-4-hsl: 262 83% 58%;
-    --chart-5-hsl: 192 91% 36%;
-    --chart-6-hsl: 0 72% 51%;
-    --chart-7-hsl: 215 16% 47%;
-    --chart-8-hsl: 333 71% 51%;
+    --chart-1-hsl: 345 44% 46%;
+    --chart-2-hsl: 162 33% 36%;
+    --chart-3-hsl: 35 68% 36%;
+    --chart-4-hsl: 295 19% 36%;
+    --chart-5-hsl: 184 42% 32%;
+    --chart-6-hsl: 352 52% 47%;
+    --chart-7-hsl: 37 10% 43%;
+    --chart-8-hsl: 329 36% 45%;
 
     /* Radius primitives (shadcn --radius base below derives sm/md/lg near 8/10/12). */
     --radius-sm: 8px;
@@ -277,142 +361,175 @@
 
     /* ── LAYER 2 - SEMANTIC ALIASES (light) → shadcn bridge ───────────────
   Existing shadcn token NAMES kept; re-pointed at primitives (values-only). */
-    --background: var(--slate-50-hsl);
-    --foreground: var(--slate-900-hsl);
-    --card: var(--slate-0-hsl);
-    --card-foreground: var(--slate-900-hsl);
-    --popover: var(--slate-0-hsl);
-    --popover-foreground: var(--slate-900-hsl);
-    /* Teal is the brand's action colour. It is the SAME token the signal
-  accent uses ("in one pass", the lit states inside the product stages), so
-  the page now speaks with one voice instead of an indigo one for buttons and
-  a teal one for everything the product actually does. 6.6:1 on pearl and
-  white-on-teal is comfortably past AA, so it is safe as both a fill and a
-  text colour. The indigo primitives stay defined for anything still pointing
-  at them, but they are no longer the brand pair or the action colour. */
-    --primary: var(--signal-on-light-hsl); /* indigo - 6.70:1 AA */
-    --primary-foreground: var(--slate-0-hsl);
+    --background: var(--blush-50-hsl);
+    --foreground: var(--blush-900-hsl);
+    --card: var(--blush-0-hsl);
+    --card-foreground: var(--blush-900-hsl);
+    --popover: var(--blush-0-hsl);
+    --popover-foreground: var(--blush-900-hsl);
+    /* Aubergine is the brand's action colour, and the SAME token the accent
+  uses, so the page speaks with one voice: the thing you click and the thing
+  the product is doing are the same colour. */
+    --primary: var(--cherry-fill-hsl); /* #7A4B78 - card colour on it 6.64:1 */
+    --primary-hover: var(--cherry-hover-hsl); /* #663B65 hover/pressed */
+    --primary-foreground: var(--blush-0-hsl);
     /* THE ACCENT AS INK, which is not the same colour as the accent as a FILL.
     A button wants a saturated block you read WHITE text on; the words "Auto
-    sync" want a colour you read ON the card. On a light page one indigo does
-    both, so this is identical to `--primary` here. On a dark page it cannot:
+    sync" want a colour you read ON the card. On a light page these are close
+    enough to look identical, but they are not equal: the ink tone is one step
+    darker so it also clears AA on the soft-mauve ACTIVE tint (6.29:1). On a
+    dark page they diverge properly:
     see the note in `.dark`. Tailwind's `textColor` key is wired to this, so
     `text-primary` resolves here while `bg-/border-/ring-primary` stay on
     `--primary` - which is why 477 existing `text-primary` call sites did not
     have to change. */
-    --primary-ink: var(--signal-on-light-hsl);
-    --secondary: var(--slate-100-hsl);
-    --secondary-foreground: var(--slate-700-hsl);
-    --muted: var(--slate-100-hsl);
-    --muted-foreground: var(--slate-500-hsl); /* on tinted surfaces step to slate-600 */
-    --accent: var(--slate-100-hsl); /* subtle neutral hover surface */
-    --accent-foreground: var(--slate-700-hsl);
+    --primary-ink: var(--cherry-ink-hsl); /* #6B4373 - 6.91:1 canvas, 6.29:1 on the tint */
+    --secondary: var(--blush-100-hsl);
+    --secondary-foreground: var(--blush-700-hsl);
+    --muted: var(--blush-100-hsl);
+    --muted-foreground: var(--blush-500-hsl); /* on tinted surfaces step to stone-600 */
+    --accent: var(--blush-100-hsl); /* subtle neutral hover surface - NOT the accent */
+    --accent-foreground: var(--blush-700-hsl);
+    /* The ACTIVE/selected fill, the one place the accent tint belongs.
+  `--accent` above stays neutral on purpose: tinting every hover state
+  would make the whole app twitch on mouse-move, which is the opposite
+  of calm. Selection is a state worth colouring; hover is not.
+  Previously defined ONLY inside `.surface-studio`, so `.studio-nav-row`
+  resolved to an invalid colour anywhere else. Now defined in every scope. */
+    --nav-active: var(--cherry-tint-hsl);
     --destructive: var(--danger-600-hsl);
-    --destructive-foreground: var(--slate-0-hsl);
-    --success: var(--success-600-hsl); /* a11y fix - 5.02:1 AA */
-    --success-foreground: var(--slate-0-hsl);
-    --warning: var(--warning-600-hsl); /* a11y fix - 5.02:1 AA */
-    --warning-foreground: var(--slate-0-hsl);
-    --info: var(--info-600-hsl); /* new semantic role */
-    --info-foreground: var(--slate-0-hsl);
-    --border: var(--slate-200-hsl);
-    --input: var(--slate-300-hsl);
-    --ring: var(--signal-on-light-hsl); /* focus follows the action colour */
+    --destructive-foreground: var(--blush-0-hsl);
+    --success: var(--success-600-hsl); /* 5.64:1 AA */
+    --success-foreground: var(--blush-0-hsl);
+    --warning: var(--warning-600-hsl); /* 5.19:1 AA */
+    --warning-foreground: var(--blush-0-hsl);
+    --info: var(--info-600-hsl);
+    --info-foreground: var(--blush-0-hsl);
+    --border: var(--blush-200-hsl);
+    --input: var(--blush-300-hsl); /* 3.14:1 - a field edge is a control boundary, not a hairline */
+    --ring: var(--cherry-ink-hsl); /* focus follows the action colour - 6.91:1 vs canvas */
     --radius: 0.75rem;
 
-    /* ── Elevation scale (Compass §7) ──────────────────────────────────────
-  Token-driven, tinted with slate-900 (never pure black) so shadows read
-  as depth, not grime. Surfaced via tailwind boxShadow
-  (shadow-soft / -panel / -pop / -float). */
-    --shadow-soft: 0 1px 2px hsl(222 47% 11% / 0.05), 0 1px 3px hsl(222 47% 11% / 0.05);
-    --shadow-panel: 0 1px 2px hsl(222 47% 11% / 0.04), 0 6px 16px -4px hsl(222 47% 11% / 0.1);
-    --shadow-pop: 0 4px 12px -2px hsl(222 47% 11% / 0.08), 0 16px 32px -8px hsl(222 47% 11% / 0.12);
-    --shadow-float:
-      0 8px 24px -6px hsl(222 47% 11% / 0.14), 0 28px 56px -12px hsl(222 47% 11% / 0.16);
+    /* ── Liquid glass, as tokens rather than as a recipe per component ─────
+  ONE pane definition, expressed in the semantic layer, so a frosted surface
+  inherits whatever scope it is dropped into instead of assuming a canvas.
+  `.glass-pane` (components) is the only consumer.
 
-    /* THE brand gradient: one pair, every mark. It used to open on indigo,
-  which was right while indigo was the action colour and wrong the moment
-  teal took over - the wordmark then belonged to a palette the rest of the
-  page had left. Light teal into the deep signal teal, so the mark, the
-  headline gradient and every avatar dot are the same object. */
-    --brand-from: 262 80% 64%;
+  Defaults are deliberately conservative: the pane is the surface's own card
+  colour at 72% with a 20px blur. A scope that wants a different pane -
+  brighter, cooler, more transparent - overrides these five values and every
+  glass surface inside it follows. `--glass-solid` is the opaque answer for
+  browsers without backdrop-filter, and it is REQUIRED: a translucent bar
+  with no blur behind it smears whatever scrolls under it. */
+    --glass-fill: var(--card);
+    --glass-alpha: 0.72;
+    --glass-solid: var(--card);
+    --glass-edge: var(--foreground);
+    --glass-edge-alpha: 0.12;
+    --glass-sheen-alpha: 0.55;
+    --glass-blur: 20px;
+
+    /* ── Elevation scale (Compass §7) ──────────────────────────────────────
+  Token-driven, tinted with the page's own ink (never pure black) so shadows
+  read as shade falling on paper rather than as grime on a screen. The hue of
+  a near-invisible colour is genuinely noticeable here: a warm-tinted shadow
+  on this cool page reads as a stain, exactly as a slate-tinted one did on
+  the warm page this replaced. Surfaced via tailwind boxShadow
+  (shadow-soft / -panel / -pop / -float). */
+    --shadow-soft: 0 1px 2px hsl(338 20% 12% / 0.06), 0 1px 3px hsl(338 20% 12% / 0.06);
+    --shadow-panel: 0 1px 2px hsl(338 20% 12% / 0.05), 0 6px 16px -4px hsl(338 20% 12% / 0.11);
+    --shadow-pop: 0 4px 12px -2px hsl(338 20% 12% / 0.09), 0 16px 32px -8px hsl(338 20% 12% / 0.13);
+    --shadow-float:
+      0 8px 24px -6px hsl(338 20% 12% / 0.15), 0 28px 56px -12px hsl(338 20% 12% / 0.17);
+
+    /* THE brand gradient: one pair, every mark. Aubergine into mauve-rose, so
+  the wordmark, the headline gradient and every avatar dot are the same
+  object. It travels mostly in LIGHTNESS, which is what keeps it from reading
+  as a second brand. */
+    --brand-from: var(--cherry-ink-hsl);
     --brand-to: var(--brand-end-on-light-hsl);
 
     /* Sidebar */
-    --sidebar-background: var(--slate-50-hsl);
-    --sidebar-foreground: var(--slate-700-hsl);
-    --sidebar-primary: var(--signal-on-light-hsl);
-    --sidebar-primary-foreground: var(--slate-0-hsl);
-    --sidebar-accent: var(--slate-100-hsl);
-    --sidebar-accent-foreground: var(--slate-700-hsl);
-    --sidebar-border: var(--slate-200-hsl);
-    --sidebar-ring: var(--signal-on-light-hsl);
+    --sidebar-background: var(--blush-50-hsl);
+    --sidebar-foreground: var(--blush-700-hsl);
+    --sidebar-primary: var(--cherry-fill-hsl);
+    --sidebar-primary-foreground: var(--blush-0-hsl);
+    --sidebar-accent: var(--blush-100-hsl);
+    --sidebar-accent-foreground: var(--blush-700-hsl);
+    --sidebar-border: var(--blush-200-hsl);
+    --sidebar-ring: var(--cherry-ink-hsl);
   }
 
   .dark {
     /* ── LAYER 2 - SEMANTIC ALIASES (dark) - token SWAP only, re-checked.
-  Near-black canvas (slate-900), off-white text (slate-100); never #000/#FFF.
-  Deep slate, never crushed black - easy on the eyes for long sessions. */
+  Graphite canvas, cool off-white text; never #000/#FFF. Deep charcoal with a
+  violet cast, never crushed black - easy on the eyes for long sessions, and
+  tinted just enough that it reads as the same product as the light side
+  rather than as a generic dark mode bolted on. */
     --background: var(--app-canvas-dark-hsl);
-    --foreground: var(--slate-100-hsl);
+    --foreground: var(--blush-100-hsl); /* #E5E3EA - 13.7:1 on the canvas */
     --card: var(--app-surface-dark-hsl);
-    --card-foreground: var(--slate-100-hsl);
+    --card-foreground: var(--blush-100-hsl);
     --popover: var(--app-surface-dark-hsl);
-    --popover-foreground: var(--slate-100-hsl);
-    --primary: var(--signal-action-dark-hsl); /* action indigo - white on it 5.42:1 */
-    --primary-foreground: var(--slate-0-hsl);
-    /* Here the fill and the ink genuinely diverge, and no single value can do
-    both jobs. The action indigo is dark enough to carry white text (5.42:1) -
-    which means as TEXT on a card it lands at 2.3:1 and is unreadable; that is
-    exactly what made the job-feed card's "Auto sync" and countdown vanish. Go
-    pale enough to read as text and the buttons turn pastel. So: `--primary`
-    stays the vivid fill, `--primary-ink` is the pale one, 7.4:1 on a card and
-    9.5:1 on the canvas. Same hue, so they still read as one accent. */
-    --primary-ink: var(--signal-on-dark-hsl);
-    --secondary: var(--app-surface-dark-hsl);
-    --secondary-foreground: var(--slate-100-hsl);
-    --muted: var(--app-sunken-dark-hsl);
-    --muted-foreground: var(--slate-400-hsl); /* 6.96:1 on slate-900 */
-    --accent: var(--app-surface-dark-hsl);
-    --accent-foreground: var(--slate-100-hsl);
-    --destructive: var(--danger-300-hsl);
-    --destructive-foreground: var(--slate-900-hsl);
-    --success: var(--success-300-hsl); /* a11y fix - lifted, AA/AAA on dark */
-    --success-foreground: var(--slate-900-hsl);
-    --warning: var(--warning-300-hsl); /* a11y fix - lifted, AA/AAA on dark */
-    --warning-foreground: var(--slate-900-hsl);
-    --info: var(--info-300-hsl);
-    --info-foreground: var(--slate-900-hsl);
-    --border: var(--app-hairline-dark-hsl);
-    --input: var(--app-hairline-dark-hsl);
-    --ring: var(--signal-on-dark-hsl);
+    --popover-foreground: var(--blush-100-hsl);
+    /* DARK BUTTONS CARRY DARK TEXT. On a dark page the accent has to be light
+    enough to read as text on a card, and anything that light cannot also hold
+    white text - so the button inverts. That is the mirror of light mode
+    rather than a contradiction of it: on a light page the accent is dark, so
+    it carries light text AND reads as text; on a dark page it is light, so it
+    carries dark text AND reads as text.
 
-    /* Same gradient, lifted for a dark canvas. */
-    /* The light end has to travel FURTHER on dark, not less. `--brand-to` is
-  already a light colour here (it has to be legible on near-black), so a
-  from-stop only 12 points above it produced a gradient with nowhere to go -
-  the headline and the mark both flattened into one shade of cyan while the
-  same pair on light read as a proper gradient. 20 points of lightness and
-  ~20 degrees of hue gives dark the same journey light gets. */
-    --brand-from: 266 88% 86%;
+    Fill and ink therefore converge here. `--primary-ink` stays a separate
+    token anyway, because Tailwind's `textColor` key is wired to it and ~477
+    `text-primary` call sites depend on that indirection. */
+    --primary: var(--cherry-ink-dark-hsl); /* #D39ACA - canvas ink on it 7.73:1, 6.91:1 vs a card */
+    /* On dark the hover LIFTS. Darkening a light accent on a dark page reads as
+    the control switching off rather than responding. */
+    --primary-hover: 343 57% 82%; /* #EFBDCB - hover LIFTS on dark */ /* #E0AEAB - hover LIFTS on dark */
+    --primary-foreground: var(--app-canvas-dark-hsl);
+    --primary-ink: var(--cherry-ink-dark-hsl); /* 7.56:1 canvas, 6.16:1 on a card */
+    --secondary: var(--app-surface-dark-hsl);
+    --secondary-foreground: var(--blush-100-hsl);
+    --muted: var(--app-muted-dark-hsl);
+    --muted-foreground: var(--blush-400-hsl); /* #ABA7B4 - 7.58:1 canvas, 6.17:1 on a card */
+    --accent: var(--app-surface-dark-hsl);
+    --accent-foreground: var(--blush-100-hsl);
+    --nav-active: var(--cherry-tint-dark-hsl); /* #2E2333 - the active/selected fill */
+    --destructive: var(--danger-300-hsl);
+    --destructive-foreground: var(--blush-900-hsl);
+    --success: var(--success-300-hsl); /* lifted, AA/AAA on espresso */
+    --success-foreground: var(--blush-900-hsl);
+    --warning: var(--warning-300-hsl); /* lifted, AA/AAA on espresso */
+    --warning-foreground: var(--blush-900-hsl);
+    --info: var(--info-300-hsl);
+    --info-foreground: var(--blush-900-hsl);
+    --border: var(--app-hairline-dark-hsl);
+    --input: var(--app-input-dark-hsl); /* 4.08:1 on a card - was the hairline, which failed SC 1.4.11 */
+    --ring: var(--cherry-ink-dark-hsl); /* 7.56:1 vs the canvas */
+
+    /* Same gradient, lifted for a dark canvas. The light end has to travel
+  FURTHER on dark, not less: `--brand-to` is already a light colour here (it
+  has to be legible on near-black), so a from-stop close to it leaves the
+  gradient nowhere to go and the headline flattens into one shade. */
+    --brand-from: var(--cherry-ink-dark-hsl);
     --brand-to: var(--brand-end-on-dark-hsl);
 
     /* Elevation - deeper, softer halos on dark so cards lift without a black
-  ring. Tinted toward true black since the canvas is already deep slate. */
+  ring. Tinted toward true black since the canvas is already deep. */
     --shadow-soft: 0 1px 2px hsl(0 0% 0% / 0.3), 0 1px 3px hsl(0 0% 0% / 0.22);
     --shadow-panel: 0 1px 2px hsl(0 0% 0% / 0.3), 0 8px 20px -6px hsl(0 0% 0% / 0.45);
     --shadow-pop: 0 6px 16px -4px hsl(0 0% 0% / 0.45), 0 20px 40px -10px hsl(0 0% 0% / 0.55);
     --shadow-float: 0 10px 30px -8px hsl(0 0% 0% / 0.55), 0 32px 64px -16px hsl(0 0% 0% / 0.65);
 
     /* Sidebar */
-    --sidebar-background: var(--slate-900-hsl);
-    --sidebar-foreground: var(--slate-300-hsl);
-    --sidebar-primary: var(--signal-action-dark-hsl);
-    --sidebar-primary-foreground: var(--slate-0-hsl);
-    --sidebar-accent: var(--slate-800-hsl);
-    --sidebar-accent-foreground: var(--slate-100-hsl);
-    --sidebar-border: var(--slate-700-hsl);
-    --sidebar-ring: var(--signal-on-dark-hsl);
+    --sidebar-background: var(--blush-900-hsl);
+    --sidebar-foreground: var(--blush-400-hsl);
+    --sidebar-primary: var(--cherry-ink-dark-hsl);
+    --sidebar-primary-foreground: var(--app-canvas-dark-hsl);
+    --sidebar-accent: var(--blush-800-hsl);
+    --sidebar-accent-foreground: var(--blush-100-hsl);
+    --sidebar-border: var(--blush-700-hsl);
+    --sidebar-ring: var(--cherry-ink-dark-hsl);
   }
 
   /* ── The Aspirely visual language: two named surfaces ────────────────────
@@ -428,43 +545,45 @@
   .surface-editorial {
     color-scheme: light;
 
-    --background: var(--pearl-50-hsl);
-    --foreground: var(--ink-900-hsl);
-    --card: var(--pearl-0-hsl);
-    --card-foreground: var(--ink-900-hsl);
-    --popover: var(--pearl-0-hsl);
-    --popover-foreground: var(--ink-900-hsl);
-    --primary: var(--signal-on-light-hsl);
-    --primary-foreground: var(--slate-0-hsl);
-    --primary-ink: var(--signal-on-light-hsl); /* light surface: ink == fill */
-    --secondary: var(--pearl-100-hsl);
-    --secondary-foreground: var(--ink-700-hsl);
-    --muted: var(--pearl-100-hsl);
-    --muted-foreground: var(--ink-500-hsl);
-    --accent: var(--pearl-100-hsl);
-    --accent-foreground: var(--ink-700-hsl);
+    --background: var(--blush-50-hsl);
+    --foreground: var(--blush-900-hsl);
+    --card: var(--blush-0-hsl);
+    --card-foreground: var(--blush-900-hsl);
+    --popover: var(--blush-0-hsl);
+    --popover-foreground: var(--blush-900-hsl);
+    --primary: var(--cherry-fill-hsl);
+    --primary-hover: var(--cherry-hover-hsl);
+    --primary-foreground: var(--blush-0-hsl);
+    --primary-ink: var(--cherry-ink-hsl); /* light surface: ink is one step darker than the fill */
+    --secondary: var(--blush-100-hsl);
+    --secondary-foreground: var(--blush-700-hsl);
+    --muted: var(--blush-100-hsl);
+    --muted-foreground: var(--blush-500-hsl);
+    --accent: var(--blush-100-hsl);
+    --accent-foreground: var(--blush-700-hsl);
     --destructive: var(--danger-600-hsl);
-    --destructive-foreground: var(--slate-0-hsl);
+    --destructive-foreground: var(--blush-0-hsl);
     --success: var(--success-600-hsl);
-    --success-foreground: var(--slate-0-hsl);
+    --success-foreground: var(--blush-0-hsl);
     --warning: var(--warning-600-hsl);
-    --warning-foreground: var(--slate-0-hsl);
+    --warning-foreground: var(--blush-0-hsl);
     --info: var(--info-600-hsl);
-    --info-foreground: var(--slate-0-hsl);
-    --border: var(--pearl-200-hsl);
-    --input: var(--pearl-300-hsl);
-    --ring: var(--signal-on-light-hsl);
+    --info-foreground: var(--blush-0-hsl);
+    --border: var(--blush-200-hsl);
+    --input: var(--blush-300-hsl);
+    --ring: var(--cherry-ink-hsl);
+    --nav-active: var(--cherry-tint-hsl);
 
-    --brand-from: 262 80% 64%;
+    --brand-from: var(--cherry-ink-hsl);
     --brand-to: var(--brand-end-on-light-hsl);
 
     /* Warm-tinted elevation: shadows on ivory must read as warm shade, never
   as grey grime. */
-    --shadow-soft: 0 1px 2px hsl(26 30% 12% / 0.05), 0 1px 3px hsl(26 30% 12% / 0.05);
-    --shadow-panel: 0 1px 2px hsl(26 30% 12% / 0.05), 0 8px 20px -6px hsl(26 30% 12% / 0.1);
-    --shadow-pop: 0 4px 12px -2px hsl(26 30% 12% / 0.08), 0 18px 36px -10px hsl(26 30% 12% / 0.12);
+    --shadow-soft: 0 1px 2px hsl(338 20% 12% / 0.06), 0 1px 3px hsl(338 20% 12% / 0.06);
+    --shadow-panel: 0 1px 2px hsl(338 20% 12% / 0.06), 0 8px 20px -6px hsl(338 20% 12% / 0.11);
+    --shadow-pop: 0 4px 12px -2px hsl(338 20% 12% / 0.09), 0 18px 36px -10px hsl(338 20% 12% / 0.13);
     --shadow-float:
-      0 10px 28px -8px hsl(26 30% 12% / 0.14), 0 32px 64px -16px hsl(26 30% 12% / 0.16);
+      0 10px 28px -8px hsl(338 20% 12% / 0.15), 0 32px 64px -16px hsl(338 20% 12% / 0.17);
 
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
@@ -479,9 +598,10 @@
     --card-foreground: var(--obsidian-fg-hsl);
     --popover: var(--obsidian-900-hsl);
     --popover-foreground: var(--obsidian-fg-hsl);
-    --primary: var(--signal-action-dark-hsl);
-    --primary-foreground: var(--slate-0-hsl);
-    --primary-ink: var(--signal-on-dark-hsl); /* dark surface: ink splits off the fill */
+    --primary: var(--cherry-ink-dark-hsl); /* same reversal as `.dark` - see the note there */
+    --primary-hover: 343 57% 82%; /* #EFBDCB - hover LIFTS on dark */
+    --primary-foreground: var(--obsidian-950-hsl);
+    --primary-ink: var(--cherry-ink-dark-hsl);
     --secondary: var(--obsidian-800-hsl);
     --secondary-foreground: var(--obsidian-fg-hsl);
     --muted: var(--obsidian-800-hsl);
@@ -497,16 +617,15 @@
     --info: var(--info-300-hsl);
     --info-foreground: var(--obsidian-950-hsl);
     --border: var(--obsidian-700-hsl);
-    --input: var(--obsidian-700-hsl);
-    --ring: var(--signal-on-dark-hsl);
+    --input: var(--obsidian-600-hsl); /* field edges clear 3:1; the hairline does not */
+    --ring: var(--cherry-ink-dark-hsl);
+    --nav-active: var(--cherry-tint-dark-hsl);
 
-    /* The light end has to travel FURTHER on dark, not less. `--brand-to` is
+    /* The light end has to travel FURTHER on dark, not less: `--brand-to` is
   already a light colour here (it has to be legible on near-black), so a
-  from-stop only 12 points above it produced a gradient with nowhere to go -
-  the headline and the mark both flattened into one shade of cyan while the
-  same pair on light read as a proper gradient. 20 points of lightness and
-  ~20 degrees of hue gives dark the same journey light gets. */
-    --brand-from: 266 88% 86%;
+  from-stop close to it leaves the gradient nowhere to go and the headline
+  flattens into a single shade. */
+    --brand-from: var(--cherry-ink-dark-hsl);
     --brand-to: var(--brand-end-on-dark-hsl);
 
     --shadow-soft: 0 1px 2px hsl(0 0% 0% / 0.34), 0 1px 3px hsl(0 0% 0% / 0.26);
@@ -518,28 +637,173 @@
     color: hsl(var(--foreground));
   }
 
+  /* ── Lumen: THE public landing surface ───────────────────────────────────
+  Same contract as the two above - it re-points the whole semantic layer for
+  its subtree - and it is the DEFAULT the public site paints in, not one half
+  of a theme pair.
+
+  WHY THE PUBLIC PAGE STOPPED FOLLOWING THE OS. `/` used to render
+  `.surface-obsidian` whenever the RESOLVED theme was dark, and "resolved"
+  included `theme: 'system'`, which is what every first-time visitor has. So
+  roughly half of all first impressions were a near-black plum canvas
+  (#140F15) with the hero film's left-hand readability wash painted in that
+  same near-black - the "dark chocolate panel" the redesign brief describes.
+  Nobody chose it; an OS preference for dark application chrome is not a
+  request for a dark marketing page, and it is the one page where we do not
+  get a second chance at the first frame.
+
+  So the public shell paints lumen unless the visitor has EXPLICITLY pressed
+  the toggle to dark, in which case `.surface-nocturne` below answers - and
+  it is charcoal, not the plum-black obsidian, because the brief is explicit
+  that the dark alternative may never read as brown.
+
+  Obsidian is untouched and still correct where it is used: it is the dark
+  PRODUCT window, a thing nested inside a page, not a page.
+
+  GLASS. The five glass tokens are overridden here rather than inherited: a
+  pane on this page is bright white at 72%, not the surface's own card
+  colour, which is what makes the frost read as light passing through rather
+  than as a slightly transparent card. */
+  .surface-lumen {
+    color-scheme: light;
+
+    --background: var(--fog-canvas-hsl);
+    --foreground: var(--fog-ink-hsl);
+    --card: var(--fog-surface-hsl);
+    --card-foreground: var(--fog-ink-hsl);
+    --popover: var(--fog-surface-hsl);
+    --popover-foreground: var(--fog-ink-hsl);
+    /* The accent is UNCHANGED from the product. One brand, two neutral ramps. */
+    --primary: var(--cherry-fill-hsl);
+    --primary-hover: var(--cherry-hover-hsl);
+    --primary-foreground: var(--fog-surface-hsl);
+    --primary-ink: var(--cherry-ink-hsl);
+    --secondary: 240 20% 95%;
+    --secondary-foreground: 276 7% 24%;
+    --muted: 240 20% 95%;
+    --muted-foreground: var(--fog-mut-hsl);
+    --accent: 240 20% 95%; /* neutral hover, NEVER the cherry tint - see the palette note */
+    --accent-foreground: 276 7% 24%;
+    --nav-active: var(--fog-tint-hsl);
+    --destructive: var(--danger-600-hsl);
+    --destructive-foreground: var(--fog-surface-hsl);
+    --success: var(--success-600-hsl);
+    --success-foreground: var(--fog-surface-hsl);
+    --warning: var(--warning-600-hsl);
+    --warning-foreground: var(--fog-surface-hsl);
+    --info: var(--info-600-hsl);
+    --info-foreground: var(--fog-surface-hsl);
+    --border: var(--fog-line-hsl);
+    --input: var(--fog-input-hsl);
+    --ring: var(--cherry-ink-hsl);
+
+    --brand-from: var(--cherry-ink-hsl);
+    --brand-to: var(--brand-end-on-light-hsl);
+
+    /* Neutral-tinted elevation. The app's shadows are tinted warm because
+  they fall on a blush canvas; the same warmth on fog reads as a stain. */
+    --shadow-soft: 0 1px 2px hsl(276 12% 14% / 0.05), 0 1px 3px hsl(276 12% 14% / 0.05);
+    --shadow-panel: 0 1px 2px hsl(276 12% 14% / 0.05), 0 8px 20px -6px hsl(276 12% 14% / 0.1);
+    --shadow-pop: 0 4px 12px -2px hsl(276 12% 14% / 0.08), 0 18px 36px -10px hsl(276 12% 14% / 0.12);
+    --shadow-float:
+      0 10px 28px -8px hsl(276 12% 14% / 0.13), 0 32px 64px -16px hsl(276 12% 14% / 0.15);
+
+    --glass-fill: 0 0% 100%;
+    --glass-alpha: 0.72;
+    --glass-solid: var(--fog-surface-hsl);
+    --glass-edge: var(--fog-ink-hsl);
+    --glass-edge-alpha: 0.1;
+    --glass-sheen-alpha: 0.7;
+    --glass-blur: 20px;
+
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
+
+  /* ── Nocturne: the public landing's DARK alternative ─────────────────────
+  Reached only by an explicit press of the theme control, never by an OS
+  preference. Charcoal with a black-cherry cast - the app's own dark canvas -
+  rather than obsidian's deeper plum, so pressing the toggle on `/` lands the
+  visitor in the same dark world the product uses instead of in a third one. */
+  .surface-nocturne {
+    color-scheme: dark;
+
+    --background: var(--app-canvas-dark-hsl);
+    --foreground: var(--blush-100-hsl);
+    --card: var(--app-surface-dark-hsl);
+    --card-foreground: var(--blush-100-hsl);
+    --popover: var(--app-surface-dark-hsl);
+    --popover-foreground: var(--blush-100-hsl);
+    --primary: var(--cherry-ink-dark-hsl);
+    --primary-hover: 343 57% 82%;
+    --primary-foreground: var(--app-canvas-dark-hsl);
+    --primary-ink: var(--cherry-ink-dark-hsl);
+    --secondary: var(--app-surface-dark-hsl);
+    --secondary-foreground: var(--blush-100-hsl);
+    --muted: var(--app-muted-dark-hsl);
+    --muted-foreground: var(--blush-400-hsl);
+    --accent: var(--app-surface-dark-hsl);
+    --accent-foreground: var(--blush-100-hsl);
+    --nav-active: var(--cherry-tint-dark-hsl);
+    --destructive: var(--danger-300-hsl);
+    --destructive-foreground: var(--blush-900-hsl);
+    --success: var(--success-300-hsl);
+    --success-foreground: var(--blush-900-hsl);
+    --warning: var(--warning-300-hsl);
+    --warning-foreground: var(--blush-900-hsl);
+    --info: var(--info-300-hsl);
+    --info-foreground: var(--blush-900-hsl);
+    --border: var(--app-hairline-dark-hsl);
+    --input: var(--app-input-dark-hsl);
+    --ring: var(--cherry-ink-dark-hsl);
+
+    --brand-from: var(--cherry-ink-dark-hsl);
+    --brand-to: var(--brand-end-on-dark-hsl);
+
+    --shadow-soft: 0 1px 2px hsl(0 0% 0% / 0.3), 0 1px 3px hsl(0 0% 0% / 0.22);
+    --shadow-panel: 0 1px 2px hsl(0 0% 0% / 0.3), 0 8px 20px -6px hsl(0 0% 0% / 0.45);
+    --shadow-pop: 0 6px 16px -4px hsl(0 0% 0% / 0.45), 0 20px 40px -10px hsl(0 0% 0% / 0.55);
+    --shadow-float: 0 10px 30px -8px hsl(0 0% 0% / 0.55), 0 32px 64px -16px hsl(0 0% 0% / 0.65);
+
+    /* The pane darkens rather than brightening - a white pane on charcoal is
+  a lamp, not glass - and the sheen drops to a hairline. */
+    --glass-fill: var(--app-surface-dark-hsl);
+    --glass-alpha: 0.72;
+    --glass-solid: var(--app-surface-dark-hsl);
+    --glass-edge: 0 0% 100%;
+    --glass-edge-alpha: 0.1;
+    --glass-sheen-alpha: 0.08;
+    --glass-blur: 20px;
+
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
+
   /* ── Resume Studio: the /app/resume workspace surface ────────────────────
   Third named surface, same contract as `.surface-editorial` /
   `.surface-obsidian`: it re-points the SEMANTIC token names for its subtree,
   so every shadcn primitive and `bg-card` / `text-muted-foreground` utility
   inside it follows without a single `dark:` variant or hex in a component.
 
-  Why a surface and not a handful of one-off classes: the Resume area gets its
-  own indigo identity. Doing that with bespoke classes would leave shadcn
-  Buttons, Skeletons, Textareas and AlertDialogs still speaking the app's teal
-  - re-pointing the tokens is what keeps one voice across the whole subtree.
+  Why a surface and not a handful of one-off classes: the Resume area is a
+  half-step lighter than the rest of the product, and doing that with bespoke
+  classes would leave shadcn Buttons, Skeletons, Textareas and AlertDialogs
+  still speaking the app's canvas - re-pointing the tokens is what keeps one
+  voice across the whole subtree.
 
-  Two extra tokens beyond the standard set, consumed by the studio recipes
-  further down this file:
-    --nav-active    accent tint marking the current destination
-    --accent-text   the accent AS TEXT. Deliberately NOT `--primary`: an
-                    indigo tuned to carry white at 6.3:1 only reaches 5.8:1
-                    when used as text on the canvas, so the text tone is a
-                    darker step. On dark both roles collapse to one value.
+  It no longer carries its own ACCENT. It used to be a separate indigo
+  identity, which made /app/resume look like a different application; the
+  distinction it actually wants is paper-versus-desk, which is a difference in
+  lightness, not a second brand colour. The clay is the same clay everywhere.
 
-  Contrast, measured. Light: ink 16.7:1, muted text 5.9:1, accent-text 7.3:1,
-  white-on-accent 6.3:1. Dark: fg 16.3:1, muted 8.0:1, accent 6.2:1,
-  canvas-on-accent 6.2:1. */
+  `--accent-text` used to live here as a darker text tone for that accent. It
+  had no consumer even then, and with the accent shared it has no reason to
+  exist - deleted rather than left as a trap. `--nav-active` is the one extra
+  token the studio recipes still read, and it is now defined in every scope.
+
+  Contrast, measured against this surface's own canvas. Light: ink 14.6:1,
+  muted text 6.4:1, accent as ink 5.9:1, warm-white on accent 5.5:1. Dark:
+  fg 13.9:1, muted 7.2:1, accent as ink 6.0:1. */
   .surface-studio {
     color-scheme: light;
 
@@ -550,7 +814,11 @@
     --popover: var(--studio-card-hsl);
     --popover-foreground: var(--studio-ink-hsl);
     --primary: var(--studio-accent-hsl);
-    --primary-foreground: 0 0% 100%;
+    --primary-hover: var(--cherry-hover-hsl);
+    --primary-foreground: var(--blush-0-hsl);
+    /* Was left undefined, so `text-primary` inside /app/resume resolved to the
+  ENCLOSING scope's accent rather than this one - a real bug, not a nuance. */
+    --primary-ink: var(--studio-accent-text-hsl);
     --secondary: var(--studio-muted-hsl);
     --secondary-foreground: var(--studio-muted-text-hsl);
     --muted: var(--studio-muted-hsl);
@@ -566,11 +834,10 @@
     --info: var(--info-600-hsl);
     --info-foreground: 0 0% 100%;
     --border: var(--studio-border-hsl);
-    --input: var(--studio-border-hsl);
+    --input: var(--studio-input-hsl);
     --ring: var(--studio-accent-hsl);
 
     --nav-active: var(--studio-accent-tint-hsl);
-    --accent-text: var(--studio-accent-text-hsl);
 
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
@@ -586,7 +853,9 @@
     --popover: var(--studio-card-dark-hsl);
     --popover-foreground: var(--studio-fg-dark-hsl);
     --primary: var(--studio-accent-dark-hsl);
+    --primary-hover: 343 57% 82%; /* #EFBDCB - hover LIFTS on dark */
     --primary-foreground: var(--studio-canvas-dark-hsl);
+    --primary-ink: var(--studio-accent-dark-hsl); /* declared, not inherited - see the light scope */
     --secondary: var(--studio-raised-dark-hsl);
     --secondary-foreground: var(--studio-fg-dark-hsl);
     --muted: var(--studio-raised-dark-hsl);
@@ -602,12 +871,11 @@
     --info: var(--info-300-hsl);
     --info-foreground: var(--studio-canvas-dark-hsl);
     --border: var(--studio-border-dark-hsl);
-    --input: var(--studio-border-dark-hsl);
+    --input: var(--studio-input-dark-hsl);
     --ring: var(--studio-accent-dark-hsl);
 
     --nav-active: var(--studio-accent-tint-dark-hsl);
     /* On dark the accent is already light enough to serve both roles. */
-    --accent-text: var(--studio-accent-dark-hsl);
   }
 
   * {
@@ -616,6 +884,11 @@
 
   body {
     @apply bg-background text-foreground antialiased;
+    /* SMOOTHNESS, part 1: type. `optimizeLegibility` turns on ligatures and
+  kerning pairs, which is most of the difference between "a website" and "a
+  designed page" at display sizes. It is scoped to body rather than `*`
+  because on very long documents the kerning pass is not free. */
+    text-rendering: optimizeLegibility;
     font-family:
       'Inter',
       -apple-system,
@@ -707,9 +980,12 @@
 }
 
 @layer components {
-  /* Glassmorphism card style */
+  /* Glassmorphism card style. Token-driven: a literal white pane over
+  parchment reads cold and blue-ish, which is the single most visible way a
+  warm re-theme fails, and `bg-white` is exactly what the landing suite bans
+  inside product illustrations. Same treatment, no literal colour. */
   .glass-card {
-    @apply bg-white/80 dark:bg-black/40 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-pop;
+    @apply border border-border/60 bg-card/80 shadow-pop backdrop-blur-xl dark:border-border/40 dark:bg-card/60;
   }
 
   /* ── Canonical glass recipe (navigation / elevated controls ONLY) ──────
@@ -732,13 +1008,14 @@
   .glass-nav-sidebar {
     --glass-bg: var(--sidebar-background);
   }
-  /* Floating marketing nav modifier. The landing bar crosses TWO surfaces as
-  you scroll (obsidian hero, then pearl editorial), so the canonical 0.7
-  fill is not enough: pearl bleeding through at 30% lifts the bar and drops
-  white-on-glass to ~3:1. At 0.86 the worst case (bar fully over pearl)
-  still measures 5.6:1 for foreground text, and over the hero it reads as
-  near-solid glass. Saturation is nudged so the wash underneath stays alive
-  rather than turning to grey. */
+  /* Floating marketing nav modifier. The landing bar does not cross a surface
+  boundary any more - one surface owns the whole public page - but it does
+  cross the hero FILM, which is the harder job the 0.7 canonical fill was
+  never sized for: a moving image under 30% transparency drags nav-label
+  contrast around as it plays. At 0.86 over the bright card token the bar
+  holds 5.6:1 for its labels against the worst frame of the loop and still
+  reads as a pane rather than a solid bar. Saturation is nudged so what shows
+  through stays alive rather than turning grey. */
   .glass-nav-strong {
     background-color: hsl(var(--glass-bg) / 0.86);
     -webkit-backdrop-filter: blur(20px) saturate(140%);
@@ -748,6 +1025,35 @@
     .glass-nav,
     .glass-nav-strong {
       background-color: hsl(var(--glass-bg));
+    }
+  }
+
+  /* ── The liquid-glass PANE ─────────────────────────────────────────────
+  The one frosted surface for CONTENT (the nav has its own recipe above,
+  because a fixed bar has a harder contrast job than a panel sitting in the
+  flow). Entirely token-driven - see the `--glass-*` block in `:root` - so it
+  is bright white frost on the public landing and a dark pane on nocturne,
+  from the same class.
+
+  USE IT SPARINGLY. Glass earns its cost by creating hierarchy: the thing in
+  front. A page where every card is frosted has no front, only haze, and pays
+  a full-surface blur per card for it. Two or three panes per view.
+
+  The solid fallback is not optional. Without backdrop-filter a translucent
+  pane is a window onto whatever scrolls beneath it, and text over text is
+  unreadable at any contrast ratio. */
+  .glass-pane {
+    background-color: hsl(var(--glass-fill) / var(--glass-alpha));
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+    backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+    border: 1px solid hsl(var(--glass-edge) / var(--glass-edge-alpha));
+    box-shadow:
+      inset 0 1px 0 0 hsl(0 0% 100% / var(--glass-sheen-alpha)),
+      var(--shadow-panel);
+  }
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .glass-pane {
+      background-color: hsl(var(--glass-solid));
     }
   }
 
@@ -805,6 +1111,17 @@
 
   Press is deliberately a scale and not a colour change: it reads on touch,
   where there is no hover state to fall back on. */
+  /* Every control shares one curve and one duration, so the page has a single
+  motion accent rather than a dozen slightly different ones. */
+  .interactive,
+  .interactive-row,
+  .interactive-lift,
+  .interactive-press,
+  a,
+  button {
+    transition-timing-function: var(--ease-out-expo);
+  }
+
   .interactive {
     @apply cursor-pointer transition-[color,background-color,border-color,box-shadow,transform] duration-fast ease-standard;
     @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
@@ -812,6 +1129,35 @@
   .interactive-row {
     @apply interactive hover:bg-accent hover:text-accent-foreground;
   }
+  /* ── Interaction polish ───────────────────────────────────────────────
+  A page reads as "smooth" when every state change takes the SAME amount of
+  time with the SAME curve, and when nothing that moves triggers layout. These
+  three recipes are that contract:
+
+   - `.hover-lift` moves on transform only, never on `top`/`margin`.
+   - the durations come from the motion tokens, so a change here is one edit.
+   - every one of them is neutralised by the reduced-motion net at the bottom
+     of this file, so none of it fights a user preference.
+
+  What is deliberately NOT here: transitions on `all`. `transition: all` is how
+  a page ends up animating its own layout during a resize, and it is the single
+  most common cause of jank that looks like "the site feels heavy". */
+  .hover-lift {
+    transition:
+      transform var(--motion-base) var(--ease-out-expo),
+      box-shadow var(--motion-base) var(--ease-out-expo);
+    will-change: transform;
+  }
+
+  .hover-lift:hover {
+    transform: translate3d(0, -2px, 0);
+  }
+
+  .hover-lift:active {
+    transform: translate3d(0, 0, 0);
+    transition-duration: var(--motion-fast);
+  }
+
   .interactive-lift {
     @apply interactive duration-base ease-expo hover:-translate-y-0.5 hover:shadow-panel;
   }
@@ -1027,7 +1373,7 @@
     almost nothing (4.77:1), so the wash alone pushed it under to 4.33:1.
     Stepping here fixes it where the tint is, instead of darkening every
     muted string in the app to pay for one card. */
-    --muted-foreground: var(--slate-600-hsl); /* 5.0:1 on the washed card */
+    --muted-foreground: var(--blush-600-hsl); /* 5.0:1 on the washed card */
   }
   /* Much lighter touch than the light-mode mesh, and lighter than this used to
   be. The 0.16/0.11 alphas were tuned when the dark `--primary` was a PALE cyan;
@@ -1042,7 +1388,7 @@
       radial-gradient(120% 120% at 100% 8%, hsl(var(--brand-to) / 0.04), transparent 58%);
     /* Undo the light-mode step. Darkening muted text is the right move against
     a tint on white and exactly the wrong one against a tint on near-black. */
-    --muted-foreground: var(--slate-400-hsl);
+    --muted-foreground: var(--blush-400-hsl);
   }
 
   .mesh-warning {
@@ -1144,9 +1490,20 @@
   }
 
   /* Premium button style - subtle, clean, no aggressive lift */
+  /* Draws the MARK gradient, not `--brand-from/--brand-to`. Those two serve
+  gradient TEXT, so on a dark page they are deliberately pale - and pale
+  gradient plus `text-white` measured about 1.3:1, i.e. an invisible label on
+  a coloured button. That was broken before this re-theme; it is fixed here
+  rather than carried forward. The mark gradient is theme-independent and
+  carries its own glyph token at 5.48:1 -> 8.98:1. */
   .btn-premium {
-    background-image: linear-gradient(90deg, hsl(var(--brand-from)), hsl(var(--brand-to)));
-    @apply relative text-white font-medium shadow-sm hover:shadow-md hover:shadow-primary/20 transition-shadow duration-200;
+    background-image: linear-gradient(
+      90deg,
+      hsl(var(--brand-mark-from-hsl)),
+      hsl(var(--brand-mark-to-hsl))
+    );
+    color: hsl(var(--brand-mark-fg-hsl));
+    @apply relative font-medium shadow-sm transition-shadow duration-200 hover:shadow-md hover:shadow-primary/20;
   }
 
   /* Surface that's clearly NOT a button - neutralizes default hover bg/scale.
@@ -1211,6 +1568,38 @@
   only way to FREEZE a progress indicator mid-way and resume it exactly where
   it stopped, which is what an indicator that pauses on hover has to do to stay
   truthful. Transform-only. */
+/* ── Hero backdrop ────────────────────────────────────────────────────────
+  Three light-fields on long, offset, non-harmonic cycles (13/17/21s) so the
+  composite never visibly repeats, plus a route that draws, arrives, holds and
+  resets on a 10s beat. Transform and stroke-dashoffset only - both composite
+  on the GPU and neither triggers layout. The global reduced-motion net at the
+  bottom of this file neutralises all of it; the component ALSO branches on the
+  preference rather than relying on that net alone, so the resolved end state
+  is what renders rather than a stalled first frame. */
+@keyframes hero-drift-a {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(4%, 6%, 0) scale(1.08); }
+}
+
+@keyframes hero-drift-b {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1.04); }
+  50% { transform: translate3d(-5%, 4%, 0) scale(1); }
+}
+
+@keyframes hero-drift-c {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(3%, -5%, 0) scale(1.06); }
+}
+
+/* Draw, hold at the destination, then reset from the start rather than
+   rewinding - a route is travelled in one direction. */
+@keyframes route-draw {
+  0% { stroke-dashoffset: 1; opacity: 0; }
+  8% { opacity: 1; }
+  62%, 88% { stroke-dashoffset: 0; opacity: 1; }
+  100% { stroke-dashoffset: 0; opacity: 0; }
+}
+
 @keyframes carousel-tick {
   from {
     transform: scaleX(0);
@@ -1351,9 +1740,21 @@
 }
 
 /* ===== GLOBAL CUSTOM SCROLLBAR =====
-  Thin, subtle, ghost-white bars that stay out of the way and only become
-  visible when the user interacts. The previous scrollbars used the
-  app's primary (pink) HSL which clashed with the new purple theme. */
+  Thin, quiet bars that stay out of the way. Drawn from `--foreground` at low
+  alpha rather than from literal rgba, for two reasons.
+
+  One: literal slate-blue thumbs read cold and slightly dirty against
+  parchment, which is the same reason the elevation shadows are warm-tinted.
+
+  Two, and more concretely: the old rules keyed the dark variant off `.dark *`,
+  which is a THEME class, not a SURFACE class. The landing's dark product
+  windows are `.surface-obsidian` inside a light root, so they were served
+  light-theme scrollbars - a bug the token version cannot have, because a
+  token resolves per surface automatically.
+
+  The purple textarea thumb that used to live here is gone. It was left over
+  from a retired theme, and a differently coloured scrollbar inside textareas
+  is noise rather than signal. */
 
 /* Webkit (Chrome, Edge, Safari) - thin + minimal */
 *::-webkit-scrollbar {
@@ -1366,47 +1767,21 @@
 }
 
 *::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.2); /* slate-400 @ 20% */
+  background: hsl(var(--foreground) / 0.18);
   border-radius: 999px;
   border: 2px solid transparent;
   background-clip: padding-box;
 }
 
 *::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.4);
-  background-clip: padding-box;
-}
-
-.dark *::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.08);
-  background-clip: padding-box;
-}
-
-.dark *::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
-  background-clip: padding-box;
-}
-
-/* Purple-tinted scrollbar inside textareas to match theme */
-textarea::-webkit-scrollbar-thumb {
-  background: rgba(139, 92, 246, 0.3); /* purple-500 @ 30% */
-  background-clip: padding-box;
-}
-textarea::-webkit-scrollbar-thumb:hover {
-  background: rgba(139, 92, 246, 0.5);
+  background: hsl(var(--foreground) / 0.32);
   background-clip: padding-box;
 }
 
 /* Firefox */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(148, 163, 184, 0.25) transparent;
-}
-.dark * {
-  scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
-}
-textarea {
-  scrollbar-color: rgba(139, 92, 246, 0.35) transparent;
+  scrollbar-color: hsl(var(--foreground) / 0.22) transparent;
 }
 
 /* Kill horizontal scroll globally - nothing on the page should

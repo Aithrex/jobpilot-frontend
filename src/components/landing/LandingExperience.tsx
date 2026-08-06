@@ -1,14 +1,17 @@
 import { useCallback, useState } from 'react';
 import { cn } from '@/lib/utils';
-import { useResolvedTheme } from '@/components/theme-provider';
 import { useAuth } from '@/contexts/AuthContext';
 import { isGuestOnboardingEnabled, markGuestOnboardingUnavailable } from '@/lib/guest';
 import { useGuestFlow } from '@/hooks/useGuestFlow';
 import { useResumePicker } from '@/components/guest/useResumePicker';
+import { SectionRule, usePublicSurface } from './_shared';
 import { LandingNav } from './LandingNav';
 import { WorkspaceHero } from './WorkspaceHero';
+import { WorkdayLoop } from './WorkdayLoop';
 import { SignalPath } from './SignalPath';
+import { PricingSection } from './PricingSection';
 import { ProofStrip } from './ProofStrip';
+import { BeforeYouBegin } from './BeforeYouBegin';
 import { ComingNext } from './ComingNext';
 import { TrustClose } from './TrustClose';
 import { LandingFooter } from './LandingFooter';
@@ -38,17 +41,17 @@ import { LandingFooter } from './LandingFooter';
  * SURFACE LANGUAGE (index.css). The page is built from real named token
  * surfaces, never from one-off colour classes:
  *
- *  `.surface-editorial` - the warm pearl reading surface.
- *  `.surface-obsidian` - the deep product surface.
+ *  `.surface-lumen` - the bright liquid-glass public canvas. THE DEFAULT.
+ *  `.surface-nocturne` - the charcoal alternative, reached only by an
+ *  explicit press of the theme control.
  *
- * ONE OF THEM OWNS THE WHOLE PAGE, chosen by the visitor's theme. The landing
- * used to hard-code obsidian for the hero and the close, with a pearl band
- * bolted through the middle for the marketing sections, so scrolling the page
- * went dark, light, dark - and the theme toggle changed nothing, because
- * neither surface was listening to it. A visitor who has told us they want a
- * light interface should not be handed a black hero, and a page that alternates
- * reads as three pages stapled together rather than one. The toggle in the nav
- * now drives the whole page.
+ * ONE OF THEM OWNS THE WHOLE PAGE. The landing used to hard-code obsidian for
+ * the hero and the close with a pearl band bolted through the middle, so
+ * scrolling went dark, light, dark; that was fixed by handing the page to the
+ * RESOLVED theme, which fixed the banding and introduced a worse problem -
+ * `theme: 'system'` is what every first-time visitor has, so a dark OS
+ * preference silently painted the marketing page near-black. `usePublicSurface`
+ * is where that decision now lives, and its comment is the long version.
  *
  * THAT INCLUDES THE PRODUCT WINDOWS. The hero's workspace and the
  * transformation stage were briefly held at obsidian in both themes, on the
@@ -65,8 +68,7 @@ import { LandingFooter } from './LandingFooter';
  * primitives that DO ship `dark:` variants keep behaving.
  */
 export default function LandingExperience() {
-  const resolvedTheme = useResolvedTheme();
-  const darkTheme = resolvedTheme === 'dark';
+  const surface = usePublicSurface();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [runtimeDisabled, setRuntimeDisabled] = useState(() => !isGuestOnboardingEnabled());
 
@@ -96,11 +98,8 @@ export default function LandingExperience() {
 
   return (
     <div
-      className={cn(
-        'min-h-screen overflow-x-clip',
-        darkTheme ? 'dark surface-obsidian' : 'surface-editorial',
-      )}
-      style={{ colorScheme: resolvedTheme }}
+      className={cn('min-h-screen overflow-x-clip', surface.className)}
+      style={{ colorScheme: surface.colorScheme }}
     >
       <a
         href="#main"
@@ -140,9 +139,26 @@ export default function LandingExperience() {
   needed a fade plus an energy hairline to make the jump look
   intentional - craft spent covering for a boundary that should
   not have been there. */}
+            {/* Every seam is drawn the same way: one `SectionRule` between two
+                sections, and each section spends the same padding on its own
+                side of it. `ProofStrip` is the one exception - it is a single
+                bordered card, so a hairline immediately above its own border
+                would be two lines saying one thing. */}
+            <WorkdayLoop />
+            <SectionRule />
             <SignalPath />
+            <SectionRule />
+            <PricingSection variant="summary" />
             <ProofStrip />
+            <SectionRule />
+            {/* Trust and FAQ used to be two sections here, answering the same
+                questions twice in two shapes. One decision section now. */}
+            <BeforeYouBegin />
+            <SectionRule />
+            {/* Roadmap sits AFTER what actually ships, so it never competes
+                with the available capabilities for the reader's attention. */}
             <ComingNext />
+            <SectionRule />
             <TrustClose
               onUpload={onUpload}
               fallbackHref={fallbackHref}
