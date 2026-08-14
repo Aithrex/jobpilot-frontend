@@ -10,13 +10,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CompanyLogo } from '@/components/CompanyLogo';
 import { JobAnalysisModal } from './JobAnalysisModal';
-import { ResumeTailorModal } from './ResumeTailorModal';
 import { JobTrustBadge } from './JobTrustBadge';
 import { VisaFlagChips } from './JobVisaSignals';
 import { ReferralModal } from './ReferralModal';
 import { WhyThisScoreButton } from './JobFitDetails';
 import { fitBandOf } from './fitBands';
 import { apiService, companyLogoSrc } from '@/lib/api';
+import { stagePendingTailorJob, cacheJdText, readCachedJdText } from '@/lib/craftHandoff';
 import { cn } from '@/lib/utils';
 import { hueFromString, toTitleCase } from '@/lib/format';
 import { useCountUp } from '@/hooks/useCountUp';
@@ -170,13 +170,62 @@ export function JobCard({ job, saved, jobStatus, onSave, onUnsave, onQuickApply,
   const [expanded, setExpanded] = useState(false);
   const [analysisOpen, setAnalysisOpen] = useState(false);
   const [analysisAction, setAnalysisAction] = useState<'summarize' | 'missing_skills' | 'cover_letter'>('summarize');
-  const [tailorOpen, setTailorOpen] = useState(false);
+  const [tailoring, setTailoring] = useState(false);
   const [referralOpen, setReferralOpen] = useState(false);
   const [scanning, setScanning] = useState(false);
 
   const openAnalysis = (action: typeof analysisAction) => {
     setAnalysisAction(action);
     setAnalysisOpen(true);
+  };
+
+  /**
+   * Open the full Tailor tool prefilled with THIS job's description - no
+   * manual copy-paste. Listing rows (Workday / inventory feed) frequently
+   * ship without an inline `description`, so when it's missing we recover the
+   * JD from the posting URL via the lazy fetcher before handing off. If the
+   * JD still can't be fetched, we hand off with `jd_fetch_failed` so Tailor
+   * can retry / prompt a paste rather than silently opening empty.
+   */
+  const handleTailor = async () => {
+    if (tailoring) return;
+    setTailoring(true);
+    try {
+      const url = job.apply_link || '';
+      let jdText = (job.description || '').trim();
+      let fetchFailed = false;
+
+      if (!jdText && url) {
+        const cached = readCachedJdText(url);
+        if (cached) {
+          jdText = cached;
+        } else {
+          toast.info('Fetching the job description. Opening Tailor in a moment...');
+          try {
+            const resp = await apiService.fetchJobDescription(url);
+            if (resp.data?.ok && resp.data.jd_text) {
+              jdText = resp.data.jd_text.trim();
+              cacheJdText(url, jdText);
+            } else {
+              fetchFailed = true;
+            }
+          } catch {
+            fetchFailed = true;
+          }
+        }
+      }
+
+      stagePendingTailorJob({
+        job_id: job.job_id,
+        jd_text: fetchFailed ? '' : jdText,
+        jd_fetch_failed: fetchFailed,
+        title: job.title,
+        company: job.company,
+        url,
+      });
+    } finally {
+      setTailoring(false);
+    }
   };
 
   const runDeepScan = async () => {
@@ -416,7 +465,7 @@ export function JobCard({ job, saved, jobStatus, onSave, onUnsave, onQuickApply,
               <span className="mr-1 inline-flex items-center gap-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground/70">
                 <Sparkles className="h-3 w-3" aria-hidden /> AI
               </span>
-              <ActionIcon label="Tailor resume to this role" icon={Wand2} onClick={() => setTailorOpen(true)} />
+              <ActionIcon label="Tailor resume to this role" icon={Wand2} onClick={handleTailor} disabled={tailoring} />
               <ActionIcon label="AI summary" icon={Sparkles} onClick={() => openAnalysis('summarize')} />
               <ActionIcon label="Skill-gap analysis" icon={Target} onClick={() => openAnalysis('missing_skills')} />
               <ActionIcon label="Generate cover letter" icon={FileText} onClick={() => openAnalysis('cover_letter')} />
@@ -427,7 +476,6 @@ export function JobCard({ job, saved, jobStatus, onSave, onUnsave, onQuickApply,
       </Card>
 
       <JobAnalysisModal open={analysisOpen} onOpenChange={setAnalysisOpen} job={job} action={analysisAction} />
-      <ResumeTailorModal open={tailorOpen} onOpenChange={setTailorOpen} job={job} />
       <ReferralModal open={referralOpen} onOpenChange={setReferralOpen} job={job} />
     </>
   );

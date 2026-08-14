@@ -1,7 +1,9 @@
-import { Suspense, lazy } from "react";
-import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { Suspense, lazy, useEffect } from "react";
+import { Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { onNavigateToTailor } from "@/lib/craftHandoff";
+import { appPath } from "./nav.config";
 import { TopBar } from "./TopBar";
 import { MobileNav } from "./MobileNav";
 import { CommandPalette } from "./CommandPalette";
@@ -42,6 +44,21 @@ function OutletFallback() {
 export default function AppShell() {
   const { isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
+
+  // Cross-surface "open Tailor with this job" handoff. Producers (job cards,
+  // Daily Pipeline, batch tailor) stage a `pending_tailor_job` payload and
+  // fire the navigate event via `stagePendingTailorJob`; this is the single
+  // listener that actually routes to the Tailor page. If Tailor is already
+  // active it re-reads the payload itself, so skip the redundant navigation.
+  useEffect(() => {
+    const tailorPath = appPath("resume", "tailor");
+    return onNavigateToTailor(() => {
+      if (!window.location.pathname.startsWith(tailorPath)) {
+        navigate(tailorPath);
+      }
+    });
+  }, [navigate]);
 
   if (isLoading) return <FullScreenLoader />;
   // Carry the attempted deep link so Login can bounce back after sign-in.
