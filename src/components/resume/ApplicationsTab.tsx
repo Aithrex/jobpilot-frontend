@@ -280,7 +280,7 @@ export default function ApplicationsTab({ embedded = false }: ApplicationsTabPro
       draft: [], applied: [], interviewing: [], offer: [], rejected: [], withdrawn: [], ghosted: [],
     };
     for (const r of searched) {
-      const s = (r.application?.status || "draft") as ApplicationStatus;
+      const s = statusMeta(r.application?.status).key as ApplicationStatus;
       (g[s] || g.draft).push(r);
     }
     for (const k of Object.keys(g) as ApplicationStatus[]) {

@@ -436,4 +436,6 @@ export interface TailoringRecord {
   versions?: TailoringVersion[];
   application?: ApplicationInfo;
   interview_prep?: InterviewPrepPack;
+  /** Inventory / listing job_id when this record was tailored from a posting. */
+  source_job_id?: string;
 }

@@ -349,11 +349,36 @@ export function useJobSearch() {
       toast.error('Could not mark as applied', { description: resp.error });
       return resp;
     }
+
+    const posting = savedJobs.find((j) => j.job_id === jobId)?.job_data;
+    const company = (posting?.company || '').trim().toLowerCase();
+    const title = (posting?.title || '').trim().toLowerCase();
+    try {
+      const listed = await apiService.listTailoringRecords();
+      const records = listed.data?.records || [];
+      const matches = records.filter((r) => {
+        if (r.source_job_id === jobId) return true;
+        const rc = (r.jd_analysis?.company || '').trim().toLowerCase();
+        const rt = (r.jd_analysis?.job_title || '').trim().toLowerCase();
+        return Boolean(company && title && rc === company && rt === title);
+      });
+      await Promise.all(
+        matches.map((r) =>
+          apiService.updateApplication(r.record_id, {
+            status: 'applied',
+            batch_confirmation_pending: false,
+          }),
+        ),
+      );
+    } catch {
+      /* saved_jobs write already succeeded; tracker sync is best-effort */
+    }
+
     toast.success('Moved to Applied', {
-      description: 'You’ll find this job in Saved → Applied.',
+      description: 'It’s in Apply → Tracker under Applied.',
     });
     return resp;
-  }, [updateJobStatus]);
+  }, [updateJobStatus, savedJobs]);
 
   const dismissApplyConfirm = useCallback((jobId: string) => {
     setPendingApplyIds((prev) => {
