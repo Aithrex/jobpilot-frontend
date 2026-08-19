@@ -11,7 +11,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ApplyConfirmDialog, JobCard } from './JobCard';
+import { ApplyConfirmDialog, JOB_FEED_GRID_CLASS, JobCard } from './JobCard';
 import { COMPANY_CHIPS, passesVisaFilters } from '@/hooks/useJobSearch';
 import type { Job, SavedJob, JobSearchFilters, JobSearchOptions, VisaFilters } from '@/types/jobs';
 import type { BatchMeta } from '@/hooks/useJobSearch';
@@ -510,9 +510,9 @@ export function JobSearchPanel({
 
       {/* Loading skeletons */}
       {loading && (
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className={JOB_FEED_GRID_CLASS}>
           {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-56 rounded-2xl" />
+            <Skeleton key={i} className="h-44 rounded-xl" />
           ))}
         </div>
       )}
@@ -527,7 +527,7 @@ export function JobSearchPanel({
       {/* Results */}
       {!loading && visibleJobs.length > 0 && (
         <>
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className={JOB_FEED_GRID_CLASS}>
             {visibleJobs.map(job => (
               <JobCard
                 key={job.job_id}

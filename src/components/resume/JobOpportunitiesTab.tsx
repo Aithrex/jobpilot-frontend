@@ -3,7 +3,7 @@ import { Link, useOutletContext } from 'react-router-dom';
 import { Bookmark, Briefcase, Send } from 'lucide-react';
 import { useJobSearch } from '@/hooks/useJobSearch';
 import { CombinedJobsPanel } from '@/components/job-search/CombinedJobsPanel';
-import { ApplyConfirmDialog, JobCard } from '@/components/job-search/JobCard';
+import { ApplyConfirmDialog, JOB_FEED_GRID_CLASS, JobCard } from '@/components/job-search/JobCard';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { appPath } from '@/app-shell/nav.config';
@@ -46,7 +46,7 @@ function JobList({
     );
   }
   return (
-    <div className="flex flex-col gap-3">
+    <div className={JOB_FEED_GRID_CLASS}>
       {jobs.map((job) => (
         <JobCard
           key={job.job_id}

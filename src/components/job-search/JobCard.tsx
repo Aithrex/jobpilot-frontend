@@ -30,6 +30,9 @@ import { toTitleCase } from '@/lib/format';
 import { useCountUp } from '@/hooks/useCountUp';
 import type { Job } from '@/types/jobs';
 
+/** Compact tiles so a typical Jobs viewport shows 6–9 roles, not 2–3 list rows. */
+export const JOB_FEED_GRID_CLASS = 'grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3';
+
 interface JobCardProps {
   job: Job;
   saved: boolean;
@@ -133,11 +136,11 @@ function CompanyMark({ job }: { job: Job }) {
         loading="lazy"
         decoding="async"
         onError={() => setIdx((i) => i + 1)}
-        className="h-10 w-10 flex-shrink-0 rounded-lg border border-border/50 bg-background object-contain p-1"
+        className="h-9 w-9 flex-shrink-0 rounded-lg border border-border/50 bg-background object-contain p-1"
       />
     );
   }
-  return <CompanyLogo company={job.company || job.title || 'JobPilot'} size={40} />;
+  return <CompanyLogo company={job.company || job.title || 'JobPilot'} size={36} />;
 }
 
 function buildApplyUrl(job: Job): { url: string; fallback: boolean } {
@@ -254,182 +257,165 @@ export function JobCard({
 
   const apply = buildApplyUrl(job);
   const band = fitBandOf(job);
-  const scored = band.key !== 'unscored';
   const title = toTitleCase(job.title);
   const company = toTitleCase(job.company);
   const location = toTitleCase(job.location);
-  const snippet = (job.description || '').replace(/\s+/g, ' ').trim().slice(0, 140);
-  const reasons = [
-    job.title_matched ? 'Title match' : '',
-    job.h1b_sponsor ? 'H-1B' : '',
-    job.is_remote ? 'Remote' : '',
-  ].filter(Boolean);
   const hasSignals = job.trust_band || job.h1b_sponsor || job.is_remote || job.contract_friendly || job.visa_flags;
+  const iconBtn = 'h-9 w-9 shrink-0 px-0 text-muted-foreground';
 
   return (
     <>
-      <Card className="overflow-hidden rounded-xl border-border bg-card transition-colors hover:border-primary/35">
-        <CardContent className="p-0">
-          <div className="flex flex-col sm:flex-row">
-            <div className="min-w-0 flex-1 p-4">
-              <div className="flex items-start gap-3">
-                <CompanyMark job={job} />
-                <div className="min-w-0 flex-1">
-                  <h3 className="truncate text-[15px] font-semibold leading-snug text-foreground" title={title}>
-                    {title}
-                  </h3>
-                  <p className="truncate text-[13px] text-muted-foreground" title={company}>{company}</p>
-                  {snippet ? (
-                    <p className="mt-1 line-clamp-1 text-[12px] text-muted-foreground">{snippet}{job.description.length > 140 ? '…' : ''}</p>
-                  ) : null}
-                </div>
-              </div>
+      <Card className="flex h-full flex-col overflow-hidden rounded-xl border-border bg-card transition-colors hover:border-primary/35">
+        <CardContent className="flex flex-1 flex-col gap-2.5 p-3.5">
+          <div className="flex items-start gap-2.5">
+            <CompanyMark job={job} />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[12px] font-medium text-muted-foreground" title={company}>{company}</p>
+              <h3 className="mt-0.5 line-clamp-2 text-[14px] font-semibold leading-snug text-foreground" title={title}>
+                {title}
+              </h3>
+            </div>
+            <div className="flex shrink-0 flex-col items-center">
+              <MatchScoreRing job={job} />
+              <p className={cn('mt-0.5 max-w-[4.75rem] text-center text-[10px] font-semibold leading-tight', band.text)}>
+                {band.label}
+              </p>
+            </div>
+          </div>
 
-              <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
-                <span className="inline-flex items-center gap-1">
-                  <MapPin className="h-3 w-3 shrink-0" aria-hidden />
-                  {location || 'Location undisclosed'}
+          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11px] text-muted-foreground">
+            <span className="inline-flex min-w-0 items-center gap-1">
+              <MapPin className="h-3 w-3 shrink-0" aria-hidden />
+              <span className="truncate">{location || 'Location undisclosed'}</span>
+            </span>
+            {job.employment_type ? <span>{toTitleCase(job.employment_type)}</span> : null}
+            {job.seniority ? <span className="capitalize">{job.seniority}</span> : null}
+            {job.salary ? <span className="font-medium text-foreground/80">{job.salary}</span> : null}
+            {job.posted_text ? <span>{job.posted_text}</span> : null}
+            <WhyThisScoreButton job={job} />
+          </div>
+
+          {hasSignals && (
+            <div className="flex flex-wrap items-center gap-1.5">
+              {job.trust_band && (
+                <JobTrustBadge band={job.trust_band} score={job.trust_score} reasons={job.trust_reasons} />
+              )}
+              {job.h1b_sponsor && <SignalPill icon={Plane} label="H1B sponsor" tone="sponsor" />}
+              {job.is_remote && <SignalPill icon={Wifi} label="Remote" tone="remote" />}
+              {job.contract_friendly && <SignalPill icon={FileSignature} label="Contract" tone="contract" />}
+              {job.visa_flags && <VisaFlagChips flags={job.visa_flags} />}
+            </div>
+          )}
+
+          {job.matched_skills.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1">
+              {job.matched_skills.slice(0, 3).map((skill) => (
+                <span key={skill} className="rounded-md bg-success/10 px-1.5 py-0.5 text-[10px] font-medium text-success">
+                  {skill}
                 </span>
-                {job.employment_type ? <span>{toTitleCase(job.employment_type)}</span> : null}
-                {job.seniority ? <span className="capitalize">{job.seniority}</span> : null}
-                {job.salary ? <span className="font-medium text-foreground/80">{job.salary}</span> : null}
-                {job.posted_text ? <span>{job.posted_text}</span> : null}
-              </div>
+              ))}
+              {job.matched_skills.length > 3 && (
+                <span className="text-[10px] text-muted-foreground">+{job.matched_skills.length - 3}</span>
+              )}
+            </div>
+          )}
 
-              {hasSignals && (
+          <div className="mt-auto">
+            {applyConfirmPending && onConfirmApplied && onConfirmNotYet ? (
+              <div
+                role="group"
+                aria-label={`Did you apply for ${job.title}?`}
+                className="rounded-lg border border-primary/30 bg-primary/[0.06] px-2.5 py-2"
+              >
+                <p className="text-xs font-medium text-foreground">
+                  Did you apply for <span className="font-semibold">{job.title}</span>?
+                </p>
+                <p className="mt-0.5 text-[11px] text-muted-foreground">
+                  Yes moves it to Applied. Not yet leaves it in Draft.
+                </p>
                 <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                  {job.trust_band && (
-                    <JobTrustBadge band={job.trust_band} score={job.trust_score} reasons={job.trust_reasons} />
-                  )}
-                  {job.h1b_sponsor && <SignalPill icon={Plane} label="H1B sponsor" tone="sponsor" />}
-                  {job.is_remote && <SignalPill icon={Wifi} label="Remote" tone="remote" />}
-                  {job.contract_friendly && <SignalPill icon={FileSignature} label="Contract" tone="contract" />}
-                  {job.visa_flags && <VisaFlagChips flags={job.visa_flags} />}
-                </div>
-              )}
-
-              {job.matched_skills.length > 0 && (
-                <div className="mt-2 flex flex-wrap items-center gap-1">
-                  {job.matched_skills.slice(0, 5).map((skill) => (
-                    <span key={skill} className="rounded-md bg-success/10 px-1.5 py-0.5 text-[10px] font-medium text-success">
-                      {skill}
-                    </span>
-                  ))}
-                  {job.matched_skills.length > 5 && (
-                    <span className="text-[10px] text-muted-foreground">+{job.matched_skills.length - 5}</span>
-                  )}
-                </div>
-              )}
-
-              {applyConfirmPending && onConfirmApplied && onConfirmNotYet ? (
-                <div
-                  role="group"
-                  aria-label={`Did you apply for ${job.title}?`}
-                  className="mt-3 rounded-xl border border-primary/30 bg-primary/[0.06] px-3 py-2.5"
-                >
-                  <p className="text-xs font-medium text-foreground">
-                    Did you apply for <span className="font-semibold">{job.title}</span>?
-                  </p>
-                  <p className="mt-0.5 text-[11px] text-muted-foreground">
-                    Yes moves it to Applied. Not yet leaves it in Draft.
-                  </p>
-                  <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                    <Button size="sm" onClick={onConfirmApplied} className="h-9 min-w-[7.5rem] gap-1.5 text-xs font-semibold">
-                      Yes, I applied
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={onConfirmNotYet} className="h-9 min-w-[5.5rem] text-xs font-semibold">
-                      Not yet
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={onQuickApply}
-                      title="Open the posting again"
-                      className="h-9 gap-1.5 px-2.5 text-xs text-muted-foreground"
-                    >
-                      <ExternalLink className="h-3.5 w-3.5" />
-                      Reopen
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="mt-3 flex flex-wrap items-center gap-1.5">
-                  <Button
-                    size="sm"
-                    onClick={() => {
-                      if (jobStatus === 'applied' || applyConfirmPending) onQuickApply();
-                      else setApplyChoiceOpen(true);
-                    }}
-                    title={apply.fallback ? 'Apply link missing. Opens Google search, then asks how you want to apply' : 'Choose tailor, apply with your base resume, or mark already applied'}
-                    className="btn-premium h-9 min-w-[6.5rem] gap-1.5 text-xs font-semibold"
-                  >
-                    <ExternalLink className="h-3.5 w-3.5" />
-                    {jobStatus === 'applied' ? 'Reopen' : 'Apply'}
+                  <Button size="sm" onClick={onConfirmApplied} className="h-9 min-w-[7.5rem] gap-1.5 text-xs font-semibold">
+                    Yes, I applied
                   </Button>
-                  {onAutoApply && (
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => void onAutoApply()}
-                      disabled={autoApplying || jobStatus === 'applied'}
-                      title="Queue this job for Aspirely auto-apply"
-                      className="h-9 gap-1.5 px-3 text-xs font-semibold"
-                    >
-                      <Zap className="h-3.5 w-3.5" />
-                      {autoApplying ? 'Queuing…' : 'Auto Apply'}
-                    </Button>
-                  )}
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={saved ? onUnsave : onSave}
-                    title={saved ? 'Remove from saved' : 'Save this job'}
-                    className={cn('h-9 gap-1.5 px-3 text-xs',
-                      saved
-                        ? 'border-success/40 bg-success/10 text-success hover:bg-success/20 hover:text-success'
-                        : 'border-border/60')}
-                  >
-                    {saved ? <BookmarkCheck className="h-3.5 w-3.5" /> : <BookmarkPlus className="h-3.5 w-3.5" />}
-                    {saved ? 'Saved' : 'Save'}
+                  <Button size="sm" variant="outline" onClick={onConfirmNotYet} className="h-9 min-w-[5.5rem] text-xs font-semibold">
+                    Not yet
                   </Button>
-                  {onHide && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={onHide}
-                      title="Hide this job from For you"
-                      aria-label="Hide this job"
-                      className="h-9 gap-1.5 px-2.5 text-xs text-muted-foreground"
-                    >
-                      <CircleOff className="h-3.5 w-3.5" />
-                      Hide
-                    </Button>
-                  )}
                   <Button
                     size="sm"
                     variant="ghost"
-                    onClick={() => setAnalysisOpen(true)}
+                    onClick={onQuickApply}
+                    title="Open the posting again"
                     className="h-9 gap-1.5 px-2.5 text-xs text-muted-foreground"
                   >
-                    <Sparkles className="h-3.5 w-3.5" />
-                    Ask
+                    <ExternalLink className="h-3.5 w-3.5" />
+                    Reopen
                   </Button>
                 </div>
-              )}
-            </div>
-
-            <aside className="flex shrink-0 items-center gap-3 border-t border-border bg-muted/25 px-4 py-3 sm:w-[9.5rem] sm:flex-col sm:items-center sm:justify-center sm:border-l sm:border-t-0 sm:py-4">
-              <MatchScoreRing job={job} />
-              <div className="min-w-0 text-center sm:px-1">
-                <p className={cn('text-[11px] font-semibold leading-tight', band.text)}>{band.label}</p>
-                {scored && reasons.length > 0 && (
-                  <p className="mt-1 text-[10px] leading-snug text-muted-foreground">{reasons.slice(0, 2).join(' · ')}</p>
-                )}
-                <div className="mt-1">
-                  <WhyThisScoreButton job={job} />
-                </div>
               </div>
-            </aside>
+            ) : (
+              <div className="flex items-center gap-1.5">
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    if (jobStatus === 'applied' || applyConfirmPending) onQuickApply();
+                    else setApplyChoiceOpen(true);
+                  }}
+                  title={apply.fallback ? 'Apply link missing. Opens Google search, then asks how you want to apply' : 'Choose tailor, apply with your base resume, or mark already applied'}
+                  className="btn-premium h-9 min-w-0 flex-1 gap-1.5 text-xs font-semibold"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  {jobStatus === 'applied' ? 'Reopen' : 'Apply'}
+                </Button>
+                {onAutoApply && (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => void onAutoApply()}
+                    disabled={autoApplying || jobStatus === 'applied'}
+                    title="Queue this job for Aspirely auto-apply"
+                    aria-label={autoApplying ? 'Queuing auto-apply' : 'Queue this job for Aspirely auto-apply'}
+                    className={iconBtn}
+                  >
+                    <Zap className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={saved ? onUnsave : onSave}
+                  title={saved ? 'Remove from saved' : 'Save this job'}
+                  aria-label={saved ? 'Remove from saved' : 'Save this job'}
+                  className={cn(iconBtn,
+                    saved
+                      ? 'border-success/40 bg-success/10 text-success hover:bg-success/20 hover:text-success'
+                      : 'border-border/60')}
+                >
+                  {saved ? <BookmarkCheck className="h-3.5 w-3.5" /> : <BookmarkPlus className="h-3.5 w-3.5" />}
+                </Button>
+                {onHide && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={onHide}
+                    title="Hide this job from For you"
+                    aria-label="Hide this job"
+                    className={iconBtn}
+                  >
+                    <CircleOff className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setAnalysisOpen(true)}
+                  title="Ask about this job"
+                  aria-label="Ask about this job"
+                  className={iconBtn}
+                >
+                  <Sparkles className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
