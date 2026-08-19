@@ -20,7 +20,7 @@ function SectionFallback() {
  */
 export default function DiscoverPage() {
   return (
-    <div className="page-measure flex flex-col gap-6">
+    <div className="page-full flex flex-col gap-6">
       <header>
         <p className="overline mb-1">Jobs</p>
         <h1 className="text-title font-display text-foreground">

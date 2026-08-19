@@ -32,8 +32,8 @@ import { hueFromString, toTitleCase } from '@/lib/format';
 import { useCountUp } from '@/hooks/useCountUp';
 import type { Job } from '@/types/jobs';
 
-/** Compact tiles so a typical Jobs viewport shows 6–9 roles, not 2–3 list rows. */
-export const JOB_FEED_GRID_CLASS = 'grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3';
+/** Compact tiles: 2 / 3 / 4 columns as the Jobs page widens. */
+export const JOB_FEED_GRID_CLASS = 'grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4';
 
 interface JobCardProps {
   job: Job;
