@@ -133,4 +133,22 @@ describe('JobCard apply confirmation', () => {
     await userEvent.click(screen.getByRole('button', { name: /hide this job/i }));
     expect(onHide).toHaveBeenCalledTimes(1);
   });
+
+  test('Tailor resume is a visible tile action', async () => {
+    const onTailor = vi.fn();
+    render(
+      <JobCard
+        job={JOB}
+        saved={false}
+        jobStatus={null}
+        onSave={() => {}}
+        onUnsave={() => {}}
+        onQuickApply={() => {}}
+        onApplyWithTailor={onTailor}
+      />,
+    );
+    expect(screen.getByRole('button', { name: /^tailor resume$/i })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /^tailor resume$/i }));
+    expect(onTailor).toHaveBeenCalledTimes(1);
+  });
 });

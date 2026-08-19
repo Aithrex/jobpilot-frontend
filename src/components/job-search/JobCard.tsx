@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import {
-  MapPin, ExternalLink, BookmarkPlus, BookmarkCheck, Sparkles,
-  CircleOff, Plane, Wifi, FileSignature, Zap,
+  MapPin, ExternalLink, BookmarkPlus, BookmarkCheck, Sparkles, Target,
+  FileText, Wand2, ChevronDown, Users, ShieldCheck, CircleOff, Plane, Wifi,
+  FileSignature, Zap,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
@@ -21,12 +22,13 @@ import { CompanyLogo } from '@/components/CompanyLogo';
 import { JobAnalysisModal } from './JobAnalysisModal';
 import { JobTrustBadge } from './JobTrustBadge';
 import { VisaFlagChips } from './JobVisaSignals';
+import { ReferralModal } from './ReferralModal';
 import { WhyThisScoreButton } from './JobFitDetails';
 import { fitBandOf } from './fitBands';
 import { apiService, companyLogoSrc } from '@/lib/api';
 import { stagePendingTailorJob, cacheJdText, readCachedJdText } from '@/lib/craftHandoff';
 import { cn } from '@/lib/utils';
-import { toTitleCase } from '@/lib/format';
+import { hueFromString, toTitleCase } from '@/lib/format';
 import { useCountUp } from '@/hooks/useCountUp';
 import type { Job } from '@/types/jobs';
 
@@ -149,6 +151,24 @@ function buildApplyUrl(job: Job): { url: string; fallback: boolean } {
   return { url: `https://www.google.com/search?q=${q}`, fallback: true };
 }
 
+/** Compact ghost action for the card's AI cluster. */
+function ActionIcon({ label, icon: Icon, onClick, disabled }: {
+  label: string; icon: typeof Sparkles; onClick: () => void; disabled?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      title={label}
+      aria-label={label}
+      className="grid h-8 w-8 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+    >
+      <Icon className="h-3.5 w-3.5" aria-hidden />
+    </button>
+  );
+}
+
 /** Primary eligibility signal pill. */
 function SignalPill({ icon: Icon, label, tone }: {
   icon: typeof Plane; label: string; tone: 'sponsor' | 'remote' | 'contract';
@@ -202,9 +222,19 @@ export function JobCard({
   applyConfirmPending, onConfirmApplied, onConfirmNotYet,
   onApplyWithTailor, onAlreadyApplied, onHide,
 }: JobCardProps) {
+  const reduceMotion = useReducedMotion();
+  const [expanded, setExpanded] = useState(false);
   const [analysisOpen, setAnalysisOpen] = useState(false);
+  const [analysisAction, setAnalysisAction] = useState<'summarize' | 'missing_skills' | 'cover_letter'>('summarize');
   const [tailoring, setTailoring] = useState(false);
+  const [referralOpen, setReferralOpen] = useState(false);
+  const [scanning, setScanning] = useState(false);
   const [applyChoiceOpen, setApplyChoiceOpen] = useState(false);
+
+  const openAnalysis = (action: typeof analysisAction) => {
+    setAnalysisAction(action);
+    setAnalysisOpen(true);
+  };
 
   /**
    * Open the full Tailor tool prefilled with THIS job's description - no
@@ -255,50 +285,115 @@ export function JobCard({
     }
   };
 
+  const startTailor = async () => {
+    await onApplyWithTailor?.();
+    await handleTailor();
+  };
+
+  const runDeepScan = async () => {
+    setScanning(true);
+    try {
+      const res = await apiService.checkJobTrust(job);
+      const r = res.data;
+      if (!r) {
+        toast.error('Could not scan this posting');
+        return;
+      }
+      const scanTitle = r.trust_band === 'high_risk'
+        ? 'High scam / ghost-job risk'
+        : r.trust_band === 'caution' ? 'Some risk signals found' : 'No scam signals found';
+      const description = r.advice || r.llm_rationale || (r.trust_reasons || []).slice(0, 2).join(' · ') || undefined;
+      if (r.trust_band === 'high_risk') toast.error(scanTitle, { description });
+      else if (r.trust_band === 'caution') toast.warning(scanTitle, { description });
+      else toast.success(scanTitle, { description });
+    } catch {
+      toast.error('Scan failed. Try again');
+    } finally {
+      setScanning(false);
+    }
+  };
+
   const apply = buildApplyUrl(job);
+  const hue = hueFromString(job.company || job.title || 'JobPilot');
+  const hasDescription = !!job.description && job.description.trim().length > 0;
   const band = fitBandOf(job);
   const title = toTitleCase(job.title);
   const company = toTitleCase(job.company);
   const location = toTitleCase(job.location);
+  const sourceLabel = job.source ? toTitleCase(job.source) : '';
+  const meta = [
+    job.salary,
+    toTitleCase(job.employment_type),
+    job.seniority ? String(job.seniority).replace(/_/g, ' ') : '',
+    sourceLabel ? `Via ${sourceLabel}` : '',
+    job.posted_text || job.date_posted || '',
+  ].filter(Boolean);
   const hasSignals = job.trust_band || job.h1b_sponsor || job.is_remote || job.contract_friendly || job.visa_flags;
-  const iconBtn = 'h-9 w-9 shrink-0 px-0 text-muted-foreground';
 
   return (
     <>
-      <Card className="flex h-full flex-col overflow-hidden rounded-xl border-border bg-card transition-colors hover:border-primary/35">
-        <CardContent className="flex flex-1 flex-col gap-2.5 p-3.5">
+      <Card className="group relative flex h-full flex-col overflow-hidden rounded-xl border-border bg-card transition-colors hover:border-primary/35">
+        <span
+          className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full opacity-50 blur-2xl"
+          style={{ backgroundColor: `hsl(${hue} 70% 55% / 0.18)` }}
+          aria-hidden
+        />
+        <span
+          className="pointer-events-none absolute inset-x-0 top-0 h-1 opacity-70"
+          style={{ backgroundImage: `linear-gradient(90deg, hsl(${hue} 72% 56%), hsl(${(hue + 45) % 360} 72% 60%))` }}
+          aria-hidden
+        />
+        <CardContent className="relative flex flex-1 flex-col gap-2.5 p-3.5">
           <div className="flex items-start gap-2.5">
             <CompanyMark job={job} />
             <div className="min-w-0 flex-1">
               <p className="truncate text-[12px] font-medium text-muted-foreground" title={company}>{company}</p>
-              <h3 className="mt-0.5 line-clamp-2 text-[14px] font-semibold leading-snug text-foreground" title={title}>
-                {title}
-              </h3>
+              <p className="mt-0.5 flex items-center gap-1 truncate text-[11px] text-muted-foreground">
+                <MapPin className="h-3 w-3 shrink-0" aria-hidden />
+                <span className="truncate">{location || 'Location undisclosed'}</span>
+              </p>
+              {sourceLabel ? (
+                <p className="mt-0.5 truncate text-[11px] font-medium text-foreground/80" title={`Posted via ${sourceLabel}`}>
+                  Via {sourceLabel}
+                </p>
+              ) : null}
             </div>
             <div className="flex shrink-0 flex-col items-center">
               <MatchScoreRing job={job} />
-              <p className={cn('mt-0.5 max-w-[4.75rem] text-center text-[10px] font-semibold leading-tight', band.text)}>
+              <span
+                className={cn(
+                  'mt-0.5 inline-flex max-w-[4.75rem] items-center justify-center rounded-full border px-1.5 py-px text-center text-[9px] font-semibold leading-tight',
+                  band.chip,
+                )}
+              >
                 {band.label}
-              </p>
+              </span>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11px] text-muted-foreground">
-            <span className="inline-flex min-w-0 items-center gap-1">
-              <MapPin className="h-3 w-3 shrink-0" aria-hidden />
-              <span className="truncate">{location || 'Location undisclosed'}</span>
-            </span>
-            {job.employment_type ? <span>{toTitleCase(job.employment_type)}</span> : null}
-            {job.seniority ? <span className="capitalize">{job.seniority}</span> : null}
-            {job.salary ? <span className="font-medium text-foreground/80">{job.salary}</span> : null}
-            {job.posted_text ? <span>{job.posted_text}</span> : null}
+          <h3 className="line-clamp-2 text-[14px] font-semibold leading-snug text-foreground" title={title}>
+            {title}
+          </h3>
+
+          <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
             <WhyThisScoreButton job={job} />
           </div>
 
           {hasSignals && (
             <div className="flex flex-wrap items-center gap-1.5">
               {job.trust_band && (
-                <JobTrustBadge band={job.trust_band} score={job.trust_score} reasons={job.trust_reasons} />
+                <>
+                  <JobTrustBadge band={job.trust_band} score={job.trust_score} reasons={job.trust_reasons} />
+                  <button
+                    type="button"
+                    onClick={() => void runDeepScan()}
+                    disabled={scanning}
+                    className="inline-flex items-center gap-0.5 text-[10px] font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:underline disabled:opacity-50"
+                  >
+                    <ShieldCheck className="h-3 w-3" aria-hidden />
+                    {scanning ? 'Scanning...' : 'Deep-scan'}
+                  </button>
+                </>
               )}
               {job.h1b_sponsor && <SignalPill icon={Plane} label="H1B sponsor" tone="sponsor" />}
               {job.is_remote && <SignalPill icon={Wifi} label="Remote" tone="remote" />}
@@ -309,18 +404,53 @@ export function JobCard({
 
           {job.matched_skills.length > 0 && (
             <div className="flex flex-wrap items-center gap-1">
-              {job.matched_skills.slice(0, 3).map((skill) => (
+              {job.matched_skills.slice(0, 7).map((skill) => (
                 <span key={skill} className="rounded-md bg-success/10 px-1.5 py-0.5 text-[10px] font-medium text-success">
                   {skill}
                 </span>
               ))}
-              {job.matched_skills.length > 3 && (
-                <span className="text-[10px] text-muted-foreground">+{job.matched_skills.length - 3}</span>
+              {job.matched_skills.length > 7 && (
+                <span className="self-center text-[10px] text-muted-foreground">+{job.matched_skills.length - 7} more</span>
+              )}
+              {job.missing_skills?.length > 0 && (
+                <span className="self-center text-[10px] text-muted-foreground">
+                  · {job.missing_skills.length} gap{job.missing_skills.length === 1 ? '' : 's'}
+                </span>
               )}
             </div>
           )}
 
-          <div className="mt-auto">
+          {meta.length > 0 && (
+            <p className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] text-muted-foreground">
+              {meta.map((m, i) => (
+                <span key={`${m}-${i}`} className="inline-flex items-center gap-1.5">
+                  {i > 0 && <span className="text-muted-foreground/40" aria-hidden>·</span>}
+                  <span className={i === 0 && job.salary ? 'font-medium text-foreground/80' : ''}>{m}</span>
+                </span>
+              ))}
+            </p>
+          )}
+
+          <AnimatePresence initial={false}>
+            {expanded && hasDescription && (
+              <motion.div
+                key="jd"
+                initial={reduceMotion ? undefined : { height: 0, opacity: 0 }}
+                animate={reduceMotion ? undefined : { height: 'auto', opacity: 1 }}
+                exit={reduceMotion ? undefined : { height: 0, opacity: 0 }}
+                transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+                className="overflow-hidden"
+              >
+                <div className="max-h-48 overflow-y-auto rounded-xl border border-border/40 bg-muted/20 p-3 text-xs leading-relaxed text-muted-foreground">
+                  <p className="whitespace-pre-line">
+                    {job.description.slice(0, 1400)}{job.description.length > 1400 && '...'}
+                  </p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <div className="mt-auto space-y-2 border-t border-border/40 pt-2.5">
             {applyConfirmPending && onConfirmApplied && onConfirmNotYet ? (
               <div
                 role="group"
@@ -353,74 +483,104 @@ export function JobCard({
                 </div>
               </div>
             ) : (
-              <div className="flex items-center gap-1.5">
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    if (jobStatus === 'applied' || applyConfirmPending) onQuickApply();
-                    else setApplyChoiceOpen(true);
-                  }}
-                  title={apply.fallback ? 'Apply link missing. Opens Google search, then asks how you want to apply' : 'Choose tailor, apply with your base resume, or mark already applied'}
-                  className="btn-premium h-9 min-w-0 flex-1 gap-1.5 text-xs font-semibold"
-                >
-                  <ExternalLink className="h-3.5 w-3.5" />
-                  {jobStatus === 'applied' ? 'Reopen' : 'Apply'}
-                </Button>
-                {onAutoApply && (
+              <div className="space-y-1.5">
+                <div className="grid grid-cols-2 gap-1.5">
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      if (jobStatus === 'applied' || applyConfirmPending) onQuickApply();
+                      else setApplyChoiceOpen(true);
+                    }}
+                    title={apply.fallback ? 'Apply link missing. Opens Google search, then asks how you want to apply' : 'Choose tailor, apply with your base resume, or mark already applied'}
+                    className="btn-premium h-9 min-w-0 gap-1.5 text-xs font-semibold"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" />
+                    {jobStatus === 'applied' ? 'Reopen' : 'Apply'}
+                  </Button>
                   <Button
                     size="sm"
                     variant="secondary"
-                    onClick={() => void onAutoApply()}
-                    disabled={autoApplying || jobStatus === 'applied'}
-                    title="Queue this job for Aspirely auto-apply"
-                    aria-label={autoApplying ? 'Queuing auto-apply' : 'Queue this job for Aspirely auto-apply'}
-                    className={iconBtn}
+                    onClick={() => void startTailor()}
+                    disabled={tailoring}
+                    title="Open Tailor with this job’s description"
+                    className="h-9 min-w-0 gap-1.5 text-xs font-semibold"
                   >
-                    <Zap className="h-3.5 w-3.5" />
+                    <Wand2 className="h-3.5 w-3.5" />
+                    {tailoring ? 'Opening…' : 'Tailor resume'}
                   </Button>
-                )}
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={saved ? onUnsave : onSave}
-                  title={saved ? 'Remove from saved' : 'Save this job'}
-                  aria-label={saved ? 'Remove from saved' : 'Save this job'}
-                  className={cn(iconBtn,
-                    saved
-                      ? 'border-success/40 bg-success/10 text-success hover:bg-success/20 hover:text-success'
-                      : 'border-border/60')}
-                >
-                  {saved ? <BookmarkCheck className="h-3.5 w-3.5" /> : <BookmarkPlus className="h-3.5 w-3.5" />}
-                </Button>
-                {onHide && (
+                </div>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {onAutoApply && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => void onAutoApply()}
+                      disabled={autoApplying || jobStatus === 'applied'}
+                      title="Queue this job for Aspirely auto-apply"
+                      className="h-9 gap-1.5 px-2.5 text-xs font-semibold"
+                    >
+                      <Zap className="h-3.5 w-3.5" />
+                      {autoApplying ? 'Queuing…' : 'Auto Apply'}
+                    </Button>
+                  )}
                   <Button
                     size="sm"
-                    variant="ghost"
-                    onClick={onHide}
-                    title="Hide this job from For you"
-                    aria-label="Hide this job"
-                    className={iconBtn}
+                    variant="outline"
+                    onClick={saved ? onUnsave : onSave}
+                    title={saved ? 'Remove from saved' : 'Save this job'}
+                    className={cn('h-9 gap-1.5 px-2.5 text-xs',
+                      saved
+                        ? 'border-success/40 bg-success/10 text-success hover:bg-success/20 hover:text-success'
+                        : 'border-border/60')}
                   >
-                    <CircleOff className="h-3.5 w-3.5" />
+                    {saved ? <BookmarkCheck className="h-3.5 w-3.5" /> : <BookmarkPlus className="h-3.5 w-3.5" />}
+                    {saved ? 'Saved' : 'Save'}
                   </Button>
-                )}
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => setAnalysisOpen(true)}
-                  title="Ask about this job"
-                  aria-label="Ask about this job"
-                  className={iconBtn}
-                >
-                  <Sparkles className="h-3.5 w-3.5" />
-                </Button>
+                  {onHide && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={onHide}
+                      title="Hide this job from For you"
+                      aria-label="Hide this job"
+                      className="h-9 gap-1.5 px-2.5 text-xs text-muted-foreground"
+                    >
+                      <CircleOff className="h-3.5 w-3.5" />
+                      Hide
+                    </Button>
+                  )}
+                  {hasDescription && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setExpanded((v) => !v)}
+                      aria-expanded={expanded}
+                      className="h-9 gap-1 px-2.5 text-xs text-muted-foreground hover:text-primary"
+                    >
+                      Details
+                      <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', expanded && 'rotate-180')} aria-hidden />
+                    </Button>
+                  )}
+                </div>
               </div>
             )}
+
+            <div className="flex items-center gap-0.5">
+              <span className="mr-1 inline-flex items-center gap-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground/70">
+                <Sparkles className="h-3 w-3" aria-hidden /> AI
+              </span>
+              <ActionIcon label="Tailor resume to this role" icon={Wand2} onClick={() => void startTailor()} disabled={tailoring} />
+              <ActionIcon label="AI summary" icon={Sparkles} onClick={() => openAnalysis('summarize')} />
+              <ActionIcon label="Skill-gap analysis" icon={Target} onClick={() => openAnalysis('missing_skills')} />
+              <ActionIcon label="Generate cover letter" icon={FileText} onClick={() => openAnalysis('cover_letter')} />
+              <ActionIcon label="Find someone who can refer you" icon={Users} onClick={() => setReferralOpen(true)} />
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      <JobAnalysisModal open={analysisOpen} onOpenChange={setAnalysisOpen} job={job} action="summarize" />
+      <JobAnalysisModal open={analysisOpen} onOpenChange={setAnalysisOpen} job={job} action={analysisAction} />
+      <ReferralModal open={referralOpen} onOpenChange={setReferralOpen} job={job} />
       <AlertDialog open={applyChoiceOpen} onOpenChange={setApplyChoiceOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -455,10 +615,7 @@ export function JobCard({
               type="button"
               onClick={() => {
                 setApplyChoiceOpen(false);
-                void (async () => {
-                  await onApplyWithTailor?.();
-                  await handleTailor();
-                })();
+                void startTailor();
               }}
             >
               Tailor resume

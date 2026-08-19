@@ -2,73 +2,26 @@ import { useEffect, useMemo } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import {
   AlertCircle,
-  Check,
-  ChevronDown,
-  Globe,
   Loader2,
-  MapPin,
   Radar,
-  RefreshCw,
   Rocket,
-  RotateCcw,
   Search,
   ShieldAlert,
-  SlidersHorizontal,
   Sparkles,
-  Wand2,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Switch } from '@/components/ui/switch';
-import { ChipsInput } from '@/components/job-search/ChipsInput';
 import { ApplyConfirmDialog, JOB_FEED_GRID_CLASS, JobCard } from '@/components/job-search/JobCard';
-import { SignalField } from '@/components/job-search/SignalField';
+import { JobFeedSheet } from '@/components/job-search/JobFeedSheet';
 import { useCombinedJobsCtx } from '@/components/job-search/CombinedJobsProvider';
 import { useCountUp } from '@/hooks/useCountUp';
-import { JOB_TITLES_CAP } from '@/hooks/useJobTitles';
 import { RECENCY_OPTIONS, seniorityOf, toJob } from '@/lib/careerJobs';
 import { cn } from '@/lib/utils';
 import type { Job, WorkdayJob } from '@/types/jobs';
 
 const PAGE_SIZE = 24;
-
-const SENIORITY_OPTIONS = [
-  { key: 'any', label: 'Any level' },
-  { key: 'intern', label: 'Intern' },
-  { key: 'entry', label: 'Entry' },
-  { key: 'mid', label: 'Mid' },
-  { key: 'senior', label: 'Senior+' },
-] as const;
-
-const MIN_SCORE_OPTIONS = [0, 40, 60, 80] as const;
-
-// Sentinel for the state <Select>, since Radix Select items cannot use "".
-const ANY_STATE = '__any__';
-
-// All 50 states + DC, plus a "Remote" narrowing option. Values are the human
-// labels we send straight through as the location narrow, so the backend reads
-// them as-is (e.g. "Texas", "Remote").
-const US_STATES = [
-  'Remote',
-  'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut',
-  'Delaware', 'District of Columbia', 'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois',
-  'Indiana', 'Iowa', 'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland', 'Massachusetts',
-  'Michigan', 'Minnesota', 'Mississippi', 'Missouri', 'Montana', 'Nebraska', 'Nevada',
-  'New Hampshire', 'New Jersey', 'New Mexico', 'New York', 'North Carolina', 'North Dakota',
-  'Ohio', 'Oklahoma', 'Oregon', 'Pennsylvania', 'Rhode Island', 'South Carolina',
-  'South Dakota', 'Tennessee', 'Texas', 'Utah', 'Vermont', 'Virginia', 'Washington',
-  'West Virginia', 'Wisconsin', 'Wyoming',
-] as const;
 
 function formatAgo(ms: number): string {
   const s = Math.max(0, Math.round((Date.now() - ms) / 1000));
@@ -166,48 +119,25 @@ export function CombinedJobsPanel({
   const {
     jobs,
     loading,
-    states,
-    sourceLabels,
     progress,
     ready,
     resumeSkillCount,
     hasResult,
-    titles,
-    setTitles,
-    resumeTitles,
-    smartSuggestTitles,
-    suggestingTitles,
     canSearch,
-    lastScanTitles,
     titlesPending,
     lastSyncedAt,
     secondsUntilNext,
     sync,
     ensureStarted,
-    usOnly,
-    setUsOnly,
-    usState,
-    setUsState,
-    city,
-    setCity,
-    location,
-    setLocation,
-    scanLocation,
-    remoteOnly,
-    setRemoteOnly,
     customizeOpen,
     setCustomizeOpen,
-    resetScope,
     search,
     setSearch,
     recency,
     setRecency,
     seniority,
-    setSeniority,
     minScore,
-    setMinScore,
     sponsorFilter,
-    setSponsorFilter,
     sortBy,
     setSortBy,
     page,
@@ -316,481 +246,97 @@ export function CombinedJobsPanel({
   // when the feed is genuinely good.
   const strongCount = useMemo(() => jobs.filter((j) => (j.match_score ?? 0) >= 70).length, [jobs]);
   const fieldIntensity = Math.min(1, strongCount / 25);
-  const sourceKeys = ['workday', 'careers', 'mncs'] as const;
 
   return (
     <div className="space-y-5">
-      {/* ── Live-sync command bar ── */}
-      <div className="mesh-accent relative overflow-hidden rounded-2xl border border-border/70 p-4 shadow-soft sm:p-5">
-        <SignalField
-          intensity={fieldIntensity}
-          className="pointer-events-none absolute inset-0 h-full w-full opacity-50"
-        />
-        <div
-          className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-primary/10 blur-3xl"
-          aria-hidden
-        />
-        <div className="relative flex flex-wrap items-center justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-3">
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/12 text-primary">
-              {loading ? (
-                <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
+      <div className="sticky top-2 z-10 space-y-2 rounded-xl border border-border/60 bg-card/90 p-2 shadow-soft backdrop-blur-md">
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="min-w-0 flex-1 text-xs text-muted-foreground" aria-live="polite">
+            {loading ? (
+              progress.total > 0 ? (
+                `Scanning ${progress.done} of ${progress.total} companies · ${roleCount} roles so far`
               ) : (
-                <Radar className="h-5 w-5" aria-hidden />
-              )}
-            </span>
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                <h3 className="text-sm font-semibold text-foreground">Your job feed</h3>
-                <Badge
-                  variant="outline"
-                  className="gap-1 border-primary/30 bg-primary/10 px-1.5 py-0 text-[10px] font-semibold text-primary"
-                >
-                  <Sparkles className="h-2.5 w-2.5" aria-hidden /> Auto-sync
-                </Badge>
-              </div>
-              <p className="truncate text-xs text-muted-foreground" aria-live="polite">
-                {loading ? (
-                  progress.total > 0 ? (
-                    `Scanning ${progress.done} of ${progress.total} companies across all sources · ${roleCount} roles so far`
-                  ) : (
-                    'Starting scan across all sources...'
-                  )
-                ) : lastSyncedAt ? (
-                  <>
-                    Updated {formatAgo(lastSyncedAt)} · {roleCount} roles
-                    {/* Full strength, not /80: at 12px on the washed card the
-                    faded variant measured 4.4:1, just under AA, and a live
-                    countdown is the one thing here you actually read. */}
-                    {secondsUntilNext != null && (
-                      <span className="ml-1 font-mono tabular-nums text-primary">
-                        · next sync {formatCountdown(secondsUntilNext)}
-                      </span>
-                    )}
-                  </>
-                ) : (
-                  'Building your feed from every company source...'
+                'Starting scan across all sources...'
+              )
+            ) : lastSyncedAt ? (
+              <>
+                Updated {formatAgo(lastSyncedAt)} · {roleCount} roles
+                {secondsUntilNext != null && (
+                  <span className="ml-1 font-mono tabular-nums text-primary">
+                    · next sync {formatCountdown(secondsUntilNext)}
+                  </span>
                 )}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex shrink-0 items-center gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => sync(true)}
-              disabled={loading}
-              className="gap-1.5"
-              title="Re-scan every source now"
-            >
-              <RefreshCw className={cn('h-3.5 w-3.5', loading && 'animate-spin')} aria-hidden />
-              {loading ? 'Syncing...' : 'Sync now'}
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => setCustomizeOpen((o) => !o)}
-              aria-expanded={customizeOpen}
-              className="gap-1.5"
-            >
-              <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden />
-              Customize
-              <ChevronDown
-                className={cn('h-3.5 w-3.5 transition-transform', customizeOpen && 'rotate-180')}
-                aria-hidden
-              />
-            </Button>
-          </div>
-        </div>
-
-        {/* Searched-roles summary - always visible; opens Customize to edit */}
-        <div className="relative mt-3">
-          <button
-            type="button"
+              </>
+            ) : (
+              'Open Job feed to set titles, then Search.'
+            )}
+            {titlesPending && (
+              <span className="ml-1.5 font-medium text-warning">Title changes need Search.</span>
+            )}
+          </p>
+          {loading && (
+            <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary" aria-hidden />
+          )}
+          <Button
+            size="sm"
+            variant="outline"
             onClick={() => setCustomizeOpen(true)}
             aria-expanded={customizeOpen}
-            title={titles.length ? titles.join(', ') : undefined}
-            className="flex min-h-[44px] w-full min-w-0 items-center gap-2 rounded-xl border border-border/60 bg-background/40 px-3 py-2 text-left transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="ml-auto gap-1.5"
           >
-            <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-xs text-foreground">
-                {titles.length ? (
-                  <>
-                    <span className="text-muted-foreground">Searching roles: </span>
-                    <span className="font-medium">{titles.slice(0, 3).join(', ')}</span>
-                    {titles.length > 3 && (
-                      <span className="text-muted-foreground"> +{titles.length - 3}</span>
-                    )}
-                  </>
-                ) : (
-                  <span className="text-muted-foreground">
-                    No role titles yet. Add titles to build your feed.
-                  </span>
-                )}
-              </span>
-              {/* Active scope summary - one glance at what's being scanned. */}
-              <span className="mt-1 flex flex-wrap items-center gap-1">
-                <span className="inline-flex items-center gap-1 rounded-full border border-primary/25 bg-primary/8 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
-                  <Globe className="h-2.5 w-2.5" aria-hidden />
-                  {usOnly ? 'US only' : 'Global'}
-                </span>
-                {scanLocation && (
-                  <span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/40 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-                    <MapPin className="h-2.5 w-2.5" aria-hidden />
-                    {scanLocation}
-                  </span>
-                )}
-                {remoteOnly && (
-                  <span className="inline-flex items-center rounded-full border border-border bg-muted/40 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-                    Remote only
-                  </span>
-                )}
-              </span>
-              {titlesPending && lastScanTitles && (
-                <span className="mt-0.5 flex items-center gap-1.5 text-[11px] font-medium text-warning">
-                  <span
-                    className="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-warning"
-                    aria-hidden
-                  />
-                  <span className="truncate">
-                    Title changes not yet applied · results below were scanned with{' '}
-                    {lastScanTitles.length} title{lastScanTitles.length === 1 ? '' : 's'}
-                  </span>
-                </span>
-              )}
-            </span>
-            <span className="shrink-0 text-[11px] font-semibold text-primary">Edit</span>
-          </button>
+            <Radar className="h-3.5 w-3.5" aria-hidden />
+            Job feed
+          </Button>
         </div>
-
-        {/* Per-source progress chips */}
-        <div className="relative mt-3 flex flex-wrap items-center gap-1.5">
-          {sourceKeys.map((k) => {
-            const st = states[k];
-            const active = st.loading;
-            const done = !st.loading && (st.withResults > 0 || st.tenantsTotal > 0);
-            return (
-              <Badge
-                key={k}
-                variant="outline"
-                className={cn(
-                  'gap-1 text-[10px] font-medium',
-                  st.error
-                    ? 'border-destructive/30 bg-destructive/10 text-destructive'
-                    : active
-                      ? 'border-primary/30 bg-primary/5 text-primary'
-                      : done
-                        ? 'border-success/30 bg-success/10 text-success'
-                        : 'border-border text-muted-foreground',
-                )}
-              >
-                {active ? (
-                  <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
-                ) : st.error ? (
-                  <AlertCircle className="h-2.5 w-2.5" aria-hidden />
-                ) : done ? (
-                  <Check className="h-2.5 w-2.5" aria-hidden />
-                ) : null}
-                {sourceLabels[k]}
-                {active && st.tenantsTotal > 0 ? ` · ${st.tenantsDone}/${st.tenantsTotal}` : ''}
-              </Badge>
-            );
-          })}
-        </div>
-
-        <AnimatePresence initial={false}>
-          {loading && (
-            <motion.div
-              initial={reduceMotion ? undefined : { opacity: 0, height: 0 }}
-              animate={reduceMotion ? undefined : { opacity: 1, height: 'auto' }}
-              exit={reduceMotion ? undefined : { opacity: 0, height: 0 }}
-              transition={{ duration: 0.22 }}
-              className="relative mt-3 overflow-hidden"
-            >
-              <Progress
-                value={progress.total ? (progress.done / progress.total) * 100 : 8}
-                className="h-1.5"
+        {loading && (
+          <Progress
+            value={progress.total ? (progress.done / progress.total) * 100 : 8}
+            className="h-1.5"
+          />
+        )}
+        {hasResult && (
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative min-w-[160px] flex-1">
+              <Search
+                className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
+                aria-hidden
               />
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Customize (location / remote) */}
-        <AnimatePresence initial={false}>
-          {customizeOpen && (
-            <motion.div
-              initial={reduceMotion ? undefined : { opacity: 0, height: 0 }}
-              animate={reduceMotion ? undefined : { opacity: 1, height: 'auto' }}
-              exit={reduceMotion ? undefined : { opacity: 0, height: 0 }}
-              transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
-              className="relative overflow-hidden"
+              <input
+                type="search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Filter title or company..."
+                aria-label="Filter jobs by title or company"
+                className="h-9 w-full rounded-lg border border-border bg-background pl-8 pr-3 text-[12px] text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-primary/40 focus-visible:ring-2 focus-visible:ring-ring"
+              />
+            </div>
+            <div
+              className="inline-flex flex-wrap rounded-lg border border-border bg-muted/40 p-0.5"
+              title="Posting dates use your timezone. Each window includes everything newer, so Today is inside Since yesterday."
             >
-              <div className="mt-4 space-y-4 rounded-xl border border-border/60 bg-background/40 p-4">
-                <div className="flex items-center gap-2">
-                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-primary/12 text-primary">
-                    <Search className="h-3.5 w-3.5" aria-hidden />
-                  </span>
-                  <div className="min-w-0">
-                    <p className="text-xs font-semibold text-foreground">Search scope</p>
-                    <p className="text-[11px] text-muted-foreground">
-                      Sets what we scan across every source. Press Search to re-scan.
-                    </p>
-                  </div>
-                </div>
-
-                <div>
-                  <p className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
-                    <Search className="h-3.5 w-3.5" aria-hidden />
-                    Role titles
-                    <span className="font-normal">· prefilled from your resume</span>
-                  </p>
-                  <ChipsInput
-                    values={titles}
-                    onChange={setTitles}
-                    maxItems={JOB_TITLES_CAP}
-                    placeholder="e.g. Backend Engineer, Data Engineer..."
-                    defaultValues={
-                      resumeTitles.length ? resumeTitles.slice(0, JOB_TITLES_CAP) : undefined
-                    }
-                    accentClass="border-primary/30 bg-primary/10 text-primary"
-                    helperText="One shared set: these titles drive Workday enterprises, career pages and MNC boards here, and the Career portals tab too. Saved automatically."
-                    emptyState="Add a role title, or upload a resume to prefill."
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => void smartSuggestTitles()}
-                    disabled={suggestingTitles}
-                    className="mt-1 gap-1 px-2 text-[11px] text-primary"
-                  >
-                    {suggestingTitles ? (
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                    ) : (
-                      <Wand2 className="h-3 w-3" />
-                    )}
-                    {suggestingTitles ? 'Analyzing resume...' : 'Smart-suggest titles from resume'}
-                  </Button>
-                </div>
-
-                {/* Location group - US-only by default, with optional narrowing. */}
-                <div className="space-y-3">
-                  <div className="flex items-start justify-between gap-3 rounded-lg border border-border/60 bg-background/50 p-3">
-                    <label htmlFor="combined-us-only" className="min-w-0 cursor-pointer">
-                      <span className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
-                        <Globe className="h-3.5 w-3.5 text-primary" aria-hidden />
-                        United States only
-                      </span>
-                      <span className="mt-0.5 block text-[11px] leading-snug text-muted-foreground">
-                        {usOnly
-                          ? 'Keeping only clearly US-based and US-remote roles. Turn off to include other countries.'
-                          : 'Including roles from any country. Turn on to limit to the US.'}
-                      </span>
-                    </label>
-                    <Switch
-                      id="combined-us-only"
-                      checked={usOnly}
-                      onCheckedChange={setUsOnly}
-                      className="mt-0.5 shrink-0"
-                    />
-                  </div>
-
-                  {usOnly ? (
-                    <div className="flex flex-wrap items-end gap-3">
-                      <div className="min-w-[180px] flex-1">
-                        <label
-                          htmlFor="combined-state"
-                          className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground"
-                        >
-                          <MapPin className="h-3.5 w-3.5" aria-hidden /> Narrow to a state (optional)
-                        </label>
-                        <Select
-                          value={usState || ANY_STATE}
-                          onValueChange={(v) => setUsState(v === ANY_STATE ? '' : v)}
-                        >
-                          <SelectTrigger id="combined-state" className="h-10">
-                            <SelectValue placeholder="All US states" />
-                          </SelectTrigger>
-                          <SelectContent className="max-h-72">
-                            <SelectItem value={ANY_STATE}>All US states</SelectItem>
-                            {US_STATES.map((s) => (
-                              <SelectItem key={s} value={s}>
-                                {s}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="min-w-[150px] flex-1">
-                        <label
-                          htmlFor="combined-city"
-                          className="mb-1.5 block text-xs font-semibold text-muted-foreground"
-                        >
-                          City (optional)
-                        </label>
-                        <Input
-                          id="combined-city"
-                          value={city}
-                          onChange={(e) => setCity(e.target.value)}
-                          placeholder="e.g. Austin"
-                        />
-                      </div>
-                    </div>
-                  ) : (
-                    <div>
-                      <label
-                        htmlFor="combined-location"
-                        className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground"
-                      >
-                        <MapPin className="h-3.5 w-3.5" aria-hidden /> Location
-                      </label>
-                      <Input
-                        id="combined-location"
-                        value={location}
-                        onChange={(e) => setLocation(e.target.value)}
-                        placeholder="City, state, or country - e.g. London, Toronto, Remote"
-                      />
-                    </div>
-                  )}
-
-                  <div className="flex flex-wrap items-center gap-3">
-                    <label className="flex cursor-pointer items-center gap-2 text-xs font-medium text-muted-foreground">
-                      <Switch checked={remoteOnly} onCheckedChange={setRemoteOnly} />
-                      Remote only
-                    </label>
-                    <div className="ml-auto flex items-center gap-2">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={resetScope}
-                        className="gap-1.5 text-muted-foreground"
-                      >
-                        <RotateCcw className="h-3.5 w-3.5" aria-hidden />
-                        Reset
-                      </Button>
-                      <Button
-                        onClick={() => sync(true)}
-                        disabled={loading || !canSearch}
-                        className="gap-1.5"
-                      >
-                        {loading ? (
-                          <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                        ) : (
-                          <Search className="h-4 w-4" aria-hidden />
-                        )}
-                        {loading ? 'Searching...' : 'Search'}
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-
-                {!canSearch && (
-                  <p className="flex items-center gap-1.5 text-[11px] font-medium text-warning">
-                    <AlertCircle className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                    Add at least one role title or upload a resume to build your job feed.
-                  </p>
-                )}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-
-      {/* ── Glass filter bar ── */}
-      {hasResult && (
-        <div className="glass-nav glass-nav-card sticky top-2 z-10 flex flex-wrap items-center gap-2 rounded-2xl border border-border/60 p-2.5 shadow-soft">
-          <span
-            className="flex basis-full items-center gap-1.5 px-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground"
-            title="These filter the roles already loaded - instantly, with no re-scan."
-          >
-            <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden />
-            Refine results
-            <span className="font-normal normal-case tracking-normal opacity-70">
-              instant, no re-scan
-            </span>
-          </span>
-          <div className="relative min-w-[180px] flex-1 basis-full sm:basis-56">
-            <Search
-              className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
-              aria-hidden
-            />
-            <input
-              type="search"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search title or company..."
-              aria-label="Search jobs by title or company"
-              className="h-8 w-full rounded-full border border-border bg-background pl-8 pr-3 text-[12px] text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-primary/40 focus-visible:ring-2 focus-visible:ring-ring"
-            />
-          </div>
-          <div
-            className="inline-flex flex-wrap rounded-full border border-border bg-muted/40 p-0.5"
-            title="Posting dates use your timezone. Each window includes everything newer, so Today is inside Since yesterday."
-          >
-            {RECENCY_OPTIONS.map((opt) => (
-              <Seg key={opt.key} active={recency === opt.key} onClick={() => setRecency(opt.key)}>
-                {opt.label}
-                <span className="ml-1 tabular-nums opacity-60">{recencyCounts[opt.key]}</span>
-              </Seg>
-            ))}
-          </div>
-
-          <select
-            value={seniority}
-            onChange={(e) => setSeniority(e.target.value)}
-            className="h-8 rounded-full border border-border bg-background px-3 text-[11px] font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            aria-label="Seniority filter"
-          >
-            {SENIORITY_OPTIONS.map((o) => (
-              <option key={o.key} value={o.key}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-
-          <div className="inline-flex rounded-full border border-border bg-muted/40 p-0.5">
-            {MIN_SCORE_OPTIONS.map((n) => (
-              <Seg key={n} active={minScore === n} onClick={() => setMinScore(n)}>
-                {n === 0 ? 'Any match' : `${n}+`}
-              </Seg>
-            ))}
-          </div>
-
-          <div
-            className="inline-flex rounded-full border border-border bg-muted/40 p-0.5"
-            title='"Sponsor-friendly" hides postings that explicitly decline visa sponsorship; "Proven" keeps only companies with recent H-1B filings.'
-          >
-            {(
-              [
-                ['all', 'All'],
-                ['friendly', 'Sponsor-friendly'],
-                ['proven', 'Proven sponsors'],
-              ] as const
-            ).map(([key, label]) => (
-              <Seg key={key} active={sponsorFilter === key} onClick={() => setSponsorFilter(key)}>
-                {label}
-              </Seg>
-            ))}
-          </div>
-
-          <div className="ml-auto flex items-center gap-2">
-            <div className="inline-flex rounded-full border border-border bg-muted/40 p-0.5">
-              {(['score', 'newest'] as const).map((s) => (
-                <Seg key={s} active={sortBy === s} onClick={() => setSortBy(s)}>
-                  {s === 'score' ? 'Best match' : 'Newest'}
+              {RECENCY_OPTIONS.map((opt) => (
+                <Seg key={opt.key} active={recency === opt.key} onClick={() => setRecency(opt.key)}>
+                  {opt.label}
+                  <span className="ml-1 tabular-nums opacity-60">{recencyCounts[opt.key]}</span>
                 </Seg>
               ))}
             </div>
-            <Badge variant="outline" className="gap-1 border-primary/30 bg-primary/10 text-primary">
-              <Sparkles className="h-3 w-3" aria-hidden />
-              <span className="font-mono tabular-nums">{roleCountUp}</span> roles
-            </Badge>
+            <div className="ml-auto flex items-center gap-2">
+              <div className="inline-flex rounded-lg border border-border bg-muted/40 p-0.5">
+                {(['score', 'newest'] as const).map((s) => (
+                  <Seg key={s} active={sortBy === s} onClick={() => setSortBy(s)}>
+                    {s === 'score' ? 'Best match' : 'Newest'}
+                  </Seg>
+                ))}
+              </div>
+              <Badge variant="outline" className="gap-1 border-primary/30 bg-primary/10 text-primary">
+                <Sparkles className="h-3 w-3" aria-hidden />
+                <span className="font-mono tabular-nums">{roleCountUp}</span> roles
+              </Badge>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {resumeSkillCount === 0 && hasResult && (
         <div className="flex items-start gap-2 rounded-xl border border-warning/40 bg-warning/10 px-4 py-3 text-xs text-foreground/85">
@@ -901,19 +447,28 @@ export function CombinedJobsPanel({
           <div className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-full bg-primary/10 text-primary">
             <Radar className="h-5 w-5" aria-hidden />
           </div>
-          <p className="text-sm font-medium text-foreground">Building your combined job feed...</p>
+          <p className="text-sm font-medium text-foreground">Your job feed is ready to set up</p>
           <p className="mx-auto mt-1 max-w-md text-xs text-muted-foreground">
-            One feed across every source - Workday enterprises, Greenhouse/Lever/Ashby career pages,
-            and curated MNC / Big Tech boards - ranked against your resume.
+            Open Job feed on the right to add titles, location, then Search. Listings stay on this page.
           </p>
-          <Button
-            size="sm"
-            className="mt-4 gap-1.5"
-            onClick={() => sync(false)}
-            disabled={!ready || !canSearch}
-          >
-            <Rocket className="h-3.5 w-3.5" aria-hidden /> Load my feed
-          </Button>
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1.5"
+              onClick={() => setCustomizeOpen(true)}
+            >
+              <Radar className="h-3.5 w-3.5" aria-hidden /> Open Job feed
+            </Button>
+            <Button
+              size="sm"
+              className="gap-1.5"
+              onClick={() => sync(false)}
+              disabled={!ready || !canSearch}
+            >
+              <Rocket className="h-3.5 w-3.5" aria-hidden /> Load my feed
+            </Button>
+          </div>
           {ready && !canSearch && (
             <p className="mx-auto mt-3 flex max-w-md items-center justify-center gap-1.5 px-4 text-[11px] font-medium text-warning">
               <AlertCircle className="h-3.5 w-3.5 shrink-0" aria-hidden />
@@ -922,6 +477,7 @@ export function CombinedJobsPanel({
           )}
         </div>
       )}
+      <JobFeedSheet roleCount={roleCount} fieldIntensity={fieldIntensity} />
       {showApplyOverlay && (
         <ApplyConfirmDialog
           job={applyConfirmJob ?? null}
