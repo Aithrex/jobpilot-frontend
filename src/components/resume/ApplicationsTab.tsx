@@ -428,7 +428,6 @@ export default function ApplicationsTab({ embedded = false }: ApplicationsTabPro
             <p className="max-w-xl text-sm text-muted-foreground">
               Your pipeline. Saved roles, drafts, and applications — tailored or with your base resume.
             </p>
-            </p>
           </div>
         )}
         <div className="flex items-center gap-2 flex-wrap">
