@@ -217,7 +217,7 @@ export const APPLY_SECTIONS: NavSection[] = [
     to: "tracker",
     label: "Tracker",
     icon: LayoutList,
-    hint: "Every application and where it stands",
+    hint: "Application board: notes, interviews, and later stages",
     keywords: "pipeline kanban status applied interview offer",
   },
   {

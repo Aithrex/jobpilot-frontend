@@ -116,4 +116,21 @@ describe('JobCard apply confirmation', () => {
     await userEvent.click(screen.getByRole('button', { name: /apply without tailoring/i }));
     expect(onQuickApply).toHaveBeenCalledTimes(1);
   });
+
+  test('Hide removes the posting from For you', async () => {
+    const onHide = vi.fn();
+    render(
+      <JobCard
+        job={JOB}
+        saved={false}
+        jobStatus={null}
+        onSave={() => {}}
+        onUnsave={() => {}}
+        onQuickApply={() => {}}
+        onHide={onHide}
+      />,
+    );
+    await userEvent.click(screen.getByRole('button', { name: /hide this job/i }));
+    expect(onHide).toHaveBeenCalledTimes(1);
+  });
 });

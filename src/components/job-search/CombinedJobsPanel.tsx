@@ -136,6 +136,9 @@ interface CombinedJobsPanelProps {
   markAlreadyApplied?: (job: Job) => void | Promise<unknown>;
   autoApply?: (job: Job) => void | Promise<unknown>;
   autoApplyingId?: string | null;
+  hiddenJobIds?: Set<string>;
+  onHideJob?: (jobId: string) => void;
+  showApplyOverlay?: boolean;
 }
 
 export function CombinedJobsPanel({
@@ -153,6 +156,9 @@ export function CombinedJobsPanel({
   markAlreadyApplied,
   autoApply,
   autoApplyingId,
+  hiddenJobIds,
+  onHideJob,
+  showApplyOverlay = true,
 }: CombinedJobsPanelProps) {
   const reduceMotion = useReducedMotion();
   // Feed state + view filters live in a provider ABOVE the router outlet, so a
@@ -233,6 +239,7 @@ export function CombinedJobsPanel({
     if (minScore > 0) out = out.filter((j) => (j.match_score ?? 0) >= minScore);
     if (sponsorFilter === 'friendly') out = out.filter((j) => j.sponsorship !== 'refused');
     else if (sponsorFilter === 'proven') out = out.filter((j) => j.sponsorship === 'likely');
+    if (hiddenJobIds?.size) out = out.filter((j) => !hiddenJobIds.has(j.job_id));
     if (sortBy === 'newest') {
       out = [...out].sort(
         (a, b) =>
@@ -240,7 +247,7 @@ export function CombinedJobsPanel({
       );
     }
     return out;
-  }, [jobs, maxDays, search, seniority, minScore, sponsorFilter, sortBy]);
+  }, [jobs, maxDays, search, seniority, minScore, sponsorFilter, sortBy, hiddenJobIds]);
 
   const pageCount = Math.max(1, Math.ceil(visibleJobs.length / PAGE_SIZE));
   useEffect(() => {
@@ -298,6 +305,7 @@ export function CombinedJobsPanel({
         onAlreadyApplied={markAlreadyApplied ? () => markAlreadyApplied(toJob(job, 'career portal')) : undefined}
         onAutoApply={autoApply ? () => autoApply(toJob(job, 'career portal')) : undefined}
         autoApplying={autoApplyingId === job.job_id}
+        onHide={onHideJob ? () => onHideJob(job.job_id) : undefined}
       />
     </motion.div>
   );
@@ -796,22 +804,16 @@ export function CombinedJobsPanel({
 
       {/* ── Loading skeleton (nothing merged yet) ── */}
       {loading && jobs.length === 0 && (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3" aria-hidden>
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="space-y-3 rounded-2xl border border-border/60 bg-card/60 p-5">
-              <div className="flex items-center gap-3">
-                <Skeleton className="h-12 w-12 rounded-xl" />
-                <div className="flex-1 space-y-2">
-                  <Skeleton className="h-3.5 w-3/4" />
-                  <Skeleton className="h-3 w-1/2" />
-                </div>
-                <Skeleton className="h-12 w-12 rounded-full" />
+        <div className="flex flex-col gap-3" aria-hidden>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="flex gap-3 rounded-xl border border-border bg-card p-4">
+              <Skeleton className="h-10 w-10 shrink-0 rounded-lg" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-4 w-2/3" />
+                <Skeleton className="h-3 w-1/3" />
+                <Skeleton className="h-3 w-1/2" />
               </div>
-              <Skeleton className="h-4 w-5/6" />
-              <div className="flex gap-1.5 pt-1">
-                <Skeleton className="h-5 w-16 rounded-full" />
-                <Skeleton className="h-5 w-14 rounded-full" />
-              </div>
+              <Skeleton className="hidden h-12 w-12 shrink-0 rounded-full sm:block" />
             </div>
           ))}
         </div>
@@ -820,7 +822,7 @@ export function CombinedJobsPanel({
       {/* ── Results ── */}
       {visibleJobs.length > 0 && (
         <>
-          <motion.div layout={!reduceMotion} className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <motion.div layout={!reduceMotion} className="flex flex-col gap-3">
             <AnimatePresence initial={false}>
               {pagedJobs.map((j, i) => renderJob(j, i))}
             </AnimatePresence>
@@ -917,16 +919,18 @@ export function CombinedJobsPanel({
           )}
         </div>
       )}
-      <ApplyConfirmDialog
-        job={applyConfirmJob ?? null}
-        onApplied={() => {
-          if (applyConfirmJob && confirmApplied) void confirmApplied(applyConfirmJob.job_id);
-        }}
-        onNotYet={() => {
-          if (applyConfirmJob && dismissApplyConfirm) dismissApplyConfirm(applyConfirmJob.job_id);
-        }}
-        onDismiss={() => closeApplyConfirmDialog?.()}
-      />
+      {showApplyOverlay && (
+        <ApplyConfirmDialog
+          job={applyConfirmJob ?? null}
+          onApplied={() => {
+            if (applyConfirmJob && confirmApplied) void confirmApplied(applyConfirmJob.job_id);
+          }}
+          onNotYet={() => {
+            if (applyConfirmJob && dismissApplyConfirm) dismissApplyConfirm(applyConfirmJob.job_id);
+          }}
+          onDismiss={() => closeApplyConfirmDialog?.()}
+        />
+      )}
     </div>
   );
 }
