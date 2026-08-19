@@ -154,6 +154,11 @@ export default function JobOpportunitiesTab({ embedded }: JobOpportunitiesTabPro
           saveJob={jobSearch.saveJob}
           unsaveJob={jobSearch.unsaveJob}
           quickApply={jobSearch.quickApply}
+          isApplyConfirmPending={jobSearch.isApplyConfirmPending}
+          confirmApplied={jobSearch.confirmApplied}
+          dismissApplyConfirm={jobSearch.dismissApplyConfirm}
+          applyConfirmJob={jobSearch.applyConfirmJob}
+          closeApplyConfirmDialog={jobSearch.closeApplyConfirmDialog}
           autoApply={jobSearch.autoApply}
           autoApplyingId={jobSearch.autoApplyingId}
         />

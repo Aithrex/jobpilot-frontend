@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Building2, Globe, Landmark } from 'lucide-react';
 import { WorkdayJobsPanel } from '@/components/job-search/WorkdayJobsPanel';
+import { ApplyConfirmDialog } from '@/components/job-search/JobCard';
 import { useJobSearch } from '@/hooks/useJobSearch';
 import { cn } from '@/lib/utils';
 import type { CareerPortalVariant } from '@/types/jobs';
@@ -29,7 +30,12 @@ export default function CareerPortalsTab() {
   );
   // One saved-jobs store for both variants - save/apply state stays in sync
   // when the same posting shows up in either catalog.
-  const { isJobSaved, getJobStatus, saveJob, unsaveJob, quickApply, autoApply, autoApplyingId } = useJobSearch();
+  const {
+    isJobSaved, getJobStatus, saveJob, unsaveJob, quickApply,
+    isApplyConfirmPending, confirmApplied, dismissApplyConfirm,
+    applyConfirmJob, closeApplyConfirmDialog,
+    autoApply, autoApplyingId,
+  } = useJobSearch();
 
   const select = (key: CareerPortalVariant) => {
     setActive(key);
@@ -98,12 +104,25 @@ export default function CareerPortalsTab() {
               saveJob={saveJob}
               unsaveJob={unsaveJob}
               quickApply={quickApply}
+              isApplyConfirmPending={isApplyConfirmPending}
+              confirmApplied={confirmApplied}
+              dismissApplyConfirm={dismissApplyConfirm}
               autoApply={autoApply}
               autoApplyingId={autoApplyingId}
             />
           </div>
         ) : null,
       )}
+      <ApplyConfirmDialog
+        job={applyConfirmJob}
+        onApplied={() => {
+          if (applyConfirmJob) void confirmApplied(applyConfirmJob.job_id);
+        }}
+        onNotYet={() => {
+          if (applyConfirmJob) dismissApplyConfirm(applyConfirmJob.job_id);
+        }}
+        onDismiss={closeApplyConfirmDialog}
+      />
     </div>
   );
 }

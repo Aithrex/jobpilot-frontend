@@ -31,7 +31,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { ChipsInput } from '@/components/job-search/ChipsInput';
-import { JobCard } from '@/components/job-search/JobCard';
+import { ApplyConfirmDialog, JobCard } from '@/components/job-search/JobCard';
 import { SignalField } from '@/components/job-search/SignalField';
 import { useCombinedJobsCtx } from '@/components/job-search/CombinedJobsProvider';
 import { useCountUp } from '@/hooks/useCountUp';
@@ -127,6 +127,11 @@ interface CombinedJobsPanelProps {
   saveJob: (job: Job) => void | Promise<unknown>;
   unsaveJob: (jobId: string) => void | Promise<unknown>;
   quickApply: (job: Job) => void | Promise<unknown>;
+  isApplyConfirmPending?: (jobId: string) => boolean;
+  confirmApplied?: (jobId: string) => void | Promise<unknown>;
+  dismissApplyConfirm?: (jobId: string) => void;
+  applyConfirmJob?: Job | null;
+  closeApplyConfirmDialog?: () => void;
   autoApply?: (job: Job) => void | Promise<unknown>;
   autoApplyingId?: string | null;
 }
@@ -137,6 +142,11 @@ export function CombinedJobsPanel({
   saveJob,
   unsaveJob,
   quickApply,
+  isApplyConfirmPending,
+  confirmApplied,
+  dismissApplyConfirm,
+  applyConfirmJob,
+  closeApplyConfirmDialog,
   autoApply,
   autoApplyingId,
 }: CombinedJobsPanelProps) {
@@ -277,6 +287,9 @@ export function CombinedJobsPanel({
         onSave={() => saveJob(toJob(job, 'career portal'))}
         onUnsave={() => unsaveJob(job.job_id)}
         onQuickApply={() => quickApply(toJob(job, 'career portal'))}
+        applyConfirmPending={isApplyConfirmPending?.(job.job_id)}
+        onConfirmApplied={confirmApplied ? () => void confirmApplied(job.job_id) : undefined}
+        onConfirmNotYet={dismissApplyConfirm ? () => dismissApplyConfirm(job.job_id) : undefined}
         onAutoApply={autoApply ? () => autoApply(toJob(job, 'career portal')) : undefined}
         autoApplying={autoApplyingId === job.job_id}
       />
@@ -898,6 +911,16 @@ export function CombinedJobsPanel({
           )}
         </div>
       )}
+      <ApplyConfirmDialog
+        job={applyConfirmJob ?? null}
+        onApplied={() => {
+          if (applyConfirmJob && confirmApplied) void confirmApplied(applyConfirmJob.job_id);
+        }}
+        onNotYet={() => {
+          if (applyConfirmJob && dismissApplyConfirm) dismissApplyConfirm(applyConfirmJob.job_id);
+        }}
+        onDismiss={() => closeApplyConfirmDialog?.()}
+      />
     </div>
   );
 }

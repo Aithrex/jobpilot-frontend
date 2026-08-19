@@ -8,6 +8,16 @@ import {
 import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { CompanyLogo } from '@/components/CompanyLogo';
 import { JobAnalysisModal } from './JobAnalysisModal';
 import { JobTrustBadge } from './JobTrustBadge';
@@ -32,6 +42,10 @@ interface JobCardProps {
   /** Optional: queue into auto-apply ledger (per-job Auto Apply CTA). */
   onAutoApply?: () => void | Promise<unknown>;
   autoApplying?: boolean;
+  /** True after Apply opened the posting and we are waiting for yes/no. */
+  applyConfirmPending?: boolean;
+  onConfirmApplied?: () => void;
+  onConfirmNotYet?: () => void;
 }
 
 /**
@@ -165,7 +179,41 @@ function SignalPill({ icon: Icon, label, tone }: {
   );
 }
 
-export function JobCard({ job, saved, jobStatus, onSave, onUnsave, onQuickApply, onAutoApply, autoApplying }: JobCardProps) {
+export function ApplyConfirmDialog({
+  job,
+  onApplied,
+  onNotYet,
+  onDismiss,
+}: {
+  job: Job | null;
+  onApplied: () => void;
+  onNotYet: () => void;
+  onDismiss: () => void;
+}) {
+  return (
+    <AlertDialog open={!!job} onOpenChange={(open) => { if (!open) onDismiss(); }}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Did you apply for this role?</AlertDialogTitle>
+          <AlertDialogDescription>
+            {job
+              ? `The posting for ${job.title} at ${job.company} opened in a new tab. If you submitted an application, we’ll move it to Applied in your tracker. If not, it stays where it is.`
+              : ''}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={onNotYet}>Not yet</AlertDialogCancel>
+          <AlertDialogAction onClick={onApplied}>Yes, I applied</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
+export function JobCard({
+  job, saved, jobStatus, onSave, onUnsave, onQuickApply, onAutoApply, autoApplying,
+  applyConfirmPending, onConfirmApplied, onConfirmNotYet,
+}: JobCardProps) {
   const reduceMotion = useReducedMotion();
   const [expanded, setExpanded] = useState(false);
   const [analysisOpen, setAnalysisOpen] = useState(false);
@@ -398,25 +446,56 @@ export function JobCard({ job, saved, jobStatus, onSave, onUnsave, onQuickApply,
 
           {/* Footer */}
           <div className="mt-auto space-y-2 border-t border-border/40 pt-3">
+            {applyConfirmPending && onConfirmApplied && onConfirmNotYet ? (
+              <div
+                role="group"
+                aria-label={`Did you apply for ${job.title}?`}
+                className="rounded-xl border border-primary/30 bg-primary/[0.06] px-3 py-2.5"
+              >
+                <p className="text-xs font-medium text-foreground">
+                  Did you apply for <span className="font-semibold">{job.title}</span>?
+                </p>
+                <p className="mt-0.5 text-[11px] text-muted-foreground">
+                  Yes moves it to Applied. Not yet leaves it in Saved.
+                </p>
+                <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                  <Button
+                    size="sm"
+                    onClick={onConfirmApplied}
+                    className="h-9 min-w-[7.5rem] gap-1.5 text-xs font-semibold"
+                  >
+                    Yes, I applied
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={onConfirmNotYet}
+                    className="h-9 min-w-[5.5rem] text-xs font-semibold"
+                  >
+                    Not yet
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={onQuickApply}
+                    title="Open the posting again"
+                    className="h-9 gap-1.5 px-2.5 text-xs text-muted-foreground"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" />
+                    Reopen
+                  </Button>
+                </div>
+              </div>
+            ) : (
             <div className="flex items-center gap-1.5">
               <Button
                 size="sm"
                 onClick={onQuickApply}
-                asChild={!job.apply_link}
-                title={apply.fallback ? 'Apply link missing. Opens Google search' : 'Opens career page and marks as applied'}
+                title={apply.fallback ? 'Apply link missing. Opens Google search, then asks if you applied' : 'Opens the career page, then asks if you applied'}
                 className="btn-premium h-9 flex-1 gap-1.5 text-xs font-semibold"
               >
-                {job.apply_link ? (
-                  <>
-                    <ExternalLink className="h-3.5 w-3.5" />
-                    {jobStatus === 'applied' ? 'Reopen' : 'Apply'}
-                  </>
-                ) : (
-                  <a href={apply.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5">
-                    <ExternalLink className="h-3.5 w-3.5" />
-                    Find Posting
-                  </a>
-                )}
+                <ExternalLink className="h-3.5 w-3.5" />
+                {jobStatus === 'applied' ? 'Reopen' : 'Apply'}
               </Button>
 
               {onAutoApply && (
@@ -460,6 +539,7 @@ export function JobCard({ job, saved, jobStatus, onSave, onUnsave, onQuickApply,
                 </Button>
               )}
             </div>
+            )}
 
             <div className="flex items-center gap-0.5">
               <span className="mr-1 inline-flex items-center gap-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground/70">

@@ -11,7 +11,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { JobCard } from './JobCard';
+import { ApplyConfirmDialog, JobCard } from './JobCard';
 import { COMPANY_CHIPS, passesVisaFilters } from '@/hooks/useJobSearch';
 import type { Job, SavedJob, JobSearchFilters, JobSearchOptions, VisaFilters } from '@/types/jobs';
 import type { BatchMeta } from '@/hooks/useJobSearch';
@@ -64,6 +64,11 @@ interface JobSearchPanelProps {
   unsaveJob: (jobId: string) => Promise<any>;
   isJobSaved: (jobId: string) => boolean;
   quickApply: (job: Job) => Promise<void>;
+  isApplyConfirmPending?: (jobId: string) => boolean;
+  confirmApplied?: (jobId: string) => void | Promise<unknown>;
+  dismissApplyConfirm?: (jobId: string) => void;
+  applyConfirmJob?: Job | null;
+  closeApplyConfirmDialog?: () => void;
   autoApply?: (job: Job) => Promise<unknown>;
   autoApplyingId?: string | null;
   getJobStatus: (jobId: string) => string | null;
@@ -77,7 +82,9 @@ interface JobSearchPanelProps {
 export function JobSearchPanel({
   jobs, filters, setFilters, page, totalPages,
   loading, error, searchJobs, batchSearch, saveJob, unsaveJob, isJobSaved,
-  quickApply, autoApply, autoApplyingId, getJobStatus, batchMeta, hasSearched, filtersLoaded, savingFilters, saveFilters,
+  quickApply, isApplyConfirmPending, confirmApplied, dismissApplyConfirm,
+  applyConfirmJob, closeApplyConfirmDialog,
+  autoApply, autoApplyingId, getJobStatus, batchMeta, hasSearched, filtersLoaded, savingFilters, saveFilters,
 }: JobSearchPanelProps) {
   const [localQuery, setLocalQuery] = useState(filters.query);
   const [showFilters, setShowFilters] = useState(true);
@@ -527,6 +534,9 @@ export function JobSearchPanel({
                 onSave={() => saveJob(job)}
                 onUnsave={() => unsaveJob(job.job_id)}
                 onQuickApply={() => quickApply(job)}
+                applyConfirmPending={isApplyConfirmPending?.(job.job_id)}
+                onConfirmApplied={confirmApplied ? () => void confirmApplied(job.job_id) : undefined}
+                onConfirmNotYet={dismissApplyConfirm ? () => dismissApplyConfirm(job.job_id) : undefined}
                 onAutoApply={autoApply ? () => autoApply(job) : undefined}
                 autoApplying={autoApplyingId === job.job_id}
               />
@@ -592,6 +602,16 @@ export function JobSearchPanel({
           </p>
         </div>
       )}
+      <ApplyConfirmDialog
+        job={applyConfirmJob ?? null}
+        onApplied={() => {
+          if (applyConfirmJob && confirmApplied) void confirmApplied(applyConfirmJob.job_id);
+        }}
+        onNotYet={() => {
+          if (applyConfirmJob && dismissApplyConfirm) dismissApplyConfirm(applyConfirmJob.job_id);
+        }}
+        onDismiss={() => closeApplyConfirmDialog?.()}
+      />
     </div>
   );
 }

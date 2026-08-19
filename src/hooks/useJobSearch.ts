@@ -51,6 +51,8 @@ export const DEFAULT_FILTERS: JobSearchFilters = {
   visa_filters: {},
 };
 
+const PENDING_APPLY_KEY = 'aspirely.pending-apply-confirm';
+
 export interface BatchMeta {
   queries_executed: number;
   cache_hits: number;
@@ -296,30 +298,100 @@ export function useJobSearch() {
     return resp;
   }, []);
 
+  const [pendingApplyIds, setPendingApplyIds] = useState<Set<string>>(() => {
+    try {
+      const raw = sessionStorage.getItem(PENDING_APPLY_KEY);
+      const parsed = JSON.parse(raw || '[]');
+      if (!Array.isArray(parsed)) return new Set();
+      return new Set(parsed.filter((id): id is string => typeof id === 'string'));
+    } catch {
+      return new Set();
+    }
+  });
+  const [applyConfirmJob, setApplyConfirmJob] = useState<Job | null>(null);
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(PENDING_APPLY_KEY, JSON.stringify([...pendingApplyIds]));
+    } catch {
+      /* private mode / quota */
+    }
+  }, [pendingApplyIds]);
+
+  useEffect(() => {
+    setPendingApplyIds((prev) => {
+      let changed = false;
+      const next = new Set(prev);
+      for (const id of prev) {
+        if (savedJobs.find((j) => j.job_id === id)?.status === 'applied') {
+          next.delete(id);
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [savedJobs]);
+
+  const isApplyConfirmPending = useCallback(
+    (jobId: string) => pendingApplyIds.has(jobId),
+    [pendingApplyIds],
+  );
+
+  const confirmApplied = useCallback(async (jobId: string) => {
+    const resp = await updateJobStatus(jobId, 'applied');
+    setPendingApplyIds((prev) => {
+      const next = new Set(prev);
+      next.delete(jobId);
+      return next;
+    });
+    setApplyConfirmJob((job) => (job?.job_id === jobId ? null : job));
+    if (resp.error) {
+      toast.error('Could not mark as applied', { description: resp.error });
+      return resp;
+    }
+    toast.success('Moved to Applied', {
+      description: 'You’ll find this job in Saved → Applied.',
+    });
+    return resp;
+  }, [updateJobStatus]);
+
+  const dismissApplyConfirm = useCallback((jobId: string) => {
+    setPendingApplyIds((prev) => {
+      const next = new Set(prev);
+      next.delete(jobId);
+      return next;
+    });
+    setApplyConfirmJob((job) => (job?.job_id === jobId ? null : job));
+  }, []);
+
+  const closeApplyConfirmDialog = useCallback(() => {
+    setApplyConfirmJob(null);
+  }, []);
+
   const isJobSaved = useCallback((jobId: string) => {
     return savedJobs.some(j => j.job_id === jobId);
   }, [savedJobs]);
 
-  // --- Quick Apply: open link + save + mark applied ---
+  // Open the posting, keep the job where it is, then ask "Did you apply?"
   const quickApply = useCallback(async (job: Job) => {
-    if (job.apply_link) {
-      window.open(job.apply_link, '_blank', 'noopener,noreferrer');
+    const url = job.apply_link
+      || `https://www.google.com/search?q=${encodeURIComponent(`${job.title} ${job.company} apply`)}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+
+    const existing = savedJobs.find((j) => j.job_id === job.job_id);
+    if (!existing) {
+      const saved = await apiService.saveJob(job);
+      if (saved.data) {
+        setSavedJobs((prev) => [
+          saved.data!.job,
+          ...prev.filter((j) => j.job_id !== job.job_id),
+        ]);
+      }
     }
-    // Save if not already saved
-    if (!savedJobs.some(j => j.job_id === job.job_id)) {
-      await apiService.saveJob(job);
-    }
-    // Mark as applied
-    const resp = await apiService.updateSavedJob(job.job_id, { status: 'applied' });
-    if (resp.data) {
-      setSavedJobs(prev => {
-        const exists = prev.some(j => j.job_id === job.job_id);
-        if (exists) {
-          return prev.map(j => j.job_id === job.job_id ? resp.data!.job : j);
-        }
-        return [resp.data!.job, ...prev];
-      });
-    }
+    if (existing?.status === 'applied') return;
+
+    setPendingApplyIds((prev) => new Set(prev).add(job.job_id));
+    setApplyConfirmJob(job);
   }, [savedJobs]);
 
   // --- Auto Apply: queue into ledger (prepare/gather/submit per user mode) ---
@@ -400,6 +472,11 @@ export function useJobSearch() {
     updateJobStatus,
     isJobSaved,
     quickApply,
+    isApplyConfirmPending,
+    applyConfirmJob,
+    confirmApplied,
+    dismissApplyConfirm,
+    closeApplyConfirmDialog,
     autoApply,
     autoApplyingId,
     getJobStatus,

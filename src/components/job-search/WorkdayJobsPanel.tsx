@@ -383,6 +383,9 @@ interface WorkdayJobsPanelProps {
   saveJob: (job: Job) => void | Promise<unknown>;
   unsaveJob: (jobId: string) => void | Promise<unknown>;
   quickApply: (job: Job) => void | Promise<unknown>;
+  isApplyConfirmPending?: (jobId: string) => boolean;
+  confirmApplied?: (jobId: string) => void | Promise<unknown>;
+  dismissApplyConfirm?: (jobId: string) => void;
   autoApply?: (job: Job) => void | Promise<unknown>;
   autoApplyingId?: string | null;
   /** 'workday' (default) scans the Workday tenant catalog; 'careers' scans
@@ -403,6 +406,9 @@ export function WorkdayJobsPanel({
   saveJob,
   unsaveJob,
   quickApply,
+  isApplyConfirmPending,
+  confirmApplied,
+  dismissApplyConfirm,
   autoApply,
   autoApplyingId,
   variant = 'workday',
@@ -787,6 +793,9 @@ export function WorkdayJobsPanel({
         onSave={() => saveJob(toJob(job, fallbackSource))}
         onUnsave={() => unsaveJob(job.job_id)}
         onQuickApply={() => quickApply(toJob(job, fallbackSource))}
+        applyConfirmPending={isApplyConfirmPending?.(job.job_id)}
+        onConfirmApplied={confirmApplied ? () => void confirmApplied(job.job_id) : undefined}
+        onConfirmNotYet={dismissApplyConfirm ? () => dismissApplyConfirm(job.job_id) : undefined}
         onAutoApply={autoApply ? () => autoApply(toJob(job, fallbackSource)) : undefined}
         autoApplying={autoApplyingId === job.job_id}
       />
