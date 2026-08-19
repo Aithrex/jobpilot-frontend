@@ -2,6 +2,7 @@ import {
   Beaker,
   Bell,
   BookOpen,
+  Bookmark,
   Bot,
   Briefcase,
   CalendarDays,
@@ -129,6 +130,20 @@ export const JOBS_SECTIONS: NavSection[] = [
     icon: Globe,
     hint: "Scan employer career sites directly",
     keywords: "workday greenhouse lever ashby ats companies",
+  },
+  {
+    to: "saved",
+    label: "Saved",
+    icon: Bookmark,
+    hint: "Roles you saved and have not applied to yet",
+    keywords: "bookmark interested later",
+  },
+  {
+    to: "applied",
+    label: "Applied",
+    icon: Send,
+    hint: "Roles you confirmed you applied to",
+    keywords: "applications submitted tracker",
   },
 ];
 

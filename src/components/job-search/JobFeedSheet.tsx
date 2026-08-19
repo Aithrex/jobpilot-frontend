@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import {
   AlertCircle,
   Check,
@@ -110,14 +111,9 @@ function Pill({
  * Right-side Job feed setup. Titles, location, refine filters, then Sync / Search.
  * The listings page stays dedicated to roles; this sheet is the control surface.
  */
-export function JobFeedSheet({
-  roleCount,
-  fieldIntensity,
-}: {
-  roleCount: number;
-  fieldIntensity: number;
-}) {
+export function JobFeedSheet() {
   const {
+    jobs,
     loading,
     states,
     sourceLabels,
@@ -154,6 +150,12 @@ export function JobFeedSheet({
     sponsorFilter,
     setSponsorFilter,
   } = useCombinedJobsCtx();
+
+  const roleCount = jobs.length;
+  const fieldIntensity = useMemo(() => {
+    const strongCount = jobs.filter((j) => (j.match_score ?? 0) >= 70).length;
+    return Math.min(1, strongCount / 25);
+  }, [jobs]);
 
   return (
     <Sheet open={customizeOpen} onOpenChange={(open) => setCustomizeOpen(open)}>

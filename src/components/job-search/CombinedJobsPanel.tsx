@@ -5,20 +5,14 @@ import {
   Loader2,
   Radar,
   Rocket,
-  Search,
   ShieldAlert,
-  Sparkles,
 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ApplyConfirmDialog, JOB_FEED_GRID_CLASS, JobCard } from '@/components/job-search/JobCard';
-import { JobFeedSheet } from '@/components/job-search/JobFeedSheet';
 import { useCombinedJobsCtx } from '@/components/job-search/CombinedJobsProvider';
-import { useCountUp } from '@/hooks/useCountUp';
 import { RECENCY_OPTIONS, seniorityOf, toJob } from '@/lib/careerJobs';
-import { cn } from '@/lib/utils';
 import type { Job, WorkdayJob } from '@/types/jobs';
 
 const PAGE_SIZE = 24;
@@ -42,36 +36,6 @@ function pageWindow(page: number, count: number): number[] {
   const end = Math.min(count, start + span - 1);
   start = Math.max(1, end - span + 1);
   return Array.from({ length: end - start + 1 }, (_, i) => start + i);
-}
-
-/** Segmented pill button. */
-function Seg({
-  active,
-  onClick,
-  children,
-  title,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-  title?: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      title={title}
-      aria-pressed={active}
-      className={cn(
-        'rounded-full px-3 py-1.5 text-[11px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-        active
-          ? 'bg-background text-primary shadow-soft'
-          : 'text-muted-foreground hover:text-foreground',
-      )}
-    >
-      {children}
-    </button>
-  );
 }
 
 interface CombinedJobsPanelProps {
@@ -129,17 +93,14 @@ export function CombinedJobsPanel({
     secondsUntilNext,
     sync,
     ensureStarted,
-    customizeOpen,
     setCustomizeOpen,
     search,
-    setSearch,
     recency,
     setRecency,
     seniority,
     minScore,
     sponsorFilter,
     sortBy,
-    setSortBy,
     page,
     setPage,
   } = useCombinedJobsCtx();
@@ -151,15 +112,6 @@ export function CombinedJobsPanel({
   }, [ensureStarted]);
 
   const maxDays = RECENCY_OPTIONS.find((o) => o.key === recency)?.maxDays ?? 3;
-
-  const recencyCounts = useMemo(() => {
-    const counts: Record<string, number> = { today: 0, '24h': 0, '3d': 0, '7d': 0, '30d': 0 };
-    for (const j of jobs) {
-      if (j.days_ago == null) continue;
-      for (const opt of RECENCY_OPTIONS) if (j.days_ago <= opt.maxDays) counts[opt.key] += 1;
-    }
-    return counts;
-  }, [jobs]);
 
   const visibleJobs = useMemo(() => {
     let out = jobs.filter((j) => j.days_ago != null && j.days_ago <= maxDays);
@@ -241,102 +193,41 @@ export function CombinedJobsPanel({
   );
 
   const roleCount = visibleJobs.length;
-  const roleCountUp = useCountUp(roleCount);
-  // Signal Field intensity = share of strong (70%+) matches → a fuller field
-  // when the feed is genuinely good.
-  const strongCount = useMemo(() => jobs.filter((j) => (j.match_score ?? 0) >= 70).length, [jobs]);
-  const fieldIntensity = Math.min(1, strongCount / 25);
 
   return (
     <div className="space-y-5">
-      <div className="sticky top-2 z-10 space-y-2 rounded-xl border border-border/60 bg-card/90 p-2 shadow-soft backdrop-blur-md">
-        <div className="flex flex-wrap items-center gap-2">
-          <p className="min-w-0 flex-1 text-xs text-muted-foreground" aria-live="polite">
-            {loading ? (
-              progress.total > 0 ? (
-                `Scanning ${progress.done} of ${progress.total} companies · ${roleCount} roles so far`
-              ) : (
-                'Starting scan across all sources...'
-              )
-            ) : lastSyncedAt ? (
-              <>
-                Updated {formatAgo(lastSyncedAt)} · {roleCount} roles
-                {secondsUntilNext != null && (
-                  <span className="ml-1 font-mono tabular-nums text-primary">
-                    · next sync {formatCountdown(secondsUntilNext)}
-                  </span>
-                )}
-              </>
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="min-w-0 flex-1 text-xs text-muted-foreground" aria-live="polite">
+          {loading ? (
+            progress.total > 0 ? (
+              `Scanning ${progress.done} of ${progress.total} companies · ${roleCount} roles so far`
             ) : (
-              'Open Job feed to set titles, then Search.'
-            )}
-            {titlesPending && (
-              <span className="ml-1.5 font-medium text-warning">Title changes need Search.</span>
-            )}
-          </p>
-          {loading && (
-            <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary" aria-hidden />
+              'Starting scan across all sources...'
+            )
+          ) : lastSyncedAt ? (
+            <>
+              Updated {formatAgo(lastSyncedAt)} · {roleCount} roles
+              {secondsUntilNext != null && (
+                <span className="ml-1 font-mono tabular-nums text-primary">
+                  · next sync {formatCountdown(secondsUntilNext)}
+                </span>
+              )}
+            </>
+          ) : null}
+          {titlesPending && (
+            <span className="ml-1.5 font-medium text-warning">Title changes need Search.</span>
           )}
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setCustomizeOpen(true)}
-            aria-expanded={customizeOpen}
-            className="ml-auto gap-1.5"
-          >
-            <Radar className="h-3.5 w-3.5" aria-hidden />
-            Job feed
-          </Button>
-        </div>
+        </p>
         {loading && (
-          <Progress
-            value={progress.total ? (progress.done / progress.total) * 100 : 8}
-            className="h-1.5"
-          />
-        )}
-        {hasResult && (
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="relative min-w-[160px] flex-1">
-              <Search
-                className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
-                aria-hidden
-              />
-              <input
-                type="search"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Filter title or company..."
-                aria-label="Filter jobs by title or company"
-                className="h-9 w-full rounded-lg border border-border bg-background pl-8 pr-3 text-[12px] text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-primary/40 focus-visible:ring-2 focus-visible:ring-ring"
-              />
-            </div>
-            <div
-              className="inline-flex flex-wrap rounded-lg border border-border bg-muted/40 p-0.5"
-              title="Posting dates use your timezone. Each window includes everything newer, so Today is inside Since yesterday."
-            >
-              {RECENCY_OPTIONS.map((opt) => (
-                <Seg key={opt.key} active={recency === opt.key} onClick={() => setRecency(opt.key)}>
-                  {opt.label}
-                  <span className="ml-1 tabular-nums opacity-60">{recencyCounts[opt.key]}</span>
-                </Seg>
-              ))}
-            </div>
-            <div className="ml-auto flex items-center gap-2">
-              <div className="inline-flex rounded-lg border border-border bg-muted/40 p-0.5">
-                {(['score', 'newest'] as const).map((s) => (
-                  <Seg key={s} active={sortBy === s} onClick={() => setSortBy(s)}>
-                    {s === 'score' ? 'Best match' : 'Newest'}
-                  </Seg>
-                ))}
-              </div>
-              <Badge variant="outline" className="gap-1 border-primary/30 bg-primary/10 text-primary">
-                <Sparkles className="h-3 w-3" aria-hidden />
-                <span className="font-mono tabular-nums">{roleCountUp}</span> roles
-              </Badge>
-            </div>
-          </div>
+          <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary" aria-hidden />
         )}
       </div>
+      {loading && (
+        <Progress
+          value={progress.total ? (progress.done / progress.total) * 100 : 8}
+          className="h-1.5"
+        />
+      )}
 
       {resumeSkillCount === 0 && hasResult && (
         <div className="flex items-start gap-2 rounded-xl border border-warning/40 bg-warning/10 px-4 py-3 text-xs text-foreground/85">
@@ -477,7 +368,6 @@ export function CombinedJobsPanel({
           )}
         </div>
       )}
-      <JobFeedSheet roleCount={roleCount} fieldIntensity={fieldIntensity} />
       {showApplyOverlay && (
         <ApplyConfirmDialog
           job={applyConfirmJob ?? null}

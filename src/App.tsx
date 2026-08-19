@@ -205,6 +205,8 @@ function AppContent() {
               <Route path="jobs" element={<DiscoverPage />}>
                 <Route index element={<Navigate to="for-you" replace />} />
                 <Route path="for-you" element={<JobOpportunitiesTab />} />
+                <Route path="saved" element={<JobOpportunitiesTab />} />
+                <Route path="applied" element={<JobOpportunitiesTab />} />
                 <Route path="portals" element={<CareerPortalsTab />} />
               </Route>
               <Route path="resume" element={<CraftPage />}>

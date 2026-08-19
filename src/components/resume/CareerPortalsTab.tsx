@@ -44,25 +44,7 @@ export default function CareerPortalsTab() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="space-y-1">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
-          Discover · Career portals
-        </p>
-        <div className="flex items-center gap-2">
-          <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary/10 text-primary">
-            <Building2 className="h-5 w-5" aria-hidden />
-          </span>
-          <h2 className="font-display text-2xl font-extrabold tracking-tight">Career portals</h2>
-        </div>
-        <p className="max-w-xl text-sm text-muted-foreground">
-          Search live openings straight from company career portals: Workday enterprises,
-          Greenhouse, Lever, Ashby and more, plus curated FAANG+ / Fortune-500 MNC boards.
-        </p>
-      </div>
-
-      {/* Variant segmented control */}
+    <div className="space-y-4">
       <div className="inline-flex max-w-full flex-wrap rounded-xl border border-border bg-muted/40 p-1">
         {SEGMENTS.map(({ key, label, icon: Icon }) => {
           const isActive = active === key;
