@@ -293,6 +293,7 @@ export interface TailoringVersion {
 }
 
 export type ApplicationStatus =
+  | "saved"
   | "draft"
   | "applied"
   | "interviewing"
@@ -313,6 +314,8 @@ export interface ApplicationInfo {
   job_url?: string;
   interview_dates?: string[];
   updated_at?: string;
+  /** base = applied without a tailored resume; tailored = ATS score may exist. */
+  resume_used?: "base" | "tailored";
 }
 
 export type QDifficulty = "easy" | "medium" | "hard";
@@ -438,4 +441,7 @@ export interface TailoringRecord {
   interview_prep?: InterviewPrepPack;
   /** Inventory / listing job_id when this record was tailored from a posting. */
   source_job_id?: string;
+  /** `pipeline_stub` until a tailored resume is merged in. */
+  source?: string;
+  tailored_resume?: TailoredFullResume;
 }

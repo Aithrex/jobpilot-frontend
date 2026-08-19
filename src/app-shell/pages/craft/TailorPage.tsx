@@ -188,7 +188,7 @@ export default function TailorPage() {
     if (job.url) setPendingJobUrl(job.url);
     if (job.title || job.company) {
       toast.info(
-        `Tailoring for ${job.title || ''}${job.company ? ' @ ' + job.company : ''}. Apply status auto-tracks`,
+        `Tailoring for ${job.title || ''}${job.company ? ' @ ' + job.company : ''}. We’ll ask if you applied when you return to Jobs`,
       );
     }
     if (job.jd_fetch_failed) {
@@ -303,6 +303,7 @@ export default function TailorPage() {
           tailored_resume: tailoredResume,
           ats_scores: atsScores || undefined,
           base_resume_filename: activeResumeRef.current?.filename || '',
+          source_job_id: pendingJobIdRef.current || undefined,
         });
         if (resp.error) {
           // The worker-persisted record exists server-side even though the
@@ -318,16 +319,6 @@ export default function TailorPage() {
           recordIdRef.current = resp.data.record_id;
           if (isNewRecord) {
             window.dispatchEvent(new CustomEvent('resume:application-saved'));
-            const jobId = pendingJobIdRef.current;
-            if (jobId) {
-              pendingJobIdRef.current = null;
-              try {
-                await apiService.updateSavedJob(jobId, { status: 'applied' });
-                toast.success('Marked as Applied in your application tracker');
-              } catch {
-                /* non-critical status sync */
-              }
-            }
           }
         }
       } catch {
@@ -444,6 +435,7 @@ export default function TailorPage() {
         advancePhase(p.phase);
         if (typeof p.pct === 'number') setTailorPct(p.pct);
       },
+      pendingJobIdRef.current || undefined,
     );
 
     if (ctrl.signal.aborted) {

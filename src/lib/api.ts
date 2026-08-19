@@ -1623,6 +1623,16 @@ class ApiService {
     });
   }
 
+  async touchJobPipeline(
+    job: import('../types/jobs').Job,
+    intent: 'saved' | 'opened' | 'applied' | 'tailor_started',
+  ) {
+    return this.request<{ job: import('../types/jobs').SavedJob }>('/jobs/tracker', {
+      method: 'POST',
+      body: JSON.stringify({ job, intent }),
+    });
+  }
+
   async deleteSavedJob(jobId: string) {
     return this.request<{ message: string }>(`/jobs/saved/${jobId}`, {
       method: 'DELETE',
@@ -1895,6 +1905,7 @@ class ApiService {
     // backend writes into job.result.progress at each real pipeline stage.
     onStatus?: (status: import('../types/resume').JobStatus) => void,
     onProgress?: (p: import('../types/resume').TailorJobProgress) => void,
+    sourceJobId?: string,
   ): Promise<
     ApiResponse<{
       jd_analysis: import('../types/resume').JDAnalysis;
@@ -1912,7 +1923,10 @@ class ApiService {
       '/resume/tailor-with-jd',
       {
         method: 'POST',
-        body: JSON.stringify({ job_description: jobDescription }),
+        body: JSON.stringify({
+          job_description: jobDescription,
+          ...(sourceJobId ? { source_job_id: sourceJobId } : {}),
+        }),
       },
       30000,
     );
@@ -2045,6 +2059,7 @@ class ApiService {
     tailored_resume?: any;
     ats_scores?: any;
     base_resume_filename?: string;
+    source_job_id?: string;
   }): Promise<ApiResponse<{ record_id: string; updated?: boolean }>> {
     let tz: string | undefined;
     try {
@@ -2356,8 +2371,8 @@ class ApiService {
   async updateApplication(
     recordId: string,
     patch: {
-      status?:
-        'draft' | 'applied' | 'interviewing' | 'offer' | 'rejected' | 'withdrawn' | 'ghosted';
+        status?:
+          'saved' | 'draft' | 'applied' | 'interviewing' | 'offer' | 'rejected' | 'withdrawn' | 'ghosted';
       applied_at?: string | null;
       next_action_date?: string | null;
       next_action_note?: string;
@@ -2369,6 +2384,7 @@ class ApiService {
       interview_dates?: string[];
       /** Clears the "Did you apply?" prompt set on batch-tailored items. */
       batch_confirmation_pending?: boolean;
+      resume_used?: 'base' | 'tailored';
     },
   ): Promise<ApiResponse<{ application: import('../types/resume').ApplicationInfo }>> {
     return this.request(`/resume/tailoring-records/${recordId}/application`, {

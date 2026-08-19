@@ -132,6 +132,8 @@ interface CombinedJobsPanelProps {
   dismissApplyConfirm?: (jobId: string) => void;
   applyConfirmJob?: Job | null;
   closeApplyConfirmDialog?: () => void;
+  beginApplyWithTailor?: (job: Job) => void | Promise<unknown>;
+  markAlreadyApplied?: (job: Job) => void | Promise<unknown>;
   autoApply?: (job: Job) => void | Promise<unknown>;
   autoApplyingId?: string | null;
 }
@@ -147,6 +149,8 @@ export function CombinedJobsPanel({
   dismissApplyConfirm,
   applyConfirmJob,
   closeApplyConfirmDialog,
+  beginApplyWithTailor,
+  markAlreadyApplied,
   autoApply,
   autoApplyingId,
 }: CombinedJobsPanelProps) {
@@ -290,6 +294,8 @@ export function CombinedJobsPanel({
         applyConfirmPending={isApplyConfirmPending?.(job.job_id)}
         onConfirmApplied={confirmApplied ? () => void confirmApplied(job.job_id) : undefined}
         onConfirmNotYet={dismissApplyConfirm ? () => dismissApplyConfirm(job.job_id) : undefined}
+        onApplyWithTailor={beginApplyWithTailor ? () => beginApplyWithTailor(toJob(job, 'career portal')) : undefined}
+        onAlreadyApplied={markAlreadyApplied ? () => markAlreadyApplied(toJob(job, 'career portal')) : undefined}
         onAutoApply={autoApply ? () => autoApply(toJob(job, 'career portal')) : undefined}
         autoApplying={autoApplyingId === job.job_id}
       />

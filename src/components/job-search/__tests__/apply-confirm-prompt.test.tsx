@@ -73,4 +73,47 @@ describe('JobCard apply confirmation', () => {
     expect(onNotYet).toHaveBeenCalledTimes(1);
     expect(onApplied).not.toHaveBeenCalled();
   });
+
+  test('Apply opens a three-way choice before the posting', async () => {
+    const onQuickApply = vi.fn();
+    const onTailor = vi.fn();
+    const onAlready = vi.fn();
+    render(
+      <JobCard
+        job={JOB}
+        saved={false}
+        jobStatus={null}
+        onSave={() => {}}
+        onUnsave={() => {}}
+        onQuickApply={onQuickApply}
+        onApplyWithTailor={onTailor}
+        onAlreadyApplied={onAlready}
+      />,
+    );
+    await userEvent.click(screen.getByRole('button', { name: /^apply$/i }));
+    expect(screen.getByText(/how do you want to apply/i)).toBeInTheDocument();
+    expect(onQuickApply).not.toHaveBeenCalled();
+
+    await userEvent.click(screen.getByRole('button', { name: /already applied/i }));
+    expect(onAlready).toHaveBeenCalledTimes(1);
+    expect(onQuickApply).not.toHaveBeenCalled();
+    expect(onTailor).not.toHaveBeenCalled();
+  });
+
+  test('Apply without tailoring opens the posting path', async () => {
+    const onQuickApply = vi.fn();
+    render(
+      <JobCard
+        job={JOB}
+        saved={false}
+        jobStatus={null}
+        onSave={() => {}}
+        onUnsave={() => {}}
+        onQuickApply={onQuickApply}
+      />,
+    );
+    await userEvent.click(screen.getByRole('button', { name: /^apply$/i }));
+    await userEvent.click(screen.getByRole('button', { name: /apply without tailoring/i }));
+    expect(onQuickApply).toHaveBeenCalledTimes(1);
+  });
 });

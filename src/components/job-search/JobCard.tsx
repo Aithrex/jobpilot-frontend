@@ -46,6 +46,8 @@ interface JobCardProps {
   applyConfirmPending?: boolean;
   onConfirmApplied?: () => void;
   onConfirmNotYet?: () => void;
+  onApplyWithTailor?: () => void | Promise<unknown>;
+  onAlreadyApplied?: () => void | Promise<unknown>;
 }
 
 /**
@@ -213,6 +215,7 @@ export function ApplyConfirmDialog({
 export function JobCard({
   job, saved, jobStatus, onSave, onUnsave, onQuickApply, onAutoApply, autoApplying,
   applyConfirmPending, onConfirmApplied, onConfirmNotYet,
+  onApplyWithTailor, onAlreadyApplied,
 }: JobCardProps) {
   const reduceMotion = useReducedMotion();
   const [expanded, setExpanded] = useState(false);
@@ -221,6 +224,7 @@ export function JobCard({
   const [tailoring, setTailoring] = useState(false);
   const [referralOpen, setReferralOpen] = useState(false);
   const [scanning, setScanning] = useState(false);
+  const [applyChoiceOpen, setApplyChoiceOpen] = useState(false);
 
   const openAnalysis = (action: typeof analysisAction) => {
     setAnalysisAction(action);
@@ -456,7 +460,7 @@ export function JobCard({
                   Did you apply for <span className="font-semibold">{job.title}</span>?
                 </p>
                 <p className="mt-0.5 text-[11px] text-muted-foreground">
-                  Yes moves it to Applied. Not yet leaves it in Saved.
+                  Yes moves it to Applied. Not yet leaves it in Draft.
                 </p>
                 <div className="mt-2 flex flex-wrap items-center gap-1.5">
                   <Button
@@ -490,8 +494,11 @@ export function JobCard({
             <div className="flex items-center gap-1.5">
               <Button
                 size="sm"
-                onClick={onQuickApply}
-                title={apply.fallback ? 'Apply link missing. Opens Google search, then asks if you applied' : 'Opens the career page, then asks if you applied'}
+                onClick={() => {
+                  if (jobStatus === 'applied' || applyConfirmPending) onQuickApply();
+                  else setApplyChoiceOpen(true);
+                }}
+                title={apply.fallback ? 'Apply link missing. Opens Google search, then asks how you want to apply' : 'Choose tailor, apply with your base resume, or mark already applied'}
                 className="btn-premium h-9 flex-1 gap-1.5 text-xs font-semibold"
               >
                 <ExternalLink className="h-3.5 w-3.5" />
@@ -557,6 +564,51 @@ export function JobCard({
 
       <JobAnalysisModal open={analysisOpen} onOpenChange={setAnalysisOpen} job={job} action={analysisAction} />
       <ReferralModal open={referralOpen} onOpenChange={setReferralOpen} job={job} />
+      <AlertDialog open={applyChoiceOpen} onOpenChange={setApplyChoiceOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>How do you want to apply?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tailor a resume for {job.title} at {job.company}, apply with your current resume, or mark that you already submitted.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setApplyChoiceOpen(false);
+                void onAlreadyApplied?.();
+              }}
+            >
+              Already applied
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                setApplyChoiceOpen(false);
+                onQuickApply();
+              }}
+            >
+              Apply without tailoring
+            </Button>
+            <Button
+              type="button"
+              onClick={() => {
+                setApplyChoiceOpen(false);
+                void (async () => {
+                  await onApplyWithTailor?.();
+                  await handleTailor();
+                })();
+              }}
+            >
+              Tailor resume
+            </Button>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

@@ -386,6 +386,8 @@ interface WorkdayJobsPanelProps {
   isApplyConfirmPending?: (jobId: string) => boolean;
   confirmApplied?: (jobId: string) => void | Promise<unknown>;
   dismissApplyConfirm?: (jobId: string) => void;
+  beginApplyWithTailor?: (job: Job) => void | Promise<unknown>;
+  markAlreadyApplied?: (job: Job) => void | Promise<unknown>;
   autoApply?: (job: Job) => void | Promise<unknown>;
   autoApplyingId?: string | null;
   /** 'workday' (default) scans the Workday tenant catalog; 'careers' scans
@@ -409,6 +411,8 @@ export function WorkdayJobsPanel({
   isApplyConfirmPending,
   confirmApplied,
   dismissApplyConfirm,
+  beginApplyWithTailor,
+  markAlreadyApplied,
   autoApply,
   autoApplyingId,
   variant = 'workday',
@@ -796,6 +800,8 @@ export function WorkdayJobsPanel({
         applyConfirmPending={isApplyConfirmPending?.(job.job_id)}
         onConfirmApplied={confirmApplied ? () => void confirmApplied(job.job_id) : undefined}
         onConfirmNotYet={dismissApplyConfirm ? () => dismissApplyConfirm(job.job_id) : undefined}
+        onApplyWithTailor={beginApplyWithTailor ? () => beginApplyWithTailor(toJob(job, fallbackSource)) : undefined}
+        onAlreadyApplied={markAlreadyApplied ? () => markAlreadyApplied(toJob(job, fallbackSource)) : undefined}
         onAutoApply={autoApply ? () => autoApply(toJob(job, fallbackSource)) : undefined}
         autoApplying={autoApplyingId === job.job_id}
       />

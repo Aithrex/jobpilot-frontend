@@ -2,8 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import {
-  CircleOff, ClipboardList, Ghost, LayoutGrid, List, MessagesSquare, Pencil,
-  PenLine, Search, Send, Trophy, X, Zap,
+  Bookmark, CircleOff, ClipboardList, Ghost, LayoutGrid, List, MessagesSquare, Pencil,
+  PenLine, Search, Send, Trophy, Wand2, X, Zap,
 } from "lucide-react";
 import { apiService } from "@/lib/api";
 import type { ApplicationStatus, TailoringRecord } from "@/types/resume";
@@ -13,6 +13,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { PanelError } from "@/app-shell/pages/today/primitives";
+import { appPath } from "@/app-shell/nav.config";
+import { stagePendingTailorJob } from "@/lib/craftHandoff";
 
 // ─── Column config ────────────────────────────────────────────────────────
 // Status hues stay meaning-coded but resolve through the semantic token set:
@@ -25,6 +27,7 @@ const COLUMNS: {
   chip: string;     // pill colour used on cards
   icon: React.ReactNode;
 }[] = [
+  { key: "saved",         label: "Saved",        dot: "bg-info",                          chip: "bg-info/10 text-info border-info/25",                                                                      icon: <Bookmark className="h-3 w-3" /> },
   { key: "draft",         label: "Draft",        dot: "bg-muted-foreground/50",           chip: "bg-muted text-muted-foreground border-border",                                                            icon: <PenLine className="h-3 w-3" /> },
   { key: "applied",       label: "Applied",      dot: "bg-primary",                       chip: "bg-primary/10 text-primary border-primary/25",                                                            icon: <Send className="h-3 w-3" /> },
   { key: "interviewing",  label: "Interviewing", dot: "bg-[hsl(var(--brand-to))]",        chip: "bg-[hsl(var(--brand-to)/0.12)] text-[hsl(var(--brand-to))] border-[hsl(var(--brand-to)/0.3)]",            icon: <MessagesSquare className="h-3 w-3" /> },
@@ -44,7 +47,7 @@ const STATUS_LOOKUP: Record<string, typeof COLUMNS[number]> = COLUMNS.reduce(
 // would otherwise crash the row renderer when we access meta.dot / meta.chip.
 const STATUS_ALIASES: Record<string, string> = {
   interview: "interviewing",
-  interested: "draft",
+  interested: "saved",
   in_review: "applied",
   in_progress: "applied",
 };
@@ -54,6 +57,32 @@ function statusMeta(status?: string | null): typeof COLUMNS[number] {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
+function atsCell(record: TailoringRecord) {
+  const ats = record.ats_scores?.overall;
+  if (typeof ats === "number") {
+    return (
+      <span className={`tabular-nums font-semibold ${ats >= 80 ? "text-success" : ats >= 60 ? "text-warning" : "text-destructive"}`}>
+        {ats}
+      </span>
+    );
+  }
+  if (record.application?.resume_used === "base") {
+    return (
+      <span className="text-[10px] font-medium text-muted-foreground leading-snug">
+        Applied with base resume
+      </span>
+    );
+  }
+  return <span className="text-muted-foreground"> - </span>;
+}
+
+function isUntailoredStub(record: TailoringRecord): boolean {
+  if (record.source === "pipeline_stub") return true;
+  return record.application?.resume_used === "base"
+    && !(record.versions?.length)
+    && !record.tailored_resume;
+}
+
 function daysUntil(iso?: string | null): number | null {
   if (!iso) return null;
   const d = new Date(iso);
@@ -61,6 +90,7 @@ function daysUntil(iso?: string | null): number | null {
   const ms = d.getTime() - Date.now();
   return Math.round(ms / 86400000);
 }
+
 function relDate(iso?: string | null): string {
   const d = daysUntil(iso);
   if (d === null) return " - ";
@@ -277,7 +307,7 @@ export default function ApplicationsTab({ embedded = false }: ApplicationsTabPro
 
   const grouped = useMemo(() => {
     const g: Record<ApplicationStatus, TailoringRecord[]> = {
-      draft: [], applied: [], interviewing: [], offer: [], rejected: [], withdrawn: [], ghosted: [],
+      saved: [], draft: [], applied: [], interviewing: [], offer: [], rejected: [], withdrawn: [], ghosted: [],
     };
     for (const r of searched) {
       const s = statusMeta(r.application?.status).key as ApplicationStatus;
@@ -376,8 +406,8 @@ export default function ApplicationsTab({ embedded = false }: ApplicationsTabPro
         </div>
         <p className="font-display text-sm font-semibold text-foreground">No applications yet</p>
         <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
-          Tailor a resume and it lands here as a draft. Then track every role from applied to offer,
-          with no guessing which stage you're in.
+          Tailor a resume or save a job from Discover and it lands here.
+          Apply without tailoring still shows in Applied, marked as base resume.
         </p>
         <Button asChild className="mt-4 min-h-11">
           <Link to="/app/resume/tailor">Tailor a resume</Link>
@@ -396,7 +426,8 @@ export default function ApplicationsTab({ embedded = false }: ApplicationsTabPro
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">Library · Applications</p>
             <h2 className="font-display text-2xl font-extrabold tracking-tight">Applications</h2>
             <p className="max-w-xl text-sm text-muted-foreground">
-              Your pipeline. Every role from first tailor to offer, tracked in one place.
+              Your pipeline. Saved roles, drafts, and applications — tailored or with your base resume.
+            </p>
             </p>
           </div>
         )}
@@ -469,8 +500,8 @@ export default function ApplicationsTab({ embedded = false }: ApplicationsTabPro
       {funnel && (
         <div className="rounded-2xl border border-primary/20 bg-primary/[0.04] p-3">
           <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary mb-2">Funnel intelligence</p>
-          <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-6 text-xs">
-            {["draft", "applied", "interviewing", "offer", "rejected", "ghosted"].map((k) => (
+          <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-7 text-xs">
+            {["saved", "draft", "applied", "interviewing", "offer", "rejected", "ghosted"].map((k) => (
               <div key={k} className="rounded-lg border border-primary/15 bg-card/70 px-2 py-1.5">
                 <p className="text-muted-foreground capitalize">{k}</p>
                 <p className="font-semibold text-foreground tabular-nums">{funnel.counts[k] ?? 0}</p>
@@ -716,7 +747,6 @@ export default function ApplicationsTab({ embedded = false }: ApplicationsTabPro
                 const co = r.jd_analysis?.company && r.jd_analysis.company !== "Not specified" ? r.jd_analysis.company : "";
                 const st = r.application?.status || "draft";
                 const meta = statusMeta(st);
-                const ats = r.ats_scores?.overall;
                 const d = daysUntil(r.application?.next_action_date);
                 return (
                   <tr key={r.record_id} className="border-t border-border hover:bg-muted/40 transition-colors">
@@ -754,11 +784,7 @@ export default function ApplicationsTab({ embedded = false }: ApplicationsTabPro
                       {r.application?.recruiter_name || " - "}
                     </td>
                     <td className="px-3 py-2.5 text-[11px]">
-                      {ats !== undefined ? (
-                        <span className={`tabular-nums font-semibold ${ats >= 80 ? "text-success" : ats >= 60 ? "text-warning" : "text-destructive"}`}>
-                          {ats}
-                        </span>
-                      ) : " - "}
+                      {atsCell(r)}
                     </td>
                   </tr>
                 );
@@ -843,11 +869,13 @@ function ApplicationCard({
 
         {/* Meta row */}
         <div className="flex items-center gap-2 flex-wrap">
-          {ats !== undefined && (
+          {ats !== undefined ? (
             <span className={`text-[10px] font-semibold tabular-nums ${ats >= 80 ? "text-success" : ats >= 60 ? "text-warning" : "text-destructive"}`}>
               ATS {ats}
             </span>
-          )}
+          ) : app.resume_used === "base" ? (
+            <span className="text-[10px] font-medium text-muted-foreground">Applied with base resume</span>
+          ) : null}
           {d !== null && (
             <span className={`text-[10px] font-medium ${overdue ? "text-destructive font-bold" : urgent ? "text-warning" : "text-muted-foreground"}`}>
               {overdue && "⚠ "}{relDate(app.next_action_date)}
@@ -867,6 +895,26 @@ function ApplicationCard({
         >
           {COLUMNS.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
         </select>
+
+        {isUntailoredStub(record) && (
+          <Button asChild size="sm" variant="outline" className="h-7 w-full gap-1 text-[10px] font-semibold">
+            <Link
+              to={appPath("resume", "tailor")}
+              onClick={() => {
+                stagePendingTailorJob({
+                  job_id: record.source_job_id || record.record_id,
+                  jd_text: record.jd_text || "",
+                  title,
+                  company: company || undefined,
+                  url: app.job_url || "",
+                });
+              }}
+            >
+              <Wand2 className="h-3 w-3" aria-hidden />
+              Tailor resume
+            </Link>
+          </Button>
+        )}
 
         {/* Expanded editor */}
         {isEditing && (

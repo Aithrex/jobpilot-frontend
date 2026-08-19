@@ -34,6 +34,7 @@ export default function CareerPortalsTab() {
     isJobSaved, getJobStatus, saveJob, unsaveJob, quickApply,
     isApplyConfirmPending, confirmApplied, dismissApplyConfirm,
     applyConfirmJob, closeApplyConfirmDialog,
+    beginApplyWithTailor, markAlreadyApplied,
     autoApply, autoApplyingId,
   } = useJobSearch();
 
@@ -107,6 +108,8 @@ export default function CareerPortalsTab() {
               isApplyConfirmPending={isApplyConfirmPending}
               confirmApplied={confirmApplied}
               dismissApplyConfirm={dismissApplyConfirm}
+              beginApplyWithTailor={beginApplyWithTailor}
+              markAlreadyApplied={markAlreadyApplied}
               autoApply={autoApply}
               autoApplyingId={autoApplyingId}
             />

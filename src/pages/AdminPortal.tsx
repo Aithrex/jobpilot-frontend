@@ -148,6 +148,7 @@ function gradientFor(seed: string | null | undefined): string {
 }
 
 const STATUS_COLORS: Record<string, { chip: string; dot: string; label: string }> = {
+  saved:        { chip: 'bg-sky-500/15 text-sky-400 border-sky-500/25',             dot: 'bg-sky-400',     label: 'Saved' },
   draft:        { chip: 'bg-gray-500/15 text-gray-400 border-gray-500/25',         dot: 'bg-gray-400',     label: 'Draft' },
   applied:      { chip: 'bg-indigo-500/15 text-indigo-400 border-indigo-500/25',   dot: 'bg-indigo-400',   label: 'Applied' },
   interviewing: { chip: 'bg-blue-500/15 text-blue-400 border-blue-500/25',         dot: 'bg-blue-400',     label: 'Interviewing' },
@@ -156,7 +157,7 @@ const STATUS_COLORS: Record<string, { chip: string; dot: string; label: string }
   ghosted:      { chip: 'bg-amber-500/15 text-amber-400 border-amber-500/25',      dot: 'bg-amber-400',   label: 'Ghosted' },
   withdrawn:    { chip: 'bg-gray-400/15 text-gray-500 border-gray-400/25',         dot: 'bg-gray-500',    label: 'Withdrawn' },
 };
-const STATUSES: Array<keyof typeof STATUS_COLORS> = ['draft', 'applied', 'interviewing', 'offer', 'rejected', 'ghosted', 'withdrawn'];
+const STATUSES: Array<keyof typeof STATUS_COLORS> = ['saved', 'draft', 'applied', 'interviewing', 'offer', 'rejected', 'ghosted', 'withdrawn'];
 
 // ─── Icons ────────────────────────────────────────────────────────────────
 const Icon = {

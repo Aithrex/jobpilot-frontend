@@ -69,6 +69,8 @@ interface JobSearchPanelProps {
   dismissApplyConfirm?: (jobId: string) => void;
   applyConfirmJob?: Job | null;
   closeApplyConfirmDialog?: () => void;
+  beginApplyWithTailor?: (job: Job) => void | Promise<unknown>;
+  markAlreadyApplied?: (job: Job) => void | Promise<unknown>;
   autoApply?: (job: Job) => Promise<unknown>;
   autoApplyingId?: string | null;
   getJobStatus: (jobId: string) => string | null;
@@ -84,6 +86,7 @@ export function JobSearchPanel({
   loading, error, searchJobs, batchSearch, saveJob, unsaveJob, isJobSaved,
   quickApply, isApplyConfirmPending, confirmApplied, dismissApplyConfirm,
   applyConfirmJob, closeApplyConfirmDialog,
+  beginApplyWithTailor, markAlreadyApplied,
   autoApply, autoApplyingId, getJobStatus, batchMeta, hasSearched, filtersLoaded, savingFilters, saveFilters,
 }: JobSearchPanelProps) {
   const [localQuery, setLocalQuery] = useState(filters.query);
@@ -537,6 +540,8 @@ export function JobSearchPanel({
                 applyConfirmPending={isApplyConfirmPending?.(job.job_id)}
                 onConfirmApplied={confirmApplied ? () => void confirmApplied(job.job_id) : undefined}
                 onConfirmNotYet={dismissApplyConfirm ? () => dismissApplyConfirm(job.job_id) : undefined}
+                onApplyWithTailor={beginApplyWithTailor ? () => beginApplyWithTailor(job) : undefined}
+                onAlreadyApplied={markAlreadyApplied ? () => markAlreadyApplied(job) : undefined}
                 onAutoApply={autoApply ? () => autoApply(job) : undefined}
                 autoApplying={autoApplyingId === job.job_id}
               />
