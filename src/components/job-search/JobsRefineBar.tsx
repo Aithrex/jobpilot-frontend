@@ -44,7 +44,7 @@ export function JobsRefineBar() {
 
   const recencyCounts = useMemo(() => {
     const counts: Record<string, number> = { today: 0, '24h': 0, '3d': 0, '7d': 0, '30d': 0 };
-    for (const j of jobs) {
+    for (const j of jobs ?? []) {
       if (j.days_ago == null) continue;
       for (const opt of RECENCY_OPTIONS) if (j.days_ago <= opt.maxDays) counts[opt.key] += 1;
     }

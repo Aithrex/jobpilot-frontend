@@ -13,6 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ApplyConfirmDialog, JOB_FEED_GRID_CLASS, JobCard } from '@/components/job-search/JobCard';
 import { useCombinedJobsCtx } from '@/components/job-search/CombinedJobsProvider';
 import { RECENCY_OPTIONS, seniorityOf, toJob } from '@/lib/careerJobs';
+import { cn } from '@/lib/utils';
 import type { Job, WorkdayJob } from '@/types/jobs';
 
 const PAGE_SIZE = 24;
