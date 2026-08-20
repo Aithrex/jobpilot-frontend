@@ -41,7 +41,7 @@ export function MobileNav() {
         aria-label="Primary"
         className="fixed inset-x-0 bottom-0 z-40 border-t border-border/70 glass-nav pb-[env(safe-area-inset-bottom)] shadow-pop lg:hidden"
       >
-        <ul className="mx-auto flex max-w-md items-stretch justify-around px-1">
+        <ul className="mx-auto mb-1 mt-1.5 flex max-w-md items-stretch justify-around rounded-full border border-border/50 bg-muted/45 p-1 backdrop-blur-md">
           {MOBILE_ITEMS.map((item) => {
             const { icon: Icon, label } = item;
             const badge = item.to === "apply" && unread > 0 ? unread : 0;
@@ -62,15 +62,14 @@ export function MobileNav() {
                       {isActive && (
                         <motion.span
                           layoutId={ACTIVE_TAB_ID}
-                          className="absolute top-0 h-0.5 w-8 rounded-full bg-primary"
+                          className="absolute inset-1 z-0 rounded-full bg-background shadow-[0_1px_4px_rgb(0_0_0/0.10)]"
                           transition={indicatorSpring(reduceMotion)}
                           aria-hidden="true"
                         />
                       )}
                       <span
                         className={cn(
-                          "relative flex h-8 w-8 items-center justify-center rounded-full transition-colors duration-200 ease-expo",
-                          isActive && "bg-primary/10",
+                          "relative z-10 flex h-8 w-8 items-center justify-center rounded-full transition-colors duration-200 ease-expo",
                         )}
                       >
                         <Icon className="h-5 w-5" aria-hidden="true" />
@@ -83,7 +82,7 @@ export function MobileNav() {
                           </span>
                         )}
                       </span>
-                      <span className="max-w-full truncate text-[10px] font-semibold leading-none">
+                      <span className="relative z-10 max-w-full truncate text-[10px] font-semibold leading-none">
                         {label}
                       </span>
                     </>

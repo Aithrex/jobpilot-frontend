@@ -24,13 +24,14 @@ import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { ChipsInput } from '@/components/job-search/ChipsInput';
-import { JOB_FEED_GRID_CLASS, JobCard } from '@/components/job-search/JobCard';
+import { JOB_FEED_GRID_CLASS, JobCard, JOB_CARD_CLASS } from '@/components/job-search/JobCard';
 import { useAutoSync } from '@/hooks/useAutoSync';
 import { JOB_TITLES_CAP, useJobTitles } from '@/hooks/useJobTitles';
 import { apiService } from '@/lib/api';
 import { jobTitleOf } from '@/lib/careerJobs';
 // (job listings are free & auth-only - no entitlement/upgrade wiring here)
 import { cn } from '@/lib/utils';
+import { PillSwitch } from '@/components/ui/pill-switch';
 import type {
   CareerPortalVariant,
   Job,
@@ -347,36 +348,6 @@ function toJob(j: WorkdayJob, fallbackSource: string): Job {
   };
 }
 
-/** Pill button inside a segmented control. */
-function Seg({
-  active,
-  onClick,
-  children,
-  title,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-  title?: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      title={title}
-      aria-pressed={active}
-      className={cn(
-        'rounded-md px-2.5 py-1.5 text-[11px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-        active
-          ? 'bg-background text-primary shadow-soft'
-          : 'text-muted-foreground hover:text-foreground',
-      )}
-    >
-      {children}
-    </button>
-  );
-}
-
 interface WorkdayJobsPanelProps {
   isJobSaved: (jobId: string) => boolean;
   getJobStatus: (jobId: string) => string | null;
@@ -516,6 +487,8 @@ export function WorkdayJobsPanel({
   const [progress, setProgress] = useState<WorkdayJobsProgress | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** Titles the most recent scan actually used - mirrors Job feed titlesPending. */
+  const [lastScanTitles, setLastScanTitles] = useState<string[] | null>(null);
 
   // Catalog metadata (industry chips), once on mount. The resume seed and the
   // thin-resume title synth used to run here too - they now live in the shared
@@ -540,6 +513,9 @@ export function WorkdayJobsPanel({
 
   const runSearch = useCallback(
     async (forceRefresh = false) => {
+      const titlesSnapshot = titles;
+      if (titlesSnapshot.length === 0) return;
+      setLastScanTitles(titlesSnapshot);
       setLoading(true);
       setError(null);
       setProgress(null);
@@ -550,7 +526,7 @@ export function WorkdayJobsPanel({
           : apiService.searchWorkdayJobs.bind(apiService);
       const resp = await search(
         {
-          titles,
+          titles: titlesSnapshot,
           industries,
           location,
           remote_only: remoteOnly,
@@ -810,6 +786,14 @@ export function WorkdayJobsPanel({
 
   const streaming = !!result?.streaming;
   const roleCount = visibleJobs.length;
+  const titlesPending = useMemo(() => {
+    if (!result || lastScanTitles == null) return false;
+    const a = new Set(titles.map((t) => t.toLowerCase()));
+    const b = new Set(lastScanTitles.map((t) => t.toLowerCase()));
+    if (a.size !== b.size) return true;
+    for (const t of a) if (!b.has(t)) return true;
+    return false;
+  }, [result, lastScanTitles, titles]);
 
   return (
     <div className="space-y-5">
@@ -838,6 +822,9 @@ export function WorkdayJobsPanel({
                   <Sparkles className="h-2.5 w-2.5" aria-hidden /> Auto-sync
                 </Badge>
               </div>
+              <p className="text-xs text-muted-foreground">
+                Scanning {catalogNoun} only. Merged across all sources lives in For you.
+              </p>
               <p className="truncate text-xs text-muted-foreground" aria-live="polite">
                 {loading ? (
                   progress ? (
@@ -851,6 +838,11 @@ export function WorkdayJobsPanel({
                     {secondsUntilNext != null && (
                       <span className="ml-1 tabular-nums text-primary/80">
                         · next sync {formatCountdown(secondsUntilNext)}
+                      </span>
+                    )}
+                    {titlesPending && (
+                      <span className="ml-1.5 font-medium text-warning">
+                        Title changes need Search.
                       </span>
                     )}
                   </>
@@ -945,7 +937,7 @@ export function WorkdayJobsPanel({
                       resumeTitles.length ? resumeTitles.slice(0, JOB_TITLES_CAP) : undefined
                     }
                     accentClass="border-primary/30 bg-primary/10 text-primary"
-                    helperText={`The first 4 core title families drive the ${isMncs ? 'MNC board scan' : isCareers ? 'career-site scan' : 'Workday search'}; every title participates in ranking. One shared set: these titles also drive Job Opportunities and the other career portals.`}
+                    helperText={`The first 4 core title families drive the ${isMncs ? 'MNC board scan' : isCareers ? 'career-site scan' : 'Workday search'}; every title participates in ranking. One shared set: these titles also drive Job feed (For you) and the other career portals.`}
                     emptyState="Add a role title, or upload a resume to prefill."
                   />
                   <Button
@@ -963,6 +955,11 @@ export function WorkdayJobsPanel({
                     )}
                     {suggesting ? 'Analyzing resume...' : 'Smart-suggest titles from resume'}
                   </Button>
+                  {titlesPending && (
+                    <p className="mt-2 text-[11px] font-medium text-warning">
+                      Titles changed - Search to apply
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -1065,7 +1062,7 @@ export function WorkdayJobsPanel({
       {loading && !result && (
         <div className={JOB_FEED_GRID_CLASS} aria-hidden>
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="space-y-2.5 rounded-xl border border-border bg-card p-3.5">
+            <div key={i} className={cn('space-y-2.5 p-3.5', JOB_CARD_CLASS)}>
               <div className="flex items-start gap-2.5">
                 <Skeleton className="h-9 w-9 shrink-0 rounded-lg" />
                 <div className="flex-1 space-y-2">
@@ -1087,22 +1084,25 @@ export function WorkdayJobsPanel({
           <div className="flex flex-wrap items-center justify-between gap-3">
             {/* Recency segmented control - filters the cached 30-day set
   client-side, so switching windows is instant. */}
-            <div className="flex flex-wrap items-center gap-1.5">
-              <div className="inline-flex flex-wrap rounded-lg border border-border bg-muted/40 p-0.5">
-                {RECENCY_OPTIONS.map((opt) => (
-                  <Seg
-                    key={opt.key}
-                    active={recency === opt.key}
-                    onClick={() => setRecency(opt.key)}
-                  >
-                    {opt.label}
-                    <span className="ml-1 tabular-nums opacity-60">{recencyCounts[opt.key]}</span>
-                  </Seg>
-                ))}
-                <Seg active={recency === 'custom'} onClick={() => setRecency('custom')}>
-                  Custom
-                </Seg>
-              </div>
+            <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto scrollbar-hide">
+              <PillSwitch
+                aria-label="Posting recency"
+                layoutId="workday-recency-pill"
+                value={recency}
+                onValueChange={setRecency}
+                options={[
+                  ...RECENCY_OPTIONS.map((opt) => ({
+                    value: opt.key as RecencyChoice,
+                    label: (
+                      <>
+                        {opt.label}
+                        <span className="tabular-nums opacity-60">{recencyCounts[opt.key]}</span>
+                      </>
+                    ),
+                  })),
+                  { value: 'custom' as RecencyChoice, label: 'Custom' },
+                ]}
+              />
               {recency === 'custom' && (
                 <label className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
                   <Input
@@ -1151,7 +1151,7 @@ export function WorkdayJobsPanel({
           <div
             id={filtersId}
             className={cn(
-              'flex-wrap items-center gap-2 rounded-xl border border-border/60 bg-card/60 p-2 backdrop-blur-sm',
+              'flex-nowrap items-center gap-2 overflow-x-auto scrollbar-hide rounded-xl border border-border/60 bg-card/60 p-2 backdrop-blur-sm',
               filtersOpen ? 'flex' : 'hidden sm:flex',
             )}
           >
@@ -1168,13 +1168,16 @@ export function WorkdayJobsPanel({
               ))}
             </select>
 
-            <div className="inline-flex rounded-lg border border-border bg-muted/40 p-0.5">
-              {MIN_SCORE_OPTIONS.map((n) => (
-                <Seg key={n} active={minScore === n} onClick={() => setMinScore(n)}>
-                  {n === 0 ? 'Any score' : `${n}+`}
-                </Seg>
-              ))}
-            </div>
+            <PillSwitch
+              aria-label="Minimum match score"
+              layoutId="workday-score-pill"
+              value={String(minScore)}
+              onValueChange={(v) => setMinScore(Number(v))}
+              options={MIN_SCORE_OPTIONS.map((n) => ({
+                value: String(n),
+                label: n === 0 ? 'Any score' : `${n}+`,
+              }))}
+            />
 
             <select
               value={locationFilter}
@@ -1201,29 +1204,32 @@ export function WorkdayJobsPanel({
             )}
 
             <div
-              className="inline-flex rounded-lg border border-border bg-muted/40 p-0.5"
               title={`Sponsorship filter for international candidates. "Sponsor-friendly" hides postings whose description explicitly declines visa sponsorship (${refusedCount} here); "Proven sponsors" additionally keeps only companies with recent H-1B filings in public disclosure data. A track record, not a promise.`}
             >
-              {(
-                [
-                  ['all', 'All'],
-                  ['friendly', 'Sponsor-friendly'],
-                  ['proven', 'Proven sponsors'],
-                ] as const
-              ).map(([key, label]) => (
-                <Seg key={key} active={sponsorFilter === key} onClick={() => setSponsorFilter(key)}>
-                  {label}
-                </Seg>
-              ))}
+            <PillSwitch
+              aria-label="Sponsorship filter"
+              layoutId="workday-sponsor-pill"
+              value={sponsorFilter}
+              onValueChange={setSponsorFilter}
+              options={[
+                { value: 'all', label: 'All' },
+                { value: 'friendly', label: 'Sponsor-friendly' },
+                { value: 'proven', label: 'Proven sponsors' },
+              ]}
+            />
             </div>
 
-            <div className="sm:ml-auto inline-flex rounded-lg border border-border bg-muted/40 p-0.5">
-              {(['score', 'newest'] as const).map((s) => (
-                <Seg key={s} active={sortBy === s} onClick={() => setSortBy(s)}>
-                  {s === 'score' ? 'Best match' : 'Newest'}
-                </Seg>
-              ))}
-            </div>
+            <PillSwitch
+              className="sm:ml-auto"
+              aria-label="Sort jobs"
+              layoutId="workday-sort-pill"
+              value={sortBy}
+              onValueChange={setSortBy}
+              options={[
+                { value: 'score', label: 'Best match' },
+                { value: 'newest', label: 'Newest' },
+              ]}
+            />
           </div>
 
           {result.resume_skill_count === 0 && !streaming && (

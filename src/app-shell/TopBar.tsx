@@ -48,7 +48,7 @@ export function TopBar() {
 
   return (
     <>
-      <header className="fixed inset-x-0 top-0 z-30 flex h-16 items-center gap-3 border-b border-border/70 glass-nav glass-specular px-4 shadow-soft transition-colors duration-200 ease-expo sm:px-6">
+      <header className="fixed inset-x-0 top-0 z-30 flex h-16 items-center gap-3 border-b border-border/30 glass-nav px-4 shadow-soft transition-colors duration-200 ease-expo sm:px-6">
       {/* Brand mark - always visible now the sidebar is gone. */}
       <Link
         to={navHref("home")}

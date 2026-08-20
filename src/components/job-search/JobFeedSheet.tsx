@@ -30,6 +30,7 @@ import { Switch } from '@/components/ui/switch';
 import { ChipsInput } from '@/components/job-search/ChipsInput';
 import { useCombinedJobsCtx } from '@/components/job-search/CombinedJobsProvider';
 import { JOB_TITLES_CAP } from '@/hooks/useJobTitles';
+import { PillSwitch } from '@/components/ui/pill-switch';
 import { cn } from '@/lib/utils';
 
 const ANY_STATE = '__any__';
@@ -82,35 +83,6 @@ function FieldLabel({ htmlFor, children }: { htmlFor?: string; children: ReactNo
     <label htmlFor={htmlFor} className="overline mb-2 block">
       {children}
     </label>
-  );
-}
-
-function Seg({
-  active,
-  onClick,
-  children,
-  title,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: ReactNode;
-  title?: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      title={title}
-      aria-pressed={active}
-      className={cn(
-        'h-8 min-w-0 flex-1 rounded-md px-2.5 text-[11px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-        active
-          ? 'bg-background text-foreground shadow-sm'
-          : 'text-muted-foreground hover:text-foreground',
-      )}
-    >
-      {children}
-    </button>
   );
 }
 
@@ -268,6 +240,7 @@ export function JobFeedSheet() {
               }
               accentClass="border-border bg-muted/60 text-foreground"
               emptyState="Add a title"
+              helperText="Titles are shared with Career Portals."
             />
             <Button
               type="button"
@@ -282,11 +255,11 @@ export function JobFeedSheet() {
               ) : (
                 <Wand2 className="mr-1.5 h-3 w-3" aria-hidden />
               )}
-              {suggestingTitles ? 'Suggesting…' : 'Suggest from resume'}
+              {suggestingTitles ? 'Suggesting...' : 'Suggest from resume'}
             </Button>
             {titlesPending && lastScanTitles && (
               <p className="mt-2 text-[11px] font-medium text-warning">
-                Titles changed — Search to apply
+                Titles changed - Search to apply
               </p>
             )}
             {!canSearch && (
@@ -370,37 +343,33 @@ export function JobFeedSheet() {
 
               <div>
                 <p className="mb-1.5 text-[11px] font-medium text-muted-foreground">Match</p>
-                <div className="flex rounded-lg border border-border bg-muted/40 p-0.5">
-                  {MIN_SCORE_OPTIONS.map((n) => (
-                    <Seg key={n} active={minScore === n} onClick={() => setMinScore(n)}>
-                      {n === 0 ? 'Any' : `${n}+`}
-                    </Seg>
-                  ))}
-                </div>
+                <PillSwitch
+                  fill
+                  aria-label="Minimum match score"
+                  layoutId="feed-score-pill"
+                  value={String(minScore)}
+                  onValueChange={(v) => setMinScore(Number(v))}
+                  options={MIN_SCORE_OPTIONS.map((n) => ({
+                    value: String(n),
+                    label: n === 0 ? 'Any' : `${n}+`,
+                  }))}
+                />
               </div>
 
               <div>
                 <p className="mb-1.5 text-[11px] font-medium text-muted-foreground">Sponsorship</p>
-                <div
-                  className="flex rounded-lg border border-border bg-muted/40 p-0.5"
-                  title="Sponsor-friendly hides postings that decline visas. Proven keeps companies with recent H-1B filings."
-                >
-                  {(
-                    [
-                      ['all', 'All'],
-                      ['friendly', 'Friendly'],
-                      ['proven', 'Proven'],
-                    ] as const
-                  ).map(([key, label]) => (
-                    <Seg
-                      key={key}
-                      active={sponsorFilter === key}
-                      onClick={() => setSponsorFilter(key)}
-                    >
-                      {label}
-                    </Seg>
-                  ))}
-                </div>
+                <PillSwitch
+                  fill
+                  aria-label="Sponsorship filter"
+                  layoutId="feed-sponsor-pill"
+                  value={sponsorFilter}
+                  onValueChange={setSponsorFilter}
+                  options={[
+                    { value: 'all', label: 'All' },
+                    { value: 'friendly', label: 'Friendly' },
+                    { value: 'proven', label: 'Proven' },
+                  ]}
+                />
               </div>
             </div>
           </section>

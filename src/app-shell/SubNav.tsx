@@ -1,9 +1,14 @@
-import { useCallback, useId, useRef, type KeyboardEvent } from "react";
-import { NavLink } from "react-router-dom";
-import { motion, useReducedMotion } from "framer-motion";
+import { useCallback, useId, type KeyboardEvent } from "react";
+import { LayoutGroup } from "framer-motion";
+import { NavLink, useLocation } from "react-router-dom";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { indicatorSpring } from "@/lib/motion";
+import {
+  PillThumb,
+  PillTrack,
+  pillItemClass,
+  useScrollActivePill,
+} from "@/components/ui/pill-switch";
 
 export interface SubNavItem {
   /** URL segment relative to the destination (e.g. "learning"). */
@@ -16,24 +21,17 @@ interface SubNavProps {
   /** Accessible label for the nav landmark (e.g. "Grow sections"). */
   ariaLabel: string;
   items: SubNavItem[];
+  className?: string;
 }
 
 /**
- * Horizontal sub-navigation for an app-shell destination - a row of route
- * links styled as a segmented/underline tab strip. Each item is a >=44px
- * target with a focus-visible ring, an `aria-current` + underline-bar active
- * affordance (never color alone), and roving arrow-key operability. Scrolls
- * horizontally on small screens instead of overflowing the body.
- *
- * The active underline is a single shared element that SLIDES between tabs
- * (framer `layoutId`), matching the top bar's destination pill and the mobile
- * tab bar - so "where am I" is expressed the same way at all three levels of
- * the IA. `useId` scopes the layoutId per mounted strip, so two SubNavs can
- * never fight over one indicator. Honors `prefers-reduced-motion`.
+ * Horizontal sub-navigation: outer capsule + sliding inner pill, with
+ * overflow scroll on narrow widths. `useId` scopes the layoutId per mounted
+ * strip. Honors `prefers-reduced-motion` via the shared thumb spring.
  */
-export function SubNav({ ariaLabel, items }: SubNavProps) {
-  const listRef = useRef<HTMLDivElement>(null);
-  const reduceMotion = useReducedMotion();
+export function SubNav({ ariaLabel, items, className }: SubNavProps) {
+  const { pathname } = useLocation();
+  const trackRef = useScrollActivePill(pathname);
   const indicatorId = `subnav-active-${useId()}`;
 
   const onKeyDown = useCallback((event: KeyboardEvent<HTMLDivElement>) => {
@@ -41,7 +39,7 @@ export function SubNav({ ariaLabel, items }: SubNavProps) {
     if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(key)) return;
 
     const links = Array.from(
-      listRef.current?.querySelectorAll<HTMLAnchorElement>("a[data-subnav-link]") ?? [],
+      trackRef.current?.querySelectorAll<HTMLAnchorElement>("a[data-subnav-link]") ?? [],
     );
     if (links.length === 0) return;
 
@@ -65,49 +63,37 @@ export function SubNav({ ariaLabel, items }: SubNavProps) {
 
     event.preventDefault();
     links[nextIndex]?.focus();
-  }, []);
+  }, [trackRef]);
 
   return (
-    <nav aria-label={ariaLabel} className="border-b border-border">
-      <div
-        ref={listRef}
+    <nav aria-label={ariaLabel} className={className}>
+      <LayoutGroup id={indicatorId}>
+      <PillTrack
+        trackRef={trackRef}
         onKeyDown={onKeyDown}
-        className="scrollbar-hide -mb-px flex gap-1 overflow-x-auto"
+        className="w-full max-w-full"
       >
         {items.map(({ to, label, icon: Icon }) => (
           <NavLink
             key={to}
             to={to}
             data-subnav-link
-            className={({ isActive }) =>
-              cn(
-                "group interactive relative flex min-h-[44px] shrink-0 items-center gap-2 whitespace-nowrap border-b-2 border-transparent px-4 text-sm font-medium",
-                isActive
-                  ? "font-semibold text-foreground"
-                  : "text-muted-foreground hover:border-border hover:text-foreground",
-              )
-            }
+            className={({ isActive }) => pillItemClass(isActive, "md")}
           >
             {({ isActive }) => (
               <>
-                {isActive && (
-                  <motion.span
-                    layoutId={indicatorId}
-                    className="absolute inset-x-0 -bottom-0.5 h-0.5 rounded-full bg-primary"
-                    transition={indicatorSpring(reduceMotion)}
-                    aria-hidden="true"
-                  />
-                )}
+                {isActive && <PillThumb layoutId={indicatorId} />}
                 <Icon
-                  className={cn("h-4 w-4 shrink-0", isActive && "text-primary")}
+                  className={cn("relative z-10 h-4 w-4 shrink-0", isActive && "text-primary")}
                   aria-hidden="true"
                 />
-                <span>{label}</span>
+                <span className="relative z-10">{label}</span>
               </>
             )}
           </NavLink>
         ))}
-      </div>
+      </PillTrack>
+      </LayoutGroup>
     </nav>
   );
 }

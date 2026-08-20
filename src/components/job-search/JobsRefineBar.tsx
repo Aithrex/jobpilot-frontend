@@ -1,38 +1,8 @@
-import { useMemo, type ReactNode } from 'react';
+import { useMemo } from 'react';
 import { Sparkles } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import { useCombinedJobsCtx } from '@/components/job-search/CombinedJobsProvider';
 import { RECENCY_OPTIONS } from '@/lib/careerJobs';
-import { cn } from '@/lib/utils';
-
-function Seg({
-  active,
-  onClick,
-  children,
-  title,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: ReactNode;
-  title?: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      title={title}
-      aria-pressed={active}
-      className={cn(
-        'rounded-full px-3 py-1.5 text-[11px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-        active
-          ? 'bg-background text-primary shadow-soft'
-          : 'text-muted-foreground hover:text-foreground',
-      )}
-    >
-      {children}
-    </button>
-  );
-}
+import { PillSwitch } from '@/components/ui/pill-switch';
 
 /**
  * For-you listing chrome: recency windows + Best match / Newest.
@@ -53,32 +23,41 @@ export function JobsRefineBar() {
 
   return (
     <div
-      className="flex flex-wrap items-center gap-2"
+      className="flex items-center gap-2 overflow-x-auto scrollbar-hide"
       role="toolbar"
       aria-label="Listing recency and sort"
     >
-      <div
-        className="inline-flex flex-wrap rounded-lg border border-border bg-muted/40 p-0.5"
-        title="Posting dates use your timezone. Each window includes everything newer, so Today is inside Since yesterday."
-      >
-        {RECENCY_OPTIONS.map((opt) => (
-          <Seg key={opt.key} active={recency === opt.key} onClick={() => setRecency(opt.key)}>
-            {opt.label}
-            <span className="ml-1 tabular-nums opacity-60">{recencyCounts[opt.key]}</span>
-          </Seg>
-        ))}
-      </div>
-      <div className="inline-flex rounded-lg border border-border bg-muted/40 p-0.5">
-        {(['score', 'newest'] as const).map((s) => (
-          <Seg key={s} active={sortBy === s} onClick={() => setSortBy(s)}>
-            {s === 'score' ? 'Best match' : 'Newest'}
-          </Seg>
-        ))}
-      </div>
-      <Badge variant="outline" className="gap-1 border-primary/30 bg-primary/10 text-primary">
+      <PillSwitch
+        aria-label="Posting recency"
+        value={recency}
+        onValueChange={setRecency}
+        layoutId="jobs-recency-pill"
+        options={RECENCY_OPTIONS.map((opt) => ({
+          value: opt.key,
+          title:
+            'Posting dates use your timezone. Each window includes everything newer, so Today is inside Since yesterday.',
+          label: (
+            <>
+              {opt.label}
+              <span className="tabular-nums opacity-60">{recencyCounts[opt.key]}</span>
+            </>
+          ),
+        }))}
+      />
+      <PillSwitch
+        aria-label="Sort jobs"
+        value={sortBy}
+        onValueChange={setSortBy}
+        layoutId="jobs-sort-pill"
+        options={[
+          { value: 'score', label: 'Best match' },
+          { value: 'newest', label: 'Newest' },
+        ]}
+      />
+      <span className="inline-flex h-9 shrink-0 items-center gap-1 rounded-full bg-primary px-3 text-[11px] font-semibold text-primary-foreground">
         <Sparkles className="h-3 w-3" aria-hidden />
         <span className="font-mono tabular-nums">{recencyCounts[recency] ?? 0}</span> roles
-      </Badge>
+      </span>
     </div>
   );
 }

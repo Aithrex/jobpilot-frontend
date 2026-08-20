@@ -10,7 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ApplyConfirmDialog, JOB_FEED_GRID_CLASS, JobCard } from '@/components/job-search/JobCard';
+import { ApplyConfirmDialog, JOB_FEED_GRID_CLASS, JobCard, JOB_CARD_CLASS } from '@/components/job-search/JobCard';
 import { useCombinedJobsCtx } from '@/components/job-search/CombinedJobsProvider';
 import { RECENCY_OPTIONS, seniorityOf, toJob } from '@/lib/careerJobs';
 import { cn } from '@/lib/utils';
@@ -244,7 +244,7 @@ export function CombinedJobsPanel({
       {loading && jobs.length === 0 && (
         <div className={JOB_FEED_GRID_CLASS} aria-hidden>
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="space-y-2.5 rounded-xl border border-border bg-card p-3.5">
+            <div key={i} className={cn('space-y-2.5 p-3.5', JOB_CARD_CLASS)}>
               <div className="flex items-start gap-2.5">
                 <Skeleton className="h-9 w-9 shrink-0 rounded-lg" />
                 <div className="flex-1 space-y-2">

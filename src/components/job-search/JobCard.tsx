@@ -35,6 +35,10 @@ import type { Job } from '@/types/jobs';
 /** Compact tiles: 2 / 3 / 4 columns as the Jobs page widens. */
 export const JOB_FEED_GRID_CLASS = 'grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4';
 
+/** Shared frosted surface — same recipe as the Job feed drawer. */
+export const JOB_CARD_CLASS =
+  'group relative flex h-full flex-col overflow-hidden rounded-xl border border-border liquid-glass shadow-none transition-[border-color,box-shadow] duration-200 hover:border-primary/40';
+
 interface JobCardProps {
   job: Job;
   saved: boolean;
@@ -332,18 +336,18 @@ export function JobCard({
 
   return (
     <>
-      <Card className="group relative flex h-full flex-col overflow-hidden rounded-xl border-border bg-card transition-colors hover:border-primary/35">
+      <Card className={JOB_CARD_CLASS}>
         <span
-          className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full opacity-50 blur-2xl"
+          className="pointer-events-none absolute -right-16 -top-16 z-0 h-40 w-40 rounded-full opacity-40 blur-3xl"
           style={{ backgroundColor: `hsl(${hue} 70% 55% / 0.18)` }}
           aria-hidden
         />
         <span
-          className="pointer-events-none absolute inset-x-0 top-0 h-1 opacity-70"
+          className="pointer-events-none absolute inset-x-0 top-0 z-[1] h-1 opacity-70"
           style={{ backgroundImage: `linear-gradient(90deg, hsl(${hue} 72% 56%), hsl(${(hue + 45) % 360} 72% 60%))` }}
           aria-hidden
         />
-        <CardContent className="relative flex flex-1 flex-col gap-2.5 p-3.5">
+        <CardContent className="relative z-[2] flex flex-1 flex-col gap-2.5 p-3.5">
           <div className="flex items-start gap-2.5">
             <CompanyMark job={job} />
             <div className="min-w-0 flex-1">

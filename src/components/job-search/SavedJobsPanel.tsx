@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { CompanyLogo } from '@/components/CompanyLogo';
 import { KanbanBoard } from '@/components/job-search/KanbanBoard';
+import { JOB_CARD_CLASS } from '@/components/job-search/JobCard';
+import { PillSwitch } from '@/components/ui/pill-switch';
 import { cn } from '@/lib/utils';
 import type { SavedJob } from '@/types/jobs';
 
@@ -41,7 +43,7 @@ function SavedJobCard({ saved, updateJobStatus, unsaveJob }: {
   const job = saved.job_data;
 
   return (
-    <Card className="group overflow-hidden rounded-2xl border-border/60 bg-card transition-[border-color,box-shadow] hover:border-primary/40 hover:shadow-panel">
+    <Card className={cn(JOB_CARD_CLASS, 'rounded-2xl hover:shadow-panel')}>
       <CardContent className="space-y-3 p-5">
         <div className="flex items-start justify-between gap-3">
           <CompanyLogo company={job.company || job.title || ''} logoUrl={job.logo_url} size={32} className="mt-0.5" />
@@ -172,23 +174,32 @@ export function SavedJobsPanel({ savedJobs, updateJobStatus, unsaveJob }: SavedJ
         <p className="text-xs text-muted-foreground">
           <span className="font-mono tabular-nums text-foreground">{savedJobs.length}</span> saved · drag cards between stages
         </p>
-        <div className="inline-flex rounded-lg border border-border bg-muted/40 p-0.5">
-          {([['board', 'Board', Columns3], ['list', 'List', LayoutGrid]] as const).map(([key, label, Icon]) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => setView(key)}
-              aria-pressed={view === key}
-              className={cn(
-                'inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                view === key ? 'bg-background text-primary shadow-soft' : 'text-muted-foreground hover:text-foreground',
-              )}
-            >
-              <Icon className="h-3.5 w-3.5" aria-hidden />
-              {label}
-            </button>
-          ))}
-        </div>
+        <PillSwitch
+          aria-label="Saved jobs layout"
+          layoutId="saved-view-pill"
+          value={view}
+          onValueChange={setView}
+          options={[
+            {
+              value: 'board',
+              label: (
+                <>
+                  <Columns3 className="h-3.5 w-3.5" aria-hidden />
+                  Board
+                </>
+              ),
+            },
+            {
+              value: 'list',
+              label: (
+                <>
+                  <LayoutGrid className="h-3.5 w-3.5" aria-hidden />
+                  List
+                </>
+              ),
+            },
+          ]}
+        />
       </div>
 
       {view === 'board' ? (

@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { Building2, Globe, Landmark } from 'lucide-react';
 import { WorkdayJobsPanel } from '@/components/job-search/WorkdayJobsPanel';
 import { ApplyConfirmDialog } from '@/components/job-search/JobCard';
+import { PillSwitch } from '@/components/ui/pill-switch';
 import { useJobSearch } from '@/hooks/useJobSearch';
-import { cn } from '@/lib/utils';
 import type { CareerPortalVariant } from '@/types/jobs';
 
 const SEGMENTS: Array<{
@@ -45,29 +45,23 @@ export default function CareerPortalsTab() {
 
   return (
     <div className="space-y-4">
-      <div className="inline-flex max-w-full flex-wrap rounded-xl border border-border bg-muted/40 p-1">
-        {SEGMENTS.map(({ key, label, icon: Icon }) => {
-          const isActive = active === key;
-          return (
-            <button
-              key={key}
-              type="button"
-              onClick={() => select(key)}
-              aria-pressed={isActive}
-              aria-controls={`career-portals-panel-${key}`}
-              className={cn(
-                'flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                isActive
-                  ? 'bg-background text-primary shadow-soft'
-                  : 'text-muted-foreground hover:text-foreground',
-              )}
-            >
+      <PillSwitch
+        aria-label="Career portal catalog"
+        layoutId="career-portals-catalog-pill"
+        size="md"
+        className="max-w-full"
+        value={active}
+        onValueChange={select}
+        options={SEGMENTS.map(({ key, label, icon: Icon }) => ({
+          value: key,
+          label: (
+            <>
               <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden />
               {label}
-            </button>
-          );
-        })}
-      </div>
+            </>
+          ),
+        }))}
+      />
 
       {/* Panels - kept mounted once visited; the inactive one hides via CSS so
           switching preserves results and lets an in-flight scan finish. */}

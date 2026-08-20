@@ -3,6 +3,7 @@ import { ExternalLink, GripVertical, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toTitleCase } from '@/lib/format';
 import { CompanyLogo } from '@/components/CompanyLogo';
+import { JOB_CARD_CLASS } from '@/components/job-search/JobCard';
 import type { SavedJob } from '@/types/jobs';
 
 interface KanbanBoardProps {
@@ -38,7 +39,10 @@ function Tile({ saved, updateJobStatus, unsaveJob }: {
         e.dataTransfer.setData('text/plain', saved.job_id);
         e.dataTransfer.effectAllowed = 'move';
       }}
-      className="group cursor-grab rounded-xl border border-border/60 bg-card p-3 shadow-soft transition-[transform,box-shadow,border-color] duration-150 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-panel active:cursor-grabbing"
+      className={cn(
+        'group cursor-grab p-3 shadow-soft transition-[transform,box-shadow,border-color] duration-150 hover:-translate-y-0.5 hover:shadow-panel active:cursor-grabbing',
+        JOB_CARD_CLASS,
+      )}
     >
       <div className="flex items-start gap-2">
         <CompanyLogo company={job.company || job.title || ''} logoUrl={job.logo_url} size={32} />
