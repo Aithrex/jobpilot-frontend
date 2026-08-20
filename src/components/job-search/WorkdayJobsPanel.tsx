@@ -1049,7 +1049,7 @@ export function WorkdayJobsPanel({
                 void sync(false);
                 setCustomizeOpen(false);
               }}
-              disabled={loading || titles.length === 0}
+              disabled={loading || (titles.length === 0 && resumeTitles.length === 0)}
               className="h-9 min-w-[5.5rem] gap-1.5"
             >
               {loading ? (

@@ -9,7 +9,7 @@
  * NOTE: useAutoSync fires ONE initial scan as soon as hydration completes  -
  * tests that assert call counts settle (and clear) that first scan.
  */
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, test, vi, type Mock } from 'vitest';
@@ -17,8 +17,9 @@ import { beforeEach, describe, expect, test, vi, type Mock } from 'vitest';
 import { apiService } from '@/lib/api';
 import { resetJobTitlesStore } from '@/hooks/useJobTitles';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { CombinedJobsProvider } from '@/components/job-search/CombinedJobsProvider';
+import { CombinedJobsProvider, useCombinedJobsCtx } from '@/components/job-search/CombinedJobsProvider';
 import { CombinedJobsPanel } from '@/components/job-search/CombinedJobsPanel';
+import { JobFeedSheet } from '@/components/job-search/JobFeedSheet';
 
 vi.mock('@/lib/api', () => ({
   companyLogoSrc: (logoUrl?: string | null) => logoUrl ?? null,
@@ -56,11 +57,21 @@ function okScan() {
 
 const SEARCH_FNS = ['searchWorkdayJobs', 'searchCareerPagesJobs', 'searchMncJobs'] as const;
 
+function CustomizeTrigger() {
+  const { setCustomizeOpen } = useCombinedJobsCtx();
+  return (
+    <button type="button" onClick={() => setCustomizeOpen(true)}>
+      Customize
+    </button>
+  );
+}
+
 function renderPanel() {
   return render(
     <MemoryRouter>
       <TooltipProvider>
         <CombinedJobsProvider>
+          <CustomizeTrigger />
           <CombinedJobsPanel
             isJobSaved={() => false}
             getJobStatus={() => null}
@@ -68,6 +79,7 @@ function renderPanel() {
             unsaveJob={vi.fn()}
             quickApply={vi.fn()}
           />
+          <JobFeedSheet />
         </CombinedJobsProvider>
       </TooltipProvider>
     </MemoryRouter>,
@@ -84,7 +96,7 @@ async function openCustomize(user: ReturnType<typeof userEvent.setup>) {
 }
 
 function titlesInput() {
-  return screen.getByPlaceholderText(/e\.g\. Backend Engineer/);
+  return screen.getByPlaceholderText(/Backend Engineer/);
 }
 
 function savedPrefs(): { titles?: string[] } {
@@ -109,14 +121,14 @@ beforeEach(() => {
 });
 
 describe('combined jobs role titles', () => {
-  test('1. resume-derived titles appear in the compact summary', async () => {
+  test('1. resume-derived titles hydrate into Job feed chips', async () => {
+    const user = userEvent.setup();
     renderPanel();
-
-    await screen.findByText(/Searching roles:/);
-    expect(
-      screen.getByText('Backend Engineer, Data Engineer, Platform Engineer'),
-    ).toBeInTheDocument();
-    expect(screen.getByText(/\+1/)).toBeInTheDocument();
+    await settleInitialScan();
+    await openCustomize(user);
+    for (const title of RESUME_TITLES) {
+      expect(await screen.findByLabelText(`Remove ${title}`)).toBeInTheDocument();
+    }
     // Resume was the seed - no saved prefs, enough titles → no LLM synth.
     expect(api.getResume).toHaveBeenCalled();
     expect(api.suggestPipelineFilters).not.toHaveBeenCalled();
@@ -125,7 +137,7 @@ describe('combined jobs role titles', () => {
   test('2. titles appear as chips inside Customize', async () => {
     const user = userEvent.setup();
     renderPanel();
-    await screen.findByText(/Searching roles:/);
+    await settleInitialScan();
 
     await openCustomize(user);
     for (const title of RESUME_TITLES) {
@@ -136,7 +148,7 @@ describe('combined jobs role titles', () => {
   test('3. adding a title (type + Enter) and removing (chip X) works', async () => {
     const user = userEvent.setup();
     renderPanel();
-    await screen.findByText(/Searching roles:/);
+    await settleInitialScan();
     await openCustomize(user);
     await screen.findByLabelText('Remove Backend Engineer');
 
@@ -158,7 +170,7 @@ describe('combined jobs role titles', () => {
   test('4. pasting "Alpha, Beta, alpha" dedups case-insensitively', async () => {
     const user = userEvent.setup();
     renderPanel();
-    await screen.findByText(/Searching roles:/);
+    await settleInitialScan();
     await openCustomize(user);
     await screen.findByLabelText('Remove Backend Engineer');
 
@@ -177,7 +189,7 @@ describe('combined jobs role titles', () => {
 
     const user = userEvent.setup();
     renderPanel();
-    await screen.findByText(/Searching roles:/);
+    await settleInitialScan();
     await openCustomize(user);
     await screen.findByLabelText('Remove Seed Title 1');
 
@@ -195,12 +207,12 @@ describe('combined jobs role titles', () => {
 
     const user = userEvent.setup();
     renderPanel();
-    await screen.findByText(/Searching roles:/);
+    await settleInitialScan();
     await openCustomize(user);
     await screen.findByLabelText('Remove Custom One');
 
-    // Reset only appears once resume titles (the Reset target) hydrated.
-    await user.click(await screen.findByRole('button', { name: 'Reset' }));
+    // Titles Reset (ChipsInput), not the footer scope Reset.
+    await user.click(screen.getAllByRole('button', { name: 'Reset' })[0]);
 
     for (const title of RESUME_TITLES) {
       expect(await screen.findByLabelText(`Remove ${title}`)).toBeInTheDocument();
@@ -238,7 +250,7 @@ describe('combined jobs role titles', () => {
   test('8. saved titles survive remount and are not clobbered by resume titles', async () => {
     const user = userEvent.setup();
     const first = renderPanel();
-    await screen.findByText(/Searching roles:/);
+    await settleInitialScan();
     await openCustomize(user);
     await screen.findByLabelText('Remove Backend Engineer');
 
@@ -254,7 +266,7 @@ describe('combined jobs role titles', () => {
       status: 200,
     });
     renderPanel();
-    await screen.findByText(/Searching roles:/);
+    await settleInitialScan();
     await openCustomize(user);
 
     expect(await screen.findByLabelText('Remove Custom Role X')).toBeInTheDocument();
@@ -274,7 +286,7 @@ describe('combined jobs role titles', () => {
 
     // Isolate the manual sync from the auto-fired initial scan.
     for (const fn of SEARCH_FNS) api[fn].mockClear();
-    await user.click(screen.getByRole('button', { name: /Apply titles and sync/i }));
+    await user.click(screen.getByRole('button', { name: /^Search$/i }));
 
     const expected = [...RESUME_TITLES, 'Extra Title'];
     for (const fn of SEARCH_FNS) {
@@ -289,21 +301,21 @@ describe('combined jobs role titles', () => {
     const user = userEvent.setup();
     renderPanel();
     await settleInitialScan();
-    expect(screen.queryByText(/Title changes not yet applied/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Title changes need Search/)).not.toBeInTheDocument();
 
     await openCustomize(user);
     await screen.findByLabelText('Remove Backend Engineer');
     await user.type(titlesInput(), 'Another Role{Enter}');
 
-    expect(await screen.findByText(/Title changes not yet applied/)).toBeInTheDocument();
+    expect(await screen.findByText(/Title changes need Search/)).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: /Apply titles and sync/i }));
+    await user.click(screen.getByRole('button', { name: /^Search$/i }));
     await waitFor(() =>
-      expect(screen.queryByText(/Title changes not yet applied/)).not.toBeInTheDocument(),
+      expect(screen.queryByText(/Title changes need Search/)).not.toBeInTheDocument(),
     );
   });
 
-  test('11. clearing all titles disables sync with guidance, and no scan fires', async () => {
+  test('11. clearing all titles still syncs via resume family mode', async () => {
     localStorage.setItem(PREFS_KEY, JSON.stringify({ titles: ['Backend Engineer'] }));
 
     const user = userEvent.setup();
@@ -315,23 +327,34 @@ describe('combined jobs role titles', () => {
     for (const fn of SEARCH_FNS) api[fn].mockClear();
     await user.click(screen.getByLabelText('Remove Backend Engineer'));
 
-    expect(await screen.findByText(/Add at least one role title/)).toBeInTheDocument();
-    const applyBtn = screen.getByRole('button', { name: /Apply titles and sync/i });
-    expect(applyBtn).toBeDisabled();
-    await user.click(applyBtn); // disabled - must be a no-op
-    for (const fn of SEARCH_FNS) expect(api[fn]).not.toHaveBeenCalled();
+    expect(
+      await screen.findByText(/No title chips - Sync will use roles from your resume background/i),
+    ).toBeInTheDocument();
+    const applyBtn = screen.getByRole('button', { name: /^Search$/i });
+    expect(applyBtn).not.toBeDisabled();
+    await user.click(applyBtn);
+    await waitFor(() => {
+      for (const fn of SEARCH_FNS) expect(api[fn]).toHaveBeenCalled();
+    });
+    for (const fn of SEARCH_FNS) {
+      const params = api[fn].mock.calls[0][0];
+      expect(params.titles).toEqual([]);
+    }
   });
 
-  test('12. compact summary truncates visually but exposes the full list', async () => {
-    renderPanel();
-    await screen.findByText(/Searching roles:/);
+  test('12. empty chips with no resume seed disable Search', async () => {
+    api.getResume.mockResolvedValue({
+      data: { resume: { job_titles: [] } },
+      status: 200,
+    });
+    localStorage.setItem(PREFS_KEY, JSON.stringify({ titles: [] }));
 
-    const summaryBtn = await screen.findByTitle(RESUME_TITLES.join(', '));
-    expect(summaryBtn.tagName).toBe('BUTTON');
-    // Full list is exposed via title attribute; the visible span truncates.
-    expect(summaryBtn).toHaveAttribute('title', RESUME_TITLES.join(', '));
-    const truncated = summaryBtn.querySelector('span.truncate');
-    expect(truncated).not.toBeNull();
-    expect(within(summaryBtn).getByText(/Searching roles:/)).toBeInTheDocument();
+    const user = userEvent.setup();
+    renderPanel();
+    await waitFor(() => expect(api.getResume).toHaveBeenCalled());
+    await openCustomize(user);
+
+    expect(await screen.findByText(/Add a title or suggest from resume/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Search$/i })).toBeDisabled();
   });
 });

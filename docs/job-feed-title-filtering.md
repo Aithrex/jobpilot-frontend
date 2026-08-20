@@ -1,40 +1,48 @@
 # Job feed title filtering
 
-How Jobs **Job feed** Sync uses resume / chip titles.
+How Jobs **Job feed** Sync uses resume / AI title chips — and what happens when they are cleared.
 
-## Product contract
+## Product contract (two modes)
 
-1. Resume upload → parse / suggest **suitable role titles** (chips).
-2. Those titles classify into **role families** (e.g. Software Engineer → `software_engineering`).
-3. Sync shows the **whole family** of jobs for those families (Backend, Full Stack, Staff Engineer, …), not only exact chip strings.
-4. Jobs outside those families are **dropped**, even if keyword recall pulled them in.
-
-Example: chips / resume titles are Software Engineer only → family `software_engineering`. Backend Engineer stays. Bare **Systems Engineer** is `devops` and is **not** shown.
+| User state | Behavior |
+| --- | --- |
+| **Has title chips** (resume AI or manual) | Strict chip allowlist: every significant token of at least one chip must appear in the job title (`title_matched`) |
+| **Clears all chips** (resume still on account) | **Family mode**: retrieve + list from resume **role families** (not the whole market) |
+| **No chips and no resume signal** | Do not sync — prompt add title / suggest from resume |
 
 ```
-Resume / chips → role families
-  → retrieve (keyword / inventory by family)
+Chips present
+  → retrieve (wide net / families OK)
   → score
-  → keep only jobs whose live title family ∈ allowed families
+  → keep only title_matched chip roles
+  → marketplace boards (Jobgether) pin last
+
+Chips cleared + resume families
+  → retrieve with family seed phrases
+  → score
+  → keep jobs whose classified role_family is in the resume set
+  → marketplace pin last
 ```
+
+Same-family but off-chip titles are **not** listed in chip mode (e.g. chip `Software Engineer` keeps `Senior Software Engineer`, drops `Backend Engineer` and `Systems Engineer` unless those chips are also present).
 
 ## What Sync sends
 
 | Piece | Where |
 | --- | --- |
 | Shared title chips | [`src/hooks/useJobTitles.ts`](../src/hooks/useJobTitles.ts) |
-| Fan-out scan | [`src/hooks/useCombinedJobs.ts`](../src/hooks/useCombinedJobs.ts) |
-
-Payload: `{ titles, location, remote_only, us_only, force_refresh }`.
+| Fan-out scan (`canSearch` = chips **or** resume titles) | [`src/hooks/useCombinedJobs.ts`](../src/hooks/useCombinedJobs.ts) |
+| Empty chips still call APIs with `titles: []` when a resume seed exists | same |
 
 ## Server gate
 
-- Taxonomy: [`fit_score.ROLE_FAMILIES`](../../jobpilot-backend/shared/python/services/fit_score.py) / `classify_role`
-- Live crawl filter: `_score_jobs` → `_allowed_families_for_titles` in `workday_jobs_service.py` (also used by career pages / MNC)
-- Inventory: `inventory_feed.build_feed` re-classifies titles against the retrieval family set after scoring
+- `resolve_feed_search_titles` chooses chips / family / none
+- Live crawl / career / MNC: `_score_jobs` chip gate vs family membership
+- Inventory: chip `title_matches_chips` **or** family membership after scoring
+- Chip matcher: `_role_matchers` / `title_matches_chips` in `workday_jobs_service.py`
 
 Pinned by `jobpilot-backend/tests/test_job_feed_title_matching.py`.
 
 ## Client filters (unchanged)
 
-Recency, free-text search, seniority, min score, sponsorship — not a second title allowlist.
+Recency, free-text, seniority, min score, sponsorship. Sort: Best match / Newest; marketplace listings last.

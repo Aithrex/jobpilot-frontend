@@ -7,9 +7,9 @@ import type { WorkdayJob, WorkdayJobsParams } from '@/types/jobs';
 /**
  * Combined Job feed scan (Workday + career pages + MNC).
  *
- * Title chips (from resume analysis / user edits) classify into role families
- * on the server. Sync returns the whole family for those titles, and drops
- * off-family rows (e.g. Systems Engineer when chips are Software Engineer).
+ * Title chips (resume AI / user edits) are the role allowlist. Sync retrieves
+ * broadly, then the server keeps only jobs whose titles match those chips
+ * (not the entire role family). Marketplace boards pin last.
  * See docs/job-feed-title-filtering.md.
  */
 
@@ -120,7 +120,8 @@ export interface CombinedJobsController {
   /** LLM title synthesizer - merges suggestions into the current set (cap 40). */
   smartSuggestTitles: () => Promise<void>;
   suggestingTitles: boolean;
-  /** False when there are no titles - run() would be a meaningless scan. */
+  /** False when there is nothing to scope a scan: no title chips and no
+   *  resume-derived titles (empty-chip family mode needs a resume signal). */
   canSearch: boolean;
   /** Snapshot of the titles the most recent scan actually used. */
   lastScanTitles: string[] | null;
@@ -161,6 +162,8 @@ export function useCombinedJobs(enabled = true): CombinedJobsController {
 
   const titlesRef = useRef<string[]>([]);
   titlesRef.current = titles;
+  const resumeTitlesRef = useRef<string[]>([]);
+  resumeTitlesRef.current = resumeTitles;
 
   const runOne = useCallback(
     async (key: SourceKey, fn: typeof apiService.searchWorkdayJobs, params: WorkdayJobsParams) => {
@@ -214,8 +217,12 @@ export function useCombinedJobs(enabled = true): CombinedJobsController {
     ) => {
       // Snapshot the ref the moment the scan starts so all three sources search
       // the exact same title set, even if the user keeps editing mid-scan.
+      // Empty chips are allowed when a resume seed exists — the backend then
+      // runs family mode from resume role families.
       const titlesSnapshot = titlesRef.current;
-      if (titlesSnapshot.length === 0) return; // nothing to search - skip the fan-out
+      if (titlesSnapshot.length === 0 && resumeTitlesRef.current.length === 0) {
+        return;
+      }
       setLastScanTitles(titlesSnapshot);
       const params: WorkdayJobsParams = {
         titles: titlesSnapshot,
@@ -245,7 +252,7 @@ export function useCombinedJobs(enabled = true): CombinedJobsController {
     return { done, total };
   }, [states]);
 
-  const canSearch = titles.length > 0;
+  const canSearch = titles.length > 0 || resumeTitles.length > 0;
   const titlesPending = useMemo(
     () => hasResult && lastScanTitles != null && !sameTitleSet(titles, lastScanTitles),
     [hasResult, lastScanTitles, titles],
