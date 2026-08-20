@@ -1,6 +1,4 @@
-import { Suspense } from "react";
-import { Outlet, useMatch } from "react-router-dom";
-import { Loader2 } from "lucide-react";
+import { useMatch } from "react-router-dom";
 import { ResumeNav } from "./craft/ResumeNav";
 import { ResumeOverviewPanel } from "./craft/ResumeOverviewPanel";
 import {
@@ -8,17 +6,7 @@ import {
   useResumeWorkspaceContext,
 } from "./craft/ResumeWorkspaceContext";
 import { navHref } from "../nav.config";
-
-function SectionFallback() {
-  return (
-    <div
-      className="flex min-h-[40vh] items-center justify-center text-muted-foreground"
-      aria-live="polite"
-    >
-      <Loader2 className="h-5 w-5 animate-spin text-primary" aria-hidden="true" />
-    </div>
-  );
-}
+import { AnimatedOutlet } from "../AnimatedOutlet";
 
 /**
  * The Resume Studio workspace.
@@ -65,13 +53,7 @@ function CraftWorkspace() {
 
         {/* Centre: primary content, the widest column. */}
         <div className="min-w-0 flex-1">
-          <Suspense fallback={<SectionFallback />}>
-            {/* Sections are mounted by App.tsx routes; `embedded` tells the
-                monolith-born tab components the shell already renders the
-                page header + navigation, so they suppress their internal
-                heroes. The overview is shell-native and ignores it. */}
-            <Outlet context={{ embedded: true }} />
-          </Suspense>
+          <AnimatedOutlet scope="section" context={{ embedded: true }} />
         </div>
 
         {/* Right: account state. Only on the overview - inside a tool the

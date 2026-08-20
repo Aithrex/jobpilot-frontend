@@ -1,23 +1,12 @@
-import { Suspense } from "react";
-import { Link, Outlet, useLocation } from "react-router-dom";
-import { Loader2, Radar, Search } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
+import { Radar, Search } from "lucide-react";
 import { SubNav } from "../SubNav";
 import { JOBS_SECTIONS, appPath } from "../nav.config";
 import { Button } from "@/components/ui/button";
 import { JobFeedSheet } from "@/components/job-search/JobFeedSheet";
 import { JobsRefineBar } from "@/components/job-search/JobsRefineBar";
 import { useCombinedJobsCtx } from "@/components/job-search/CombinedJobsProvider";
-
-function SectionFallback() {
-  return (
-    <div
-      className="flex min-h-[40vh] items-center justify-center text-muted-foreground"
-      aria-live="polite"
-    >
-      <Loader2 className="h-5 w-5 animate-spin text-primary" aria-hidden="true" />
-    </div>
-  );
-}
+import { AnimatedOutlet } from "../AnimatedOutlet";
 
 function jobsSectionOf(pathname: string): string {
   return pathname.split("/").filter(Boolean).pop() ?? "";
@@ -104,12 +93,7 @@ export default function DiscoverPage() {
       </div>
       {showCombinedFeed && <JobFeedSheet />}
 
-      <Suspense fallback={<SectionFallback />}>
-        {/* Sections are mounted by App.tsx routes; `embedded` tells the
-            monolith-born tab components the shell already renders the page
-            header + SubNav, so they suppress their internal hero headers. */}
-        <Outlet context={{ embedded: true }} />
-      </Suspense>
+      <AnimatedOutlet scope="section" context={{ embedded: true }} />
     </div>
   );
 }

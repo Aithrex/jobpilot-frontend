@@ -1,5 +1,5 @@
 import { Suspense, lazy, useEffect } from "react";
-import { Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { onNavigateToTailor } from "@/lib/craftHandoff";
@@ -7,6 +7,7 @@ import { appPath } from "./nav.config";
 import { TopBar } from "./TopBar";
 import { MobileNav } from "./MobileNav";
 import { CommandPalette } from "./CommandPalette";
+import { AnimatedOutlet } from "./AnimatedOutlet";
 
 // First-run onboarding. Auth lands on /app/home; the shell hosts the wizard
 // (self-gates unless the signed-in user still lacks onboarding).
@@ -22,14 +23,6 @@ function FullScreenLoader() {
         <Loader2 className="h-5 w-5 animate-spin text-primary" aria-hidden="true" />
         <span className="text-sm">Loading your workspace...</span>
       </div>
-    </div>
-  );
-}
-
-function OutletFallback() {
-  return (
-    <div className="flex min-h-[50vh] items-center justify-center text-muted-foreground" aria-live="polite">
-      <Loader2 className="h-5 w-5 animate-spin text-primary" aria-hidden="true" />
     </div>
   );
 }
@@ -90,9 +83,7 @@ export default function AppShell() {
             every page had before), or `.page-full` for a full-bleed workspace
             that supplies its own padding. */}
         <main id="main-content" className="flex-1 overflow-x-hidden pb-24 lg:pb-0">
-          <Suspense fallback={<OutletFallback />}>
-            <Outlet />
-          </Suspense>
+          <AnimatedOutlet scope="destination" />
         </main>
       </div>
 

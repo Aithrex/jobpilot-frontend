@@ -1,22 +1,9 @@
-import { Suspense } from "react";
-import { Outlet } from "react-router-dom";
-import { Loader2 } from "lucide-react";
 import { SubNav } from "../SubNav";
 import { SETTINGS_SECTIONS } from "../nav.config";
-
-function SectionFallback() {
-  return (
-    <div
-      className="flex min-h-[40vh] items-center justify-center text-muted-foreground"
-      aria-live="polite"
-    >
-      <Loader2 className="h-5 w-5 animate-spin text-primary" aria-hidden="true" />
-    </div>
-  );
-}
+import { AnimatedOutlet } from "../AnimatedOutlet";
 
 /**
- * "Settings" destination in the app shell (`/next/settings`). A consolidated
+ * "Settings" destination in the app shell (`/app/settings`). A consolidated
  * settings hub: a horizontal sub-nav over deep-linkable nested sections that
  * unify identity, the previously scattered integrations, the auto-apply
  * autonomy control, billing, and notifications. Sections are lazy-loaded via
@@ -38,9 +25,7 @@ export default function SettingsPage() {
 
       <SubNav ariaLabel="Settings sections" items={SETTINGS_SECTIONS} />
 
-      <Suspense fallback={<SectionFallback />}>
-        <Outlet />
-      </Suspense>
+      <AnimatedOutlet scope="section" />
     </div>
   );
 }

@@ -1,22 +1,9 @@
-import { Suspense } from "react";
-import { Outlet } from "react-router-dom";
-import { Loader2 } from "lucide-react";
 import { SubNav } from "../SubNav";
 import { GROW_SECTIONS } from "../nav.config";
-
-function SectionFallback() {
-  return (
-    <div
-      className="flex min-h-[40vh] items-center justify-center text-muted-foreground"
-      aria-live="polite"
-    >
-      <Loader2 className="h-5 w-5 animate-spin text-primary" aria-hidden="true" />
-    </div>
-  );
-}
+import { AnimatedOutlet } from "../AnimatedOutlet";
 
 /**
- * "Grow" destination in the app shell (`/next/grow`). A layout route: a
+ * "Grow" destination in the app shell (`/app/grow`). A layout route: a
  * horizontal sub-nav over deep-linkable nested sections, each mounting an
  * existing standalone tab component from the monolith. Sections are lazy-loaded
  * via the nested routes in App.tsx.
@@ -36,12 +23,7 @@ export default function GrowPage() {
 
       <SubNav ariaLabel="Grow sections" items={GROW_SECTIONS} />
 
-      <Suspense fallback={<SectionFallback />}>
-        {/* Sections are mounted by App.tsx routes; `embedded` tells the
-            monolith-born tab components the shell already renders the page
-            header + SubNav, so they suppress their internal hero headers. */}
-        <Outlet context={{ embedded: true }} />
-      </Suspense>
+      <AnimatedOutlet scope="section" context={{ embedded: true }} />
     </div>
   );
 }

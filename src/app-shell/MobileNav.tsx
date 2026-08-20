@@ -62,7 +62,7 @@ export function MobileNav() {
                       {isActive && (
                         <motion.span
                           layoutId={ACTIVE_TAB_ID}
-                          className="absolute inset-1 z-0 rounded-full bg-background shadow-[0_1px_4px_rgb(0_0_0/0.10)]"
+                          className="absolute inset-1 z-0 rounded-full border border-white/70 bg-background/90 shadow-[0_1px_6px_rgb(0_0_0/0.12)] dark:border-white/15 dark:bg-background/80"
                           transition={indicatorSpring(reduceMotion)}
                           aria-hidden="true"
                         />

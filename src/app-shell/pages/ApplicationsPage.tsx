@@ -1,25 +1,14 @@
 import { Suspense, lazy, useState } from 'react';
-import { Outlet, useSearchParams } from 'react-router-dom';
-import { Loader2 } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import { SubNav } from '../SubNav';
 import { APPLY_SECTIONS } from '../nav.config';
+import { AnimatedOutlet } from '../AnimatedOutlet';
 
 // Emailed approve/review links 302 into `/app/apply?approve=<token>`.
 // Lazy so the confirmation surface only loads for users who arrive via a link.
 const ApproveLinkConfirm = lazy(
   () => import('@/components/autoSubmit/ApproveLinkConfirm'),
 );
-
-function SectionFallback() {
-  return (
-    <div
-      className="flex min-h-[40vh] items-center justify-center text-muted-foreground"
-      aria-live="polite"
-    >
-      <Loader2 className="h-5 w-5 animate-spin text-primary" aria-hidden="true" />
-    </div>
-  );
-}
 
 /**
  * "Apply" destination (`/app/apply`): tracker, Auto-Apply, inbox, pipeline.
@@ -54,11 +43,7 @@ export default function ApplicationsPage() {
 
       <SubNav ariaLabel="Applications sections" items={APPLY_SECTIONS} />
 
-      <Suspense fallback={<SectionFallback />}>
-        {/* `embedded` tells the tracker tab the shell already renders the page
-            header + SubNav, so it suppresses its own hero header. */}
-        <Outlet context={{ embedded: true }} />
-      </Suspense>
+      <AnimatedOutlet scope="section" context={{ embedded: true }} />
     </div>
   );
 }

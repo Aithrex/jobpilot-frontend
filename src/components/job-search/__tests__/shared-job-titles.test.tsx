@@ -132,6 +132,14 @@ async function closeJobFeed(user: ReturnType<typeof userEvent.setup>) {
 
 async function openCareersCustomize(user: ReturnType<typeof userEvent.setup>) {
   await user.click(surface('careers').getByRole('button', { name: 'Customize' }));
+  await screen.findByPlaceholderText(/e\.g\. Backend Engineer/);
+}
+
+async function closeCareersCustomize(user: ReturnType<typeof userEvent.setup>) {
+  await user.keyboard('{Escape}');
+  await waitFor(() =>
+    expect(screen.queryByPlaceholderText(/e\.g\. Backend Engineer/)).not.toBeInTheDocument(),
+  );
 }
 
 function jobFeedTitlesInput() {
@@ -139,7 +147,7 @@ function jobFeedTitlesInput() {
 }
 
 function careersTitlesInput() {
-  return surface('careers').getByPlaceholderText(/e\.g\. Backend Engineer/);
+  return screen.getByPlaceholderText(/e\.g\. Backend Engineer/);
 }
 
 function cachedTitles(): string[] {
@@ -171,17 +179,12 @@ describe('shared job titles', () => {
     const user = userEvent.setup();
     renderBothSurfaces();
 
-    // Open Customize first: Job feed is a modal dialog that aria-hides the page.
-    await openCareersCustomize(user);
-    await surface('careers').findByLabelText('Remove Backend Engineer');
-
     await openJobFeed(user);
     await user.type(jobFeedTitlesInput(), 'Machine Learning Engineer{Enter}');
     await closeJobFeed(user);
 
-    expect(
-      await surface('careers').findByLabelText('Remove Machine Learning Engineer'),
-    ).toBeInTheDocument();
+    await openCareersCustomize(user);
+    expect(await screen.findByLabelText('Remove Machine Learning Engineer')).toBeInTheDocument();
   });
 
   test('2. a title removed in Careers disappears from Job feed with no reload', async () => {
@@ -189,8 +192,9 @@ describe('shared job titles', () => {
     renderBothSurfaces();
 
     await openCareersCustomize(user);
-    await surface('careers').findByLabelText('Remove Data Engineer');
-    await user.click(surface('careers').getByLabelText('Remove Data Engineer'));
+    await screen.findByLabelText('Remove Data Engineer');
+    await user.click(screen.getByLabelText('Remove Data Engineer'));
+    await closeCareersCustomize(user);
 
     await openJobFeed(user);
     await waitFor(() =>
@@ -219,7 +223,7 @@ describe('shared job titles', () => {
     const first = renderBothSurfaces();
 
     await openCareersCustomize(user);
-    await surface('careers').findByLabelText('Remove Backend Engineer');
+    await screen.findByLabelText('Remove Backend Engineer');
     await user.type(careersTitlesInput(), 'Custom Role X{Enter}');
     await waitFor(() => expect(cachedTitles()).toContain('Custom Role X'));
 
@@ -246,15 +250,16 @@ describe('shared job titles', () => {
     renderBothSurfaces();
 
     await openCareersCustomize(user);
-    await surface('careers').findByLabelText('Remove Seed Title 1');
+    await screen.findByLabelText('Remove Seed Title 1');
 
     await user.click(careersTitlesInput());
     await user.paste('Extra One, Extra Two, Extra Three');
 
-    expect(await surface('careers').findByLabelText('Remove Extra One')).toBeInTheDocument();
-    expect(surface('careers').queryByLabelText('Remove Extra Two')).not.toBeInTheDocument();
-    expect(surface('careers').getByText('40 / 40')).toBeInTheDocument();
+    expect(await screen.findByLabelText('Remove Extra One')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Remove Extra Two')).not.toBeInTheDocument();
+    expect(screen.getByText('40 / 40')).toBeInTheDocument();
 
+    await closeCareersCustomize(user);
     await openJobFeed(user);
     expect((await screen.findAllByText('40 / 40')).length).toBeGreaterThanOrEqual(1);
   });
@@ -279,11 +284,10 @@ describe('shared job titles', () => {
     await waitFor(() => expect(api.suggestPipelineFilters).toHaveBeenCalledTimes(1));
     await openCareersCustomize(user);
 
-    const careers = surface('careers');
-    expect(await careers.findByLabelText('Remove Backend Engineer')).toBeInTheDocument();
-    expect(await careers.findByLabelText('Remove Platform Engineer')).toBeInTheDocument();
-    expect(await careers.findByLabelText('Remove Data Engineer')).toBeInTheDocument();
-    expect(careers.queryByLabelText('Remove backend engineer')).not.toBeInTheDocument();
+    expect(await screen.findByLabelText('Remove Backend Engineer')).toBeInTheDocument();
+    expect(await screen.findByLabelText('Remove Platform Engineer')).toBeInTheDocument();
+    expect(await screen.findByLabelText('Remove Data Engineer')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Remove backend engineer')).not.toBeInTheDocument();
   });
 
   test('7. a resume with 4+ titles does NOT auto-suggest', async () => {
@@ -315,6 +319,6 @@ describe('shared job titles', () => {
     await closeJobFeed(user);
 
     await openCareersCustomize(user);
-    expect(await surface('careers').findByLabelText('Remove Staff Engineer')).toBeInTheDocument();
+    expect(await screen.findByLabelText('Remove Staff Engineer')).toBeInTheDocument();
   });
 });

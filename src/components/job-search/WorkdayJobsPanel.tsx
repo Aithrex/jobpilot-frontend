@@ -4,14 +4,11 @@ import {
   AlertCircle,
   Building2,
   Check,
-  ChevronDown,
   Factory,
   Loader2,
-  MapPin,
   Radar,
   RefreshCw,
   Rocket,
-  Search,
   ShieldAlert,
   SlidersHorizontal,
   Sparkles,
@@ -30,6 +27,14 @@ import { JOB_TITLES_CAP, useJobTitles } from '@/hooks/useJobTitles';
 import { apiService } from '@/lib/api';
 import { jobTitleOf } from '@/lib/careerJobs';
 // (job listings are free & auth-only - no entitlement/upgrade wiring here)
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import { PillSwitch } from '@/components/ui/pill-switch';
 import type {
@@ -798,7 +803,7 @@ export function WorkdayJobsPanel({
   return (
     <div className="space-y-5">
       {/* ── Live-sync command bar ── */}
-      <div className="mesh-accent relative overflow-hidden rounded-2xl border border-border/70 p-4 shadow-soft sm:p-5">
+      <div className="relative overflow-hidden rounded-2xl border border-border/50 liquid-glass p-4 shadow-soft sm:p-5">
         <div
           className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-primary/10 blur-3xl"
           aria-hidden
@@ -867,18 +872,14 @@ export function WorkdayJobsPanel({
             </Button>
             <Button
               size="sm"
-              variant="ghost"
-              onClick={() => setCustomizeOpen((o) => !o)}
+              variant="outline"
+              onClick={() => setCustomizeOpen(true)}
               aria-expanded={customizeOpen}
               aria-controls={`career-portals-setup-${variant}`}
-              className="gap-1.5"
+              className="h-9 gap-1.5"
             >
               <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden />
               Customize
-              <ChevronDown
-                className={cn('h-3.5 w-3.5 transition-transform', customizeOpen && 'rotate-180')}
-                aria-hidden
-              />
             </Button>
           </div>
         </div>
@@ -909,140 +910,164 @@ export function WorkdayJobsPanel({
         </AnimatePresence>
       </div>
 
-      {/* ── Customize search (collapsed by default) ── */}
-      <AnimatePresence initial={false}>
-        {customizeOpen && (
-          <motion.div
-            id={`career-portals-setup-${variant}`}
-            initial={reduceMotion ? undefined : { opacity: 0, height: 0 }}
-            animate={reduceMotion ? undefined : { opacity: 1, height: 'auto' }}
-            exit={reduceMotion ? undefined : { opacity: 0, height: 0 }}
-            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-            className="overflow-hidden"
-          >
-            <div className="glass-card rounded-2xl p-5">
-              <div className="space-y-5">
-                <div>
-                  <p className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
-                    <Search className="h-3.5 w-3.5" aria-hidden />
-                    Role titles
-                    <span className="font-normal">· prefilled from your resume</span>
-                  </p>
-                  <ChipsInput
-                    values={titles}
-                    onChange={setTitles}
-                    maxItems={JOB_TITLES_CAP}
-                    placeholder="e.g. Backend Engineer, Data Engineer..."
-                    defaultValues={
-                      resumeTitles.length ? resumeTitles.slice(0, JOB_TITLES_CAP) : undefined
-                    }
-                    accentClass="border-primary/30 bg-primary/10 text-primary"
-                    helperText={`The first 4 core title families drive the ${isMncs ? 'MNC board scan' : isCareers ? 'career-site scan' : 'Workday search'}; every title participates in ranking. One shared set: these titles also drive Job feed (For you) and the other career portals.`}
-                    emptyState="Add a role title, or upload a resume to prefill."
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => void smartSuggestTitles()}
-                    disabled={suggesting}
-                    className="mt-1 gap-1 px-2 text-[11px] text-primary"
-                  >
-                    {suggesting ? (
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                    ) : (
-                      <Wand2 className="h-3 w-3" />
-                    )}
-                    {suggesting ? 'Analyzing resume...' : 'Smart-suggest titles from resume'}
-                  </Button>
-                  {titlesPending && (
-                    <p className="mt-2 text-[11px] font-medium text-warning">
-                      Titles changed - Search to apply
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <p className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
-                    <Factory className="h-3.5 w-3.5" aria-hidden />
-                    Industries
-                    <span className="font-normal">
-                      ·{' '}
-                      {industries.length
-                        ? `${selectedTenantCount} companies selected`
-                        : `all ${catalogTotal} companies`}
-                    </span>
-                  </p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {(catalog?.industries ?? []).map((ind) => {
-                      const isActive = industries.includes(ind.key);
-                      return (
-                        <button
-                          key={ind.key}
-                          type="button"
-                          onClick={() => toggleIndustry(ind.key)}
-                          aria-pressed={isActive}
-                          className={cn(
-                            'rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                            isActive
-                              ? 'border-primary/50 bg-primary/10 text-primary'
-                              : 'border-border text-muted-foreground hover:border-primary/30 hover:text-primary',
-                          )}
-                        >
-                          {industryLabels[ind.key] ?? ind.key}
-                          <span className="ml-1 tabular-nums opacity-60">{ind.count}</span>
-                        </button>
-                      );
-                    })}
-                    {catalogLoading &&
-                      !catalog &&
-                      Array.from({ length: 8 }).map((_, i) => (
-                        <Skeleton key={i} className="h-6 w-20 rounded-full" />
-                      ))}
-                    {!catalogLoading && !catalog && (
-                      <span className="text-xs text-muted-foreground">
-                        Couldn't load the company catalog. Search still works across all companies.
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap items-end gap-4">
-                  <div className="min-w-[200px] flex-1">
-                    <label
-                      htmlFor={`portal-location-${variant}`}
-                      className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground"
-                    >
-                      <MapPin className="h-3.5 w-3.5" aria-hidden />
-                      Location
-                    </label>
-                    <Input
-                      id={`portal-location-${variant}`}
-                      value={location}
-                      onChange={(e) => setLocation(e.target.value)}
-                      placeholder="Anywhere in the US, e.g. Texas, Austin, Remote"
-                    />
-                  </div>
-                  <label className="flex cursor-pointer items-center gap-2 pb-2 text-xs font-medium text-muted-foreground">
-                    <Switch checked={remoteOnly} onCheckedChange={setRemoteOnly} />
-                    Remote only
-                  </label>
-                  <div className="flex gap-2 pb-0.5">
-                    <Button onClick={() => sync(false)} disabled={loading} className="gap-1.5">
-                      {loading ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Rocket className="h-4 w-4" />
-                      )}
-                      {loading ? 'Scanning...' : searchVerb}
-                    </Button>
-                  </div>
-                </div>
-              </div>
+      {/* Customize opens as a right drawer - same pattern as Job feed. */}
+      <Sheet open={customizeOpen} onOpenChange={setCustomizeOpen}>
+        <SheetContent
+          side="right"
+          overlayClassName="bg-black/40"
+          id={`career-portals-setup-${variant}`}
+          className="liquid-glass flex w-full flex-col gap-0 overflow-hidden rounded-l-2xl border-l p-0 sm:max-w-md"
+        >
+          <SheetHeader className="space-y-3 border-b border-border/50 px-6 pb-4 pt-5 text-left">
+            <div className="pr-8">
+              <p className="overline">Career Portals</p>
+              <SheetTitle className="mt-1 font-display text-xl font-semibold tracking-tight">
+                Live listings
+              </SheetTitle>
+              <SheetDescription className="mt-1 text-xs text-muted-foreground">
+                Tune titles, industries, and location for {catalogNoun}. Titles stay shared with Job
+                feed.
+              </SheetDescription>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            {loading && (
+              <Progress
+                value={
+                  progress ? (progress.tenants_done / Math.max(1, progress.tenants_total)) * 100 : 8
+                }
+                className="h-1"
+              />
+            )}
+          </SheetHeader>
+
+          <div className="flex-1 space-y-7 overflow-y-auto px-6 py-5">
+            <section>
+              <p className="overline mb-2">Titles</p>
+              <ChipsInput
+                values={titles}
+                onChange={setTitles}
+                maxItems={JOB_TITLES_CAP}
+                placeholder="e.g. Backend Engineer, Data Engineer..."
+                defaultValues={
+                  resumeTitles.length ? resumeTitles.slice(0, JOB_TITLES_CAP) : undefined
+                }
+                accentClass="border-border bg-muted/60 text-foreground"
+                helperText={`The first 4 core title families drive the ${isMncs ? 'MNC board scan' : isCareers ? 'career-site scan' : 'Workday search'}; every title participates in ranking. One shared set: these titles also drive Job feed (For you) and the other career portals.`}
+                emptyState="Add a role title, or upload a resume to prefill."
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => void smartSuggestTitles()}
+                disabled={suggesting}
+                className="mt-2 h-8 px-2 text-[11px] font-medium text-muted-foreground hover:text-foreground"
+              >
+                {suggesting ? (
+                  <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
+                ) : (
+                  <Wand2 className="mr-1.5 h-3 w-3" aria-hidden />
+                )}
+                {suggesting ? 'Analyzing resume...' : 'Suggest from resume'}
+              </Button>
+              {titlesPending && (
+                <p className="mt-2 text-[11px] font-medium text-warning">
+                  Titles changed - Search to apply
+                </p>
+              )}
+            </section>
+
+            <section>
+              <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+                <Factory className="h-3.5 w-3.5" aria-hidden />
+                Industries
+                <span className="font-normal">
+                  ·{' '}
+                  {industries.length
+                    ? `${selectedTenantCount} companies selected`
+                    : `all ${catalogTotal} companies`}
+                </span>
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {(catalog?.industries ?? []).map((ind) => {
+                  const isActive = industries.includes(ind.key);
+                  return (
+                    <button
+                      key={ind.key}
+                      type="button"
+                      onClick={() => toggleIndustry(ind.key)}
+                      aria-pressed={isActive}
+                      className={cn(
+                        'rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                        isActive
+                          ? 'border-primary/50 bg-primary/10 text-primary'
+                          : 'border-border/70 bg-background/40 text-muted-foreground hover:border-primary/30 hover:text-primary',
+                      )}
+                    >
+                      {industryLabels[ind.key] ?? ind.key}
+                      <span className="ml-1 tabular-nums opacity-60">{ind.count}</span>
+                    </button>
+                  );
+                })}
+                {catalogLoading &&
+                  !catalog &&
+                  Array.from({ length: 8 }).map((_, i) => (
+                    <Skeleton key={i} className="h-6 w-20 rounded-full" />
+                  ))}
+                {!catalogLoading && !catalog && (
+                  <span className="text-xs text-muted-foreground">
+                    Couldn't load the company catalog. Search still works across all companies.
+                  </span>
+                )}
+              </div>
+            </section>
+
+            <section>
+              <p className="overline mb-2">Location</p>
+              <Input
+                id={`portal-location-${variant}`}
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                placeholder="Anywhere in the US, e.g. Texas, Austin, Remote"
+                className="h-10"
+              />
+              <label className="mt-3 flex h-10 cursor-pointer items-center justify-between rounded-lg border border-border/70 bg-background/55 px-3 text-sm font-medium text-foreground">
+                Remote only
+                <Switch checked={remoteOnly} onCheckedChange={setRemoteOnly} />
+              </label>
+            </section>
+          </div>
+
+          <SheetFooter className="flex-row items-center gap-2 border-t border-border/50 px-6 py-3 sm:space-x-0">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => sync(true)}
+              disabled={loading}
+              className="mr-auto h-9 gap-1.5"
+              title="Re-scan every company now"
+            >
+              <RefreshCw className={cn('h-3.5 w-3.5', loading && 'animate-spin')} aria-hidden />
+              Sync
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => {
+                void sync(false);
+                setCustomizeOpen(false);
+              }}
+              disabled={loading || titles.length === 0}
+              className="h-9 min-w-[5.5rem] gap-1.5"
+            >
+              {loading ? (
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+              ) : (
+                <Rocket className="h-4 w-4" aria-hidden />
+              )}
+              {loading ? 'Scanning...' : searchVerb}
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
 
       {/* ── Error / gate states ── */}
       {error && (
