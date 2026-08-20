@@ -22,7 +22,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { ChipsInput } from '@/components/job-search/ChipsInput';
 import { JOB_FEED_GRID_CLASS, JobCard, JOB_CARD_CLASS } from '@/components/job-search/JobCard';
-import { JobsTailorBanner } from '@/components/job-search/JobsTailorBanner';
 import { useAutoSync } from '@/hooks/useAutoSync';
 import { JOB_TITLES_CAP, useJobTitles } from '@/hooks/useJobTitles';
 import { apiService } from '@/lib/api';
@@ -825,7 +824,6 @@ export function WorkdayJobsPanel({
 
   return (
     <div className="space-y-5">
-      <JobsTailorBanner />
       {/* ── Live-sync command bar ── */}
       <div className="relative overflow-hidden rounded-2xl border border-border/50 liquid-glass p-4 shadow-soft sm:p-5">
         <div

@@ -11,7 +11,6 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ApplyConfirmDialog, JOB_FEED_GRID_CLASS, JobCard, JOB_CARD_CLASS } from '@/components/job-search/JobCard';
-import { JobsTailorBanner } from '@/components/job-search/JobsTailorBanner';
 import { useCombinedJobsCtx } from '@/components/job-search/CombinedJobsProvider';
 import { RECENCY_OPTIONS, seniorityOf, sortJobsByMode, isAppliedPipelineStatus, toJob } from '@/lib/careerJobs';
 import { cn } from '@/lib/utils';
@@ -213,7 +212,6 @@ export function CombinedJobsPanel({
 
   return (
     <div className="space-y-5">
-      <JobsTailorBanner />
       <div className="flex flex-wrap items-center gap-2">
         <p className="min-w-0 flex-1 text-xs text-muted-foreground" aria-live="polite">
           {loading ? (

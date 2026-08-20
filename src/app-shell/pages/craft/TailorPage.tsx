@@ -56,11 +56,6 @@ import {
   cacheJdText,
   readCachedJdText,
 } from '@/lib/craftHandoff';
-import {
-  clearActiveTailorSession,
-  getActiveTailorSession,
-  setActiveTailorSession,
-} from '@/lib/activeTailorSession';
 import type {
   TailoredFullResume,
   JDAnalysis,
@@ -398,15 +393,6 @@ export default function TailorPage() {
     const ctrl = new AbortController();
     tailorAbortRef.current = ctrl;
 
-    const prevSession = getActiveTailorSession();
-    setActiveTailorSession({
-      sourceJobId: pendingJobIdRef.current || prevSession?.sourceJobId || 'manual',
-      title: prevSession?.title,
-      company: prevSession?.company,
-      backendJobId: prevSession?.backendJobId,
-      status: 'running',
-    });
-
     setPhase('submitting');
     setTailorPct(null);
     setTailorError('');
@@ -450,34 +436,15 @@ export default function TailorPage() {
         if (typeof p.pct === 'number') setTailorPct(p.pct);
       },
       pendingJobIdRef.current || undefined,
-      (backendJobId) => {
-        const prev = getActiveTailorSession();
-        setActiveTailorSession({
-          sourceJobId: pendingJobIdRef.current || prev?.sourceJobId || 'manual',
-          title: prev?.title,
-          company: prev?.company,
-          backendJobId,
-          status: 'running',
-        });
-      },
     );
 
     if (ctrl.signal.aborted) {
       cleanup();
-      // Leave activeTailorSession running — Jobs banner keeps polling the worker.
       return;
     }
     cleanup();
 
     if (combined.error) {
-      const prev = getActiveTailorSession();
-      if (prev) {
-        setActiveTailorSession({
-          ...prev,
-          status: 'error',
-          error: combined.error,
-        });
-      }
       if (combined.status === 403) {
         upgrade.open({
           feature: 'tailor',
@@ -503,14 +470,6 @@ export default function TailorPage() {
     }
     if (!combined.data?.jd_analysis || !combined.data?.tailored_resume) {
       setTailorError('Failed to tailor resume.');
-      const prev = getActiveTailorSession();
-      if (prev) {
-        setActiveTailorSession({
-          ...prev,
-          status: 'error',
-          error: 'Failed to tailor resume.',
-        });
-      }
       return;
     }
     refreshUsage();
@@ -529,14 +488,6 @@ export default function TailorPage() {
         timestamp: Date.now(),
       },
     ]);
-    const prev = getActiveTailorSession();
-    setActiveTailorSession({
-      sourceJobId: pendingJobIdRef.current || prev?.sourceJobId || 'manual',
-      title: prev?.title,
-      company: prev?.company,
-      backendJobId: prev?.backendJobId,
-      status: 'ready',
-    });
     await saveRecord(
       analysis,
       tailoredResume,
@@ -552,7 +503,6 @@ export default function TailorPage() {
     tailorTimerRef.current = null;
     setPhase(null);
     setTailorElapsed(0);
-    clearActiveTailorSession();
   }, []);
 
   /* ── Downloads ───────────────────────────────────────────────────────────── */
