@@ -421,13 +421,13 @@
   glass surface inside it follows. `--glass-solid` is the opaque answer for
   browsers without backdrop-filter, and it is REQUIRED: a translucent bar
   with no blur behind it smears whatever scrolls under it. */
-    --glass-fill: var(--card);
+    --glass-fill: 0 0% 100%;
     --glass-alpha: 0.72;
     --glass-solid: var(--card);
-    --glass-edge: var(--foreground);
-    --glass-edge-alpha: 0.12;
-    --glass-sheen-alpha: 0.55;
-    --glass-blur: 20px;
+    --glass-edge: 0 0% 100%;
+    --glass-edge-alpha: 0.55;
+    --glass-sheen-alpha: 0.7;
+    --glass-blur: 28px;
 
     /* ── Elevation scale (Compass §7) ──────────────────────────────────────
   Token-driven, tinted with the page's own ink (never pure black) so shadows
@@ -531,13 +531,13 @@
     --sidebar-border: var(--blush-700-hsl);
     --sidebar-ring: var(--cherry-ink-dark-hsl);
 
-    --glass-fill: 276 8% 22%;
-    --glass-alpha: 0.55;
+    --glass-fill: 240 12% 10%;
+    --glass-alpha: 0.72;
     --glass-solid: var(--app-surface-dark-hsl);
     --glass-edge: 0 0% 100%;
-    --glass-edge-alpha: 0.14;
-    --glass-sheen-alpha: 0.16;
-    --glass-blur: 24px;
+    --glass-edge-alpha: 0.12;
+    --glass-sheen-alpha: 0.12;
+    --glass-blur: 28px;
   }
 
   /* ── The Aspirely visual language: two named surfaces ────────────────────
@@ -719,10 +719,10 @@
     --glass-fill: 0 0% 100%;
     --glass-alpha: 0.72;
     --glass-solid: var(--fog-surface-hsl);
-    --glass-edge: var(--fog-ink-hsl);
-    --glass-edge-alpha: 0.1;
+    --glass-edge: 0 0% 100%;
+    --glass-edge-alpha: 0.55;
     --glass-sheen-alpha: 0.7;
-    --glass-blur: 20px;
+    --glass-blur: 28px;
 
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
@@ -775,13 +775,13 @@
 
     /* The pane darkens rather than brightening - a white pane on charcoal is
   a lamp, not glass - and the sheen drops to a hairline. */
-    --glass-fill: 276 8% 22%;
-    --glass-alpha: 0.55;
+    --glass-fill: 240 12% 10%;
+    --glass-alpha: 0.72;
     --glass-solid: var(--app-surface-dark-hsl);
     --glass-edge: 0 0% 100%;
-    --glass-edge-alpha: 0.14;
-    --glass-sheen-alpha: 0.16;
-    --glass-blur: 24px;
+    --glass-edge-alpha: 0.12;
+    --glass-sheen-alpha: 0.12;
+    --glass-blur: 28px;
 
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
@@ -890,8 +890,12 @@
     @apply border-border;
   }
 
+  html {
+    min-height: 100%;
+  }
+
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply text-foreground antialiased;
     /* SMOOTHNESS, part 1: type. `optimizeLegibility` turns on ligatures and
   kerning pairs, which is most of the difference between "a website" and "a
   designed page" at display sizes. It is scoped to body rather than `*`
@@ -988,12 +992,29 @@
 }
 
 @layer components {
+  /* Quiet atmosphere behind every frosted pane. Glass only reads as glass when
+  something other than a flat slab sits underneath it - the Job feed drawer
+  already proved that. Two or three wide radial stops, no blobs, no grain. */
+  html,
+  body,
+  .surface-lumen,
+  .surface-nocturne,
+  .surface-editorial,
+  .surface-obsidian,
+  .surface-studio {
+    background-color: hsl(var(--background));
+    background-image:
+      radial-gradient(120% 90% at 10% -10%, hsl(var(--foreground) / 0.06), transparent 58%),
+      radial-gradient(95% 75% at 100% 0%, hsl(var(--card) / 0.55), transparent 54%),
+      radial-gradient(70% 45% at 40% 115%, hsl(var(--muted) / 0.5), transparent 55%);
+  }
+
   /* Glassmorphism card style. Token-driven: a literal white pane over
   parchment reads cold and blue-ish, which is the single most visible way a
   warm re-theme fails, and `bg-white` is exactly what the landing suite bans
   inside product illustrations. Same treatment, no literal colour. */
   .glass-card {
-    @apply border border-border/60 bg-card/80 shadow-pop backdrop-blur-xl dark:border-border/40 dark:bg-card/60;
+    @apply border border-border/60 shadow-pop backdrop-blur-xl dark:border-border/40;
   }
 
   /* ── Canonical glass recipe (navigation / elevated controls ONLY) ──────
@@ -1006,9 +1027,9 @@
   mobile nav, sidebar, command palette, sticky filter bars. */
   .glass-nav {
     --glass-bg: var(--background);
-    background-color: hsl(var(--glass-bg) / 0.7);
-    -webkit-backdrop-filter: blur(16px);
-    backdrop-filter: blur(16px);
+    background-color: hsl(var(--glass-bg) / 0.72);
+    -webkit-backdrop-filter: blur(28px) saturate(140%);
+    backdrop-filter: blur(28px) saturate(140%);
   }
   .glass-nav-card {
     --glass-bg: var(--card);
@@ -1026,8 +1047,8 @@
   through stays alive rather than turning grey. */
   .glass-nav-strong {
     background-color: hsl(var(--glass-bg) / 0.86);
-    -webkit-backdrop-filter: blur(20px) saturate(140%);
-    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(28px) saturate(140%);
+    backdrop-filter: blur(28px) saturate(140%);
   }
   @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
     .glass-nav,
@@ -1065,50 +1086,51 @@
     }
   }
 
-  .hero-film-wash {
-    background: linear-gradient(
-      to right,
-      hsl(var(--background) / 0.9) 0%,
-      hsl(var(--background) / 0.78) 34%,
-      hsl(var(--background) / 0.4) 62%,
-      hsl(var(--background) / 0.08) 100%
-    );
-  }
-  .dark .hero-film-wash {
-    background: linear-gradient(
-      to right,
-      hsl(var(--background) / 0.55) 0%,
-      hsl(var(--background) / 0.38) 36%,
-      hsl(var(--background) / 0.16) 64%,
-      transparent 100%
-    );
-  }
-  .hero-film-mobile-scrim {
-    background: hsl(var(--background) / 0.45);
-  }
-  .dark .hero-film-mobile-scrim {
-    background: hsl(var(--background) / 0.26);
+  /* Job-feed frost, used site-wide for elevated surfaces. Same tokens as
+  `.glass-pane` so light and dark stay one material. `!important` is load-
+  bearing: shadcn utilities (`bg-card`, `bg-background`, `bg-popover`) ship
+  after this layer and would otherwise paint solids over the glass. */
+  .liquid-glass,
+  .bg-card,
+  .bg-popover,
+  .glass-card {
+    background-color: hsl(var(--glass-fill) / var(--glass-alpha)) !important;
+    background-image: none !important;
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+    backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+    box-shadow:
+      inset 0 1px 0 0 hsl(0 0% 100% / var(--glass-sheen-alpha)),
+      0 16px 48px hsl(276 12% 10% / 0.14);
   }
   .liquid-glass {
-    background-color: rgb(255 255 255 / 0.72) !important;
-    background-image: none !important;
-    -webkit-backdrop-filter: blur(28px) saturate(140%);
-    backdrop-filter: blur(28px) saturate(140%);
-    border-color: rgb(255 255 255 / 0.55) !important;
-    box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.7),
-      0 16px 48px rgb(15 18 28 / 0.14);
+    border-color: hsl(var(--glass-edge) / var(--glass-edge-alpha)) !important;
   }
-  .dark .liquid-glass {
-    background-color: rgb(22 22 28 / 0.72) !important;
-    border-color: rgb(255 255 255 / 0.12) !important;
+  .dark .liquid-glass,
+  .dark .bg-card,
+  .dark .bg-popover,
+  .dark .glass-card {
     box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.12),
-      0 16px 48px rgb(0 0 0 / 0.45);
+      inset 0 1px 0 0 hsl(0 0% 100% / var(--glass-sheen-alpha)),
+      0 16px 48px hsl(0 0% 0% / 0.45);
   }
   @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-    .liquid-glass {
-      background-color: hsl(var(--card)) !important;
+    .liquid-glass,
+    .bg-card,
+    .bg-popover,
+    .glass-card {
+      background-color: hsl(var(--glass-solid)) !important;
+    }
+  }
+  @media (prefers-reduced-transparency: reduce) {
+    .liquid-glass,
+    .glass-pane,
+    .bg-card,
+    .bg-popover,
+    .glass-card,
+    .studio-panel {
+      background-color: hsl(var(--glass-solid)) !important;
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
     }
   }
 
@@ -1143,7 +1165,11 @@
   card language. `.surface` = flat resting panel; `.panel` adds a soft
   lift; `.card-interactive` is the calm hover affordance. */
   .surface {
-    @apply rounded-xl border border-border bg-card text-card-foreground;
+    @apply rounded-xl border border-border text-card-foreground;
+    background-color: hsl(var(--glass-fill) / var(--glass-alpha));
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+    backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+    box-shadow: inset 0 1px 0 0 hsl(0 0% 100% / var(--glass-sheen-alpha));
   }
   .surface-muted {
     @apply rounded-xl border border-border bg-muted/40 text-foreground;
@@ -1319,9 +1345,8 @@
     .studio-panel     the frosted surface (dock, overview panels, preview)
     .studio-nav-row   a navigable destination (hover fill, active indicator)
 
-  Glass is spent ONLY on those panels. List rows, the resume preview body and
-  nested cards stay solid `bg-card`: blur behind dense text costs legibility
-  for nothing.
+  Glass is the same Job-feed frost on those panels and on `bg-card` surfaces
+  site-wide. The canvas wash underneath is what the blur actually sees.
 
   There is deliberately no full-page glass wrapper. Drawing the "coherent
   workspace" as one bordered pane re-introduced the framing it was meant to
@@ -1341,13 +1366,13 @@
   read as the same material. The inset top hairline is what makes it look
   like a lit pane rather than a flat translucent box. */
   .studio-panel {
-    background-color: hsl(var(--card) / 0.62);
-    -webkit-backdrop-filter: blur(18px) saturate(120%);
-    backdrop-filter: blur(18px) saturate(120%);
-    border: 1px solid hsl(var(--foreground) / 0.1);
+    background-color: hsl(var(--glass-fill) / var(--glass-alpha));
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+    backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+    border: 1px solid hsl(var(--glass-edge) / var(--glass-edge-alpha));
     border-radius: 1.125rem;
     box-shadow:
-      inset 0 1px 0 0 hsl(var(--card) / 0.75),
+      inset 0 1px 0 0 hsl(0 0% 100% / var(--glass-sheen-alpha)),
       var(--shadow-soft);
   }
   /* Interactive variant - only for panels that are themselves controls. */
@@ -1409,7 +1434,13 @@
 
   /* Subtle elevated panel used across the workspace */
   .panel {
-    @apply rounded-xl border border-border bg-card shadow-soft;
+    @apply rounded-xl border border-border;
+    background-color: hsl(var(--glass-fill) / var(--glass-alpha));
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+    backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+    box-shadow:
+      inset 0 1px 0 0 hsl(0 0% 100% / var(--glass-sheen-alpha)),
+      var(--shadow-soft);
   }
 
   /* ── Editorial accent meshes (Compass §7) ──────────────────────────────

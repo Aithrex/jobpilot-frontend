@@ -187,20 +187,15 @@ describe('primary CTA', () => {
     expect(clickSpy).toHaveBeenCalledTimes(1);
   });
 
-  test('the hero loop is a backdrop: behind the content, and it displaces nothing', () => {
+  test('the hero has no decorative film or poster', () => {
     const { container } = renderLanding();
     const hero = document.getElementById('try') as HTMLElement;
 
-    // The loop used to be a named `group` with a play control. It is a pure
-    // background now, so it is aria-hidden and has no accessible handle at
-    // all - which is why this queries the DOM rather than the a11y tree.
-    const backdrop = hero.querySelector('[aria-hidden="true"].absolute.inset-0');
-    expect(backdrop).toBeTruthy();
-    expect((backdrop as HTMLElement).className).toContain('pointer-events-none');
+    expect(hero.querySelector('video')).toBeNull();
+    expect(hero.querySelector('img[src*="poster"], img[src*="hero"]')).toBeNull();
 
-    // The hero copy sits above it, not inside it.
     const cta = within(hero).getByRole('link', { name: /^Create free account$/i });
-    expect(backdrop!.contains(cta)).toBe(false);
+    expect(cta).toBeInTheDocument();
     void container;
   });
 
@@ -223,37 +218,19 @@ describe('honesty of the pre-upload composition', () => {
     expect(text).not.toMatch(/Senior (Frontend|Backend|Software) Engineer at/i);
   });
 
-  test('the hero backdrop carries no copy, so it can claim nothing', () => {
+  test('the hero has no decorative film, so there is nothing to mislabel', () => {
     renderLanding();
     const hero = document.getElementById('try') as HTMLElement;
-    const backdrop = hero.querySelector('[aria-hidden="true"].absolute.inset-0') as HTMLElement;
-
-    // The previous hero visual was an illustrative mockup that had to be
-    // labelled "Illustrative" precisely because it drew fake product UI. This
-    // one is abstract and wordless: there is nothing in it to be true or false
-    // about, which is a stronger guarantee than a disclaimer.
-    expect((backdrop.textContent ?? '').trim()).toBe('');
-    expect(backdrop.querySelector('img, video')).toBeTruthy();
+    expect(hero.querySelector('img, video')).toBeNull();
   });
 
 });
 
 describe('product demo accessibility', () => {
-  test('the backdrop is hidden from assistive tech, because it is decorative', () => {
+  test('the hero film is gone, so there is nothing decorative to expose to assistive tech', () => {
     renderLanding();
     const hero = document.getElementById('try') as HTMLElement;
-
-    // This assertion is the REVERSE of what it used to be, and deliberately.
-    // When the film was a foreground module with a play button, hiding it from
-    // screen readers would have removed a real feature. As a wordless
-    // background it carries no information the headline does not already
-    // state, so exposing it would only add noise to the a11y tree.
-    const media = hero.querySelector('video, img[src*="poster"]');
-    expect(media).toBeTruthy();
-    expect(media!.closest('[aria-hidden="true"]')).toBeTruthy();
-
-    // And it is not focusable or clickable.
-    expect(hero.querySelector('[aria-hidden="true"] button, [aria-hidden="true"] a')).toBeNull();
+    expect(hero.querySelector('video, img[src*="poster"]')).toBeNull();
   });
 
 });
@@ -399,7 +376,7 @@ describe('future-feature controls', () => {
 // ── 6. Reduced motion ────────────────────────────────────────────
 
 describe('reduced motion', () => {
-  test('with motion off the hero is fully resolved and serves the poster, not a video', async () => {
+  test('with motion off the hero still paints copy and CTAs, with no film', async () => {
     setReducedMotion(true);
     renderLanding();
     const hero = document.getElementById('try') as HTMLElement;
@@ -409,11 +386,9 @@ describe('reduced motion', () => {
     expect(within(hero).getByRole('link', { name: /^Create free account$/i })).toBeInTheDocument();
     expect(within(hero).getByRole('button', { name: /^Find my matches$/i })).toBeInTheDocument();
 
-    // No <video> at all - not a paused one. A paused video still downloads and
-    // still decodes a frame; an <img> is the unambiguous answer to "no motion".
+    // No <video> and no poster: the hero is copy and CTAs on the canvas.
     expect(hero.querySelector('video')).toBeNull();
-    const poster = hero.querySelector('img');
-    expect(poster).toHaveAttribute('src', '/media/aspirely-hero-poster.webp');
+    expect(hero.querySelector('img[src*="poster"], img[src*="hero"]')).toBeNull();
   });
 
 });
@@ -1037,30 +1012,10 @@ describe('hero composition', () => {
 });
 
 describe('hero product film', () => {
-  test('the hero loads the generated loop and poster from /media', () => {
+  test('the generated loop and poster are not mounted on the hero', () => {
     renderLanding();
     const hero = document.getElementById('try') as HTMLElement;
-    const video = hero.querySelector('video') as HTMLVideoElement;
-
-    expect(video).toBeTruthy();
-    expect(hero.querySelector('source')).toHaveAttribute('src', '/media/aspirely-hero-loop.webm');
-    expect(video).toHaveAttribute('poster', '/media/aspirely-hero-poster.webp');
-    // A poster on the element means the first paint is the still, so a slow
-    // network never shows an empty rectangle where the hero should be.
-    expect(video.getAttribute('preload')).toBe('metadata');
-  });
-
-  test('the loop is silent, looping and inline - it never asks for audio', () => {
-    renderLanding();
-    const video = (document.getElementById('try') as HTMLElement).querySelector(
-      'video',
-    ) as HTMLVideoElement;
-    expect(video.muted).toBe(true);
-    expect(video.loop).toBe(true);
-    expect(video.autoplay).toBe(true);
-    expect(video.playsInline).toBe(true);
-    // No controls: it is a background, and a control on it would invite a
-    // click that does nothing useful.
-    expect(video.controls).toBe(false);
+    expect(hero.querySelector('video')).toBeNull();
+    expect(hero.querySelector('img[src*="aspirely-hero"]')).toBeNull();
   });
 });

@@ -165,7 +165,7 @@ export function AuthShell({
     // sign-in. Every surface here is token-driven (AuthAtlas included), so the
     // scene re-points itself; only the brand logos in SocialQuietRow stay fixed.
     <div
-      className="relative min-h-screen overflow-hidden bg-background text-foreground"
+      className="relative min-h-screen overflow-hidden text-foreground"
       data-auth-scene={phase !== 'idle' ? phase : zone}
     >
       <div aria-hidden className="pointer-events-none absolute inset-0 bg-grid-faint" />

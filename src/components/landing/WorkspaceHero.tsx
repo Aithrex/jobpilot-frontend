@@ -20,28 +20,18 @@ import type { ResumePicker } from '@/components/guest/useResumePicker';
 import type { GuestFlow } from '@/hooks/useGuestFlow';
 import { Container } from './_shared';
 import { MacWindow, type WindowStatus } from './workspace/MacWindow';
-import { HeroBackdrop } from './HeroBackdrop';
 
 /**
- * The hero: the promise and the two actions, beside the product film.
+ * The hero: the promise and the two actions on the page canvas.
  *
- * WHAT REPLACED WHAT. The right column used to be a Mac-style window running an
- * illustrative tour - a fake tablist, redacted job rows, an invented status
- * pill cycling "Reading" and "Ranking matches". It was labelled illustrative
- * and it was honest about that, but it was still the largest object on the
- * page and it was a drawing of the product rather than the product. It is now
- * a real teaser with the full film one press behind it (`HeroVideo`).
- *
- * The window itself survives for the state it was always best at: framing the
- * REAL guest flow once an upload starts. Its status pill is driven only by
- * `liveStatus(flow)` now, so it can no longer narrate something that is not
- * happening.
+ * The right-column Mac window is reserved for the real guest flow once an
+ * upload starts. Its status pill is driven only by `liveStatus(flow)`.
  *
  * Upload is ONE click. This component does not own the file input:
  * LandingExperience renders the page's single `<input type="file">` and hands
- * the SAME picker to the hero CTA, the drop surface under the film, and the
- * closing CTA. `GuestDropzone` must always be handed that picker - without it
- * the component mounts a second file input of its own.
+ * the SAME picker to the hero CTA, the drop surface, and the closing CTA.
+ * `GuestDropzone` must always be handed that picker - without it the component
+ * mounts a second file input of its own.
  *
  * This component is presentational; the single `useGuestFlow` controller lives
  * in LandingExperience.
@@ -169,9 +159,6 @@ export function WorkspaceHero({
       // window it was not measured in; the content is the honest source.
       className="relative flex scroll-mt-4 items-center overflow-hidden pb-16 pt-24 sm:pb-20 sm:pt-28 lg:pb-24 lg:pt-28"
     >
-      {/* Full-bleed, behind everything, decorative. */}
-      {!flowActive && <HeroBackdrop />}
-
       {dragActive && (
         <div
           aria-hidden

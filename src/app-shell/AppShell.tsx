@@ -15,7 +15,7 @@ const OnboardingWizard = lazy(() => import("@/components/onboarding/OnboardingWi
 function FullScreenLoader() {
   return (
     <div
-      className="flex min-h-screen items-center justify-center bg-background text-muted-foreground"
+      className="flex min-h-screen items-center justify-center text-muted-foreground"
       aria-live="polite"
     >
       <div className="flex items-center gap-2">
@@ -65,7 +65,7 @@ export default function AppShell() {
   if (!isAuthenticated) return <Navigate to="/login" replace state={{ from: location }} />;
 
   return (
-    <div className="min-h-screen bg-background text-foreground antialiased">
+    <div className="min-h-screen text-foreground antialiased">
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-primary-foreground focus:shadow-pop focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"

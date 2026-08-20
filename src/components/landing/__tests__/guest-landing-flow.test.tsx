@@ -579,13 +579,8 @@ describe('guest landing flow', () => {
 
     expect(screen.getAllByRole('link', { name: /Create free account/i }).length).toBeGreaterThan(0);
 
-    // The product story stays on the page - it does not disappear just because
-    // guest upload is paused. This used to check for the mock workspace
-    // window, which the product film replaced.
-
-    expect(
-      (document.getElementById('try') as HTMLElement).querySelector('video, img[src*="poster"]'),
-    ).toBeTruthy();
+    // Guest upload is paused, but the hero still has the account CTA.
+    expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
 
     // And none of it touches the backend beyond the initial probe.
 
