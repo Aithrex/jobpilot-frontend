@@ -25,7 +25,7 @@ import { JOB_FEED_GRID_CLASS, JobCard, JOB_CARD_CLASS } from '@/components/job-s
 import { useAutoSync } from '@/hooks/useAutoSync';
 import { JOB_TITLES_CAP, useJobTitles } from '@/hooks/useJobTitles';
 import { apiService } from '@/lib/api';
-import { jobTitleOf } from '@/lib/careerJobs';
+import { jobTitleOf, sortJobsByMode } from '@/lib/careerJobs';
 // (job listings are free & auth-only - no entitlement/upgrade wiring here)
 import {
   Sheet,
@@ -638,13 +638,7 @@ export function WorkdayJobsPanel({
     if (hideUnrealistic && hasFeasibility) out = out.filter((j) => j.tailor_feasibility !== 'skip');
     if (sponsorFilter === 'friendly') out = out.filter((j) => j.sponsorship !== 'refused');
     else if (sponsorFilter === 'proven') out = out.filter((j) => j.sponsorship === 'likely');
-    if (sortBy === 'newest') {
-      out = [...out].sort(
-        (a, b) =>
-          (a.days_ago ?? 99) - (b.days_ago ?? 99) || (b.match_score ?? 0) - (a.match_score ?? 0),
-      );
-    }
-    return out;
+    return sortJobsByMode(out, sortBy);
   }, [
     recencyJobs,
     seniorityFilter,

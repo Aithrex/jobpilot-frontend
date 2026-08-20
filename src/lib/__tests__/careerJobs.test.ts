@@ -7,7 +7,7 @@
  */
 import { describe, expect, test } from 'vitest';
 
-import { jobTitleOf, mergeJobs, toJob } from '@/lib/careerJobs';
+import { jobTitleOf, mergeJobs, sortJobsByMode, toJob } from '@/lib/careerJobs';
 import type { WorkdayJob } from '@/types/jobs';
 
 function row(overrides: Partial<WorkdayJob>): WorkdayJob {
@@ -50,5 +50,31 @@ describe('jobTitleOf / toJob', () => {
     expect(merged).toHaveLength(1);
     // The higher-scoring copy wins the merge.
     expect(merged[0].match_score).toBe(70);
+  });
+
+  test('mergeJobs prefers higher score over a longer description from another ATS', () => {
+    const workday = row({
+      job_id: 'wd',
+      title: 'Software Engineer',
+      match_score: 88,
+      description: 'Short.',
+    });
+    const careers = row({
+      job_id: 'cp',
+      title: 'Software Engineer',
+      match_score: 40,
+      description: 'x'.repeat(400),
+    });
+    const merged = mergeJobs([workday], [careers]);
+    expect(merged).toHaveLength(1);
+    expect(merged[0].job_id).toBe('wd');
+    expect(merged[0].match_score).toBe(88);
+  });
+
+  test('sortJobsByMode Best match vs Newest', () => {
+    const a = row({ job_id: 'a', title: 'A', match_score: 90, days_ago: 5 });
+    const b = row({ job_id: 'b', title: 'B', match_score: 50, days_ago: 0 });
+    expect(sortJobsByMode([a, b], 'score').map((j) => j.job_id)).toEqual(['a', 'b']);
+    expect(sortJobsByMode([a, b], 'newest').map((j) => j.job_id)).toEqual(['b', 'a']);
   });
 });

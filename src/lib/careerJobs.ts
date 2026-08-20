@@ -113,13 +113,35 @@ export function toJob(j: WorkdayJob, fallbackSource: string): Job {
 
 const norm = (s?: string) => (s || '').toLowerCase().replace(/\s+/g, ' ').trim();
 
-/** A merged row is "better" if it carries a full description, else the higher
- *  match score - so cross-catalog duplicates keep the richest copy. */
+/** A merged row is "better" if it has the higher match score; description
+ *  richness is only a tiebreaker. Preferring a long JD from one ATS over a
+ *  higher-scored short row from another made Best match look broken across
+ *  Workday / Careers / MNC duplicates. */
 function isBetter(candidate: WorkdayJob, current: WorkdayJob): boolean {
-  const cDesc = (candidate.description || '').length;
-  const curDesc = (current.description || '').length;
-  if ((cDesc > 200) !== (curDesc > 200)) return cDesc > curDesc;
-  return (candidate.match_score ?? 0) > (current.match_score ?? 0);
+  const cScore = candidate.match_score ?? 0;
+  const curScore = current.match_score ?? 0;
+  if (cScore !== curScore) return cScore > curScore;
+  return (candidate.description || '').length > (current.description || '').length;
+}
+
+/** Stable Best match / Newest ordering for the merged multi-ATS feed. */
+export function sortJobsByMode(
+  jobs: WorkdayJob[],
+  sortBy: 'score' | 'newest',
+): WorkdayJob[] {
+  const out = [...jobs];
+  if (sortBy === 'newest') {
+    out.sort(
+      (a, b) =>
+        (a.days_ago ?? 99) - (b.days_ago ?? 99) || (b.match_score ?? 0) - (a.match_score ?? 0),
+    );
+  } else {
+    out.sort(
+      (a, b) =>
+        (b.match_score ?? 0) - (a.match_score ?? 0) || (a.days_ago ?? 99) - (b.days_ago ?? 99),
+    );
+  }
+  return out;
 }
 
 /**
@@ -138,7 +160,5 @@ export function mergeJobs(...lists: WorkdayJob[][]): WorkdayJob[] {
       if (!existing || isBetter(j, existing)) map.set(key, j);
     }
   }
-  return [...map.values()].sort(
-    (a, b) => (b.match_score ?? 0) - (a.match_score ?? 0) || (a.days_ago ?? 99) - (b.days_ago ?? 99),
-  );
+  return sortJobsByMode([...map.values()], 'score');
 }

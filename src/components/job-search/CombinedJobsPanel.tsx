@@ -12,7 +12,7 @@ import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ApplyConfirmDialog, JOB_FEED_GRID_CLASS, JobCard, JOB_CARD_CLASS } from '@/components/job-search/JobCard';
 import { useCombinedJobsCtx } from '@/components/job-search/CombinedJobsProvider';
-import { RECENCY_OPTIONS, seniorityOf, toJob } from '@/lib/careerJobs';
+import { RECENCY_OPTIONS, seniorityOf, sortJobsByMode, toJob } from '@/lib/careerJobs';
 import { cn } from '@/lib/utils';
 import type { Job, WorkdayJob } from '@/types/jobs';
 
@@ -123,13 +123,7 @@ export function CombinedJobsPanel({
     if (sponsorFilter === 'friendly') out = out.filter((j) => j.sponsorship !== 'refused');
     else if (sponsorFilter === 'proven') out = out.filter((j) => j.sponsorship === 'likely');
     if (hiddenJobIds?.size) out = out.filter((j) => !hiddenJobIds.has(j.job_id));
-    if (sortBy === 'newest') {
-      out = [...out].sort(
-        (a, b) =>
-          (a.days_ago ?? 99) - (b.days_ago ?? 99) || (b.match_score ?? 0) - (a.match_score ?? 0),
-      );
-    }
-    return out;
+    return sortJobsByMode(out, sortBy);
   }, [jobs, maxDays, search, seniority, minScore, sponsorFilter, sortBy, hiddenJobIds]);
 
   const pageCount = Math.max(1, Math.ceil(visibleJobs.length / PAGE_SIZE));

@@ -10,6 +10,7 @@ Developer documentation for the JobPilot web app. Start here.
 | **[Architecture](architecture.md)** | Understand routing, providers, the workspace, and the design system |
 | **[API reference](api-reference.md)** | Look up any backend endpoint the frontend calls (grouped by domain) |
 | **[Frontend views → endpoints](frontend-views.md)** | See exactly which endpoints each screen/component requires |
+| **[Job feed title filtering](job-feed-title-filtering.md)** | Understand why Sync title chips seed search but do not hard-filter results |
 
 ## TL;DR
 

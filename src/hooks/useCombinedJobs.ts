@@ -4,6 +4,15 @@ import { apiService } from '@/lib/api';
 import { mergeJobs } from '@/lib/careerJobs';
 import type { WorkdayJob, WorkdayJobsParams } from '@/types/jobs';
 
+/**
+ * Combined Job feed scan (Workday + career pages + MNC).
+ *
+ * Title chips (from resume analysis / user edits) classify into role families
+ * on the server. Sync returns the whole family for those titles, and drops
+ * off-family rows (e.g. Systems Engineer when chips are Software Engineer).
+ * See docs/job-feed-title-filtering.md.
+ */
+
 type SourceKey = 'workday' | 'careers' | 'mncs';
 
 interface SourceState {
