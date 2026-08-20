@@ -265,12 +265,7 @@ export function JobFeedSheet() {
             {!canSearch && (
               <p className="mt-2 flex items-center gap-1.5 text-[11px] font-medium text-warning">
                 <AlertCircle className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                Add a title or suggest from resume
-              </p>
-            )}
-            {canSearch && titles.length === 0 && (
-              <p className="mt-2 text-[11px] text-muted-foreground">
-                No title chips - Sync will use roles from your resume background
+                Add a title
               </p>
             )}
           </section>

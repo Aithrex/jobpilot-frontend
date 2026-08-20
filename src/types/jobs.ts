@@ -439,9 +439,6 @@ export interface WorkdayJob {
    *  ashby, smartrecruiters, workable, recruitee). Absent on Workday rows.
    *  MNC rows may also carry workday, amazon, eightfold, phenom, aggregator. */
   ats?: string;
-  /** Marketplace / aggregator boards (e.g. Jobgether on Lever). Kept in the
-   *  feed but sorted below first-party employer postings. */
-  board_kind?: 'marketplace' | string;
   /** MNC rows: curated sector key (big_tech, semiconductors, fintech, ...). */
   sector?: string;
   /** Whole days since posting (0 = today). null/undefined = unknown. */

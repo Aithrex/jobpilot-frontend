@@ -77,32 +77,4 @@ describe('jobTitleOf / toJob', () => {
     expect(sortJobsByMode([a, b], 'score').map((j) => j.job_id)).toEqual(['a', 'b']);
     expect(sortJobsByMode([a, b], 'newest').map((j) => j.job_id)).toEqual(['b', 'a']);
   });
-
-  test('sortJobsByMode pins marketplace boards below employers', () => {
-    const employer = row({
-      job_id: 'e',
-      title: 'Software Engineer',
-      company: 'Spotify',
-      tenant: 'spotify',
-      match_score: 40,
-      days_ago: 2,
-    });
-    const market = row({
-      job_id: 'm',
-      title: 'Software Engineer',
-      company: 'Jobgether',
-      tenant: 'jobgether',
-      board_kind: 'marketplace',
-      match_score: 95,
-      days_ago: 0,
-    });
-    expect(sortJobsByMode([market, employer], 'score').map((j) => j.job_id)).toEqual([
-      'e',
-      'm',
-    ]);
-    expect(sortJobsByMode([market, employer], 'newest').map((j) => j.job_id)).toEqual([
-      'e',
-      'm',
-    ]);
-  });
 });

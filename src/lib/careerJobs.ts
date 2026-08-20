@@ -113,50 +113,32 @@ export function toJob(j: WorkdayJob, fallbackSource: string): Job {
 
 const norm = (s?: string) => (s || '').toLowerCase().replace(/\s+/g, ' ').trim();
 
-/** Marketplace boards (Jobgether on Lever, ...) stay in the feed but pin last. */
-export function isMarketplaceListing(job: WorkdayJob): boolean {
-  if ((job.board_kind || '').toLowerCase() === 'marketplace') return true;
-  const tenant = (job.tenant || '').toLowerCase();
-  const company = (job.company || '').toLowerCase();
-  return tenant === 'jobgether' || company === 'jobgether';
-}
-
 /** A merged row is "better" if it has the higher match score; description
  *  richness is only a tiebreaker. Preferring a long JD from one ATS over a
  *  higher-scored short row from another made Best match look broken across
- *  Workday / Careers / MNC duplicates. First-party employers beat marketplace
- *  boards when scores tie. */
+ *  Workday / Careers / MNC duplicates. */
 function isBetter(candidate: WorkdayJob, current: WorkdayJob): boolean {
-  const cMarket = isMarketplaceListing(candidate);
-  const curMarket = isMarketplaceListing(current);
-  if (cMarket !== curMarket) return !cMarket;
   const cScore = candidate.match_score ?? 0;
   const curScore = current.match_score ?? 0;
   if (cScore !== curScore) return cScore > curScore;
   return (candidate.description || '').length > (current.description || '').length;
 }
 
-/** Stable Best match / Newest ordering for the merged multi-ATS feed.
- *  Marketplace listings always sort after first-party employer rows. */
+/** Stable Best match / Newest ordering for the merged multi-ATS feed. */
 export function sortJobsByMode(
   jobs: WorkdayJob[],
   sortBy: 'score' | 'newest',
 ): WorkdayJob[] {
   const out = [...jobs];
-  const pin = (j: WorkdayJob) => (isMarketplaceListing(j) ? 1 : 0);
   if (sortBy === 'newest') {
     out.sort(
       (a, b) =>
-        pin(a) - pin(b) ||
-        (a.days_ago ?? 99) - (b.days_ago ?? 99) ||
-        (b.match_score ?? 0) - (a.match_score ?? 0),
+        (a.days_ago ?? 99) - (b.days_ago ?? 99) || (b.match_score ?? 0) - (a.match_score ?? 0),
     );
   } else {
     out.sort(
       (a, b) =>
-        pin(a) - pin(b) ||
-        (b.match_score ?? 0) - (a.match_score ?? 0) ||
-        (a.days_ago ?? 99) - (b.days_ago ?? 99),
+        (b.match_score ?? 0) - (a.match_score ?? 0) || (a.days_ago ?? 99) - (b.days_ago ?? 99),
     );
   }
   return out;
