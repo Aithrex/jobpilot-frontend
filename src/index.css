@@ -421,13 +421,13 @@
   glass surface inside it follows. `--glass-solid` is the opaque answer for
   browsers without backdrop-filter, and it is REQUIRED: a translucent bar
   with no blur behind it smears whatever scrolls under it. */
-    --glass-fill: 0 0% 100%;
+    --glass-fill: var(--card);
     --glass-alpha: 0.72;
     --glass-solid: var(--card);
-    --glass-edge: 0 0% 100%;
-    --glass-edge-alpha: 0.55;
-    --glass-sheen-alpha: 0.7;
-    --glass-blur: 28px;
+    --glass-edge: var(--foreground);
+    --glass-edge-alpha: 0.12;
+    --glass-sheen-alpha: 0.55;
+    --glass-blur: 20px;
 
     /* ── Elevation scale (Compass §7) ──────────────────────────────────────
   Token-driven, tinted with the page's own ink (never pure black) so shadows
@@ -531,13 +531,13 @@
     --sidebar-border: var(--blush-700-hsl);
     --sidebar-ring: var(--cherry-ink-dark-hsl);
 
-    --glass-fill: 240 12% 10%;
-    --glass-alpha: 0.72;
+    --glass-fill: 276 8% 22%;
+    --glass-alpha: 0.55;
     --glass-solid: var(--app-surface-dark-hsl);
     --glass-edge: 0 0% 100%;
-    --glass-edge-alpha: 0.12;
-    --glass-sheen-alpha: 0.12;
-    --glass-blur: 28px;
+    --glass-edge-alpha: 0.14;
+    --glass-sheen-alpha: 0.16;
+    --glass-blur: 24px;
   }
 
   /* ── The Aspirely visual language: two named surfaces ────────────────────
@@ -992,11 +992,25 @@
 }
 
 @layer components {
-  /* Quiet atmosphere behind every frosted pane. Glass only reads as glass when
-  something other than a flat slab sits underneath it - the Job feed drawer
-  already proved that. Two or three wide radial stops, no blobs, no grain. */
+  /* Job-feed canvas: cool fog depth that frosted panes blur against. The drawer
+  the user approved is rgb(255 255 255 / 0.72) over THIS atmosphere — not warm
+  blush slabs. Named surfaces keep their own token overrides when mounted. */
   html,
-  body,
+  body {
+    background-color: hsl(var(--fog-canvas-hsl));
+    background-image:
+      radial-gradient(140% 100% at -5% -15%, hsl(276 35% 88% / 0.55), transparent 52%),
+      radial-gradient(110% 85% at 105% 5%, hsl(345 28% 92% / 0.4), transparent 50%),
+      radial-gradient(90% 70% at 50% 105%, hsl(240 25% 88% / 0.45), transparent 55%);
+  }
+  html.dark,
+  html.dark body {
+    background-color: hsl(var(--app-canvas-dark-hsl));
+    background-image:
+      radial-gradient(120% 90% at 5% -10%, hsl(345 22% 24% / 0.55), transparent 55%),
+      radial-gradient(100% 75% at 100% 10%, hsl(276 18% 20% / 0.5), transparent 52%),
+      radial-gradient(85% 65% at 45% 110%, hsl(300 12% 10% / 0.65), transparent 58%);
+  }
   .surface-lumen,
   .surface-nocturne,
   .surface-editorial,
@@ -1004,9 +1018,16 @@
   .surface-studio {
     background-color: hsl(var(--background));
     background-image:
-      radial-gradient(120% 90% at 10% -10%, hsl(var(--foreground) / 0.06), transparent 58%),
-      radial-gradient(95% 75% at 100% 0%, hsl(var(--card) / 0.55), transparent 54%),
-      radial-gradient(70% 45% at 40% 115%, hsl(var(--muted) / 0.5), transparent 55%);
+      radial-gradient(140% 100% at -5% -15%, hsl(276 35% 88% / 0.55), transparent 52%),
+      radial-gradient(110% 85% at 105% 5%, hsl(345 28% 92% / 0.4), transparent 50%),
+      radial-gradient(90% 70% at 50% 105%, hsl(240 25% 88% / 0.45), transparent 55%);
+  }
+  .surface-nocturne,
+  .surface-obsidian {
+    background-image:
+      radial-gradient(120% 90% at 5% -10%, hsl(345 22% 24% / 0.55), transparent 55%),
+      radial-gradient(100% 75% at 100% 10%, hsl(276 18% 20% / 0.5), transparent 52%),
+      radial-gradient(85% 65% at 45% 110%, hsl(300 12% 10% / 0.65), transparent 58%);
   }
 
   /* Glassmorphism card style. Token-driven: a literal white pane over
@@ -1014,7 +1035,7 @@
   warm re-theme fails, and `bg-white` is exactly what the landing suite bans
   inside product illustrations. Same treatment, no literal colour. */
   .glass-card {
-    @apply border border-border/60 shadow-pop backdrop-blur-xl dark:border-border/40;
+    @apply border border-border/60 shadow-pop dark:border-border/40;
   }
 
   /* ── Canonical glass recipe (navigation / elevated controls ONLY) ──────
@@ -1026,10 +1047,12 @@
   matching tint modifier. Reserved for sticky/fixed chrome: top bar,
   mobile nav, sidebar, command palette, sticky filter bars. */
   .glass-nav {
-    --glass-bg: var(--background);
-    background-color: hsl(var(--glass-bg) / 0.72);
+    background-color: rgb(255 255 255 / 0.72);
     -webkit-backdrop-filter: blur(28px) saturate(140%);
     backdrop-filter: blur(28px) saturate(140%);
+  }
+  .dark .glass-nav {
+    background-color: rgb(22 22 28 / 0.72);
   }
   .glass-nav-card {
     --glass-bg: var(--card);
@@ -1046,14 +1069,17 @@
   reads as a pane rather than a solid bar. Saturation is nudged so what shows
   through stays alive rather than turning grey. */
   .glass-nav-strong {
-    background-color: hsl(var(--glass-bg) / 0.86);
+    background-color: rgb(255 255 255 / 0.86);
     -webkit-backdrop-filter: blur(28px) saturate(140%);
     backdrop-filter: blur(28px) saturate(140%);
+  }
+  .dark .glass-nav-strong {
+    background-color: rgb(22 22 28 / 0.86);
   }
   @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
     .glass-nav,
     .glass-nav-strong {
-      background-color: hsl(var(--glass-bg));
+      background-color: hsl(var(--card));
     }
   }
 
@@ -1086,49 +1112,118 @@
     }
   }
 
-  /* Job-feed frost, used site-wide for elevated surfaces. Same tokens as
-  `.glass-pane` so light and dark stay one material. `!important` is load-
-  bearing: shadcn utilities (`bg-card`, `bg-background`, `bg-popover`) ship
-  after this layer and would otherwise paint solids over the glass. */
+  /* Job-feed frost — site-wide glass tiers. Primary/destructive fills stay solid;
+  everything else reads as the same cool white / charcoal pane as Job feed. */
+  .glass-frost-surface,
+  .glass-frost,
   .liquid-glass,
   .bg-card,
   .bg-popover,
   .glass-card {
-    background-color: hsl(var(--glass-fill) / var(--glass-alpha)) !important;
+    background-color: rgb(255 255 255 / 0.72) !important;
     background-image: none !important;
-    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(140%);
-    backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+    -webkit-backdrop-filter: blur(28px) saturate(140%);
+    backdrop-filter: blur(28px) saturate(140%);
     box-shadow:
-      inset 0 1px 0 0 hsl(0 0% 100% / var(--glass-sheen-alpha)),
-      0 16px 48px hsl(276 12% 10% / 0.14);
+      inset 0 1px 0 rgb(255 255 255 / 0.7),
+      0 16px 48px rgb(15 18 28 / 0.14);
   }
-  .liquid-glass {
-    border-color: hsl(var(--glass-edge) / var(--glass-edge-alpha)) !important;
+  .glass-frost-control,
+  .bg-background {
+    background-color: rgb(255 255 255 / 0.58) !important;
+    background-image: none !important;
+    -webkit-backdrop-filter: blur(28px) saturate(140%);
+    backdrop-filter: blur(28px) saturate(140%);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.55);
   }
+  .glass-frost-subtle,
+  .bg-muted,
+  .bg-secondary {
+    background-color: rgb(255 255 255 / 0.43) !important;
+    background-image: none !important;
+    -webkit-backdrop-filter: blur(28px) saturate(140%);
+    backdrop-filter: blur(28px) saturate(140%);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.4);
+  }
+  .glass-frost-wash,
+  .bg-accent {
+    background-color: rgb(255 255 255 / 0.36) !important;
+    background-image: none !important;
+    -webkit-backdrop-filter: blur(28px) saturate(140%);
+    backdrop-filter: blur(28px) saturate(140%);
+  }
+  .liquid-glass,
+  .glass-frost-surface,
+  .glass-frost {
+    border-color: rgb(255 255 255 / 0.55) !important;
+  }
+  .dark .glass-frost-surface,
+  .dark .glass-frost,
   .dark .liquid-glass,
   .dark .bg-card,
   .dark .bg-popover,
   .dark .glass-card {
+    background-color: rgb(22 22 28 / 0.72) !important;
     box-shadow:
-      inset 0 1px 0 0 hsl(0 0% 100% / var(--glass-sheen-alpha)),
-      0 16px 48px hsl(0 0% 0% / 0.45);
+      inset 0 1px 0 rgb(255 255 255 / 0.12),
+      0 16px 48px rgb(0 0 0 / 0.45);
+  }
+  .dark .glass-frost-control,
+  .dark .bg-background {
+    background-color: rgb(22 22 28 / 0.58) !important;
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.1);
+  }
+  .dark .glass-frost-subtle,
+  .dark .bg-muted,
+  .dark .bg-secondary {
+    background-color: rgb(22 22 28 / 0.43) !important;
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08);
+  }
+  .dark .glass-frost-wash,
+  .dark .bg-accent {
+    background-color: rgb(22 22 28 / 0.36) !important;
+  }
+  .dark .liquid-glass,
+  .dark .glass-frost-surface,
+  .dark .glass-frost {
+    border-color: rgb(255 255 255 / 0.12) !important;
   }
   @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .glass-frost-surface,
+    .glass-frost,
+    .glass-frost-control,
+    .glass-frost-subtle,
+    .glass-frost-wash,
     .liquid-glass,
     .bg-card,
     .bg-popover,
+    .bg-background,
+    .bg-muted,
+    .bg-secondary,
+    .bg-accent,
     .glass-card {
-      background-color: hsl(var(--glass-solid)) !important;
+      background-color: hsl(var(--card)) !important;
     }
   }
   @media (prefers-reduced-transparency: reduce) {
+    .glass-frost-surface,
+    .glass-frost,
+    .glass-frost-control,
+    .glass-frost-subtle,
+    .glass-frost-wash,
     .liquid-glass,
     .glass-pane,
     .bg-card,
     .bg-popover,
+    .bg-background,
+    .bg-muted,
+    .bg-secondary,
+    .bg-accent,
     .glass-card,
-    .studio-panel {
-      background-color: hsl(var(--glass-solid)) !important;
+    .studio-panel,
+    .glass-nav,
+    .glass-nav-strong {
+      background-color: hsl(var(--card)) !important;
       -webkit-backdrop-filter: none;
       backdrop-filter: none;
     }
@@ -1165,14 +1260,10 @@
   card language. `.surface` = flat resting panel; `.panel` adds a soft
   lift; `.card-interactive` is the calm hover affordance. */
   .surface {
-    @apply rounded-xl border border-border text-card-foreground;
-    background-color: hsl(var(--glass-fill) / var(--glass-alpha));
-    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(140%);
-    backdrop-filter: blur(var(--glass-blur)) saturate(140%);
-    box-shadow: inset 0 1px 0 0 hsl(0 0% 100% / var(--glass-sheen-alpha));
+    @apply rounded-xl border border-border text-card-foreground liquid-glass;
   }
   .surface-muted {
-    @apply rounded-xl border border-border bg-muted/40 text-foreground;
+    @apply rounded-xl border border-border glass-frost-subtle text-foreground;
   }
   .card-interactive {
     @apply surface shadow-soft transition-[transform,box-shadow,border-color] duration-200 ease-expo;
@@ -1366,13 +1457,20 @@
   read as the same material. The inset top hairline is what makes it look
   like a lit pane rather than a flat translucent box. */
   .studio-panel {
-    background-color: hsl(var(--glass-fill) / var(--glass-alpha));
-    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(140%);
-    backdrop-filter: blur(var(--glass-blur)) saturate(140%);
-    border: 1px solid hsl(var(--glass-edge) / var(--glass-edge-alpha));
+    background-color: rgb(255 255 255 / 0.72);
+    -webkit-backdrop-filter: blur(28px) saturate(140%);
+    backdrop-filter: blur(28px) saturate(140%);
+    border: 1px solid rgb(255 255 255 / 0.55);
     border-radius: 1.125rem;
     box-shadow:
-      inset 0 1px 0 0 hsl(0 0% 100% / var(--glass-sheen-alpha)),
+      inset 0 1px 0 rgb(255 255 255 / 0.7),
+      var(--shadow-soft);
+  }
+  .dark .studio-panel {
+    background-color: rgb(22 22 28 / 0.72);
+    border-color: rgb(255 255 255 / 0.12);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.12),
       var(--shadow-soft);
   }
   /* Interactive variant - only for panels that are themselves controls. */
@@ -1400,13 +1498,23 @@
     color: hsl(var(--muted-foreground));
   }
   .studio-nav-row:hover {
-    background-color: hsl(var(--foreground) / 0.05);
+    background-color: rgb(255 255 255 / 0.36);
+    -webkit-backdrop-filter: blur(28px) saturate(140%);
+    backdrop-filter: blur(28px) saturate(140%);
     color: hsl(var(--foreground));
   }
+  .dark .studio-nav-row:hover {
+    background-color: rgb(22 22 28 / 0.36);
+  }
   .studio-nav-row[aria-current='page'] {
-    background-color: hsl(var(--nav-active));
+    background-color: rgb(255 255 255 / 0.58);
+    -webkit-backdrop-filter: blur(28px) saturate(140%);
+    backdrop-filter: blur(28px) saturate(140%);
     color: hsl(var(--foreground));
     font-weight: 600;
+  }
+  .dark .studio-nav-row[aria-current='page'] {
+    background-color: rgb(22 22 28 / 0.58);
   }
   /* The indicator: 3px, inset, only on the active row. */
   .studio-nav-row[aria-current='page']::before {
@@ -1434,13 +1542,7 @@
 
   /* Subtle elevated panel used across the workspace */
   .panel {
-    @apply rounded-xl border border-border;
-    background-color: hsl(var(--glass-fill) / var(--glass-alpha));
-    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(140%);
-    backdrop-filter: blur(var(--glass-blur)) saturate(140%);
-    box-shadow:
-      inset 0 1px 0 0 hsl(0 0% 100% / var(--glass-sheen-alpha)),
-      var(--shadow-soft);
+    @apply rounded-xl border border-border liquid-glass;
   }
 
   /* ── Editorial accent meshes (Compass §7) ──────────────────────────────
@@ -1449,7 +1551,9 @@
   noise - reserved for the dashboard hero (primary) and the OPT-priority
   hero (warning, never alarm-red). */
   .mesh-accent {
-    background-color: hsl(var(--card));
+    background-color: rgb(255 255 255 / 0.72);
+    -webkit-backdrop-filter: blur(28px) saturate(140%);
+    backdrop-filter: blur(28px) saturate(140%);
     background-image:
       radial-gradient(115% 120% at 0% 0%, hsl(var(--primary) / 0.1), transparent 55%),
       radial-gradient(120% 120% at 100% 8%, hsl(var(--brand-to) / 0.08), transparent 58%);
@@ -1469,6 +1573,9 @@
   At 0.05/0.04 the card lands at #2F3A56 and muted recovers to 4.37:1, close to
   the 4.85:1 it gets on the untinted card. */
   .dark .mesh-accent {
+    background-color: rgb(22 22 28 / 0.72);
+    -webkit-backdrop-filter: blur(28px) saturate(140%);
+    backdrop-filter: blur(28px) saturate(140%);
     background-image:
       radial-gradient(115% 120% at 0% 0%, hsl(var(--primary) / 0.05), transparent 55%),
       radial-gradient(120% 120% at 100% 8%, hsl(var(--brand-to) / 0.04), transparent 58%);
@@ -1478,12 +1585,17 @@
   }
 
   .mesh-warning {
-    background-color: hsl(var(--card));
+    background-color: rgb(255 255 255 / 0.72);
+    -webkit-backdrop-filter: blur(28px) saturate(140%);
+    backdrop-filter: blur(28px) saturate(140%);
     background-image:
       radial-gradient(115% 120% at 0% 0%, hsl(var(--warning) / 0.12), transparent 55%),
       radial-gradient(120% 120% at 100% 8%, hsl(var(--warning) / 0.05), transparent 60%);
   }
   .dark .mesh-warning {
+    background-color: rgb(22 22 28 / 0.72);
+    -webkit-backdrop-filter: blur(28px) saturate(140%);
+    backdrop-filter: blur(28px) saturate(140%);
     background-image:
       radial-gradient(115% 120% at 0% 0%, hsl(var(--warning) / 0.18), transparent 55%),
       radial-gradient(120% 120% at 100% 8%, hsl(var(--warning) / 0.08), transparent 60%);
@@ -1986,4 +2098,184 @@ html {
   border-radius: 16px;
   position: relative;
   z-index: 5;
+}
+
+/* Frosted opacity + state utilities — Tailwind variants compile to separate
+class names that bypass the component-layer `.bg-*` rules above. */
+@layer utilities {
+  .bg-card\/50,
+  .bg-card\/60,
+  .bg-card\/80,
+  .bg-background\/40,
+  .bg-background\/50,
+  .bg-background\/55,
+  .bg-background\/60,
+  .bg-background\/70,
+  .bg-background\/75,
+  .bg-background\/80,
+  .bg-muted\/40,
+  .bg-muted\/50,
+  .bg-secondary\/80,
+  .bg-accent\/40,
+  .bg-accent\/50 {
+    background-image: none !important;
+    -webkit-backdrop-filter: blur(28px) saturate(140%);
+    backdrop-filter: blur(28px) saturate(140%);
+  }
+  .bg-card\/50 {
+    background-color: rgb(255 255 255 / 0.36) !important;
+  }
+  .bg-card\/60 {
+    background-color: rgb(255 255 255 / 0.43) !important;
+  }
+  .bg-card\/80 {
+    background-color: rgb(255 255 255 / 0.58) !important;
+  }
+  .bg-background\/40 {
+    background-color: rgb(255 255 255 / 0.29) !important;
+  }
+  .bg-background\/50 {
+    background-color: rgb(255 255 255 / 0.36) !important;
+  }
+  .bg-background\/55 {
+    background-color: rgb(255 255 255 / 0.4) !important;
+  }
+  .bg-background\/60 {
+    background-color: rgb(255 255 255 / 0.43) !important;
+  }
+  .bg-background\/70 {
+    background-color: rgb(255 255 255 / 0.5) !important;
+  }
+  .bg-background\/75 {
+    background-color: rgb(255 255 255 / 0.54) !important;
+  }
+  .bg-background\/80 {
+    background-color: rgb(255 255 255 / 0.58) !important;
+  }
+  .bg-muted\/40,
+  .bg-muted\/50 {
+    background-color: rgb(255 255 255 / 0.29) !important;
+  }
+  .bg-secondary\/80 {
+    background-color: rgb(255 255 255 / 0.36) !important;
+  }
+  .bg-accent\/40,
+  .bg-accent\/50 {
+    background-color: rgb(255 255 255 / 0.29) !important;
+  }
+  .dark .bg-card\/50 {
+    background-color: rgb(22 22 28 / 0.36) !important;
+  }
+  .dark .bg-card\/60 {
+    background-color: rgb(22 22 28 / 0.43) !important;
+  }
+  .dark .bg-card\/80 {
+    background-color: rgb(22 22 28 / 0.58) !important;
+  }
+  .dark .bg-background\/40 {
+    background-color: rgb(22 22 28 / 0.29) !important;
+  }
+  .dark .bg-background\/50 {
+    background-color: rgb(22 22 28 / 0.36) !important;
+  }
+  .dark .bg-background\/55 {
+    background-color: rgb(22 22 28 / 0.4) !important;
+  }
+  .dark .bg-background\/60 {
+    background-color: rgb(22 22 28 / 0.43) !important;
+  }
+  .dark .bg-background\/70 {
+    background-color: rgb(22 22 28 / 0.5) !important;
+  }
+  .dark .bg-background\/75 {
+    background-color: rgb(22 22 28 / 0.54) !important;
+  }
+  .dark .bg-background\/80 {
+    background-color: rgb(22 22 28 / 0.58) !important;
+  }
+  .dark .bg-muted\/40,
+  .dark .bg-muted\/50 {
+    background-color: rgb(22 22 28 / 0.29) !important;
+  }
+  .dark .bg-secondary\/80 {
+    background-color: rgb(22 22 28 / 0.36) !important;
+  }
+  .dark .bg-accent\/40,
+  .dark .bg-accent\/50 {
+    background-color: rgb(22 22 28 / 0.29) !important;
+  }
+
+  .hover\:bg-accent:hover,
+  .hover\:bg-muted:hover,
+  .hover\:bg-secondary:hover,
+  .focus\:bg-accent:focus,
+  .focus-visible\:bg-accent:focus-visible {
+    background-color: rgb(255 255 255 / 0.36) !important;
+    background-image: none !important;
+    -webkit-backdrop-filter: blur(28px) saturate(140%);
+    backdrop-filter: blur(28px) saturate(140%);
+  }
+  .dark .hover\:bg-accent:hover,
+  .dark .hover\:bg-muted:hover,
+  .dark .hover\:bg-secondary:hover,
+  .dark .focus\:bg-accent:focus,
+  .dark .focus-visible\:bg-accent:focus-visible {
+    background-color: rgb(22 22 28 / 0.36) !important;
+  }
+
+  .data-\[state\=active\]\:bg-background[data-state='active'],
+  .data-\[state\=on\]\:bg-accent[data-state='on'],
+  .data-\[state\=open\]\:bg-accent[data-state='open'],
+  .data-\[selected\=true\]\:bg-accent[data-selected='true'],
+  .data-\[selected\=\'true\'\]\:bg-accent[data-selected='true'] {
+    background-color: rgb(255 255 255 / 0.58) !important;
+    background-image: none !important;
+    -webkit-backdrop-filter: blur(28px) saturate(140%);
+    backdrop-filter: blur(28px) saturate(140%);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.55);
+  }
+  .data-\[state\=active\]\:bg-accent[data-state='active'],
+  .data-\[active\]\:bg-accent[data-active] {
+    background-color: rgb(255 255 255 / 0.36) !important;
+    background-image: none !important;
+    -webkit-backdrop-filter: blur(28px) saturate(140%);
+    backdrop-filter: blur(28px) saturate(140%);
+  }
+  .dark .data-\[state\=active\]\:bg-background[data-state='active'],
+  .dark .data-\[state\=on\]\:bg-accent[data-state='on'],
+  .dark .data-\[state\=open\]\:bg-accent[data-state='open'],
+  .dark .data-\[selected\=true\]\:bg-accent[data-selected='true'],
+  .dark .data-\[selected\=\'true\'\]\:bg-accent[data-selected='true'] {
+    background-color: rgb(22 22 28 / 0.58) !important;
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.1);
+  }
+  .dark .data-\[state\=active\]\:bg-accent[data-state='active'],
+  .dark .data-\[active\]\:bg-accent[data-active] {
+    background-color: rgb(22 22 28 / 0.36) !important;
+  }
+
+  .group-\[\.toaster\]\:bg-background {
+    background-color: rgb(255 255 255 / 0.72) !important;
+    background-image: none !important;
+    -webkit-backdrop-filter: blur(28px) saturate(140%);
+    backdrop-filter: blur(28px) saturate(140%);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.7),
+      0 16px 48px rgb(15 18 28 / 0.14);
+  }
+  .dark .group-\[\.toaster\]\:bg-background {
+    background-color: rgb(22 22 28 / 0.72) !important;
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.12),
+      0 16px 48px rgb(0 0 0 / 0.45);
+  }
+  .group-\[\.toast\]\:bg-muted {
+    background-color: rgb(255 255 255 / 0.43) !important;
+    background-image: none !important;
+    -webkit-backdrop-filter: blur(28px) saturate(140%);
+    backdrop-filter: blur(28px) saturate(140%);
+  }
+  .dark .group-\[\.toast\]\:bg-muted {
+    background-color: rgb(22 22 28 / 0.43) !important;
+  }
 }
