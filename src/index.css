@@ -141,8 +141,8 @@
     /* Dark counterparts. Same idea inverted: the studio canvas sits a step
   ABOVE the app's graphite rather than below it, so the document surface is
   still the lightest thing on the page. */
-    --studio-canvas-dark-hsl: 290 11% 11%; /* #1B171C */
-    --studio-card-dark-hsl: 303 11% 17%; /* #2D242D */
+    --studio-canvas-dark-hsl: 290 10% 16%; /* #2A2329 */
+    --studio-card-dark-hsl: 303 10% 21%; /* #372E36 */
     --studio-raised-dark-hsl: 312 10% 22%; /* #3C3039 */
     --studio-border-dark-hsl: 323 12% 30%; /* #56444F hairline */
     --studio-input-dark-hsl: 323 8% 50%; /* #8B7683 field edge - 3:1 on the studio card */
@@ -171,10 +171,10 @@
     canvas -> card   1.30:1
     card   -> border 1.66:1
   Body text 15.5:1 on the canvas; muted text 6.2:1 on a card. */
-    --app-canvas-dark-hsl: 276 11% 9%; /* #171419 charcoal black-cherry canvas */
-    --app-surface-dark-hsl: 300 10% 14%; /* #272027 - the raised step */
-    --app-muted-dark-hsl: 312 10% 19%; /* #352B33 hover / selected fills - LIGHTER than the card, so a hover reads as a lift rather than a dent */
-    --app-hairline-dark-hsl: 323 12% 27%; /* #4D3D47 */
+    --app-canvas-dark-hsl: 276 10% 14%; /* #261F26 lifted charcoal — dark without a black hole */
+    --app-surface-dark-hsl: 300 9% 19%; /* #342A33 raised step */
+    --app-muted-dark-hsl: 312 9% 24%; /* #42353E hover / selected fills */
+    --app-hairline-dark-hsl: 323 11% 32%; /* #5A4651 */
     --app-input-dark-hsl: 323 8% 50%; /* #8B7683 - 3.79:1 on a card. Field edges need 3:1, a hairline does not */
 
     /* Obsidian: the landing's dark product window, deliberately a shade
@@ -530,6 +530,14 @@
     --sidebar-accent-foreground: var(--blush-100-hsl);
     --sidebar-border: var(--blush-700-hsl);
     --sidebar-ring: var(--cherry-ink-dark-hsl);
+
+    --glass-fill: 276 8% 22%;
+    --glass-alpha: 0.55;
+    --glass-solid: var(--app-surface-dark-hsl);
+    --glass-edge: 0 0% 100%;
+    --glass-edge-alpha: 0.14;
+    --glass-sheen-alpha: 0.16;
+    --glass-blur: 24px;
   }
 
   /* ── The Aspirely visual language: two named surfaces ────────────────────
@@ -767,13 +775,13 @@
 
     /* The pane darkens rather than brightening - a white pane on charcoal is
   a lamp, not glass - and the sheen drops to a hairline. */
-    --glass-fill: var(--app-surface-dark-hsl);
-    --glass-alpha: 0.72;
+    --glass-fill: 276 8% 22%;
+    --glass-alpha: 0.55;
     --glass-solid: var(--app-surface-dark-hsl);
     --glass-edge: 0 0% 100%;
-    --glass-edge-alpha: 0.1;
-    --glass-sheen-alpha: 0.08;
-    --glass-blur: 20px;
+    --glass-edge-alpha: 0.14;
+    --glass-sheen-alpha: 0.16;
+    --glass-blur: 24px;
 
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
@@ -1054,6 +1062,53 @@
   @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
     .glass-pane {
       background-color: hsl(var(--glass-solid));
+    }
+  }
+
+  .hero-film-wash {
+    background: linear-gradient(
+      to right,
+      hsl(var(--background) / 0.9) 0%,
+      hsl(var(--background) / 0.78) 34%,
+      hsl(var(--background) / 0.4) 62%,
+      hsl(var(--background) / 0.08) 100%
+    );
+  }
+  .dark .hero-film-wash {
+    background: linear-gradient(
+      to right,
+      hsl(var(--background) / 0.55) 0%,
+      hsl(var(--background) / 0.38) 36%,
+      hsl(var(--background) / 0.16) 64%,
+      transparent 100%
+    );
+  }
+  .hero-film-mobile-scrim {
+    background: hsl(var(--background) / 0.45);
+  }
+  .dark .hero-film-mobile-scrim {
+    background: hsl(var(--background) / 0.26);
+  }
+  .liquid-glass {
+    background-color: rgb(255 255 255 / 0.72) !important;
+    background-image: none !important;
+    -webkit-backdrop-filter: blur(28px) saturate(140%);
+    backdrop-filter: blur(28px) saturate(140%);
+    border-color: rgb(255 255 255 / 0.55) !important;
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.7),
+      0 16px 48px rgb(15 18 28 / 0.14);
+  }
+  .dark .liquid-glass {
+    background-color: rgb(22 22 28 / 0.72) !important;
+    border-color: rgb(255 255 255 / 0.12) !important;
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.12),
+      0 16px 48px rgb(0 0 0 / 0.45);
+  }
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .liquid-glass {
+      background-color: hsl(var(--card)) !important;
     }
   }
 

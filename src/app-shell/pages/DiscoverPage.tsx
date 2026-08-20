@@ -24,7 +24,7 @@ function JobsTopBar() {
   const { search, setSearch, customizeOpen, setCustomizeOpen } = useCombinedJobsCtx();
 
   return (
-    <div className="sticky top-0 z-20 border-b border-border bg-background/90 py-2.5 backdrop-blur-md">
+    <div className="sticky top-0 z-20 border-b border-border/70 bg-background/75 py-2.5 backdrop-blur-xl">
       <div className="flex min-h-11 items-center gap-3">
         <h1 className="shrink-0 font-display text-lg font-bold tracking-tight text-foreground">
           Jobs
@@ -40,7 +40,7 @@ function JobsTopBar() {
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Filter title or company..."
             aria-label="Filter jobs by title or company"
-            className="h-10 w-full rounded-lg border border-border bg-card pl-8 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-primary/40 focus-visible:ring-2 focus-visible:ring-ring"
+            className="h-10 w-full rounded-lg border border-border/80 bg-background/80 pl-8 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-primary/40 focus-visible:ring-2 focus-visible:ring-ring"
           />
         </div>
         <Button

@@ -87,24 +87,22 @@ export function HeroBackdrop({ className }: { className?: string }) {
       aria-hidden
       className={cn('pointer-events-none absolute inset-0 overflow-hidden', className)}
     >
-      {/* THE MEDIA IS A LIGHT ASSET, mixed on the bright public canvas, and it
-          stays that way in both themes - one film, not a film plus a dark-mode
-          cut of it. On the charcoal alternative it is therefore dimmed rather
-          than re-graded: at full strength a pearl-white poster on a near-black
-          page is a lamp in the corner of the hero, brighter than the headline
-          and pulling every eye to the one element carrying no information. */}
+      {/* THE MEDIA is a light film. In dark mode it stays visible and is
+          frosted into the canvas (glass), instead of being crushed to 30%
+          opacity on a near-black wash — that pairing made Home feel like a
+          black slab with a ghost image. */}
       {showPoster ? (
         <img
           src={POSTER_SRC}
           alt=""
-          className="absolute inset-0 h-full w-full object-cover dark:opacity-30"
+          className="absolute inset-0 h-full w-full object-cover dark:opacity-80 dark:brightness-[0.88] dark:saturate-[0.85]"
           decoding="async"
           fetchPriority="low"
         />
       ) : (
         <video
           ref={videoRef}
-          className="absolute inset-0 h-full w-full object-cover dark:opacity-30"
+          className="absolute inset-0 h-full w-full object-cover dark:opacity-80 dark:brightness-[0.88] dark:saturate-[0.85]"
           autoPlay
           muted
           loop
@@ -117,6 +115,17 @@ export function HeroBackdrop({ className }: { className?: string }) {
           <source src={LOOP_MP4} type="video/mp4" />
         </video>
       )}
+
+      {/* Dark-only frost: blurs the film into the page so it reads as glass
+          atmosphere behind the copy, not a photograph pasted on charcoal. */}
+      <div
+        className="absolute inset-0 hidden dark:block"
+        style={{
+          background: 'hsl(var(--background) / 0.38)',
+          backdropFilter: 'blur(28px) saturate(140%)',
+          WebkitBackdropFilter: 'blur(28px) saturate(140%)',
+        }}
+      />
 
       {/* THE OVERLAY. Four layers, each doing one job, all token-driven so the
           whole stack re-tints with the surface underneath it.
@@ -142,11 +151,7 @@ export function HeroBackdrop({ className }: { className?: string }) {
           4 The bottom settle, which is now a short ramp to the page's own
             canvas rather than a cinematic fade. */}
       <div
-        className="absolute inset-0"
-        style={{
-          background:
-            'linear-gradient(to right, hsl(var(--background) / 0.9) 0%, hsl(var(--background) / 0.78) 34%, hsl(var(--background) / 0.4) 62%, hsl(var(--background) / 0.08) 100%)',
-        }}
+        className="hero-film-wash absolute inset-0"
       />
       {/* Below `lg` the copy column is centred and full-width, so there is no
           quiet side for the film to live on - it sits directly behind the
@@ -154,8 +159,7 @@ export function HeroBackdrop({ className }: { className?: string }) {
           so a flat scrim takes the film back on small viewports. It costs one
           composited layer that does not exist on desktop. */}
       <div
-        className="absolute inset-0 lg:hidden"
-        style={{ background: 'hsl(var(--background) / 0.45)' }}
+        className="hero-film-mobile-scrim absolute inset-0 lg:hidden"
       />
       <div
         className="absolute inset-0"
