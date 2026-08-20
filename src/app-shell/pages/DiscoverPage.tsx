@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Radar, Search } from "lucide-react";
 import { SubNav } from "../SubNav";
@@ -7,6 +8,7 @@ import { JobFeedSheet } from "@/components/job-search/JobFeedSheet";
 import { JobsRefineBar } from "@/components/job-search/JobsRefineBar";
 import { useCombinedJobsCtx } from "@/components/job-search/CombinedJobsProvider";
 import { AnimatedOutlet } from "../AnimatedOutlet";
+import { useSavedJobTabCounts } from "@/hooks/useSavedJobTabCounts";
 
 function jobsSectionOf(pathname: string): string {
   return pathname.split("/").filter(Boolean).pop() ?? "";
@@ -78,6 +80,16 @@ export default function DiscoverPage() {
   const isPortals = section === "portals";
   const showListingRefine = section === "for-you" || section === "jobs";
   const showCombinedFeed = !isPortals;
+  const { saved, applied } = useSavedJobTabCounts();
+  const jobsSections = useMemo(
+    () =>
+      JOBS_SECTIONS.map((item) => {
+        if (item.to === "saved") return { ...item, badge: saved };
+        if (item.to === "applied") return { ...item, badge: applied };
+        return item;
+      }),
+    [saved, applied],
+  );
 
   return (
     <div className="page-full flex flex-col gap-4 !pt-0">
@@ -87,7 +99,7 @@ export default function DiscoverPage() {
       <div className="sticky top-0 z-20 -mx-4 border-b border-border/30 glass-nav px-4 pb-3 pt-2.5 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
         {isPortals ? <PortalsJobsTopBar /> : <JobsTopBar />}
         <div className="mt-3 space-y-2">
-          <SubNav ariaLabel="Jobs sections" items={JOBS_SECTIONS} className="border-0" />
+          <SubNav ariaLabel="Jobs sections" items={jobsSections} className="border-0" />
           {showListingRefine && <JobsRefineBar />}
         </div>
       </div>

@@ -1,6 +1,8 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { apiService } from '@/lib/api';
+import { SAVED_JOBS_QUERY_KEY } from '@/hooks/useSavedJobTabCounts';
 import type { Job, SavedJob, JobSearchFilters, JobSearchOptions, BatchSearchResponse, VisaFlags, VisaFilters } from '@/types/jobs';
 
 /**
@@ -88,6 +90,10 @@ export interface BatchMeta {
 }
 
 export function useJobSearch() {
+  const queryClient = useQueryClient();
+  const bumpSavedTabCounts = useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: SAVED_JOBS_QUERY_KEY });
+  }, [queryClient]);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [savedJobs, setSavedJobs] = useState<SavedJob[]>([]);
   const [filters, setFilters] = useState<JobSearchFilters>(DEFAULT_FILTERS);
@@ -291,32 +297,36 @@ export function useJobSearch() {
     const resp = await apiService.getSavedJobs();
     if (resp.data) {
       setSavedJobs(resp.data.jobs);
+      bumpSavedTabCounts();
     }
-  }, []);
+  }, [bumpSavedTabCounts]);
 
   const saveJob = useCallback(async (job: Job) => {
     const resp = await apiService.saveJob(job);
     if (resp.data) {
       setSavedJobs(prev => [resp.data!.job, ...prev.filter(j => j.job_id !== job.job_id)]);
+      bumpSavedTabCounts();
     }
     return resp;
-  }, []);
+  }, [bumpSavedTabCounts]);
 
   const unsaveJob = useCallback(async (jobId: string) => {
     const resp = await apiService.deleteSavedJob(jobId);
     if (!resp.error) {
       setSavedJobs(prev => prev.filter(j => j.job_id !== jobId));
+      bumpSavedTabCounts();
     }
     return resp;
-  }, []);
+  }, [bumpSavedTabCounts]);
 
   const updateJobStatus = useCallback(async (jobId: string, status: string, notes?: string) => {
     const resp = await apiService.updateSavedJob(jobId, { status, notes });
     if (resp.data) {
       setSavedJobs(prev => prev.map(j => j.job_id === jobId ? resp.data!.job : j));
+      bumpSavedTabCounts();
     }
     return resp;
-  }, []);
+  }, [bumpSavedTabCounts]);
 
   const [pendingApplyIds, setPendingApplyIds] = useState<Set<string>>(
     () => new Set(readPendingApplyIds()),
@@ -391,12 +401,13 @@ export function useJobSearch() {
           ? prev.map((j) => (j.job_id === job.job_id ? job : j))
           : [job, ...prev];
       });
+      bumpSavedTabCounts();
     }
     toast.success('Moved to Applied', {
       description: 'It’s in Apply → Tracker under Applied.',
     });
     return resp;
-  }, [updateJobStatus, savedJobs, applyConfirmJob]);
+  }, [updateJobStatus, savedJobs, applyConfirmJob, bumpSavedTabCounts]);
 
   const dismissApplyConfirm = useCallback((jobId: string) => {
     deferredTailorPending.current.delete(jobId);
@@ -430,6 +441,7 @@ export function useJobSearch() {
           ? prev.map((j) => (j.job_id === row.job_id ? row : j))
           : [row, ...prev];
       });
+      bumpSavedTabCounts();
     }
     setPendingApplyIds((prev) => {
       const next = new Set(prev);
@@ -442,7 +454,7 @@ export function useJobSearch() {
       description: 'Tracker shows Applied with your base resume until you tailor.',
     });
     return resp;
-  }, []);
+  }, [bumpSavedTabCounts]);
 
   // Open the posting, keep the job where it is, then ask "Did you apply?"
   const quickApply = useCallback(async (job: Job) => {

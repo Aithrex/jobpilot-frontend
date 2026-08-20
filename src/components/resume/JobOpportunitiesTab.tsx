@@ -6,7 +6,8 @@ import { ApplyConfirmDialog, JOB_FEED_GRID_CLASS, JobCard } from '@/components/j
 import { Button } from '@/components/ui/button';
 import { appPath } from '@/app-shell/nav.config';
 import { loadHiddenJobIds, persistHiddenJobId } from '@/lib/hiddenJobs';
-import type { Job, SavedJob } from '@/types/jobs';
+import type { Job } from '@/types/jobs';
+import { isAppliedSavedJob } from '@/lib/savedJobs';
 
 interface JobOpportunitiesTabProps {
   /** Mounted inside the /next app shell - the shell already renders the page
@@ -16,17 +17,11 @@ interface JobOpportunitiesTabProps {
 
 type View = 'browse' | 'saved' | 'applied';
 
-const APPLIED_STATUSES = new Set(['applied', 'interview', 'offer', 'rejected', 'withdrawn']);
-
 function viewFromPath(pathname: string): View {
   const leaf = pathname.split('/').filter(Boolean).pop();
   if (leaf === 'saved') return 'saved';
   if (leaf === 'applied') return 'applied';
   return 'browse';
-}
-
-function isAppliedSaved(row: SavedJob): boolean {
-  return APPLIED_STATUSES.has((row.status || '').toLowerCase());
 }
 
 function JobList({
@@ -88,11 +83,11 @@ export default function JobOpportunitiesTab({ embedded }: JobOpportunitiesTabPro
   };
 
   const savedRows = useMemo(
-    () => jobSearch.savedJobs.filter((row) => !isAppliedSaved(row)),
+    () => jobSearch.savedJobs.filter((row) => !isAppliedSavedJob(row)),
     [jobSearch.savedJobs],
   );
   const appliedRows = useMemo(
-    () => jobSearch.savedJobs.filter(isAppliedSaved),
+    () => jobSearch.savedJobs.filter(isAppliedSavedJob),
     [jobSearch.savedJobs],
   );
 

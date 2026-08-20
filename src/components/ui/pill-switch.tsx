@@ -12,9 +12,9 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { indicatorSpring } from '@/lib/motion';
 
-/** Outer capsule - frosted back pill behind a sliding inner thumb. */
+/** Outer capsule - quiet track; the moving inner pill is the glass surface. */
 export const PILL_TRACK_CLASS =
-  'relative inline-flex max-w-full items-stretch overflow-x-auto overscroll-x-contain scrollbar-hide snap-x snap-mandatory rounded-full border border-white/55 liquid-glass p-1 dark:border-white/12';
+  'relative inline-flex max-w-full items-stretch overflow-x-auto overscroll-x-contain scrollbar-hide snap-x snap-mandatory rounded-full border border-border/50 bg-muted/45 p-1 backdrop-blur-md';
 
 const SIZE: Record<'sm' | 'md', string> = {
   sm: 'min-h-9 px-3 text-[11px] font-semibold',
@@ -60,7 +60,7 @@ export function PillThumb({ layoutId }: { layoutId: string }) {
   return (
     <motion.span
       layoutId={layoutId}
-      className="absolute inset-0 z-0 rounded-full border border-white/70 bg-background/90 shadow-[0_1px_6px_rgb(0_0_0/0.12)] dark:border-white/15 dark:bg-background/80"
+      className="liquid-glass liquid-glass-thumb absolute inset-0 z-0 overflow-hidden rounded-full"
       transition={indicatorSpring(reduceMotion)}
       aria-hidden="true"
     />

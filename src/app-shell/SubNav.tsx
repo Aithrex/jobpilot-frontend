@@ -15,6 +15,8 @@ export interface SubNavItem {
   to: string;
   label: string;
   icon: LucideIcon;
+  /** Small count at the top of the label (Saved / Applied). */
+  badge?: number;
 }
 
 interface SubNavProps {
@@ -73,11 +75,12 @@ export function SubNav({ ariaLabel, items, className }: SubNavProps) {
         onKeyDown={onKeyDown}
         className="w-full max-w-full"
       >
-        {items.map(({ to, label, icon: Icon }) => (
+        {items.map(({ to, label, icon: Icon, badge }) => (
           <NavLink
             key={to}
             to={to}
             data-subnav-link
+            aria-label={badge != null ? `${label} ${badge}` : undefined}
             className={({ isActive }) => pillItemClass(isActive, "md")}
           >
             {({ isActive }) => (
@@ -87,7 +90,14 @@ export function SubNav({ ariaLabel, items, className }: SubNavProps) {
                   className={cn("relative z-10 h-4 w-4 shrink-0", isActive && "text-primary")}
                   aria-hidden="true"
                 />
-                <span className="relative z-10">{label}</span>
+                <span className="relative z-10">
+                  {label}
+                  {badge != null && (
+                    <sup className="ml-0.5 text-[9px] font-bold tabular-nums leading-none text-primary">
+                      {badge > 99 ? "99+" : badge}
+                    </sup>
+                  )}
+                </span>
               </>
             )}
           </NavLink>

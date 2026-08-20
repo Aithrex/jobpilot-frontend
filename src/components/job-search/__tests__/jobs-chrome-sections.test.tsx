@@ -4,6 +4,7 @@
  */
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { beforeEach, describe, expect, test, vi, type Mock } from 'vitest';
 
 import { apiService } from '@/lib/api';
@@ -52,20 +53,23 @@ function okScan() {
 }
 
 function renderDiscover(path: string) {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <MemoryRouter initialEntries={[path]}>
-      <TooltipProvider>
-        <CombinedJobsProvider>
-          <Routes>
-            <Route path="/app/jobs" element={<DiscoverPage />}>
-              <Route path="for-you" element={<div data-testid="outlet-for-you" />} />
-              <Route path="portals" element={<div data-testid="outlet-portals" />} />
-              <Route path="saved" element={<div data-testid="outlet-saved" />} />
-            </Route>
-          </Routes>
-        </CombinedJobsProvider>
-      </TooltipProvider>
-    </MemoryRouter>,
+    <QueryClientProvider client={client}>
+      <MemoryRouter initialEntries={[path]}>
+        <TooltipProvider>
+          <CombinedJobsProvider>
+            <Routes>
+              <Route path="/app/jobs" element={<DiscoverPage />}>
+                <Route path="for-you" element={<div data-testid="outlet-for-you" />} />
+                <Route path="portals" element={<div data-testid="outlet-portals" />} />
+                <Route path="saved" element={<div data-testid="outlet-saved" />} />
+              </Route>
+            </Routes>
+          </CombinedJobsProvider>
+        </TooltipProvider>
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
 }
 
@@ -81,6 +85,7 @@ describe('DiscoverPage section-aware Jobs chrome', () => {
     for (const fn of ['getWorkdayCatalog', 'getCareerPagesCatalog', 'getMncCatalog'] as const) {
       api[fn].mockResolvedValue({ data: { total: 0, industries: [] }, status: 200 });
     }
+    api.getSavedJobs.mockResolvedValue({ data: { jobs: [] }, status: 200 });
   });
 
   test('For you shows Job feed button and title filter', () => {
@@ -105,6 +110,22 @@ describe('DiscoverPage section-aware Jobs chrome', () => {
     renderDiscover('/app/jobs/saved');
     expect(screen.getByRole('button', { name: /job feed/i })).toBeInTheDocument();
     expect(screen.queryByText(/scan one catalog at a time/i)).not.toBeInTheDocument();
+  });
+
+  test('Saved and Applied pills show counts as superscripts', async () => {
+    api.getSavedJobs.mockResolvedValue({
+      data: {
+        jobs: [
+          { job_id: 'a', status: 'interested' },
+          { job_id: 'b', status: 'interested' },
+          { job_id: 'c', status: 'applied' },
+        ],
+      },
+      status: 200,
+    });
+    renderDiscover('/app/jobs/for-you');
+    expect(await screen.findByRole('link', { name: 'Saved 2' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Applied 1' })).toBeInTheDocument();
   });
 });
 
