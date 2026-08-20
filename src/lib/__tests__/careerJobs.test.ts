@@ -77,4 +77,54 @@ describe('jobTitleOf / toJob', () => {
     expect(sortJobsByMode([a, b], 'score').map((j) => j.job_id)).toEqual(['a', 'b']);
     expect(sortJobsByMode([a, b], 'newest').map((j) => j.job_id)).toEqual(['b', 'a']);
   });
+
+  test('Jobgether marketplace rows always sort after first-party employers', () => {
+    const employer = row({
+      job_id: 'emp',
+      title: 'Software Engineer',
+      company: 'Acme',
+      tenant: 'acme',
+      match_score: 40,
+      days_ago: 3,
+    });
+    const market = row({
+      job_id: 'jg',
+      title: 'Software Engineer',
+      company: 'Jobgether',
+      tenant: 'jobgether',
+      board_kind: 'marketplace',
+      match_score: 99,
+      days_ago: 0,
+    });
+    expect(sortJobsByMode([market, employer], 'score').map((j) => j.job_id)).toEqual([
+      'emp',
+      'jg',
+    ]);
+    expect(sortJobsByMode([market, employer], 'newest').map((j) => j.job_id)).toEqual([
+      'emp',
+      'jg',
+    ]);
+  });
+
+  test('mergeJobs prefers a first-party copy over a Jobgether duplicate', () => {
+    const employer = row({
+      job_id: 'emp',
+      title: 'Software Engineer',
+      company: 'Acme',
+      location: 'Remote',
+      match_score: 50,
+    });
+    const market = row({
+      job_id: 'jg',
+      title: 'Software Engineer',
+      company: 'Acme',
+      location: 'Remote',
+      tenant: 'jobgether',
+      board_kind: 'marketplace',
+      match_score: 95,
+    });
+    const merged = mergeJobs([market], [employer]);
+    expect(merged).toHaveLength(1);
+    expect(merged[0].job_id).toBe('emp');
+  });
 });

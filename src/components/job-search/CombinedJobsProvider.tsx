@@ -89,7 +89,7 @@ export function CombinedJobsProvider({ children }: { children: React.ReactNode }
   const [seniority, setSeniority] = useState('any');
   const [minScore, setMinScore] = useState(0);
   const [sponsorFilter, setSponsorFilter] = useState<SponsorFilter>('friendly');
-  const [sortBy, setSortBy] = useState<SortBy>('score');
+  const [sortBy, setSortBy] = useState<SortBy>('newest');
   const [page, setPage] = useState(1);
 
   const ensureStarted = useCallback(() => setStarted(true), []);

@@ -50,8 +50,8 @@ export function JobsRefineBar() {
         onValueChange={setSortBy}
         layoutId="jobs-sort-pill"
         options={[
-          { value: 'score', label: 'Best match' },
           { value: 'newest', label: 'Newest' },
+          { value: 'score', label: 'Best match' },
         ]}
       />
       <span className="inline-flex h-9 shrink-0 items-center gap-1 rounded-full bg-primary px-3 text-[11px] font-semibold text-primary-foreground">

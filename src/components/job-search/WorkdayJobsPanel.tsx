@@ -429,7 +429,7 @@ export function WorkdayJobsPanel({
   // Frank mode: rows the feasibility engine marks "skip" (core-stack
   // mismatch, big experience gap, clearance) are hidden by default.
   const [hideUnrealistic, setHideUnrealistic] = useState(prefs.hideUnrealistic ?? true);
-  const [sortBy, setSortBy] = useState<'score' | 'newest'>(prefs.sortBy ?? 'score');
+  const [sortBy, setSortBy] = useState<'score' | 'newest'>(prefs.sortBy ?? 'newest');
   // International default: hide JDs that explicitly decline sponsorship.
   // 'proven' additionally requires the company to have a real H-1B filing
   // record; 'unknown' companies stay visible in 'friendly' (no evidence
@@ -1245,8 +1245,8 @@ export function WorkdayJobsPanel({
               value={sortBy}
               onValueChange={setSortBy}
               options={[
-                { value: 'score', label: 'Best match' },
                 { value: 'newest', label: 'Newest' },
+                { value: 'score', label: 'Best match' },
               ]}
             />
           </div>
