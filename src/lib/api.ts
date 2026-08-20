@@ -1906,6 +1906,8 @@ class ApiService {
     onStatus?: (status: import('../types/resume').JobStatus) => void,
     onProgress?: (p: import('../types/resume').TailorJobProgress) => void,
     sourceJobId?: string,
+    /** Fires once the async tailor job is accepted (before polling). */
+    onSubmitted?: (jobId: string) => void,
   ): Promise<
     ApiResponse<{
       jd_analysis: import('../types/resume').JDAnalysis;
@@ -1942,6 +1944,11 @@ class ApiService {
       };
     }
     if (!submitResp.data?.job_id) return { error: 'Failed to submit job' };
+    try {
+      onSubmitted?.(submitResp.data.job_id);
+    } catch {
+      /* ignore */
+    }
 
     return this.pollJob<{
       jd_analysis: import('../types/resume').JDAnalysis;

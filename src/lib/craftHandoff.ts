@@ -22,6 +22,7 @@
  * doesn't replay a stale handoff.
  */
 import type { JDAnalysis, TailoredFullResume } from '../types/resume';
+import { setActiveTailorSession } from './activeTailorSession';
 
 /* ── Keys & the cross-surface event name ─────────────────────────────────── */
 
@@ -86,6 +87,12 @@ function remove(storage: Storage, key: string): void {
 /** Producer: stage a pending tailor job and wake any mounted Tailor surface. */
 export function stagePendingTailorJob(job: PendingTailorJob): void {
   writeJson(sessionStorage, PENDING_TAILOR_JOB_KEY, job);
+  setActiveTailorSession({
+    sourceJobId: job.job_id,
+    title: job.title,
+    company: job.company,
+    status: 'handed_off',
+  });
   try {
     window.dispatchEvent(new CustomEvent(NAVIGATE_TO_TAILOR_EVENT));
   } catch {

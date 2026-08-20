@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import {
   AlertCircle,
@@ -22,6 +22,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { ChipsInput } from '@/components/job-search/ChipsInput';
 import { JOB_FEED_GRID_CLASS, JobCard, JOB_CARD_CLASS } from '@/components/job-search/JobCard';
+import { JobsTailorBanner } from '@/components/job-search/JobsTailorBanner';
 import { useAutoSync } from '@/hooks/useAutoSync';
 import { JOB_TITLES_CAP, useJobTitles } from '@/hooks/useJobTitles';
 import { apiService } from '@/lib/api';
@@ -484,7 +485,22 @@ export function WorkdayJobsPanel({
     sponsorFilter,
   ]);
 
-  const [page, setPage] = useState(1);
+  const pageStorageKey = `career-portals-page:${variant}`;
+  const [page, setPage] = useState(() => {
+    try {
+      const n = Number(sessionStorage.getItem(pageStorageKey) || '1');
+      return Number.isFinite(n) && n >= 1 ? Math.floor(n) : 1;
+    } catch {
+      return 1;
+    }
+  });
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(pageStorageKey, String(page));
+    } catch {
+      /* ignore */
+    }
+  }, [page, pageStorageKey]);
 
   // ── Data ────────────────────────────────────────────────────────────────
   const [catalog, setCatalog] = useState<WorkdayCatalog | null>(null);
@@ -661,7 +677,13 @@ export function WorkdayJobsPanel({
   useEffect(() => {
     setPage((p) => Math.min(Math.max(1, p), pageCount));
   }, [pageCount]);
+  // Reset to page 1 only when filters change — not on remount after Tailor.
+  const filterResetReady = useRef(false);
   useEffect(() => {
+    if (!filterResetReady.current) {
+      filterResetReady.current = true;
+      return;
+    }
     setPage(1);
   }, [
     recency,
@@ -803,6 +825,7 @@ export function WorkdayJobsPanel({
 
   return (
     <div className="space-y-5">
+      <JobsTailorBanner />
       {/* ── Live-sync command bar ── */}
       <div className="relative overflow-hidden rounded-2xl border border-border/50 liquid-glass p-4 shadow-soft sm:p-5">
         <div
