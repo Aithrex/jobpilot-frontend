@@ -12,7 +12,7 @@ import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ApplyConfirmDialog, JOB_FEED_GRID_CLASS, JobCard, JOB_CARD_CLASS } from '@/components/job-search/JobCard';
 import { useCombinedJobsCtx } from '@/components/job-search/CombinedJobsProvider';
-import { RECENCY_OPTIONS, seniorityOf, sortJobsByMode, toJob } from '@/lib/careerJobs';
+import { RECENCY_OPTIONS, seniorityOf, sortJobsByMode, isAppliedPipelineStatus, toJob } from '@/lib/careerJobs';
 import { cn } from '@/lib/utils';
 import type { Job, WorkdayJob } from '@/types/jobs';
 
@@ -101,6 +101,7 @@ export function CombinedJobsPanel({
     seniority,
     minScore,
     sponsorFilter,
+    showApplied,
     sortBy,
     page,
     setPage,
@@ -115,6 +116,7 @@ export function CombinedJobsPanel({
   const maxDays = RECENCY_OPTIONS.find((o) => o.key === recency)?.maxDays ?? 3;
 
   const visibleJobs = useMemo(() => {
+    const isApplied = (j: WorkdayJob) => isAppliedPipelineStatus(getJobStatus(j.job_id));
     let out = jobs.filter((j) => j.days_ago != null && j.days_ago <= maxDays);
     const q = search.trim().toLowerCase();
     if (q) out = out.filter((j) => `${j.title} ${j.company}`.toLowerCase().includes(q));
@@ -123,8 +125,20 @@ export function CombinedJobsPanel({
     if (sponsorFilter === 'friendly') out = out.filter((j) => j.sponsorship !== 'refused');
     else if (sponsorFilter === 'proven') out = out.filter((j) => j.sponsorship === 'likely');
     if (hiddenJobIds?.size) out = out.filter((j) => !hiddenJobIds.has(j.job_id));
-    return sortJobsByMode(out, sortBy);
-  }, [jobs, maxDays, search, seniority, minScore, sponsorFilter, sortBy, hiddenJobIds]);
+    if (!showApplied) out = out.filter((j) => !isApplied(j));
+    return sortJobsByMode(out, sortBy, { isApplied });
+  }, [
+    jobs,
+    maxDays,
+    search,
+    seniority,
+    minScore,
+    sponsorFilter,
+    sortBy,
+    hiddenJobIds,
+    showApplied,
+    getJobStatus,
+  ]);
 
   const pageCount = Math.max(1, Math.ceil(visibleJobs.length / PAGE_SIZE));
   useEffect(() => {
@@ -132,7 +146,7 @@ export function CombinedJobsPanel({
   }, [pageCount, setPage]);
   useEffect(() => {
     setPage(1);
-  }, [recency, search, seniority, minScore, sponsorFilter, sortBy, setPage]);
+  }, [recency, search, seniority, minScore, sponsorFilter, showApplied, sortBy, setPage]);
 
   const pagedJobs = useMemo(
     () => visibleJobs.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),

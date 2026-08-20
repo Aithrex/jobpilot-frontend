@@ -121,6 +121,22 @@ export function isMarketplaceListing(job: WorkdayJob): boolean {
   return tenant === 'jobgether' || company === 'jobgether';
 }
 
+/** Pipeline statuses that mean the seeker already acted — hide from discovery
+ *  by default; when shown, pin below still-open roles. `interested` stays
+ *  visible (saved, not yet applied). */
+const APPLIED_PIPELINE = new Set([
+  'applied',
+  'interview',
+  'offer',
+  'rejected',
+  'withdrawn',
+]);
+
+export function isAppliedPipelineStatus(status: string | null | undefined): boolean {
+  if (!status) return false;
+  return APPLIED_PIPELINE.has(String(status).toLowerCase());
+}
+
 /** A merged row is "better" if it has the higher match score; description
  *  richness is only a tiebreaker. Preferring a long JD from one ATS over a
  *  higher-scored short row from another made Best match look broken across
@@ -136,14 +152,23 @@ function isBetter(candidate: WorkdayJob, current: WorkdayJob): boolean {
   return (candidate.description || '').length > (current.description || '').length;
 }
 
+export type SortJobsOptions = {
+  /** When true for a row, that row sorts after all still-open roles. */
+  isApplied?: (job: WorkdayJob) => boolean;
+};
+
 /** Stable Best match / Newest ordering for the merged multi-ATS feed.
- *  Marketplace listings always sort after first-party employer rows. */
+ *  Tier order: open first-party → open marketplace → applied first-party →
+ *  applied marketplace. */
 export function sortJobsByMode(
   jobs: WorkdayJob[],
   sortBy: 'score' | 'newest',
+  opts?: SortJobsOptions,
 ): WorkdayJob[] {
   const out = [...jobs];
-  const pin = (j: WorkdayJob) => (isMarketplaceListing(j) ? 1 : 0);
+  const appliedOf = opts?.isApplied ?? (() => false);
+  const pin = (j: WorkdayJob) =>
+    (appliedOf(j) ? 2 : 0) + (isMarketplaceListing(j) ? 1 : 0);
   if (sortBy === 'newest') {
     out.sort(
       (a, b) =>

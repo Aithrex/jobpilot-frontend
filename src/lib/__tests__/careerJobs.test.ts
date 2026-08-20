@@ -7,7 +7,7 @@
  */
 import { describe, expect, test } from 'vitest';
 
-import { jobTitleOf, mergeJobs, sortJobsByMode, toJob } from '@/lib/careerJobs';
+import { jobTitleOf, mergeJobs, sortJobsByMode, toJob, isAppliedPipelineStatus } from '@/lib/careerJobs';
 import type { WorkdayJob } from '@/types/jobs';
 
 function row(overrides: Partial<WorkdayJob>): WorkdayJob {
@@ -126,5 +126,45 @@ describe('jobTitleOf / toJob', () => {
     const merged = mergeJobs([market], [employer]);
     expect(merged).toHaveLength(1);
     expect(merged[0].job_id).toBe('emp');
+  });
+
+  test('isAppliedPipelineStatus covers funnel and terminal statuses', () => {
+    expect(isAppliedPipelineStatus('applied')).toBe(true);
+    expect(isAppliedPipelineStatus('interview')).toBe(true);
+    expect(isAppliedPipelineStatus('offer')).toBe(true);
+    expect(isAppliedPipelineStatus('rejected')).toBe(true);
+    expect(isAppliedPipelineStatus('withdrawn')).toBe(true);
+    expect(isAppliedPipelineStatus('interested')).toBe(false);
+    expect(isAppliedPipelineStatus(null)).toBe(false);
+  });
+
+  test('applied roles pin after open roles, including after marketplace', () => {
+    const openEmp = row({
+      job_id: 'open-emp',
+      title: 'A',
+      match_score: 40,
+      days_ago: 5,
+      tenant: 'acme',
+    });
+    const openMarket = row({
+      job_id: 'open-jg',
+      title: 'B',
+      match_score: 99,
+      days_ago: 0,
+      tenant: 'jobgether',
+      board_kind: 'marketplace',
+    });
+    const appliedEmp = row({
+      job_id: 'applied-emp',
+      title: 'C',
+      match_score: 95,
+      days_ago: 0,
+      tenant: 'acme',
+    });
+    const appliedIds = new Set(['applied-emp']);
+    const sorted = sortJobsByMode([appliedEmp, openMarket, openEmp], 'newest', {
+      isApplied: (j) => appliedIds.has(j.job_id),
+    });
+    expect(sorted.map((j) => j.job_id)).toEqual(['open-emp', 'open-jg', 'applied-emp']);
   });
 });

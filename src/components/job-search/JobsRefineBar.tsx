@@ -5,12 +5,20 @@ import { RECENCY_OPTIONS } from '@/lib/careerJobs';
 import { PillSwitch } from '@/components/ui/pill-switch';
 
 /**
- * For-you listing chrome: recency windows + Best match / Newest.
- * Lives under the Jobs section tabs so it stays visible even before the first
- * scan result (the old panel row hid these until `hasResult`).
+ * For-you listing chrome: recency windows + Newest / Best match + open vs
+ * applied. Lives under the Jobs section tabs so it stays visible even before
+ * the first scan result.
  */
 export function JobsRefineBar() {
-  const { jobs, recency, setRecency, sortBy, setSortBy } = useCombinedJobsCtx();
+  const {
+    jobs,
+    recency,
+    setRecency,
+    sortBy,
+    setSortBy,
+    showApplied,
+    setShowApplied,
+  } = useCombinedJobsCtx();
 
   const recencyCounts = useMemo(() => {
     const counts: Record<string, number> = { today: 0, '24h': 0, '3d': 0, '7d': 0, '30d': 0 };
@@ -52,6 +60,20 @@ export function JobsRefineBar() {
         options={[
           { value: 'newest', label: 'Newest' },
           { value: 'score', label: 'Best match' },
+        ]}
+      />
+      <PillSwitch
+        aria-label="Applied roles visibility"
+        value={showApplied ? 'all' : 'open'}
+        onValueChange={(v) => setShowApplied(v === 'all')}
+        layoutId="jobs-applied-pill"
+        options={[
+          { value: 'open', label: 'Open', title: 'Hide roles you already applied to' },
+          {
+            value: 'all',
+            label: 'Incl. applied',
+            title: 'Show applied roles at the bottom of the list',
+          },
         ]}
       />
       <span className="inline-flex h-9 shrink-0 items-center gap-1 rounded-full bg-primary px-3 text-[11px] font-semibold text-primary-foreground">

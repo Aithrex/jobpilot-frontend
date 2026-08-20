@@ -25,7 +25,7 @@ import { JOB_FEED_GRID_CLASS, JobCard, JOB_CARD_CLASS } from '@/components/job-s
 import { useAutoSync } from '@/hooks/useAutoSync';
 import { JOB_TITLES_CAP, useJobTitles } from '@/hooks/useJobTitles';
 import { apiService } from '@/lib/api';
-import { jobTitleOf, sortJobsByMode } from '@/lib/careerJobs';
+import { jobTitleOf, sortJobsByMode, isAppliedPipelineStatus } from '@/lib/careerJobs';
 // (job listings are free & auth-only - no entitlement/upgrade wiring here)
 import {
   Sheet,
@@ -437,6 +437,7 @@ export function WorkdayJobsPanel({
   const [sponsorFilter, setSponsorFilter] = useState<'all' | 'friendly' | 'proven'>(
     prefs.sponsorFilter ?? 'friendly',
   );
+  const [showApplied, setShowApplied] = useState(false);
   // Heavy search setup (role titles / industries / location) is collapsed by
   // default - results stream in on their own, so the "companies search bar"
   // stays out of the way until the user wants to retune it.
@@ -631,6 +632,8 @@ export function WorkdayJobsPanel({
   );
 
   const visibleJobs = useMemo(() => {
+    const isApplied = (j: (typeof recencyJobs)[number]) =>
+      isAppliedPipelineStatus(getJobStatus(j.job_id));
     let out = recencyJobs;
     if (seniorityFilter !== 'any') out = out.filter((j) => seniorityOf(j) === seniorityFilter);
     if (minScore > 0) out = out.filter((j) => (j.match_score ?? 0) >= minScore);
@@ -638,7 +641,8 @@ export function WorkdayJobsPanel({
     if (hideUnrealistic && hasFeasibility) out = out.filter((j) => j.tailor_feasibility !== 'skip');
     if (sponsorFilter === 'friendly') out = out.filter((j) => j.sponsorship !== 'refused');
     else if (sponsorFilter === 'proven') out = out.filter((j) => j.sponsorship === 'likely');
-    return sortJobsByMode(out, sortBy);
+    if (!showApplied) out = out.filter((j) => !isApplied(j));
+    return sortJobsByMode(out, sortBy, { isApplied });
   }, [
     recencyJobs,
     seniorityFilter,
@@ -648,6 +652,8 @@ export function WorkdayJobsPanel({
     hasFeasibility,
     sortBy,
     sponsorFilter,
+    showApplied,
+    getJobStatus,
   ]);
 
   const pageCount = Math.max(1, Math.ceil(visibleJobs.length / PAGE_SIZE));
@@ -666,6 +672,7 @@ export function WorkdayJobsPanel({
     hideUnrealistic,
     sortBy,
     sponsorFilter,
+    showApplied,
   ]);
 
   const pagedJobs = useMemo(
@@ -1237,6 +1244,21 @@ export function WorkdayJobsPanel({
               ]}
             />
             </div>
+
+            <PillSwitch
+              aria-label="Applied roles visibility"
+              layoutId="workday-applied-pill"
+              value={showApplied ? 'all' : 'open'}
+              onValueChange={(v) => setShowApplied(v === 'all')}
+              options={[
+                { value: 'open', label: 'Open', title: 'Hide roles you already applied to' },
+                {
+                  value: 'all',
+                  label: 'Incl. applied',
+                  title: 'Show applied roles at the bottom of the list',
+                },
+              ]}
+            />
 
             <PillSwitch
               className="sm:ml-auto"

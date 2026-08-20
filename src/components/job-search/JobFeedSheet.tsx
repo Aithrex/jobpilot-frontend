@@ -147,6 +147,8 @@ export function JobFeedSheet() {
     setMinScore,
     sponsorFilter,
     setSponsorFilter,
+    showApplied,
+    setShowApplied,
   } = useCombinedJobsCtx();
 
   const roleCount = jobs.length;
@@ -371,6 +373,13 @@ export function JobFeedSheet() {
                   ]}
                 />
               </div>
+
+              <ToggleRow
+                id="combined-show-applied"
+                label="Show applied"
+                checked={showApplied}
+                onCheckedChange={setShowApplied}
+              />
             </div>
           </section>
         </div>

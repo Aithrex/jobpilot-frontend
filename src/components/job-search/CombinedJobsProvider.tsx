@@ -54,6 +54,9 @@ interface CombinedJobsContextValue extends CombinedJobsController {
   setMinScore: (v: number) => void;
   sponsorFilter: SponsorFilter;
   setSponsorFilter: (v: SponsorFilter) => void;
+  /** When false (default), roles already in the apply funnel are hidden. */
+  showApplied: boolean;
+  setShowApplied: (v: boolean) => void;
   sortBy: SortBy;
   setSortBy: (v: SortBy) => void;
   page: number;
@@ -89,6 +92,8 @@ export function CombinedJobsProvider({ children }: { children: React.ReactNode }
   const [seniority, setSeniority] = useState('any');
   const [minScore, setMinScore] = useState(0);
   const [sponsorFilter, setSponsorFilter] = useState<SponsorFilter>('friendly');
+  // Discovery default: hide already-applied so the list stays actionable.
+  const [showApplied, setShowApplied] = useState(false);
   const [sortBy, setSortBy] = useState<SortBy>('newest');
   const [page, setPage] = useState(1);
 
@@ -153,6 +158,8 @@ export function CombinedJobsProvider({ children }: { children: React.ReactNode }
     setMinScore,
     sponsorFilter,
     setSponsorFilter,
+    showApplied,
+    setShowApplied,
     sortBy,
     setSortBy,
     page,
