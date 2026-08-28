@@ -12,7 +12,7 @@ import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ApplyConfirmDialog, JOB_FEED_GRID_CLASS, JobCard, JOB_CARD_CLASS } from '@/components/job-search/JobCard';
 import { useCombinedJobsCtx } from '@/components/job-search/CombinedJobsProvider';
-import { RECENCY_OPTIONS, seniorityOf, sortJobsByMode, isAppliedPipelineStatus, toJob } from '@/lib/careerJobs';
+import { RECENCY_OPTIONS, matchesSeniority, sortJobsByMode, isAppliedPipelineStatus, toJob } from '@/lib/careerJobs';
 import { cn } from '@/lib/utils';
 import type { Job, WorkdayJob } from '@/types/jobs';
 
@@ -120,7 +120,7 @@ export function CombinedJobsPanel({
     let out = jobs.filter((j) => j.days_ago != null && j.days_ago <= maxDays);
     const q = search.trim().toLowerCase();
     if (q) out = out.filter((j) => `${j.title} ${j.company}`.toLowerCase().includes(q));
-    if (seniority !== 'any') out = out.filter((j) => seniorityOf(j) === seniority);
+    if (seniority !== 'any') out = out.filter((j) => matchesSeniority(j, seniority));
     if (minScore > 0) out = out.filter((j) => (j.match_score ?? 0) >= minScore);
     if (sponsorFilter === 'friendly') out = out.filter((j) => j.sponsorship !== 'refused');
     else if (sponsorFilter === 'proven') out = out.filter((j) => j.sponsorship === 'likely');

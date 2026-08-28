@@ -25,7 +25,7 @@ import { JOB_FEED_GRID_CLASS, JobCard, JOB_CARD_CLASS } from '@/components/job-s
 import { useAutoSync } from '@/hooks/useAutoSync';
 import { JOB_TITLES_CAP, useJobTitles } from '@/hooks/useJobTitles';
 import { apiService } from '@/lib/api';
-import { jobTitleOf, sortJobsByMode, isAppliedPipelineStatus } from '@/lib/careerJobs';
+import { jobTitleOf, matchesSeniority, sortJobsByMode, isAppliedPipelineStatus } from '@/lib/careerJobs';
 // (job listings are free & auth-only - no entitlement/upgrade wiring here)
 import {
   Sheet,
@@ -186,20 +186,6 @@ const STATE_NAMES: Record<string, string> = {
   'washington, d.c.': 'DC',
   'district of columbia': 'DC',
 };
-
-/** Title-based seniority, mirroring the backend classifier - used as a
- *  fallback for streamed provisional rows that don't carry the field yet,
- *  so the seniority filter works mid-scan too. */
-function seniorityOf(j: WorkdayJob): string {
-  if (j.seniority) return j.seniority;
-  const t = (j.title || '').toLowerCase();
-  if (/\b(intern|internship|co-?op)\b/.test(t)) return 'intern';
-  if (/\b(senior|sr\.?|staff|principal|lead|architect|director|manager|head|vp|iii|iv)\b/.test(t))
-    return 'senior';
-  if (/\b(junior|jr\.?|associate|entry|new grad|graduate|early career|i|1)\b/.test(t))
-    return 'entry';
-  return 'mid';
-}
 
 /** Bucket a posted location string into a dropdown key (state code,
  *  Remote, Multiple, US-wide, Other). */
@@ -650,7 +636,7 @@ export function WorkdayJobsPanel({
     const isApplied = (j: (typeof recencyJobs)[number]) =>
       isAppliedPipelineStatus(getJobStatus(j.job_id));
     let out = recencyJobs;
-    if (seniorityFilter !== 'any') out = out.filter((j) => seniorityOf(j) === seniorityFilter);
+    if (seniorityFilter !== 'any') out = out.filter((j) => matchesSeniority(j, seniorityFilter));
     if (minScore > 0) out = out.filter((j) => (j.match_score ?? 0) >= minScore);
     if (locationFilter !== 'all') out = out.filter((j) => locationKeyOf(j) === locationFilter);
     if (hideUnrealistic && hasFeasibility) out = out.filter((j) => j.tailor_feasibility !== 'skip');

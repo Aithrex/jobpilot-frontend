@@ -44,16 +44,66 @@ const STATE_NAMES: Record<string, string> = {
   'washington, d.c.': 'DC', 'district of columbia': 'DC',
 };
 
+/** The four choices the seniority filter offers, plus 'any'. */
+export type SeniorityView = 'any' | 'intern' | 'entry' | 'mid' | 'senior';
+
+/** Backend band (`fit_score.LEVELS`) -> the view it belongs under.
+ *
+ *  The backend stores seven bands; this filter offers four. Without this map
+ *  `seniorityOf(j) === view` silently hides every `staff`, `director` and
+ *  `executive` posting under EVERY non-"any" choice, because none of those
+ *  three is a choice - the rows do not fail the filter so much as fall
+ *  through the floor. */
+const VIEW_OF_BAND: Record<string, SeniorityView> = {
+  intern: 'intern',
+  entry: 'entry',
+  mid: 'mid',
+  senior: 'senior',
+  staff: 'senior',
+  director: 'senior',
+  executive: 'senior',
+};
+
 /** Title-based seniority, mirroring the backend classifier - a fallback for
  *  streamed rows that don't carry the field yet, so seniority filtering works
- *  mid-scan. */
+ *  mid-scan.
+ *
+ *  Returns a BAND, or 'unknown'. Unmarked titles are 'unknown', never 'mid':
+ *  "Software Engineer", "Data Analyst" and "Registered Nurse" state no level,
+ *  which is most of the market, and calling them mid asserts a level the
+ *  employer never wrote and hides them from every other view. That is the same
+ *  rule `job_inventory_service.seniority_of` documents on the server.
+ *
+ *  The pattern list mirrors `fit_score.title_level`, including the two
+ *  corrections that mattered most there: `manager` / `lead` are NOT senior
+ *  markers ("Lead Cashier", "Restaurant Shift Manager"), and the early-career
+ *  vocabulary covers how large employers really title a graduate pipeline. */
 export function seniorityOf(j: WorkdayJob): string {
   if (j.seniority) return j.seniority;
   const t = (j.title || '').toLowerCase();
-  if (/\b(intern|internship|co-?op)\b/.test(t)) return 'intern';
-  if (/\b(senior|sr\.?|staff|principal|lead|architect|director|manager|head|vp|iii|iv)\b/.test(t)) return 'senior';
-  if (/\b(junior|jr\.?|associate|entry|new grad|graduate|early career|i|1)\b/.test(t)) return 'entry';
-  return 'mid';
+  if (/\b(intern|internship|co-?op|summer analyst)\b/.test(t)) return 'intern';
+  if (/\b(chief|vp|svp|evp|vice president|head of|president)\b/.test(t)) return 'executive';
+  if (/\b(director|principal|distinguished|fellow)\b/.test(t)) return 'director';
+  if (/\b(staff|architect)\b/.test(t) && !/\bstaff (nurse|accountant|pharmacist|technician)\b/.test(t))
+    return 'staff';
+  if (/\b(senior|sr\.?|iii|iv|[34])\b/.test(t)) return 'senior';
+  if (/\b(junior|jr\.?|associate|assistant|entry[- ]?level|new ?grad(uate)?|recent graduate|university grad(uate)?|campus (hire|recruit)|early[- ]career|rotational|trainee|apprentice|graduate|fresher|level ?[12]|i{1,2}|[12])\b/.test(t))
+    return 'entry';
+  if (/\b(manager|supervisor|lead|foreman)\b/.test(t)) return 'mid';
+  return 'unknown';
+}
+
+/** Does this posting belong in the chosen seniority view?
+ *
+ *  'unknown' ALWAYS passes. Most postings state no level, so treating unknown
+ *  as "fails the filter" would hide the majority of the market behind a
+ *  distinction the employer never drew - the same reason the server ORs
+ *  unknown into every seniority query rather than filtering it out. */
+export function matchesSeniority(j: WorkdayJob, view: string): boolean {
+  if (!view || view === 'any') return true;
+  const band = seniorityOf(j);
+  if (!band || band === 'unknown') return true;
+  return (VIEW_OF_BAND[band] ?? 'mid') === view;
 }
 
 /** Bucket a posted location string into a dropdown key. */

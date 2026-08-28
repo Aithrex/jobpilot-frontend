@@ -7,7 +7,7 @@
  */
 import { describe, expect, test } from 'vitest';
 
-import { jobTitleOf, mergeJobs, sortJobsByMode, toJob, isAppliedPipelineStatus } from '@/lib/careerJobs';
+import { jobTitleOf, matchesSeniority, mergeJobs, seniorityOf, sortJobsByMode, toJob, isAppliedPipelineStatus } from '@/lib/careerJobs';
 import type { WorkdayJob } from '@/types/jobs';
 
 function row(overrides: Partial<WorkdayJob>): WorkdayJob {
@@ -166,5 +166,49 @@ describe('jobTitleOf / toJob', () => {
       isApplied: (j) => appliedIds.has(j.job_id),
     });
     expect(sorted.map((j) => j.job_id)).toEqual(['open-emp', 'open-jg', 'applied-emp']);
+  });
+});
+
+
+describe('seniority filtering', () => {
+  const job = (over: Partial<WorkdayJob>): WorkdayJob => row(over);
+
+  test('a band the filter does not offer is not silently hidden', () => {
+    // The server stores seven bands; the dropdown offers four. The old
+    // `seniorityOf(j) === view` comparison meant every staff / director /
+    // executive posting matched NO option and vanished under every choice
+    // except "Any". They belong under Senior+.
+    for (const band of ['senior', 'staff', 'director', 'executive']) {
+      expect(matchesSeniority(job({ seniority: band }), 'senior')).toBe(true);
+      expect(matchesSeniority(job({ seniority: band }), 'entry')).toBe(false);
+    }
+    expect(matchesSeniority(job({ seniority: 'intern' }), 'intern')).toBe(true);
+    expect(matchesSeniority(job({ seniority: 'entry' }), 'entry')).toBe(true);
+    expect(matchesSeniority(job({ seniority: 'mid' }), 'mid')).toBe(true);
+  });
+
+  test('an unlevelled posting shows in every view', () => {
+    // Most postings state no level. Treating unknown as "fails the filter"
+    // hides the majority of the market behind a distinction the employer
+    // never drew - the same rule the server applies in its own query.
+    for (const view of ['intern', 'entry', 'mid', 'senior', 'any']) {
+      expect(matchesSeniority(job({ seniority: 'unknown' }), view)).toBe(true);
+      expect(matchesSeniority(job({ title: 'Software Engineer' }), view)).toBe(true);
+    }
+  });
+
+  test('the streamed-row fallback mirrors the server classifier', () => {
+    // No `seniority` yet (a provisional row mid-scan), so the title is read.
+    expect(seniorityOf(job({ title: 'New Grad Software Engineer' }))).toBe('entry');
+    expect(seniorityOf(job({ title: 'Early Career Analyst' }))).toBe('entry');
+    expect(seniorityOf(job({ title: 'Software Engineering Intern' }))).toBe('intern');
+    // "Lead" and "Manager" are not senior markers: "Lead Cashier" is not a
+    // Staff Engineer, and reading them that way is what put 21% of the live
+    // corpus in the staff band.
+    expect(seniorityOf(job({ title: 'Lead Cashier' }))).toBe('mid');
+    expect(seniorityOf(job({ title: 'Restaurant Shift Manager' }))).toBe('mid');
+    expect(seniorityOf(job({ title: 'Staff Nurse' }))).not.toBe('staff');
+    // Unmarked is unknown, never 'mid'.
+    expect(seniorityOf(job({ title: 'Registered Nurse' }))).toBe('unknown');
   });
 });
