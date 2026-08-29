@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, test, vi } from 'vitest';
 
@@ -74,7 +74,7 @@ describe('JobCard apply confirmation', () => {
     expect(onApplied).not.toHaveBeenCalled();
   });
 
-  test('Apply opens a three-way choice before the posting', async () => {
+  test('Apply asks to open the posting, then opens it', async () => {
     const onQuickApply = vi.fn();
     const onTailor = vi.fn();
     const onAlready = vi.fn();
@@ -91,17 +91,20 @@ describe('JobCard apply confirmation', () => {
       />,
     );
     await userEvent.click(screen.getByRole('button', { name: /^apply$/i }));
-    expect(screen.getByText(/how do you want to apply/i)).toBeInTheDocument();
+    const dialog = screen.getByRole('alertdialog');
+    expect(within(dialog).getByRole('heading', { name: /open this posting/i })).toBeInTheDocument();
+    expect(within(dialog).queryByRole('button', { name: /^tailor resume$/i })).not.toBeInTheDocument();
     expect(onQuickApply).not.toHaveBeenCalled();
 
-    await userEvent.click(screen.getByRole('button', { name: /already applied/i }));
-    expect(onAlready).toHaveBeenCalledTimes(1);
-    expect(onQuickApply).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole('button', { name: /open posting/i }));
+    expect(onQuickApply).toHaveBeenCalledTimes(1);
     expect(onTailor).not.toHaveBeenCalled();
+    expect(onAlready).not.toHaveBeenCalled();
   });
 
-  test('Apply without tailoring opens the posting path', async () => {
+  test('Already applied from the confirm skips opening the posting', async () => {
     const onQuickApply = vi.fn();
+    const onAlready = vi.fn();
     render(
       <JobCard
         job={JOB}
@@ -110,11 +113,13 @@ describe('JobCard apply confirmation', () => {
         onSave={() => {}}
         onUnsave={() => {}}
         onQuickApply={onQuickApply}
+        onAlreadyApplied={onAlready}
       />,
     );
     await userEvent.click(screen.getByRole('button', { name: /^apply$/i }));
-    await userEvent.click(screen.getByRole('button', { name: /apply without tailoring/i }));
-    expect(onQuickApply).toHaveBeenCalledTimes(1);
+    await userEvent.click(screen.getByRole('button', { name: /already applied/i }));
+    expect(onAlready).toHaveBeenCalledTimes(1);
+    expect(onQuickApply).not.toHaveBeenCalled();
   });
 
   test('Hide removes the posting from For you', async () => {
@@ -150,5 +155,129 @@ describe('JobCard apply confirmation', () => {
     expect(screen.getByRole('button', { name: /^tailor resume$/i })).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: /^tailor resume$/i }));
     expect(onTailor).toHaveBeenCalledTimes(1);
+  });
+
+  test('Tailor resume shows a spinner while the handoff is in flight', async () => {
+    const onTailor = vi.fn(() => new Promise<void>(() => {}));
+    render(
+      <JobCard
+        job={JOB}
+        saved={false}
+        jobStatus={null}
+        onSave={() => {}}
+        onUnsave={() => {}}
+        onQuickApply={() => {}}
+        onApplyWithTailor={onTailor}
+      />,
+    );
+    await userEvent.click(screen.getByRole('button', { name: /^tailor resume$/i }));
+    expect(onTailor).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('button', { name: /opening/i })).toBeDisabled();
+  });
+
+  test('hides the in-card Did you apply prompt while the modal is open for that job', () => {
+    render(
+      <JobCard
+        job={JOB}
+        saved
+        jobStatus="interested"
+        onSave={() => {}}
+        onUnsave={() => {}}
+        onQuickApply={() => {}}
+        applyConfirmPending
+        applyConfirmModalJobId={JOB.job_id}
+        onConfirmApplied={() => {}}
+        onConfirmNotYet={() => {}}
+      />,
+    );
+    expect(screen.queryByRole('group', { name: /did you apply for platform engineer/i }))
+      .not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^apply$/i })).toBeInTheDocument();
+  });
+
+  test('applied roles omit Save — the Applied tab already says they applied', () => {
+    render(
+      <JobCard
+        job={JOB}
+        saved
+        jobStatus="applied"
+        onSave={() => {}}
+        onUnsave={() => {}}
+        onQuickApply={() => {}}
+      />,
+    );
+    expect(screen.queryByText('Applied')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^saved$/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^reopen$/i })).toBeInTheDocument();
+  });
+
+  test('Save shows a spinner until the request finishes', async () => {
+    let resolveSave: () => void = () => {};
+    const onSave = vi.fn(() => new Promise<void>((resolve) => { resolveSave = resolve; }));
+    render(
+      <JobCard
+        job={JOB}
+        saved={false}
+        jobStatus={null}
+        onSave={onSave}
+        onUnsave={() => {}}
+        onQuickApply={() => {}}
+      />,
+    );
+    await userEvent.click(screen.getByRole('button', { name: /^save$/i }));
+    expect(onSave).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('button', { name: /saving/i })).toBeDisabled();
+    resolveSave();
+    expect(await screen.findByRole('button', { name: /^save$/i })).toBeEnabled();
+  });
+
+  test('Details stays on the card even when no description is stored', () => {
+    render(
+      <JobCard
+        job={{ ...JOB, description: '' }}
+        saved
+        jobStatus="interested"
+        onSave={() => {}}
+        onUnsave={() => {}}
+        onQuickApply={() => {}}
+      />,
+    );
+    expect(screen.getByRole('button', { name: /^details$/i })).toBeInTheDocument();
+  });
+
+  test('gap count after skill chips is fully visible', () => {
+    render(
+      <JobCard
+        job={{
+          ...JOB,
+          matched_skills: ['typescript', 'react', 'postgresql', 'datadog', 'observability', 'kafka', 'go'],
+          missing_skills: ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'],
+        }}
+        saved={false}
+        jobStatus={null}
+        onSave={() => {}}
+        onUnsave={() => {}}
+        onQuickApply={() => {}}
+      />,
+    );
+    expect(screen.getByText('· 8 gaps')).toBeInTheDocument();
+    expect(screen.getByText('observability')).toBeInTheDocument();
+  });
+
+  test('Details expands the job description on the card', async () => {
+    render(
+      <JobCard
+        job={JOB}
+        saved={false}
+        jobStatus={null}
+        onSave={() => {}}
+        onUnsave={() => {}}
+        onQuickApply={() => {}}
+      />,
+    );
+    expect(screen.queryByText(/build platforms/i)).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /^details$/i }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByText(/build platforms/i)).toBeInTheDocument();
   });
 });

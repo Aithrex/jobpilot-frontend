@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import {
   MapPin, ExternalLink, BookmarkPlus, BookmarkCheck, Sparkles, Target,
-  FileText, Wand2, ChevronDown, Users, ShieldCheck, CircleOff, Plane, Wifi,
-  FileSignature, Zap,
+  FileText, Wand2, Users, ShieldCheck, CircleOff, Plane, Wifi,
+  FileSignature, Zap, Loader2, ChevronDown,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
@@ -27,30 +27,33 @@ import { WhyThisScoreButton } from './JobFitDetails';
 import { fitBandOf } from './fitBands';
 import { apiService, companyLogoSrc } from '@/lib/api';
 import { stagePendingTailorJob, cacheJdText, readCachedJdText } from '@/lib/craftHandoff';
+import { isAppliedSavedJob } from '@/lib/savedJobs';
 import { cn } from '@/lib/utils';
-import { hueFromString, toTitleCase } from '@/lib/format';
+import { hueFromString, toTitleCase, decodeJobHtml } from '@/lib/format';
 import { useCountUp } from '@/hooks/useCountUp';
 import type { Job } from '@/types/jobs';
 
 /** Compact tiles: 2 / 3 / 4 columns as the Jobs page widens. */
-export const JOB_FEED_GRID_CLASS = 'grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4';
+export const JOB_FEED_GRID_CLASS = 'grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4';
 
 /** Shared frosted surface — same recipe as the Job feed drawer. */
 export const JOB_CARD_CLASS =
-  'group relative flex h-full flex-col overflow-hidden rounded-xl border border-border liquid-glass shadow-none transition-[border-color,box-shadow] duration-200 hover:border-primary/40';
+  'group relative flex h-full min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border liquid-glass shadow-none transition-[border-color,box-shadow] duration-200 hover:border-primary/40';
 
 interface JobCardProps {
   job: Job;
   saved: boolean;
   jobStatus: string | null;
-  onSave: () => void;
-  onUnsave: () => void;
+  onSave: () => void | Promise<unknown>;
+  onUnsave: () => void | Promise<unknown>;
   onQuickApply: () => void;
   /** Optional: queue into auto-apply ledger (per-job Auto Apply CTA). */
   onAutoApply?: () => void | Promise<unknown>;
   autoApplying?: boolean;
   /** True after Apply opened the posting and we are waiting for yes/no. */
   applyConfirmPending?: boolean;
+  /** Job currently in the page-level Did-you-apply modal. Hide the in-card copy while that overlay is open. */
+  applyConfirmModalJobId?: string | null;
   onConfirmApplied?: () => void;
   onConfirmNotYet?: () => void;
   onApplyWithTailor?: () => void | Promise<unknown>;
@@ -203,7 +206,7 @@ export function ApplyConfirmDialog({
 }) {
   return (
     <AlertDialog open={!!job} onOpenChange={(open) => { if (!open) onDismiss(); }}>
-      <AlertDialogContent>
+      <AlertDialogContent solid>
         <AlertDialogHeader>
           <AlertDialogTitle>Did you apply for this role?</AlertDialogTitle>
           <AlertDialogDescription>
@@ -223,17 +226,21 @@ export function ApplyConfirmDialog({
 
 export function JobCard({
   job, saved, jobStatus, onSave, onUnsave, onQuickApply, onAutoApply, autoApplying,
-  applyConfirmPending, onConfirmApplied, onConfirmNotYet,
+  applyConfirmPending, applyConfirmModalJobId, onConfirmApplied, onConfirmNotYet,
   onApplyWithTailor, onAlreadyApplied, onHide,
 }: JobCardProps) {
   const reduceMotion = useReducedMotion();
   const [expanded, setExpanded] = useState(false);
+  const [jdText, setJdText] = useState('');
+  const [jdLoading, setJdLoading] = useState(false);
+  const [jdError, setJdError] = useState('');
   const [analysisOpen, setAnalysisOpen] = useState(false);
   const [analysisAction, setAnalysisAction] = useState<'summarize' | 'missing_skills' | 'cover_letter'>('summarize');
   const [tailoring, setTailoring] = useState(false);
   const [referralOpen, setReferralOpen] = useState(false);
   const [scanning, setScanning] = useState(false);
-  const [applyChoiceOpen, setApplyChoiceOpen] = useState(false);
+  const [applyOpenConfirm, setApplyOpenConfirm] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const openAnalysis = (action: typeof analysisAction) => {
     setAnalysisAction(action);
@@ -249,49 +256,112 @@ export function JobCard({
    * can retry / prompt a paste rather than silently opening empty.
    */
   const handleTailor = async () => {
+    const url = job.apply_link || '';
+    let jdText = (job.description || '').trim();
+    let fetchFailed = false;
+
+    if (!jdText && url) {
+      const cached = readCachedJdText(url);
+      if (cached) {
+        jdText = cached;
+      } else {
+        toast.info('Fetching the job description. Opening Tailor in a moment...');
+        try {
+          const resp = await apiService.fetchJobDescription(url);
+          if (resp.data?.ok && resp.data.jd_text) {
+            jdText = resp.data.jd_text.trim();
+            cacheJdText(url, jdText);
+          } else {
+            fetchFailed = true;
+          }
+        } catch {
+          fetchFailed = true;
+        }
+      }
+    }
+
+    stagePendingTailorJob({
+      job_id: job.job_id,
+      jd_text: fetchFailed ? '' : jdText,
+      jd_fetch_failed: fetchFailed,
+      title: job.title,
+      company: job.company,
+      url,
+    });
+  };
+
+  /** Card Tailor is a Craft handoff only — never open the posting or ask Did you apply. */
+  const startTailor = async () => {
     if (tailoring) return;
     setTailoring(true);
     try {
-      const url = job.apply_link || '';
-      let jdText = (job.description || '').trim();
-      let fetchFailed = false;
-
-      if (!jdText && url) {
-        const cached = readCachedJdText(url);
-        if (cached) {
-          jdText = cached;
-        } else {
-          toast.info('Fetching the job description. Opening Tailor in a moment...');
-          try {
-            const resp = await apiService.fetchJobDescription(url);
-            if (resp.data?.ok && resp.data.jd_text) {
-              jdText = resp.data.jd_text.trim();
-              cacheJdText(url, jdText);
-            } else {
-              fetchFailed = true;
-            }
-          } catch {
-            fetchFailed = true;
-          }
-        }
-      }
-
-      stagePendingTailorJob({
-        job_id: job.job_id,
-        jd_text: fetchFailed ? '' : jdText,
-        jd_fetch_failed: fetchFailed,
-        title: job.title,
-        company: job.company,
-        url,
-      });
-    } finally {
+      await onApplyWithTailor?.();
+      await handleTailor();
+    } catch {
+      toast.error('Could not open Tailor');
       setTailoring(false);
     }
   };
 
-  const startTailor = async () => {
-    await onApplyWithTailor?.();
-    await handleTailor();
+  useEffect(() => {
+    if (!expanded) return;
+    const stored = (job.description || '').trim();
+    if (stored) {
+      setJdText(decodeJobHtml(stored));
+      setJdLoading(false);
+      setJdError('');
+      return;
+    }
+    const url = job.apply_link || '';
+    if (!url) {
+      setJdText('');
+      setJdLoading(false);
+      setJdError('No description is stored for this listing.');
+      return;
+    }
+    const cached = readCachedJdText(url);
+    if (cached) {
+      setJdText(decodeJobHtml(cached));
+      setJdLoading(false);
+      setJdError('');
+      return;
+    }
+    let cancelled = false;
+    setJdLoading(true);
+    setJdError('');
+    setJdText('');
+    apiService.fetchJobDescription(url).then((resp) => {
+      if (cancelled) return;
+      setJdLoading(false);
+      if (resp.data?.ok && resp.data.jd_text) {
+        const jd = resp.data.jd_text.trim();
+        cacheJdText(url, jd);
+        setJdText(decodeJobHtml(jd));
+        return;
+      }
+      setJdError('We could not load this job description. Open the posting to read it.');
+    }).catch(() => {
+      if (cancelled) return;
+      setJdLoading(false);
+      setJdError('We could not load this job description. Open the posting to read it.');
+    });
+    return () => { cancelled = true; };
+  }, [expanded, job.description, job.apply_link, job.job_id]);
+
+  const showInlineApplyConfirm =
+    !!applyConfirmPending
+    && !!onConfirmApplied
+    && !!onConfirmNotYet
+    && applyConfirmModalJobId !== job.job_id;
+
+  const toggleSave = async () => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      await (saved ? onUnsave() : onSave());
+    } finally {
+      setSaving(false);
+    }
   };
 
   const runDeepScan = async () => {
@@ -319,7 +389,6 @@ export function JobCard({
 
   const apply = buildApplyUrl(job);
   const hue = hueFromString(job.company || job.title || 'JobPilot');
-  const hasDescription = !!job.description && job.description.trim().length > 0;
   const band = fitBandOf(job);
   const title = toTitleCase(job.title);
   const company = toTitleCase(job.company);
@@ -333,10 +402,13 @@ export function JobCard({
     job.posted_text || job.date_posted || '',
   ].filter(Boolean);
   const hasSignals = job.trust_band || job.h1b_sponsor || job.is_remote || job.contract_friendly || job.visa_flags;
+  const inAppliedPipeline = isAppliedSavedJob({ status: jobStatus ?? undefined });
+  const skills = job.matched_skills ?? [];
 
   return (
     <>
-      <Card className={JOB_CARD_CLASS}>
+      <div className={cn('flex min-h-0 flex-col', expanded ? 'h-auto' : 'h-full')}>
+      <Card className={cn(JOB_CARD_CLASS, expanded && 'h-auto overflow-visible')}>
         <span
           className="pointer-events-none absolute -right-16 -top-16 z-0 h-40 w-40 rounded-full opacity-40 blur-3xl"
           style={{ backgroundColor: `hsl(${hue} 70% 55% / 0.18)` }}
@@ -347,7 +419,7 @@ export function JobCard({
           style={{ backgroundImage: `linear-gradient(90deg, hsl(${hue} 72% 56%), hsl(${(hue + 45) % 360} 72% 60%))` }}
           aria-hidden
         />
-        <CardContent className="relative z-[2] flex flex-1 flex-col gap-2.5 p-3.5">
+        <CardContent className="relative z-[2] flex min-h-0 flex-1 flex-col gap-2.5 p-3.5">
           <div className="flex items-start gap-2.5">
             <CompanyMark job={job} />
             <div className="min-w-0 flex-1">
@@ -383,60 +455,59 @@ export function JobCard({
             <WhyThisScoreButton job={job} />
           </div>
 
-          {hasSignals && (
-            <div className="flex flex-wrap items-center gap-1.5">
-              {job.trust_band && (
-                <>
-                  <JobTrustBadge band={job.trust_band} score={job.trust_score} reasons={job.trust_reasons} />
-                  <button
-                    type="button"
-                    onClick={() => void runDeepScan()}
-                    disabled={scanning}
-                    className="inline-flex items-center gap-0.5 text-[10px] font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:underline disabled:opacity-50"
-                  >
-                    <ShieldCheck className="h-3 w-3" aria-hidden />
-                    {scanning ? 'Scanning...' : 'Deep-scan'}
-                  </button>
-                </>
-              )}
-              {job.h1b_sponsor && <SignalPill icon={Plane} label="H1B sponsor" tone="sponsor" />}
-              {job.is_remote && <SignalPill icon={Wifi} label="Remote" tone="remote" />}
-              {job.contract_friendly && <SignalPill icon={FileSignature} label="Contract" tone="contract" />}
-              {job.visa_flags && <VisaFlagChips flags={job.visa_flags} />}
-            </div>
-          )}
+          <div className="min-h-[3.5rem] shrink-0 space-y-1.5">
+            {hasSignals && (
+              <div className="flex flex-wrap items-center gap-1.5">
+                {job.trust_band && (
+                  <>
+                    <JobTrustBadge band={job.trust_band} score={job.trust_score} reasons={job.trust_reasons} />
+                    <button
+                      type="button"
+                      onClick={() => void runDeepScan()}
+                      disabled={scanning}
+                      className="inline-flex items-center gap-0.5 text-[10px] font-medium text-muted-foreground underline-offset-2 hover:text-primary hover:underline disabled:opacity-50"
+                    >
+                      <ShieldCheck className="h-3 w-3" aria-hidden />
+                      {scanning ? 'Scanning...' : 'Deep-scan'}
+                    </button>
+                  </>
+                )}
+                {job.h1b_sponsor && <SignalPill icon={Plane} label="H1B sponsor" tone="sponsor" />}
+                {job.is_remote && <SignalPill icon={Wifi} label="Remote" tone="remote" />}
+                {job.contract_friendly && <SignalPill icon={FileSignature} label="Contract" tone="contract" />}
+                {job.visa_flags && <VisaFlagChips flags={job.visa_flags} />}
+              </div>
+            )}
 
-          {job.matched_skills.length > 0 && (
-            <div className="flex flex-wrap items-center gap-1">
-              {job.matched_skills.slice(0, 7).map((skill) => (
-                <span key={skill} className="rounded-md bg-success/10 px-1.5 py-0.5 text-[10px] font-medium text-success">
-                  {skill}
-                </span>
-              ))}
-              {job.matched_skills.length > 7 && (
-                <span className="self-center text-[10px] text-muted-foreground">+{job.matched_skills.length - 7} more</span>
-              )}
-              {job.missing_skills?.length > 0 && (
-                <span className="self-center text-[10px] text-muted-foreground">
-                  · {job.missing_skills.length} gap{job.missing_skills.length === 1 ? '' : 's'}
-                </span>
-              )}
-            </div>
-          )}
+            {skills.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1">
+                {skills.slice(0, 7).map((skill) => (
+                  <span key={skill} className="rounded-md bg-success/10 px-1.5 py-0.5 text-[10px] font-medium text-success">
+                    {skill}
+                  </span>
+                ))}
+                {skills.length > 7 && (
+                  <span className="shrink-0 whitespace-nowrap text-[10px] text-muted-foreground">
+                    +{skills.length - 7} more
+                  </span>
+                )}
+                {job.missing_skills?.length > 0 && (
+                  <span className="shrink-0 whitespace-nowrap text-[10px] text-muted-foreground">
+                    · {job.missing_skills.length} gap{job.missing_skills.length === 1 ? '' : 's'}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
 
           {meta.length > 0 && (
-            <p className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] text-muted-foreground">
-              {meta.map((m, i) => (
-                <span key={`${m}-${i}`} className="inline-flex items-center gap-1.5">
-                  {i > 0 && <span className="text-muted-foreground/40" aria-hidden>·</span>}
-                  <span className={i === 0 && job.salary ? 'font-medium text-foreground/80' : ''}>{m}</span>
-                </span>
-              ))}
+            <p className="truncate text-[11px] text-muted-foreground" title={meta.join(' · ')}>
+              {meta.join(' · ')}
             </p>
           )}
 
           <AnimatePresence initial={false}>
-            {expanded && hasDescription && (
+            {expanded && (
               <motion.div
                 key="jd"
                 initial={reduceMotion ? undefined : { height: 0, opacity: 0 }}
@@ -446,16 +517,20 @@ export function JobCard({
                 className="overflow-hidden"
               >
                 <div className="max-h-48 overflow-y-auto rounded-xl border border-border/40 bg-muted/20 p-3 text-xs leading-relaxed text-muted-foreground">
-                  <p className="whitespace-pre-line">
-                    {job.description.slice(0, 1400)}{job.description.length > 1400 && '...'}
-                  </p>
+                  {jdLoading && <p>Loading the job description...</p>}
+                  {jdError && !jdLoading && <p>{jdError}</p>}
+                  {jdText && !jdLoading && (
+                    <p className="whitespace-pre-line">
+                      {jdText.slice(0, 1400)}{jdText.length > 1400 ? '...' : ''}
+                    </p>
+                  )}
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
 
           <div className="mt-auto space-y-2 border-t border-border/40 pt-2.5">
-            {applyConfirmPending && onConfirmApplied && onConfirmNotYet ? (
+            {showInlineApplyConfirm ? (
               <div
                 role="group"
                 aria-label={`Did you apply for ${job.title}?`}
@@ -471,7 +546,12 @@ export function JobCard({
                   <Button size="sm" onClick={onConfirmApplied} className="h-9 min-w-[7.5rem] gap-1.5 text-xs font-semibold">
                     Yes, I applied
                   </Button>
-                  <Button size="sm" variant="outline" onClick={onConfirmNotYet} className="h-9 min-w-[5.5rem] text-xs font-semibold">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={onConfirmNotYet}
+                    className="h-9 min-w-[5.5rem] text-xs font-semibold hover:border-primary hover:bg-primary/10 hover:text-primary"
+                  >
                     Not yet
                   </Button>
                   <Button
@@ -479,7 +559,7 @@ export function JobCard({
                     variant="ghost"
                     onClick={onQuickApply}
                     title="Open the posting again"
-                    className="h-9 gap-1.5 px-2.5 text-xs text-muted-foreground"
+                    className="h-9 gap-1.5 px-2.5 text-xs text-muted-foreground hover:bg-transparent hover:text-primary"
                   >
                     <ExternalLink className="h-3.5 w-3.5" />
                     Reopen
@@ -492,24 +572,29 @@ export function JobCard({
                   <Button
                     size="sm"
                     onClick={() => {
-                      if (jobStatus === 'applied' || applyConfirmPending) onQuickApply();
-                      else setApplyChoiceOpen(true);
+                      if (inAppliedPipeline) onQuickApply();
+                      else setApplyOpenConfirm(true);
                     }}
-                    title={apply.fallback ? 'Apply link missing. Opens Google search, then asks how you want to apply' : 'Choose tailor, apply with your base resume, or mark already applied'}
+                    title={apply.fallback ? 'Apply link missing. Confirm, then we search Google for this posting' : 'Confirm, then open the posting'}
                     className="btn-premium h-9 min-w-0 gap-1.5 text-xs font-semibold"
                   >
                     <ExternalLink className="h-3.5 w-3.5" />
-                    {jobStatus === 'applied' ? 'Reopen' : 'Apply'}
+                    {inAppliedPipeline ? 'Reopen' : 'Apply'}
                   </Button>
                   <Button
                     size="sm"
-                    variant="secondary"
+                    variant="outline"
                     onClick={() => void startTailor()}
                     disabled={tailoring}
+                    aria-busy={tailoring}
                     title="Open Tailor with this job’s description"
-                    className="h-9 min-w-0 gap-1.5 text-xs font-semibold"
+                    className="h-9 min-w-0 gap-1.5 border-border bg-white text-xs font-semibold text-foreground hover:border-primary hover:bg-primary/10 hover:text-primary disabled:opacity-70 dark:bg-zinc-900"
                   >
-                    <Wand2 className="h-3.5 w-3.5" />
+                    {tailoring ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+                    ) : (
+                      <Wand2 className="h-3.5 w-3.5" />
+                    )}
                     {tailoring ? 'Opening…' : 'Tailor resume'}
                   </Button>
                 </div>
@@ -517,29 +602,39 @@ export function JobCard({
                   {onAutoApply && (
                     <Button
                       size="sm"
-                      variant="secondary"
+                      variant="ghost"
                       onClick={() => void onAutoApply()}
-                      disabled={autoApplying || jobStatus === 'applied'}
+                      disabled={autoApplying || inAppliedPipeline}
                       title="Queue this job for Aspirely auto-apply"
-                      className="h-9 gap-1.5 px-2.5 text-xs font-semibold"
+                      className="h-9 gap-1.5 px-2.5 text-xs font-semibold text-muted-foreground hover:bg-transparent hover:text-primary"
                     >
                       <Zap className="h-3.5 w-3.5" />
                       {autoApplying ? 'Queuing…' : 'Auto Apply'}
                     </Button>
                   )}
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={saved ? onUnsave : onSave}
-                    title={saved ? 'Remove from saved' : 'Save this job'}
-                    className={cn('h-9 gap-1.5 px-2.5 text-xs',
-                      saved
-                        ? 'border-success/40 bg-success/10 text-success hover:bg-success/20 hover:text-success'
-                        : 'border-border/60')}
-                  >
-                    {saved ? <BookmarkCheck className="h-3.5 w-3.5" /> : <BookmarkPlus className="h-3.5 w-3.5" />}
-                    {saved ? 'Saved' : 'Save'}
-                  </Button>
+                  {!inAppliedPipeline && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => void toggleSave()}
+                      disabled={saving}
+                      aria-busy={saving}
+                      title={saved ? 'Remove from saved' : 'Save this job'}
+                      className={cn('h-9 min-w-[5.5rem] gap-1.5 px-2.5 text-xs',
+                        saved
+                          ? 'border-success/40 bg-success/10 text-success hover:border-success hover:bg-success/20 hover:text-success'
+                          : 'border-border/60 text-muted-foreground hover:text-primary')}
+                    >
+                      {saving ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+                      ) : saved ? (
+                        <BookmarkCheck className="h-3.5 w-3.5" />
+                      ) : (
+                        <BookmarkPlus className="h-3.5 w-3.5" />
+                      )}
+                      {saving ? (saved ? 'Removing…' : 'Saving…') : saved ? 'Saved' : 'Save'}
+                    </Button>
+                  )}
                   {onHide && (
                     <Button
                       size="sm"
@@ -547,24 +642,22 @@ export function JobCard({
                       onClick={onHide}
                       title="Hide this job from For you"
                       aria-label="Hide this job"
-                      className="h-9 gap-1.5 px-2.5 text-xs text-muted-foreground"
+                      className="h-9 gap-1.5 px-2.5 text-xs text-muted-foreground hover:bg-transparent hover:text-primary"
                     >
                       <CircleOff className="h-3.5 w-3.5" />
                       Hide
                     </Button>
                   )}
-                  {hasDescription && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => setExpanded((v) => !v)}
-                      aria-expanded={expanded}
-                      className="h-9 gap-1 px-2.5 text-xs text-muted-foreground hover:text-primary"
-                    >
-                      Details
-                      <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', expanded && 'rotate-180')} aria-hidden />
-                    </Button>
-                  )}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setExpanded((v) => !v)}
+                    aria-expanded={expanded}
+                    className="h-9 gap-1 px-2.5 text-xs text-muted-foreground hover:bg-transparent hover:text-primary"
+                  >
+                    Details
+                    <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', expanded && 'rotate-180')} aria-hidden />
+                  </Button>
                 </div>
               </div>
             )}
@@ -582,49 +675,44 @@ export function JobCard({
           </div>
         </CardContent>
       </Card>
+      </div>
 
       <JobAnalysisModal open={analysisOpen} onOpenChange={setAnalysisOpen} job={job} action={analysisAction} />
       <ReferralModal open={referralOpen} onOpenChange={setReferralOpen} job={job} />
-      <AlertDialog open={applyChoiceOpen} onOpenChange={setApplyChoiceOpen}>
-        <AlertDialogContent>
+      <AlertDialog open={applyOpenConfirm} onOpenChange={setApplyOpenConfirm}>
+        <AlertDialogContent solid>
           <AlertDialogHeader>
-            <AlertDialogTitle>How do you want to apply?</AlertDialogTitle>
+            <AlertDialogTitle>Open this posting?</AlertDialogTitle>
             <AlertDialogDescription>
-              Tailor a resume for {job.title} at {job.company}, apply with your current resume, or mark that you already submitted.
+              {apply.fallback
+                ? `No direct apply link for ${title} at ${company}. We’ll search Google, then ask if you submitted so we can track it.`
+                : `We’ll open the listing for ${title} at ${company} in a new tab. When you come back, confirm whether you submitted so we can track it.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
+          <AlertDialogFooter className="gap-2 sm:space-x-0">
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <Button
-              type="button"
-              variant="outline"
+            {onAlreadyApplied && (
+              <Button
+                type="button"
+                variant="outline"
+                className="hover:border-primary hover:bg-primary/10 hover:text-primary"
+                onClick={() => {
+                  setApplyOpenConfirm(false);
+                  void onAlreadyApplied();
+                }}
+              >
+                Already applied
+              </Button>
+            )}
+            <AlertDialogAction
               onClick={() => {
-                setApplyChoiceOpen(false);
-                void onAlreadyApplied?.();
-              }}
-            >
-              Already applied
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => {
-                setApplyChoiceOpen(false);
+                setApplyOpenConfirm(false);
                 onQuickApply();
               }}
             >
-              Apply without tailoring
-            </Button>
-            <Button
-              type="button"
-              onClick={() => {
-                setApplyChoiceOpen(false);
-                void startTailor();
-              }}
-            >
-              Tailor resume
-            </Button>
-          </div>
+              Open posting
+            </AlertDialogAction>
+          </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </>

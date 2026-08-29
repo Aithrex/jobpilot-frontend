@@ -65,16 +65,6 @@ function readPendingApplyIds(): string[] {
   }
 }
 
-function persistPendingApplyId(jobId: string) {
-  try {
-    const ids = readPendingApplyIds();
-    if (!ids.includes(jobId)) ids.push(jobId);
-    sessionStorage.setItem(PENDING_APPLY_KEY, JSON.stringify(ids));
-  } catch {
-    /* private mode / quota */
-  }
-}
-
 export interface BatchMeta {
   queries_executed: number;
   cache_hits: number;
@@ -95,7 +85,12 @@ export function useJobSearch() {
     void queryClient.invalidateQueries({ queryKey: SAVED_JOBS_QUERY_KEY });
   }, [queryClient]);
   const [jobs, setJobs] = useState<Job[]>([]);
-  const [savedJobs, setSavedJobs] = useState<SavedJob[]>([]);
+  const [savedJobs, setSavedJobs] = useState<SavedJob[]>(
+    () => queryClient.getQueryData<SavedJob[]>(SAVED_JOBS_QUERY_KEY) ?? [],
+  );
+  const [savedJobsLoading, setSavedJobsLoading] = useState(
+    () => queryClient.getQueryData(SAVED_JOBS_QUERY_KEY) == null,
+  );
   const [filters, setFilters] = useState<JobSearchFilters>(DEFAULT_FILTERS);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -294,12 +289,18 @@ export function useJobSearch() {
 
   // --- Saved jobs ---
   const loadSavedJobs = useCallback(async () => {
-    const resp = await apiService.getSavedJobs();
-    if (resp.data) {
-      setSavedJobs(resp.data.jobs);
-      bumpSavedTabCounts();
+    const hadCache = queryClient.getQueryData(SAVED_JOBS_QUERY_KEY) != null;
+    if (!hadCache) setSavedJobsLoading(true);
+    try {
+      const resp = await apiService.getSavedJobs();
+      if (resp.data) {
+        setSavedJobs(resp.data.jobs);
+        queryClient.setQueryData(SAVED_JOBS_QUERY_KEY, resp.data.jobs);
+      }
+    } finally {
+      setSavedJobsLoading(false);
     }
-  }, [bumpSavedTabCounts]);
+  }, [queryClient]);
 
   const saveJob = useCallback(async (job: Job) => {
     const resp = await apiService.saveJob(job);
@@ -332,14 +333,10 @@ export function useJobSearch() {
     () => new Set(readPendingApplyIds()),
   );
   const [applyConfirmJob, setApplyConfirmJob] = useState<Job | null>(null);
-  // Tailor-from-Apply ids stay in sessionStorage for the next Jobs visit
-  // without flipping the in-card prompt on this visit.
-  const deferredTailorPending = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     try {
-      const ids = new Set([...pendingApplyIds, ...deferredTailorPending.current]);
-      sessionStorage.setItem(PENDING_APPLY_KEY, JSON.stringify([...ids]));
+      sessionStorage.setItem(PENDING_APPLY_KEY, JSON.stringify([...pendingApplyIds]));
     } catch {
       /* private mode / quota */
     }
@@ -382,7 +379,6 @@ export function useJobSearch() {
     const resp = posting
       ? await apiService.touchJobPipeline(posting, 'applied')
       : await updateJobStatus(jobId, 'applied');
-    deferredTailorPending.current.delete(jobId);
     setPendingApplyIds((prev) => {
       const next = new Set(prev);
       next.delete(jobId);
@@ -410,7 +406,6 @@ export function useJobSearch() {
   }, [updateJobStatus, savedJobs, applyConfirmJob, bumpSavedTabCounts]);
 
   const dismissApplyConfirm = useCallback((jobId: string) => {
-    deferredTailorPending.current.delete(jobId);
     setPendingApplyIds((prev) => {
       const next = new Set(prev);
       next.delete(jobId);
@@ -448,7 +443,6 @@ export function useJobSearch() {
       next.delete(job.job_id);
       return next;
     });
-    deferredTailorPending.current.delete(job.job_id);
     setApplyConfirmJob(null);
     toast.success('Moved to Applied', {
       description: 'Tracker shows Applied with your base resume until you tailor.',
@@ -478,10 +472,9 @@ export function useJobSearch() {
     setApplyConfirmJob(job);
   }, [savedJobs]);
 
+  // Record that Tailor started. Do not open the posting or queue Did-you-apply —
+  // Tailor is a Craft handoff, not an apply.
   const beginApplyWithTailor = useCallback(async (job: Job) => {
-    const url = job.apply_link
-      || `https://www.google.com/search?q=${encodeURIComponent(`${job.title} ${job.company} apply`)}`;
-    window.open(url, '_blank', 'noopener,noreferrer');
     const resp = await apiService.touchJobPipeline(job, 'tailor_started');
     if (resp.data) {
       setSavedJobs((prev) => {
@@ -492,10 +485,6 @@ export function useJobSearch() {
           : [row, ...prev];
       });
     }
-    persistPendingApplyId(job.job_id);
-    deferredTailorPending.current.add(job.job_id);
-    // Do not open Did-you-apply on this visit — Jobs remounts after Tailor
-    // and restores the prompt from sessionStorage once.
   }, []);
 
   // --- Auto Apply: queue into ledger (prepare/gather/submit per user mode) ---
@@ -557,6 +546,7 @@ export function useJobSearch() {
   return {
     jobs,
     savedJobs,
+    savedJobsLoading,
     filters,
     setFilters,
     page,

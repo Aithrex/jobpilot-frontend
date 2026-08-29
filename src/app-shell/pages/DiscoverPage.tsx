@@ -9,6 +9,7 @@ import { JobsRefineBar } from "@/components/job-search/JobsRefineBar";
 import { useCombinedJobsCtx } from "@/components/job-search/CombinedJobsProvider";
 import { AnimatedOutlet } from "../AnimatedOutlet";
 import { useSavedJobTabCounts } from "@/hooks/useSavedJobTabCounts";
+import { cn } from "@/lib/utils";
 
 function jobsSectionOf(pathname: string): string {
   return pathname.split("/").filter(Boolean).pop() ?? "";
@@ -40,9 +41,14 @@ export function JobsTopBar() {
       <Button
         size="sm"
         variant="outline"
-        onClick={() => setCustomizeOpen(true)}
+        onClick={() => setCustomizeOpen((open) => !open)}
         aria-expanded={customizeOpen}
-        className="h-10 shrink-0 gap-1.5"
+        aria-controls="job-feed-sheet"
+        className={cn(
+          "h-10 shrink-0 gap-1.5 rounded-lg border-border bg-background px-3.5 text-sm font-semibold shadow-none [&_svg]:h-3.5 [&_svg]:w-3.5",
+          "hover:border-primary hover:bg-primary/10 hover:text-primary",
+          customizeOpen && "border-primary bg-primary/10 text-primary",
+        )}
       >
         <Radar className="h-3.5 w-3.5" aria-hidden />
         Job feed

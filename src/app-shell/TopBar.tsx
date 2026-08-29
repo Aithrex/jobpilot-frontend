@@ -48,21 +48,24 @@ export function TopBar() {
 
   return (
     <>
-      <header className="fixed inset-x-0 top-0 z-30 flex h-16 items-center gap-3 border-b border-border/30 glass-nav px-4 shadow-soft transition-colors duration-200 ease-expo sm:px-6">
-      {/* Brand mark - always visible now the sidebar is gone. */}
-      <Link
-        to={navHref("home")}
-        aria-label="Aspirely home"
-        className="flex shrink-0 items-center gap-2.5 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-      >
-        <BrandMark />
-        <span className="hidden font-display text-lg font-extrabold tracking-tight text-foreground sm:inline lg:hidden xl:inline">
-          Aspirely
-        </span>
-      </Link>
+      <header className="fixed inset-x-0 top-0 z-30 flex h-16 items-center gap-4 border-b border-border/30 glass-nav px-4 shadow-soft transition-colors duration-200 ease-expo sm:px-6">
+      {/* Brand + destinations as two clusters. gap-3 glued the pill track to
+          the wordmark; a larger pause keeps identity separate from navigation. */}
+      <div className="flex min-w-0 items-center gap-6 lg:gap-8">
+        <Link
+          to={navHref("home")}
+          aria-label="Aspirely home"
+          className="flex shrink-0 items-center gap-2.5 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        >
+          <BrandMark />
+          <span className="hidden font-display text-lg font-extrabold tracking-tight text-foreground sm:inline lg:hidden xl:inline">
+            Aspirely
+          </span>
+        </Link>
 
-      {/* Primary destination nav (>=lg; MobileNav covers smaller widths). */}
-      <DestinationNav />
+        {/* Primary destination nav (>=lg; MobileNav covers smaller widths). */}
+        <DestinationNav />
+      </div>
 
       {/* Push the action cluster to the right. */}
       <div className="min-w-0 flex-1" />

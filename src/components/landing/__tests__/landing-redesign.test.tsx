@@ -23,6 +23,7 @@ import { apiService } from '@/lib/api';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { ThemeProvider } from '@/components/theme-provider';
 import LandingExperience from '@/components/landing/LandingExperience';
+import { LandingNav } from '@/components/landing/LandingNav';
 import { RouteLoadingFallback } from '@/App';
 import { setReducedMotion } from '@/test/setup';
 import {
@@ -48,8 +49,15 @@ vi.mock('@/lib/api', () => ({
   },
 }));
 
+const { authState } = vi.hoisted(() => ({
+  authState: { isAuthenticated: false, isLoading: false },
+}));
+
 vi.mock('@/contexts/AuthContext', () => ({
-  useAuth: () => ({ isAuthenticated: false, isLoading: false }),
+  useAuth: () => ({
+    isAuthenticated: authState.isAuthenticated,
+    isLoading: authState.isLoading,
+  }),
   AuthProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 
@@ -85,6 +93,8 @@ beforeEach(() => {
   localStorage.clear();
   sessionStorage.clear();
   setReducedMotion(false);
+  authState.isAuthenticated = false;
+  authState.isLoading = false;
   api.guestSession.mockResolvedValue({ data: { exists: false }, status: 200 });
 });
 
@@ -105,8 +115,7 @@ describe('primary CTA', () => {
     // hero and the closing section, so the bar does not repeat them.
     // 1 - the hero's secondary CTA.
     await user.click(screen.getByRole('button', { name: /^Find my matches$/i }));
-    // 2 - the drop surface under the product film. It moved out of the mock
-    // window when the mock window went, but it is the SAME picker.
+    // 2 - the drop surface under the CTAs. Same picker as the secondary CTA.
     await user.click(
       await screen.findByRole('button', { name: /Drop your resume to see your matches/i }),
     );
@@ -218,19 +227,26 @@ describe('honesty of the pre-upload composition', () => {
     expect(text).not.toMatch(/Senior (Frontend|Backend|Software) Engineer at/i);
   });
 
-  test('the hero has no decorative film, so there is nothing to mislabel', () => {
+  test('the hero preview is a product window, not a film or a screenshot', () => {
     renderLanding();
     const hero = document.getElementById('try') as HTMLElement;
-    expect(hero.querySelector('img, video')).toBeNull();
+    expect(hero.querySelector('video')).toBeNull();
+    expect(hero.querySelector('img[src*="poster"], img[src*="hero"]')).toBeNull();
+    expect(within(hero).getByText('Career Workspace')).toBeInTheDocument();
+    expect(within(hero).getByText(/placeholders, not real results/i)).toBeInTheDocument();
   });
 
 });
 
 describe('product demo accessibility', () => {
-  test('the hero film is gone, so there is nothing decorative to expose to assistive tech', () => {
+  test('the idle hero preview is named and operable, not a silent decoration', () => {
     renderLanding();
     const hero = document.getElementById('try') as HTMLElement;
     expect(hero.querySelector('video, img[src*="poster"]')).toBeNull();
+    expect(
+      within(hero).getByRole('tablist', { name: /Illustrative workflow steps/i }),
+    ).toBeInTheDocument();
+    expect(within(hero).getByRole('tab', { name: /^Read$/i })).toBeInTheDocument();
   });
 
 });
@@ -1003,11 +1019,13 @@ describe('hero composition', () => {
     expect(account.compareDocumentPosition(signIn) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  test('the illustrative product mockup is gone', () => {
+  test('the idle hero shows the workspace preview with redacted structure, not invented results', () => {
     renderLanding();
-    // No fake window chrome, no invented status pill, no fake tablist.
-    expect(screen.queryByText('Career Workspace')).toBeNull();
-    expect(screen.queryByRole('tablist', { name: /Illustrative workflow steps/i })).toBeNull();
+    expect(screen.getByText('Career Workspace')).toBeInTheDocument();
+    expect(screen.getByRole('tablist', { name: /Illustrative workflow steps/i })).toBeInTheDocument();
+    expect(screen.getByText(/Illustrative workflow/i)).toBeInTheDocument();
+    // Still no fabricated outcomes inside that window.
+    expect(document.body.textContent ?? '').not.toMatch(/\d{1,3}\s*%\s*(match|fit)/i);
   });
 });
 
@@ -1019,3 +1037,108 @@ describe('hero product film', () => {
     expect(hero.querySelector('img[src*="aspirely-hero"]')).toBeNull();
   });
 });
+
+describe('public nav current page', () => {
+  function renderNav(path: string) {
+    return render(
+      <MemoryRouter initialEntries={[path]}>
+        <ThemeProvider>
+          <LandingNav />
+        </ThemeProvider>
+      </MemoryRouter>,
+    );
+  }
+
+  test('on /pricing, Pricing is marked current and the others are not', () => {
+    renderNav('/pricing');
+    const banner = screen.getByRole('banner');
+    expect(within(banner).getByRole('link', { name: /^Pricing$/i })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+    expect(within(banner).getByRole('link', { name: /How it works/i })).not.toHaveAttribute(
+      'aria-current',
+    );
+    expect(within(banner).getByRole('link', { name: /Before you begin/i })).not.toHaveAttribute(
+      'aria-current',
+    );
+  });
+
+  test('on /trust, Before you begin is marked current', () => {
+    renderNav('/trust');
+    const banner = screen.getByRole('banner');
+    expect(within(banner).getByRole('link', { name: /Before you begin/i })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+    expect(within(banner).getByRole('link', { name: /^Pricing$/i })).not.toHaveAttribute(
+      'aria-current',
+    );
+  });
+});
+
+describe('signed-in public chrome', () => {
+  beforeEach(() => {
+    authState.isAuthenticated = true;
+  });
+
+  test('does not sell signup: no Sign in, Create free account, or Find my matches', () => {
+    renderLanding();
+
+    expect(screen.queryByRole('link', { name: /^Sign in$/i })).toBeNull();
+    expect(screen.queryByRole('link', { name: /create free account/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /find my matches/i })).toBeNull();
+    expect(screen.queryByRole('link', { name: /find my matches/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /upload your resume/i })).toBeNull();
+    expect(screen.queryByText(/already have an account/i)).toBeNull();
+    expect(screen.queryByText(/create a free account and set your direction/i)).toBeNull();
+  });
+
+  test('the bar and the hero each carry one workspace action, not a stack of them', () => {
+    renderLanding();
+    const banner = screen.getByRole('banner');
+    const hero = document.getElementById('try') as HTMLElement;
+
+    const navCta = within(banner).getByRole('link', { name: /^Open my workspace$/i });
+    expect(navCta).toHaveAttribute('href', '/app/home');
+    expect(within(banner).queryByRole('link', { name: /^Sign in$/i })).toBeNull();
+    expect(within(banner).queryByRole('link', { name: /create free account/i })).toBeNull();
+
+    const heroCtas = within(hero).getAllByRole('link', { name: /^Open my workspace$/i });
+    expect(heroCtas).toHaveLength(1);
+    expect(heroCtas[0]).toHaveAttribute('href', '/app/home');
+    expect(within(hero).queryByText(/you're signed in/i)).toBeInTheDocument();
+  });
+
+  test('pricing, before you begin, the close, and the footer all continue the workspace, not signup', () => {
+    renderLanding();
+
+    const pricing = document.getElementById('pricing') as HTMLElement;
+    const pricingCta = within(pricing).getByRole('link', { name: /^Open my workspace$/i });
+    expect(pricingCta).toHaveAttribute('href', '/app/home');
+    expect(within(pricing).queryByRole('link', { name: /create free account/i })).toBeNull();
+
+    const before = document.getElementById('before-you-begin') as HTMLElement;
+    expect(within(before).getByRole('link', { name: /^Open my workspace$/i })).toHaveAttribute(
+      'href',
+      '/app/home',
+    );
+    expect(within(before).queryByRole('link', { name: /sign in/i })).toBeNull();
+
+    const close = document.getElementById('get-started') as HTMLElement;
+    expect(within(close).getByRole('heading', { name: /your workspace is waiting/i })).toBeInTheDocument();
+    expect(within(close).getByRole('link', { name: /^Open my workspace$/i })).toHaveAttribute(
+      'href',
+      '/app/home',
+    );
+    expect(within(close).queryByRole('link', { name: /^Sign in$/i })).toBeNull();
+
+    const footer = screen.getByRole('contentinfo');
+    expect(within(footer).getByRole('link', { name: /^Workspace$/i })).toHaveAttribute(
+      'href',
+      '/app/home',
+    );
+    expect(within(footer).queryByRole('link', { name: /^Sign in$/i })).toBeNull();
+  });
+});
+

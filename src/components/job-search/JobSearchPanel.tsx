@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ApplyConfirmDialog, JOB_FEED_GRID_CLASS, JobCard } from './JobCard';
+import { JobFeedPager } from './JobFeedPager';
 import { COMPANY_CHIPS, passesVisaFilters } from '@/hooks/useJobSearch';
 import type { Job, SavedJob, JobSearchFilters, JobSearchOptions, VisaFilters } from '@/types/jobs';
 import type { BatchMeta } from '@/hooks/useJobSearch';
@@ -538,6 +539,7 @@ export function JobSearchPanel({
                 onUnsave={() => unsaveJob(job.job_id)}
                 onQuickApply={() => quickApply(job)}
                 applyConfirmPending={isApplyConfirmPending?.(job.job_id)}
+                applyConfirmModalJobId={applyConfirmJob?.job_id}
                 onConfirmApplied={confirmApplied ? () => void confirmApplied(job.job_id) : undefined}
                 onConfirmNotYet={dismissApplyConfirm ? () => dismissApplyConfirm(job.job_id) : undefined}
                 onApplyWithTailor={beginApplyWithTailor ? () => beginApplyWithTailor(job) : undefined}
@@ -549,27 +551,7 @@ export function JobSearchPanel({
           </div>
 
           {totalPages > 1 && (
-            <div className="flex justify-center gap-2 pt-2">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page <= 1}
-                onClick={() => handlePageChange(page - 1)}
-              >
-                Previous
-              </Button>
-              <span className="flex items-center px-3 text-sm text-muted-foreground">
-                Page {page} of {totalPages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page >= totalPages}
-                onClick={() => handlePageChange(page + 1)}
-              >
-                Next
-              </Button>
-            </div>
+            <JobFeedPager page={page} pageCount={totalPages} onPageChange={handlePageChange} />
           )}
         </>
       )}

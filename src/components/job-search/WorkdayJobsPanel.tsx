@@ -22,6 +22,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { ChipsInput } from '@/components/job-search/ChipsInput';
 import { JOB_FEED_GRID_CLASS, JobCard, JOB_CARD_CLASS } from '@/components/job-search/JobCard';
+import { JobFeedPager } from '@/components/job-search/JobFeedPager';
 import { useAutoSync } from '@/hooks/useAutoSync';
 import { JOB_TITLES_CAP, useJobTitles } from '@/hooks/useJobTitles';
 import { apiService } from '@/lib/api';
@@ -297,15 +298,6 @@ function formatCountdown(sec: number): string {
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
-/** Windowed page numbers around the current page (max 5 shown). */
-function pageWindow(page: number, count: number): number[] {
-  const span = Math.min(5, count);
-  let start = Math.max(1, page - 2);
-  const end = Math.min(count, start + span - 1);
-  start = Math.max(1, end - span + 1);
-  return Array.from({ length: end - start + 1 }, (_, i) => start + i);
-}
-
 /** Normalize a portal row into the `Job` shape `JobCard` renders. Portal rows
  *  carry a discrete sponsorship band, not the `SponsorshipSignal` object  -
  *  we surface the honest signal via visa flags (evidence-backed) and a
@@ -348,6 +340,7 @@ interface WorkdayJobsPanelProps {
   isApplyConfirmPending?: (jobId: string) => boolean;
   confirmApplied?: (jobId: string) => void | Promise<unknown>;
   dismissApplyConfirm?: (jobId: string) => void;
+  applyConfirmJobId?: string | null;
   beginApplyWithTailor?: (job: Job) => void | Promise<unknown>;
   markAlreadyApplied?: (job: Job) => void | Promise<unknown>;
   autoApply?: (job: Job) => void | Promise<unknown>;
@@ -373,6 +366,7 @@ export function WorkdayJobsPanel({
   isApplyConfirmPending,
   confirmApplied,
   dismissApplyConfirm,
+  applyConfirmJobId,
   beginApplyWithTailor,
   markAlreadyApplied,
   autoApply,
@@ -759,7 +753,7 @@ export function WorkdayJobsPanel({
       key={job.job_id}
       layout={!reduceMotion}
       {...cardMotion(index)}
-      className="flex flex-col gap-1.5"
+      className="flex h-full flex-col gap-1.5"
     >
       {job.sponsorship === 'refused' && (
         <p className="flex items-start gap-1.5 rounded-lg border border-destructive/30 bg-destructive/10 px-2.5 py-1.5 text-[11px] font-medium leading-snug text-destructive">
@@ -787,6 +781,7 @@ export function WorkdayJobsPanel({
         onUnsave={() => unsaveJob(job.job_id)}
         onQuickApply={() => quickApply(toJob(job, fallbackSource))}
         applyConfirmPending={isApplyConfirmPending?.(job.job_id)}
+        applyConfirmModalJobId={applyConfirmJobId}
         onConfirmApplied={confirmApplied ? () => void confirmApplied(job.job_id) : undefined}
         onConfirmNotYet={dismissApplyConfirm ? () => dismissApplyConfirm(job.job_id) : undefined}
         onApplyWithTailor={beginApplyWithTailor ? () => beginApplyWithTailor(toJob(job, fallbackSource)) : undefined}
@@ -1380,54 +1375,7 @@ export function WorkdayJobsPanel({
 
           {/* ── Pagination ── */}
           {pageCount > 1 && (
-            <nav
-              className="flex flex-wrap items-center justify-center gap-1.5 pt-2"
-              aria-label="Job results pages"
-            >
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page <= 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="gap-1"
-              >
-                Prev
-              </Button>
-              {pageWindow(page, pageCount)[0] > 1 && (
-                <span className="px-1 text-xs text-muted-foreground">...</span>
-              )}
-              {pageWindow(page, pageCount).map((n) => (
-                <button
-                  key={n}
-                  type="button"
-                  onClick={() => setPage(n)}
-                  aria-current={n === page ? 'page' : undefined}
-                  className={cn(
-                    'h-8 min-w-8 rounded-md px-2 text-xs font-semibold tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                    n === page
-                      ? 'bg-primary text-primary-foreground shadow-soft'
-                      : 'border border-border text-muted-foreground hover:border-primary/40 hover:text-primary',
-                  )}
-                >
-                  {n}
-                </button>
-              ))}
-              {pageWindow(page, pageCount).slice(-1)[0] < pageCount && (
-                <span className="px-1 text-xs text-muted-foreground">...</span>
-              )}
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page >= pageCount}
-                onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
-                className="gap-1"
-              >
-                Next
-              </Button>
-              <span className="ml-2 text-[11px] text-muted-foreground">
-                Page {page} of {pageCount}
-              </span>
-            </nav>
+            <JobFeedPager page={page} pageCount={pageCount} onPageChange={setPage} />
           )}
         </div>
       )}

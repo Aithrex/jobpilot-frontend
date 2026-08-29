@@ -5,13 +5,16 @@
  *   1. Derive sensible DEFAULTS from a just-parsed resume so Step 4's few
  *      questions arrive PRE-FILLED (the user confirms/edits, not fills blanks).
  *   2. Persist wizard progress across the LinkedIn OAuth full-page redirect so
- *      onboarding is resumable (localStorage) and non-nagging (sessionStorage).
+ *      onboarding is resumable (localStorage). Dismissal is also localStorage:
+ *      a closed wizard must not nag on every later sign-in. Home can reopen it.
  */
 import type { ResumeStatus } from '@/types/resume';
 
 export const ONBOARDING_STORAGE_KEY = 'jobpilot.onboarding.v1';
-/** Set when the user dismisses the wizard - suppresses it for this tab session. */
+/** Set when the user dismisses the wizard. Survives sign-out so we do not nag. */
 export const ONBOARDING_SNOOZE_KEY = 'jobpilot.onboarding.snoozed';
+/** Home (and anywhere else) can ask the mounted wizard to open again. */
+export const ONBOARDING_OPEN_EVENT = 'aspirely:onboarding-open';
 
 /** The friendly seniority buckets we ask about (stored as `experience_level`). */
 export const EXPERIENCE_LEVELS = [
@@ -185,7 +188,7 @@ export function clearOnboardingState(): void {
 export function isOnboardingSnoozed(): boolean {
   if (typeof window === 'undefined') return false;
   try {
-    return window.sessionStorage.getItem(ONBOARDING_SNOOZE_KEY) === '1';
+    return window.localStorage.getItem(ONBOARDING_SNOOZE_KEY) === '1';
   } catch {
     return false;
   }
@@ -194,8 +197,24 @@ export function isOnboardingSnoozed(): boolean {
 export function snoozeOnboarding(): void {
   if (typeof window === 'undefined') return;
   try {
-    window.sessionStorage.setItem(ONBOARDING_SNOOZE_KEY, '1');
+    window.localStorage.setItem(ONBOARDING_SNOOZE_KEY, '1');
   } catch {
     /* no-op */
   }
+}
+
+export function clearOnboardingSnooze(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.removeItem(ONBOARDING_SNOOZE_KEY);
+  } catch {
+    /* no-op */
+  }
+}
+
+/** Re-open the first-run wizard from Home after the user dismissed it. */
+export function requestOnboardingOpen(): void {
+  clearOnboardingSnooze();
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new CustomEvent(ONBOARDING_OPEN_EVENT));
 }

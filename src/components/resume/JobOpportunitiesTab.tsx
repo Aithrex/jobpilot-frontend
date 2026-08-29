@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { appPath } from '@/app-shell/nav.config';
 import { loadHiddenJobIds, persistHiddenJobId } from '@/lib/hiddenJobs';
 import type { Job } from '@/types/jobs';
+import { Skeleton } from '@/components/ui/skeleton';
 import { isAppliedSavedJob } from '@/lib/savedJobs';
 
 interface JobOpportunitiesTabProps {
@@ -30,13 +31,35 @@ function JobList({
   emptyBody,
   jobSearch,
   onHideJob,
+  loading,
 }: {
   jobs: Job[];
   emptyTitle: string;
   emptyBody: string;
   jobSearch: ReturnType<typeof useJobSearch>;
   onHideJob?: (jobId: string) => void;
+  loading?: boolean;
 }) {
+  if (loading) {
+    return (
+      <div className={JOB_FEED_GRID_CLASS} aria-busy="true" aria-label="Loading jobs">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="space-y-2.5 rounded-xl border border-border p-3.5">
+            <div className="flex items-start gap-2.5">
+              <Skeleton className="h-9 w-9 shrink-0 rounded-lg" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-3 w-1/2" />
+                <Skeleton className="h-4 w-5/6" />
+              </div>
+              <Skeleton className="h-12 w-12 shrink-0 rounded-full" />
+            </div>
+            <Skeleton className="h-3 w-2/3" />
+            <Skeleton className="h-9 w-full rounded-md" />
+          </div>
+        ))}
+      </div>
+    );
+  }
   if (jobs.length === 0) {
     return (
       <div className="rounded-xl border border-dashed border-border px-4 py-10 text-center">
@@ -53,10 +76,11 @@ function JobList({
           job={job}
           saved={jobSearch.isJobSaved(job.job_id)}
           jobStatus={jobSearch.getJobStatus(job.job_id)}
-          onSave={() => void jobSearch.saveJob(job)}
-          onUnsave={() => void jobSearch.unsaveJob(job.job_id)}
+          onSave={() => jobSearch.saveJob(job)}
+          onUnsave={() => jobSearch.unsaveJob(job.job_id)}
           onQuickApply={() => void jobSearch.quickApply(job)}
           applyConfirmPending={jobSearch.isApplyConfirmPending(job.job_id)}
+          applyConfirmModalJobId={jobSearch.applyConfirmJob?.job_id}
           onConfirmApplied={() => void jobSearch.confirmApplied(job.job_id)}
           onConfirmNotYet={() => jobSearch.dismissApplyConfirm(job.job_id)}
           onApplyWithTailor={() => void jobSearch.beginApplyWithTailor(job)}
@@ -128,9 +152,10 @@ export default function JobOpportunitiesTab({ embedded }: JobOpportunitiesTabPro
         <JobList
           jobs={savedRows.map((row) => row.job_data).filter(Boolean)}
           emptyTitle="Nothing saved yet"
-          emptyBody="Save a role from For you and it lands here until you apply."
+          emptyBody="Save a role from For you. After you apply, it moves to Applied so it doesn't sit in both lists."
           jobSearch={jobSearch}
           onHideJob={hideJob}
+          loading={jobSearch.savedJobsLoading}
         />
       )}
 
@@ -145,8 +170,9 @@ export default function JobOpportunitiesTab({ embedded }: JobOpportunitiesTabPro
           <JobList
             jobs={appliedRows.map((row) => row.job_data).filter(Boolean)}
             emptyTitle="No applications yet"
-            emptyBody="Apply from For you, then tap Yes I applied — the role shows here."
+            emptyBody="Apply from For you, then confirm you submitted. Those roles live here, not under Saved."
             jobSearch={jobSearch}
+            loading={jobSearch.savedJobsLoading}
           />
         </div>
       )}

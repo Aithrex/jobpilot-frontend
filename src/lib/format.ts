@@ -126,3 +126,15 @@ export function hostFromUrl(url?: string | null): string | null {
     return null;
   }
 }
+
+/** Scraped JDs often keep HTML entities (`&nbsp;`) after a naive text extract. */
+export function decodeJobHtml(input: string): string {
+  return input
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;|&apos;/g, "'")
+    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)));
+}

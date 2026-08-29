@@ -164,8 +164,10 @@ export function LandingNav() {
 
   const linkClass = (isActive: boolean) =>
     cn(
-      'focus-ring-visible rounded-full px-3 py-1.5 text-[14px] font-medium transition-colors',
-      isActive ? 'bg-nav-active text-foreground' : 'text-secondary-foreground hover:text-foreground',
+      'focus-ring-visible rounded-full px-3 py-1.5 text-[14px] transition-colors duration-200',
+      isActive
+        ? 'bg-primary/10 font-semibold text-primary'
+        : 'font-medium text-secondary-foreground hover:text-primary',
     );
 
   return (
@@ -190,7 +192,14 @@ export function LandingNav() {
         <nav aria-label="Primary" className="hidden items-center gap-1 lg:flex">
           {PUBLIC_NAV.map((link) => {
             const asAnchor = onHome && link.anchorOnHome;
-            const isActive = asAnchor ? active === link.href.slice(1) : pathname === link.route;
+            // On `/`, highlight from the scroll-spy for every IA link — Pricing
+            // and Before you begin are real routes (so the click still navigates)
+            // but they are also on-page sections, and matching `pathname` alone
+            // left them unhighlighted the entire time a signed-in reader was
+            // scrolling the home page. Off `/`, the route is the source of truth.
+            const isActive = onHome
+              ? active === link.href.slice(1)
+              : pathname === link.route;
             // Anchor only where there is no standalone route to fall back to.
             // A nav link that quietly does nothing once the guest flow has
             // unmounted its target is worse than a navigation.
@@ -229,7 +238,7 @@ export function LandingNav() {
             <>
               <Link
                 to="/login"
-                className="focus-ring-visible hidden rounded-full px-3 py-1.5 text-[14px] font-medium text-secondary-foreground transition-colors hover:text-foreground sm:inline-flex"
+                className="focus-ring-visible hidden items-center rounded-full px-3 py-1.5 text-[14px] font-medium text-secondary-foreground transition-colors duration-200 hover:text-primary sm:inline-flex"
               >
                 Sign in
               </Link>
@@ -271,19 +280,30 @@ export function LandingNav() {
           id="public-nav-menu"
           className="glass-nav glass-nav-strong glass-nav-card mx-auto mt-2 max-w-[84rem] rounded-2xl border border-foreground/[0.12] p-2 lg:hidden"
         >
-          {PUBLIC_NAV.map((link) => (
-            <Link
-              key={link.route}
-              to={link.route}
-              className="focus-ring-visible block rounded-xl px-3.5 py-3 text-[15px] font-medium text-foreground"
-            >
-              {link.label}
-            </Link>
-          ))}
+          {PUBLIC_NAV.map((link) => {
+            const isActive = onHome
+              ? active === link.href.slice(1)
+              : pathname === link.route;
+            return (
+              <Link
+                key={link.route}
+                to={link.route}
+                aria-current={isActive ? 'page' : undefined}
+                className={cn(
+                  'focus-ring-visible block rounded-xl px-3.5 py-3 text-[15px] transition-colors duration-200',
+                  isActive
+                    ? 'bg-primary/10 font-semibold text-primary'
+                    : 'font-medium text-foreground hover:text-primary',
+                )}
+              >
+                {link.label}
+              </Link>
+            );
+          })}
           {!isAuthenticated && (
             <Link
               to="/login"
-              className="focus-ring-visible block rounded-xl px-3.5 py-3 text-[15px] font-medium text-foreground sm:hidden"
+              className="focus-ring-visible block rounded-xl px-3.5 py-3 text-[15px] font-medium text-foreground transition-colors duration-200 hover:text-primary sm:hidden"
             >
               Sign in
             </Link>

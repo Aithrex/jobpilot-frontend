@@ -1,7 +1,7 @@
 import { lazy, Suspense, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { FileCheck2, LayoutDashboard, UploadCloud } from 'lucide-react';
+import { FileCheck2, UploadCloud } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { GuestDropzone } from '@/components/guest/GuestDropzone';
 /**
@@ -19,13 +19,17 @@ const GuestFlowShell = lazy(() =>
 import type { ResumePicker } from '@/components/guest/useResumePicker';
 import type { GuestFlow } from '@/hooks/useGuestFlow';
 import { Container } from './_shared';
+import { HeroPreview } from './HeroPreview';
 import { MacWindow, type WindowStatus } from './workspace/MacWindow';
 
 /**
- * The hero: the promise and the two actions on the page canvas.
+ * The hero: the promise and the two actions, with a product window beside them.
  *
- * The right-column Mac window is reserved for the real guest flow once an
- * upload starts. Its status pill is driven only by `liveStatus(flow)`.
+ * On a wide canvas the idle state is two columns - copy on the left, a live
+ * DOM preview of the workspace on the right. That window is illustrative
+ * (redacted bars, empty slots, a caption that says so) until an upload starts,
+ * at which point the same frame is taken over by the real guest flow. Its
+ * status pill is driven only by `liveStatus(flow)`.
  *
  * Upload is ONE click. This component does not own the file input:
  * LandingExperience renders the page's single `<input type="file">` and hands
@@ -77,8 +81,7 @@ export function WorkspaceHero({
   flowActive,
   picker,
 }: WorkspaceHeroProps) {
-  // Drag state for the whole video column, which is where a dragged file now
-  // lands. It used to be the mock window's body.
+  // Drag state for the whole hero, which is where a dragged file lands.
   const [dragActive, setDragActive] = useState(false);
   const droppable = guestEnabled && !authed;
 
@@ -88,17 +91,7 @@ export function WorkspaceHero({
   // that was not happening.
   const { status, label } = liveStatus(flow);
 
-  const uploadSurface = authed ? (
-    <div className="flex flex-col items-center gap-3 text-center sm:flex-row sm:text-left">
-      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
-        <LayoutDashboard className="h-6 w-6" aria-hidden />
-      </span>
-      <p className="min-w-0 flex-1 text-sm font-semibold">You're signed in</p>
-      <Button asChild size="sm" className="h-11 w-full rounded-control font-semibold sm:w-auto">
-        <Link to="/app/home">Open my workspace</Link>
-      </Button>
-    </div>
-  ) : guestEnabled ? (
+  const uploadSurface = guestEnabled ? (
     // The label states the ACTION and what it buys, in the second person.
     // Two earlier tries missed in opposite directions: "Upload my resume to
     // find matches" put the visitor's own words on the thing being spoken to,
@@ -177,14 +170,13 @@ export function WorkspaceHero({
               key="idle"
               initial={false}
               exit={{ opacity: 0, transition: { duration: 0.2 } }}
-              className="grid grid-cols-[minmax(0,1fr)] items-center"
+              className="grid grid-cols-1 items-center gap-12 lg:grid-cols-12 lg:gap-10 xl:gap-14"
             >
               {/* THE COPY COLUMN.
-                  Six of twelve rather than five: the headline is the page's
-                  single most important object and it was breaking into four
-                  lines inside a five-column well while the page had space
-                  going spare. */}
-              <div className="mx-auto flex w-full max-w-2xl flex-col text-center lg:mx-0 lg:max-w-3xl lg:text-left">
+                  Five of twelve on the widest canvas, six below that: the
+                  headline still has room to breathe, and the remaining
+                  columns are the product window that used to sit empty. */}
+              <div className="mx-auto flex w-full max-w-2xl flex-col text-center lg:col-span-6 lg:mx-0 lg:max-w-none lg:text-left xl:col-span-5">
                 <h1 className="text-balance font-display text-[2.15rem] font-extrabold leading-[1.07] tracking-[-0.03em] text-foreground sm:text-[2.9rem] xl:text-[3.2rem]">
                   Run your job search with{' '}
                   <span className="gradient-text">clarity, consistency, and control.</span>
@@ -195,95 +187,120 @@ export function WorkspaceHero({
                   every next step organized.
                 </p>
 
-                {/* THE TWO ACTIONS, side by side.
-                    The primary used to be the file picker, which made this a
-                    single-purpose upload tool: a visitor not ready to hand over
-                    a resume in the first ten seconds had nothing to do. It then
-                    briefly paired account creation with "See how it works",
-                    which spent the second-most valuable control on a scroll.
-                    Both actions now start something real - one creates the
-                    account, one runs the guest match flow - and they share a
-                    row, a height and a shape so the choice reads as a choice
-                    rather than as a button and an afterthought. */}
-                <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center lg:justify-start">
-                  <Button
-                    asChild
-                    size="lg"
-                    className="h-[3.25rem] w-full rounded-full px-8 text-base font-semibold shadow-panel sm:w-auto"
-                  >
-                    <Link to={authed ? '/app/home' : '/register'}>
-                      {authed ? 'Open my workspace' : 'Create free account'}
-                    </Link>
-                  </Button>
-
-                  {guestEnabled ? (
-                    <button
-                      type="button"
-                      // Opens the real OS file dialog on THIS click, through the
-                      // page's ONE shared picker. No scroll, no focus hand-off,
-                      // no second uploader.
-                      onClick={picker.open}
-                      // Glass, not a second solid button: the pair reads as one
-                      // primary and one alternative rather than as two equal
-                      // commands. `--glass-alpha` is nudged on hover, which is
-                      // the whole hover state - the pane clouds slightly. See
-                      // `.glass-pane` in index.css for the fallback.
-                      className="focus-ring-visible glass-pane inline-flex h-[3.25rem] w-full items-center justify-center rounded-full px-8 text-base font-semibold text-foreground hover:[--glass-alpha:0.92] sm:w-auto"
-                    >
-                      Find my matches
-                    </button>
-                  ) : (
-                    <Link
-                      to="/register"
-                      className="focus-ring-visible glass-pane inline-flex h-[3.25rem] w-full items-center justify-center rounded-full px-8 text-base font-semibold text-foreground hover:[--glass-alpha:0.92] sm:w-auto"
-                    >
-                      Find my matches
-                    </Link>
-                  )}
-                </div>
-
-                {/* ONE trust line. There were three stacked reassurance
-                    statements here, which is how a hero stops being read at
-                    all - each one made the next one cheaper. */}
-                <p className="mt-4 text-[13.5px] font-medium text-muted-foreground">
-                  Free to start. Nothing is submitted without your approval.
-                </p>
-
-                {/* Returning guest whose resume is already on file - straight
-                    to today's matches, no re-upload. */}
-                {guestEnabled && flow.session?.exists && flow.session.has_resume && (
-                  <div className="mt-7 flex items-center justify-center gap-3 rounded-xl border border-primary/25 bg-primary/5 p-3 lg:justify-between">
-                    <p className="flex items-center gap-2 text-sm">
-                      <FileCheck2 className="h-4 w-4 shrink-0 text-primary" aria-hidden />
-                      Your resume is already on file.
+                {authed ? (
+                  <>
+                    {/* Signed-in visitors already have an account. One path
+                        back to the product — the bar already carries the same
+                        label as persistent chrome, so this is the in-page
+                        action, not a third copy of a signup funnel. */}
+                    <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center lg:justify-start">
+                      <Button
+                        asChild
+                        size="lg"
+                        className="h-[3.25rem] w-full rounded-full px-8 text-base font-semibold shadow-panel sm:w-auto"
+                      >
+                        <Link to="/app/home">Open my workspace</Link>
+                      </Button>
+                    </div>
+                    <p className="mt-4 text-[13.5px] font-medium text-muted-foreground">
+                      You're signed in. Continue where you left off.
                     </p>
-                    <Button size="sm" variant="outline" className="shrink-0" onClick={flow.goToMatches}>
-                      See today's matches
-                    </Button>
-                  </div>
+                  </>
+                ) : (
+                  <>
+                    {/* THE TWO ACTIONS, side by side.
+                        The primary used to be the file picker, which made this a
+                        single-purpose upload tool: a visitor not ready to hand over
+                        a resume in the first ten seconds had nothing to do. It then
+                        briefly paired account creation with "See how it works",
+                        which spent the second-most valuable control on a scroll.
+                        Both actions now start something real - one creates the
+                        account, one runs the guest match flow - and they share a
+                        row, a height and a shape so the choice reads as a choice
+                        rather than as a button and an afterthought. */}
+                    <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center lg:justify-start">
+                      <Button
+                        asChild
+                        size="lg"
+                        className="h-[3.25rem] w-full rounded-full px-8 text-base font-semibold shadow-panel sm:w-auto"
+                      >
+                        <Link to="/register">Create free account</Link>
+                      </Button>
+
+                      {guestEnabled ? (
+                        <button
+                          type="button"
+                          // Opens the real OS file dialog on THIS click, through the
+                          // page's ONE shared picker. No scroll, no focus hand-off,
+                          // no second uploader.
+                          onClick={picker.open}
+                          // Glass, not a second solid button. Hover is colour and
+                          // fill only — no lift or press scale, which made the
+                          // label jump.
+                          className="focus-ring-visible glass-pane inline-flex h-[3.25rem] w-full items-center justify-center rounded-full px-8 text-base font-semibold text-foreground transition-[color,border-color,background-color] duration-200 ease-out hover:border-primary/40 hover:text-primary hover:[--glass-alpha:1] sm:w-auto"
+                        >
+                          Find my matches
+                        </button>
+                      ) : (
+                        <Link
+                          to="/register"
+                          className="focus-ring-visible glass-pane inline-flex h-[3.25rem] w-full items-center justify-center rounded-full px-8 text-base font-semibold text-foreground transition-[color,border-color,background-color] duration-200 ease-out hover:border-primary/40 hover:text-primary hover:[--glass-alpha:1] sm:w-auto"
+                        >
+                          Find my matches
+                        </Link>
+                      )}
+                    </div>
+
+                    {/* ONE trust line. There were three stacked reassurance
+                        statements here, which is how a hero stops being read at
+                        all - each one made the next one cheaper. */}
+                    <p className="mt-4 text-[13.5px] font-medium text-muted-foreground">
+                      Free to start. Nothing is submitted without your approval.
+                    </p>
+
+                    {/* Returning guest whose resume is already on file - straight
+                        to today's matches, no re-upload. */}
+                    {guestEnabled && flow.session?.exists && flow.session.has_resume && (
+                      <div className="mt-7 flex items-center justify-center gap-3 rounded-xl border border-primary/25 bg-primary/5 p-3 lg:justify-between">
+                        <p className="flex items-center gap-2 text-sm">
+                          <FileCheck2 className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+                          Your resume is already on file.
+                        </p>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="shrink-0"
+                          onClick={flow.goToMatches}
+                        >
+                          See today's matches
+                        </Button>
+                      </div>
+                    )}
+
+                    {/* The drag-and-drop path, kept because a dragged file has to
+                        land somewhere. Same picker as the CTA above, so this is one
+                        mechanism presented twice, not two uploaders. */}
+                    {/* The trust line, this drop surface and the sign-in line are
+                        ONE supporting cluster under the two actions, so they sit
+                        at a tighter interval than the interval that separates the
+                        cluster from the actions above it. They were spaced 5/8/7,
+                        which made three unrelated statements out of one group. */}
+                    <div className="mt-6 max-w-md lg:mx-0">{uploadSurface}</div>
+
+                    <p className="mt-5 text-sm text-muted-foreground">
+                      Already have an account?{' '}
+                      <Link
+                        to="/login"
+                        className="font-medium text-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        Sign in
+                      </Link>
+                    </p>
+                  </>
                 )}
-
-                {/* The drag-and-drop path, kept because a dragged file has to
-                    land somewhere. Same picker as the CTA above, so this is one
-                    mechanism presented twice, not two uploaders. */}
-                {/* The trust line, this drop surface and the sign-in line are
-                    ONE supporting cluster under the two actions, so they sit
-                    at a tighter interval than the interval that separates the
-                    cluster from the actions above it. They were spaced 5/8/7,
-                    which made three unrelated statements out of one group. */}
-                <div className="mt-6 max-w-md lg:mx-0">{uploadSurface}</div>
-
-                <p className="mt-5 text-sm text-muted-foreground">
-                  Already have an account?{' '}
-                  <Link
-                    to="/login"
-                    className="font-medium text-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  >
-                    Sign in
-                  </Link>
-                </p>
               </div>
 
+              <HeroPreview />
             </motion.div>
           ) : (
             /* Real work owns the window */

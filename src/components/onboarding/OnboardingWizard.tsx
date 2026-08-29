@@ -12,11 +12,13 @@ import {
   Sparkles, X, Loader2, Check, UploadCloud, FileText, RotateCcw, Linkedin,
   Briefcase, MapPin, GraduationCap, Plane, ArrowRight, ArrowLeft, ShieldCheck,
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import {
   EMPTY_ANSWERS, EMPTY_DEFAULTS, EXPERIENCE_LEVELS, REMOTE_OPTIONS, ROLE_SUGGESTIONS,
-  clearOnboardingState, deriveDefaultsFromParsed, isOnboardingSnoozed, loadOnboardingState,
-  mergeStatusDefaults, saveOnboardingState, snoozeOnboarding,
+  ONBOARDING_OPEN_EVENT, clearOnboardingState, clearOnboardingSnooze,
+  deriveDefaultsFromParsed, isOnboardingSnoozed, loadOnboardingState, mergeStatusDefaults,
+  saveOnboardingState, snoozeOnboarding,
   type OnboardingAnswers, type OnboardingDefaults,
 } from './onboarding';
 
@@ -28,9 +30,9 @@ import {
  *
  * The questions arrive PRE-FILLED from the parsed resume so the user confirms
  * rather than fills blank fields. Progress is persisted to localStorage so the
- * flow survives the LinkedIn OAuth full-page redirect (resumable), and dismissal
- * snoozes it for the session (non-nagging). Self-gates to authenticated users
- * who haven't completed onboarding (new signups + retrofitted accounts).
+ * flow survives the LinkedIn OAuth full-page redirect (resumable). Dismissing
+ * snoozes it persistently (non-nagging); Home can reopen it. Self-gates to
+ * authenticated users who haven't completed onboarding.
  */
 
 type ResumeState = 'idle' | 'parsing' | 'parsed' | 'error';
@@ -45,6 +47,9 @@ const QUESTIONS_STEP = 2;
 
 /** House ease (matches AuthShell) for the cinematic reveals. */
 const EASE: [number, number, number, number] = [0.16, 1, 0.3, 1];
+
+const QUIET_HOVER =
+  'text-muted-foreground hover:bg-primary/10 hover:text-primary';
 
 /**
  * Presentation phases around the (unchanged) data-collecting steps:
@@ -157,6 +162,12 @@ export default function OnboardingWizard() {
   // Controls the in-flight resume parse so Cancel/close/unmount can abort it
   // (upload fetch + the up-to-120s poll) instead of trapping the user.
   const parseAbortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    const reopen = () => setDismissed(false);
+    window.addEventListener(ONBOARDING_OPEN_EVENT, reopen);
+    return () => window.removeEventListener(ONBOARDING_OPEN_EVENT, reopen);
+  }, []);
 
   const update = useCallback(
     (patch: Partial<OnboardingAnswers>) => setAnswers((a) => ({ ...a, ...patch })),
@@ -345,6 +356,7 @@ export default function OnboardingWizard() {
       return;
     }
     clearOnboardingState();
+    clearOnboardingSnooze();
     // Cinematic resolve: a brief "your workspace is ready" beat, then in.
     setPhase('resolve');
     resolveTimer.current = window.setTimeout(
@@ -354,9 +366,8 @@ export default function OnboardingWizard() {
   };
 
   /**
-   * Session snooze - dismisses the wizard WITHOUT marking onboarding complete,
-   * so it returns next login until the user genuinely finishes. Used by both
-   * the dialog close and the final step's "Skip for now".
+   * Dismiss without marking onboarding complete. Stored in localStorage so a
+   * later sign-in does not nag. Home can reopen the wizard on demand.
    */
   const snoozeAndClose = () => {
     saveOnboardingState({ stepIndex, resumeDone, defaults, answers });
@@ -366,7 +377,7 @@ export default function OnboardingWizard() {
 
   const skipForNow = () => {
     snoozeAndClose();
-    toast("Skipped for now. We'll pick this up next time you sign in.");
+    toast('Setup closed. Finish it anytime from Home.');
   };
 
   const handleOpenChange = (open: boolean) => {
@@ -395,9 +406,24 @@ export default function OnboardingWizard() {
     ? { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } }
     : { initial: { opacity: 0, x: 16 }, animate: { opacity: 1, x: 0 }, exit: { opacity: 0, x: -16 } };
 
+  const cinematic = phase === 'welcome' || phase === 'resolve';
+
   return (
     <Dialog open onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-lg gap-0 overflow-hidden p-0 sm:rounded-2xl">
+      {/* A real overlay: dim the whole app (including the top bar) and sit a
+          centred card on top. Stretching this to a full page under a live Home
+          tab made setup look like the product, and left the nav arguing with
+          the step chrome. Nielsen: modal for a focused task; do not nag. */}
+      <DialogContent
+        solid
+        overlayClassName="bg-black/40"
+        closeClassName={cinematic ? 'text-white opacity-80 hover:text-white hover:opacity-100' : undefined}
+        className={
+          cinematic
+            ? 'flex w-[calc(100vw-1.5rem)] max-w-lg flex-col gap-0 overflow-hidden border-border bg-white p-0 shadow-2xl dark:bg-zinc-900 sm:rounded-2xl'
+            : 'flex max-h-[90svh] w-[calc(100vw-1.5rem)] max-w-lg flex-col gap-0 overflow-hidden border-border bg-white p-0 shadow-2xl dark:bg-zinc-900 sm:rounded-2xl'
+        }
+      >
         {/* Radix a11y: the dialog always has an accessible name + description;
             the title tracks the current phase/step. */}
         <DialogTitle className="sr-only">
@@ -419,6 +445,7 @@ export default function OnboardingWizard() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: reduce ? 0 : 0.3 }}
+              className="overflow-hidden rounded-2xl"
             >
               <WelcomeMoment onBegin={() => setPhase('steps')} />
             </motion.div>
@@ -431,13 +458,14 @@ export default function OnboardingWizard() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: reduce ? 0 : 0.3 }}
+              className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
             >
-              {/* Thin timeline: hairline track, animated fill, one dot per step. */}
-              <div className="border-b border-border px-5 pb-4 pt-6 sm:px-6">
+              {/* Thin timeline: stays put while the step body scrolls. */}
+              <div className="shrink-0 border-b border-border bg-white px-5 pb-4 pr-12 pt-6 dark:bg-zinc-900 sm:px-6 sm:pr-14">
                 <div className="relative mx-0.5 flex items-center justify-between">
-                  <span className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-border" aria-hidden />
+                  <span className="absolute inset-x-0 top-1/2 h-0.5 -translate-y-1/2 rounded-full bg-border" aria-hidden />
                   <motion.span
-                    className="absolute left-0 top-1/2 h-px -translate-y-1/2 bg-primary"
+                    className="absolute left-0 top-1/2 h-0.5 -translate-y-1/2 rounded-full bg-primary"
                     initial={false}
                     animate={{ width: `${(stepIndex / (STEPS.length - 1)) * 100}%` }}
                     transition={{ duration: reduce ? 0 : 0.45, ease: EASE }}
@@ -472,6 +500,7 @@ export default function OnboardingWizard() {
                   animate={stepVariants.animate}
                   exit={stepVariants.exit}
                   transition={{ duration: reduce ? 0 : 0.25, ease: EASE }}
+                  className="flex min-h-0 flex-1 flex-col overflow-hidden"
                 >
                   {stepIndex === 0 && (
                     <ResumeStep
@@ -522,6 +551,7 @@ export default function OnboardingWizard() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: reduce ? 0 : 0.3 }}
+              className="overflow-hidden rounded-2xl"
             >
               <ReadyMoment />
             </motion.div>
@@ -567,7 +597,7 @@ function WelcomeMoment({ onBegin }: { onBegin: () => void }) {
     show: { opacity: 1, y: 0, transition: { duration: reduce ? 0 : 0.55, ease: EASE } },
   };
   return (
-    <div className="relative overflow-hidden px-6 py-14 text-center sm:py-16">
+    <div className="relative flex flex-col items-center justify-center overflow-hidden px-6 py-14 text-center">
       <CinematicBackdrop />
       <motion.div variants={container} initial="hidden" animate="show" className="relative">
         <motion.span
@@ -586,7 +616,11 @@ function WelcomeMoment({ onBegin }: { onBegin: () => void }) {
           A workspace built around your real experience. Ready in about two minutes.
         </motion.p>
         <motion.div variants={item} className="mt-8">
-          <Button size="lg" onClick={onBegin} className="bg-white text-black hover:bg-white/90">
+          <Button
+            size="lg"
+            onClick={onBegin}
+            className="bg-white text-black transition-colors duration-200 hover:bg-white/90"
+          >
             Let's begin <ArrowRight className="h-4 w-4" />
           </Button>
         </motion.div>
@@ -599,7 +633,7 @@ function WelcomeMoment({ onBegin }: { onBegin: () => void }) {
 function ReadyMoment() {
   const reduce = useReducedMotion();
   return (
-    <div className="relative overflow-hidden px-6 py-16 text-center">
+    <div className="relative flex flex-col items-center justify-center overflow-hidden px-6 py-14 text-center">
       <CinematicBackdrop />
       <div className="relative" role="status" aria-live="polite">
         <motion.span
@@ -645,7 +679,7 @@ function ResumeStep({ state, defaults, onPick, onDropFile, onRetry, onCancel, on
   const [dragging, setDragging] = useState(false);
   const reduce = useReducedMotion();
   return (
-    <div className="px-5 pb-6 pt-5 sm:px-6">
+    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-5 pb-6 pt-5 sm:px-6">
       <div className="flex items-center gap-2 text-primary">
         <Sparkles className="h-5 w-5" />
         <span className="text-xs font-semibold uppercase tracking-wide">Welcome to Aspirely</span>
@@ -674,7 +708,11 @@ function ResumeStep({ state, defaults, onPick, onDropFile, onRetry, onCancel, on
               <span className="font-semibold">Drop your resume or tap to browse</span>
               <span className="text-xs text-muted-foreground">PDF or Word · we never share it</span>
             </button>
-            <button type="button" onClick={onSkip} className="mt-4 block w-full text-center text-sm text-muted-foreground hover:text-foreground">
+            <button
+              type="button"
+              onClick={onSkip}
+              className={cn('mt-4 block w-full text-center text-sm', QUIET_HOVER, 'rounded-md py-1.5')}
+            >
               Skip for now, I'll add it later
             </button>
           </div>
@@ -731,11 +769,17 @@ function ResumeStep({ state, defaults, onPick, onDropFile, onRetry, onCancel, on
                 )}
               </div>
             )}
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <Button className="flex-1" onClick={onContinue}>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <Button className="h-10 flex-1 hover:bg-primary-hover" onClick={onContinue}>
                 Continue <ArrowRight className="h-4 w-4" />
               </Button>
-              <Button variant="outline" className="flex-1" onClick={onRetry}>Re-upload</Button>
+              <Button
+                variant="outline"
+                className="h-10 flex-1 hover:border-primary hover:bg-primary/10 hover:text-primary"
+                onClick={onRetry}
+              >
+                Re-upload
+              </Button>
             </div>
           </motion.div>
         )}
@@ -756,7 +800,8 @@ function LinkedInStep({ connected, name, checking, connecting, onConnect, onBack
   onContinue: () => void;
 }) {
   return (
-    <div className="px-5 pb-5 pt-5 sm:px-6">
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="min-h-0 flex-1 overflow-y-auto px-5 pt-5 sm:px-6">
       <div className="flex items-center gap-2 text-primary">
         <Linkedin className="h-5 w-5" />
         <span className="text-xs font-semibold uppercase tracking-wide">Connect LinkedIn</span>
@@ -786,25 +831,28 @@ function LinkedInStep({ connected, name, checking, connecting, onConnect, onBack
               <li className="flex items-start gap-2"><Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" /> Draft and post wins. You always approve first</li>
               <li className="flex items-start gap-2"><Linkedin className="mt-0.5 h-4 w-4 shrink-0 text-primary" /> Keep your profile in sync with your target roles</li>
             </ul>
-            <Button className="mt-5 w-full" onClick={onConnect} disabled={connecting}>
+            <Button className="mt-5 w-full hover:bg-primary-hover" onClick={onConnect} disabled={connecting}>
               {connecting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Linkedin className="h-4 w-4" />}
               {connecting ? 'Opening LinkedIn...' : 'Connect LinkedIn'}
             </Button>
           </div>
         )}
       </div>
+      </div>
 
-      <div className="mt-4 flex items-center justify-between gap-3 border-t border-border pt-4">
-        <Button variant="ghost" onClick={onBack} className="text-muted-foreground">
+      <div className="flex shrink-0 items-center justify-between gap-3 border-t border-border bg-white px-5 py-4 dark:bg-zinc-900 sm:px-6">
+        <Button variant="ghost" onClick={onBack} className={QUIET_HOVER}>
           <ArrowLeft className="h-4 w-4" /> Back
         </Button>
         <div className="flex items-center gap-2">
           {!connected && (
-            <button type="button" onClick={onSkip} className="text-sm text-muted-foreground hover:text-foreground">
+            <Button type="button" variant="ghost" onClick={onSkip} className={QUIET_HOVER}>
               Skip for now
-            </button>
+            </Button>
           )}
-          <Button onClick={onContinue}>Continue <ArrowRight className="h-4 w-4" /></Button>
+          <Button className="hover:bg-primary-hover" onClick={onContinue}>
+            Continue <ArrowRight className="h-4 w-4" />
+          </Button>
         </div>
       </div>
     </div>
@@ -824,7 +872,8 @@ function QuestionsStep({ answers, defaults, update, saving, onBack, onSkip, onFi
 }) {
   const roleSuggestions = [...defaults.roles, ...ROLE_SUGGESTIONS];
   return (
-    <div className="px-5 pb-5 pt-5 sm:px-6">
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="min-h-0 flex-1 overflow-y-auto px-5 pt-5 sm:px-6">
       <div className="flex items-center gap-2 text-primary">
         <Sparkles className="h-5 w-5" />
         <span className="text-xs font-semibold uppercase tracking-wide">Confirm your profile</span>
@@ -834,7 +883,7 @@ function QuestionsStep({ answers, defaults, update, saving, onBack, onSkip, onFi
         Pulled from your resume. Confirm or tweak. Nothing here is locked in.
       </p>
 
-      <div className="mt-4 max-h-[52vh] space-y-5 overflow-y-auto pr-1">
+      <div className="mt-4 space-y-5 pb-2">
         {/* Target roles */}
         <div>
           <Label className="mb-2 flex items-center gap-1.5 text-sm">
@@ -906,16 +955,23 @@ function QuestionsStep({ answers, defaults, update, saving, onBack, onSkip, onFi
           </div>
         </div>
       </div>
+      </div>
 
-      <div className="mt-4 flex items-center justify-between gap-3 border-t border-border pt-4">
-        <Button variant="ghost" onClick={onBack} disabled={saving} className="text-muted-foreground">
+      <div className="flex shrink-0 items-center justify-between gap-3 border-t border-border bg-white px-5 py-4 dark:bg-zinc-900 sm:px-6">
+        <Button variant="ghost" onClick={onBack} disabled={saving} className={QUIET_HOVER}>
           <ArrowLeft className="h-4 w-4" /> Back
         </Button>
         <div className="flex items-center gap-2">
-          <button type="button" onClick={onSkip} disabled={saving} className="text-sm text-muted-foreground hover:text-foreground">
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={onSkip}
+            disabled={saving}
+            className={QUIET_HOVER}
+          >
             Skip for now
-          </button>
-          <Button onClick={onFinish} disabled={saving}>
+          </Button>
+          <Button className="hover:bg-primary-hover" onClick={onFinish} disabled={saving}>
             {saving && <Loader2 className="h-4 w-4 animate-spin" />} Finish
           </Button>
         </div>
