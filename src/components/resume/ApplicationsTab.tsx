@@ -7,7 +7,6 @@ import {
 } from "lucide-react";
 import { apiService } from "@/lib/api";
 import type { ApplicationStatus, TailoringRecord } from "@/types/resume";
-import { formatDate } from "@/components/resume/ResumeDashboard";
 import GmailIntegration from "@/components/resume/GmailIntegration";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +14,9 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { PanelError } from "@/app-shell/pages/today/primitives";
 import { appPath } from "@/app-shell/nav.config";
 import { stagePendingTailorJob } from "@/lib/craftHandoff";
+import {
+  appliedDayOf, formatCivilDay, localDayISO, startOfLocalMonthISO,
+} from "@/lib/applicationDates";
 
 // ─── Column config ────────────────────────────────────────────────────────
 // Status hues stay meaning-coded but resolve through the semantic token set:
@@ -56,6 +58,38 @@ function statusMeta(status?: string | null): typeof COLUMNS[number] {
   return STATUS_LOOKUP[key] || STATUS_LOOKUP[STATUS_ALIASES[key] || "draft"] || COLUMNS[0];
 }
 
+// ─── Applied-date filter ──────────────────────────────────────────────────
+type DatePreset = "all" | "today" | "7d" | "30d" | "month" | "custom";
+
+const DATE_PRESETS: { key: DatePreset; label: string }[] = [
+  { key: "all", label: "Any date" },
+  { key: "today", label: "Today" },
+  { key: "7d", label: "Last 7 days" },
+  { key: "30d", label: "Last 30 days" },
+  { key: "month", label: "This month" },
+  { key: "custom", label: "Custom" },
+];
+
+/** Inclusive [from, to] civil-day bounds for a preset, or null for "any". */
+function presetRange(
+  preset: DatePreset, customFrom: string, customTo: string,
+): { from: string; to: string } | null {
+  const today = localDayISO();
+  switch (preset) {
+    case "today": return { from: today, to: today };
+    // Inclusive of today, so "last 7 days" is today plus the previous six.
+    case "7d": return { from: localDayISO(-6), to: today };
+    case "30d": return { from: localDayISO(-29), to: today };
+    case "month": return { from: startOfLocalMonthISO(), to: today };
+    case "custom": {
+      if (!customFrom && !customTo) return null;
+      // A half-open custom range still filters, using the open end as unbounded.
+      return { from: customFrom || "0000-01-01", to: customTo || "9999-12-31" };
+    }
+    default: return null;
+  }
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────
 function atsCell(record: TailoringRecord) {
   const ats = record.ats_scores?.overall;
@@ -74,6 +108,12 @@ function atsCell(record: TailoringRecord) {
     );
   }
   return <span className="text-muted-foreground"> - </span>;
+}
+
+/** Reads either the canonical flag or its legacy batch-only name. */
+function isConfirmationPending(app: TailoringRecord["application"]): boolean {
+  const a = (app || {}) as Record<string, unknown>;
+  return Boolean(a.confirmation_pending ?? a.batch_confirmation_pending);
 }
 
 function isUntailoredStub(record: TailoringRecord): boolean {
@@ -142,6 +182,13 @@ export default function ApplicationsTab({ embedded = false }: ApplicationsTabPro
   const [reframe, setReframe] = useState<{ acknowledgement: string; what_went_right: string; next_actions: string[]; silver_lining: string } | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOverCol, setDragOverCol] = useState<ApplicationStatus | null>(null);
+  // Filters. Status is a set (empty = all). The date range works on
+  // application.applied_date, a frozen "YYYY-MM-DD" civil day, so the whole
+  // filter is string comparison — no Date parsing, no timezone drift.
+  const [statusFilter, setStatusFilter] = useState<Set<ApplicationStatus>>(new Set());
+  const [datePreset, setDatePreset] = useState<DatePreset>("all");
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo] = useState("");
   // Show-all toggle for stale-apps list (defaults to top 4).
   const [staleShowAll, setStaleShowAll] = useState(false);
 
@@ -305,11 +352,48 @@ export default function ApplicationsTab({ embedded = false }: ApplicationsTabPro
     });
   }, [records, search]);
 
+  const dateRange = useMemo(
+    () => presetRange(datePreset, customFrom, customTo),
+    [datePreset, customFrom, customTo],
+  );
+
+  const filtered = useMemo(() => {
+    if (!statusFilter.size && !dateRange) return searched;
+    return searched.filter(r => {
+      if (statusFilter.size) {
+        const key = statusMeta(r.application?.status).key;
+        if (!statusFilter.has(key)) return false;
+      }
+      if (dateRange) {
+        // A record with no applied day was never submitted, so it can't belong
+        // to "jobs I applied on this date".
+        const day = appliedDayOf(r.application);
+        if (!day || day < dateRange.from || day > dateRange.to) return false;
+      }
+      return true;
+    });
+  }, [searched, statusFilter, dateRange]);
+
+  const filtersActive = statusFilter.size > 0 || !!dateRange;
+  const clearFilters = useCallback(() => {
+    setStatusFilter(new Set());
+    setDatePreset("all");
+    setCustomFrom("");
+    setCustomTo("");
+  }, []);
+  const toggleStatus = useCallback((key: ApplicationStatus) => {
+    setStatusFilter(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  }, []);
+
   const grouped = useMemo(() => {
     const g: Record<ApplicationStatus, TailoringRecord[]> = {
       saved: [], draft: [], applied: [], interviewing: [], offer: [], rejected: [], withdrawn: [], ghosted: [],
     };
-    for (const r of searched) {
+    for (const r of filtered) {
       const s = statusMeta(r.application?.status).key as ApplicationStatus;
       (g[s] || g.draft).push(r);
     }
@@ -324,7 +408,7 @@ export default function ApplicationsTab({ embedded = false }: ApplicationsTabPro
       });
     }
     return g;
-  }, [searched]);
+  }, [filtered]);
 
   // Dashboard metrics (whole set, not filtered)
   const metrics = useMemo(() => {
@@ -462,6 +546,91 @@ export default function ApplicationsTab({ embedded = false }: ApplicationsTabPro
             </ToggleGroupItem>
           </ToggleGroup>
         </div>
+      </div>
+
+      {/* Filters — status chips + applied-date range. Both views honour them. */}
+      <div className="rounded-2xl border border-border bg-card/60 p-3 space-y-2.5">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground mr-1">
+            Status
+          </span>
+          {COLUMNS.map(c => {
+            const on = statusFilter.has(c.key);
+            return (
+              <button
+                key={c.key}
+                type="button"
+                onClick={() => toggleStatus(c.key)}
+                aria-pressed={on}
+                className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+                  on ? c.chip : "border-border bg-card text-muted-foreground hover:bg-muted"
+                }`}
+              >
+                {c.icon}
+                {c.label}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground mr-1">
+            Applied
+          </span>
+          {DATE_PRESETS.map(p => (
+            <button
+              key={p.key}
+              type="button"
+              onClick={() => setDatePreset(p.key)}
+              aria-pressed={datePreset === p.key}
+              className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+                datePreset === p.key
+                  ? "border-primary/25 bg-primary/10 text-primary"
+                  : "border-border bg-card text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              {p.label}
+            </button>
+          ))}
+          {datePreset === "custom" && (
+            <span className="flex items-center gap-1.5">
+              <input
+                type="date"
+                value={customFrom}
+                max={customTo || undefined}
+                onChange={e => setCustomFrom(e.target.value)}
+                aria-label="Applied from"
+                className="rounded-md border border-input bg-muted/40 px-2 py-1 text-[11px]"
+              />
+              <span className="text-[11px] text-muted-foreground">to</span>
+              <input
+                type="date"
+                value={customTo}
+                min={customFrom || undefined}
+                onChange={e => setCustomTo(e.target.value)}
+                aria-label="Applied to"
+                className="rounded-md border border-input bg-muted/40 px-2 py-1 text-[11px]"
+              />
+            </span>
+          )}
+        </div>
+
+        {filtersActive && (
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/60 pt-2">
+            <p role="status" className="text-[11px] text-muted-foreground">
+              <span className="font-semibold text-foreground tabular-nums">{filtered.length}</span>
+              {filtered.length === 1 ? " application" : " applications"}
+              {dateRange && (
+                dateRange.from === dateRange.to
+                  ? ` applied ${formatCivilDay(dateRange.from)}`
+                  : ` applied ${formatCivilDay(dateRange.from)} - ${formatCivilDay(dateRange.to)}`
+              )}
+            </p>
+            <Button variant="ghost" size="sm" onClick={clearFilters} className="h-7 text-[11px]">
+              Clear filters
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className="space-y-1.5">
@@ -742,7 +911,7 @@ export default function ApplicationsTab({ embedded = false }: ApplicationsTabPro
               </tr>
             </thead>
             <tbody>
-              {searched.map(r => {
+              {filtered.map(r => {
                 const co = r.jd_analysis?.company && r.jd_analysis.company !== "Not specified" ? r.jd_analysis.company : "";
                 const st = r.application?.status || "draft";
                 const meta = statusMeta(st);
@@ -770,7 +939,9 @@ export default function ApplicationsTab({ embedded = false }: ApplicationsTabPro
                         {COLUMNS.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
                       </select>
                     </td>
-                    <td className="px-3 py-2.5 text-muted-foreground text-[11px]">{r.application?.applied_at ? formatDate(r.application.applied_at) : " - "}</td>
+                    <td className="px-3 py-2.5 text-muted-foreground text-[11px]">
+                      {formatCivilDay(appliedDayOf(r.application), { month: "short", day: "numeric", year: "numeric" }) || " - "}
+                    </td>
                     <td className="px-3 py-2.5 text-[11px]">
                       {r.application?.next_action_date ? (
                         <span className={`${d! < 0 ? "text-destructive font-semibold" : d !== null && d <= 2 ? "text-warning font-semibold" : "text-muted-foreground"}`}>
@@ -884,6 +1055,49 @@ function ApplicationCard({
             <span className="text-[10px] text-muted-foreground italic truncate max-w-[120px]">· {app.next_action_note}</span>
           )}
         </div>
+
+        {/* Unanswered "Did you apply?" — set when the tailor prompt was shown
+            but dismissed, and by batch tailoring. Without surfacing it here the
+            question is lost the moment the tab closes. */}
+        {isConfirmationPending(app) && (
+          <div
+            role="group"
+            aria-label={`Did you apply for ${title}?`}
+            className="rounded-md border border-primary/30 bg-primary/[0.06] px-2 py-1.5"
+          >
+            <p className="text-[10px] font-semibold text-foreground">Did you apply?</p>
+            <div className="mt-1.5 flex flex-wrap gap-1">
+              <button
+                type="button"
+                disabled={saving}
+                onClick={() => onPatch({
+                  status: "applied",
+                  applied_at: new Date().toISOString(),
+                  confirmation_pending: false,
+                })}
+                className="rounded bg-primary px-2 py-0.5 text-[10px] font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+              >
+                Yes, I applied
+              </button>
+              <button
+                type="button"
+                disabled={saving}
+                onClick={() => onPatch({ status: "saved", confirmation_pending: false })}
+                className="rounded border border-border bg-card px-2 py-0.5 text-[10px] font-semibold text-foreground hover:bg-muted disabled:opacity-50"
+              >
+                Save for later
+              </button>
+              <button
+                type="button"
+                disabled={saving}
+                onClick={() => onPatch({ confirmation_pending: false })}
+                className="rounded px-2 py-0.5 text-[10px] font-medium text-muted-foreground hover:text-foreground disabled:opacity-50"
+              >
+                Not yet
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Status select */}
         <select

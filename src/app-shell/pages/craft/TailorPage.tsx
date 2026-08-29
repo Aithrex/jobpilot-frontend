@@ -46,7 +46,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { PanelError } from '@/app-shell/pages/today/primitives';
 import { SmartFiltersInline } from '@/components/job-search/SmartFiltersInline';
 import OnboardingHero from '@/components/resume/OnboardingHero';
+import ApplyOutcomeDialog, { type ApplyOutcome } from '@/components/resume/ApplyOutcomeDialog';
 import { buildCoverLetterFilename } from '@/lib/filename';
+import { formatCivilDay } from '@/lib/applicationDates';
 import {
   consumeBatchHandoff,
   readBatchHandoffIdFromUrl,
@@ -140,6 +142,13 @@ export default function TailorPage() {
   const [downloading, setDownloading] = useState<'pdf' | 'docx' | null>(null);
   const [editing, setEditing] = useState(false);
   const [downloadMenuOpen, setDownloadMenuOpen] = useState(false);
+
+  // "Did you apply?" — asked once per record, after the first download. Without
+  // it a tailored role sits in Draft forever, which is wrong for the common
+  // case of tailoring precisely because you're about to apply.
+  const [applyPromptOpen, setApplyPromptOpen] = useState(false);
+  const [applyPromptSaving, setApplyPromptSaving] = useState(false);
+  const applyPromptShownRef = useRef(false);
 
   const [regenFeedback, setRegenFeedback] = useState('');
   const [regenerating, setRegenerating] = useState(false);
@@ -533,9 +542,54 @@ export default function TailorPage() {
         a.click();
         URL.revokeObjectURL(u);
         toast.success(`Resume downloaded as ${fmt.toUpperCase()}`);
+
+        // Downloading is the point where applying becomes plausible, so this is
+        // where we ask. Needs a persisted record to patch — if the save-record
+        // settle failed there is nothing to attach an outcome to.
+        if (recordIdRef.current && !applyPromptShownRef.current) {
+          applyPromptShownRef.current = true;
+          setApplyPromptOpen(true);
+          // Mark it pending server-side so closing the tab without answering
+          // resurfaces the prompt on the tracker card instead of losing it.
+          apiService
+            .updateApplication(recordIdRef.current, { confirmation_pending: true })
+            .catch(() => { /* the prompt is already open; this is just durability */ });
+        }
       }
     },
     [result],
+  );
+
+  const handleApplyOutcome = useCallback(
+    async (outcome: ApplyOutcome) => {
+      const recordId = recordIdRef.current;
+      if (!recordId) return;
+      setApplyPromptSaving(true);
+      const resp = await apiService.updateApplication(recordId, {
+        status: outcome.status,
+        ...(outcome.applied_at ? { applied_at: outcome.applied_at } : {}),
+        ...(outcome.job_url ? { job_url: outcome.job_url } : {}),
+        resume_used: 'tailored',
+        confirmation_pending: false,
+      });
+      setApplyPromptSaving(false);
+      if (resp.error) {
+        toast.error("Couldn't update your tracker", { description: resp.error });
+        return;
+      }
+      setApplyPromptOpen(false);
+      const day = resp.data?.application?.applied_date;
+      if (outcome.status === 'applied') {
+        toast.success(
+          day ? `Marked as applied on ${formatCivilDay(day)}` : 'Marked as applied',
+          { description: 'Find it under Applied in your tracker.' },
+        );
+      } else if (outcome.status === 'saved') {
+        toast.success('Saved for later', { description: 'It’s in the Saved column.' });
+      }
+      window.dispatchEvent(new CustomEvent('resume:application-saved'));
+    },
+    [],
   );
 
   /* ── Regenerate ──────────────────────────────────────────────────────────── */
@@ -878,6 +932,8 @@ export default function TailorPage() {
     setScoreStale(false);
     recordIdRef.current = null;
     atsAutoTriggered.current = false;
+    setApplyPromptOpen(false);
+    applyPromptShownRef.current = false;
   }, []);
 
   const handleRetryFetch = useCallback(async () => {
@@ -1282,6 +1338,18 @@ export default function TailorPage() {
               "Could you bump my limit? Here's the context:\n\n",
           })
         }
+      />
+
+      <ApplyOutcomeDialog
+        open={applyPromptOpen}
+        jobTitle={result?.jd_analysis.job_title}
+        company={result?.jd_analysis.company}
+        defaultJobUrl={pendingJobUrl || ''}
+        saving={applyPromptSaving}
+        onSubmit={handleApplyOutcome}
+        // Dismissing leaves confirmation_pending set, so the tracker card keeps
+        // asking rather than silently stranding the record in Draft.
+        onDismiss={() => setApplyPromptOpen(false)}
       />
     </div>
   );
