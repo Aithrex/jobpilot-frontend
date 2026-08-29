@@ -167,13 +167,17 @@ Versioned tailored outputs.
 | `DELETE /resume/tailoring-records/{id}` 🔒 | Delete |
 
 ### Applications — `components/tracker/TrackerPage.tsx` · tab `applications`
-Pipeline tracker + Gmail auto-status. Two panes: a stage-grouped list beside a
-detail pane. Metrics, funnel, Gmail sync and stale-app nudges live in the
-Insights sheet rather than stacked above the list.
+Pipeline tracker + Gmail auto-status, beside a detail pane. Three scopes:
+**Focus** (the default — unanswered apply prompts, overdue and upcoming next
+actions, applications gone quiet, plus the Gmail suggestion queue), **Active**
+and **All**. Active and All render the stage rail: six stages side by side with
+one open, and any stage over ~25 rows rolled up to a header per day. Metrics,
+funnel, Gmail connect/sync and stale-app nudges live in the Insights sheet.
 
 | Endpoint | Why |
 | --- | --- |
-| `GET /resume/tailoring-records` 🔒 | The application list |
+| `GET /resume/tailoring-records?view=list` 🔒 | The application list, server-projected to the fields a row draws |
+| `GET /resume/tailoring-records/{id}` 🔒 | The rest of a record, fetched when one is opened |
 | `PATCH /resume/tailoring-records/{id}/application` 🔒 | Update status / dates / notes |
 | `GET /resume/streak` 🔒 | Streak widget |
 | `GET /resume/gmail/status` 🔒 · `POST /resume/gmail/sync` ⏳ 🔒 | Gmail connection + inbox sync |

@@ -1,34 +1,31 @@
 /**
  * The application tracker.
  *
- * Two panes: a grouped list of every application on the left, and the selected
- * one open beside it on the right. Below `xl` the pane becomes a sheet and the
- * list takes the full width.
+ * Opens on Focus — the handful of applications that want a decision — with the
+ * full pipeline one click away as a rail of stages. The selected application
+ * sits open beside it on the right; below `xl` that pane becomes a sheet.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { AlertTriangle, ClipboardList, MousePointerClick } from 'lucide-react';
+import { ClipboardList, MousePointerClick } from 'lucide-react';
 
 import type { ApplicationStatus } from '@/types/resume';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { PanelError } from '@/app-shell/pages/today/primitives';
+import { useGmailSuggestions } from '@/components/resume/GmailSuggestions';
 import { appliedDayOf } from '@/lib/applicationDates';
 
 import ApplicationDetail from './ApplicationDetail';
+import FocusView from './FocusView';
 import InsightsSheet, { type TrackerMetrics } from './InsightsSheet';
-import TrackerList from './TrackerList';
+import StageRail from './StageRail';
 import TrackerToolbar from './TrackerToolbar';
-import {
-  presetRange,
-  statusForSection,
-  statusKeyOf,
-  type DatePreset,
-  type GroupBy,
-} from './trackerConfig';
+import { presetRange, statusKeyOf, type DatePreset } from './trackerConfig';
+import { focusCount, isClosed, scopeRecords, type Scope } from './trackerScopes';
 import { useMediaQuery } from './useMediaQuery';
 import { useTrackerData, type ApplicationPatch } from './useTrackerData';
-import { companyOf, daysUntil, relDate, titleOf } from './trackerUtils';
+import { titleOf } from './trackerUtils';
 
 export default function TrackerPage() {
   const {
@@ -42,20 +39,31 @@ export default function TrackerPage() {
     reframe,
     refetch,
     refetchSilent,
+    hydrate,
     setStatus,
     patch,
     dismissStale,
   } = useTrackerData();
 
+  const [scope, setScope] = useState<Scope>('focus');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<Set<ApplicationStatus>>(new Set());
   const [datePreset, setDatePreset] = useState<DatePreset>('all');
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
-  const [groupBy, setGroupBy] = useState<GroupBy>('stage');
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [insightsOpen, setInsightsOpen] = useState(false);
+
+  // Inbox-derived stage changes belong on the page, not buried in a sheet, so
+  // the tracker owns the queue and hands it to Focus.
+  const {
+    suggestions,
+    busyId: suggestionBusyId,
+    apply: applySuggestion,
+    dismiss: dismissSuggestion,
+    reload: reloadSuggestions,
+  } = useGmailSuggestions(true, refetchSilent);
 
   // The pane needs room for the list beside it; below this it becomes a sheet.
   const wide = useMediaQuery('(min-width: 1280px)');
@@ -65,8 +73,8 @@ export default function TrackerPage() {
 
   /**
    * The OAuth callback lands on `?gmail=linked`, and GmailIntegration reacts to
-   * that flag on mount. It now lives inside the Insights sheet, so the sheet has
-   * to open or the confirmation would never fire and the flag would stick.
+   * that flag on mount. It lives inside the Insights sheet, so the sheet has to
+   * open or the confirmation would never fire and the flag would stick.
    */
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get('gmail') === 'linked') {
@@ -98,6 +106,21 @@ export default function TrackerPage() {
     });
   }, [records, search, statusFilter, dateRange]);
 
+  const scoped = useMemo(() => scopeRecords(filtered, scope), [filtered, scope]);
+
+  /**
+   * Counts come off the unfiltered set, so the control keeps saying how much
+   * work each scope holds even while a filter is narrowing the view.
+   */
+  const scopeCounts = useMemo(
+    () => ({
+      focus: focusCount(records),
+      active: records.filter((r) => !isClosed(r)).length,
+      all: records.length,
+    }),
+    [records],
+  );
+
   const selected = useMemo(
     () => records.find((r) => r.record_id === selectedId) || null,
     [records, selectedId],
@@ -121,7 +144,6 @@ export default function TrackerPage() {
   }, []);
 
   const metrics: TrackerMetrics = useMemo(() => {
-    const isClosed = (s?: string) => s === 'rejected' || s === 'withdrawn' || s === 'ghosted';
     const applied = records.filter((r) => statusKeyOf(r.application?.status) === 'applied').length;
     const responded = records.filter((r) =>
       ['interviewing', 'offer', 'rejected'].includes(statusKeyOf(r.application?.status)),
@@ -129,7 +151,7 @@ export default function TrackerPage() {
     const total = applied + responded;
     return {
       total: records.length,
-      active: records.filter((r) => !isClosed(statusKeyOf(r.application?.status))).length,
+      active: records.filter((r) => !isClosed(r)).length,
       interviewing: records.filter((r) => statusKeyOf(r.application?.status) === 'interviewing')
         .length,
       offers: records.filter((r) => statusKeyOf(r.application?.status) === 'offer').length,
@@ -137,32 +159,32 @@ export default function TrackerPage() {
     };
   }, [records]);
 
-  /**
-   * The one thing that stays on the page rather than moving into the sheet. A
-   * deadline the user cannot see is not a deadline.
-   */
-  const overdue = useMemo(
-    () =>
-      records
-        .map((r) => ({ record: r, days: daysUntil(r.application?.next_action_date) }))
-        .filter((x) => x.days !== null && x.days < 0)
-        .sort((a, b) => a.days! - b.days!),
-    [records],
+  /** Selecting fetches the rest of the record; the list only carried a summary. */
+  const handleSelect = useCallback(
+    (id: string) => {
+      setSelectedId(id);
+      void hydrate(id);
+    },
+    [hydrate],
   );
-
-  const handleSelect = useCallback((id: string) => {
-    setSelectedId(id);
-  }, []);
 
   const handlePatch = useCallback(
     (id: string, body: ApplicationPatch, opts?: { quiet?: boolean }) => patch(id, body, opts),
     [patch],
   );
 
-  const handleDropOnSection = useCallback(
-    (sectionId: string, recordId: string) => setStatus(recordId, statusForSection(sectionId)),
-    [setStatus],
+  /** A Gmail suggestion changes a stage, so the list has to catch up with it. */
+  const handleApplySuggestion = useCallback(
+    (id: string) => {
+      void applySuggestion(id);
+    },
+    [applySuggestion],
   );
+
+  const handleSyncComplete = useCallback(() => {
+    refetchSilent();
+    void reloadSuggestions();
+  }, [refetchSilent, reloadSuggestions]);
 
   if (loading) {
     return (
@@ -218,9 +240,14 @@ export default function TrackerPage() {
     />
   ) : null;
 
+  const noMatches = filtered.length === 0;
+
   return (
     <div className="flex flex-col gap-4">
       <TrackerToolbar
+        scope={scope}
+        onScopeChange={setScope}
+        scopeCounts={scopeCounts}
         search={search}
         onSearchChange={setSearch}
         statusFilter={statusFilter}
@@ -232,61 +259,44 @@ export default function TrackerPage() {
         customTo={customTo}
         onCustomToChange={setCustomTo}
         dateRange={dateRange}
-        groupBy={groupBy}
-        onGroupByChange={setGroupBy}
         filtersActive={filtersActive}
         onClearFilters={clearFilters}
-        resultCount={filtered.length}
+        resultCount={scoped.length}
         attentionCount={staleApps.length}
         onOpenInsights={() => setInsightsOpen(true)}
       />
 
-      {overdue.length > 0 && (
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-destructive/30 px-3 py-2">
-          <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-destructive" aria-hidden />
-          <span className="text-label font-medium text-destructive">
-            {overdue.length} overdue {overdue.length === 1 ? 'action' : 'actions'}
-          </span>
-          {overdue.slice(0, 3).map(({ record, days }) => (
-            <button
-              key={record.record_id}
-              type="button"
-              onClick={() => handleSelect(record.record_id)}
-              className="rounded text-label text-muted-foreground underline-offset-2 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              {titleOf(record)}
-              {companyOf(record) ? ` · ${companyOf(record)}` : ''} ({relDate(
-                record.application?.next_action_date,
-              )})
-            </button>
-          ))}
-          {overdue.length > 3 && (
-            <span className="text-label text-muted-foreground">
-              +{overdue.length - 3} more
-            </span>
-          )}
-        </div>
-      )}
-
       <div className="flex items-start gap-6">
         <div className="min-w-0 flex-1">
-          {filtered.length === 0 ? (
+          {noMatches ? (
             <div className="rounded-xl border border-dashed border-border p-10 text-center">
               <p className="text-body text-foreground">Nothing matches those filters.</p>
               <Button variant="ghost" size="sm" className="mt-2" onClick={clearFilters}>
                 Clear filters
               </Button>
             </div>
+          ) : scope === 'focus' ? (
+            <FocusView
+              records={scoped}
+              suggestions={suggestions}
+              suggestionBusyId={suggestionBusyId}
+              onApplySuggestion={handleApplySuggestion}
+              onDismissSuggestion={dismissSuggestion}
+              selectedId={selectedId}
+              savingId={savingId}
+              onSelect={handleSelect}
+              onPatch={handlePatch}
+              onShowActive={() => setScope('active')}
+            />
           ) : (
-            <TrackerList
-              records={filtered}
-              groupBy={groupBy}
+            <StageRail
+              records={scoped}
               selectedId={selectedId}
               savingId={savingId}
               canDrag={canDrag}
               onSelect={handleSelect}
               onPatch={handlePatch}
-              onDropOnSection={handleDropOnSection}
+              onMove={setStatus}
             />
           )}
         </div>
@@ -332,7 +342,7 @@ export default function TrackerPage() {
         funnelLoading={funnelLoading}
         staleApps={staleApps}
         reframe={reframe}
-        onSyncComplete={refetchSilent}
+        onSyncComplete={handleSyncComplete}
         onDismissStale={dismissStale}
       />
     </div>

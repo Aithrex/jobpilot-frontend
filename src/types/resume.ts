@@ -456,4 +456,11 @@ export interface TailoringRecord {
   /** `pipeline_stub` until a tailored resume is merged in. */
   source?: string;
   tailored_resume?: TailoredFullResume;
+  /**
+   * Present only on the tracker's slim `view=list` rows, where `versions` and
+   * `tailored_resume` are never read. Consumers that need "is this an
+   * untailored stub" must prefer these and fall back to the full fields.
+   */
+  version_count?: number;
+  has_tailored_resume?: boolean;
 }

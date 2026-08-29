@@ -2089,10 +2089,17 @@ class ApiService {
     return this.request('/resume/versions');
   }
 
-  async listTailoringRecords(): Promise<
-    ApiResponse<{ records: import('../types/resume').TailoringRecord[] }>
-  > {
-    return this.request('/resume/tailoring-records');
+  /**
+   * `view: 'list'` asks the backend to project server-side and return only the
+   * fields a tracker row renders. Everything else on this endpoint still gets
+   * the full shape, so interview prep and the tailored-resumes page are
+   * unaffected.
+   */
+  async listTailoringRecords(
+    opts: { view?: 'list' } = {},
+  ): Promise<ApiResponse<{ records: import('../types/resume').TailoringRecord[] }>> {
+    const qs = opts.view === 'list' ? '?view=list' : '';
+    return this.request(`/resume/tailoring-records${qs}`);
   }
 
   async getApplicationStreak(): Promise<

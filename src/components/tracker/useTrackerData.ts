@@ -4,7 +4,7 @@
  * fields). Lifted out of the old ApplicationsTab so the view components stay
  * presentational.
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { apiService } from '@/lib/api';
@@ -43,6 +43,9 @@ export function useTrackerData() {
   const [staleApps, setStaleApps] = useState<StaleApp[]>([]);
   const [reframe, setReframe] = useState<Reframe | null>(null);
 
+  /** Records already fetched in full. Reset whenever the slim list reloads. */
+  const hydratedRef = useRef<Set<string>>(new Set());
+
   /**
    * Silent mode re-fetches in place without toggling the page skeleton, so a
    * post-action refresh (applying a Gmail suggestion, say) doesn't blank the
@@ -57,8 +60,9 @@ export function useTrackerData() {
 
     // Records are all the list needs — resolve them first and clear the
     // page-level loading flag the moment they land, rather than waiting on the
-    // slowest of three endpoints.
-    const recordsPromise = apiService.listTailoringRecords().then((resp) => {
+    // slowest of three endpoints. `view=list` keeps that first payload to the
+    // fields a row renders; opening one fetches the rest.
+    const recordsPromise = apiService.listTailoringRecords({ view: 'list' }).then((resp) => {
       if (resp.error) {
         // Track the failure so the page can offer a retry instead of
         // masquerading as an empty pipeline.
@@ -67,6 +71,9 @@ export function useTrackerData() {
       } else if (resp.data) {
         setRecords((resp.data.records || []) as TailoringRecord[]);
         setLoadError(null);
+        // These rows are slim again, so anything previously fetched in full has
+        // just been replaced by a stub.
+        hydratedRef.current.clear();
       }
       if (!silent) setLoading(false);
     });
@@ -102,6 +109,38 @@ export function useTrackerData() {
       setRecords((prev) => prev.map((r) => (r.record_id === id ? patcher(r) : r)));
     },
     [],
+  );
+
+  /**
+   * List rows arrive without `jd_text`, `versions` or the full `ats_scores`,
+   * all of which the detail pane and the re-tailor handoff need. The first time
+   * a record is opened we fetch it whole and merge it in; a record already
+   * fetched is never fetched again, so flicking between two applications costs
+   * one request each and nothing after that.
+   */
+  const hydrate = useCallback(
+    async (id: string) => {
+      if (hydratedRef.current.has(id)) return;
+      hydratedRef.current.add(id);
+
+      const resp = await apiService.getTailoringRecord(id);
+      if (resp.error || !resp.data?.record) {
+        // Let a later open try again rather than leaving the pane permanently
+        // short of a job description.
+        hydratedRef.current.delete(id);
+        return;
+      }
+
+      const full = resp.data.record;
+      updateRecord(id, (local) => ({
+        ...local,
+        ...full,
+        // Local wins on `application`: an optimistic stage change made a moment
+        // ago is newer than whatever this response was built from.
+        application: { ...(full.application || {}), ...(local.application || {}) },
+      }));
+    },
+    [updateRecord],
   );
 
   // Keeps the server-side funnel counts in lockstep with the local sections
@@ -199,6 +238,7 @@ export function useTrackerData() {
     setReframe,
     refetch,
     refetchSilent,
+    hydrate,
     setStatus,
     patch,
     dismissStale,

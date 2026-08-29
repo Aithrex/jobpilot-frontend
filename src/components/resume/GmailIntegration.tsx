@@ -1,25 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { apiService } from "@/lib/api";
-
-type Suggestion = {
-  suggestion_id: string;
-  record_id: string;
-  company?: string;
-  title?: string;
-  from_name?: string;
-  from_address?: string;
-  subject?: string;
-  snippet?: string;
-  current_status: string;
-  suggested_status: string;
-  confidence: number;
-  reason?: string;
-  applied: boolean;
-  dismissed: boolean;
-  auto_applied?: boolean;
-  created_at?: string;
-};
+import GmailSuggestions, { useGmailSuggestions } from "@/components/resume/GmailSuggestions";
 
 type GmailStatus = {
   configured: boolean;
@@ -27,16 +9,6 @@ type GmailStatus = {
   gmail_address?: string | null;
   last_synced_at?: string | null;
   pending_suggestions: number;
-};
-
-const STATUS_CHIP: Record<string, string> = {
-  draft: "bg-muted text-muted-foreground",
-  applied: "bg-primary/10 text-primary",
-  interviewing: "bg-primary/10 text-primary",
-  offer: "bg-success/10 text-success",
-  rejected: "bg-destructive/10 text-destructive",
-  ghosted: "bg-warning/10 text-warning",
-  withdrawn: "bg-muted text-muted-foreground",
 };
 
 /** Gmail mark - Google's literal brand colors (intentional; all chrome around it stays tokenized). */
@@ -61,9 +33,7 @@ export default function GmailIntegration({ onSyncComplete }: { onSyncComplete?: 
   const [statusError, setStatusError] = useState(false);
   const [linking, setLinking] = useState(false);
   const [syncing, setSyncing] = useState(false);
-  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(true);
-  const [busyId, setBusyId] = useState<string | null>(null);
 
   const loadStatus = useCallback(async () => {
     const resp = await apiService.getGmailStatus();
@@ -76,18 +46,18 @@ export default function GmailIntegration({ onSyncComplete }: { onSyncComplete?: 
     setLoading(false);
   }, []);
 
-  const loadSuggestions = useCallback(async () => {
-    const resp = await apiService.listGmailSuggestions(false);
-    if (resp.data) setSuggestions(resp.data.suggestions || []);
-  }, []);
+  const {
+    suggestions,
+    busyId,
+    apply: handleApply,
+    dismiss: handleDismiss,
+    reload: loadSuggestions,
+    setSuggestions,
+  } = useGmailSuggestions(Boolean(status?.connected), onSyncComplete);
 
   useEffect(() => {
     loadStatus();
   }, [loadStatus]);
-
-  useEffect(() => {
-    if (status?.connected) loadSuggestions();
-  }, [status?.connected, loadSuggestions]);
 
   // If we land here via the OAuth callback, refresh once the user arrives.
   useEffect(() => {
@@ -216,23 +186,6 @@ export default function GmailIntegration({ onSyncComplete }: { onSyncComplete?: 
     syncPollRef.current = null;
   }, []);
 
-  const handleApply = useCallback(async (id: string) => {
-    setBusyId(id);
-    const resp = await apiService.applyGmailSuggestion(id);
-    setBusyId(null);
-    if (resp.error) { toast.error(resp.error); return; }
-    setSuggestions(prev => prev.filter(s => s.suggestion_id !== id));
-    onSyncComplete?.();
-  }, [onSyncComplete]);
-
-  const handleDismiss = useCallback(async (id: string) => {
-    setBusyId(id);
-    const resp = await apiService.dismissGmailSuggestion(id);
-    setBusyId(null);
-    if (resp.error) { toast.error(resp.error); return; }
-    setSuggestions(prev => prev.filter(s => s.suggestion_id !== id));
-  }, []);
-
   const handleDisconnect = useCallback(async () => {
     if (!window.confirm("Disconnect Gmail? Pending suggestions will be discarded.")) return;
     const resp = await apiService.disconnectGmail();
@@ -240,9 +193,9 @@ export default function GmailIntegration({ onSyncComplete }: { onSyncComplete?: 
     setSuggestions([]);
     await loadStatus();
     toast.success("Gmail disconnected.");
-  }, [loadStatus]);
+  }, [loadStatus, setSuggestions]);
 
-  const pendingCount = useMemo(() => suggestions.length, [suggestions]);
+  const pendingCount = suggestions.length;
 
   // Loading - a stable-height stand-in for the banner so nothing shifts.
   if (loading) {
@@ -338,60 +291,13 @@ export default function GmailIntegration({ onSyncComplete }: { onSyncComplete?: 
             </button>
           </div>
           {showSuggestions && (
-            <div className="space-y-2">
-              {suggestions.map(s => {
-                const fromChip = STATUS_CHIP[s.current_status] || STATUS_CHIP.draft;
-                const toChip = STATUS_CHIP[s.suggested_status] || STATUS_CHIP.draft;
-                const conf = Math.round((s.confidence || 0) * 100);
-                return (
-                  <div key={s.suggestion_id} className="rounded-lg border border-border/70 bg-background/60 p-2.5">
-                    <div className="flex items-start justify-between gap-3 flex-wrap">
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <p className="text-[12px] font-semibold text-foreground truncate">
-                            {s.title || "Untitled role"}
-                            {s.company ? <span className="text-muted-foreground font-normal"> · {s.company}</span> : null}
-                          </p>
-                          <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${fromChip}`}>{s.current_status}</span>
-                          <span className="text-[10px] text-muted-foreground/70">→</span>
-                          <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${toChip}`}>{s.suggested_status}</span>
-                          <span className="text-[10px] text-muted-foreground tabular-nums">{conf}% confident</span>
-                        </div>
-                        {s.subject && (
-                          <p className="mt-1 text-[11px] text-foreground/80 truncate">
-                            <span className="text-muted-foreground">Subject:</span> {s.subject}
-                          </p>
-                        )}
-                        {s.from_address && (
-                          <p className="text-[10px] text-muted-foreground truncate">
-                            From: {s.from_name ? `${s.from_name} ` : ""}&lt;{s.from_address}&gt;
-                          </p>
-                        )}
-                        {s.reason && (
-                          <p className="mt-1 text-[11px] italic text-muted-foreground">"{s.reason}"</p>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <button
-                          onClick={() => handleApply(s.suggestion_id)}
-                          disabled={busyId === s.suggestion_id}
-                          className="text-[10px] font-semibold px-2.5 py-1 rounded bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
-                        >
-                          Apply
-                        </button>
-                        <button
-                          onClick={() => handleDismiss(s.suggestion_id)}
-                          disabled={busyId === s.suggestion_id}
-                          className="text-[10px] font-medium px-2.5 py-1 rounded border border-border text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-50"
-                        >
-                          Dismiss
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            <GmailSuggestions
+              suggestions={suggestions}
+              busyId={busyId}
+              onApply={handleApply}
+              onDismiss={handleDismiss}
+              className="rounded-lg border border-border/70 bg-background/60"
+            />
           )}
         </div>
       )}

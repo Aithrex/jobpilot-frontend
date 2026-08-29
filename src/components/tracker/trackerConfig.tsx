@@ -127,16 +127,6 @@ export function statusForSection(sectionId: string): ApplicationStatus {
   return (section?.statuses[0] || 'draft') as ApplicationStatus;
 }
 
-// ─── Grouping ─────────────────────────────────────────────────────────────
-
-export type GroupBy = 'stage' | 'applied' | 'company';
-
-export const GROUP_BY_OPTIONS: { key: GroupBy; label: string }[] = [
-  { key: 'stage', label: 'Stage' },
-  { key: 'applied', label: 'Applied date' },
-  { key: 'company', label: 'Company' },
-];
-
 // ─── Applied-date presets ─────────────────────────────────────────────────
 
 export type DatePreset = 'all' | 'today' | '7d' | '30d' | 'month' | 'custom';

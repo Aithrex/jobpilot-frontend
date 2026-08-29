@@ -19,10 +19,12 @@ import { cn } from '@/lib/utils';
 import { APPLY_PROMPT, statusMeta } from './trackerConfig';
 import type { ApplicationPatch } from './useTrackerData';
 import {
+  atsTone,
   companyOf,
   daysUntil,
   initials,
   isConfirmationPending,
+  isUntailoredStub,
   relDate,
   titleOf,
 } from './trackerUtils';
@@ -61,6 +63,13 @@ export default function ApplicationRow({
   const overdue = due !== null && due < 0;
   const urgent = due !== null && due >= 0 && due <= 2;
   const pending = isConfirmationPending(app);
+
+  // The third line only exists when there is something to put on it, so the
+  // common row stays two lines tall.
+  const ats = record.ats_scores?.overall;
+  const baseResume = isUntailoredStub(record);
+  const note = app.next_action_note?.trim();
+  const hasSignals = typeof ats === 'number' || baseResume || Boolean(note);
 
   return (
     <li
@@ -106,6 +115,28 @@ export default function ApplicationRow({
               </>
             )}
           </span>
+
+          {hasSignals && (
+            <span className="mt-0.5 flex items-center gap-1.5 text-label text-muted-foreground">
+              {typeof ats === 'number' && (
+                <span className={cn('font-medium tabular-nums', atsTone(ats))}>
+                  ATS {Math.round(ats)}
+                </span>
+              )}
+              {baseResume && (
+                <>
+                  {typeof ats === 'number' && <span aria-hidden>·</span>}
+                  <span>Base resume</span>
+                </>
+              )}
+              {note && (
+                <>
+                  {(typeof ats === 'number' || baseResume) && <span aria-hidden>·</span>}
+                  <span className="truncate">{note}</span>
+                </>
+              )}
+            </span>
+          )}
         </span>
 
         <span className="shrink-0 text-right">

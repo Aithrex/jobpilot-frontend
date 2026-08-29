@@ -53,11 +53,13 @@ export function isConfirmationPending(app: TailoringRecord['application']): bool
 /** A tracker stub that never got a tailored resume attached. */
 export function isUntailoredStub(record: TailoringRecord): boolean {
   if (record.source === 'pipeline_stub') return true;
-  return (
-    record.application?.resume_used === 'base' &&
-    !record.versions?.length &&
-    !record.tailored_resume
-  );
+  if (record.application?.resume_used !== 'base') return false;
+  // The tracker's `view=list` rows never read `versions` or `tailored_resume`,
+  // so prefer what the server counted and fall back to the full shape for
+  // callers that fetched it.
+  const versionCount = record.version_count ?? record.versions?.length ?? 0;
+  const hasTailored = record.has_tailored_resume ?? Boolean(record.tailored_resume);
+  return versionCount === 0 && !hasTailored;
 }
 
 export function atsTone(score: number): string {

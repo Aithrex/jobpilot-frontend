@@ -1,9 +1,10 @@
 /**
  * The one bar of chrome above the pipeline.
  *
- * Filters live inside popovers rather than an always-open chip wall, so the
- * default state of the page is the list itself. Each trigger reports its own
- * active count, which is the only thing the collapsed state needs to say.
+ * Scope comes first, because it decides what the page is even about; filters
+ * narrow whatever scope is chosen. Filters live inside popovers rather than an
+ * always-open chip wall, so the default state of the page is the list itself,
+ * and each trigger reports its own active count.
  */
 import { Check, Filter, CalendarRange, Search, Sparkles, X } from 'lucide-react';
 
@@ -11,25 +12,17 @@ import type { ApplicationStatus } from '@/types/resume';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { formatCivilDay } from '@/lib/applicationDates';
 import { cn } from '@/lib/utils';
 
-import {
-  DATE_PRESETS,
-  GROUP_BY_OPTIONS,
-  STATUSES,
-  type DatePreset,
-  type GroupBy,
-} from './trackerConfig';
+import { DATE_PRESETS, STATUSES, type DatePreset } from './trackerConfig';
+import { SCOPES, type Scope } from './trackerScopes';
 
 interface TrackerToolbarProps {
+  scope: Scope;
+  onScopeChange: (s: Scope) => void;
+  /** Live per-scope totals, so the control says how much work each one holds. */
+  scopeCounts: Record<Scope, number>;
   search: string;
   onSearchChange: (v: string) => void;
   statusFilter: Set<ApplicationStatus>;
@@ -41,8 +34,6 @@ interface TrackerToolbarProps {
   customTo: string;
   onCustomToChange: (v: string) => void;
   dateRange: { from: string; to: string } | null;
-  groupBy: GroupBy;
-  onGroupByChange: (g: GroupBy) => void;
   filtersActive: boolean;
   onClearFilters: () => void;
   resultCount: number;
@@ -51,6 +42,9 @@ interface TrackerToolbarProps {
 }
 
 export default function TrackerToolbar({
+  scope,
+  onScopeChange,
+  scopeCounts,
   search,
   onSearchChange,
   statusFilter,
@@ -62,8 +56,6 @@ export default function TrackerToolbar({
   customTo,
   onCustomToChange,
   dateRange,
-  groupBy,
-  onGroupByChange,
   filtersActive,
   onClearFilters,
   resultCount,
@@ -79,6 +71,43 @@ export default function TrackerToolbar({
 
   return (
     <div className="sticky top-0 z-20 flex flex-wrap items-center gap-2 rounded-xl border border-border glass-nav px-3 py-2">
+      <div
+        role="radiogroup"
+        aria-label="What to show"
+        className="flex shrink-0 items-center gap-0.5 rounded-lg bg-muted/60 p-0.5"
+      >
+        {SCOPES.map((s) => {
+          const on = scope === s.key;
+          return (
+            <button
+              key={s.key}
+              type="button"
+              role="radio"
+              aria-checked={on}
+              title={s.hint}
+              onClick={() => onScopeChange(s.key)}
+              className={cn(
+                'flex h-8 items-center gap-1.5 rounded-md px-2.5 text-label font-medium transition-colors',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                on
+                  ? 'bg-card text-foreground shadow-soft'
+                  : 'text-muted-foreground hover:text-foreground',
+              )}
+            >
+              {s.label}
+              <span
+                className={cn(
+                  'tabular-nums',
+                  on ? 'text-muted-foreground' : 'text-muted-foreground/70',
+                )}
+              >
+                {scopeCounts[s.key]}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
       <div className="relative min-w-[12rem] flex-1">
         <Search
           aria-hidden
@@ -181,19 +210,6 @@ export default function TrackerToolbar({
           )}
         </PopoverContent>
       </Popover>
-
-      <Select value={groupBy} onValueChange={(v) => onGroupByChange(v as GroupBy)}>
-        <SelectTrigger className="h-9 w-[9.5rem]" aria-label="Group applications by">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {GROUP_BY_OPTIONS.map((o) => (
-            <SelectItem key={o.key} value={o.key}>
-              Group: {o.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
 
       <Button variant="outline" size="sm" className="h-9 gap-1.5" onClick={onOpenInsights}>
         <Sparkles className="h-3.5 w-3.5" aria-hidden />
