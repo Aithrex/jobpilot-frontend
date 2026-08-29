@@ -166,8 +166,10 @@ Versioned tailored outputs.
 | `POST /resume/download` 🔒 | Re-export a version |
 | `DELETE /resume/tailoring-records/{id}` 🔒 | Delete |
 
-### Applications — `components/resume/ApplicationsTab.tsx` · tab `applications`
-Pipeline tracker + Gmail auto-status.
+### Applications — `components/tracker/TrackerPage.tsx` · tab `applications`
+Pipeline tracker + Gmail auto-status. Two panes: a stage-grouped list beside a
+detail pane. Metrics, funnel, Gmail sync and stale-app nudges live in the
+Insights sheet rather than stacked above the list.
 
 | Endpoint | Why |
 | --- | --- |

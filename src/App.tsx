@@ -46,7 +46,7 @@ const LegacyNextRedirect = lazy(() =>
 );
 const TodayPage = lazy(() => import('@/app-shell/pages/TodayPage'));
 const ApplicationsPage = lazy(() => import('@/app-shell/pages/ApplicationsPage'));
-const ApplicationsTab = lazy(() => import('@/components/resume/ApplicationsTab'));
+const TrackerPage = lazy(() => import('@/components/tracker/TrackerPage'));
 const MailboxInboxTab = lazy(() => import('@/components/mailbox/MailboxInboxTab'));
 const AutoApplyTab = lazy(() => import('@/components/autoSubmit/AutoApplyTab'));
 const PipelineSection = lazy(() => import('@/app-shell/pages/PipelineSection'));
@@ -189,7 +189,7 @@ function AppContent() {
               <Route path="home" element={<TodayPage />} />
               <Route path="apply" element={<ApplicationsPage />}>
                 <Route index element={<Navigate to="tracker" replace />} />
-                <Route path="tracker" element={<ApplicationsTab embedded />} />
+                <Route path="tracker" element={<TrackerPage />} />
                 <Route path="auto-apply" element={<AutoApplyTab />} />
                 <Route path="inbox" element={<MailboxInboxTab />} />
                 <Route path="pipeline" element={<PipelineSection />} />
