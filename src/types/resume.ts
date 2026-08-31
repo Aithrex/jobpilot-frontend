@@ -326,7 +326,17 @@ export type ApplicationStatus =
 
 export interface ApplicationInfo {
   status?: ApplicationStatus;
+  /** UTC instant the application was submitted. Answers "when". */
   applied_at?: string | null;
+  /**
+   * The civil day the application counts for, as "YYYY-MM-DD", frozen in the
+   * user's timezone at confirmation time. Answers "which day" — deriving it
+   * from `applied_at` at read time would shift an evening application into the
+   * next day, and move it again whenever the user travels.
+   */
+  applied_date?: string | null;
+  /** IANA zone that produced `applied_date`. */
+  applied_tz?: string | null;
   next_action_date?: string | null;
   next_action_note?: string;
   notes?: string;
@@ -338,6 +348,8 @@ export interface ApplicationInfo {
   updated_at?: string;
   /** base = applied without a tailored resume; tailored = ATS score may exist. */
   resume_used?: "base" | "tailored";
+  /** An unanswered "Did you apply?" prompt is waiting on this record. */
+  confirmation_pending?: boolean;
 }
 
 export type QDifficulty = "easy" | "medium" | "hard";
@@ -468,4 +480,11 @@ export interface TailoringRecord {
   /** `pipeline_stub` until a tailored resume is merged in. */
   source?: string;
   tailored_resume?: TailoredFullResume;
+  /**
+   * Present only on the tracker's slim `view=list` rows, where `versions` and
+   * `tailored_resume` are never read. Consumers that need "is this an
+   * untailored stub" must prefer these and fall back to the full fields.
+   */
+  version_count?: number;
+  has_tailored_resume?: boolean;
 }

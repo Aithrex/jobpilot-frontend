@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 import { capabilityById, STATUS_LABEL, isLive } from '@/lib/capabilities';
 import {
   FREE_PRICE_LABEL,
@@ -66,6 +67,8 @@ export function PricingSection({
 }: PricingSectionProps) {
   const Heading = headingLevel;
   const isRoute = headingLevel === 'h1';
+  const { isAuthenticated, isLoading } = useAuth();
+  const authed = !isLoading && isAuthenticated;
 
   return (
     <Section id="pricing" labelledBy="pricing-heading" className={className}>
@@ -135,10 +138,10 @@ export function PricingSection({
 
                 {plan.cta ? (
                   <Link
-                    to={plan.cta.to}
+                    to={authed ? '/app/home' : plan.cta.to}
                     className="mt-6 inline-flex h-11 items-center justify-center rounded-full bg-primary px-5 text-[14px] font-semibold text-primary-foreground transition-colors hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                   >
-                    {plan.cta.label}
+                    {authed ? 'Open my workspace' : plan.cta.label}
                   </Link>
                 ) : (
                   <p className="mt-6 text-[13px] text-muted-foreground">

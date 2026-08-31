@@ -16,6 +16,7 @@
  * gets NO band words, because we cannot say what its number means.
  */
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, test, vi } from 'vitest';
 
 import { JobCard } from '@/components/job-search/JobCard';
@@ -148,5 +149,21 @@ describe('JobCard fit verdict', () => {
     renderCard(scoredRow(20));
     expect(screen.getByText('Unlikely match')).toBeInTheDocument();
     expect(screen.queryByText('Not scored')).not.toBeInTheDocument();
+  });
+
+  test('Why this score opens a scrollable panel with the full receipts', async () => {
+    renderCard({
+      ...scoredRow(50),
+      matched_skills: ['typescript', 'react', 'postgresql'],
+      missing_skills: [
+        'python', 'java', 'fastapi', 'flask', 'django',
+        'spring boot', 'reactive spring', 'react native',
+      ],
+    });
+    await userEvent.click(screen.getByRole('button', { name: /why this score/i }));
+    expect(await screen.findByText(/asked for, not evidenced \(8\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/scored 0-100 against the requirements/i)).toBeInTheDocument();
+    const scroller = screen.getByText(/asked for, not evidenced \(8\)/i).closest('.overflow-y-auto');
+    expect(scroller).toBeTruthy();
   });
 });

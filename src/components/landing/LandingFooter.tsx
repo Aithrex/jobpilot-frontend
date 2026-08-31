@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { BrandMark } from '@/components/BrandMark';
+import { useAuth } from '@/contexts/AuthContext';
 
 const LINK_CLASS =
   'focus-ring-visible rounded-control text-sm text-muted-foreground transition-colors hover:text-foreground';
@@ -18,6 +19,7 @@ const LINK_CLASS =
  * A footer is the one place a reader has stopped being sold to.
  */
 export function LandingFooter() {
+  const { isAuthenticated } = useAuth();
   return (
     <footer className="border-t border-border bg-card">
       <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
@@ -46,9 +48,15 @@ export function LandingFooter() {
             <Link to="/trust" className={LINK_CLASS}>
               Before you begin
             </Link>
-            <Link to="/login" className={LINK_CLASS}>
-              Sign in
-            </Link>
+            {isAuthenticated ? (
+              <Link to="/app/home" className={LINK_CLASS}>
+                Workspace
+              </Link>
+            ) : (
+              <Link to="/login" className={LINK_CLASS}>
+                Sign in
+              </Link>
+            )}
             <Link to="/privacy" className={LINK_CLASS}>
               Privacy
             </Link>

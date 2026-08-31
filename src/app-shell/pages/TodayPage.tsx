@@ -18,12 +18,19 @@
  * The launchpad and the resume prompt used to sit ABOVE the status panels, so a
  * user with three approvals waiting opened Home and saw four static marketing
  * tiles first. Status now wins the fold; the tour is where a tour belongs.
+ *
+ * First-run empty Home (upload + continue setup) is only for a settled empty
+ * workspace. While dashboard fetches are in flight we keep the real layout and
+ * its skeletons - otherwise an unfinished onboarding flag flashes the empty
+ * page, then swaps in KPIs/matches and drops Continue workspace setup.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { rise as riseIn } from '@/lib/motion';
+import { toTitleCase } from '@/lib/format';
+import { requestOnboardingOpen } from '@/components/onboarding/onboarding';
 import { apiService } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import type { DashboardOverview } from '@/types/overview';
@@ -63,6 +70,45 @@ function greeting(): string {
   if (h < 12) return 'Good morning';
   if (h < 18) return 'Good afternoon';
   return 'Good evening';
+}
+
+/** First name for the greeting. Profile/email local-parts often arrive as
+ *  `lavanya`; we title-case so the page does not shout the raw storage form. */
+function givenName(raw?: string | null): string {
+  const first = raw?.trim().split(/\s+/)[0];
+  return first ? toTitleCase(first) : 'there';
+}
+
+/** Empty-home layout only after fetches settle and this workspace still has
+ *  nothing to brief. Loading must not use this branch - `onboarded === false`
+ *  is common for people who already applied / saved roles. */
+export function shouldShowFirstRunHome({
+  onboarded,
+  settled,
+  applicationCount,
+  countsUnknown,
+}: {
+  onboarded: boolean | undefined;
+  settled: boolean;
+  applicationCount: number;
+  countsUnknown: boolean;
+}): boolean {
+  return onboarded === false && settled && !countsUnknown && applicationCount === 0;
+}
+
+function ContinueWorkspaceSetup({ className }: { className?: string }) {
+  return (
+    <button
+      type="button"
+      onClick={() => requestOnboardingOpen()}
+      className={cn(
+        'rounded-sm font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+        className,
+      )}
+    >
+      Continue workspace setup
+    </button>
+  );
 }
 
 export default function TodayPage({ userName }: TodayPageProps = {}) {
@@ -133,7 +179,17 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
   }, [load]);
 
   const displayName = userName ?? user?.name ?? user?.email?.split('@')[0] ?? null;
-  const name = displayName?.split(' ')[0] || displayName || 'there';
+  const name = givenName(displayName);
+  const settled = !(firstLoad && loading);
+  const applicationCount = overview?.applications.total ?? streak?.total_applications ?? 0;
+  const countsUnknown = settled && err.overview && err.streak;
+  const firstRunHome = shouldShowFirstRunHome({
+    onboarded: user?.onboarded,
+    settled,
+    applicationCount,
+    countsUnknown,
+  });
+  const setupOpen = user?.onboarded === false;
 
   /* ── Zone A hero model - Today inbox first, else today's status ──────────── */
   const hero: HeroModel = useMemo(() => {
@@ -172,6 +228,31 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
    */
   const rise = (order: number) => riseIn({ reduce: reduceMotion, index: order });
 
+  // First-run empty workspace: one next action, not seven blank panels.
+  // The setup overlay sits on top of this (dimmed). This is also what they
+  // land on if they close the overlay without finishing.
+  if (firstRunHome) {
+    return (
+      <div className="page-measure space-y-8">
+        <motion.header {...rise(0)} className="space-y-2">
+          <p className="overline leading-none">Home</p>
+          <h1 className="text-title font-display text-foreground">
+            {greeting()}, {name}
+          </h1>
+          <p className="max-w-xl text-body text-muted-foreground">
+            Add your resume and this home fills in with matches, today's work, and your pipeline.
+          </p>
+        </motion.header>
+        <motion.div {...rise(1)} className="space-y-4">
+          <ResumeEntryPanel onUploaded={() => void load()} />
+          <p className="text-center text-sm text-muted-foreground">
+            <ContinueWorkspaceSetup />
+          </p>
+        </motion.div>
+      </div>
+    );
+  }
+
   return (
     <div className="page-measure space-y-8">
       {/* Page header */}
@@ -203,6 +284,15 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
           Refresh
         </button>
       </motion.header>
+
+      {setupOpen && (
+        <div className="flex flex-col gap-2 rounded-xl border border-primary/25 bg-primary/5 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+          <p className="text-sm text-muted-foreground">
+            Workspace setup is still open. Finish titles, location, and how you apply so this home stays on-target.
+          </p>
+          <ContinueWorkspaceSetup className="shrink-0 text-sm" />
+        </div>
+      )}
 
       {/* Zone A - What needs me, and where do I stand? */}
       <motion.section {...rise(1)} aria-label="Today's status" className="space-y-4">

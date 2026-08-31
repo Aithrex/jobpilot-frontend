@@ -171,6 +171,7 @@ export function JobFeedSheet() {
       <SheetContent
         side="right"
         overlayClassName="bg-black/40"
+        id="job-feed-sheet"
         className="liquid-glass flex w-full flex-col gap-0 overflow-hidden rounded-l-2xl border-l p-0 sm:max-w-md"
       >
         <SheetHeader className="space-y-3 border-b border-border/50 px-6 pb-4 pt-5 text-left">

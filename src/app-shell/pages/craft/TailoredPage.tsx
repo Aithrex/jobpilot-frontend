@@ -71,7 +71,7 @@ function FilterInput({ label, children }: { label: string; children: React.React
   );
 }
 
-// Status tones match ApplicationsTab's kanban columns so a status reads the
+// Status tones match the tracker's STATUSES table so a status reads the
 // same everywhere: draft/withdrawn=muted, applied=primary,
 // interviewing=brand-to, offer=success, rejected=destructive, ghosted=warning.
 const STATUS_CHIP: Record<string, { label: string; cls: string }> = {

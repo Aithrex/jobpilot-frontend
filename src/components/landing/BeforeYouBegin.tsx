@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 import { AUTO_APPLY, STATUS_LABEL } from '@/lib/capabilities';
 import { Container, Reveal, Section } from './_shared';
 
@@ -165,6 +166,8 @@ export interface BeforeYouBeginProps {
 
 export function BeforeYouBegin({ headingLevel = 'h2', className }: BeforeYouBeginProps) {
   const Heading = headingLevel;
+  const { isAuthenticated, isLoading } = useAuth();
+  const authed = !isLoading && isAuthenticated;
 
   return (
     <Section id="before-you-begin" labelledBy="before-you-begin-heading" className={className}>
@@ -197,18 +200,29 @@ export function BeforeYouBegin({ headingLevel = 'h2', className }: BeforeYouBegi
             </p>
 
             <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
-              <Link
-                to="/register"
-                className="focus-ring-visible inline-flex h-12 items-center justify-center rounded-full bg-primary px-7 text-[15px] font-semibold text-primary-foreground shadow-panel transition-colors hover:bg-primary-hover"
-              >
-                Create free account
-              </Link>
-              <Link
-                to="/login"
-                className="focus-ring-visible rounded-control text-sm font-medium text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"
-              >
-                Already have an account? Sign in
-              </Link>
+              {authed ? (
+                <Link
+                  to="/app/home"
+                  className="focus-ring-visible inline-flex h-12 items-center justify-center rounded-full bg-primary px-7 text-[15px] font-semibold text-primary-foreground shadow-panel transition-colors hover:bg-primary-hover"
+                >
+                  Open my workspace
+                </Link>
+              ) : (
+                <>
+                  <Link
+                    to="/register"
+                    className="focus-ring-visible inline-flex h-12 items-center justify-center rounded-full bg-primary px-7 text-[15px] font-semibold text-primary-foreground shadow-panel transition-colors hover:bg-primary-hover"
+                  >
+                    Create free account
+                  </Link>
+                  <Link
+                    to="/login"
+                    className="focus-ring-visible rounded-control text-sm font-medium text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"
+                  >
+                    Already have an account? Sign in
+                  </Link>
+                </>
+              )}
             </div>
 
             <p className="mt-6 max-w-md text-[13px] leading-relaxed text-muted-foreground">

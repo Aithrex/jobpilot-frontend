@@ -2099,10 +2099,17 @@ class ApiService {
     return this.request('/resume/versions');
   }
 
-  async listTailoringRecords(): Promise<
-    ApiResponse<{ records: import('../types/resume').TailoringRecord[] }>
-  > {
-    return this.request('/resume/tailoring-records');
+  /**
+   * `view: 'list'` asks the backend to project server-side and return only the
+   * fields a tracker row renders. Everything else on this endpoint still gets
+   * the full shape, so interview prep and the tailored-resumes page are
+   * unaffected.
+   */
+  async listTailoringRecords(
+    opts: { view?: 'list' } = {},
+  ): Promise<ApiResponse<{ records: import('../types/resume').TailoringRecord[] }>> {
+    const qs = opts.view === 'list' ? '?view=list' : '';
+    return this.request(`/resume/tailoring-records${qs}`);
   }
 
   async getApplicationStreak(): Promise<
@@ -2392,14 +2399,25 @@ class ApiService {
       recruiter_company?: string;
       job_url?: string;
       interview_dates?: string[];
-      /** Clears the "Did you apply?" prompt set on batch-tailored items. */
+      /** Clears the "Did you apply?" prompt. Flow-agnostic name. */
+      confirmation_pending?: boolean;
+      /** Legacy batch-only name for the same flag; the backend mirrors both. */
       batch_confirmation_pending?: boolean;
       resume_used?: 'base' | 'tailored';
     },
   ): Promise<ApiResponse<{ application: import('../types/resume').ApplicationInfo }>> {
+    // The backend freezes `applied_date` in the user's zone, so it needs to know
+    // which zone that is. Sent on every patch (harmless when no date changes)
+    // rather than only on applied, matching what save-record already does.
+    let tz: string | undefined;
+    try {
+      tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    } catch {
+      tz = undefined;
+    }
     return this.request(`/resume/tailoring-records/${recordId}/application`, {
       method: 'PATCH',
-      body: JSON.stringify(patch),
+      body: JSON.stringify(tz ? { ...patch, tz } : patch),
     });
   }
 

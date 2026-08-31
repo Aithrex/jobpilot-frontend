@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ApplyConfirmDialog, JOB_FEED_GRID_CLASS, JobCard, JOB_CARD_CLASS } from '@/components/job-search/JobCard';
+import { JobFeedPager } from '@/components/job-search/JobFeedPager';
 import { useCombinedJobsCtx } from '@/components/job-search/CombinedJobsProvider';
 import { RECENCY_OPTIONS, matchesSeniority, sortJobsByMode, isAppliedPipelineStatus, toJob } from '@/lib/careerJobs';
 import { cn } from '@/lib/utils';
@@ -29,14 +30,6 @@ function formatAgo(ms: number): string {
 function formatCountdown(sec: number): string {
   const m = Math.floor(sec / 60);
   return `${m}:${String(sec % 60).padStart(2, '0')}`;
-}
-
-function pageWindow(page: number, count: number): number[] {
-  const span = Math.min(5, count);
-  let start = Math.max(1, page - 2);
-  const end = Math.min(count, start + span - 1);
-  start = Math.max(1, end - span + 1);
-  return Array.from({ length: end - start + 1 }, (_, i) => start + i);
 }
 
 interface CombinedJobsPanelProps {
@@ -178,7 +171,7 @@ export function CombinedJobsPanel({
       key={job.job_id}
       layout={!reduceMotion}
       {...cardMotion(index)}
-      className="flex flex-col gap-1.5"
+      className="flex h-full flex-col gap-1.5"
     >
       {job.sponsorship === 'refused' && (
         <p className="flex items-start gap-1.5 rounded-lg border border-destructive/30 bg-destructive/10 px-2.5 py-1.5 text-[11px] font-medium leading-snug text-destructive">
@@ -197,6 +190,7 @@ export function CombinedJobsPanel({
         onUnsave={() => unsaveJob(job.job_id)}
         onQuickApply={() => quickApply(toJob(job, 'career portal'))}
         applyConfirmPending={isApplyConfirmPending?.(job.job_id)}
+        applyConfirmModalJobId={showApplyOverlay ? applyConfirmJob?.job_id : undefined}
         onConfirmApplied={confirmApplied ? () => void confirmApplied(job.job_id) : undefined}
         onConfirmNotYet={dismissApplyConfirm ? () => dismissApplyConfirm(job.job_id) : undefined}
         onApplyWithTailor={beginApplyWithTailor ? () => beginApplyWithTailor(toJob(job, 'career portal')) : undefined}
@@ -285,52 +279,7 @@ export function CombinedJobsPanel({
           </motion.div>
 
           {pageCount > 1 && (
-            <nav
-              className="flex flex-wrap items-center justify-center gap-1.5 pt-2"
-              aria-label="Job results pages"
-            >
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page <= 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-              >
-                Prev
-              </Button>
-              {pageWindow(page, pageCount)[0] > 1 && (
-                <span className="px-1 text-xs text-muted-foreground">...</span>
-              )}
-              {pageWindow(page, pageCount).map((n) => (
-                <button
-                  key={n}
-                  type="button"
-                  onClick={() => setPage(n)}
-                  aria-current={n === page ? 'page' : undefined}
-                  className={cn(
-                    'h-8 min-w-8 rounded-md px-2 font-mono text-xs font-semibold tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                    n === page
-                      ? 'bg-primary text-primary-foreground shadow-soft'
-                      : 'border border-border text-muted-foreground hover:border-primary/40 hover:text-primary',
-                  )}
-                >
-                  {n}
-                </button>
-              ))}
-              {pageWindow(page, pageCount).slice(-1)[0] < pageCount && (
-                <span className="px-1 text-xs text-muted-foreground">...</span>
-              )}
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page >= pageCount}
-                onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
-              >
-                Next
-              </Button>
-              <span className="ml-2 text-[11px] text-muted-foreground">
-                Page {page} of {pageCount}
-              </span>
-            </nav>
+            <JobFeedPager page={page} pageCount={pageCount} onPageChange={setPage} />
           )}
         </>
       )}
@@ -362,7 +311,7 @@ export function CombinedJobsPanel({
             <Button
               size="sm"
               variant="outline"
-              className="gap-1.5"
+              className="gap-1.5 rounded-lg border-border/80 bg-background/80 font-semibold hover:border-primary/40 hover:bg-primary/10 hover:text-primary [&_svg]:h-3.5 [&_svg]:w-3.5"
               onClick={() => setCustomizeOpen(true)}
             >
               <Radar className="h-3.5 w-3.5" aria-hidden /> Open Job feed

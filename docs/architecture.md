@@ -80,7 +80,7 @@ Feature tabs are split out as lazy-loaded components (mostly under
 | `batch` | `resume/BatchTailor.tsx` | Create |
 | `my-resumes` | in-file `MyResumesTab` → `resume/ResumeDashboard.tsx` | Library |
 | `tailored` | in-file `TailoredResumesTab` | Library |
-| `applications` | `resume/ApplicationsTab.tsx` | Library |
+| `applications` | `tracker/TrackerPage.tsx` | Library |
 | `interview` | `resume/InterviewPrepTab.tsx` | Career |
 | `visa` | `visa/VisaTimelineTab.tsx` | Career |
 | `copilot` | `resume/CareerCopilotTab.tsx` | Career |

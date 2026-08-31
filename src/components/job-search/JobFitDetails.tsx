@@ -278,10 +278,20 @@ export function WhyThisScoreButton({ job, className }: { job: Job; className?: s
         </button>
       </PopoverTrigger>
       <PopoverContent
-        align="end"
-        className="max-h-[70vh] w-[min(22rem,calc(100vw-2rem))] overflow-y-auto p-4"
+        align="start"
+        side="bottom"
+        sideOffset={8}
+        collisionPadding={{ top: 80, bottom: 16, left: 16, right: 16 }}
+        className="flex w-[min(22rem,calc(100vw-2rem))] flex-col overflow-hidden p-0"
+        style={{
+          maxHeight: 'min(28rem, var(--radix-popover-content-available-height, 70vh))',
+        }}
       >
-        <JobFitDetails job={job} />
+        {/* Scroll on an inner pane. The content node itself animates with
+            transform, which blocks overflow-y on the same element. */}
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4">
+          <JobFitDetails job={job} />
+        </div>
       </PopoverContent>
     </Popover>
   );

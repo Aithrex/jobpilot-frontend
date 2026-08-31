@@ -84,6 +84,7 @@ export default function CareerPortalsTab() {
               isApplyConfirmPending={isApplyConfirmPending}
               confirmApplied={confirmApplied}
               dismissApplyConfirm={dismissApplyConfirm}
+              applyConfirmJobId={applyConfirmJob?.job_id}
               beginApplyWithTailor={beginApplyWithTailor}
               markAlreadyApplied={markAlreadyApplied}
               autoApply={autoApply}

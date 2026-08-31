@@ -106,6 +106,24 @@ if (!HTMLElement.prototype.scrollIntoView) {
   HTMLElement.prototype.scrollIntoView = () => {};
 }
 
+// ── Pointer capture ──────────────────────────────────────────────
+// jsdom implements no part of the Pointer Capture API. Radix calls
+// `hasPointerCapture` on pointerdown in Select (and Slider, and Toast swipe),
+// so without these a component throws for an environment reason rather than a
+// product one. Defined on Element, not HTMLElement: the failing call lands on
+// an HTMLUnknownElement in some Radix trees.
+for (const name of [
+  'hasPointerCapture',
+  'setPointerCapture',
+  'releasePointerCapture',
+] as const) {
+  Object.defineProperty(Element.prototype, name, {
+    writable: true,
+    configurable: true,
+    value: name === 'hasPointerCapture' ? () => false : () => undefined,
+  });
+}
+
 // ── requestIdleCallback ──────────────────────────────────────────
 Object.defineProperty(window, 'requestIdleCallback', {
   writable: true,
