@@ -53,6 +53,14 @@ export interface TailoredFullResume {
   /** Claim-verification sidecar (backend attaches post-tailor; absent on
    * older records = "not verified yet"). See ResumeVerification. */
   verification?: ResumeVerification;
+  /**
+   * Where each known skill belongs, decided by the backend at tailor time.
+   * `map` is canonical-skill-key -> heading and covers both the base resume's
+   * own placements and the JD terms it lacked; `order` is the base resume's
+   * heading order, needed to re-insert a heading that `_polish_skills` pruned
+   * out of this document. Absent on records tailored before this shipped.
+   */
+  _skill_headings?: { map: Record<string, string>; order: string[] };
 }
 
 export interface JDAnalysis {

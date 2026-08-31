@@ -47,23 +47,76 @@ export function removeBulletAt(
   };
 }
 
+/** Lookup key for `_skill_headings.map` — mirrors the backend's raw variant. */
+function headingKey(skill: string): string {
+  return skill.replace(/\s*\([^)]*\)\s*$/, '').trim().toLowerCase();
+}
+
+/**
+ * Insert `category` into `skills` at the position the base resume had it.
+ *
+ * `_polish_skills` prunes categories that ended up empty, so a heading the
+ * skill legitimately belongs under may be missing from the tailored document.
+ * Re-creating it at the end would read as an afterthought; the base order says
+ * where it used to sit.
+ */
+function withCategoryInBaseOrder(
+  skills: Record<string, string[]>,
+  category: string,
+  order: string[],
+): Record<string, string[]> {
+  const target = order.indexOf(category);
+  if (target < 0) return { ...skills, [category]: [] };
+
+  const rebuilt: Record<string, string[]> = {};
+  let inserted = false;
+  for (const cat of Object.keys(skills)) {
+    const pos = order.indexOf(cat);
+    if (!inserted && pos > target) {
+      rebuilt[category] = [];
+      inserted = true;
+    }
+    rebuilt[cat] = skills[cat];
+  }
+  if (!inserted) rebuilt[category] = [];
+  return rebuilt;
+}
+
 export function addSkillToCategory(
   resume: TailoredFullResume,
   category: string,
   keyword: string,
 ): TailoredFullResume {
-  const skills = { ...(resume.skills || {}) };
+  let skills = { ...(resume.skills || {}) };
+  if (!(category in skills)) {
+    skills = withCategoryInBaseOrder(
+      skills,
+      category,
+      resume._skill_headings?.order || [],
+    );
+  }
   const existing = skills[category] || [];
   if (existing.some((s) => s.toLowerCase() === keyword.toLowerCase())) {
     return resume;
   }
-  skills[category] = [...existing, keyword];
+  // Front, not back: these come from the missing-keywords panel, so they are
+  // JD-aligned by construction, and _polish_skills orders JD-aligned first.
+  skills[category] = [keyword, ...existing];
   return { ...resume, skills };
 }
 
 /**
- * Pick the most fitting existing category for a keyword by token overlap
- * with each category's current contents (falls back to common defaults).
+ * Pick the category a keyword belongs under.
+ *
+ * The backend decided this at tailor time with the whole skills section in
+ * view and shipped it as `_skill_headings`, so prefer that. The similarity
+ * scan below is only a fallback for keywords the map never saw: it is a Dice
+ * coefficient over word sets, so a single-token keyword intersects nothing and
+ * scores zero against every category.
+ *
+ * The final fallback is the LAST category, not the first — skill sections are
+ * conventionally ordered specific-to-general, so an unplaceable item reads far
+ * better under a tail heading like "Tools & Platforms" than under "Languages".
  */
 export function inferSkillCategory(
   resume: TailoredFullResume,
@@ -71,7 +124,10 @@ export function inferSkillCategory(
   similarityFn: (a: string, b: string) => number,
 ): string {
   const categories = Object.keys(resume.skills || {});
+  const mapped = resume._skill_headings?.map?.[headingKey(keyword)];
+  if (mapped) return mapped;
   if (categories.length === 0) return 'Technical Skills';
+
   let best = '';
   let bestScore = 0;
   for (const cat of categories) {
@@ -84,6 +140,7 @@ export function inferSkillCategory(
   }
   if (best) return best;
   return (
-    categories.find((c) => /technical|skills/i.test(c)) ?? categories[0]
+    categories.find((c) => /technical|skills/i.test(c)) ??
+    categories[categories.length - 1]
   );
 }
