@@ -17,6 +17,7 @@ import DiscoverPage from '@/app-shell/pages/DiscoverPage';
 vi.mock('@/lib/api', () => ({
   companyLogoSrc: (logoUrl?: string | null) => logoUrl ?? null,
   apiService: {
+    getTitleSeed: vi.fn(),
     getResume: vi.fn(),
     suggestPipelineFilters: vi.fn(),
     searchWorkdayJobs: vi.fn(),
@@ -77,6 +78,16 @@ describe('DiscoverPage section-aware Jobs chrome', () => {
   beforeEach(() => {
     resetJobTitlesStore();
     window.localStorage.clear();
+    api.getTitleSeed.mockResolvedValue({
+      data: {
+        fingerprint: 'fp-chrome',
+        resume_titles: ['Backend Engineer'],
+        synth_titles: [],
+        resume_count: 1,
+        cached: true,
+      },
+      status: 200,
+    });
     api.getResume.mockResolvedValue({ data: { target_titles: ['Backend Engineer'] }, status: 200 });
     api.suggestPipelineFilters.mockResolvedValue({ data: { titles: [] }, status: 200 });
     for (const fn of ['searchWorkdayJobs', 'searchCareerPagesJobs', 'searchMncJobs'] as const) {
@@ -133,6 +144,16 @@ describe('WorkdayJobsPanel Live listings', () => {
   beforeEach(() => {
     resetJobTitlesStore();
     window.localStorage.clear();
+    api.getTitleSeed.mockResolvedValue({
+      data: {
+        fingerprint: 'fp-chrome',
+        resume_titles: ['Backend Engineer'],
+        synth_titles: [],
+        resume_count: 1,
+        cached: true,
+      },
+      status: 200,
+    });
     api.getResume.mockResolvedValue({ data: { target_titles: ['Backend Engineer'] }, status: 200 });
     api.suggestPipelineFilters.mockResolvedValue({ data: { titles: [] }, status: 200 });
     api.searchWorkdayJobs.mockResolvedValue(okScan());

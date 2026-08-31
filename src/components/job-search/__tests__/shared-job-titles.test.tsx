@@ -30,6 +30,7 @@ import { WorkdayJobsPanel } from '@/components/job-search/WorkdayJobsPanel';
 vi.mock('@/lib/api', () => ({
   companyLogoSrc: (logoUrl?: string | null) => logoUrl ?? null,
   apiService: {
+    getTitleSeed: vi.fn(),
     getResume: vi.fn(),
     suggestPipelineFilters: vi.fn(),
     searchWorkdayJobs: vi.fn(),
@@ -46,12 +47,27 @@ vi.mock('@/lib/api', () => ({
 const api = apiService as unknown as Record<string, Mock>;
 
 const SHARED_CACHE_KEY = 'combined_jobs_prefs_v1';
+const SEED_FINGERPRINT = 'fp-resume-set-1';
 const RESUME_TITLES = [
   'Backend Engineer',
   'Data Engineer',
   'Platform Engineer',
   'Site Reliability Engineer',
 ];
+
+function okTitleSeed(overrides: Record<string, unknown> = {}) {
+  return {
+    data: {
+      fingerprint: SEED_FINGERPRINT,
+      resume_titles: RESUME_TITLES,
+      synth_titles: [],
+      resume_count: 1,
+      cached: true,
+      ...overrides,
+    },
+    status: 200,
+  };
+}
 
 /** A full (empty) scan payload - the Careers panel renders every field. */
 function okScan() {
@@ -158,6 +174,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   localStorage.clear();
   resetJobTitlesStore();
+  api.getTitleSeed.mockResolvedValue(okTitleSeed());
   api.getResume.mockResolvedValue({
     data: { resume: { job_titles: RESUME_TITLES } },
     status: 200,
@@ -202,23 +219,23 @@ describe('shared job titles', () => {
     );
   });
 
-  test('3. both surfaces mounting fires the resume seed and the synth once', async () => {
-    api.getResume.mockResolvedValue({
-      data: { resume: { job_titles: ['Backend Engineer'] } },
-      status: 200,
-    });
+  test('3. both surfaces mounting fires the title seed and the synth once', async () => {
+    api.getTitleSeed.mockResolvedValue(
+      okTitleSeed({ resume_titles: ['Backend Engineer'], resume_count: 1 }),
+    );
     api.suggestPipelineFilters.mockResolvedValue({
-      data: { suggestions: { workday_titles: ['Platform Engineer'] } },
+      data: { suggestions: { workday_titles: ['Platform Engineer'] }, cached: false },
       status: 200,
     });
 
     renderBothSurfaces();
 
     await waitFor(() => expect(api.suggestPipelineFilters).toHaveBeenCalledTimes(1));
-    expect(api.getResume).toHaveBeenCalledTimes(1);
+    expect(api.getTitleSeed).toHaveBeenCalledTimes(1);
+    expect(api.getResume).not.toHaveBeenCalled();
   });
 
-  test('4. a saved user-edited set is not clobbered by a later resume fetch', async () => {
+  test('4. a saved user-edited set is not clobbered when the fingerprint is unchanged', async () => {
     const user = userEvent.setup();
     const first = renderBothSurfaces();
 
@@ -230,21 +247,58 @@ describe('shared job titles', () => {
     first.unmount();
     resetJobTitlesStore();
 
-    api.getResume.mockResolvedValue({
-      data: { resume: { job_titles: ['Completely Different'] } },
-      status: 200,
-    });
+    api.getTitleSeed.mockResolvedValue(
+      okTitleSeed({ resume_titles: ['Completely Different'] }),
+    );
     renderBothSurfaces();
 
     await openJobFeed(user);
     expect(await screen.findByLabelText('Remove Custom Role X')).toBeInTheDocument();
     expect(screen.getByLabelText('Remove Backend Engineer')).toBeInTheDocument();
     expect(screen.queryByLabelText('Remove Completely Different')).not.toBeInTheDocument();
+    expect(api.suggestPipelineFilters).not.toHaveBeenCalled();
+  });
+
+  test('4b. a changed fingerprint merges new resume titles into the saved set', async () => {
+    const user = userEvent.setup();
+    localStorage.setItem(
+      SHARED_CACHE_KEY,
+      JSON.stringify({
+        titles: ['Backend Engineer', 'Custom Role X'],
+        fingerprint: SEED_FINGERPRINT,
+      }),
+    );
+
+    api.getTitleSeed.mockResolvedValue(
+      okTitleSeed({
+        fingerprint: 'fp-after-upload',
+        resume_titles: [
+          'Backend Engineer',
+          'Registered Nurse',
+          'Data Engineer',
+          'Clinical Nurse',
+        ],
+        resume_count: 3,
+      }),
+    );
+
+    renderBothSurfaces();
+    await openJobFeed(user);
+
+    expect(await screen.findByLabelText('Remove Custom Role X')).toBeInTheDocument();
+    expect(screen.getByLabelText('Remove Backend Engineer')).toBeInTheDocument();
+    expect(screen.getByLabelText('Remove Registered Nurse')).toBeInTheDocument();
+    expect(screen.getByLabelText('Remove Data Engineer')).toBeInTheDocument();
+    expect(screen.getByLabelText('Remove Clinical Nurse')).toBeInTheDocument();
+    expect(api.suggestPipelineFilters).not.toHaveBeenCalled();
   });
 
   test('5. the 40-title cap holds across surfaces (39 + paste 3 => exactly 40)', async () => {
     const seed = Array.from({ length: 39 }, (_, i) => `Seed Title ${i + 1}`);
-    localStorage.setItem(SHARED_CACHE_KEY, JSON.stringify({ titles: seed }));
+    localStorage.setItem(
+      SHARED_CACHE_KEY,
+      JSON.stringify({ titles: seed, fingerprint: SEED_FINGERPRINT }),
+    );
 
     const user = userEvent.setup();
     renderBothSurfaces();
@@ -265,15 +319,15 @@ describe('shared job titles', () => {
   });
 
   test('6. a thin resume (< 4 titles) auto-suggests once and merges deduped', async () => {
-    api.getResume.mockResolvedValue({
-      data: { resume: { job_titles: ['Backend Engineer'] } },
-      status: 200,
-    });
+    api.getTitleSeed.mockResolvedValue(
+      okTitleSeed({ resume_titles: ['Backend Engineer'], synth_titles: [] }),
+    );
     api.suggestPipelineFilters.mockResolvedValue({
       data: {
         suggestions: {
           workday_titles: ['Platform Engineer', 'backend engineer', 'Data Engineer'],
         },
+        cached: false,
       },
       status: 200,
     });
@@ -294,7 +348,24 @@ describe('shared job titles', () => {
     renderBothSurfaces();
 
     expect(await screen.findByRole('heading', { name: /live listings/i })).toBeInTheDocument();
-    await waitFor(() => expect(api.getResume).toHaveBeenCalled());
+    await waitFor(() => expect(api.getTitleSeed).toHaveBeenCalled());
+    expect(api.suggestPipelineFilters).not.toHaveBeenCalled();
+  });
+
+  test('7b. cached synth_titles skip the suggest-filters call', async () => {
+    api.getTitleSeed.mockResolvedValue(
+      okTitleSeed({
+        resume_titles: ['Backend Engineer'],
+        synth_titles: ['Platform Engineer', 'Data Engineer'],
+      }),
+    );
+
+    const user = userEvent.setup();
+    renderBothSurfaces();
+    await openCareersCustomize(user);
+
+    expect(await screen.findByLabelText('Remove Backend Engineer')).toBeInTheDocument();
+    expect(screen.getByLabelText('Remove Platform Engineer')).toBeInTheDocument();
     expect(api.suggestPipelineFilters).not.toHaveBeenCalled();
   });
 

@@ -21,6 +21,12 @@ function notifyLLMRetriesExhausted(): void {
   });
 }
 
+/** Resume upload / delete / reparse is the only reason to re-seed job titles. */
+function emitResumeSetChanged(): void {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new CustomEvent('resume:set-changed'));
+}
+
 // In browser on production (non-localhost), always use same origin so /api hits CloudFront regardless of build env.
 // This avoids API URL mismatch after infra changes (e.g. Lambda URL, domain).
 function getApiBaseUrl(): string {
@@ -1434,11 +1440,15 @@ class ApiService {
   --- APIFY DISABLED (temporary) --- */
 
   async suggestPipelineFilters() {
-    return this.request<{ suggestions: import('../types/jobs').SmartFilterSuggestions }>(
+    return this.request<{ suggestions: import('../types/jobs').SmartFilterSuggestions; cached?: boolean }>(
       '/jobs/pipeline/suggest-filters',
       { method: 'GET' },
       45000,
     );
+  }
+
+  async getTitleSeed() {
+    return this.request<import('../types/jobs').JobTitleSeed>('/jobs/title-seed');
   }
 
   async pipelineMatchScores(items: Array<{ id: string; title?: string; description?: string }>) {
@@ -1568,6 +1578,7 @@ class ApiService {
       clearTimeout(timeoutId);
       const data = await response.json().catch(() => ({}));
       if (!response.ok) return { error: data.error || `HTTP ${response.status}` };
+      emitResumeSetChanged();
       return { data } as ApiResponse<{
         resume: import('../types/jobs').ParsedResume;
       }>;
@@ -1723,6 +1734,7 @@ class ApiService {
           120000,
           signal,
         );
+        if (pollResult.data) emitResumeSetChanged();
         return pollResult;
       }
 
@@ -2253,9 +2265,12 @@ class ApiService {
 
   /** DELETE /api/resume/file/<resume_id> - deletes a resume asset (was s3_key). */
   async deleteResume(resumeId: string): Promise<ApiResponse<{ message: string }>> {
-    return this.request(`/resume/file/${encodeURIComponent(resumeId)}`, {
-      method: 'DELETE',
-    });
+    const resp = await this.request<{ message: string }>(
+      `/resume/file/${encodeURIComponent(resumeId)}`,
+      { method: 'DELETE' },
+    );
+    if (resp.data) emitResumeSetChanged();
+    return resp;
   }
 
   /**

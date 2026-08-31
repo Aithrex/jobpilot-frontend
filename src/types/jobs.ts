@@ -309,8 +309,19 @@ export interface ParsedResume {
   education: Array<{ degree: string; institution: string; year: string }>;
   certifications: string[];
   job_titles: string[];
+  /** Union of job_titles across every parsed resume (additive; older backends omit). */
+  job_titles_all?: string[];
   summary: string;
   parsed_at: string;
+}
+
+/** GET /api/jobs/title-seed — never hits the LLM. */
+export interface JobTitleSeed {
+  fingerprint: string;
+  resume_titles: string[];
+  synth_titles: string[];
+  resume_count: number;
+  cached: boolean;
 }
 
 export interface TailoredResume {

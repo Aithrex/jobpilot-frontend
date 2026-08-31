@@ -8,9 +8,10 @@
  *
  * This module owns all of it exactly once:
  *   - the title list (capped at JOB_TITLES_CAP)
- *   - hydration from the parsed-resume seed
+ *   - hydration from the parsed-resume seed (ALL parsed resumes, not just active)
  *   - the thin-resume smart-suggest merge
- *   - persistence
+ *   - persistence keyed by a resume-set fingerprint so the LLM synth runs
+ *     only when an upload / delete / reparse actually changed the set
  *
  * It is a module-level store read through `useSyncExternalStore` rather than a
  * React context on purpose: the Careers panels and the Opportunities feed sit
@@ -19,21 +20,23 @@
  * renders standalone. A module store gives every surface the same value with
  * no mounting contract, and gives hydration a natural once-per-session guard.
  *
- * Persistence today is the browser cache below. The durable home is the
- * server-side `job_filter_preferences` document (unique per user_email), but
- * its `/api/jobs/filters` writer whitelists a fixed set of keys and would drop
- * a `job_titles` field, so server sync is deliberately not wired here yet.
- * `persistTitles` is the single seam to swap once the backend accepts it.
+ * Durable cache is two-layer:
+ *   - browser `combined_jobs_prefs_v1` (titles + fingerprint) so a refresh
+ *     does not re-synth
+ *   - server `job_filter_preferences.title_seed` so a new browser / Daily
+ *     Pipeline share the same synth and do not pay Bedrock again
  */
 import { useCallback, useEffect, useSyncExternalStore } from 'react';
 import { apiService } from '@/lib/api';
+import type { JobTitleSeed } from '@/types/jobs';
 
 /** Hard ceiling on the title set. The scan endpoints fan out per title, so an
  *  unbounded list is a slow scan, not a better one. */
 export const JOB_TITLES_CAP = 40;
 
 /** Parsed resumes often carry only 1-2 messy past titles, which is a weak
- *  search seed. Below this we auto-run the LLM title synthesizer once. */
+ *  search seed. Below this we auto-run the LLM title synthesizer once per
+ *  fingerprint (server-cached after that). */
 const THIN_RESUME_TITLES = 4;
 
 /** Browser cache key. Kept as the pre-existing combined-feed key so saved
@@ -76,6 +79,9 @@ const INITIAL: JobTitlesState = {
 let state: JobTitlesState = INITIAL;
 const listeners = new Set<() => void>();
 let hydration: Promise<void> | null = null;
+/** Last fingerprint we synced this session. Cheap GETs with the same
+ *  fingerprint skip merge + synth. */
+let lastSyncedFingerprint: string | null = null;
 
 function emit() {
   for (const listener of listeners) listener();
@@ -101,6 +107,7 @@ function getSnapshot(): JobTitlesState {
 
 interface CachedPrefs {
   titles?: string[];
+  fingerprint?: string;
   [key: string]: unknown;
 }
 
@@ -125,20 +132,59 @@ function readCachedTitles(): string[] {
   return [];
 }
 
+function readCachedFingerprint(): string {
+  const fp = readCache(CACHE_KEY).fingerprint;
+  return typeof fp === 'string' ? fp : '';
+}
+
 /**
  * Write-through persistence. Merges into the existing prefs object so the
  * scan params stored alongside (location, remoteOnly) are never dropped.
  */
-function persistTitles(titles: string[]) {
+function persistTitles(titles: string[], fingerprint?: string) {
   if (typeof window === 'undefined') return;
   try {
+    const prev = readCache(CACHE_KEY);
     window.localStorage.setItem(
       CACHE_KEY,
-      JSON.stringify({ ...readCache(CACHE_KEY), titles }),
+      JSON.stringify({
+        ...prev,
+        titles,
+        fingerprint: fingerprint ?? prev.fingerprint,
+      }),
     );
   } catch {
     /* storage full or unavailable: non-fatal, the set stays in memory */
   }
+}
+
+// ── Seed fetch ──────────────────────────────────────────────────────────────
+
+async function loadTitleSeed(): Promise<JobTitleSeed> {
+  const seed = await apiService.getTitleSeed();
+  if (seed.data && Array.isArray(seed.data.resume_titles)) {
+    return {
+      fingerprint: seed.data.fingerprint ?? '',
+      resume_titles: seed.data.resume_titles,
+      synth_titles: seed.data.synth_titles ?? [],
+      resume_count: seed.data.resume_count ?? 0,
+      cached: seed.data.cached ?? true,
+    };
+  }
+  // Deploy skew: older backends have no /title-seed. Fall back to the
+  // active-resume GET (may include additive job_titles_all).
+  const resume = await apiService.getResume();
+  const all =
+    resume.data?.resume?.job_titles_all ??
+    resume.data?.resume?.job_titles ??
+    [];
+  return {
+    fingerprint: '',
+    resume_titles: all,
+    synth_titles: [],
+    resume_count: all.length ? 1 : 0,
+    cached: false,
+  };
 }
 
 // ── Actions ─────────────────────────────────────────────────────────────────
@@ -157,38 +203,60 @@ export function setJobTitles(next: string[] | ((prev: string[]) => string[])): v
 }
 
 /**
- * Seed the shared set, once per session. Saved titles win outright: a later
- * resume fetch only refreshes the Reset defaults and NEVER clobbers a
- * user-edited set. With no saved set we seed from the parsed resume, and fall
- * back to the LLM synthesizer when the resume's own titles are too thin.
+ * Seed the shared set. Concurrent callers (Careers and Opportunities mounting
+ * together) share one in-flight promise, so the seed fetch and the synth
+ * call fire exactly once.
  *
- * Concurrent callers (Careers and Opportunities mounting together) share one
- * in-flight promise, so the resume fetch and the synth call fire exactly once.
+ * Resume-set fingerprint:
+ *   - same fingerprint as last sync / localStorage → reuse chips, no LLM
+ *   - fingerprint changed (upload / delete / reparse) → merge new resume
+ *     titles into the user-edited set (never wipe custom chips)
+ *   - union still thinner than THIN_RESUME_TITLES → use server-cached
+ *     synth_titles, and only then call suggest-filters (itself cached)
  */
 export function hydrateJobTitles(): Promise<void> {
   if (hydration) return hydration;
   hydration = (async () => {
     try {
-      const saved = readCachedTitles();
-      if (saved.length) {
-        setState({ titles: saved.slice(0, JOB_TITLES_CAP), ready: true });
-        const resume = await apiService.getResume();
-        setState({ resumeTitles: resume.data?.resume?.job_titles ?? [] });
+      const seed = await loadTitleSeed();
+      const fp = seed.fingerprint;
+      const resumeTitles = seed.resume_titles.slice(0, JOB_TITLES_CAP);
+
+      if (state.ready && lastSyncedFingerprint === fp && fp) {
+        setState({ resumeTitles });
         return;
       }
 
-      const resume = await apiService.getResume();
-      const fromResume: string[] = resume.data?.resume?.job_titles ?? [];
-      setState({ resumeTitles: fromResume });
+      const saved = readCachedTitles();
+      const cachedFp = readCachedFingerprint();
+      const fingerprintUnchanged = Boolean(fp) && cachedFp === fp;
 
-      let seeded = fromResume.slice(0, JOB_TITLES_CAP);
-      if (fromResume.length < THIN_RESUME_TITLES) {
-        const suggested = await apiService.suggestPipelineFilters();
-        const synth: string[] = suggested.data?.suggestions?.workday_titles ?? [];
-        if (synth.length) seeded = mergeTitles(seeded, synth);
+      let titles: string[];
+      if (saved.length && fingerprintUnchanged) {
+        titles = saved.slice(0, JOB_TITLES_CAP);
+      } else if (saved.length) {
+        titles = mergeTitles(saved, resumeTitles);
+      } else {
+        titles = resumeTitles.slice(0, JOB_TITLES_CAP);
       }
-      setState({ titles: seeded, ready: true });
-      if (seeded.length) persistTitles(seeded);
+
+      const thin = resumeTitles.length < THIN_RESUME_TITLES;
+      const needSynth =
+        thin &&
+        seed.resume_count > 0 &&
+        !(saved.length && fingerprintUnchanged);
+      if (needSynth) {
+        let synth = seed.synth_titles;
+        if (!synth.length) {
+          const suggested = await apiService.suggestPipelineFilters();
+          synth = suggested.data?.suggestions?.workday_titles ?? [];
+        }
+        if (synth.length) titles = mergeTitles(titles, synth);
+      }
+
+      lastSyncedFingerprint = fp || lastSyncedFingerprint;
+      setState({ titles, resumeTitles, ready: true });
+      if (titles.length) persistTitles(titles, fp || undefined);
     } catch {
       // A failed seed must not leave every panel stuck behind `ready`. Clear
       // the guard so the next mount retries.
@@ -200,8 +268,23 @@ export function hydrateJobTitles(): Promise<void> {
 }
 
 /**
+ * Drop the in-flight / session fingerprint so the next hydrate re-reads the
+ * server seed. Call after a resume upload, delete, or reparse — those are
+ * the only events that should ever re-run the (cached) title pipeline.
+ */
+export function invalidateJobTitleSeed(): void {
+  lastSyncedFingerprint = null;
+  hydration = null;
+  // Only re-sync if a jobs surface already hydrated. Otherwise the next
+  // Jobs visit fetches the new seed; no point paying even a cheap GET
+  // (or a thin-resume synth) for a user who never searches jobs.
+  if (state.ready) void hydrateJobTitles();
+}
+
+/**
  * The LLM title synthesizer, merged case-insensitively into whatever the user
- * already has. Same endpoint the Daily Pipeline's Smart Filters use.
+ * already has. Same endpoint the Daily Pipeline's Smart Filters use; the
+ * backend returns the fingerprint-cached bundle when resumes have not changed.
  */
 export async function smartSuggestJobTitles(): Promise<void> {
   if (state.suggesting) return;
@@ -219,7 +302,14 @@ export async function smartSuggestJobTitles(): Promise<void> {
 export function resetJobTitlesStore(): void {
   state = INITIAL;
   hydration = null;
+  lastSyncedFingerprint = null;
   emit();
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('resume:set-changed', () => {
+    invalidateJobTitleSeed();
+  });
 }
 
 // ── Hook ────────────────────────────────────────────────────────────────────
