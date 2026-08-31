@@ -81,7 +81,7 @@ describe('MyResumesPage (Resume Platform v3)', () => {
     expect(screen.getByText('Parsing')).toBeInTheDocument();
 
     // Unparsed rows can't be activated (the backend would answer 409).
-    const useButtons = screen.getAllByRole('button', { name: 'Use for Tailoring' });
+    const useButtons = screen.getAllByRole('button', { name: 'Set as active' });
     expect(useButtons).toHaveLength(2); // beta (enabled) + gamma (disabled)
     expect(useButtons[0]).toBeEnabled();
     expect(useButtons[1]).toBeDisabled();
@@ -92,7 +92,7 @@ describe('MyResumesPage (Resume Platform v3)', () => {
     render(<MyResumesPage />);
 
     const [betaButton] = await screen.findAllByRole('button', {
-      name: 'Use for Tailoring',
+      name: 'Set as active',
     });
     await userEvent.click(betaButton);
 
@@ -112,7 +112,7 @@ describe('MyResumesPage (Resume Platform v3)', () => {
     render(<MyResumesPage />);
 
     const [betaButton] = await screen.findAllByRole('button', {
-      name: 'Use for Tailoring',
+      name: 'Set as active',
     });
     await userEvent.click(betaButton);
 

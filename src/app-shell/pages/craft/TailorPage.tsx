@@ -69,6 +69,9 @@ import type {
 import { PHASE_ORDER } from './tailor/types';
 import type { ReviewDecision } from './tailor/types';
 import { ReviewPanel } from './tailor/ReviewPanel';
+import type { ResumeAssetRow, BaseResumeSelection } from '@/types/resume';
+import { BaseResumePicker, AUTO_BASE } from './tailor/BaseResumePicker';
+import { BaseResumeUsedBanner } from './tailor/BaseResumeUsedBanner';
 import {
   replaceBulletText,
   removeBulletAt,
@@ -91,6 +94,9 @@ const ResumeEditor = lazy(() => import('@/components/resume/ResumeEditor'));
 export default function TailorPage() {
   const reduceMotion = useReducedMotion();
   const [hasResumes, setHasResumes] = useState<boolean | null>(null);
+  const [parsedResumes, setParsedResumes] = useState<ResumeAssetRow[]>([]);
+  const [baseChoice, setBaseChoice] = useState<string>(AUTO_BASE);
+  const [baseSelection, setBaseSelection] = useState<BaseResumeSelection | null>(null);
   const [loadingCheck, setLoadingCheck] = useState(true);
   const [resumeLoadError, setResumeLoadError] = useState('');
   const [jdText, setJdText] = useState('');
@@ -236,6 +242,8 @@ export default function TailorPage() {
     const resp = await apiService.listBaseResumes();
     if (resp.data) {
       const baseVersions = resp.data.versions || [];
+      const parsed = baseVersions.filter((v) => v.parse_status === 'parsed');
+      setParsedResumes(parsed);
       const active = baseVersions.find((v) => v.is_active);
       if (active) {
         activeResumeRef.current = { filename: active.filename, resume_id: active.resume_id };
@@ -436,6 +444,9 @@ export default function TailorPage() {
         if (typeof p.pct === 'number') setTailorPct(p.pct);
       },
       pendingJobIdRef.current || undefined,
+      baseChoice === AUTO_BASE
+        ? { selection_mode: 'auto' }
+        : { resume_id: baseChoice },
     );
 
     if (ctrl.signal.aborted) {
@@ -465,6 +476,16 @@ export default function TailorPage() {
         setTailorError('');
         return;
       }
+      if (combined.status === 404) {
+        setTailorError('That resume was not found. Pick another from the list and try again.');
+        return;
+      }
+      if (combined.status === 409) {
+        setTailorError(
+          'That resume has not finished parsing yet. Wait a moment or pick another.',
+        );
+        return;
+      }
       setTailorError(combined.error);
       return;
     }
@@ -476,7 +497,26 @@ export default function TailorPage() {
 
     const analysis = combined.data.jd_analysis;
     const tailoredResume = combined.data.tailored_resume;
-    setResult({ jd_analysis: analysis, tailored_resume: tailoredResume });
+    const selection = combined.data.base_selection || null;
+    if (selection) {
+      setBaseSelection(selection);
+      if (selection.resume_id) {
+        activeResumeRef.current = {
+          filename: selection.filename || '',
+          resume_id: selection.resume_id,
+        };
+      }
+      if (selection.filename) {
+        toast.success(`Tailored from ${selection.filename}`);
+      }
+    } else {
+      setBaseSelection(null);
+    }
+    setResult({
+      jd_analysis: analysis,
+      tailored_resume: tailoredResume,
+      base_selection: selection || undefined,
+    });
     if (combined.data.base_resume) setBaseResume(combined.data.base_resume);
     setReviewDecisions({});
     setScoreStale(false);
@@ -495,7 +535,7 @@ export default function TailorPage() {
       undefined,
       combined.data.record_id,
     );
-  }, [jdText, saveRecord, applyUsage, refreshUsage, upgrade]);
+  }, [jdText, saveRecord, applyUsage, refreshUsage, upgrade, baseChoice]);
 
   const handleCancel = useCallback(() => {
     tailorAbortRef.current?.abort();
@@ -555,6 +595,7 @@ export default function TailorPage() {
       // Naming the record lets the backend refuse the 6th version up front
       // (409 version_limit_reached) before spending an LLM call.
       recordIdRef.current || undefined,
+      baseSelection?.resume_id,
     );
 
     if (ctrl.signal.aborted) {
@@ -633,7 +674,7 @@ export default function TailorPage() {
       toast.success('Resume regenerated. Previous version kept for comparison');
       atsAutoTriggered.current = false;
     }
-  }, [result, regenFeedback, upgrade]);
+  }, [result, regenFeedback, upgrade, baseSelection]);
 
   /* ── Cover letter ────────────────────────────────────────────────────────── */
   const handleCoverLetter = useCallback(async () => {
@@ -856,6 +897,7 @@ export default function TailorPage() {
   const handleStartNew = useCallback(() => {
     setJdText('');
     setResult(null);
+    setBaseSelection(null);
     setTailorError('');
     setAtsLoading(false);
     setAtsError('');
@@ -944,6 +986,18 @@ export default function TailorPage() {
       {/* APIFY DISABLED (temporary): <SmartFiltersInline /> feeds the hidden Apify pipeline. Restore to re-enable. */}
 
       <ProgressStepper currentStep={currentStep} />
+
+      {baseSelection && result && (
+        <BaseResumeUsedBanner selection={baseSelection} />
+      )}
+      {!tailoring && (parsedResumes.length > 1 || !result) && (
+        <BaseResumePicker
+          resumes={parsedResumes}
+          value={baseChoice}
+          onChange={setBaseChoice}
+          disabled={tailoring}
+        />
+      )}
 
       {tailorError && (
         <div

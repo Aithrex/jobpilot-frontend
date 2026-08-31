@@ -646,6 +646,14 @@ export default function TailoredPage() {
                         <span>{formatDate(rec.created_at || '')}</span>
                         <span>·</span>
                         <span>{versions.length} version{versions.length === 1 ? '' : 's'}</span>
+                        {(rec.base_selection?.filename || rec.base_resume_filename) && (
+                          <>
+                            <span>·</span>
+                            <span title="Base resume used for this tailoring">
+                              from {rec.base_selection?.filename || rec.base_resume_filename}
+                            </span>
+                          </>
+                        )}
                         {ats !== undefined && (
                           <>
                             <span>·</span>

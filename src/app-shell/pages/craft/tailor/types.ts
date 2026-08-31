@@ -41,10 +41,11 @@ export const PHASE_ORDER: Record<TailorPhase, number> = {
   submitting: 0,
   queued: 0,
   extracting_jd: 1,
-  tailoring: 2,
-  augmenting: 3,
-  verifying: 4,
-  finalizing: 5,
+  selecting_base: 2,
+  tailoring: 3,
+  augmenting: 4,
+  verifying: 5,
+  finalizing: 6,
 };
 
 /** An entry in the in-session version history stack. */

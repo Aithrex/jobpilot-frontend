@@ -44,6 +44,7 @@ interface BatchJob {
     jd_analysis: JDAnalysis;
     record_id?: string;
     source_job_id?: string;
+    base_selection?: import('@/types/resume').BaseResumeSelection;
   };
   error?: string;
   /** Original posting URL when handed off from the Daily Pipeline. */
@@ -640,9 +641,12 @@ export default function BatchTailor() {
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-foreground truncate">{job.title}</p>
                       <p className={`text-xs ${job.status === 'failed' ? 'text-destructive' : 'text-muted-foreground'}`}>
-                        {job.status === 'completed' ? 'Ready' :
-                         job.status === 'failed' ? (job.error || 'Tailoring failed. Start a new batch to try this role again.') :
-                         job.status === 'processing' ? 'Tailoring...' : 'Queued'}
+                        {job.status === 'completed'
+                          ? (job.result?.base_selection?.filename
+                            ? `Ready · from ${job.result.base_selection.filename}`
+                            : 'Ready')
+                          : job.status === 'failed' ? (job.error || 'Tailoring failed. Start a new batch to try this role again.')
+                          : job.status === 'processing' ? 'Tailoring...' : 'Queued'}
                       </p>
                     </div>
                   </div>

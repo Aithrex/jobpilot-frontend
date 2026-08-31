@@ -79,6 +79,12 @@ describe('tailor record_id echo (worker-persisted records)', () => {
             jd_analysis: jd,
             tailored_resume: resume,
             record_id: 'rec-42',
+            base_selection: {
+              resume_id: 'ra-backend',
+              filename: 'backend.pdf',
+              mode: 'pinned',
+              reason: 'Using backend.pdf (the resume you chose).',
+            },
           },
         });
       }
@@ -88,9 +94,25 @@ describe('tailor record_id echo (worker-persisted records)', () => {
       throw new Error(`unexpected fetch: ${u}`);
     });
 
-    const tailor = await apiService.tailorResumeWithJDText('A job description');
+    const tailor = await apiService.tailorResumeWithJDText(
+      'A job description',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      { resume_id: 'ra-backend' },
+    );
     expect(tailor.error).toBeUndefined();
     expect(tailor.data?.record_id).toBe('rec-42');
+    expect(tailor.data?.base_selection?.filename).toBe('backend.pdf');
+
+    const postCall = fetchMock.mock.calls.find(([u]) =>
+      String(u).includes('/resume/tailor-with-jd'),
+    );
+    expect(postCall).toBeDefined();
+    const postBody = JSON.parse((postCall![1] as RequestInit).body as string);
+    expect(postBody.resume_id).toBe('ra-backend');
+    expect(postBody.job_description).toBe('A job description');
 
     const save = await apiService.saveTailoringRecord({
       record_id: tailor.data!.record_id,

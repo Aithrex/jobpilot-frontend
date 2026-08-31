@@ -210,6 +210,7 @@ export interface TailorPipelineResult {
   jd_analysis: JDAnalysis;
   tailored_resume: TailoredFullResume;
   ats_scores?: ATSScores;
+  base_selection?: BaseResumeSelection;
 }
 
 export interface ResumeStatus {
@@ -242,6 +243,26 @@ export interface ResumeAssetRow {
   is_active: boolean;
 }
 
+export type BaseSelectionMode = "auto" | "pinned" | "active" | "single";
+
+export interface BaseResumeCandidate {
+  resume_id: string;
+  filename: string;
+  match_score: number;
+  is_selected: boolean;
+  is_active?: boolean;
+}
+
+/** Sidecar on a completed tailor job: which uploaded file was the base. */
+export interface BaseResumeSelection {
+  resume_id: string;
+  filename: string;
+  mode: BaseSelectionMode;
+  match_score?: number | null;
+  reason: string;
+  candidates?: BaseResumeCandidate[];
+}
+
 // ─── Async job status ─────────────────────────────────────────────────────
 // The lifecycle of a `resume_jobs` document, polled via GET /api/resume/job/<id>.
 // Backend writes: "queued"/"processing" while running, then terminal
@@ -254,6 +275,7 @@ export type JobStatus = "queued" | "processing" | "completed" | "failed";
 // pass ships; the UI treats unknown phases as "keep current step".
 export type BackendTailorPhase =
   | "extracting_jd"
+  | "selecting_base"
   | "tailoring"
   | "augmenting"
   | "verifying"
@@ -432,6 +454,8 @@ export interface TailoringRecord {
   };
   base_resume_filename?: string;
   base_resume_s3_key?: string;
+  base_resume_id?: string;
+  base_selection?: BaseResumeSelection;
   ats_scores?: { overall?: number } | null;
   created_at: string;
   updated_at?: string;

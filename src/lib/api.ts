@@ -1906,6 +1906,10 @@ class ApiService {
     onStatus?: (status: import('../types/resume').JobStatus) => void,
     onProgress?: (p: import('../types/resume').TailorJobProgress) => void,
     sourceJobId?: string,
+    options?: {
+      resume_id?: string;
+      selection_mode?: 'auto' | 'active';
+    },
   ): Promise<
     ApiResponse<{
       jd_analysis: import('../types/resume').JDAnalysis;
@@ -1917,6 +1921,7 @@ class ApiService {
       // and echoes its id - callers MUST pass this to saveTailoringRecord so
       // the settle is idempotent (never a duplicate record).
       record_id?: string;
+      base_selection?: import('../types/resume').BaseResumeSelection;
     }>
   > {
     const submitResp = await this.request<{ job_id: string }>(
@@ -1926,6 +1931,8 @@ class ApiService {
         body: JSON.stringify({
           job_description: jobDescription,
           ...(sourceJobId ? { source_job_id: sourceJobId } : {}),
+          ...(options?.resume_id ? { resume_id: options.resume_id } : {}),
+          ...(options?.selection_mode ? { selection_mode: options.selection_mode } : {}),
         }),
       },
       30000,
@@ -1948,6 +1955,7 @@ class ApiService {
       tailored_resume: import('../types/resume').TailoredFullResume;
       base_resume?: import('../types/resume').TailoredFullResume;
       record_id?: string;
+      base_selection?: import('../types/resume').BaseResumeSelection;
     }>(
       submitResp.data.job_id,
       120000,
@@ -1971,6 +1979,7 @@ class ApiService {
     // 5-version cap up front (409 version_limit_reached) BEFORE spending an
     // LLM call whose result could never be saved.
     recordId?: string,
+    resumeId?: string,
   ): Promise<
     ApiResponse<{
       tailored_resume: import('../types/resume').TailoredFullResume;
@@ -1985,6 +1994,7 @@ class ApiService {
           jd_analysis: jdAnalysis,
           user_feedback: userFeedback,
           record_id: recordId || undefined,
+          ...(resumeId ? { resume_id: resumeId } : {}),
         }),
       },
       30000,

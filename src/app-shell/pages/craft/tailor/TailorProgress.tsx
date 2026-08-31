@@ -21,7 +21,7 @@ const STEPS: Array<{
 }> = [
   {
     key: 'extract',
-    phases: ['submitting', 'queued', 'extracting_jd'],
+    phases: ['submitting', 'queued', 'extracting_jd', 'selecting_base'],
     label: 'Extract job requirements',
     hint: 'Pulling skills, responsibilities, and ATS keywords',
   },
@@ -151,7 +151,9 @@ export function TailorProgress({
                 {status === 'active' && (
                   <>
                     <p className="text-[12px] text-muted-foreground mt-0.5">
-                      {step.hint}
+                      {phase === 'selecting_base'
+                        ? 'Choosing the resume that fits this role best'
+                        : step.hint}
                     </p>
                     <div className="mt-2 h-1 rounded-full bg-muted overflow-hidden">
                       {pct !== null ? (

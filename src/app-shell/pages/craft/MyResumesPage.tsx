@@ -102,7 +102,8 @@ export default function MyResumesPage() {
           <p className="overline">Craft · Base resumes</p>
           <h2 className="font-display text-h2 text-foreground">My Resumes</h2>
           <p className="text-caption text-muted-foreground">
-            Uploaded resumes used as the base for tailoring
+            Active is used for job matching. Tailor picks the best resume for
+            each job unless you choose one.
           </p>
         </div>
         {/* Real button + hidden input: unlike a `label` styled as a Button,
@@ -159,7 +160,7 @@ export default function MyResumesPage() {
         <PanelEmpty
           icon={FileText}
           title="No resumes uploaded yet"
-          body="Upload a PDF or DOCX to get started. It becomes the base for every tailored resume."
+          body="Upload a PDF or DOCX to get started. You can keep more than one. Tailor will pick the best fit for each job."
         />
       ) : (
         <div className="divide-y divide-border overflow-hidden rounded-container border border-border bg-card shadow-soft">
@@ -229,7 +230,7 @@ export default function MyResumesPage() {
                     }}
                     className="text-primary hover:text-primary"
                   >
-                    {settingActive === r.resume_id ? 'Setting...' : 'Use for Tailoring'}
+                    {settingActive === r.resume_id ? 'Setting...' : 'Set as active'}
                   </Button>
                 )}
                 <Button
