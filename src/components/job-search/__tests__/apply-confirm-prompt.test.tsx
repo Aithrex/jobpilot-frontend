@@ -100,7 +100,8 @@ describe('JobCard apply confirmation', () => {
     expect(onTailor).not.toHaveBeenCalled();
   });
 
-  test('Apply without tailoring opens the posting path', async () => {
+  test('Apply without tailoring opens the posting in a new tab', async () => {
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
     const onQuickApply = vi.fn();
     render(
       <JobCard
@@ -114,7 +115,13 @@ describe('JobCard apply confirmation', () => {
     );
     await userEvent.click(screen.getByRole('button', { name: /^apply$/i }));
     await userEvent.click(screen.getByRole('button', { name: /apply without tailoring/i }));
-    expect(onQuickApply).toHaveBeenCalledTimes(1);
+    expect(openSpy).toHaveBeenCalledWith(
+      'https://example.com/apply',
+      '_blank',
+      'noopener,noreferrer',
+    );
+    expect(onQuickApply).toHaveBeenCalledWith({ skipOpen: true });
+    openSpy.mockRestore();
   });
 
   test('Tailor resume from the choice dialog starts the tailor handoff', async () => {

@@ -336,7 +336,7 @@ interface WorkdayJobsPanelProps {
   getJobStatus: (jobId: string) => string | null;
   saveJob: (job: Job) => void | Promise<unknown>;
   unsaveJob: (jobId: string) => void | Promise<unknown>;
-  quickApply: (job: Job) => void | Promise<unknown>;
+  quickApply: (job: Job, opts?: { skipOpen?: boolean }) => void | Promise<unknown>;
   isApplyConfirmPending?: (jobId: string) => boolean;
   confirmApplied?: (jobId: string) => void | Promise<unknown>;
   dismissApplyConfirm?: (jobId: string) => void;
@@ -779,7 +779,7 @@ export function WorkdayJobsPanel({
         jobStatus={getJobStatus(job.job_id)}
         onSave={() => saveJob(toJob(job, fallbackSource))}
         onUnsave={() => unsaveJob(job.job_id)}
-        onQuickApply={() => quickApply(toJob(job, fallbackSource))}
+        onQuickApply={(opts) => quickApply(toJob(job, fallbackSource), opts)}
         applyConfirmPending={isApplyConfirmPending?.(job.job_id)}
         applyConfirmModalJobId={applyConfirmJobId}
         onConfirmApplied={confirmApplied ? () => void confirmApplied(job.job_id) : undefined}

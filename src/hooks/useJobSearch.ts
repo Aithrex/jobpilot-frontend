@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { apiService } from '@/lib/api';
+import { openJobPosting } from '@/lib/jobPosting';
 import { SAVED_JOBS_QUERY_KEY } from '@/hooks/useSavedJobTabCounts';
 import type { Job, SavedJob, JobSearchFilters, JobSearchOptions, BatchSearchResponse, VisaFlags, VisaFilters } from '@/types/jobs';
 
@@ -62,6 +63,16 @@ function readPendingApplyIds(): string[] {
     return parsed.filter((id): id is string => typeof id === 'string' && id.length > 0);
   } catch {
     return [];
+  }
+}
+
+function persistPendingApplyId(jobId: string) {
+  try {
+    const ids = readPendingApplyIds();
+    if (!ids.includes(jobId)) ids.push(jobId);
+    sessionStorage.setItem(PENDING_APPLY_KEY, JSON.stringify(ids));
+  } catch {
+    /* private mode / quota */
   }
 }
 
@@ -333,10 +344,14 @@ export function useJobSearch() {
     () => new Set(readPendingApplyIds()),
   );
   const [applyConfirmJob, setApplyConfirmJob] = useState<Job | null>(null);
+  // Tailor-from-Apply ids stay in sessionStorage for the next Jobs visit
+  // without flipping the in-card prompt on this visit.
+  const deferredTailorPending = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     try {
-      sessionStorage.setItem(PENDING_APPLY_KEY, JSON.stringify([...pendingApplyIds]));
+      const ids = new Set([...pendingApplyIds, ...deferredTailorPending.current]);
+      sessionStorage.setItem(PENDING_APPLY_KEY, JSON.stringify([...ids]));
     } catch {
       /* private mode / quota */
     }
@@ -379,6 +394,7 @@ export function useJobSearch() {
     const resp = posting
       ? await apiService.touchJobPipeline(posting, 'applied')
       : await updateJobStatus(jobId, 'applied');
+    deferredTailorPending.current.delete(jobId);
     setPendingApplyIds((prev) => {
       const next = new Set(prev);
       next.delete(jobId);
@@ -406,6 +422,7 @@ export function useJobSearch() {
   }, [updateJobStatus, savedJobs, applyConfirmJob, bumpSavedTabCounts]);
 
   const dismissApplyConfirm = useCallback((jobId: string) => {
+    deferredTailorPending.current.delete(jobId);
     setPendingApplyIds((prev) => {
       const next = new Set(prev);
       next.delete(jobId);
@@ -443,6 +460,7 @@ export function useJobSearch() {
       next.delete(job.job_id);
       return next;
     });
+    deferredTailorPending.current.delete(job.job_id);
     setApplyConfirmJob(null);
     toast.success('Moved to Applied', {
       description: 'Tracker shows Applied with your base resume until you tailor.',
@@ -451,10 +469,13 @@ export function useJobSearch() {
   }, [bumpSavedTabCounts]);
 
   // Open the posting, keep the job where it is, then ask "Did you apply?"
-  const quickApply = useCallback(async (job: Job) => {
-    const url = job.apply_link
-      || `https://www.google.com/search?q=${encodeURIComponent(`${job.title} ${job.company} apply`)}`;
-    window.open(url, '_blank', 'noopener,noreferrer');
+  const quickApply = useCallback(async (
+    job: Job,
+    opts?: { skipOpen?: boolean },
+  ) => {
+    if (!opts?.skipOpen) {
+      openJobPosting(job);
+    }
 
     const resp = await apiService.touchJobPipeline(job, 'opened');
     if (resp.data) {
@@ -472,9 +493,11 @@ export function useJobSearch() {
     setApplyConfirmJob(job);
   }, [savedJobs]);
 
-  // Record that Tailor started. Do not open the posting or queue Did-you-apply —
-  // Tailor is a Craft handoff, not an apply.
+  // Tailor-from-Apply opens the posting first (same as apply-without-tailoring),
+  // records tailor_started, and defers Did-you-apply until the user returns from
+  // Craft — Jobs remounts after Tailor and restores the prompt from sessionStorage.
   const beginApplyWithTailor = useCallback(async (job: Job) => {
+    openJobPosting(job);
     const resp = await apiService.touchJobPipeline(job, 'tailor_started');
     if (resp.data) {
       setSavedJobs((prev) => {
@@ -485,6 +508,8 @@ export function useJobSearch() {
           : [row, ...prev];
       });
     }
+    persistPendingApplyId(job.job_id);
+    deferredTailorPending.current.add(job.job_id);
   }, []);
 
   // --- Auto Apply: queue into ledger (prepare/gather/submit per user mode) ---

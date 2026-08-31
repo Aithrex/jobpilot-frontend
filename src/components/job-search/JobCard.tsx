@@ -27,6 +27,7 @@ import { WhyThisScoreButton } from './JobFitDetails';
 import { fitBandOf } from './fitBands';
 import { apiService, companyLogoSrc } from '@/lib/api';
 import { stagePendingTailorJob, cacheJdText, readCachedJdText } from '@/lib/craftHandoff';
+import { openJobPosting } from '@/lib/jobPosting';
 import { isAppliedSavedJob } from '@/lib/savedJobs';
 import { cn } from '@/lib/utils';
 import { hueFromString, toTitleCase, decodeJobHtml } from '@/lib/format';
@@ -46,7 +47,7 @@ interface JobCardProps {
   jobStatus: string | null;
   onSave: () => void | Promise<unknown>;
   onUnsave: () => void | Promise<unknown>;
-  onQuickApply: () => void;
+  onQuickApply: (opts?: { skipOpen?: boolean }) => void;
   /** Optional: queue into auto-apply ledger (per-job Auto Apply CTA). */
   onAutoApply?: () => void | Promise<unknown>;
   autoApplying?: boolean;
@@ -706,8 +707,11 @@ export function JobCard({
               type="button"
               variant="secondary"
               onClick={() => {
+                // Open synchronously in the click handler so popup blockers
+                // cannot swallow the tab after the dialog closes.
+                openJobPosting(job);
                 setApplyChoiceOpen(false);
-                onQuickApply();
+                onQuickApply({ skipOpen: true });
               }}
             >
               Apply without tailoring

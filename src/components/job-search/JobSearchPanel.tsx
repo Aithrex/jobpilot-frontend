@@ -64,7 +64,7 @@ interface JobSearchPanelProps {
   saveJob: (job: Job) => Promise<any>;
   unsaveJob: (jobId: string) => Promise<any>;
   isJobSaved: (jobId: string) => boolean;
-  quickApply: (job: Job) => Promise<void>;
+  quickApply: (job: Job, opts?: { skipOpen?: boolean }) => Promise<void>;
   isApplyConfirmPending?: (jobId: string) => boolean;
   confirmApplied?: (jobId: string) => void | Promise<unknown>;
   dismissApplyConfirm?: (jobId: string) => void;
@@ -537,7 +537,7 @@ export function JobSearchPanel({
                 jobStatus={getJobStatus(job.job_id)}
                 onSave={() => saveJob(job)}
                 onUnsave={() => unsaveJob(job.job_id)}
-                onQuickApply={() => quickApply(job)}
+                onQuickApply={(opts) => void quickApply(job, opts)}
                 applyConfirmPending={isApplyConfirmPending?.(job.job_id)}
                 applyConfirmModalJobId={applyConfirmJob?.job_id}
                 onConfirmApplied={confirmApplied ? () => void confirmApplied(job.job_id) : undefined}

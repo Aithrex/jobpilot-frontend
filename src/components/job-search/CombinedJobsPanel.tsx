@@ -37,7 +37,7 @@ interface CombinedJobsPanelProps {
   getJobStatus: (jobId: string) => string | null;
   saveJob: (job: Job) => void | Promise<unknown>;
   unsaveJob: (jobId: string) => void | Promise<unknown>;
-  quickApply: (job: Job) => void | Promise<unknown>;
+  quickApply: (job: Job, opts?: { skipOpen?: boolean }) => void | Promise<unknown>;
   isApplyConfirmPending?: (jobId: string) => boolean;
   confirmApplied?: (jobId: string) => void | Promise<unknown>;
   dismissApplyConfirm?: (jobId: string) => void;
@@ -188,7 +188,7 @@ export function CombinedJobsPanel({
         jobStatus={getJobStatus(job.job_id)}
         onSave={() => saveJob(toJob(job, 'career portal'))}
         onUnsave={() => unsaveJob(job.job_id)}
-        onQuickApply={() => quickApply(toJob(job, 'career portal'))}
+        onQuickApply={(opts) => quickApply(toJob(job, 'career portal'), opts)}
         applyConfirmPending={isApplyConfirmPending?.(job.job_id)}
         applyConfirmModalJobId={showApplyOverlay ? applyConfirmJob?.job_id : undefined}
         onConfirmApplied={confirmApplied ? () => void confirmApplied(job.job_id) : undefined}

@@ -78,7 +78,7 @@ function JobList({
           jobStatus={jobSearch.getJobStatus(job.job_id)}
           onSave={() => jobSearch.saveJob(job)}
           onUnsave={() => jobSearch.unsaveJob(job.job_id)}
-          onQuickApply={() => void jobSearch.quickApply(job)}
+          onQuickApply={(opts) => void jobSearch.quickApply(job, opts)}
           applyConfirmPending={jobSearch.isApplyConfirmPending(job.job_id)}
           applyConfirmModalJobId={jobSearch.applyConfirmJob?.job_id}
           onConfirmApplied={() => void jobSearch.confirmApplied(job.job_id)}
