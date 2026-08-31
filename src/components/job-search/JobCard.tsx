@@ -239,7 +239,7 @@ export function JobCard({
   const [tailoring, setTailoring] = useState(false);
   const [referralOpen, setReferralOpen] = useState(false);
   const [scanning, setScanning] = useState(false);
-  const [applyOpenConfirm, setApplyOpenConfirm] = useState(false);
+  const [applyChoiceOpen, setApplyChoiceOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const openAnalysis = (action: typeof analysisAction) => {
@@ -573,9 +573,9 @@ export function JobCard({
                     size="sm"
                     onClick={() => {
                       if (inAppliedPipeline) onQuickApply();
-                      else setApplyOpenConfirm(true);
+                      else setApplyChoiceOpen(true);
                     }}
-                    title={apply.fallback ? 'Apply link missing. Confirm, then we search Google for this posting' : 'Confirm, then open the posting'}
+                    title={apply.fallback ? 'Apply link missing. Opens Google search, then asks how you want to apply' : 'Choose tailor, apply with your base resume, or mark already applied'}
                     className="btn-premium h-9 min-w-0 gap-1.5 text-xs font-semibold"
                   >
                     <ExternalLink className="h-3.5 w-3.5" />
@@ -679,17 +679,15 @@ export function JobCard({
 
       <JobAnalysisModal open={analysisOpen} onOpenChange={setAnalysisOpen} job={job} action={analysisAction} />
       <ReferralModal open={referralOpen} onOpenChange={setReferralOpen} job={job} />
-      <AlertDialog open={applyOpenConfirm} onOpenChange={setApplyOpenConfirm}>
+      <AlertDialog open={applyChoiceOpen} onOpenChange={setApplyChoiceOpen}>
         <AlertDialogContent solid>
           <AlertDialogHeader>
-            <AlertDialogTitle>Open this posting?</AlertDialogTitle>
+            <AlertDialogTitle>How do you want to apply?</AlertDialogTitle>
             <AlertDialogDescription>
-              {apply.fallback
-                ? `No direct apply link for ${title} at ${company}. We’ll search Google, then ask if you submitted so we can track it.`
-                : `We’ll open the listing for ${title} at ${company} in a new tab. When you come back, confirm whether you submitted so we can track it.`}
+              Tailor a resume for {title} at {company}, apply with your current resume, or mark that you already submitted.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="gap-2 sm:space-x-0">
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             {onAlreadyApplied && (
               <Button
@@ -697,22 +695,33 @@ export function JobCard({
                 variant="outline"
                 className="hover:border-primary hover:bg-primary/10 hover:text-primary"
                 onClick={() => {
-                  setApplyOpenConfirm(false);
+                  setApplyChoiceOpen(false);
                   void onAlreadyApplied();
                 }}
               >
                 Already applied
               </Button>
             )}
-            <AlertDialogAction
+            <Button
+              type="button"
+              variant="secondary"
               onClick={() => {
-                setApplyOpenConfirm(false);
+                setApplyChoiceOpen(false);
                 onQuickApply();
               }}
             >
-              Open posting
-            </AlertDialogAction>
-          </AlertDialogFooter>
+              Apply without tailoring
+            </Button>
+            <Button
+              type="button"
+              onClick={() => {
+                setApplyChoiceOpen(false);
+                void startTailor();
+              }}
+            >
+              Tailor resume
+            </Button>
+          </div>
         </AlertDialogContent>
       </AlertDialog>
     </>
