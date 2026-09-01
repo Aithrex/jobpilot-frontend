@@ -96,7 +96,9 @@ export default function CareerPortalsTab() {
       <ApplyConfirmDialog
         job={applyConfirmJob}
         onApplied={() => {
-          if (applyConfirmJob) void confirmApplied(applyConfirmJob.job_id);
+          if (applyConfirmJob) {
+            void confirmApplied(applyConfirmJob.job_id, applyConfirmJob);
+          }
         }}
         onNotYet={() => {
           if (applyConfirmJob) dismissApplyConfirm(applyConfirmJob.job_id);

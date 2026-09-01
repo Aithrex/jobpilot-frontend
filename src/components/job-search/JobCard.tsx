@@ -292,7 +292,19 @@ export function JobCard({
   };
 
   /** Card Tailor is a Craft handoff only — never open the posting or ask Did you apply. */
-  const startTailor = async () => {
+  const startTailorHandoff = async () => {
+    if (tailoring) return;
+    setTailoring(true);
+    try {
+      await handleTailor();
+    } catch {
+      toast.error('Could not open Tailor');
+      setTailoring(false);
+    }
+  };
+
+  /** Apply-choice Tailor opens the posting, records tailor_started, then hands off. */
+  const startTailorFromApply = async () => {
     if (tailoring) return;
     setTailoring(true);
     try {
@@ -585,7 +597,7 @@ export function JobCard({
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => void startTailor()}
+                    onClick={() => void startTailorHandoff()}
                     disabled={tailoring}
                     aria-busy={tailoring}
                     title="Open Tailor with this job’s description"
@@ -667,7 +679,7 @@ export function JobCard({
               <span className="mr-1 inline-flex items-center gap-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground/70">
                 <Sparkles className="h-3 w-3" aria-hidden /> AI
               </span>
-              <ActionIcon label="Tailor resume to this role" icon={Wand2} onClick={() => void startTailor()} disabled={tailoring} />
+              <ActionIcon label="Tailor resume to this role" icon={Wand2} onClick={() => void startTailorHandoff()} disabled={tailoring} />
               <ActionIcon label="AI summary" icon={Sparkles} onClick={() => openAnalysis('summarize')} />
               <ActionIcon label="Skill-gap analysis" icon={Target} onClick={() => openAnalysis('missing_skills')} />
               <ActionIcon label="Generate cover letter" icon={FileText} onClick={() => openAnalysis('cover_letter')} />
@@ -720,7 +732,7 @@ export function JobCard({
               type="button"
               onClick={() => {
                 setApplyChoiceOpen(false);
-                void startTailor();
+                void startTailorFromApply();
               }}
             >
               Tailor resume

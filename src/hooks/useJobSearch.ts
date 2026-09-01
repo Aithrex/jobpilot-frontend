@@ -55,6 +55,7 @@ export const DEFAULT_FILTERS: JobSearchFilters = {
 };
 
 const PENDING_APPLY_KEY = 'aspirely.pending-apply-confirm';
+const PENDING_APPLY_JOBS_KEY = 'aspirely.pending-apply-jobs';
 
 function readPendingApplyIds(): string[] {
   try {
@@ -66,6 +67,16 @@ function readPendingApplyIds(): string[] {
   }
 }
 
+function readPendingApplyJobs(): Record<string, Job> {
+  try {
+    const parsed = JSON.parse(sessionStorage.getItem(PENDING_APPLY_JOBS_KEY) || '{}');
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+    return parsed as Record<string, Job>;
+  } catch {
+    return {};
+  }
+}
+
 function persistPendingApplyId(jobId: string) {
   try {
     const ids = readPendingApplyIds();
@@ -74,6 +85,32 @@ function persistPendingApplyId(jobId: string) {
   } catch {
     /* private mode / quota */
   }
+}
+
+function persistPendingApplyJob(job: Job) {
+  try {
+    const jobs = readPendingApplyJobs();
+    jobs[job.job_id] = job;
+    sessionStorage.setItem(PENDING_APPLY_JOBS_KEY, JSON.stringify(jobs));
+  } catch {
+    /* private mode / quota */
+  }
+}
+
+function clearPendingApply(jobId: string) {
+  try {
+    const ids = readPendingApplyIds().filter((id) => id !== jobId);
+    sessionStorage.setItem(PENDING_APPLY_KEY, JSON.stringify(ids));
+    const jobs = readPendingApplyJobs();
+    delete jobs[jobId];
+    sessionStorage.setItem(PENDING_APPLY_JOBS_KEY, JSON.stringify(jobs));
+  } catch {
+    /* private mode / quota */
+  }
+}
+
+function notifyTrackerRefresh() {
+  window.dispatchEvent(new CustomEvent('resume:application-saved'));
 }
 
 export interface BatchMeta {
@@ -359,15 +396,51 @@ export function useJobSearch() {
 
   const restoredPendingDialog = useRef(false);
   useEffect(() => {
-    if (restoredPendingDialog.current) return;
-    if (!pendingApplyIds.size || savedJobs.length === 0) return;
-    const id = [...pendingApplyIds][0];
-    const row = savedJobs.find((j) => j.job_id === id);
-    if (row?.job_data) {
-      restoredPendingDialog.current = true;
-      setApplyConfirmJob(row.job_data);
+    const storedIds = readPendingApplyIds();
+    if (storedIds.length) {
+      setPendingApplyIds((prev) => {
+        const next = new Set(prev);
+        for (const id of storedIds) next.add(id);
+        return next.size === prev.size && [...next].every((id) => prev.has(id)) ? prev : next;
+      });
     }
-  }, [pendingApplyIds, savedJobs]);
+  }, []);
+
+  useEffect(() => {
+    const onVisible = () => {
+      const storedIds = readPendingApplyIds();
+      if (!storedIds.length) return;
+      setPendingApplyIds((prev) => {
+        const next = new Set(prev);
+        for (const id of storedIds) next.add(id);
+        return next.size === prev.size && [...next].every((id) => prev.has(id)) ? prev : next;
+      });
+      if (!applyConfirmJob) {
+        const id = storedIds[0];
+        const job = readPendingApplyJobs()[id]
+          || savedJobs.find((j) => j.job_id === id)?.job_data;
+        if (job) setApplyConfirmJob(job);
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', onVisible);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', onVisible);
+    };
+  }, [applyConfirmJob, savedJobs]);
+
+  useEffect(() => {
+    if (restoredPendingDialog.current || applyConfirmJob) return;
+    if (!pendingApplyIds.size) return;
+    const id = [...pendingApplyIds][0];
+    const job = readPendingApplyJobs()[id]
+      || savedJobs.find((j) => j.job_id === id)?.job_data;
+    if (job) {
+      restoredPendingDialog.current = true;
+      setApplyConfirmJob(job);
+    }
+  }, [pendingApplyIds, savedJobs, applyConfirmJob]);
 
   useEffect(() => {
     setPendingApplyIds((prev) => {
@@ -383,18 +456,30 @@ export function useJobSearch() {
     });
   }, [savedJobs]);
 
+  const resolvePosting = useCallback((jobId: string, jobHint?: Job): Job | undefined => {
+    if (jobHint?.job_id === jobId) return jobHint;
+    if (applyConfirmJob?.job_id === jobId) return applyConfirmJob;
+    const cached = readPendingApplyJobs()[jobId];
+    if (cached) return cached;
+    return savedJobs.find((j) => j.job_id === jobId)?.job_data;
+  }, [applyConfirmJob, savedJobs]);
+
   const isApplyConfirmPending = useCallback(
-    (jobId: string) => pendingApplyIds.has(jobId),
+    (jobId: string) => (
+      pendingApplyIds.has(jobId)
+      || deferredTailorPending.current.has(jobId)
+      || readPendingApplyIds().includes(jobId)
+    ),
     [pendingApplyIds],
   );
 
-  const confirmApplied = useCallback(async (jobId: string) => {
-    const posting = savedJobs.find((j) => j.job_id === jobId)?.job_data
-      || applyConfirmJob;
+  const confirmApplied = useCallback(async (jobId: string, jobHint?: Job) => {
+    const posting = resolvePosting(jobId, jobHint);
     const resp = posting
       ? await apiService.touchJobPipeline(posting, 'applied')
       : await updateJobStatus(jobId, 'applied');
     deferredTailorPending.current.delete(jobId);
+    clearPendingApply(jobId);
     setPendingApplyIds((prev) => {
       const next = new Set(prev);
       next.delete(jobId);
@@ -415,14 +500,16 @@ export function useJobSearch() {
       });
       bumpSavedTabCounts();
     }
+    notifyTrackerRefresh();
     toast.success('Moved to Applied', {
       description: 'It’s in Apply → Tracker under Applied.',
     });
     return resp;
-  }, [updateJobStatus, savedJobs, applyConfirmJob, bumpSavedTabCounts]);
+  }, [updateJobStatus, resolvePosting, bumpSavedTabCounts]);
 
   const dismissApplyConfirm = useCallback((jobId: string) => {
     deferredTailorPending.current.delete(jobId);
+    clearPendingApply(jobId);
     setPendingApplyIds((prev) => {
       const next = new Set(prev);
       next.delete(jobId);
@@ -461,7 +548,9 @@ export function useJobSearch() {
       return next;
     });
     deferredTailorPending.current.delete(job.job_id);
+    clearPendingApply(job.job_id);
     setApplyConfirmJob(null);
+    notifyTrackerRefresh();
     toast.success('Moved to Applied', {
       description: 'Tracker shows Applied with your base resume until you tailor.',
     });
@@ -489,6 +578,8 @@ export function useJobSearch() {
     }
     if (savedJobs.find((j) => j.job_id === job.job_id)?.status === 'applied') return;
 
+    persistPendingApplyId(job.job_id);
+    persistPendingApplyJob(job);
     setPendingApplyIds((prev) => new Set(prev).add(job.job_id));
     setApplyConfirmJob(job);
   }, [savedJobs]);
@@ -509,7 +600,10 @@ export function useJobSearch() {
       });
     }
     persistPendingApplyId(job.job_id);
+    persistPendingApplyJob(job);
     deferredTailorPending.current.add(job.job_id);
+    setPendingApplyIds((prev) => new Set(prev).add(job.job_id));
+    setApplyConfirmJob(job);
   }, []);
 
   // --- Auto Apply: queue into ledger (prepare/gather/submit per user mode) ---

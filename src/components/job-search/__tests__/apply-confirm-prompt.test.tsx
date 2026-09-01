@@ -10,6 +10,12 @@ vi.mock('@/lib/api', () => ({
   companyLogoSrc: () => '',
 }));
 
+vi.mock('@/lib/craftHandoff', () => ({
+  stagePendingTailorJob: vi.fn(),
+  cacheJdText: vi.fn(),
+  readCachedJdText: vi.fn(() => ''),
+}));
+
 const JOB: Job = {
   job_id: 'j1',
   title: 'Platform Engineer',
@@ -162,7 +168,7 @@ describe('JobCard apply confirmation', () => {
     expect(onHide).toHaveBeenCalledTimes(1);
   });
 
-  test('Tailor resume is a visible tile action', async () => {
+  test('Tailor resume is a visible tile action without starting the apply pipeline', async () => {
     const onTailor = vi.fn();
     render(
       <JobCard
@@ -177,11 +183,10 @@ describe('JobCard apply confirmation', () => {
     );
     expect(screen.getByRole('button', { name: /^tailor resume$/i })).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: /^tailor resume$/i }));
-    expect(onTailor).toHaveBeenCalledTimes(1);
+    expect(onTailor).not.toHaveBeenCalled();
   });
 
   test('Tailor resume shows a spinner while the handoff is in flight', async () => {
-    const onTailor = vi.fn(() => new Promise<void>(() => {}));
     render(
       <JobCard
         job={JOB}
@@ -190,11 +195,9 @@ describe('JobCard apply confirmation', () => {
         onSave={() => {}}
         onUnsave={() => {}}
         onQuickApply={() => {}}
-        onApplyWithTailor={onTailor}
       />,
     );
     await userEvent.click(screen.getByRole('button', { name: /^tailor resume$/i }));
-    expect(onTailor).toHaveBeenCalledTimes(1);
     expect(screen.getByRole('button', { name: /opening/i })).toBeDisabled();
   });
 

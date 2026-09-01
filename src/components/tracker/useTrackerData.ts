@@ -104,6 +104,12 @@ export function useTrackerData() {
     load();
   }, [load]);
 
+  useEffect(() => {
+    const onSaved = () => { void refetchSilent(); };
+    window.addEventListener('resume:application-saved', onSaved);
+    return () => window.removeEventListener('resume:application-saved', onSaved);
+  }, [refetchSilent]);
+
   const updateRecord = useCallback(
     (id: string, patcher: (r: TailoringRecord) => TailoringRecord) => {
       setRecords((prev) => prev.map((r) => (r.record_id === id ? patcher(r) : r)));

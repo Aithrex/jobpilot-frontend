@@ -81,7 +81,7 @@ function JobList({
           onQuickApply={(opts) => void jobSearch.quickApply(job, opts)}
           applyConfirmPending={jobSearch.isApplyConfirmPending(job.job_id)}
           applyConfirmModalJobId={jobSearch.applyConfirmJob?.job_id}
-          onConfirmApplied={() => void jobSearch.confirmApplied(job.job_id)}
+          onConfirmApplied={() => void jobSearch.confirmApplied(job.job_id, job)}
           onConfirmNotYet={() => jobSearch.dismissApplyConfirm(job.job_id)}
           onApplyWithTailor={() => void jobSearch.beginApplyWithTailor(job)}
           onAlreadyApplied={() => void jobSearch.markAlreadyApplied(job)}
@@ -180,7 +180,12 @@ export default function JobOpportunitiesTab({ embedded }: JobOpportunitiesTabPro
       <ApplyConfirmDialog
         job={view === 'browse' ? null : jobSearch.applyConfirmJob}
         onApplied={() => {
-          if (jobSearch.applyConfirmJob) void jobSearch.confirmApplied(jobSearch.applyConfirmJob.job_id);
+          if (jobSearch.applyConfirmJob) {
+            void jobSearch.confirmApplied(
+              jobSearch.applyConfirmJob.job_id,
+              jobSearch.applyConfirmJob,
+            );
+          }
         }}
         onNotYet={() => {
           if (jobSearch.applyConfirmJob) jobSearch.dismissApplyConfirm(jobSearch.applyConfirmJob.job_id);

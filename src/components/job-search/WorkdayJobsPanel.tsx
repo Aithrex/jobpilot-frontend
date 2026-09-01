@@ -782,7 +782,7 @@ export function WorkdayJobsPanel({
         onQuickApply={(opts) => quickApply(toJob(job, fallbackSource), opts)}
         applyConfirmPending={isApplyConfirmPending?.(job.job_id)}
         applyConfirmModalJobId={applyConfirmJobId}
-        onConfirmApplied={confirmApplied ? () => void confirmApplied(job.job_id) : undefined}
+        onConfirmApplied={confirmApplied ? () => void confirmApplied(job.job_id, job) : undefined}
         onConfirmNotYet={dismissApplyConfirm ? () => dismissApplyConfirm(job.job_id) : undefined}
         onApplyWithTailor={beginApplyWithTailor ? () => beginApplyWithTailor(toJob(job, fallbackSource)) : undefined}
         onAlreadyApplied={markAlreadyApplied ? () => markAlreadyApplied(toJob(job, fallbackSource)) : undefined}

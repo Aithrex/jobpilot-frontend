@@ -540,7 +540,7 @@ export function JobSearchPanel({
                 onQuickApply={(opts) => void quickApply(job, opts)}
                 applyConfirmPending={isApplyConfirmPending?.(job.job_id)}
                 applyConfirmModalJobId={applyConfirmJob?.job_id}
-                onConfirmApplied={confirmApplied ? () => void confirmApplied(job.job_id) : undefined}
+                onConfirmApplied={confirmApplied ? () => void confirmApplied(job.job_id, job) : undefined}
                 onConfirmNotYet={dismissApplyConfirm ? () => dismissApplyConfirm(job.job_id) : undefined}
                 onApplyWithTailor={beginApplyWithTailor ? () => beginApplyWithTailor(job) : undefined}
                 onAlreadyApplied={markAlreadyApplied ? () => markAlreadyApplied(job) : undefined}
@@ -592,7 +592,9 @@ export function JobSearchPanel({
       <ApplyConfirmDialog
         job={applyConfirmJob ?? null}
         onApplied={() => {
-          if (applyConfirmJob && confirmApplied) void confirmApplied(applyConfirmJob.job_id);
+          if (applyConfirmJob && confirmApplied) {
+            void confirmApplied(applyConfirmJob.job_id, applyConfirmJob);
+          }
         }}
         onNotYet={() => {
           if (applyConfirmJob && dismissApplyConfirm) dismissApplyConfirm(applyConfirmJob.job_id);
