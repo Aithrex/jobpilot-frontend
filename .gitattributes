@@ -1,0 +1,32 @@
+# Normalise line endings in the repo, always.
+#
+# Without this the repo drifts: HEAD stores LF while a Windows/WSL checkout
+# rewrites files as CRLF, so files sit permanently "modified" with no content
+# change. Measured here on 2026-09-01: 420 files showed as modified and a
+# 26-line change to src/types/jobs.ts rendered as 1,137 changed lines. That
+# buries real diffs and invites someone to commit the noise, flipping the repo
+# to CRLF in a codebase that is built and served on Linux (node:22 -> nginx).
+#
+# The backend repo already carries this file; the two are kept identical apart
+# from the asset list below.
+* text=auto eol=lf
+
+# Binary - never touch these.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.pdf binary
+*.zip binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.ico binary
+*.mp4 binary
+*.webm binary
+
+# Lockfiles: real content, but never worth a manual merge.
+pnpm-lock.yaml -diff
+package-lock.json -diff
