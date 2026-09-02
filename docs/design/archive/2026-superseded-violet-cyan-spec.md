@@ -2,7 +2,7 @@
 >
 > This generated spec (violet `#7C3AED` / cyan `#0891B2`, Space Grotesk / DM Sans)
 > was never shipped and conflicts with the live token system. The authoritative
-> reference is **`docs/DESIGN_SYSTEM_MAP.md`**, backed by the runtime tokens in
+> reference is **`docs/design/system-map.md`**, backed by the runtime tokens in
 > **`src/index.css`** + `tailwind.config.ts` (indigo primary `hsl(238 70% 57%)`,
 > slate neutrals, Inter / Plus Jakarta Sans / JetBrains Mono). Kept for history only.
 

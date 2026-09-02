@@ -1,7 +1,7 @@
 > ## SUPERSEDED - PROPOSAL SINCE SHIPPED
 >
 > This proposal was implemented; the values below now live in **`src/index.css`**
-> (the single source of truth) and are documented in **`docs/DESIGN_SYSTEM_MAP.md`**.
+> (the single source of truth) and are documented in **`docs/design/system-map.md`**.
 > Read those instead; this file is kept only for the contrast-math rationale.
 
 # JobPilot — Reconciled Design-Token Proposal

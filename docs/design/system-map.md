@@ -6,7 +6,7 @@
 > the code ever disagree, the code wins; fix the doc.
 >
 > Older direction docs are **superseded** and kept only for history:
-> `design-system/jobpilot/MASTER.md` (violet/cyan, Space Grotesk),
+> `docs/design/archive/2026-superseded-violet-cyan-spec.md` (violet/cyan, Space Grotesk),
 > `docs/design/token-decisions.md`, `docs/design/tokens.proposal.css`,
 > `docs/design/token-reference.html` (the proposal that BECAME this system).
 

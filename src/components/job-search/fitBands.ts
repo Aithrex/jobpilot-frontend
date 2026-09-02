@@ -17,7 +17,7 @@
  * server sent, and keep the bare `fitBand(score)` for a number already known to
  * be a fit score.
  *
- * Colour policy (docs/DESIGN_SYSTEM_MAP.md section 3): `success` is reserved
+ * Colour policy (docs/design/system-map.md section 3): `success` is reserved
  * for positive evidence, `warning` for caution, and the brand `primary` for
  * "we recommend this". Colour is never the only cue - every consumer renders
  * the band LABEL next to the number.

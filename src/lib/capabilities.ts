@@ -129,7 +129,7 @@ export const WHATSAPP: Capability = {
   status: 'coming-soon',
   blurb: 'Opt in to receive match alerts, application updates and approval requests in WhatsApp.',
   evidence:
-    'Concept only. Meta Cloud API request is shaped (channels.py:116-185) but WHATSAPP_ENABLED / PHONE_NUMBER_ID / ACCESS_TOKEN exist in NO config surface - absent from .env.example, lambda.tf and the SSM map, so it cannot be switched on. Consent fns start/confirm/revoke (service.py:292-347) have zero callers and no route, and the FE captures no phone number, so it would deliver to nobody. Inbound approval webhook does not exist at all - no hub.challenge, no X-Hub-Signature-256, no edge prefix (variables.tf:81-96). MANUAL_STEPS.md:30 states send+receive is NOT built.',
+    'Concept only. Meta Cloud API request is shaped (channels.py:116-185) but WHATSAPP_ENABLED / PHONE_NUMBER_ID / ACCESS_TOKEN exist in NO config surface - absent from .env.example, lambda.tf and the SSM map, so it cannot be switched on. Consent fns start/confirm/revoke (service.py:292-347) have zero callers and no route, and the FE captures no phone number, so it would deliver to nobody. Inbound approval webhook does not exist at all - no hub.challenge, no X-Hub-Signature-256, no edge prefix (variables.tf:81-96). docs/ops/manual-steps.md:30 states send+receive is NOT built.',
 };
 
 export const SMS: Capability = {

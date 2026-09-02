@@ -86,5 +86,13 @@ flag, replacing the three legacy panels when on. **Off by default.**
 ## Deploy
 2-stage `Dockerfile` (Node 22 build → `nginx:alpine`). `nginx/default.conf` = SPA fallback (`try_files`) + security headers + gzip. Prod uses same-origin `/api` (CloudFront). CI: `.github/workflows/deploy.yml`.
 
+## Docs
+**Start at [`docs/README.md`](docs/README.md)** — getting started, architecture,
+the API reference, view→endpoint map, and `design/` (the live token
+[system map](docs/design/system-map.md), token decisions, the landing brief,
+and `design/archive/` for superseded direction docs kept only for history).
+`extension/`, `infra/` and `public/media/` keep their own READMEs beside the
+code they describe.
+
 ## Agents & skills
 `.claude/agents/` holds a scoped subagent suite (`orchestrator`, `frontend-engineer`, `uiux-designer`, `security-engineer`, `performance-engineer`, `staff-engineer`, `qa-test-engineer`, `devops-engineer`). Start with **`orchestrator`** for fuzzy asks; see `.claude/agents/README.md`. `.claude/skills/` adds `page-cro`, `react-state-management`, `typescript-advanced-types`.

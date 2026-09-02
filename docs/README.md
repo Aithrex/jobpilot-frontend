@@ -11,6 +11,14 @@ Developer documentation for the JobPilot web app. Start here.
 | **[API reference](api-reference.md)** | Look up any backend endpoint the frontend calls (grouped by domain) |
 | **[Frontend views → endpoints](frontend-views.md)** | See exactly which endpoints each screen/component requires |
 | **[Job feed title filtering](job-feed-title-filtering.md)** | Understand why Sync title chips seed search but do not hard-filter results |
+| **[Design system map](design/system-map.md)** | Look up a live token — this describes what is actually in `src/index.css` |
+| **[Token decisions](design/token-decisions.md)** | Understand why a token has the value it has |
+| **[Landing v8 brief](design/landing-v8-brief.md)** | Work on the public landing page |
+
+Everything design-related now sits under **`design/`**, including
+[`design/archive/`](design/archive/) for superseded direction documents kept
+only for history. Read those for context, never to implement from — the map
+above says which one is live.
 
 ## TL;DR
 
