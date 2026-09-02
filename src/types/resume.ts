@@ -47,12 +47,32 @@ export interface TailoredFullResume {
   experience: ResumeExperience[];
   education: ResumeEducation[];
   certifications: string[];
+  licenses?: string[];
   projects: ResumeProject[];
+  headline?: string;
+  languages?: string[];
+  awards?: string[];
+  publications?: string[];
+  patents?: string[];
+  leadership?: string[];
+  volunteering?: string[];
+  associations?: string[];
+  clearance?: string[];
+  layout_plan?: LayoutPlan;
+  finalization?: {
+    pipeline_version?: string;
+    render_version?: string;
+    content_hash?: string;
+    blocking_claim_count?: number;
+    blocking_claims?: Array<{ address: string; text: string; flags: string[] }>;
+  };
   target_role?: string;
   ats_keyword_audit?: ATSKeywordAudit;
   /** Claim-verification sidecar (backend attaches post-tailor; absent on
    * older records = "not verified yet"). See ResumeVerification. */
   verification?: ResumeVerification;
+  content_plan?: ContentPlan;
+  readiness?: ReadinessAnalysis;
   /**
    * Where each known skill belongs, decided by the backend at tailor time.
    * `map` is canonical-skill-key -> heading and covers both the base resume's
@@ -61,6 +81,19 @@ export interface TailoredFullResume {
    * out of this document. Absent on records tailored before this shipped.
    */
   _skill_headings?: { map: Record<string, string>; order: string[] };
+}
+
+export interface JDRequirement {
+  requirement_id: string;
+  text: string;
+  normalized_term: string;
+  source_sentence?: string;
+  source_location?: { start?: number; end?: number };
+  requirement_type: string;
+  priority: "mandatory" | "preferred" | "contextual" | string;
+  resume_controllable: boolean;
+  evidence_status: "supported" | "partial" | "missing" | "unknown" | string;
+  confidence?: number;
 }
 
 export interface JDAnalysis {
@@ -75,6 +108,45 @@ export interface JDAnalysis {
   experience_years: string;
   industry: string;
   keywords: string[];
+  requirements?: JDRequirement[];
+  jd_char_count?: number;
+}
+
+export interface LayoutPlan {
+  body_size?: number;
+  stretch?: number;
+  max_pages?: number;
+  page_format?: string;
+  section_order?: string[];
+  credentials_first?: boolean;
+}
+
+export interface ContentPlan {
+  candidate_positioning?: string;
+  recruiter_persona?: string;
+  domain?: string;
+  skill_groups?: Array<{ heading: string; skills: string[] }>;
+  section_order?: string[];
+  credentials_first?: boolean;
+  force_metrics?: boolean;
+  allow_project_generation?: boolean;
+}
+
+export interface RequirementCoverage {
+  requirement_id?: string;
+  text: string;
+  requirement_type?: string;
+  priority?: string;
+  evidence_status: string;
+  usage: string;
+}
+
+export interface ReadinessAnalysis {
+  qualification_fit: number;
+  knockout_failures: string[];
+  requirement_coverage: RequirementCoverage[];
+  notes: string[];
+  disclaimer?: string;
 }
 
 /** @deprecated v1 LLM-simulated per-vendor scores - v2 backends emit
@@ -188,6 +260,12 @@ export interface ATSScores {
   pdf_parseable_score?: number;
   pdf_parseable_checks?: PdfParseabilityChecks;
   pdf_parseable_warnings?: string[];
+  readiness?: ReadinessAnalysis;
+  docx_parseable?: {
+    docx_parseable_score?: number;
+    checks?: Record<string, unknown>;
+    warnings?: string[];
+  };
 }
 
 // ─── Claim verification sidecar (rides inside tailored_resume) ────────────
@@ -275,7 +353,7 @@ export interface BaseResumeSelection {
 // The lifecycle of a `resume_jobs` document, polled via GET /api/resume/job/<id>.
 // Backend writes: "queued"/"processing" while running, then terminal
 // "completed" (with `result`) or "failed" (with `error`/`error_code`).
-export type JobStatus = "queued" | "processing" | "completed" | "failed";
+export type JobStatus = "queued" | "processing" | "completed" | "failed" | "cancelled";
 
 // Honest sub-phase the backend writes into `job.result.progress` while a
 // tailor job is processing (update_job_progress). Drives the real stepper  - 

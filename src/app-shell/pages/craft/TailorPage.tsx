@@ -144,6 +144,9 @@ export default function TailorPage() {
   // Resume Platform v3: base rows are identified by resume_id (no s3_key).
   const activeResumeRef = useRef<{ filename: string; resume_id: string } | null>(null);
   const atsAutoTriggered = useRef(false);
+  const tailorJobIdRef = useRef<string | null>(null);
+  const tailorRunIdRef = useRef(0);
+  const [cancelling, setCancelling] = useState(false);
 
   const [downloading, setDownloading] = useState<'pdf' | 'docx' | null>(null);
   const [editing, setEditing] = useState(false);
@@ -409,6 +412,9 @@ export default function TailorPage() {
     tailorAbortRef.current?.abort();
     const ctrl = new AbortController();
     tailorAbortRef.current = ctrl;
+    const runId = ++tailorRunIdRef.current;
+    tailorJobIdRef.current = null;
+    setCancelling(false);
 
     setPhase('submitting');
     setTailorPct(null);
@@ -453,12 +459,17 @@ export default function TailorPage() {
         if (typeof p.pct === 'number') setTailorPct(p.pct);
       },
       pendingJobIdRef.current || undefined,
-      baseChoice === AUTO_BASE
-        ? { selection_mode: 'auto' }
-        : { resume_id: baseChoice },
+      {
+        ...(baseChoice === AUTO_BASE
+          ? { selection_mode: 'auto' as const }
+          : { resume_id: baseChoice }),
+        onJobId: (id) => {
+          tailorJobIdRef.current = id;
+        },
+      },
     );
 
-    if (ctrl.signal.aborted) {
+    if (runId !== tailorRunIdRef.current || ctrl.signal.aborted) {
       cleanup();
       return;
     }
@@ -546,18 +557,79 @@ export default function TailorPage() {
     );
   }, [jdText, saveRecord, applyUsage, refreshUsage, upgrade, baseChoice]);
 
-  const handleCancel = useCallback(() => {
+  const resetTailorSession = useCallback((opts?: { keepJdText?: boolean }) => {
     tailorAbortRef.current?.abort();
+    atsAbortRef.current?.abort();
+    regenAbortRef.current?.abort();
     if (tailorTimerRef.current) clearInterval(tailorTimerRef.current);
     tailorTimerRef.current = null;
+    tailorJobIdRef.current = null;
+    tailorRunIdRef.current += 1;
+    pendingJobIdRef.current = null;
+    recordIdRef.current = null;
+    atsAutoTriggered.current = false;
+    applyPromptShownRef.current = false;
+    coverLetterInFlightRef.current = false;
+    coverLetterAbortRef.current?.abort();
+    if (!opts?.keepJdText) setJdText('');
+    setResult(null);
+    setBaseSelection(null);
+    setTailorError('');
+    setAtsLoading(false);
+    setAtsError('');
+    setEditing(false);
+    setRegenFeedback('');
+    setRegenerating(false);
+    setRegenError('');
+    setPreviousResume(null);
+    setRegenView('tailored');
+    setCoverLetter(null);
+    setCoverLetterLoading(false);
+    setAddedKeywords(new Set());
+    setInspectorTab('jd');
+    setDownloadMenuOpen(false);
+    setVersions([]);
+    setDismissedNudges(new Set());
+    setReviewDecisions({});
+    setScoreStale(false);
+    setApplyPromptOpen(false);
     setPhase(null);
+    setTailorPct(null);
     setTailorElapsed(0);
+    setCancelling(false);
   }, []);
+
+  const handleCancel = useCallback(() => {
+    if (cancelling) return;
+    const jobId = tailorJobIdRef.current;
+    tailorAbortRef.current?.abort();
+    resetTailorSession({ keepJdText: true });
+    toast.success('Tailoring cancelled', {
+      description: 'You can tailor another job now. Your credit is being returned.',
+    });
+    if (jobId) {
+      void apiService.cancelResumeJob(jobId).finally(() => {
+        refreshUsage();
+      });
+    }
+  }, [cancelling, resetTailorSession, refreshUsage]);
+
+  const handleStartNew = useCallback(() => {
+    resetTailorSession();
+  }, [resetTailorSession]);
 
   /* ── Downloads ───────────────────────────────────────────────────────────── */
   const handleDownload = useCallback(
     async (fmt: 'pdf' | 'docx') => {
       if (!result) return;
+      const blocked = (result.tailored_resume.finalization?.blocking_claims || []).length;
+      if (blocked > 0) {
+        toast.error('Resolve flagged numbers first', {
+          description: 'Open Review and accept, edit, or remove unsupported claims before downloading.',
+        });
+        setInspectorTab('review');
+        return;
+      }
       setDownloading(fmt);
       const r = await apiService.downloadTailoredResume(
         result.tailored_resume,
@@ -907,7 +979,21 @@ export default function TailorPage() {
 
   /* ── Version + keyword + new-session helpers ─────────────────────────────── */
   const handleAddKeyword = useCallback(
-    (kw: string) => {
+    async (kw: string) => {
+      if (!result) return;
+      const check = await apiService.addGroundedSkill(
+        kw,
+        result.tailored_resume,
+        baseResume,
+      );
+      if (check.error || check.status === 409) {
+        toast.error(`Can't add "${kw}"`, {
+          description:
+            (check.errorPayload as { message?: string } | undefined)?.message ||
+            'This skill is not evidenced on your resume. Only add what you can defend.',
+        });
+        return;
+      }
       setResult((prev) => {
         if (!prev) return prev;
         const category = inferSkillCategory(prev.tailored_resume, kw, similarity);
@@ -920,7 +1006,7 @@ export default function TailorPage() {
       setAddedKeywords((prev) => new Set(prev).add(kw));
       toast.success(`Added "${kw}" to your skills`);
     },
-    [],
+    [result, baseResume],
   );
 
   const handleRestoreVersion = useCallback((version: VersionEntry) => {
@@ -948,35 +1034,7 @@ export default function TailorPage() {
     toast.success('Reverted to previous version');
   }, [previousResume]);
 
-  const handleStartNew = useCallback(() => {
-    setJdText('');
-    setResult(null);
-    setBaseSelection(null);
-    setTailorError('');
-    setAtsLoading(false);
-    setAtsError('');
-    setEditing(false);
-    setRegenFeedback('');
-    setRegenerating(false);
-    setRegenError('');
-    setPreviousResume(null);
-    setRegenView('tailored');
-    setCoverLetter(null);
-    setCoverLetterLoading(false);
-    coverLetterInFlightRef.current = false;
-    coverLetterAbortRef.current?.abort();
-    setAddedKeywords(new Set());
-    setInspectorTab('jd');
-    setDownloadMenuOpen(false);
-    setVersions([]);
-    setDismissedNudges(new Set());
-    setReviewDecisions({});
-    setScoreStale(false);
-    recordIdRef.current = null;
-    atsAutoTriggered.current = false;
-    setApplyPromptOpen(false);
-    applyPromptShownRef.current = false;
-  }, []);
+  /* session reset lives in handleCancel / handleStartNew */
 
   const handleRetryFetch = useCallback(async () => {
     if (!pendingJobUrl || retryingJdFetch) return;
@@ -1033,6 +1091,8 @@ export default function TailorPage() {
   const reviewHasUnsupported = pendingFlagged.some(
     ([, item]) => item.verdict === 'UNSUPPORTED',
   );
+  const downloadBlocked =
+    (result?.tailored_resume.finalization?.blocking_claims || []).length > 0;
 
   return (
     <div className="space-y-5">
@@ -1095,6 +1155,7 @@ export default function TailorPage() {
             pct={tailorPct}
             elapsedSeconds={tailorElapsed}
             onCancel={handleCancel}
+            cancelling={cancelling}
           />
         </section>
 
@@ -1287,7 +1348,15 @@ export default function TailorPage() {
               <div className="mx-0.5 h-6 w-px bg-border" />
               <DropdownMenu open={downloadMenuOpen} onOpenChange={setDownloadMenuOpen}>
                 <DropdownMenuTrigger asChild>
-                  <Button disabled={downloading !== null} className="gap-1.5">
+                  <Button
+                    disabled={downloading !== null || downloadBlocked}
+                    className="gap-1.5"
+                    title={
+                      downloadBlocked
+                        ? 'Resolve flagged numbers in Review before downloading'
+                        : undefined
+                    }
+                  >
                     {downloading !== null ? (
                       <>
                         <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
@@ -1310,7 +1379,7 @@ export default function TailorPage() {
                   {(['pdf', 'docx'] as const).map((fmt) => (
                     <DropdownMenuItem
                       key={fmt}
-                      disabled={downloading !== null}
+                      disabled={downloading !== null || downloadBlocked}
                       onSelect={() => handleDownload(fmt)}
                       className="gap-3 py-2.5"
                     >

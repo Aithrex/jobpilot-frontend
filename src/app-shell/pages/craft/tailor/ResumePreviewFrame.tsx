@@ -63,6 +63,7 @@ export interface ResumePreviewFrameProps {
   pct: number | null;
   elapsedSeconds: number;
   onCancel: () => void;
+  cancelling?: boolean;
 }
 
 export function ResumePreviewFrame({
@@ -78,6 +79,7 @@ export function ResumePreviewFrame({
   pct,
   elapsedSeconds,
   onCancel,
+  cancelling = false,
 }: ResumePreviewFrameProps) {
   const reduceMotion = useReducedMotion();
   const statusLabel = result
@@ -209,6 +211,7 @@ export function ResumePreviewFrame({
             pct={pct}
             elapsedSeconds={elapsedSeconds}
             onCancel={onCancel}
+            cancelling={cancelling}
           />
         ) : (
           <div className="flex items-center justify-center min-h-[480px] p-6">

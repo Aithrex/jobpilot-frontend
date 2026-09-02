@@ -176,15 +176,16 @@ export function PDFParseabilityCard({
     <div className="rounded-2xl border border-gray-200 dark:border-white/[0.07] bg-white/60 dark:bg-gray-900/40 backdrop-blur-sm shadow-xl shadow-black/5 dark:shadow-black/20 p-5">
       <div className="flex items-center justify-between mb-1">
         <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-          Real ATS Parseability
+          Vendor-informed parseability
         </p>
         <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold ${tone}`}>
           {score}/100
         </span>
       </div>
       <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
-        Deterministic round-trip through pypdf (same library used by Workday,
-        Greenhouse, Taleo). Verifies what a real ATS will actually read.
+        Deterministic round-trip through pypdf (the same class of library
+        Workday, Greenhouse, and Taleo use). This is a parse check, not a
+        vendor score or a rejection prediction.
       </p>
       <div className="grid gap-2 sm:grid-cols-2">
         <Row label="PDF text extraction" ok={!!checks.extraction_ok} />
