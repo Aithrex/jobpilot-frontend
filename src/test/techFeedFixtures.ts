@@ -94,7 +94,9 @@ export function makeTechFeedResponse(
     coverage: {
       as_of: '2026-08-31T06:00:00Z',
       active_postings: 412_000,
-      validated_endpoints: 8_100,
+      responding_endpoints: 8_100,
+      owner_verified_sources: 1_092,
+      harvested_companies: 80_400,
       known_employers: 21_400,
     },
     source_health: {

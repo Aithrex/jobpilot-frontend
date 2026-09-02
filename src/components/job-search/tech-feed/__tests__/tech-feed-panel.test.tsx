@@ -568,3 +568,28 @@ describe('a filter the server did not apply is not shown as applied', () => {
     expect(screen.queryByTestId('tech-feed-unapplied-filters')).not.toBeInTheDocument();
   });
 });
+
+describe('the coverage banner does not promise coverage it does not have', () => {
+  test('it reports owner-verified career pages, not endpoints that answered', async () => {
+    renderPanel();
+    const badge = await screen.findByTestId('tech-feed-owner-verified');
+    expect(badge).toHaveTextContent('1,092 career pages owner-verified');
+  });
+
+  test('a backend that sends no owner-verified figure shows no claim', async () => {
+    const body = makeTechFeedResponse();
+    delete (body.coverage as { owner_verified_sources?: number }).owner_verified_sources;
+    api.searchTechFeed.mockResolvedValue({ data: body, status: 200 });
+    renderPanel();
+
+    await waitFor(() => expect(api.searchTechFeed).toHaveBeenCalled());
+    expect(screen.queryByTestId('tech-feed-owner-verified')).not.toBeInTheDocument();
+  });
+
+  test('employers is phrased as the ones we hold postings FROM', async () => {
+    // It used to read "across N employers" where N was every company ever
+    // harvested (~80,000). We do not have postings across 80,000 employers.
+    renderPanel();
+    expect(await screen.findByText(/active postings from/)).toBeInTheDocument();
+  });
+});

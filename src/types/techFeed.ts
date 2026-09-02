@@ -350,8 +350,22 @@ export type TechFeedFacets = Partial<Record<TechFeedFacetKey, TechFeedFacetValue
 export interface TechFeedCoverage {
   as_of: string | null;
   active_postings: number;
-  validated_endpoints: number;
+  /** Employers we hold LIVE postings for — not every company ever harvested. */
   known_employers: number;
+  /**
+   * Endpoints that ANSWERED. Not coverage: it cannot tell a company's own
+   * board from a stranger's board with a similar slug, and it is the number
+   * that once reported 43%. Optional — older backends send
+   * `validated_endpoints` for the same thing under a name that overclaims.
+   */
+  responding_endpoints?: number;
+  /** @deprecated the old name for `responding_endpoints`. */
+  validated_endpoints?: number;
+  /** Every company ever harvested. A ceiling on ambition, not a claim. */
+  harvested_companies?: number;
+  /** Career sources whose OWNER is verified — the real coverage figure. */
+  owner_verified_sources?: number;
+  registered_employers?: number;
 }
 
 export interface TechFeedSourceStatus {

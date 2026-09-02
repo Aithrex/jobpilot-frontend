@@ -82,8 +82,29 @@ export function TechFeedHealthBanner({
         {coverage && (
           <span className="inline-flex items-center gap-1">
             <Database className="h-3 w-3" aria-hidden />
-            {coverage.active_postings.toLocaleString()} active postings across{' '}
+            {coverage.active_postings.toLocaleString()} active postings from{' '}
             {coverage.known_employers.toLocaleString()} employers
+          </span>
+        )}
+
+        {/*
+          The honest denominator. `owner_verified_sources` counts career
+          sources whose OWNER we proved; `harvested_companies` is every company
+          ever harvested and is a ceiling on ambition, not a claim of coverage.
+          Showing them together is the point: the gap is the work remaining,
+          and hiding it would be promising coverage we do not have.
+        */}
+        {typeof coverage?.owner_verified_sources === 'number' && (
+          <span
+            className="inline-flex items-center gap-1"
+            data-testid="tech-feed-owner-verified"
+            title={
+              'A career page counts as covered only once we have proved whose ' +
+              'board it is. An endpoint that merely answers does not count.'
+            }
+          >
+            {coverage.owner_verified_sources.toLocaleString()} career pages
+            owner-verified
           </span>
         )}
 
