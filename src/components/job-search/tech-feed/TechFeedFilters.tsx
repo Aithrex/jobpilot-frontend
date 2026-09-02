@@ -14,7 +14,6 @@
  * the user has to opt into that.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { ChevronRight, SlidersHorizontal } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -25,7 +24,8 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { ChipsInput } from '@/components/job-search/ChipsInput';
-import { apiService } from '@/lib/api';
+import { CompanyAutocomplete } from './CompanyAutocomplete';
+import { CompanyCategoryPicker } from './CompanyCategoryPicker';
 import { cn } from '@/lib/utils';
 import {
   clampDays,
@@ -35,7 +35,6 @@ import {
   TECH_SCOPES,
   WORK_MODES,
 } from '@/lib/techFeedUrlState';
-import { companyLabel } from '@/types/jobs';
 import type {
   TechFeedFamily,
   TechFeedFilters as TechFeedFilterState,
@@ -485,32 +484,12 @@ export function TechFeedFilters({
     saveTechFeedUiState({ advancedOpen });
   }, [advancedOpen]);
 
-  // The catalog is only useful once the advanced section is open, so it is not
-  // fetched before then.
-  const catalog = useQuery({
-    queryKey: ['tech-feed', 'company-catalog'],
-    enabled: advancedOpen,
-    staleTime: 60 * 60 * 1000,
-    retry: 1,
-    queryFn: async () => {
-      const resp = await apiService.getWorkdayCatalog();
-      if (resp.error) throw new Error(resp.error);
-      return resp.data ?? null;
-    },
-  });
-
-  const companySuggestions = useMemo(() => {
-    const rows = (catalog.data?.industries ?? []).flatMap((industry) => industry.companies ?? []);
-    const seen = new Set<string>();
-    return rows
-      .filter((company) => {
-        const id = company.tenant;
-        if (!id || seen.has(id)) return false;
-        seen.add(id);
-        return true;
-      })
-      .slice(0, 12);
-  }, [catalog.data]);
+  // The Workday CATALOG fan-out that used to back the company suggestions is
+  // gone. It fetched an entire industry catalog to render twelve chips whose
+  // values were ATS tenant slugs - the same slugs a user could not type and
+  // could not read back. `CompanyAutocomplete` asks the canonical employer
+  // registry instead, one bounded query per keystroke burst, and returns the
+  // id the rest of the system agrees on.
 
   return (
     <div className={cn('space-y-5', className)} data-testid="tech-feed-filters">
@@ -830,6 +809,18 @@ export function TechFeedFilters({
                   { value: 'tech_only', label: 'Technology companies only' },
                 ]}
               />
+              {/* The toggle is a POSITIVE filter: it keeps the employers we
+                  hold technology evidence for, which necessarily hides the
+                  ones we hold none about. Saying so is the difference between
+                  a narrowing the user chose and one that just happened. */}
+              {filters.employerScope === 'tech_only' && (
+                <p className="text-[11px] text-muted-foreground">
+                  Shows MNCs, public technology companies, growth companies and
+                  niche startups we hold documentary evidence for. Employers we
+                  have not yet classified are hidden - the result count says how
+                  many.
+                </p>
+              )}
               <ChoiceGroup
                 name="tech-feed-employer-kind"
                 legend="Who is hiring"
@@ -845,50 +836,26 @@ export function TechFeedFilters({
                 ]}
               />
               <div className="space-y-1">
-                <Label className="text-xs font-medium">Selected companies</Label>
-                <ChipsInput
+                <Label className="text-xs font-medium" id="tech-feed-company-label">
+                  Companies
+                </Label>
+                {/* Names, never ids. See `CompanyAutocomplete` - the filter
+                    used to want whichever slug the catalog handed the UI, and
+                    a user typing "Stripe" had no way to reach it. */}
+                <CompanyAutocomplete
                   values={filters.companyIds}
                   onChange={(companyIds) => onPatch({ companyIds })}
-                  placeholder="Add a company id"
-                  emptyState="No company filter - every employer is in scope."
-                  accentClass="border-border bg-muted text-foreground"
+                  technologyOnly={filters.employerScope === 'tech_only'}
                 />
-                {companySuggestions.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 pt-1">
-                    {companySuggestions.map((company) => {
-                      const label = companyLabel(company);
-                      const active = filters.companyIds.includes(company.tenant);
-                      return (
-                        <button
-                          key={company.tenant}
-                          type="button"
-                          aria-pressed={active}
-                          onClick={() =>
-                            onPatch({ companyIds: toggle(filters.companyIds, company.tenant) })
-                          }
-                          className={cn(
-                            'rounded-full border px-2 py-0.5 text-[11px] transition-colors',
-                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                            active
-                              ? 'border-primary bg-primary text-primary-foreground'
-                              : 'border-border bg-background text-muted-foreground hover:bg-muted',
-                          )}
-                        >
-                          {label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
               </div>
               <div className="space-y-1">
                 <Label className="text-xs font-medium">Company categories</Label>
-                <ChipsInput
+                {/* The canonical facet with counts, not free text: a category
+                    outside the registry's vocabulary matched nothing, silently,
+                    and rendered as an applied filter. */}
+                <CompanyCategoryPicker
                   values={filters.companyCategories}
                   onChange={(companyCategories) => onPatch({ companyCategories })}
-                  placeholder="Add a category"
-                  emptyState="Every category."
-                  accentClass="border-border bg-muted text-foreground"
                 />
               </div>
             </div>

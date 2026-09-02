@@ -19,6 +19,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
+import { apiService } from '@/lib/api';
+
 import type {
   ApplyMode,
   EmployerKindFilter,
@@ -452,19 +454,139 @@ export function removeSavedSearch(id: string): SavedTechFeedSearch[] {
   return next;
 }
 
-/** Saved searches, kept in sync with localStorage. Separate from URL state. */
-export function useSavedTechFeedSearches() {
+/**
+ * Saved searches: the SERVER owns the list, this browser keeps a mirror.
+ *
+ * Why both
+ * --------
+ * A saved search used to live in `localStorage` and nowhere else. That is not
+ * storage, it is a cache with no origin: clearing site data, a private window,
+ * a new laptop or a second browser all lose every saved search silently, and
+ * the user finds out by looking for something that is gone.
+ *
+ * The mirror stays because the feed has to work when the API does not. A
+ * saved search the user can still see and still apply offline is worth more
+ * than a correct 503. So:
+ *
+ *   1. render from localStorage IMMEDIATELY (no spinner on a list the user
+ *      already had);
+ *   2. reconcile once on mount - push anything local-only up, take the
+ *      server's list back;
+ *   3. write through on every change, and mark a write that did not land
+ *      `pendingSync` so the next reconcile retries it.
+ *
+ * The server never deletes on reconcile: a search this browser does not have
+ * is one saved on another device, not one the user removed. Deletion is
+ * explicit and travels its own route.
+ */
+/**
+ * Every server call this hook makes, funnelled through one guard.
+ *
+ * `apiService` answers `{ data, error }` and does not reject - but that is a
+ * contract, not a guarantee, and this hook's entire promise is that the LOCAL
+ * list survives whatever the network does. A transport that throws
+ * SYNCHRONOUSLY (an interceptor, a stale bundle whose `apiService` predates
+ * these methods, a `TypeError` from a partial deploy) skips the `{ error }`
+ * branch entirely and rejects the caller's promise instead - which is an
+ * unhandled rejection, no `syncError` shown, and a spinner that never stops.
+ * Treating a throw as `{ error }` is the same answer for the same situation.
+ */
+async function guarded<T>(
+  call: () => Promise<{ data?: T; error?: string }>,
+): Promise<{ data?: T; error?: string }> {
+  try {
+    return await call();
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Network unavailable.' };
+  }
+}
+
+export function useSavedTechFeedSearches(options: { enabled?: boolean } = {}) {
+  const enabled = options.enabled !== false;
   const [saved, setSaved] = useState<SavedTechFeedSearch[]>(() => loadSavedSearches());
+  const [syncing, setSyncing] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
+  const reconciled = useRef(false);
 
-  const save = useCallback((name: string, filters: TechFeedFilters) => {
-    setSaved(persistSavedSearch(name, filters));
+  const adopt = useCallback((rows: SavedTechFeedSearch[]) => {
+    const clean = rows.map((row) => ({ ...row, pendingSync: false }));
+    writeJson(SAVED_SEARCHES_KEY, clean);
+    setSaved(clean);
   }, []);
 
-  const remove = useCallback((id: string) => {
-    setSaved(removeSavedSearch(id));
-  }, []);
+  useEffect(() => {
+    if (!enabled || reconciled.current) return;
+    reconciled.current = true;
+    let cancelled = false;
+    void (async () => {
+      setSyncing(true);
+      const res = await guarded(() =>
+        apiService.reconcileTechFeedSavedSearches(loadSavedSearches()),
+      );
+      if (cancelled) return;
+      setSyncing(false);
+      if (res.error || !res.data) {
+        // Offline, or the endpoint is not deployed. The local list stands and
+        // is NOT cleared - the whole point of the mirror.
+        setSyncError(res.error ?? 'Saved searches could not be synced.');
+        return;
+      }
+      setSyncError(null);
+      adopt(res.data.searches ?? []);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [enabled, adopt]);
 
-  return { saved, save, remove };
+  const save = useCallback(
+    async (name: string, filters: TechFeedFilters) => {
+      // Local first, always: the user sees the search appear whether or not
+      // the network is there.
+      const local = persistSavedSearch(name, filters);
+      setSaved(local);
+      const entry = local[0];
+      if (!enabled || !entry) return;
+      const res = await guarded(() =>
+        apiService.saveTechFeedSearch({
+          id: entry.id,
+          name: entry.name,
+          filters: techFeedFiltersToRequest(entry.filters),
+        }),
+      );
+      if (res.error || !res.data) {
+        // Mark it, do not lose it. The next reconcile pushes it up.
+        setSyncError(res.error ?? 'This search is saved on this device only.');
+        const marked = loadSavedSearches().map((row) =>
+          row.id === entry.id ? { ...row, pendingSync: true } : row,
+        );
+        writeJson(SAVED_SEARCHES_KEY, marked);
+        setSaved(marked);
+        return;
+      }
+      setSyncError(null);
+      adopt(res.data.searches ?? []);
+    },
+    [enabled, adopt],
+  );
+
+  const remove = useCallback(
+    async (id: string) => {
+      const local = removeSavedSearch(id);
+      setSaved(local);
+      if (!enabled) return;
+      const res = await guarded(() => apiService.deleteTechFeedSavedSearch(id));
+      if (res.error || !res.data) {
+        setSyncError(res.error ?? 'Removed here, but not yet on your other devices.');
+        return;
+      }
+      setSyncError(null);
+      adopt(res.data.searches ?? []);
+    },
+    [enabled, adopt],
+  );
+
+  return { saved, save, remove, syncing, syncError };
 }
 
 // ── Transient UI state ───────────────────────────────────────────

@@ -4027,6 +4027,124 @@ class ApiService {
     );
   }
 
+  /**
+   * Company autocomplete over the CANONICAL employer registry.
+   *
+   * The company filter used to take a company ID - whichever of an employer's
+   * several slugs the catalog happened to hand the UI, or a bare ATS tenant.
+   * A user typing "Stripe" had no way to reach `emp_fd96667721fe`, and a user
+   * who somehow had the id could not tell what it named.
+   *
+   * `technologyOnly` narrows to employers the registry holds technology
+   * evidence for - the SAME rule that builds the coverage denominator and the
+   * feed's `employer_scope=tech_only` filter, so a company picked from the
+   * technology-only list is guaranteed to survive the technology-only feed.
+   */
+  async searchTechFeedCompanies(
+    query: string,
+    opts: { limit?: number; technologyOnly?: boolean; categories?: string[] } = {},
+  ) {
+    const params = new URLSearchParams({ q: query });
+    if (opts.limit) params.set('limit', String(opts.limit));
+    if (opts.technologyOnly) params.set('technology_only', '1');
+    if (opts.categories?.length) params.set('categories', opts.categories.join(','));
+    return this.request<import('../types/techFeed').TechFeedCompanyResponse>(
+      `/jobs/tech-feed/companies?${params.toString()}`,
+      { method: 'GET' },
+    );
+  }
+
+  /**
+   * Resolve canonical employer ids back to names.
+   *
+   * What makes a saved or bookmarked company filter render as "Stripe" rather
+   * than as hex. Follows acquisitions, so an id saved before one still names
+   * the employer that now holds the postings.
+   */
+  async lookupTechFeedCompanies(ids: string[]) {
+    const clean = ids.map((id) => id.trim()).filter(Boolean).slice(0, 25);
+    return this.request<import('../types/techFeed').TechFeedCompanyResponse>(
+      `/jobs/tech-feed/companies?ids=${encodeURIComponent(clean.join(','))}`,
+      { method: 'GET' },
+    );
+  }
+
+  /** The canonical employer-category facet, with counts. Static per deploy-ish. */
+  async getTechFeedCompanyCategories() {
+    return this.request<import('../types/techFeed').TechFeedCompanyCategoriesResponse>(
+      '/jobs/tech-feed/company-categories',
+      { method: 'GET' },
+    );
+  }
+
+  // --- Saved searches: server-owned, locally mirrored ------------------
+  async listTechFeedSavedSearches() {
+    return this.request<import('../types/techFeed').TechFeedSavedSearchesResponse>(
+      '/jobs/tech-feed/saved-searches',
+      { method: 'GET' },
+    );
+  }
+
+  /**
+   * Upsert one saved search, keyed on the CLIENT's own id.
+   *
+   * Sending the same id twice updates one row rather than creating two, which
+   * is what makes an offline queue safe to drain. 409 means the account is at
+   * its cap - a well-formed request against a full account, not bad input.
+   */
+  async saveTechFeedSearch(body: { id: string; name: string; filters: unknown }) {
+    return this.request<import('../types/techFeed').TechFeedSavedSearchesResponse>(
+      '/jobs/tech-feed/saved-searches',
+      { method: 'POST', body: JSON.stringify(body) },
+    );
+  }
+
+  async deleteTechFeedSavedSearch(id: string) {
+    return this.request<import('../types/techFeed').TechFeedSavedSearchesResponse>(
+      `/jobs/tech-feed/saved-searches/${encodeURIComponent(id)}`,
+      { method: 'DELETE' },
+    );
+  }
+
+  /**
+   * Push this browser's local list up, then take the server's back.
+   *
+   * Called once on mount. The server never deletes on reconcile: a search
+   * this browser does not have is one saved on another device, not one the
+   * user removed.
+   */
+  async reconcileTechFeedSavedSearches(
+    searches: import('../types/techFeed').SavedTechFeedSearch[],
+  ) {
+    return this.request<import('../types/techFeed').TechFeedSavedSearchesResponse>(
+      '/jobs/tech-feed/saved-searches/reconcile',
+      { method: 'POST', body: JSON.stringify({ searches }) },
+    );
+  }
+
+  /**
+   * Non-PII product telemetry. Fire and forget.
+   *
+   * 204 with no body when accepted or dropped, so a caller never branches on
+   * it: telemetry must not be able to fail a user action. `dimensions` carries
+   * filter KEYS only - the server discards anything outside its allowlist, so
+   * a value that slipped in here would be dropped rather than stored, but the
+   * client should not send one in the first place.
+   */
+  async recordTechFeedTelemetry(
+    events: import('../types/techFeed').TechFeedTelemetryItem[],
+  ): Promise<void> {
+    if (!events.length) return;
+    try {
+      await this.request<Record<string, never>>('/jobs/tech-feed/telemetry', {
+        method: 'POST',
+        body: JSON.stringify({ events: events.slice(0, 50) }),
+      });
+    } catch {
+      /* telemetry never surfaces */
+    }
+  }
+
   // ============================================
   // Auto-Apply (opt-in auto-submit) - /api/apply/auto-submit
   // Rides the existing ANY /api/apply/{proxy+} edge route (no new Terraform).

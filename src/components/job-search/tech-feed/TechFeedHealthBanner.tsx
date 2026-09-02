@@ -31,6 +31,20 @@ function formatTimestamp(value: string | null | undefined): string {
   return date.toLocaleString();
 }
 
+function formatAge(hours: number | null | undefined): string {
+  if (hours === null || hours === undefined || !Number.isFinite(hours)) {
+    return 'at an unknown time';
+  }
+  if (hours < 1) return `${Math.max(1, Math.round(hours * 60))} min ago`;
+  if (hours < 48) return `${Math.round(hours)} hours ago`;
+  return `${Math.round(hours / 24)} days ago`;
+}
+
+function pct(value: number | null | undefined): string {
+  if (value === null || value === undefined || !Number.isFinite(value)) return '-';
+  return `${(value * 100).toFixed(1)}%`;
+}
+
 function formatLag(minutes: number | null): string {
   if (minutes === null || !Number.isFinite(minutes)) return 'lag unknown';
   if (minutes < 60) return `${Math.round(minutes)} min behind`;
@@ -52,7 +66,19 @@ export function TechFeedHealthBanner({
   const runnerDown = !!runner && runner.healthy === false;
   const allWarnings = [...warnings, ...(sourceHealth?.warnings ?? [])].filter(Boolean);
 
+  const measured = coverage?.measured;
+  const haveMeasurement = !!measured?.available;
+  /**
+   * A stale MEASUREMENT is not a degraded index - the crawl may be perfectly
+   * healthy while nobody has re-run the coverage report - so it is surfaced
+   * as its own caveat rather than turning the banner red. Conflating them
+   * would train the user to ignore the red banner.
+   */
+  const measurementStale = haveMeasurement && measured?.stale === true;
+
   const degraded = runnerDown || staleSources.length > 0 || allWarnings.length > 0;
+  const expandable =
+    staleSources.length > 0 || runnerDown || allWarnings.length > 0 || haveMeasurement;
 
   if (!coverage && !sourceHealth && !allWarnings.length) return null;
 
@@ -108,9 +134,38 @@ export function TechFeedHealthBanner({
           </span>
         )}
 
+        {/*
+          The MEASURED coverage: what share of the technology employers we
+          hold documentary evidence for has a career source whose owner we can
+          prove. Rendered WITH its age, always. The number is computed by
+          `scripts/employer_coverage_report.py --persist` and read from a
+          stored snapshot, so a figure with no age could be a week old and
+          look current.
+        */}
+        {haveMeasurement && (
+          <span
+            className="inline-flex items-center gap-1"
+            data-testid="tech-feed-employer-coverage"
+            title={
+              'Of the technology employers we hold documentary evidence for, ' +
+              'this many have a career source whose owner we have proved. An ' +
+              'endpoint that merely answers does not count.'
+            }
+          >
+            {pct(measured?.employer_coverage_pct)} of{' '}
+            {(measured?.technology_employer_denominator ?? 0).toLocaleString()}{' '}
+            technology employers covered
+            {measurementStale && (
+              <Badge variant="outline" className="ml-1 text-[10px]">
+                measured {formatAge(measured?.age_hours)}
+              </Badge>
+            )}
+          </span>
+        )}
+
         {coverage?.as_of && <span>Coverage as of {formatTimestamp(coverage.as_of)}</span>}
 
-        {(staleSources.length > 0 || runnerDown || allWarnings.length > 0) && (
+        {expandable && (
           <Collapsible open={open} onOpenChange={setOpen} className="ml-auto">
             <CollapsibleTrigger asChild>
               <Button
@@ -127,6 +182,137 @@ export function TechFeedHealthBanner({
               </Button>
             </CollapsibleTrigger>
             <CollapsibleContent className="mt-2 space-y-1.5 text-xs">
+              {haveMeasurement && (
+                <div data-testid="tech-feed-coverage-detail" className="space-y-1">
+                  <p className="font-medium">
+                    Coverage, measured {formatAge(measured?.age_hours)}
+                    {measured?.measured_at ? ` (${formatTimestamp(measured.measured_at)})` : ''}
+                  </p>
+                  {/*
+                    Four counts, four UNITS, and they were one number under a
+                    name that fitted none of them. An employer running a
+                    Workday board and a Greenhouse board is one employer and
+                    two sources; a covered board can be genuinely empty; an
+                    ownership-verified board whose content is unconfirmed is
+                    work in progress and not coverage.
+                  */}
+                  <ul className="grid grid-cols-1 gap-x-4 gap-y-0.5 sm:grid-cols-2">
+                    <li>
+                      Technology employers we hold evidence for:{' '}
+                      <strong className="tabular-nums">
+                        {(measured?.technology_employer_denominator ?? 0).toLocaleString()}
+                      </strong>
+                    </li>
+                    <li>
+                      Of those, covered:{' '}
+                      <strong className="tabular-nums">
+                        {(measured?.covered_technology_employers ?? 0).toLocaleString()}
+                      </strong>{' '}
+                      ({pct(measured?.employer_coverage_pct)})
+                    </li>
+                    <li>
+                      Still candidates:{' '}
+                      <strong className="tabular-nums">
+                        {(measured?.candidate_technology_employers ?? 0).toLocaleString()}
+                      </strong>
+                    </li>
+                    <li>
+                      Career sources covered (boards, not employers):{' '}
+                      <strong className="tabular-nums">
+                        {(measured?.covered_career_sources ?? 0).toLocaleString()}
+                      </strong>
+                    </li>
+                    <li>
+                      Owner-verified, content not yet confirmed:{' '}
+                      <strong className="tabular-nums">
+                        {(measured?.ownership_verified_unvalidated_sources ?? 0).toLocaleString()}
+                      </strong>
+                    </li>
+                    <li>
+                      Employers actually yielding postings:{' '}
+                      <strong className="tabular-nums">
+                        {(measured?.employers_yielding_postings ?? 0).toLocaleString()}
+                      </strong>
+                    </li>
+                    {measured?.tier_a && (
+                      <li>
+                        Strategic employers covered:{' '}
+                        <strong className="tabular-nums">
+                          {(measured.tier_a.accountable?.covered
+                            ?? measured.tier_a.covered).toLocaleString()}
+                        </strong>{' '}
+                        of{' '}
+                        {(measured.tier_a.accountable?.total
+                          ?? measured.tier_a.total).toLocaleString()}
+                      </li>
+                    )}
+                    {typeof coverage?.postings_with_canonical_employer === 'number' && (
+                      <li>
+                        Postings with a proven employer:{' '}
+                        <strong className="tabular-nums">
+                          {coverage.postings_with_canonical_employer.toLocaleString()}
+                        </strong>
+                      </li>
+                    )}
+                  </ul>
+                  {measured?.by_cohort && Object.keys(measured.by_cohort).length > 0 && (
+                    <div className="pt-1">
+                      <p className="mb-1 text-muted-foreground">By cohort:</p>
+                      <ul className="flex flex-wrap gap-1.5">
+                        {Object.entries(measured.by_cohort)
+                          .sort((a, b) => b[1].employers - a[1].employers)
+                          .slice(0, 6)
+                          .map(([name, facet]) => (
+                            <li key={name}>
+                              <Badge variant="outline" className="text-[10px]">
+                                {name.replace(/_/g, ' ')} {pct(facet.covered_pct)}
+                              </Badge>
+                            </li>
+                          ))}
+                      </ul>
+                    </div>
+                  )}
+                  {measured?.by_category && Object.keys(measured.by_category).length > 0 && (
+                    <div className="pt-1">
+                      <p className="mb-1 text-muted-foreground">By category:</p>
+                      <ul className="flex flex-wrap gap-1.5">
+                        {Object.entries(measured.by_category)
+                          .filter(([name]) => name !== 'other')
+                          .sort((a, b) => b[1].employers - a[1].employers)
+                          .slice(0, 8)
+                          .map(([name, facet]) => (
+                            <li key={name}>
+                              <Badge variant="outline" className="text-[10px]">
+                                {name.replace(/_/g, ' ')} {pct(facet.covered_pct)}
+                              </Badge>
+                            </li>
+                          ))}
+                      </ul>
+                    </div>
+                  )}
+                  {measured?.inventory_watermark && (
+                    <p className="text-muted-foreground">
+                      Inventory watermark {formatTimestamp(measured.inventory_watermark)}
+                    </p>
+                  )}
+                  {measurementStale && (
+                    <p className="text-muted-foreground">
+                      This measurement is older than{' '}
+                      {measured?.stale_after_hours
+                        ? `${Math.round(measured.stale_after_hours / 24)} days`
+                        : 'its refresh window'}
+                      . Treat it as history, not as status.
+                    </p>
+                  )}
+                </div>
+              )}
+              {coverage?.measured && !coverage.measured.available && (
+                <p data-testid="tech-feed-coverage-unmeasured" className="text-muted-foreground">
+                  No coverage measurement has been stored yet, so the share of
+                  technology employers we cover is unknown - which is not the
+                  same as zero.
+                </p>
+              )}
               {runnerDown && (
                 <p data-testid="tech-feed-ingest-down">
                   The ingest runner has not checked in since{' '}

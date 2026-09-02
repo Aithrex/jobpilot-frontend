@@ -27,10 +27,19 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useTechFeed } from '@/hooks/useTechFeed';
+import { DEFAULT_TECH_FEED_PAGE_SIZE, useTechFeed } from '@/hooks/useTechFeed';
 import { useTechFeedTaxonomy } from '@/hooks/useTechFeedTaxonomy';
 import { loadNotInterestedIds, reconcileNotInterested } from '@/lib/techFeedNotInterested';
 import { useSavedTechFeedSearches, useTechFeedFilters } from '@/lib/techFeedUrlState';
+import {
+  activeFilterKeys,
+  trackCardEngagement,
+  trackCardImpressions,
+  trackFilterApplied,
+  trackSearch,
+  trackSourceFailure,
+  trackZeroResultReason,
+} from '@/lib/techFeedTelemetry';
 import { cn } from '@/lib/utils';
 import { TechFeedEmptyState } from '@/components/job-search/tech-feed/TechFeedEmptyState';
 import { TechFeedFacets } from '@/components/job-search/tech-feed/TechFeedFacets';
@@ -206,7 +215,16 @@ export function TechFeedPanel({
   const { filters, queryDraft, setQueryDraft, patchFilters, replaceFilters, resetFilters, activeFilterCount } =
     useTechFeedFilters();
   const { families, isLoading: taxonomyLoading } = useTechFeedTaxonomy();
-  const { saved, save, remove } = useSavedTechFeedSearches();
+  const { saved, save, remove, syncError } = useSavedTechFeedSearches();
+  /**
+   * Telemetry. Keyed on the SEARCH, not on the render, so a re-render or a
+   * page append does not re-count a search - and on `searchId`, which the
+   * server mints once per search, rather than on a filter hash the client
+   * could compute differently.
+   */
+  const trackedSearchId = useRef<string | null>(null);
+  const trackedImpressionPages = useRef<Set<string>>(new Set());
+  const lastFilterKeys = useRef<string[] | null>(null);
 
   const {
     jobs,
@@ -274,6 +292,68 @@ export function TechFeedPanel({
       return next;
     });
   }, []);
+
+  // ── Telemetry ──────────────────────────────────────────────────
+  //
+  // Non-PII: filter KEYS, bucketed result counts, vendor slugs. Never a
+  // filter value, a query string or a job id. See `lib/techFeedTelemetry.ts`,
+  // which enforces that on the way out; the server enforces it again on the
+  // way in.
+  useEffect(() => {
+    if (!searchId || isFetching || trackedSearchId.current === searchId) return;
+    trackedSearchId.current = searchId;
+    trackSearch(filters, total);
+    if (total === 0) {
+      // The SERVER computed which filter emptied the page. Reporting the
+      // client's guess instead would measure our guess.
+      for (const suggestion of unappliedFilters ?? []) {
+        if (suggestion.reason) trackZeroResultReason(suggestion.reason);
+      }
+    }
+  }, [searchId, isFetching, total, filters, unappliedFilters]);
+
+  // One impression event per (search, page), not per card: card impressions
+  // are the highest-volume and least urgent event in the product, and a
+  // per-row write would put the most-scrolled sessions at the top of the
+  // request log for no reason.
+  useEffect(() => {
+    if (!searchId || !visibleJobs.length) return;
+    const page = Math.ceil(visibleJobs.length / DEFAULT_TECH_FEED_PAGE_SIZE);
+    const key = `${searchId}:${page}`;
+    if (trackedImpressionPages.current.has(key)) return;
+    trackedImpressionPages.current.add(key);
+    trackCardImpressions(visibleJobs.length, page);
+  }, [searchId, visibleJobs.length]);
+
+  // Which filters the user TURNED ON, as distinct from which filters a
+  // search ran with. `search` already carries the full active key set, but a
+  // set restored from the URL or a saved search is not a filter anybody
+  // chose, and reading adoption off `search` would count it as one. The first
+  // observation is therefore skipped: it IS the restore.
+  useEffect(() => {
+    const keys = activeFilterKeys(filters);
+    const previous = lastFilterKeys.current;
+    lastFilterKeys.current = keys;
+    if (previous === null) return;
+    const added = keys.filter((key) => !previous.includes(key));
+    if (added.length) trackFilterApplied(added);
+  }, [filters]);
+
+  // A source the USER was told about failed. Distinct from an internal crawl
+  // failure, which `tech_feed_metrics` already counts: only one of the two is
+  // visible to somebody looking for a job.
+  useEffect(() => {
+    for (const source of sourceHealth?.sources ?? []) {
+      if (source.stale) trackSourceFailure(source.source, 'stale');
+    }
+  }, [sourceHealth]);
+
+  const onCardEngagement = useCallback(
+    (kind: 'card_open' | 'card_apply_click' | 'card_save', ats?: string | null) => {
+      trackCardEngagement(kind, ats);
+    },
+    [],
+  );
 
   // ── Infinite scroll ────────────────────────────────────────────
   const sentinelRef = useRef<HTMLDivElement | null>(null);
@@ -459,7 +539,9 @@ export function TechFeedPanel({
               variant="outline"
               className="h-8 gap-1 text-xs focus-visible:ring-2 focus-visible:ring-ring"
               onClick={() => {
-                save(saveName, filters);
+                // Fire and forget: the local write is synchronous inside the
+                // hook, so the chip appears whether or not the network does.
+                void save(saveName, filters);
                 setSaveName('');
               }}
             >
@@ -474,12 +556,22 @@ export function TechFeedPanel({
                       type="button"
                       onClick={() => replaceFilters(entry.filters)}
                       className="rounded-l-full border border-border bg-background px-2.5 py-0.5 text-xs hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      title={
+                        entry.pendingSync
+                          ? 'Saved on this device only - it will sync when the connection returns.'
+                          : undefined
+                      }
                     >
                       {entry.name}
+                      {entry.pendingSync && (
+                        <span className="ml-1 text-muted-foreground" aria-label="not yet synced">
+                          &#183;
+                        </span>
+                      )}
                     </button>
                     <button
                       type="button"
-                      onClick={() => remove(entry.id)}
+                      onClick={() => void remove(entry.id)}
                       aria-label={`Delete saved search ${entry.name}`}
                       className="rounded-r-full border border-l-0 border-border bg-background px-1.5 py-0.5 text-xs text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
@@ -488,6 +580,19 @@ export function TechFeedPanel({
                   </li>
                 ))}
               </ul>
+            )}
+            {/*
+              A sync failure is stated, never silent. The searches are still
+              here and still work; what the user needs to know is that this
+              browser is the only place they exist right now.
+            */}
+            {syncError && (
+              <span
+                className="text-[11px] text-muted-foreground"
+                data-testid="tech-feed-saved-search-sync-error"
+              >
+                Saved on this device only - {syncError}
+              </span>
             )}
           </div>
 
@@ -528,8 +633,12 @@ export function TechFeedPanel({
                       onRestore={onRestore}
                       saved={isJobSaved?.(job.job_id) ?? false}
                       jobStatus={getJobStatus?.(job.job_id) ?? null}
-                      onSave={saveJob}
+                      onSave={(posting) => {
+                        onCardEngagement('card_save', posting.ats);
+                        saveJob?.(posting);
+                      }}
                       onUnsave={unsaveJob}
+                      onEngagement={onCardEngagement}
                       onQuickApply={quickApply}
                       onApplyWithTailor={beginApplyWithTailor}
                       onAutoApply={autoApply}

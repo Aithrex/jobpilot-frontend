@@ -193,6 +193,28 @@ The agentic RAG copilot and its sub-workspaces.
 | PUT/DELETE | `/jobs/saved/{id}` | 🔒 | Update/remove a saved job | `updateSavedJob()` / `deleteSavedJob()` |
 | GET/PUT | `/jobs/filters` | 🔒 | Persisted search filters | `getJobFilters()` / `saveJobFilters()` |
 
+### 4a. The unified tech feed — `/jobs/tech-feed`
+
+Behind the `aspirely.techFeed.enabled` flag. Every route rides the existing
+`ANY /api/jobs/{proxy+}` edge route, so none of them needs a Terraform change.
+
+| Method | Endpoint | 🔒 | Purpose | `api.ts` |
+| --- | --- | --- | --- | --- |
+| POST | `/jobs/tech-feed/search` | 🔒 | The bounded indexed search. 200 inline; 202 `{job_id}` only when the caller asks for `async` | `searchTechFeed()` |
+| GET | `/jobs/tech-feed/taxonomy` | 🔒 | The filter tree. Static per deploy | `getTechFeedTaxonomy()` |
+| GET | `/jobs/tech-feed/coverage` | 🔒 | Crawl health + the MEASURED coverage, with `measured_at` / `age_hours` / `stale` | `getTechFeedCoverage()` |
+| GET | `/jobs/tech-feed/companies?q=` | 🔒 | Company autocomplete over the canonical employer registry. `?ids=a,b` resolves ids back to names | `searchTechFeedCompanies()` / `lookupTechFeedCompanies()` |
+| GET | `/jobs/tech-feed/company-categories` | 🔒 | The canonical employer-category facet, with counts | `getTechFeedCompanyCategories()` |
+| POST/DELETE/GET | `/jobs/tech-feed/feedback` | 🔒 | Cross-device "not interested" | `recordTechFeedFeedback()` / `undoTechFeedFeedback()` / `getTechFeedFeedback()` |
+| GET/POST | `/jobs/tech-feed/saved-searches` | 🔒 | Server-owned saved searches, keyed on the CLIENT's id | `listTechFeedSavedSearches()` / `saveTechFeedSearch()` |
+| DELETE | `/jobs/tech-feed/saved-searches/{id}` | 🔒 | Remove one | `deleteTechFeedSavedSearch()` |
+| POST | `/jobs/tech-feed/saved-searches/reconcile` | 🔒 | Push this browser's list up, take the server's back. Never deletes | `reconcileTechFeedSavedSearches()` |
+| POST | `/jobs/tech-feed/telemetry` | 🔒 | Non-PII product events. Filter KEYS and bucketed counts only; 204 on a dropped batch | `recordTechFeedTelemetry()` |
+
+> **`company_ids` takes canonical `emp_<12 hex>` ids** from the autocomplete.
+> A legacy value (a name slug or a bare ATS tenant) is still accepted on the
+> wire and still matches, temporarily — but nothing should DISPLAY one.
+
 ---
 
 ## 5. Gmail integration — `/resume/gmail`
