@@ -500,3 +500,47 @@ describe('TechFeedPanel accessibility', () => {
     expect(within(dialog).getByTestId('tech-feed-filters')).toBeInTheDocument();
   });
 });
+
+describe('a filter the server did not apply is not shown as applied', () => {
+  test('an unapplied filter is pulled out of "Server applied" and labelled', async () => {
+    api.searchTechFeed.mockResolvedValue({
+      data: makeTechFeedResponse({
+        applied_filters: { tech_scope: ['core'], radius_km: 50 },
+        unapplied_filters: [
+          { filter: 'radius_km', reason: 'needs geocoded coordinates' },
+        ],
+      }),
+      status: 200,
+    });
+    renderPanel();
+
+    const unapplied = await screen.findByTestId('tech-feed-unapplied-filters');
+    expect(within(unapplied).getByText('radius km')).toBeInTheDocument();
+    expect(within(unapplied).getByTitle('needs geocoded coordinates')).toBeInTheDocument();
+
+    // and it must NOT also appear in the applied row, which is the whole point
+    const applied = screen.getByTestId('tech-feed-applied-filters');
+    expect(within(applied).queryByText(/radius km: 50/)).not.toBeInTheDocument();
+  });
+
+  test('no unapplied filters means no "Not applied" row at all', async () => {
+    api.searchTechFeed.mockResolvedValue({
+      data: makeTechFeedResponse({ applied_filters: { tech_scope: ['core'] } }),
+      status: 200,
+    });
+    renderPanel();
+
+    await screen.findByTestId('tech-feed-applied-filters');
+    expect(screen.queryByTestId('tech-feed-unapplied-filters')).not.toBeInTheDocument();
+  });
+
+  test('a response from an older backend, with no field at all, still renders', async () => {
+    const body = makeTechFeedResponse({ applied_filters: { tech_scope: ['core'] } });
+    delete (body as { unapplied_filters?: unknown }).unapplied_filters;
+    api.searchTechFeed.mockResolvedValue({ data: body, status: 200 });
+    renderPanel();
+
+    await screen.findByTestId('tech-feed-applied-filters');
+    expect(screen.queryByTestId('tech-feed-unapplied-filters')).not.toBeInTheDocument();
+  });
+});

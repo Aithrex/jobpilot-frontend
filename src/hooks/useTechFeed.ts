@@ -30,6 +30,7 @@ import {
   type TechFeedSearchRequest,
   type TechFeedSearchResponse,
   type TechFeedSourceHealth,
+  type TechFeedUnappliedFilter,
 } from '@/types/techFeed';
 
 /** Thrown by the query fn so the reset effect can recognise the 410 path. */
@@ -63,6 +64,8 @@ export interface UseTechFeedResult {
   sourceHealth: TechFeedSourceHealth | null;
   warnings: string[];
   appliedFilters: Record<string, unknown> | null;
+  /** Requested filters the server did not apply, with the reason for each. */
+  unappliedFilters: TechFeedUnappliedFilter[];
   taxonomyVersion: string | null;
   inventoryWatermark: string | null;
   /** True for one render cycle after a 410 forced a reset - drives a notice. */
@@ -191,6 +194,7 @@ export function useTechFeed({
     sourceHealth: latestPage?.source_health ?? null,
     warnings: latestPage?.warnings ?? [],
     appliedFilters: firstPage?.applied_filters ?? null,
+    unappliedFilters: firstPage?.unapplied_filters ?? [],
     taxonomyVersion: firstPage?.taxonomy_version ?? null,
     inventoryWatermark: latestPage?.inventory_watermark ?? null,
     cursorReset,

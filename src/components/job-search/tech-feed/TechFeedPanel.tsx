@@ -38,7 +38,7 @@ import { TechFeedFilters } from '@/components/job-search/tech-feed/TechFeedFilte
 import { TechFeedHealthBanner } from '@/components/job-search/tech-feed/TechFeedHealthBanner';
 import { TechFeedJobCard } from '@/components/job-search/tech-feed/TechFeedJobCard';
 import type { Job } from '@/types/jobs';
-import type { TechFeedSort } from '@/types/techFeed';
+import type { TechFeedSort, TechFeedUnappliedFilter } from '@/types/techFeed';
 
 const SORT_OPTIONS: Array<{ value: TechFeedSort; label: string }> = [
   { value: 'relevance', label: 'Best match' },
@@ -61,29 +61,72 @@ function ResultsSkeleton() {
   );
 }
 
-/** The SERVER's normalized view of the search - not an echo of the request. */
-function AppliedFiltersSummary({ applied }: { applied: Record<string, unknown> | null }) {
+/**
+ * The SERVER's normalized view of the search - not an echo of the request.
+ *
+ * `applied_filters` is literally the echo, though, so anything the server
+ * reports in `unapplied_filters` is pulled OUT of the "Server applied" row and
+ * shown as not applied, with the server's reason. A filter chip that claims to
+ * have narrowed results when it did not is worse than no chip: the user
+ * believes they have excluded something and stops looking for it.
+ */
+function AppliedFiltersSummary({
+  applied,
+  unapplied,
+}: {
+  applied: Record<string, unknown> | null;
+  unapplied: TechFeedUnappliedFilter[];
+}) {
+  const inert = useMemo(
+    () => new Map(unapplied.map((u) => [u.filter, u.reason])),
+    [unapplied],
+  );
   const entries = useMemo(() => {
     if (!applied) return [];
-    return Object.entries(applied).filter(([, value]) => {
+    return Object.entries(applied).filter(([key, value]) => {
+      if (inert.has(key)) return false;
       if (value === null || value === undefined || value === '') return false;
       if (Array.isArray(value)) return value.length > 0;
       return true;
     });
-  }, [applied]);
+  }, [applied, inert]);
 
-  if (!entries.length) return null;
+  if (!entries.length && !unapplied.length) return null;
 
   return (
     <div className="flex flex-wrap items-center gap-1.5" data-testid="tech-feed-applied-filters">
-      <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
-        Server applied
-      </span>
-      {entries.slice(0, 12).map(([key, value]) => (
-        <Badge key={key} variant="outline" className="font-normal text-muted-foreground">
-          {key.replace(/_/g, ' ')}: {Array.isArray(value) ? value.join(', ') : String(value)}
-        </Badge>
-      ))}
+      {entries.length > 0 && (
+        <>
+          <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
+            Server applied
+          </span>
+          {entries.slice(0, 12).map(([key, value]) => (
+            <Badge key={key} variant="outline" className="font-normal text-muted-foreground">
+              {key.replace(/_/g, ' ')}: {Array.isArray(value) ? value.join(', ') : String(value)}
+            </Badge>
+          ))}
+        </>
+      )}
+      {unapplied.length > 0 && (
+        <span
+          className="flex flex-wrap items-center gap-1.5"
+          data-testid="tech-feed-unapplied-filters"
+        >
+          <span className="text-[11px] uppercase tracking-wide text-amber-600 dark:text-amber-500">
+            Not applied
+          </span>
+          {unapplied.map((u) => (
+            <Badge
+              key={u.filter}
+              variant="outline"
+              title={u.reason}
+              className="border-amber-500/40 font-normal text-amber-700 dark:text-amber-500"
+            >
+              {u.filter.replace(/_/g, ' ')}
+            </Badge>
+          ))}
+        </span>
+      )}
     </div>
   );
 }
@@ -147,6 +190,7 @@ export function TechFeedPanel({
     sourceHealth,
     warnings,
     appliedFilters,
+    unappliedFilters,
     inventoryWatermark,
     cursorReset,
     searchId,
@@ -364,7 +408,7 @@ export function TechFeedPanel({
             </fieldset>
           </div>
 
-          <AppliedFiltersSummary applied={appliedFilters} />
+          <AppliedFiltersSummary applied={appliedFilters} unapplied={unappliedFilters} />
 
           {/* Saved searches */}
           <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted/20 p-2">

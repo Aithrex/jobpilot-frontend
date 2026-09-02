@@ -375,6 +375,11 @@ export interface TechFeedSourceHealth {
   warnings: string[];
 }
 
+export interface TechFeedUnappliedFilter {
+  filter: string;
+  reason: string;
+}
+
 export interface TechFeedSearchResponse {
   search_id: string;
   jobs: TechFeedJob[];
@@ -384,6 +389,14 @@ export interface TechFeedSearchResponse {
   facets: TechFeedFacets;
   /** The SERVER's normalized view of the filters - render this, not the request. */
   applied_filters: Record<string, unknown>;
+  /**
+   * The filters in `applied_filters` that NOTHING actually narrowed on, each
+   * with the reason. `applied_filters` is an echo of the request, so rendering
+   * it as "Server applied" tells the user a filter excluded something when it
+   * did not - and a user who believes they have filtered stops looking. Render
+   * these separately; never inside the applied list.
+   */
+  unapplied_filters?: TechFeedUnappliedFilter[];
   taxonomy_version: string;
   fit_score_version: string;
   feed_version: string;
