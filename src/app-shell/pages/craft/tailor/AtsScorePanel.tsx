@@ -115,51 +115,17 @@ export function AtsScorePanel({
         </div>
       )}
 
-      {scores.readiness && (
-        <div className={SURFACE}>
-          <p className="text-sm font-semibold text-foreground">Application readiness</p>
-          <p className="mt-1 text-[11px] leading-snug text-muted-foreground">
-            {scores.readiness.disclaimer
-              || 'Qualification check against this posting. Not a rejection prediction.'}
-          </p>
-          <div className="mt-3">
-            <ScoreBar
-              label="Qualification fit"
-              score={scores.readiness.qualification_fit}
-            />
-          </div>
-          {scores.readiness.knockout_failures?.length > 0 && (
-            <ul className="mt-3 space-y-1.5">
-              {scores.readiness.knockout_failures.slice(0, 6).map((k) => (
-                <li key={k} className="flex gap-2 text-xs text-destructive">
-                  <XCircle className="mt-0.5 h-3 w-3 shrink-0" />
-                  <span>{k}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-          {scores.readiness.notes?.length > 0 && (
-            <ul className="mt-3 space-y-1.5">
-              {scores.readiness.notes.map((n) => (
-                <li key={n} className="text-xs leading-relaxed text-muted-foreground">
-                  {n}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
-
+      {/* Overall score ring */}
       <div className="rounded-container border border-border bg-card p-6 shadow-soft">
         <div className="flex items-center gap-6">
           <ScoreRing score={scores.overall} />
           <div className="flex-1">
             <p className="text-base font-semibold text-foreground">
-              Legacy match rubric (advisory)
+              Overall ATS Score
             </p>
             <p className="mt-0.5 text-xs text-muted-foreground">
               {v2
-                ? 'Kept for comparison. It is not a vendor ATS score and does not predict rejection. Use Application readiness above as the hiring signal.'
+                ? 'Deterministic, research-backed rubric: 75-80 is the honest target band; scores above 85 usually mean keyword stuffing, not a better resume.'
                 : 'Weighted score across all dimensions'}
             </p>
           </div>
@@ -216,13 +182,13 @@ export function AtsScorePanel({
         </div>
         <div className={SURFACE}>
           <p className="mb-1 text-sm font-semibold text-foreground">
-            {v2 ? 'Vendor-informed parse checks' : 'ATS Scanner Scores'}
+            {v2 ? 'ATS Compatibility Checks' : 'ATS Scanner Scores'}
           </p>
           {v2 ? (
             <>
               <p className="mb-3 text-[11px] leading-snug text-muted-foreground">
-                Parse-compatibility checklists informed by how these platforms
-                extract text. They are not live ATS scores.
+                Real parse-compatibility checks per platform. ATS don't score
+                resumes; they parse them. These verify yours parses.
               </p>
               <div className="space-y-2.5">
                 {scores.vendor_compat &&

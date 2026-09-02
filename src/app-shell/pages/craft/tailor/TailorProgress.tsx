@@ -62,14 +62,12 @@ export function TailorProgress({
   pct,
   elapsedSeconds,
   onCancel,
-  cancelling = false,
 }: {
   phase: TailorPhase;
   /** Real backend progress percent, null when the backend hasn't reported one. */
   pct: number | null;
   elapsedSeconds: number;
   onCancel: () => void;
-  cancelling?: boolean;
 }) {
   const current = activeStep(phase);
 
@@ -88,14 +86,12 @@ export function TailorProgress({
           </div>
           <div>
             <p className="text-[15px] font-semibold text-foreground">
-              {cancelling ? 'Stopping tailoring' : 'Tailoring your resume'}
+              Tailoring your resume
             </p>
             <p className="text-[11px] text-muted-foreground">
-              {cancelling
-                ? 'Your credit will be returned. You can tailor another job right away.'
-                : elapsedSeconds >= 90
-                  ? 'Taking longer than expected — you can cancel and start another job'
-                  : 'Usually takes 30 to 60 seconds. Cancel anytime to tailor a different job.'}
+              {elapsedSeconds >= 90
+                ? 'Taking longer than expected'
+                : 'Usually takes 30 to 60 seconds'}
             </p>
           </div>
         </div>
@@ -105,16 +101,16 @@ export function TailorProgress({
               {elapsedSeconds}s
             </span>
           )}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onCancel}
-            disabled={cancelling}
-            aria-label="Cancel tailoring and return your credit"
-            className="min-h-11 min-w-[5.5rem] px-3 text-[12px] hover:border-destructive/60 hover:text-destructive"
-          >
-            {cancelling ? 'Stopping…' : 'Cancel'}
-          </Button>
+          {elapsedSeconds >= 90 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onCancel}
+              className="h-auto px-2.5 py-1 text-[11px] hover:border-destructive/60 hover:text-destructive"
+            >
+              Cancel
+            </Button>
+          )}
         </div>
       </div>
 

@@ -1834,10 +1834,6 @@ class ApiService {
         return { data: job.result as unknown as T };
       }
 
-      if (job.status === 'cancelled') {
-        return { error: 'Canceled', errorPayload: { error: 'cancelled' } };
-      }
-
       if (job.status === 'failed') {
         if (job.error_code === 'LLM_RETRIES_EXHAUSTED') {
           // Fire the friendly, de-duped global toast, but ALSO return a
@@ -1925,7 +1921,6 @@ class ApiService {
     options?: {
       resume_id?: string;
       selection_mode?: 'auto' | 'active';
-      onJobId?: (jobId: string) => void;
     },
   ): Promise<
     ApiResponse<{
@@ -1966,7 +1961,6 @@ class ApiService {
       };
     }
     if (!submitResp.data?.job_id) return { error: 'Failed to submit job' };
-    options?.onJobId?.(submitResp.data.job_id);
 
     return this.pollJob<{
       jd_analysis: import('../types/resume').JDAnalysis;
@@ -2228,29 +2222,6 @@ class ApiService {
     }
   }
 
-  async cancelResumeJob(
-    jobId: string,
-  ): Promise<ApiResponse<{ status: import('../types/resume').JobStatus }>> {
-    return this.request(`/resume/job/${encodeURIComponent(jobId)}/cancel`, {
-      method: 'POST',
-    });
-  }
-
-  async addGroundedSkill(
-    keyword: string,
-    tailoredResume: import('../types/resume').TailoredFullResume,
-    baseResume?: import('../types/resume').TailoredFullResume | null,
-  ): Promise<ApiResponse<{ ok: boolean; keyword: string }>> {
-    return this.request('/resume/add-skill', {
-      method: 'POST',
-      body: JSON.stringify({
-        keyword,
-        tailored_resume: tailoredResume,
-        ...(baseResume ? { base_resume: baseResume } : {}),
-      }),
-    });
-  }
-
   async pollJobStatus<T>(
     jobId: string,
   ): Promise<ApiResponse<T & { status: import('../types/resume').JobStatus }>> {
@@ -2363,13 +2334,6 @@ class ApiService {
         // distinct version is refused with 409 version_limit_reached.
         if (response.status === 409 && errData.error === 'version_limit_reached') {
           return { error: VERSION_LIMIT_MESSAGE };
-        }
-        if (response.status === 409 && errData.error === 'unresolved_claims') {
-          return {
-            error:
-              errData.message ||
-              'Resolve unsupported numbers in Review before downloading.',
-          };
         }
         return { error: errData.error || `HTTP ${response.status}` };
       }
