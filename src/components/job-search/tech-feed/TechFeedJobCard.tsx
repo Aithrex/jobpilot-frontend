@@ -96,6 +96,16 @@ interface TechFeedJobCardProps {
   /** "I applied to this elsewhere" - files it under Applied without opening it. */
   onAlreadyApplied?: (job: Job) => void | Promise<unknown>;
 
+  /**
+   * Non-PII engagement telemetry. The ATS VENDOR is passed, never the job id:
+   * "apply clicks on iCIMS boards" is a product fact and "this person clicked
+   * apply on this requisition" is that person's job hunt.
+   */
+  onEngagement?: (
+    kind: 'card_open' | 'card_apply_click' | 'card_save',
+    ats?: string | null,
+  ) => void;
+
   className?: string;
 }
 
@@ -209,6 +219,7 @@ export function TechFeedJobCard({
   onConfirmApplied,
   onConfirmNotYet,
   onAlreadyApplied,
+  onEngagement,
   className,
 }: TechFeedJobCardProps) {
   const posted = useMemo(() => postedLabel(job), [job]);
@@ -662,7 +673,10 @@ export function TechFeedJobCard({
             type="button"
             size="sm"
             className="focus-visible:ring-2 focus-visible:ring-ring"
-            onClick={() => void onQuickApply(posting)}
+            onClick={() => {
+              onEngagement?.('card_apply_click', job.ats);
+              void onQuickApply(posting);
+            }}
           >
             Apply
             <ExternalLink className="ml-1.5 h-3.5 w-3.5" aria-hidden />

@@ -78,6 +78,52 @@ flag, replacing the three legacy panels when on. **Off by default.**
   `irrelevant_role` and `duplicate` hide a job — `wrong_company`, `stale_job`
   and `incorrect_metadata` are DATA-QUALITY REPORTS and the copy must not
   promise the job will disappear.
+- **the company filter takes NAMES, not ids**
+  (`tech-feed/CompanyAutocomplete.tsx` -> `GET /api/jobs/tech-feed/companies`).
+  It used to be a free-text chips input whose values were whichever slug the
+  catalog handed the UI: a user typing "Stripe" had no way to reach
+  `emp_fd96667721fe`, and a saved filter rendered as hex forever. Ids handed
+  in on mount are resolved back to names (`?ids=`), which also follows an
+  acquisition. A LEGACY value (a bare ATS tenant) is kept and flagged, never
+  dropped - silently widening a filter is the failure mode a filter must not
+  have. The Workday catalog fan-out that used to back the suggestion chips is
+  gone with it.
+- **company categories come from the canonical facet with counts**
+  (`CompanyCategoryPicker.tsx`). The old chips input accepted any string;
+  anything outside the registry vocabulary matched nothing, silently, and
+  rendered as an applied filter. `other` is shown LAST and labelled "Not yet
+  categorised" rather than hidden, or the counts stop adding up.
+- **"Technology companies only" is a POSITIVE filter and says what it costs.**
+  It keeps the employers the registry holds technology evidence for - the same
+  rule that builds the coverage denominator - so the toggle and the coverage
+  report admit the same set by construction. The server reports
+  `employer_scope_dropped_non_tech` and `employer_scope_dropped_unclassified`
+  separately, and the second is offered back as a one-click broadening,
+  because "they are not a technology company" and "we do not know whether they
+  are" are different answers and only one of them is our gap.
+- **saved searches are SERVER-owned with a local mirror**
+  (`useSavedTechFeedSearches`, `/api/jobs/tech-feed/saved-searches`).
+  localStorage alone is a cache with no origin: clearing site data, a private
+  window or a new laptop lost every saved search silently. The client renders
+  local first, reconciles once on mount, writes through, and marks a write
+  that did not land `pendingSync`. Reconcile NEVER deletes - a search this
+  browser lacks is one saved on another device.
+- **telemetry carries no identity by construction**
+  (`src/lib/techFeedTelemetry.ts` -> `POST /api/jobs/tech-feed/telemetry`).
+  Filter KEYS, bucketed result counts and vendor slugs; never a filter value,
+  a query string or a job id. Batched on a 4s window and flushed on
+  `pagehide`; every path is `void`-returning, because telemetry that can fail
+  a user action is worse than no telemetry.
+  `search` carries the filters a search RAN with; `filter_applied` carries
+  only the keys the user just turned ON, and the first observation of a
+  filter set is skipped because it IS the URL/saved-search restore, not a
+  choice. Counting adoption off `search` counts every restore as an adoption.
+- the health banner renders the MEASURED coverage - the technology-employer
+  denominator, what share is covered, career sources covered, ownership-
+  verified-but-unvalidated sources, Tier-A, by cohort and category - and
+  ALWAYS with its age. The numbers come from a stored snapshot
+  (`coverage_snapshots`), so a figure with no age could be a week old and look
+  current; `available: false` renders as "unknown", which is not zero.
 - the card reads `eligibility` / `ineligible_reasons` / `role_alignment` /
   `hard_requirements` (`src/lib/techFeedEligibility.ts`). An `ineligible` card
   shows NO score and NO band; a hard requirement ("requires an active security

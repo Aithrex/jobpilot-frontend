@@ -366,6 +366,151 @@ export interface TechFeedCoverage {
   /** Career sources whose OWNER is verified — the real coverage figure. */
   owner_verified_sources?: number;
   registered_employers?: number;
+  /**
+   * Employers we hold live postings for, keyed on the LEGACY `employer_id`
+   * slug. Always >= `known_employers`, and the difference IS the identity
+   * problem: JPMorgan's Oracle instance stamps three legal-entity names on
+   * one tenant, so the slug count triple-counts it. Shown beside the
+   * canonical count rather than instead of it.
+   */
+  known_employers_legacy?: number;
+  postings_with_canonical_employer?: number;
+  /** The stored measurement. See `TechFeedMeasuredCoverage`. */
+  measured?: TechFeedMeasuredCoverage;
+}
+
+/**
+ * The MEASURED coverage numbers, from `coverage_snapshots`.
+ *
+ * These are not computed per request — measuring them reads five collections
+ * and classifies 23,782 employers — so they arrive with `measured_at`,
+ * `age_hours` and `stale`. A surface that renders a coverage figure without
+ * its age is making a claim the data does not support.
+ *
+ * `available: false` is a real answer and must render as one. An absent
+ * measurement is not a coverage of zero.
+ */
+export interface TechFeedMeasuredCoverage {
+  available: boolean;
+  detail?: string;
+  /** Employers we hold documentary technology evidence for. The denominator. */
+  technology_employer_denominator?: number;
+  /** Of those, how many have a career source whose owner we can prove. */
+  covered_technology_employers?: number;
+  employer_coverage_pct?: number;
+  candidate_technology_employers?: number;
+  /** BOARDS, not employers — a different unit, reported separately. */
+  covered_career_sources?: number;
+  /** Ownership proven, content not yet confirmed. Work in progress. */
+  ownership_verified_unvalidated_sources?: number;
+  employers_yielding_postings?: number;
+  employers_yielding_core_tech?: number;
+  core_tech_postings?: number;
+  tier_a?: {
+    total: number;
+    covered: number;
+    by_state?: Record<string, number>;
+    /** The batch the target was set against, reported on its own. */
+    accountable?: { total: number; covered: number; pct: number };
+  };
+  by_cohort?: Record<string, TechFeedCoverageFacet>;
+  by_category?: Record<string, TechFeedCoverageFacet>;
+  inventory_watermark?: string | null;
+  measured_at?: string | null;
+  age_hours?: number | null;
+  stale?: boolean;
+  stale_after_hours?: number | null;
+}
+
+export interface TechFeedCoverageFacet {
+  employers: number;
+  covered: number;
+  covered_pct: number;
+  core_postings: number;
+}
+
+// ── Employer directory (company autocomplete) ────────────────────
+
+/**
+ * One company as the directory describes it. Everything here is ABOUT THE
+ * EMPLOYER — nothing from `career_sources`, which holds the endpoints we
+ * fetch and the domains we probe. `career_source_verified` is the one thing
+ * that subsystem contributes and it is a boolean with no detail behind it.
+ */
+export interface TechFeedCompany {
+  employer_id: string;
+  display_name: string;
+  aliases: string[];
+  legal_names?: string[];
+  brands?: string[];
+  domain: string | null;
+  categories: string[];
+  cohorts: string[];
+  countries?: string[];
+  identity: {
+    basis: 'domain' | 'curated' | 'name' | string;
+    confidence: number | null;
+    operating_status: string;
+    /** Set when this id now resolves to a different employer. */
+    redirects_to: string | null;
+  };
+  career_source_verified: boolean;
+  active_postings: number;
+  core_tech_postings: number;
+  /** Present on a lookup when the id asked for resolved to another employer. */
+  requested_employer_id?: string;
+}
+
+export interface TechFeedCompanyResponse {
+  query?: string;
+  companies: TechFeedCompany[];
+  truncated?: boolean;
+  unresolved?: string[];
+  detail?: string;
+  directory_version?: string;
+}
+
+export interface TechFeedCompanyCategory {
+  value: string;
+  label: string;
+  employers: number;
+}
+
+export interface TechFeedCompanyCategoriesResponse {
+  categories: TechFeedCompanyCategory[];
+  directory_version?: string;
+}
+
+// ── Saved searches (server-owned, locally mirrored) ──────────────
+
+export interface TechFeedSavedSearchesResponse {
+  searches: SavedTechFeedSearch[];
+  pushed_from_client?: number;
+  saved_search_version?: string;
+}
+
+// ── Telemetry ────────────────────────────────────────────────────
+
+/**
+ * A telemetry event. `dimensions` carries filter KEYS, never their values —
+ * "somebody filtered by company" is a product fact, "somebody filtered by
+ * Stripe" is that person's job hunt. The server drops anything outside its
+ * own allowlist, so this type is a convenience rather than the enforcement.
+ */
+export type TechFeedTelemetryEvent =
+  | 'search'
+  | 'zero_result'
+  | 'filter_applied'
+  | 'card_impression'
+  | 'card_open'
+  | 'card_apply_click'
+  | 'card_save'
+  | 'source_failure';
+
+export interface TechFeedTelemetryItem {
+  event: TechFeedTelemetryEvent;
+  count?: number;
+  dimensions?: Record<string, string | number | boolean | string[]>;
 }
 
 export interface TechFeedSourceStatus {
@@ -529,12 +674,29 @@ export interface TechFeedFilters {
   sort: TechFeedSort;
 }
 
-/** A search the user chose to keep. Stored under `aspirely.techFeed.savedSearches`. */
+/**
+ * A search the user chose to keep.
+ *
+ * The SERVER owns the list (`/api/jobs/tech-feed/saved-searches`) and
+ * localStorage keeps a mirror under `aspirely.techFeed.savedSearches`. Not
+ * belt-and-braces: the feed must stay usable when the API is unreachable, and
+ * a saved search the user can still see and still apply offline is worth more
+ * than a correct 503.
+ *
+ * `id` is the CLIENT's own key. It is minted locally, sent up, and the server
+ * keys on `(account, id)` — so a write that arrives twice is one row, and the
+ * client never has to map its ids onto the server's.
+ */
 export interface SavedTechFeedSearch {
   id: string;
   name: string;
   filters: TechFeedFilters;
   createdAt: string;
+  updatedAt?: string;
+  /** Absent until the server has acknowledged this search. */
+  fingerprint?: string;
+  /** True while this search exists only in this browser. */
+  pendingSync?: boolean;
 }
 
 /**
