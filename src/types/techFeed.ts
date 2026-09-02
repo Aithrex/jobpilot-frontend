@@ -375,9 +375,19 @@ export interface TechFeedSourceHealth {
   warnings: string[];
 }
 
+/**
+ * `not_applied` — nothing narrowed on it at all.
+ * `partial` — it DID narrow, but only the rows carrying the data it tests;
+ * rows without that data are kept rather than excluded. Rendering a partial
+ * as "not applied" replaces one wrong claim with the opposite one.
+ */
+export type TechFeedFilterStatus = 'not_applied' | 'partial';
+
 export interface TechFeedUnappliedFilter {
   filter: string;
   reason: string;
+  /** Absent from responses that predate the distinction; treat as not applied. */
+  status?: TechFeedFilterStatus;
 }
 
 export interface TechFeedSearchResponse {

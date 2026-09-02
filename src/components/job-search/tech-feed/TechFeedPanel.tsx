@@ -77,9 +77,19 @@ function AppliedFiltersSummary({
   applied: Record<string, unknown> | null;
   unapplied: TechFeedUnappliedFilter[];
 }) {
-  const inert = useMemo(
-    () => new Map(unapplied.map((u) => [u.filter, u.reason])),
+  const notApplied = useMemo(
+    () => unapplied.filter((u) => (u.status ?? 'not_applied') === 'not_applied'),
     [unapplied],
+  );
+  const partial = useMemo(
+    () => unapplied.filter((u) => u.status === 'partial'),
+    [unapplied],
+  );
+  // Only the fully inert ones leave the applied row. A PARTIAL filter did
+  // narrow the results, so removing its chip would understate what ran.
+  const inert = useMemo(
+    () => new Map(notApplied.map((u) => [u.filter, u.reason])),
+    [notApplied],
   );
   const entries = useMemo(() => {
     if (!applied) return [];
@@ -93,6 +103,9 @@ function AppliedFiltersSummary({
 
   if (!entries.length && !unapplied.length) return null;
 
+  const partialReason = (key: string) =>
+    partial.find((u) => u.filter === key || u.filter.split('/').includes(key))?.reason;
+
   return (
     <div className="flex flex-wrap items-center gap-1.5" data-testid="tech-feed-applied-filters">
       {entries.length > 0 && (
@@ -100,14 +113,24 @@ function AppliedFiltersSummary({
           <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
             Server applied
           </span>
-          {entries.slice(0, 12).map(([key, value]) => (
-            <Badge key={key} variant="outline" className="font-normal text-muted-foreground">
-              {key.replace(/_/g, ' ')}: {Array.isArray(value) ? value.join(', ') : String(value)}
-            </Badge>
-          ))}
+          {entries.slice(0, 12).map(([key, value]) => {
+            const caveat = partialReason(key);
+            return (
+              <Badge
+                key={key}
+                variant="outline"
+                title={caveat}
+                className="font-normal text-muted-foreground"
+              >
+                {key.replace(/_/g, ' ')}:{' '}
+                {Array.isArray(value) ? value.join(', ') : String(value)}
+                {caveat ? <span aria-hidden className="ml-1 opacity-60">*</span> : null}
+              </Badge>
+            );
+          })}
         </>
       )}
-      {unapplied.length > 0 && (
+      {notApplied.length > 0 && (
         <span
           className="flex flex-wrap items-center gap-1.5"
           data-testid="tech-feed-unapplied-filters"
@@ -115,7 +138,7 @@ function AppliedFiltersSummary({
           <span className="text-[11px] uppercase tracking-wide text-amber-600 dark:text-amber-500">
             Not applied
           </span>
-          {unapplied.map((u) => (
+          {notApplied.map((u) => (
             <Badge
               key={u.filter}
               variant="outline"
@@ -125,6 +148,14 @@ function AppliedFiltersSummary({
               {u.filter.replace(/_/g, ' ')}
             </Badge>
           ))}
+        </span>
+      )}
+      {partial.length > 0 && (
+        <span
+          className="text-[11px] text-muted-foreground"
+          data-testid="tech-feed-partial-filters"
+        >
+          * narrows only the postings that state it
         </span>
       )}
     </div>

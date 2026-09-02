@@ -534,6 +534,30 @@ describe('a filter the server did not apply is not shown as applied', () => {
     expect(screen.queryByTestId('tech-feed-unapplied-filters')).not.toBeInTheDocument();
   });
 
+  test('a PARTIAL filter keeps its applied chip and gains a caveat', async () => {
+    // A partial filter did narrow the results. Moving it to "Not applied"
+    // would replace one wrong claim with the opposite one.
+    api.searchTechFeed.mockResolvedValue({
+      data: makeTechFeedResponse({
+        applied_filters: { tech_scope: ['core'], employment_types: ['contract'] },
+        unapplied_filters: [
+          {
+            filter: 'employment_types',
+            reason: 'the rest are kept, not excluded',
+            status: 'partial',
+          },
+        ],
+      }),
+      status: 200,
+    });
+    renderPanel();
+
+    const applied = await screen.findByTestId('tech-feed-applied-filters');
+    expect(within(applied).getByTitle('the rest are kept, not excluded')).toBeInTheDocument();
+    expect(screen.queryByTestId('tech-feed-unapplied-filters')).not.toBeInTheDocument();
+    expect(screen.getByTestId('tech-feed-partial-filters')).toBeInTheDocument();
+  });
+
   test('a response from an older backend, with no field at all, still renders', async () => {
     const body = makeTechFeedResponse({ applied_filters: { tech_scope: ['core'] } });
     delete (body as { unapplied_filters?: unknown }).unapplied_filters;
