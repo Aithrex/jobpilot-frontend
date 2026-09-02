@@ -3982,6 +3982,51 @@ class ApiService {
     );
   }
 
+  /**
+   * Record one piece of feedback on one posting.
+   *
+   * 204 with NO body on success, so `data` is `{}` - callers check `error`,
+   * never a payload. Idempotent per (user, job_id): re-posting updates the one
+   * row rather than adding a second, which is what makes undo a single DELETE.
+   *
+   * Failures here are business failures - 400 (missing job_id / a reason
+   * outside the closed set) and 429 (240 per 5 min). None of them is an auth
+   * event; a 401 would be a real session expiry and takes the shared path.
+   *
+   * IMPORTANT: only `not_interested`, `irrelevant_role` and `duplicate`
+   * suppress the posting. The other three are data-quality reports and hide
+   * nothing - see `lib/techFeedNotInterested.ts` for the copy that follows
+   * from that.
+   */
+  async recordTechFeedFeedback(
+    body: import('../types/techFeed').TechFeedFeedbackRequest,
+  ): Promise<ApiResponse<Record<string, never>>> {
+    return this.request<Record<string, never>>('/jobs/tech-feed/feedback', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+  }
+
+  /** Undo feedback on one posting. Always 204 - deleting nothing is not an error. */
+  async undoTechFeedFeedback(jobId: string): Promise<ApiResponse<Record<string, never>>> {
+    return this.request<Record<string, never>>(
+      `/jobs/tech-feed/feedback/${encodeURIComponent(jobId)}`,
+      { method: 'DELETE' },
+    );
+  }
+
+  /**
+   * The caller's suppression set. Suppression is applied SERVER-side during
+   * search; this exists so a second device can hide the same cards
+   * optimistically instead of waiting for the next search to come back.
+   */
+  async getTechFeedFeedback() {
+    return this.request<import('../types/techFeed').TechFeedSuppression>(
+      '/jobs/tech-feed/feedback',
+      { method: 'GET' },
+    );
+  }
+
   // ============================================
   // Auto-Apply (opt-in auto-submit) - /api/apply/auto-submit
   // Rides the existing ANY /api/apply/{proxy+} edge route (no new Terraform).

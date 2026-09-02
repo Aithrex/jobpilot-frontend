@@ -232,8 +232,17 @@ export interface TechFeedJob {
 
   match_score: number;
   fit_score_version: string | null;
-  fit: Record<string, unknown> | null;
+  fit: TechFeedFit | null;
   rank_score: number;
+
+  /**
+   * Screening verdict. Optional because an older server omits it; absent is
+   * read as "the server did not say", never as `eligible`.
+   */
+  eligibility?: TechFeedEligibility;
+  ineligible_reasons?: string[];
+  role_alignment?: TechFeedRoleAlignment | null;
+  hard_constraints?: TechFeedHardConstraint[];
 
   why_matched: string[];
   /** Rendered as "Important unknowns" - never as a hard rejection. */
@@ -248,6 +257,85 @@ export interface TechFeedJob {
   employer_name_confidence?: number;
   employer_name_conflict?: boolean;
   employer_name_variants?: string[];
+}
+
+// ── Fit verdict, eligibility and role alignment ──────────────────
+
+/**
+ * "May this person be considered at all", which is NOT a second score.
+ *  - `eligible`    - no KNOWN disqualifier;
+ *  - `ineligible`  - a positive, stated mismatch (a named licence the resume
+ *    does not evidence, a sponsorship conflict, a confident cross-domain
+ *    verdict). Silence is never a mismatch;
+ *  - `not_scored`  - there was nothing readable to compare against.
+ */
+export type TechFeedEligibility = 'eligible' | 'ineligible' | 'not_scored';
+
+export type RoleAlignmentTier =
+  | 'exact_specialty'
+  | 'adjacent_specialty'
+  | 'same_family'
+  | 'adjacent_family'
+  | 'unrelated'
+  | 'unknown';
+
+/**
+ * How close the candidate's discipline is to the posting's.
+ *
+ * `detail` is written by the scoring engine to be READ ("backend is adjacent
+ * to platform engineering"). Render it verbatim - re-wording it on the client
+ * would put a claim in the engine's mouth that the engine did not make.
+ */
+export interface TechFeedRoleAlignment {
+  tier: RoleAlignmentTier;
+  detail: string;
+  /** The specialty / family key that produced the tier. null when none did. */
+  matched: string | null;
+  weight?: number;
+  cross_domain?: boolean;
+  adjacency_version?: string;
+  taxonomy_version?: string;
+}
+
+/** `unknown` is "the resume is silent", which is not `missing`. */
+export type HardConstraintStatus = 'met' | 'missing' | 'unknown';
+
+/**
+ * One stated gate on the posting (a clearance, a licence, a work-authorization
+ * restriction).
+ *
+ * An entry with `hard_requirement: true` and `status: "unknown"` is a
+ * REQUIREMENT TO CHECK, never a deduction: nothing on a resume can contradict
+ * "holds an active security clearance", so the engine does not price it and
+ * the UI must not present it as a reason the score is low.
+ */
+export interface TechFeedHardConstraint {
+  type: string;
+  key?: string;
+  status: HardConstraintStatus;
+  hard_requirement?: boolean;
+  detail?: string;
+  /** Score ceiling this constraint applied. Only ever set for `missing`. */
+  cap?: number;
+}
+
+/**
+ * The fit block. Kept open (`[key: string]: unknown`) because the engine sends
+ * more than the card reads, and narrowed only where the card actually reads.
+ *
+ * The four fields below are also promoted to the top level of a job by the
+ * search response; `src/lib/techFeedEligibility.ts` reads the top level first
+ * and falls back here, so both shapes render.
+ */
+export interface TechFeedFit {
+  score_version?: string | null;
+  band?: string | null;
+  confidence?: string | null;
+  eligibility?: TechFeedEligibility;
+  ineligible_reasons?: string[];
+  role_alignment?: TechFeedRoleAlignment | null;
+  hard_constraints?: TechFeedHardConstraint[];
+  [key: string]: unknown;
 }
 
 // ── Response envelope ────────────────────────────────────────────
@@ -412,19 +500,62 @@ export interface SavedTechFeedSearch {
   createdAt: string;
 }
 
-/** Why a user dismissed a posting. Local-only today - see lib/techFeedNotInterested.ts. */
-export type NotInterestedReason =
-  | 'wrong_role'
-  | 'wrong_level'
-  | 'wrong_location'
-  | 'wrong_technology'
-  | 'staffing_agency'
+/**
+ * Why a user gave feedback on a posting. The CLOSED set the server accepts on
+ * POST /api/jobs/tech-feed/feedback - anything else is a 400.
+ *
+ * These are two different acts under one menu, and the difference is
+ * load-bearing:
+ *  - `not_interested` / `irrelevant_role` / `duplicate` are PREFERENCES and
+ *    are the only three that suppress the posting for that user;
+ *  - `wrong_company` / `stale_job` / `incorrect_metadata` are DATA-QUALITY
+ *    REPORTS. The server records and counts them so ingestion can be fixed,
+ *    and deliberately hides nothing. The UI must not promise otherwise.
+ */
+export type TechFeedFeedbackReason =
+  | 'not_interested'
+  | 'irrelevant_role'
+  | 'wrong_company'
   | 'duplicate'
-  | 'not_eligible';
+  | 'stale_job'
+  | 'incorrect_metadata';
 
-export interface NotInterestedRecord {
+/** Body of POST /api/jobs/tech-feed/feedback. 204, no body, on success. */
+export interface TechFeedFeedbackRequest {
   job_id: string;
-  reason: NotInterestedReason;
+  reason: TechFeedFeedbackReason;
+  dedupe_group_id?: string;
+  employer_id?: string;
+  search_id?: string;
+  note?: string;
+}
+
+/**
+ * GET /api/jobs/tech-feed/feedback - the caller's suppression set, so a second
+ * device converges on the same feed. `employer_ids` is always empty today and
+ * is present for shape stability only.
+ */
+export interface TechFeedSuppression {
+  job_ids: string[];
+  dedupe_group_ids: string[];
+  employer_ids: string[];
+  updated_at: string | null;
+}
+
+/**
+ * One locally-cached piece of feedback.
+ *
+ * `reason: null` means the SERVER reported this job as suppressed and this
+ * device never saw the reason (GET returns ids, not reasons). It is recorded
+ * as unknown rather than back-filled with a plausible one.
+ *
+ * `synced: false` means the write has not been acknowledged by the server yet
+ * (offline / in flight), which is why the cache keeps it.
+ */
+export interface TechFeedFeedbackRecord {
+  job_id: string;
+  reason: TechFeedFeedbackReason | null;
   employer_name?: string;
   at: string;
+  synced?: boolean;
 }

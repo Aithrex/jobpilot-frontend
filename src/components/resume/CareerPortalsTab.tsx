@@ -56,6 +56,25 @@ export default function CareerPortalsTab() {
     setVisited((prev) => (prev.has(key) ? prev : new Set([...prev, key])));
   };
 
+  // The did-you-apply dialog, rendered identically on BOTH branches. It is
+  // page-level because the answer arrives after the user comes back from
+  // another tab, by which time the card that opened it may have scrolled,
+  // re-sorted or paged away.
+  const applyConfirmDialog = (
+    <ApplyConfirmDialog
+      job={applyConfirmJob}
+      onApplied={() => {
+        if (applyConfirmJob) {
+          void confirmApplied(applyConfirmJob.job_id, applyConfirmJob);
+        }
+      }}
+      onNotYet={() => {
+        if (applyConfirmJob) dismissApplyConfirm(applyConfirmJob.job_id);
+      }}
+      onDismiss={closeApplyConfirmDialog}
+    />
+  );
+
   // Flag ON: one unified indexed feed instead of three fan-out catalogs. The
   // legacy path below is untouched and is exactly what renders when it is OFF.
   // (The hooks above stay unconditional - this branch is after all of them.)
@@ -69,7 +88,25 @@ export default function CareerPortalsTab() {
           </div>
         }
       >
-        <TechFeedPanel />
+        {/* Same handlers as the legacy branch: one saved-jobs store, one
+            tracker, one apply-confirmation flow. The feed is a different
+            RETRIEVAL surface, not a different product. */}
+        <TechFeedPanel
+          isJobSaved={isJobSaved}
+          getJobStatus={getJobStatus}
+          saveJob={saveJob}
+          unsaveJob={unsaveJob}
+          quickApply={quickApply}
+          beginApplyWithTailor={beginApplyWithTailor}
+          autoApply={autoApply}
+          autoApplyingId={autoApplyingId}
+          isApplyConfirmPending={isApplyConfirmPending}
+          applyConfirmJobId={applyConfirmJob?.job_id}
+          confirmApplied={confirmApplied}
+          dismissApplyConfirm={dismissApplyConfirm}
+          markAlreadyApplied={markAlreadyApplied}
+        />
+        {applyConfirmDialog}
       </Suspense>
     );
   }
@@ -124,18 +161,7 @@ export default function CareerPortalsTab() {
           </div>
         ) : null,
       )}
-      <ApplyConfirmDialog
-        job={applyConfirmJob}
-        onApplied={() => {
-          if (applyConfirmJob) {
-            void confirmApplied(applyConfirmJob.job_id, applyConfirmJob);
-          }
-        }}
-        onNotYet={() => {
-          if (applyConfirmJob) dismissApplyConfirm(applyConfirmJob.job_id);
-        }}
-        onDismiss={closeApplyConfirmDialog}
-      />
+      {applyConfirmDialog}
     </div>
   );
 }

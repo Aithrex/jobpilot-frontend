@@ -24,6 +24,17 @@ function jsonResponse(body: unknown, status = 200): Response {
   } as unknown as Response;
 }
 
+/** A real 204: no content at all, so `json()` rejects. */
+function noContentResponse(): Response {
+  return {
+    ok: true,
+    status: 204,
+    json: async () => {
+      throw new SyntaxError('Unexpected end of JSON input');
+    },
+  } as unknown as Response;
+}
+
 const fetchMock = vi.fn();
 
 beforeEach(() => {
@@ -156,5 +167,83 @@ describe('apiService tech feed reads', () => {
     fetchMock.mockResolvedValue(jsonResponse({ coverage: {}, source_health: {} }));
     await apiService.getTechFeedCoverage();
     expect(String(fetchMock.mock.calls[1][0])).toContain('/jobs/tech-feed/coverage');
+  });
+});
+
+describe('apiService tech feed feedback', () => {
+  test('a dismissal posts the closed-set reason and treats 204 as success', async () => {
+    fetchMock.mockResolvedValue(noContentResponse());
+
+    const resp = await apiService.recordTechFeedFeedback({
+      job_id: 'job-1',
+      reason: 'irrelevant_role',
+      search_id: 'search-1',
+    });
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(String(url)).toContain('/jobs/tech-feed/feedback');
+    expect((init as RequestInit).method).toBe('POST');
+    expect(JSON.parse((init as RequestInit).body as string)).toEqual({
+      job_id: 'job-1',
+      reason: 'irrelevant_role',
+      search_id: 'search-1',
+    });
+    // 204 carries no body. That is a success, not a parse failure.
+    expect(resp.error).toBeUndefined();
+    expect(resp.status).toBe(204);
+  });
+
+  test('a rejected reason comes back as a business 400, never a logout', async () => {
+    const sessionExpired = vi.fn();
+    window.addEventListener('auth:session-expired', sessionExpired);
+    fetchMock.mockResolvedValue(jsonResponse({ error: 'reason must be one of: ...' }, 400));
+
+    const resp = await apiService.recordTechFeedFeedback({
+      job_id: 'job-1',
+      reason: 'not_interested',
+    });
+
+    expect(resp.status).toBe(400);
+    expect(resp.error).toMatch(/reason must be one of/);
+    expect(sessionExpired).not.toHaveBeenCalled();
+    expect(apiService.getToken()).toBe('test-token');
+    window.removeEventListener('auth:session-expired', sessionExpired);
+  });
+
+  test('a rate limit is reported as a rate limit', async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse({ error: 'Rate limit exceeded. Tech feed feedback is limited to 240 / 5 min.' }, 429),
+    );
+
+    const resp = await apiService.recordTechFeedFeedback({ job_id: 'j', reason: 'duplicate' });
+    expect(resp.status).toBe(429);
+    expect(resp.error).toMatch(/240 \/ 5 min/);
+  });
+
+  test('undo is a DELETE on the job id, url-encoded', async () => {
+    fetchMock.mockResolvedValue(noContentResponse());
+
+    await apiService.undoTechFeedFeedback('greenhouse/req 9');
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(String(url)).toContain('/jobs/tech-feed/feedback/greenhouse%2Freq%209');
+    expect((init as RequestInit).method).toBe('DELETE');
+  });
+
+  test('the suppression set is a plain GET', async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse({
+        job_ids: ['a'],
+        dedupe_group_ids: [],
+        employer_ids: [],
+        updated_at: '2026-08-31T10:00:00Z',
+      }),
+    );
+
+    const resp = await apiService.getTechFeedFeedback();
+
+    expect(String(fetchMock.mock.calls[0][0])).toContain('/jobs/tech-feed/feedback');
+    expect(fetchMock.mock.calls[0][1].method).toBe('GET');
+    expect(resp.data?.job_ids).toEqual(['a']);
   });
 });

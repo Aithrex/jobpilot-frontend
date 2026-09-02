@@ -12,6 +12,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import CareerPortalsTab from '@/components/resume/CareerPortalsTab';
 import {
   TECH_FEED_OVERRIDE_KEY,
+  applyTechFeedUrlOverride,
   isTechFeedEnabled,
   setTechFeedOverride,
 } from '@/lib/techFeedFlag';
@@ -23,11 +24,23 @@ vi.mock('@/components/job-search/WorkdayJobsPanel', () => ({
     <div data-testid={`legacy-panel-${variant}`} />
   ),
 }));
+// The feed panel is stubbed but RECORDS its props: this file also guards the
+// wiring, because a branch that renders the feed and drops every handler is a
+// working search on top of a dead-end card.
+const harness = vi.hoisted(() => ({
+  feedProps: null as Record<string, unknown> | null,
+  applyConfirmJob: null as { job_id: string; title: string } | null,
+}));
+
 vi.mock('@/components/job-search/tech-feed/TechFeedPanel', () => ({
-  TechFeedPanel: () => <div data-testid="tech-feed-panel" />,
+  TechFeedPanel: (props: Record<string, unknown>) => {
+    harness.feedProps = props;
+    return <div data-testid="tech-feed-panel" />;
+  },
 }));
 vi.mock('@/components/job-search/JobCard', () => ({
-  ApplyConfirmDialog: () => null,
+  ApplyConfirmDialog: ({ job }: { job: { title: string } | null }) =>
+    job ? <div data-testid="apply-confirm-dialog">{job.title}</div> : null,
 }));
 vi.mock('@/hooks/useJobSearch', () => ({
   useJobSearch: () => ({
@@ -39,7 +52,7 @@ vi.mock('@/hooks/useJobSearch', () => ({
     isApplyConfirmPending: () => false,
     confirmApplied: vi.fn(),
     dismissApplyConfirm: vi.fn(),
-    applyConfirmJob: null,
+    applyConfirmJob: harness.applyConfirmJob,
     closeApplyConfirmDialog: vi.fn(),
     beginApplyWithTailor: vi.fn(),
     markAlreadyApplied: vi.fn(),
@@ -51,6 +64,9 @@ vi.mock('@/hooks/useJobSearch', () => ({
 beforeEach(() => {
   window.localStorage.clear();
   vi.unstubAllEnvs();
+  window.history.replaceState({}, '', '/app/jobs/portals');
+  harness.feedProps = null;
+  harness.applyConfirmJob = null;
 });
 
 describe('tech feed flag resolution', () => {
@@ -84,6 +100,47 @@ describe('tech feed flag resolution', () => {
   });
 });
 
+describe('staged rollout by link', () => {
+  test('?techfeed=1 turns the feed on for this browser and persists the choice', () => {
+    window.history.replaceState({}, '', '/app/jobs/portals?techfeed=1');
+
+    expect(isTechFeedEnabled()).toBe(true);
+    // Persisted, so the rest of the session (and every later navigation
+    // without the parameter) keeps the same answer without a rebuild.
+    expect(window.localStorage.getItem(TECH_FEED_OVERRIDE_KEY)).toBe('1');
+
+    window.history.replaceState({}, '', '/app/jobs/portals');
+    expect(isTechFeedEnabled()).toBe(true);
+  });
+
+  test('?techfeed=0 is an equally shareable rollback, even against the build flag', () => {
+    vi.stubEnv('VITE_TECH_FEED', '1');
+    window.history.replaceState({}, '', '/app/jobs/portals?techfeed=0');
+
+    expect(isTechFeedEnabled()).toBe(false);
+    expect(window.localStorage.getItem(TECH_FEED_OVERRIDE_KEY)).toBe('0');
+  });
+
+  test('the link beats a localStorage override set earlier', () => {
+    setTechFeedOverride(false);
+    window.history.replaceState({}, '', '/app/jobs/portals?techfeed=on');
+    expect(isTechFeedEnabled()).toBe(true);
+  });
+
+  test('a typo in the link changes nothing at all', () => {
+    setTechFeedOverride(true);
+    expect(applyTechFeedUrlOverride('?techfeed=maybe')).toBeNull();
+    // Not read as "off": a mistyped rollout link must not roll anyone back.
+    expect(isTechFeedEnabled()).toBe(true);
+    expect(window.localStorage.getItem(TECH_FEED_OVERRIDE_KEY)).toBe('1');
+  });
+
+  test('no parameter means no opinion', () => {
+    expect(applyTechFeedUrlOverride('?q=golang')).toBeNull();
+    expect(window.localStorage.getItem(TECH_FEED_OVERRIDE_KEY)).toBeNull();
+  });
+});
+
 describe('Career portals mount point', () => {
   test('flag OFF renders the three legacy catalogs, untouched', () => {
     render(<CareerPortalsTab />);
@@ -104,5 +161,50 @@ describe('Career portals mount point', () => {
     expect(await screen.findByTestId('tech-feed-panel')).toBeInTheDocument();
     expect(screen.queryByTestId('legacy-panel-workday')).not.toBeInTheDocument();
     expect(screen.queryByRole('radio', { name: /Enterprise \(Workday\)/ })).not.toBeInTheDocument();
+  });
+});
+
+describe('the tech feed branch is wired, not just rendered', () => {
+  test('every job flow reaches the feed panel', async () => {
+    setTechFeedOverride(true);
+    render(<CareerPortalsTab />);
+    await screen.findByTestId('tech-feed-panel');
+
+    // Save / apply-confirm / tailor / tracker / auto-apply, same instances the
+    // legacy branch uses - one saved-jobs store behind both surfaces.
+    for (const prop of [
+      'isJobSaved',
+      'getJobStatus',
+      'saveJob',
+      'unsaveJob',
+      'quickApply',
+      'beginApplyWithTailor',
+      'autoApply',
+      'isApplyConfirmPending',
+      'confirmApplied',
+      'dismissApplyConfirm',
+    ]) {
+      expect(typeof harness.feedProps?.[prop]).toBe('function');
+    }
+  });
+
+  test('the did-you-apply dialog renders on the feed branch too', async () => {
+    harness.applyConfirmJob = { job_id: 'job-1', title: 'Senior Backend Engineer' };
+    setTechFeedOverride(true);
+    render(<CareerPortalsTab />);
+
+    await screen.findByTestId('tech-feed-panel');
+    expect(screen.getByTestId('apply-confirm-dialog')).toHaveTextContent(
+      'Senior Backend Engineer',
+    );
+    expect(harness.feedProps?.applyConfirmJobId).toBe('job-1');
+  });
+
+  test('the legacy branch keeps the same dialog', () => {
+    harness.applyConfirmJob = { job_id: 'job-1', title: 'Senior Backend Engineer' };
+    render(<CareerPortalsTab />);
+
+    expect(screen.getByTestId('legacy-panel-workday')).toBeInTheDocument();
+    expect(screen.getByTestId('apply-confirm-dialog')).toBeInTheDocument();
   });
 });

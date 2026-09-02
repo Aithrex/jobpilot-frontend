@@ -25,6 +25,9 @@ vi.mock('@/lib/api', () => ({
     getTechFeedTaxonomy: vi.fn(),
     getTechFeedCoverage: vi.fn(),
     getWorkdayCatalog: vi.fn(),
+    getTechFeedFeedback: vi.fn(),
+    recordTechFeedFeedback: vi.fn(),
+    undoTechFeedFeedback: vi.fn(),
   },
 }));
 
@@ -54,6 +57,12 @@ beforeEach(() => {
   api.getTechFeedTaxonomy.mockResolvedValue({ data: TECH_FEED_TAXONOMY, status: 200 });
   api.getWorkdayCatalog.mockResolvedValue({ data: { total: 0, industries: [] }, status: 200 });
   api.searchTechFeed.mockResolvedValue({ data: makeTechFeedResponse(), status: 200 });
+  api.getTechFeedFeedback.mockResolvedValue({
+    data: { job_ids: [], dedupe_group_ids: [], employer_ids: [], updated_at: null },
+    status: 200,
+  });
+  api.recordTechFeedFeedback.mockResolvedValue({ data: {}, status: 204 });
+  api.undoTechFeedFeedback.mockResolvedValue({ data: {}, status: 204 });
 });
 
 describe('TechFeedPanel request contract', () => {
@@ -167,7 +176,7 @@ describe('TechFeedPanel unknown data is never invented', () => {
 
     const posted = await screen.findByTestId('tech-feed-posted');
     expect(posted).toHaveTextContent('First seen 12 days ago');
-    expect(posted).toHaveTextContent('Posting date unknown.');
+    expect(posted).toHaveTextContent('Posting date not stated by the employer.');
     expect(posted.textContent).not.toMatch(/^Posted /);
   });
 
@@ -409,21 +418,25 @@ describe('TechFeedPanel facets', () => {
 });
 
 describe('TechFeedPanel not-interested feedback', () => {
-  test('a dismissal with a reason hides the card and persists locally', async () => {
+  test('a dismissal with a reason hides the card, posts it, and caches it', async () => {
     const user = userEvent.setup();
     renderPanel();
 
     await screen.findByTestId('tech-feed-job-card');
-    await user.click(screen.getByRole('button', { name: /^Not interested in/ }));
-    await user.click(await screen.findByRole('menuitem', { name: 'Staffing agency' }));
+    await user.click(screen.getByRole('button', { name: /^Hide or report/ }));
+    await user.click(await screen.findByRole('menuitem', { name: 'Not interested' }));
 
     await waitFor(() => expect(screen.queryByTestId('tech-feed-job-card')).not.toBeInTheDocument());
 
+    // The server is the source of truth; localStorage is the cache under it.
+    expect(api.recordTechFeedFeedback).toHaveBeenCalledWith(
+      expect.objectContaining({ job_id: 'job-1', reason: 'not_interested' }),
+    );
     const stored = JSON.parse(
       window.localStorage.getItem('aspirely.techFeed.notInterested') || '[]',
     );
     expect(stored).toHaveLength(1);
-    expect(stored[0]).toMatchObject({ job_id: 'job-1', reason: 'staffing_agency' });
+    expect(stored[0]).toMatchObject({ job_id: 'job-1', reason: 'not_interested' });
   });
 });
 

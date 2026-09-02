@@ -51,6 +51,38 @@ React 18.3 · Vite 5.4 (`plugin-react-swc`) · TS 5.5 (`strict`, `noImplicitAny:
 ## Conventions
 PascalCase component files; typed props interface; `@/` imports; `cn()` for conditional classes; compose shadcn `ui/*`; `sonner` for transient feedback. **Design tokens** in `src/index.css` (semantic HSL, light + dark) — never raw hex. Verify visual changes in **both themes + mobile**. Handle loading/empty/error for every async surface. Keep UI copy ASCII (`pnpm copy:check`).
 
+## The unified tech feed (flagged)
+
+Mounted at `/portals` (`src/components/resume/CareerPortalsTab.tsx`) behind a
+flag, replacing the three legacy panels when on. **Off by default.**
+
+- flag: `localStorage['aspirely.techFeed.enabled']` beats build-time
+  `VITE_TECH_FEED`; `?techfeed=1` / `?techfeed=0` writes the localStorage key,
+  so a staged rollout is a LINK, not a rebuild (`src/lib/techFeedFlag.ts`).
+- components: `src/components/job-search/tech-feed/*` — `TechFeedPanel`,
+  `TechFeedFilters` (occupation filters are the primary rail; employer-category
+  filters live in the advanced group — the two axes are deliberately separate),
+  `TechFeedFacets`, `TechFeedJobCard`, `NotInterestedMenu`.
+- state: filters are URL-owned (`src/lib/techFeedUrlState.ts`, `|` separated —
+  not `,`, because "Austin, TX").
+- **`src/lib/techFeedJobAdapter.ts` is the ONE bridge** from `TechFeedJob` to
+  the legacy `Job` the five flows take. It must never invent a value: an
+  unpublished salary, an unknown work mode and an undated posting are OMITTED,
+  not defaulted, so the tracker receives "we do not know".
+- the five flows are the EXISTING ones — `useJobSearch().saveJob/unsaveJob/
+  quickApply/beginApplyWithTailor/autoApply` plus `ApplyConfirmDialog` — wired
+  through, never reimplemented.
+- suppression is CROSS-DEVICE via `POST/DELETE/GET /api/jobs/tech-feed/feedback`
+  (`src/lib/techFeedNotInterested.ts`); localStorage is an optimistic cache
+  that reconciles from the server on mount. Only `not_interested`,
+  `irrelevant_role` and `duplicate` hide a job — `wrong_company`, `stale_job`
+  and `incorrect_metadata` are DATA-QUALITY REPORTS and the copy must not
+  promise the job will disappear.
+- the card reads `eligibility` / `ineligible_reasons` / `role_alignment` /
+  `hard_requirements` (`src/lib/techFeedEligibility.ts`). An `ineligible` card
+  shows NO score and NO band; a hard requirement ("requires an active security
+  clearance") renders as a requirement to check, never as a penalty.
+
 ## Deploy
 2-stage `Dockerfile` (Node 22 build → `nginx:alpine`). `nginx/default.conf` = SPA fallback (`try_files`) + security headers + gzip. Prod uses same-origin `/api` (CloudFront). CI: `.github/workflows/deploy.yml`.
 

@@ -29,7 +29,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTechFeed } from '@/hooks/useTechFeed';
 import { useTechFeedTaxonomy } from '@/hooks/useTechFeedTaxonomy';
-import { loadNotInterestedIds, undoNotInterested } from '@/lib/techFeedNotInterested';
+import { loadNotInterestedIds, reconcileNotInterested } from '@/lib/techFeedNotInterested';
 import { useSavedTechFeedSearches, useTechFeedFilters } from '@/lib/techFeedUrlState';
 import { cn } from '@/lib/utils';
 import { TechFeedEmptyState } from '@/components/job-search/tech-feed/TechFeedEmptyState';
@@ -37,6 +37,7 @@ import { TechFeedFacets } from '@/components/job-search/tech-feed/TechFeedFacets
 import { TechFeedFilters } from '@/components/job-search/tech-feed/TechFeedFilters';
 import { TechFeedHealthBanner } from '@/components/job-search/tech-feed/TechFeedHealthBanner';
 import { TechFeedJobCard } from '@/components/job-search/tech-feed/TechFeedJobCard';
+import type { Job } from '@/types/jobs';
 import type { TechFeedSort } from '@/types/techFeed';
 
 const SORT_OPTIONS: Array<{ value: TechFeedSort; label: string }> = [
@@ -87,11 +88,47 @@ function AppliedFiltersSummary({ applied }: { applied: Record<string, unknown> |
   );
 }
 
+/**
+ * The five job flows are OWNED by `useJobSearch`, which is mounted once by the
+ * page (`CareerPortalsTab`) so save / apply / tracker state is shared with
+ * every other jobs surface. They are handed down here rather than re-created,
+ * which is why they are all optional: a panel rendered without them still
+ * searches, it just links out instead of tracking.
+ */
 export interface TechFeedPanelProps {
   className?: string;
+  isJobSaved?: (jobId: string) => boolean;
+  getJobStatus?: (jobId: string) => string | null;
+  saveJob?: (job: Job) => void | Promise<unknown>;
+  unsaveJob?: (jobId: string) => void | Promise<unknown>;
+  quickApply?: (job: Job, opts?: { skipOpen?: boolean }) => void | Promise<unknown>;
+  beginApplyWithTailor?: (job: Job) => void | Promise<unknown>;
+  autoApply?: (job: Job) => void | Promise<unknown>;
+  autoApplyingId?: string | null;
+  isApplyConfirmPending?: (jobId: string) => boolean;
+  /** Job the page-level dialog is currently asking about. */
+  applyConfirmJobId?: string | null;
+  confirmApplied?: (jobId: string, job?: Job) => void | Promise<unknown>;
+  dismissApplyConfirm?: (jobId: string) => void;
+  markAlreadyApplied?: (job: Job) => void | Promise<unknown>;
 }
 
-export function TechFeedPanel({ className }: TechFeedPanelProps) {
+export function TechFeedPanel({
+  className,
+  isJobSaved,
+  getJobStatus,
+  saveJob,
+  unsaveJob,
+  quickApply,
+  beginApplyWithTailor,
+  autoApply,
+  autoApplyingId,
+  isApplyConfirmPending,
+  applyConfirmJobId,
+  confirmApplied,
+  dismissApplyConfirm,
+  markAlreadyApplied,
+}: TechFeedPanelProps) {
   const { filters, queryDraft, setQueryDraft, patchFilters, replaceFilters, resetFilters, activeFilterCount } =
     useTechFeedFilters();
   const { families, isLoading: taxonomyLoading } = useTechFeedTaxonomy();
@@ -112,6 +149,7 @@ export function TechFeedPanel({ className }: TechFeedPanelProps) {
     appliedFilters,
     inventoryWatermark,
     cursorReset,
+    searchId,
     isFetching,
     refetch,
   } = useTechFeed({ filters });
@@ -134,12 +172,27 @@ export function TechFeedPanel({ className }: TechFeedPanelProps) {
     return map;
   }, [families]);
 
+  // Suppression is applied SERVER-side inside the search itself; this set is
+  // the optimistic half, so a card leaves the list on click rather than on the
+  // next round trip. Reconciling from the server on mount is what makes a
+  // dismissal made on another device hold on this one.
+  useEffect(() => {
+    let cancelled = false;
+    void reconcileNotInterested().then((ids) => {
+      if (!cancelled) setDismissed(ids);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const onNotInterested = useCallback((jobId: string) => {
     setDismissed((prev) => new Set(prev).add(jobId));
   }, []);
 
+  // The server DELETE belongs to the menu's Undo action (and to the rollback
+  // of a refused write). This only puts the card back on screen.
   const onRestore = useCallback((jobId: string) => {
-    undoNotInterested(jobId);
     setDismissed((prev) => {
       const next = new Set(prev);
       next.delete(jobId);
@@ -395,8 +448,22 @@ export function TechFeedPanel({ className }: TechFeedPanelProps) {
                     <TechFeedJobCard
                       job={job}
                       labels={labels}
+                      searchId={searchId}
                       onNotInterested={onNotInterested}
                       onRestore={onRestore}
+                      saved={isJobSaved?.(job.job_id) ?? false}
+                      jobStatus={getJobStatus?.(job.job_id) ?? null}
+                      onSave={saveJob}
+                      onUnsave={unsaveJob}
+                      onQuickApply={quickApply}
+                      onApplyWithTailor={beginApplyWithTailor}
+                      onAutoApply={autoApply}
+                      autoApplying={autoApplyingId === job.job_id}
+                      applyConfirmPending={isApplyConfirmPending?.(job.job_id) ?? false}
+                      applyConfirmModalJobId={applyConfirmJobId}
+                      onConfirmApplied={(posting) => confirmApplied?.(posting.job_id, posting)}
+                      onConfirmNotYet={dismissApplyConfirm}
+                      onAlreadyApplied={markAlreadyApplied}
                     />
                   </li>
                 ))}
