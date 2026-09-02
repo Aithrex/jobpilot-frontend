@@ -149,11 +149,6 @@ export function ResumePreview({ resume }: { resume: TailoredFullResume }) {
                   <p className="text-[13.5px] font-semibold text-gray-900 dark:text-white">
                     {p.name}
                   </p>
-                  {p.tech ? (
-                    <p className="text-[12px] text-gray-600 dark:text-gray-300 italic">
-                      {p.tech}
-                    </p>
-                  ) : null}
                   <ul className="mt-1 space-y-1">
                     {p.bullets?.map((b, j) => (
                       <li
