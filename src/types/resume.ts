@@ -4,6 +4,8 @@ export interface ResumeContact {
   phone: string;
   linkedin: string;
   github: string;
+  location?: string;
+  portfolio?: string;
 }
 
 export interface ResumeExperience {
@@ -48,6 +50,8 @@ export interface TailoredFullResume {
   education: ResumeEducation[];
   certifications: string[];
   projects: ResumeProject[];
+  /** Tailor-chosen skills heading; must be one of the renderer whitelist. */
+  skills_section_title?: string;
   target_role?: string;
   ats_keyword_audit?: ATSKeywordAudit;
   /** Claim-verification sidecar (backend attaches post-tailor; absent on

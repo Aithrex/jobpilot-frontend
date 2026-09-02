@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import type { TailoredFullResume, ResumeExperience, ResumeEducation, ResumeProject, JDAnalysis } from '@/types/resume';
 import { apiService } from '@/lib/api';
+import { isTrimmedOutcome, resumeTrimDescription } from '@/lib/resumeLayoutSpec';
 import { titleCaseName } from '@/lib/filename';
 import { toast } from 'sonner';
 
@@ -414,7 +415,13 @@ export default function ResumeEditor({ resume: initialResume, jdAnalysis, record
       a.download = r.filename || `resume.${fmt}`;
       a.click();
       URL.revokeObjectURL(u);
-      toast.success(`Resume downloaded as ${fmt.toUpperCase()}`);
+      if (isTrimmedOutcome(r.outcome)) {
+        toast.warning('Some content was trimmed to fit the page', {
+          description: resumeTrimDescription(r.dropped?.length || 0),
+        });
+      } else {
+        toast.success(`Resume downloaded as ${fmt.toUpperCase()}`);
+      }
     }
   }, [resume, jdAnalysis, recordId, isModified, onEditedVersionSaved]);
 

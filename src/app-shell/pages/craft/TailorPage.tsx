@@ -31,6 +31,7 @@ import {
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { apiService, VERSION_LIMIT_MESSAGE } from '@/lib/api';
+import { isTrimmedOutcome, resumeTrimDescription } from '@/lib/resumeLayoutSpec';
 import { useDailyUsage, type DailyUsage } from '@/hooks/useDailyUsage';
 import { useFeedback } from '@/components/feedback/FeedbackWidget';
 import { useUpgrade } from '@/components/billing/UpgradeModalProvider';
@@ -581,7 +582,13 @@ export default function TailorPage() {
         a.download = r.filename || `resume.${fmt}`;
         a.click();
         URL.revokeObjectURL(u);
-        toast.success(`Resume downloaded as ${fmt.toUpperCase()}`);
+        if (isTrimmedOutcome(r.outcome)) {
+          toast.warning('Some content was trimmed to fit the page', {
+            description: resumeTrimDescription(r.dropped?.length || 0),
+          });
+        } else {
+          toast.success(`Resume downloaded as ${fmt.toUpperCase()}`);
+        }
 
         // Downloading is the point where applying becomes plausible, so this is
         // where we ask. Needs a persisted record to patch — if the save-record

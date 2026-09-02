@@ -2302,7 +2302,15 @@ class ApiService {
       source?: 'initial' | 'regenerated' | 'edited';
       autoSaveOnEdit?: boolean;
     },
-  ): Promise<{ data?: Blob; error?: string; filename?: string }> {
+  ): Promise<{
+    data?: Blob;
+    error?: string;
+    filename?: string;
+    pages?: number;
+    outcome?: string;
+    fill_ratio?: number;
+    dropped?: Array<{ kind?: string; preview?: string }>;
+  }> {
     const token = this.getToken();
     const url = `${this.baseURL}/resume/download`;
     const controller = new AbortController();
@@ -2341,7 +2349,20 @@ class ApiService {
       const disposition = response.headers.get('content-disposition') || '';
       const match = disposition.match(/filename="?([^"]+)"?/);
       const filename = match?.[1] || `resume.${format}`;
-      return { data: blob, filename };
+      let dropped: Array<{ kind?: string; preview?: string }> = [];
+      try {
+        dropped = JSON.parse(response.headers.get('X-Resume-Dropped') || '[]');
+      } catch {
+        dropped = [];
+      }
+      return {
+        data: blob,
+        filename,
+        pages: Number(response.headers.get('X-Resume-Pages') || '') || undefined,
+        outcome: response.headers.get('X-Resume-Outcome') || undefined,
+        fill_ratio: Number(response.headers.get('X-Resume-Fill-Ratio') || '') || undefined,
+        dropped,
+      };
     } catch (error) {
       clearTimeout(timeoutId);
       return {

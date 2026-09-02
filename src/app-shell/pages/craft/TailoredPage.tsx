@@ -30,6 +30,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { apiService } from '@/lib/api';
+import { isTrimmedOutcome, resumeTrimDescription } from '@/lib/resumeLayoutSpec';
 import { formatDate } from '@/components/resume/ResumeDashboard';
 import type { TailoringRecord, TailoringVersion } from '@/types/resume';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -321,7 +322,13 @@ export default function TailoredPage() {
       const a = document.createElement('a');
       a.href = u; a.download = r.filename || `resume.${fmt}`;
       a.click(); URL.revokeObjectURL(u);
-      toast.success(`Downloaded ${fmt.toUpperCase()}`);
+      if (isTrimmedOutcome(r.outcome)) {
+        toast.warning('Some content was trimmed to fit the page', {
+          description: resumeTrimDescription(r.dropped?.length || 0),
+        });
+      } else {
+        toast.success(`Downloaded ${fmt.toUpperCase()}`);
+      }
       // Refresh record to pick up the new file cache
       fetchAll();
     }

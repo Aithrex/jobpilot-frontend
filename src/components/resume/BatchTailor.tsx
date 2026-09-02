@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { Plus, Trash2, CheckCircle2, X, XCircle, Download } from 'lucide-react';
 import { apiService } from '@/lib/api';
+import { isTrimmedOutcome, resumeTrimDescription } from '@/lib/resumeLayoutSpec';
 import { toast } from 'sonner';
 import type { TailoredFullResume, JDAnalysis, ATSScores } from '@/types/resume';
 import { useAuth } from '@/contexts/AuthContext';
@@ -438,7 +439,13 @@ export default function BatchTailor() {
     if (r.data) {
       const u = URL.createObjectURL(r.data);
       const a = document.createElement('a'); a.href = u; a.download = r.filename || `resume.${fmt}`; a.click(); URL.revokeObjectURL(u);
-      toast.success(`Downloaded ${fmt.toUpperCase()}`);
+      if (isTrimmedOutcome(r.outcome)) {
+        toast.warning('Some content was trimmed to fit the page', {
+          description: resumeTrimDescription(r.dropped?.length || 0),
+        });
+      } else {
+        toast.success(`Downloaded ${fmt.toUpperCase()}`);
+      }
     }
   }, []);
 
