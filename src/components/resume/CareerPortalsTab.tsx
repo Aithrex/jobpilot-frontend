@@ -1,10 +1,19 @@
-import { useState } from 'react';
-import { Building2, Globe, Landmark } from 'lucide-react';
+import { Suspense, lazy, useState } from 'react';
+import { Building2, Globe, Landmark, Loader2 } from 'lucide-react';
 import { WorkdayJobsPanel } from '@/components/job-search/WorkdayJobsPanel';
 import { ApplyConfirmDialog } from '@/components/job-search/JobCard';
 import { PillSwitch } from '@/components/ui/pill-switch';
 import { useJobSearch } from '@/hooks/useJobSearch';
+import { isTechFeedEnabled } from '@/lib/techFeedFlag';
 import type { CareerPortalVariant } from '@/types/jobs';
+
+// Lazy on purpose: the flag ships OFF, so the unified feed must not weigh down
+// the chunk that the legacy three-tab path loads.
+const TechFeedPanel = lazy(() =>
+  import('@/components/job-search/tech-feed/TechFeedPanel').then((m) => ({
+    default: m.TechFeedPanel,
+  })),
+);
 
 const SEGMENTS: Array<{
   key: CareerPortalVariant;
@@ -24,6 +33,10 @@ const SEGMENTS: Array<{
  * preserves results and in-flight scans.
  */
 export default function CareerPortalsTab() {
+  // Read once at mount: the flag must not flip mid-session and swap the whole
+  // surface out from under an in-flight scan. Clearing the localStorage
+  // override (or VITE_TECH_FEED) and reloading is the rollback.
+  const [techFeed] = useState(isTechFeedEnabled);
   const [active, setActive] = useState<CareerPortalVariant>('workday');
   const [visited, setVisited] = useState<Set<CareerPortalVariant>>(
     () => new Set<CareerPortalVariant>(['workday']),
@@ -42,6 +55,24 @@ export default function CareerPortalsTab() {
     setActive(key);
     setVisited((prev) => (prev.has(key) ? prev : new Set([...prev, key])));
   };
+
+  // Flag ON: one unified indexed feed instead of three fan-out catalogs. The
+  // legacy path below is untouched and is exactly what renders when it is OFF.
+  // (The hooks above stay unconditional - this branch is after all of them.)
+  if (techFeed) {
+    return (
+      <Suspense
+        fallback={
+          <div className="flex items-center justify-center py-16 text-muted-foreground">
+            <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
+            <span className="ml-2 text-sm">Loading the job feed...</span>
+          </div>
+        }
+      >
+        <TechFeedPanel />
+      </Suspense>
+    );
+  }
 
   return (
     <div className="space-y-4">

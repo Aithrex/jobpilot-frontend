@@ -541,10 +541,35 @@ export interface WorkdayJobsResult {
   streaming?: boolean;
 }
 
+/**
+ * One company row in a catalog response (`/jobs/workday/catalog`,
+ * `/jobs/career-pages/catalog`, `/jobs/mnc/catalog`). All three now send BOTH
+ * `display_name` (canonical) and `name` (legacy alias) - read the label with
+ * `companyLabel()` so a stale server that only sends one of them still renders.
+ */
+export interface WorkdayCatalogCompany {
+  display_name: string;
+  /** Legacy alias for `display_name`. Kept so an older server still labels. */
+  name?: string;
+  tenant: string;
+  ats?: string;
+}
+
+/**
+ * The one place a catalog company turns into a visible label. Prefers the
+ * canonical `display_name`, falls back to the legacy `name`, then to the
+ * tenant slug - never renders an empty chip.
+ */
+export function companyLabel(
+  company: Partial<Pick<WorkdayCatalogCompany, 'display_name' | 'name' | 'tenant'>>,
+): string {
+  return company.display_name || company.name || company.tenant || '';
+}
+
 export interface WorkdayCatalogIndustry {
   key: string;
   count: number;
-  companies: Array<{ display_name: string; tenant: string; ats?: string }>;
+  companies: WorkdayCatalogCompany[];
 }
 
 export interface WorkdayCatalog {

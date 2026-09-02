@@ -3894,6 +3894,95 @@ class ApiService {
   }
 
   // ============================================
+  // Tech feed - unified indexed job search (/api/jobs/tech-feed)
+  //
+  // The successor to the three fan-outs above. It is a BOUNDED INDEXED READ,
+  // not a crawl, so /search answers 200 with the page inline; it only returns
+  // 202 {job_id} when the caller passes `async: true`, in which case we poll
+  // the shared /resume/job/<id> machinery like every other long job.
+  // ============================================
+
+  /**
+   * Run a tech-feed search.
+   *
+   * Three things this method guarantees for callers:
+   * 1. `opts.signal` cancels an in-flight search, so a stale query dies the
+   *    moment the filters change (React Query hands us its own signal).
+   * 2. A 410 `cursor_expired` comes back as DATA tagged `cursor_expired: true`
+   *    with `status: 410`, NOT as an error - the paging session expired and the
+   *    caller must re-run from the current filters. It is categorically not an
+   *    auth failure and never touches the 401 force-logout path.
+   * 3. `tz_offset_minutes` always rides the request, last in the body so it
+   *    cannot be accidentally overridden: "posted today" is computed in the
+   *    VIEWER's calendar day, not UTC's.
+   */
+  async searchTechFeed(
+    params: import('../types/techFeed').TechFeedSearchRequest,
+    opts?: { signal?: AbortSignal; timeoutMs?: number },
+  ): Promise<ApiResponse<import('../types/techFeed').TechFeedSearchOutcome>> {
+    type SearchResponse = import('../types/techFeed').TechFeedSearchResponse;
+
+    const resp = await this.request<SearchResponse & { job_id?: string }>(
+      '/jobs/tech-feed/search',
+      {
+        method: 'POST',
+        // JSON.stringify drops undefined members, so an unset filter is simply
+        // absent rather than a null the backend has to interpret.
+        body: JSON.stringify({
+          ...params,
+          tz_offset_minutes: -new Date().getTimezoneOffset(),
+        }),
+      },
+      opts?.timeoutMs ?? 30000,
+      { signal: opts?.signal },
+    );
+
+    // 410: the search session behind this cursor is gone. Hand the payload back
+    // as data so the caller can reset to page 1 instead of showing a failure.
+    if (resp.status === 410 && resp.errorPayload?.error === 'cursor_expired') {
+      return {
+        data: {
+          cursor_expired: true,
+          error: 'cursor_expired',
+          message:
+            typeof resp.errorPayload.message === 'string'
+              ? resp.errorPayload.message
+              : 'This result page expired. Re-running your search.',
+        },
+        status: 410,
+      };
+    }
+
+    if (resp.error) {
+      // Forward status + payload so a 403 upgrade_required / 429 quota surfaces.
+      return { error: resp.error, status: resp.status, errorPayload: resp.errorPayload };
+    }
+
+    // Async mode: 202 {job_id} with no inline page - poll to completion.
+    if (params.async && resp.data?.job_id && !Array.isArray(resp.data?.jobs)) {
+      return this.pollJob<SearchResponse>(resp.data.job_id, 300000, opts?.signal);
+    }
+
+    if (!resp.data) return { error: 'Tech feed search returned no data', status: resp.status };
+    return { data: resp.data, status: resp.status };
+  }
+
+  /** The filter tree. Static per deploy - cache it hard on the client. */
+  async getTechFeedTaxonomy() {
+    return this.request<import('../types/techFeed').TechFeedTaxonomy>('/jobs/tech-feed/taxonomy', {
+      method: 'GET',
+    });
+  }
+
+  /** Index coverage + per-source crawl health, for the honesty banner. */
+  async getTechFeedCoverage() {
+    return this.request<import('../types/techFeed').TechFeedCoverageResponse>(
+      '/jobs/tech-feed/coverage',
+      { method: 'GET' },
+    );
+  }
+
+  // ============================================
   // Auto-Apply (opt-in auto-submit) - /api/apply/auto-submit
   // Rides the existing ANY /api/apply/{proxy+} edge route (no new Terraform).
   // All endpoints 404 when AUTO_SUBMIT_ENABLED is off; callers treat 404 as
