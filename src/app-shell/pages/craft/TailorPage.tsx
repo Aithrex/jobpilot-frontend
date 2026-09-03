@@ -82,8 +82,10 @@ import {
   inferSkillCategory,
   replaceSummarySentence,
   removeSummarySentence,
+  appendBulletOrClause,
 } from '@/lib/resumeMutations';
 import { resolveAnchor } from '@/lib/reviewAnchors';
+import type { EvidenceTarget } from './tailor/MatchGapsPanel';
 import { similarity, bestMatch } from '@/lib/textDiff';
 import { ProgressStepper } from './tailor/ProgressStepper';
 import { NudgeBar } from './tailor/NudgeBar';
@@ -139,7 +141,6 @@ export default function TailorPage() {
   // The displayed ATS score no longer matches the edited resume.
   const [scoreStale, setScoreStale] = useState(false);
   const [scoreDelta, setScoreDelta] = useState<number | null>(null);
-  const [addedKeywords, setAddedKeywords] = useState<Set<string>>(new Set());
   const prevOverallRef = useRef<number | null>(null);
 
   const tailorAbortRef = useRef<AbortController | null>(null);
@@ -441,7 +442,6 @@ export default function TailorPage() {
     setTailorError('');
     setAtsError('');
     setResult(null);
-    setAddedKeywords(new Set());
     setTailorElapsed(0);
     tailorTimerRef.current = setInterval(() => setTailorElapsed((p) => p + 1), 1000);
 
@@ -978,19 +978,30 @@ export default function TailorPage() {
   }, [atsLoading]);
 
   /* ── Version + keyword + new-session helpers ─────────────────────────────── */
-  const handleAddKeyword = useCallback((kw: string) => {
-    setResult((prev) => {
-      if (!prev) return prev;
-      const category = inferSkillCategory(prev.tailored_resume, kw, similarity);
-      return {
-        ...prev,
-        tailored_resume: addSkillToCategory(prev.tailored_resume, category, kw),
-      };
-    });
-    setScoreStale(true);
-    setAddedKeywords((prev) => new Set(prev).add(kw));
-    toast.success(`Added "${kw}" to your skills`);
-  }, []);
+  const handleAttachEvidence = useCallback(
+    (term: string, target: EvidenceTarget) => {
+      setResult((prev) => {
+        if (!prev) return prev;
+        const withBullet = appendBulletOrClause(
+          prev.tailored_resume,
+          target.section,
+          target.itemIndex,
+          target.bulletIndex,
+          target.clause,
+          !!target.asNewBullet,
+        );
+        const category = inferSkillCategory(withBullet, term, similarity);
+        return {
+          ...prev,
+          tailored_resume: addSkillToCategory(withBullet, category, term),
+        };
+      });
+      setScoreStale(true);
+      apiService.trackCraftEvent('gap_attach_evidence', term);
+      toast.success(`Recorded ${term} against a bullet. Re-score to refresh the ATS score.`);
+    },
+    [],
+  );
 
   const handleRestoreVersion = useCallback((version: VersionEntry) => {
     setResult((prev) =>
@@ -1041,7 +1052,6 @@ export default function TailorPage() {
     setReviewDecisions({});
     setScoreStale(false);
     setScoreDelta(null);
-    setAddedKeywords(new Set());
     prevOverallRef.current = null;
     recordIdRef.current = null;
     atsAutoTriggered.current = false;
@@ -1234,11 +1244,13 @@ export default function TailorPage() {
                 )}
                 <AtsScorePanel
                   scores={result?.ats_scores ?? null}
-                  onAddKeyword={handleAddKeyword}
-                  addedKeywords={addedKeywords}
+                  resume={result?.tailored_resume ?? null}
+                  matchGaps={result?.tailored_resume.match_gaps ?? null}
+                  onAttachEvidence={handleAttachEvidence}
                   stale={scoreStale}
                   onRescore={handleRescore}
                   rescoring={atsLoading}
+                  delta={scoreDelta}
                 />
               </div>
             }
