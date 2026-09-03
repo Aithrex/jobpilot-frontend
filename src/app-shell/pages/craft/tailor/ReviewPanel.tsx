@@ -215,26 +215,22 @@ function ReviewCard({
                 <Undo2 className="h-3 w-3" /> Restore original
               </Button>
             )}
-            {!isSummary && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7 gap-1 px-2.5 text-[11px] hover:border-destructive/50 hover:text-destructive"
-                onClick={() => onRemove(address)}
-              >
-                <Trash2 className="h-3 w-3" /> Remove
-              </Button>
-            )}
-            {!isSummary && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7 gap-1 px-2.5 text-[11px]"
-                onClick={() => setEditing(true)}
-              >
-                <Pencil className="h-3 w-3" /> Edit
-              </Button>
-            )}
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 gap-1 px-2.5 text-[11px] hover:border-destructive/50 hover:text-destructive"
+              onClick={() => onRemove(address)}
+            >
+              <Trash2 className="h-3 w-3" /> Remove
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 gap-1 px-2.5 text-[11px]"
+              onClick={() => setEditing(true)}
+            >
+              <Pencil className="h-3 w-3" /> Edit
+            </Button>
           </div>
         )
       )}

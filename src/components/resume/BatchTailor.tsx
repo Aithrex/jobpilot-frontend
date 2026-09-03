@@ -733,7 +733,7 @@ export default function BatchTailor() {
                         onClick={() => handleGenerateAts(job)}
                         className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium text-primary bg-primary/10 border border-primary/30 hover:bg-primary/15 transition-all"
                       >
-                        ⓘ ATS score
+                        ⓘ Checklist
                       </button>
                     )}
                     {job.atsScores?.status === 'generating' && (
@@ -751,9 +751,9 @@ export default function BatchTailor() {
                             ? 'text-warning bg-warning/10 border-warning/30'
                             : 'text-destructive bg-destructive/10 border-destructive/30'
                         }`}
-                        title={`ATS overall · keyword ${job.atsScores.data.keyword_match ?? '?'}% · format ${job.atsScores.data.format_score ?? '?'}%`}
+                        title={`Checklist · keyword ${job.atsScores.data.keyword_match ?? '?'} · format ${job.atsScores.data.format_score ?? '?'}`}
                       >
-                        ATS {Math.round(job.atsScores.data.overall ?? 0)}%
+                        Checklist {Math.round(job.atsScores.data.overall ?? 0)}
                       </span>
                     )}
                     {job.atsScores?.status === 'failed' && (
@@ -761,7 +761,7 @@ export default function BatchTailor() {
                         onClick={() => handleGenerateAts(job)}
                         className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium text-destructive bg-destructive/10 border border-destructive/30 hover:bg-destructive/15 transition-all"
                       >
-                        <X className="w-3 h-3" aria-hidden="true" /> Retry ATS score
+                        <X className="w-3 h-3" aria-hidden="true" /> Retry checklist
                       </button>
                     )}
                   </div>

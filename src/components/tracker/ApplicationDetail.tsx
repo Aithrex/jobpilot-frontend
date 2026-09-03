@@ -146,7 +146,7 @@ export default function ApplicationDetail({
             <span className="text-muted-foreground">Not yet</span>
           )}
         </Fact>
-        <Fact label="ATS score">
+        <Fact label="Checklist">
           {typeof ats === 'number' ? (
             <span className={`tabular-nums font-semibold ${atsTone(ats)}`}>{ats}</span>
           ) : app.resume_used === 'base' ? (

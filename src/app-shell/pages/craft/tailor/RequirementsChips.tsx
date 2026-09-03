@@ -116,6 +116,33 @@ export function RequirementsChips({
           </div>
         )}
 
+        {(() => {
+          const ctx = jdAnalysis.jd_context;
+          const bits = [
+            ...(ctx?.domain || []),
+            ...(ctx?.logistics || []),
+            ...(ctx?.seniority || []),
+          ];
+          if (!bits.length) return null;
+          return (
+            <div>
+              <p className="text-[11px] font-medium text-muted-foreground mb-2">
+                Role context — not skills
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {bits.slice(0, 8).map((s) => (
+                  <span
+                    key={s}
+                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium border border-border bg-muted text-muted-foreground"
+                  >
+                    {s}
+                  </span>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+
         {preferred.length > 0 && (
           <div>
             <p className="text-[11px] font-medium text-muted-foreground mb-2">
@@ -151,7 +178,7 @@ export function RequirementsChips({
           </span>
           <span className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-warning" />
-            Missing. Consider adding
+            Not shown in bullets
           </span>
         </div>
       </div>

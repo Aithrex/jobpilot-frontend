@@ -58,7 +58,7 @@ export function NudgeBar({
         <>
           Resume regenerated:{' '}
           <strong className="text-foreground">
-            ATS score is now {result.ats_scores.overall}/100
+            checklist is now {result.ats_scores.overall}/100
           </strong>
           . Download your updated version when ready.
         </>
@@ -68,29 +68,23 @@ export function NudgeBar({
     });
   }
 
-  // Low skills alignment or weak scores
+  // Weak evidenced coverage — never frame adding a skill as a score bump.
   if (
     result.ats_scores &&
-    result.ats_scores.skills_alignment < 70 &&
-    result.ats_scores.missing_keywords &&
-    result.ats_scores.missing_keywords.length > 0
+    (result.ats_scores.skills_alignment ?? 100) < 70
   ) {
-    const top = result.ats_scores.missing_keywords.slice(0, 2);
     nudges.push({
       id: `skills-${result.ats_scores.overall}`,
       icon: Lightbulb,
       text: (
         <>
-          Your Skills Alignment is{' '}
-          <strong className="text-warning">{result.ats_scores.skills_alignment}</strong>
-          . Try adding{' '}
-          <strong className="text-foreground">"{top.join('"')}"</strong>
-          {top.length > 1 ? ' and ' : ''}
-          <strong className="text-foreground">"{top[top.length - 1]}"</strong> to bump
-          it.
+          Several required skills are not evidenced in bullets.{' '}
+          <strong className="text-foreground">
+            Review the gaps and only name what you have used.
+          </strong>
         </>
       ),
-      actionLabel: 'Review in ATS',
+      actionLabel: 'Review checklist',
       onAction: onReviewAts,
     });
   }

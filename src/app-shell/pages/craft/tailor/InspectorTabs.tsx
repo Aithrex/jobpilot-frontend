@@ -94,7 +94,7 @@ export function InspectorTabs({
 
         <TabsTrigger value="ats" disabled={!hasResult} className={triggerCls}>
           <Search className="h-4 w-4 shrink-0" aria-hidden="true" />
-          <span className="sr-only sm:not-sr-only">ATS Score</span>
+          <span className="sr-only sm:not-sr-only">Checklist</span>
           {atsScore != null ? (
             <span className="ml-0.5 inline-flex items-center gap-1">
               <span

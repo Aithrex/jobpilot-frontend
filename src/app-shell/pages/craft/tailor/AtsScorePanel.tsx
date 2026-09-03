@@ -7,9 +7,8 @@
  * carry the legacy scanner/ai_screener blocks). Old records must render
  * forever - never assume v2 fields.
  */
-import { CheckCircle2, AlertTriangle, XCircle, Info, ShieldAlert } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, ShieldAlert } from 'lucide-react';
 
-import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   ScoreRing,
@@ -18,28 +17,47 @@ import {
   VendorChecklistCard,
 } from '@/components/resume/tailored/ScoreDisplay';
 import { isAtsV2, ATS_V2_RUBRIC, VENDOR_LABELS } from '@/lib/atsScores';
+import { MatchGapsPanel, type EvidenceTarget } from './MatchGapsPanel';
 
-import type { ATSScores } from './types';
+import type { ATSScores, MatchGaps, TailoredFullResume } from '@/types/resume';
 
 const SURFACE = 'rounded-container border border-border bg-card p-5 shadow-soft';
 
 interface AtsScorePanelProps {
   scores: ATSScores | null;
-  onAddKeyword: (kw: string) => void;
-  addedKeywords: Set<string>;
+  resume?: TailoredFullResume | null;
+  matchGaps?: MatchGaps | null;
+  onAttachEvidence?: (term: string, target: EvidenceTarget) => void;
   /** True when the resume changed after this score was computed. */
   stale?: boolean;
   onRescore?: () => void;
   rescoring?: boolean;
+  /** Overall delta after an edit-triggered rescore. Null when none. */
+  delta?: number | null;
 }
+
+const LEVERS: Array<{
+  key: ATSScores extends never ? never : keyof ATSScores | string;
+  action: string;
+  weight: number;
+}> = [
+  { key: 'quantified_impact', action: 'Add a metric to a bullet that lacks one', weight: 15 },
+  { key: 'readability', action: 'Reword a weak bullet opener', weight: 7 },
+  { key: 'recency_relevance', action: 'Name a JD term in your most recent role', weight: 8 },
+  { key: 'title_alignment', action: 'Align the summary with the target role family', weight: 15 },
+  { key: 'ats_parseability', action: 'Resolve a two-page overflow honestly', weight: 15 },
+  { key: 'section_completeness', action: 'Fill an empty section', weight: 10 },
+];
 
 export function AtsScorePanel({
   scores,
-  onAddKeyword,
-  addedKeywords,
+  resume = null,
+  matchGaps = null,
+  onAttachEvidence,
   stale = false,
   onRescore,
   rescoring = false,
+  delta = null,
 }: AtsScorePanelProps) {
   // ── Loading state - mirror the real layout (ring card + bar rows). ──
   if (scores === null) {
@@ -77,27 +95,53 @@ export function AtsScorePanel({
   }
 
   const v2 = isAtsV2(scores);
-  const classified = scores.missing_keywords_classified;
+  const levers = LEVERS
+    .map((row) => {
+      const raw = scores[row.key as keyof ATSScores];
+      const value = typeof raw === 'number' ? raw : 0;
+      return { ...row, score: value, room: ((100 - value) * row.weight) / 100 };
+    })
+    .filter((row) => row.score < 90)
+    .sort((a, b) => b.room - a.room)
+    .slice(0, 4);
 
-  return (
-    <div className="space-y-5 p-5 sm:p-6">
-      {/* Staleness banner - the score describes a previous version */}
-      {stale && (
-        <div className="flex items-center justify-between gap-3 rounded-container border border-warning/40 bg-warning/10 px-4 py-3">
+  if (!v2) {
+    return (
+      <div className="space-y-5 p-5 sm:p-6">
+        <div className="rounded-container border border-warning/40 bg-warning/10 px-4 py-3">
           <p className="text-xs text-foreground">
-            <span className="font-semibold">Edited since scored</span>. The
-            numbers below reflect the pre-edit resume.
+            <span className="font-semibold">Legacy score hidden.</span> The
+            stored number is from the old LLM scanner and is not the current
+            checklist. Re-score to replace it.
           </p>
           {onRescore && (
             <button
               type="button"
               onClick={onRescore}
               disabled={rescoring}
-              className="shrink-0 rounded-control border border-warning/50 px-2.5 py-1 text-[11px] font-semibold text-warning hover:bg-warning/15 disabled:opacity-50"
+              className="mt-2 rounded-control border border-warning/50 px-2.5 py-1 text-[11px] font-semibold text-warning hover:bg-warning/15 disabled:opacity-50"
             >
-              {rescoring ? 'Re-scoring...' : 'Re-score'}
+              {rescoring ? 'Re-scoring...' : 'Score with current checklist'}
             </button>
           )}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-5 p-5 sm:p-6">
+
+      {/* Staleness banner - the score describes a previous version */}
+      {v2 && stale && (
+        <div className="flex items-center justify-between gap-3 rounded-container border border-warning/40 bg-warning/10 px-4 py-3">
+          <p className="text-xs text-foreground">
+            <span className="font-semibold">
+              {rescoring ? 'Updating checklist…' : 'Edited since scored'}
+            </span>
+            {!rescoring &&
+              ' The numbers below reflect the pre-edit resume and will refresh shortly.'}
+          </p>
         </div>
       )}
 
@@ -115,22 +159,24 @@ export function AtsScorePanel({
         </div>
       )}
 
-      {/* Overall score ring */}
-      <div className="rounded-container border border-border bg-card p-6 shadow-soft">
-        <div className="flex items-center gap-6">
-          <ScoreRing score={scores.overall} />
-          <div className="flex-1">
-            <p className="text-base font-semibold text-foreground">
-              Overall ATS Score
-            </p>
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              {v2
-                ? 'Deterministic, research-backed rubric: 75-80 is the honest target band; scores above 85 usually mean keyword stuffing, not a better resume.'
-                : 'Weighted score across all dimensions'}
-            </p>
+      {/* Overall score ring — v1 numbers are theater; do not render them. */}
+      {v2 && (
+        <div className="rounded-container border border-border bg-card p-6 shadow-soft">
+          <div className="flex items-center gap-6">
+            <ScoreRing score={scores.overall} delta={delta} />
+            <div className="flex-1">
+              <p className="text-base font-semibold text-foreground">
+                Resume checklist
+              </p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Internal checklist of evidenced relevance and parse quality —
+                not a prediction that any ATS will pass or reject this resume.
+                75–80 is the honest target; higher often means stuffing.
+              </p>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Score breakdown + per-vendor column */}
       <div className="grid gap-4 md:grid-cols-2">
@@ -139,82 +185,52 @@ export function AtsScorePanel({
             Score Breakdown
           </p>
           <div className="space-y-3">
-            {v2 ? (
-              <>
-                {ATS_V2_RUBRIC.map(({ key, label, weight }) => (
-                  <ScoreBar
-                    key={key}
-                    label={`${label} (${weight}%)`}
-                    score={scores[key] ?? 0}
-                  />
-                ))}
-                <ScoreBar
-                  label="Experience Relevance (advisory)"
-                  score={scores.experience_relevance}
-                  color="bg-primary"
-                />
-              </>
-            ) : (
-              <>
-                <ScoreBar label="Keyword Match" score={scores.keyword_match} />
-                <ScoreBar
-                  label="Keyword Frequency"
-                  score={scores.keyword_frequency}
-                />
-                <ScoreBar label="Skills Alignment" score={scores.skills_alignment} />
-                <ScoreBar
-                  label="Experience Relevance"
-                  score={scores.experience_relevance}
-                />
-                <ScoreBar
-                  label="Quantifiable Impact"
-                  score={scores.quantifiable_impact}
-                />
-                <ScoreBar label="Bullet Quality" score={scores.bullet_quality} />
-                <ScoreBar label="Format Score" score={scores.format_score} />
-                <ScoreBar
-                  label="Section Completeness"
-                  score={scores.section_completeness}
-                />
-              </>
-            )}
+            {ATS_V2_RUBRIC.map(({ key, label, weight }) => (
+              <ScoreBar
+                key={key}
+                label={`${label} (${weight}%)`}
+                score={
+                  key === 'hard_skill_match' && scores.hard_skill_unscored
+                    ? 0
+                    : (scores[key] ?? 0)
+                }
+                unavailable={
+                  key === 'hard_skill_match' && scores.hard_skill_unscored
+                    ? 'No JD keywords found'
+                    : undefined
+                }
+              />
+            ))}
+            <ScoreBar
+              label="Experience Relevance (advisory)"
+              score={scores.experience_relevance ?? 0}
+              color="bg-primary"
+              unavailable={
+                scores.experience_relevance == null ? 'Unavailable' : undefined
+              }
+            />
           </div>
         </div>
         <div className={SURFACE}>
           <p className="mb-1 text-sm font-semibold text-foreground">
-            {v2 ? 'ATS Compatibility Checks' : 'ATS Scanner Scores'}
+            ATS Compatibility Checks
           </p>
-          {v2 ? (
-            <>
-              <p className="mb-3 text-[11px] leading-snug text-muted-foreground">
-                Real parse-compatibility checks per platform. ATS don't score
-                resumes; they parse them. These verify yours parses.
-              </p>
-              <div className="space-y-2.5">
-                {scores.vendor_compat &&
-                  Object.entries(scores.vendor_compat).map(([vendor, entry]) =>
-                    entry ? (
-                      <VendorChecklistCard
-                        key={vendor}
-                        vendor={VENDOR_LABELS[vendor] ?? vendor}
-                        entry={entry}
-                      />
-                    ) : null,
-                  )}
-              </div>
-            </>
-          ) : (
-            <div className="mt-3 space-y-3">
-              {scores.scanners &&
-                Object.entries(scores.scanners).map(([n, s]) => (
-                  <ScoreBar
-                    key={n}
-                    label={VENDOR_LABELS[n] ?? n}
-                    score={s}
+          <p className="mb-3 text-[11px] leading-snug text-muted-foreground">
+            Real parse-compatibility checks per platform. ATS don't score
+            resumes; they parse them. These verify yours parses.
+          </p>
+          <div className="space-y-2.5">
+            {scores.vendor_compat &&
+              Object.entries(scores.vendor_compat).map(([vendor, entry]) =>
+                entry ? (
+                  <VendorChecklistCard
+                    key={vendor}
+                    vendor={VENDOR_LABELS[vendor] ?? vendor}
+                    entry={entry}
                   />
-                ))}
-            </div>
-          )}
+                ) : null,
+              )}
+          </div>
         </div>
       </div>
 
@@ -225,21 +241,6 @@ export function AtsScorePanel({
           checks={scores.pdf_parseable_checks || {}}
           warnings={scores.pdf_parseable_warnings || []}
         />
-      )}
-
-      {/* AI screener - v1 records only (v2 removed the pseudo-signal) */}
-      {!v2 && scores.ai_screener && (
-        <div className={SURFACE}>
-          <p className="mb-4 text-sm font-semibold text-foreground">
-            AI Screener Analysis
-          </p>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <ScoreBar label="Overall" score={scores.ai_screener.overall} color="bg-primary" />
-            <ScoreBar label="Relevance" score={scores.ai_screener.relevance} color="bg-primary" />
-            <ScoreBar label="Seniority Fit" score={scores.ai_screener.seniority_fit} color="bg-primary" />
-            <ScoreBar label="Culture Fit" score={scores.ai_screener.culture_fit} color="bg-primary" />
-          </div>
-        </div>
       )}
 
       {/* Strengths + suggestions */}
@@ -284,68 +285,74 @@ export function AtsScorePanel({
         )}
       </div>
 
-      {/* Missing keywords - classification-aware when the backend provides it:
-          only real SKILLS are one-click addable; logistics terms are
-          informational; compliance frameworks need real domain evidence. */}
-      {scores.missing_keywords?.length > 0 && (
+      {scores.stuffing_warnings && scores.stuffing_warnings.length > 0 && (
         <div className={SURFACE}>
-          <div className="mb-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <XCircle className="h-4 w-4 text-destructive" />
-              <p className="text-sm font-semibold text-foreground">
-                Missing Keywords
-              </p>
-            </div>
-            <span className="text-[10px] text-muted-foreground">
-              Click a skill to add it. Only claim what you can defend
-            </span>
+          <div className="mb-2 flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-warning" />
+            <p className="text-sm font-semibold text-foreground">
+              Screeners will notice
+            </p>
           </div>
-          <div className="flex flex-wrap gap-1.5">
-            {(classified?.skills ?? scores.missing_keywords).map((kw) => {
-              const added = addedKeywords.has(kw);
-              return (
-                <button
-                  key={kw}
-                  type="button"
-                  onClick={() => !added && onAddKeyword(kw)}
-                  disabled={added}
-                  className={cn(
-                    'group inline-flex items-center gap-1 rounded-control border px-2.5 py-1 text-[11px] font-medium transition-all duration-200',
-                    added
-                      ? 'cursor-default border-success/25 bg-success/10 text-success'
-                      : 'border-destructive/25 bg-destructive/10 text-destructive hover:-translate-y-px hover:border-primary/40 hover:bg-primary/15 hover:text-primary',
-                  )}
-                >
-                  {added ? (
-                    <CheckCircle2 className="h-3 w-3" />
-                  ) : (
-                    <span className="text-[13px] leading-none opacity-60 group-hover:opacity-100">+</span>
-                  )}
-                  {kw}
-                </button>
-              );
-            })}
-            {classified?.compliance.map((kw) => (
-              <span
-                key={kw}
-                title="Compliance frameworks need real domain experience. Add only if your history genuinely shows it."
-                className="inline-flex items-center gap-1 rounded-control border border-warning/30 bg-warning/10 px-2.5 py-1 text-[11px] font-medium text-warning"
-              >
-                <AlertTriangle className="h-3 w-3" />
-                {kw}
-              </span>
+          <ul className="space-y-1.5">
+            {scores.stuffing_warnings.map((w) => (
+              <li key={w} className="text-xs leading-relaxed text-muted-foreground">
+                {w}
+              </li>
             ))}
-            {classified?.logistics.map((kw) => (
-              <span
-                key={kw}
-                title="Describes the job's working arrangement. Not a resume skill."
-                className="inline-flex items-center gap-1 rounded-control border border-border bg-muted px-2.5 py-1 text-[11px] font-medium text-muted-foreground"
-              >
-                <Info className="h-3 w-3" />
-                {kw}
-              </span>
+          </ul>
+        </div>
+      )}
+
+      {scores.unevidenced_keywords && scores.unevidenced_keywords.length > 0 && (
+        <div className={SURFACE}>
+          <p className="text-sm font-semibold text-foreground">Listed, not demonstrated</p>
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            These JD terms sit only in Skills. Mention them in a bullet to earn
+            credit — listing them moves the checklist by +0.
+          </p>
+          <p className="mt-2 text-xs text-foreground">
+            {scores.unevidenced_keywords.join(', ')}
+          </p>
+        </div>
+      )}
+
+      {onAttachEvidence &&
+        matchGaps &&
+        ((matchGaps.defensible?.length ?? 0) +
+          (matchGaps.learnable?.length ?? 0) +
+          (matchGaps.stretch?.length ?? 0) >
+          0) && (
+        <div className={SURFACE}>
+          <p className="mb-3 text-sm font-semibold text-foreground">
+            What the role asks that you have not shown
+          </p>
+          <MatchGapsPanel
+            gaps={matchGaps}
+            resume={resume}
+            onAttachEvidence={onAttachEvidence}
+          />
+        </div>
+      )}
+
+      {v2 && levers.length > 0 && (
+        <div className={SURFACE}>
+          <p className="mb-1 text-sm font-semibold text-foreground">
+            What would help most
+          </p>
+          <p className="mb-3 text-[11px] text-muted-foreground">
+            Ranked by room left on the checklist. None of these ask you to
+            invent a skill.
+          </p>
+          <ul className="space-y-2">
+            {levers.map((row) => (
+              <li key={row.key} className="flex items-start justify-between gap-3 text-xs">
+                <span className="text-foreground">{row.action}</span>
+                <span className="shrink-0 tabular-nums text-muted-foreground">
+                  {row.weight}% of checklist
+                </span>
+              </li>
             ))}
-          </div>
+          </ul>
         </div>
       )}
     </div>

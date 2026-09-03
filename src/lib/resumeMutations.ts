@@ -5,6 +5,15 @@
  */
 import type { TailoredFullResume } from '@/types/resume';
 
+/** Same split the backend uses in claim_guard / tailor_verifier. */
+export function splitSummarySentences(summary: string): string[] {
+  return (summary || '')
+    .trim()
+    .split(/(?<=[.!?])\s+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
 export type BulletSection = 'experience' | 'projects';
 
 export function replaceBulletText(
@@ -43,6 +52,56 @@ export function removeBulletAt(
       i === itemIndex
         ? { ...item, bullets: item.bullets.filter((_, j) => j !== bulletIndex) }
         : item,
+    ),
+  };
+}
+
+export function replaceSummarySentence(
+  resume: TailoredFullResume,
+  sentenceIndex: number,
+  text: string,
+): TailoredFullResume {
+  const sentences = splitSummarySentences(resume.summary || '');
+  if (sentenceIndex < 0 || sentenceIndex >= sentences.length) return resume;
+  const next = sentences.slice();
+  next[sentenceIndex] = text.trim();
+  return { ...resume, summary: next.join(' ') };
+}
+
+export function removeSummarySentence(
+  resume: TailoredFullResume,
+  sentenceIndex: number,
+): TailoredFullResume {
+  const sentences = splitSummarySentences(resume.summary || '');
+  if (sentenceIndex < 0 || sentenceIndex >= sentences.length) return resume;
+  const next = sentences.filter((_, i) => i !== sentenceIndex);
+  return { ...resume, summary: next.join(' ') };
+}
+
+export function appendBulletOrClause(
+  resume: TailoredFullResume,
+  section: BulletSection,
+  itemIndex: number,
+  bulletIndex: number,
+  clause: string,
+  asNewBullet: boolean,
+): TailoredFullResume {
+  const items = resume[section];
+  if (!items?.[itemIndex]) return resume;
+  const trimmed = clause.trim();
+  if (!trimmed) return resume;
+  const bullets = items[itemIndex].bullets || [];
+  const nextBullets = asNewBullet || bulletIndex < 0 || bulletIndex >= bullets.length
+    ? [...bullets, trimmed.endsWith('.') ? trimmed : `${trimmed}.`]
+    : bullets.map((b, j) =>
+        j === bulletIndex
+          ? `${b.replace(/\s+$/, '')} ${trimmed.endsWith('.') ? trimmed : `${trimmed}.`}`
+          : b,
+      );
+  return {
+    ...resume,
+    [section]: items.map((item, i) =>
+      i === itemIndex ? { ...item, bullets: nextBullets } : item,
     ),
   };
 }

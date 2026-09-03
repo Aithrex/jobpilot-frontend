@@ -17,11 +17,26 @@ export function ScoreBar({
   label,
   score,
   color,
+  unavailable,
 }: {
   label: string;
   score: number;
   color?: string;
+  unavailable?: string;
 }) {
+  if (unavailable) {
+    return (
+      <div className="space-y-1.5">
+        <div className="flex justify-between items-center gap-2">
+          <span className="text-xs text-gray-700 dark:text-gray-300 font-medium">
+            {label}
+          </span>
+          <span className="text-[11px] text-muted-foreground">{unavailable}</span>
+        </div>
+        <div className="h-2 rounded-full bg-gray-200 dark:bg-white/[0.06]" />
+      </div>
+    );
+  }
   const bg =
     score >= 80
       ? "bg-emerald-500"
@@ -87,7 +102,15 @@ export function ScoreBar({
 }
 
 // ─── Score ring ─────────────────────────────────────────────────────────────
-export function ScoreRing({ score, size = 96 }: { score: number; size?: number }) {
+export function ScoreRing({
+  score,
+  size = 96,
+  delta,
+}: {
+  score: number;
+  size?: number;
+  delta?: number | null;
+}) {
   const r = (size - 10) / 2,
     c = 2 * Math.PI * r,
     o = c - (score / 100) * c;
@@ -123,13 +146,24 @@ export function ScoreRing({ score, size = 96 }: { score: number; size?: number }
           className="transition-all duration-1000 ease-out"
         />
       </svg>
-      <div className="absolute inset-0 flex items-center justify-center">
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
         <span
-          className="text-2xl font-bold tabular-nums"
+          className="text-2xl font-bold tabular-nums leading-none"
           style={{ color: col }}
         >
           {score}
         </span>
+        {typeof delta === 'number' && delta !== 0 && (
+          <span
+            className={`mt-0.5 text-[10px] font-semibold tabular-nums ${
+              delta > 0
+                ? 'text-emerald-600 dark:text-emerald-400'
+                : 'text-rose-600 dark:text-rose-400'
+            }`}
+          >
+            {delta > 0 ? `+${delta}` : delta}
+          </span>
+        )}
       </div>
     </div>
   );

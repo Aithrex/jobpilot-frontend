@@ -65,6 +65,8 @@ export interface TailoredFullResume {
    * out of this document. Absent on records tailored before this shipped.
    */
   _skill_headings?: { map: Record<string, string>; order: string[] };
+  /** FLASH-tiered missing required terms. Honest replacement for click-to-add. */
+  match_gaps?: MatchGaps;
 }
 
 export interface JDAnalysis {
@@ -79,6 +81,26 @@ export interface JDAnalysis {
   experience_years: string;
   industry: string;
   keywords: string[];
+  /** Non-skill JD terms (domain / logistics / seniority / title). Not scored. */
+  jd_context?: {
+    domain?: string[];
+    logistics?: string[];
+    seniority?: string[];
+    title?: string[];
+  };
+}
+
+export interface MatchGapItem {
+  item: string;
+  why: string;
+}
+
+export interface MatchGaps {
+  required_coverage?: number;
+  coverage_percentage?: number;
+  defensible: MatchGapItem[];
+  learnable: MatchGapItem[];
+  stretch: MatchGapItem[];
 }
 
 /** @deprecated v1 LLM-simulated per-vendor scores - v2 backends emit
@@ -175,7 +197,7 @@ export interface ATSScores {
   keyword_match: number;
   keyword_frequency: number;
   skills_alignment: number;
-  experience_relevance: number;
+  experience_relevance: number | null;
   quantifiable_impact: number;
   bullet_quality: number;
   format_score: number;
@@ -192,6 +214,10 @@ export interface ATSScores {
   pdf_parseable_score?: number;
   pdf_parseable_checks?: PdfParseabilityChecks;
   pdf_parseable_warnings?: string[];
+  unevidenced_keywords?: string[];
+  stuffing_warnings?: string[];
+  hard_skill_unscored?: boolean;
+  jd_context?: JDAnalysis['jd_context'];
 }
 
 // ─── Claim verification sidecar (rides inside tailored_resume) ────────────

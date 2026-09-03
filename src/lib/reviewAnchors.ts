@@ -10,29 +10,44 @@
  */
 import type { TailoredFullResume } from '@/types/resume';
 import type { BulletSection } from '@/lib/resumeMutations';
+import { splitSummarySentences } from '@/lib/resumeMutations';
+
+export type ReviewSection = BulletSection | 'summary';
 
 export interface ResolvedAnchor {
-  section: BulletSection;
+  section: ReviewSection;
   itemIndex: number;
   bulletIndex: number;
   /** Current text at the resolved position. */
   currentText: string;
 }
 
+export { splitSummarySentences } from '@/lib/resumeMutations';
+
 export function parseAddress(
   address: string,
-): { section: BulletSection; itemIndex: number; bulletIndex: number } | null {
-  const m = /^(experience|projects)\.(\d+)\.bullets\.(\d+)$/.exec(address);
-  if (!m) return null;
-  return {
-    section: m[1] as BulletSection,
-    itemIndex: Number(m[2]),
-    bulletIndex: Number(m[3]),
-  };
+): { section: ReviewSection; itemIndex: number; bulletIndex: number } | null {
+  const bullet = /^(experience|projects)\.(\d+)\.bullets\.(\d+)$/.exec(address);
+  if (bullet) {
+    return {
+      section: bullet[1] as BulletSection,
+      itemIndex: Number(bullet[2]),
+      bulletIndex: Number(bullet[3]),
+    };
+  }
+  const summary = /^summary\.s(\d+)$/.exec(address);
+  if (summary) {
+    return {
+      section: 'summary',
+      itemIndex: 0,
+      bulletIndex: Number(summary[1]),
+    };
+  }
+  return null;
 }
 
 export function isSummaryAddress(address: string): boolean {
-  return address.startsWith('summary.');
+  return /^summary\.s\d+$/.test(address);
 }
 
 /**
@@ -48,16 +63,34 @@ export function resolveAnchor(
   const parsed = parseAddress(address);
   const target = snapshotText.trim();
 
+  if (parsed?.section === 'summary') {
+    const sentences = splitSummarySentences(resume.summary || '');
+    const at = sentences[parsed.bulletIndex];
+    if (typeof at === 'string' && at.trim() === target) {
+      return { ...parsed, currentText: at };
+    }
+    const found = sentences.findIndex((s) => s.trim() === target);
+    if (found >= 0) {
+      return {
+        section: 'summary',
+        itemIndex: 0,
+        bulletIndex: found,
+        currentText: sentences[found],
+      };
+    }
+    return null;
+  }
+
   if (parsed) {
     const atAddress =
       resume[parsed.section]?.[parsed.itemIndex]?.bullets?.[parsed.bulletIndex];
     if (typeof atAddress === 'string' && atAddress.trim() === target) {
       return { ...parsed, currentText: atAddress };
     }
-    // Search the original section first, then the other bullet section.
-    const sections: BulletSection[] = parsed
-      ? [parsed.section, parsed.section === 'experience' ? 'projects' : 'experience']
-      : ['experience', 'projects'];
+    const sections: BulletSection[] = [
+      parsed.section,
+      parsed.section === 'experience' ? 'projects' : 'experience',
+    ];
     for (const section of sections) {
       const items = resume[section] || [];
       for (let i = 0; i < items.length; i++) {

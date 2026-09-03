@@ -80,8 +80,13 @@ import {
   removeBulletAt,
   addSkillToCategory,
   inferSkillCategory,
+  replaceSummarySentence,
+  removeSummarySentence,
+  appendBulletOrClause,
 } from '@/lib/resumeMutations';
 import { resolveAnchor } from '@/lib/reviewAnchors';
+import { isAtsV2 } from '@/lib/atsScores';
+import type { EvidenceTarget } from './tailor/MatchGapsPanel';
 import { similarity, bestMatch } from '@/lib/textDiff';
 import { ProgressStepper } from './tailor/ProgressStepper';
 import { NudgeBar } from './tailor/NudgeBar';
@@ -136,6 +141,8 @@ export default function TailorPage() {
   >({});
   // The displayed ATS score no longer matches the edited resume.
   const [scoreStale, setScoreStale] = useState(false);
+  const [scoreDelta, setScoreDelta] = useState<number | null>(null);
+  const prevOverallRef = useRef<number | null>(null);
 
   const tailorAbortRef = useRef<AbortController | null>(null);
   const atsAbortRef = useRef<AbortController | null>(null);
@@ -170,7 +177,6 @@ export default function TailorPage() {
   const coverLetterInFlightRef = useRef(false);
   const [coverLetterDownloading, setCoverLetterDownloading] = useState(false);
 
-  const [addedKeywords, setAddedKeywords] = useState<Set<string>>(new Set());
   const [inspectorTab, setInspectorTab] = useState<InspectorTabKey>('jd');
   const [versions, setVersions] = useState<VersionEntry[]>([]);
   const [dismissedNudges, setDismissedNudges] = useState<Set<string>>(new Set());
@@ -363,7 +369,8 @@ export default function TailorPage() {
 
   /* ── ATS scoring - shared by the auto-trigger and the manual retry ───────── */
   const runAtsScoring = useCallback(
-    (res: TailorPipelineResult) => {
+    (res: TailorPipelineResult, opts?: { silent?: boolean }) => {
+      atsAbortRef.current?.abort();
       const ctrl = new AbortController();
       atsAbortRef.current = ctrl;
       setAtsLoading(true);
@@ -374,14 +381,27 @@ export default function TailorPage() {
           if (ctrl.signal.aborted) return;
           setAtsLoading(false);
           if (r.data?.ats_scores) {
+            const next = r.data.ats_scores.overall;
+            const prev = prevOverallRef.current;
+            if (
+              opts?.silent &&
+              prev != null &&
+              typeof next === 'number' &&
+              next !== prev
+            ) {
+              setScoreDelta(next - prev);
+            } else if (!opts?.silent) {
+              setScoreDelta(null);
+            }
+            if (typeof next === 'number') prevOverallRef.current = next;
             setResult((p) => (p ? { ...p, ats_scores: r.data!.ats_scores } : p));
             updateRecordATS(r.data.ats_scores);
             setScoreStale(false);
-            // Flagged claims outrank the score: send the user to review
-            // first when anything UNSUPPORTED is waiting on them.
-            const unsupported =
-              res.tailored_resume.verification?.counts.unsupported ?? 0;
-            setInspectorTab(unsupported > 0 ? 'review' : 'ats');
+            if (!opts?.silent) {
+              const unsupported =
+                res.tailored_resume.verification?.counts.unsupported ?? 0;
+              setInspectorTab(unsupported > 0 ? 'review' : 'ats');
+            }
           } else {
             setAtsError(r.error || "Couldn't score this resume against the JD.");
           }
@@ -403,6 +423,13 @@ export default function TailorPage() {
       return () => clearTimeout(t);
     }
   }, [result, atsLoading, runAtsScoring]);
+
+  /* ── Re-score after edits (gradient is honest now; the number may move). ─ */
+  useEffect(() => {
+    if (!result || !scoreStale || phase !== null) return;
+    const t = setTimeout(() => runAtsScoring(result, { silent: true }), 800);
+    return () => clearTimeout(t);
+  }, [result, scoreStale, phase, runAtsScoring]);
 
   /* ── The tailoring flow - real phase transitions, no fake timer ──────────── */
   const handleTailoring = useCallback(async () => {
@@ -824,7 +851,34 @@ export default function TailorPage() {
 
   const decideReview = useCallback((address: string, decision: ReviewDecision) => {
     setReviewDecisions((prev) => ({ ...prev, [address]: decision }));
+    apiService.trackCraftEvent(`review_${decision}`, address);
   }, []);
+
+  const reverifyAfterEdit = useCallback(
+    (resume: TailoredFullResume) => {
+      if (!result) return;
+      void apiService
+        .verifyResume(resume, result.jd_analysis, {
+          recordId: recordIdRef.current || undefined,
+          resumeId: activeResumeRef.current?.resume_id,
+        })
+        .then((resp) => {
+          if (!resp.data?.verification) return;
+          setResult((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  tailored_resume: {
+                    ...prev.tailored_resume,
+                    verification: resp.data!.verification,
+                  },
+                }
+              : prev,
+          );
+        });
+    },
+    [result],
+  );
 
   const handleReviewAccept = useCallback(
     (address: string) => decideReview(address, 'accepted'),
@@ -841,13 +895,19 @@ export default function TailorPage() {
         decideReview(address, 'edited');
         return;
       }
-      mutateResume((r) =>
-        removeBulletAt(r, anchor.section, anchor.itemIndex, anchor.bulletIndex),
-      );
+      let next: TailoredFullResume | null = null;
+      mutateResume((r) => {
+        next =
+          anchor.section === 'summary'
+            ? removeSummarySentence(r, anchor.bulletIndex)
+            : removeBulletAt(r, anchor.section, anchor.itemIndex, anchor.bulletIndex);
+        return next;
+      });
       decideReview(address, 'removed');
-      toast.success('Bullet removed');
+      toast.success(anchor.section === 'summary' ? 'Sentence removed' : 'Bullet removed');
+      if (next) reverifyAfterEdit(next);
     },
-    [result, mutateResume, decideReview],
+    [result, mutateResume, decideReview, reverifyAfterEdit],
   );
 
   const handleReviewRestore = useCallback(
@@ -855,7 +915,7 @@ export default function TailorPage() {
       const item = result?.tailored_resume.verification?.items[address];
       if (!item || !result || !baseResume) return;
       const anchor = resolveAnchor(result.tailored_resume, address, item.text);
-      if (!anchor) {
+      if (!anchor || anchor.section === 'summary') {
         decideReview(address, 'edited');
         return;
       }
@@ -892,14 +952,20 @@ export default function TailorPage() {
         decideReview(address, 'edited');
         return;
       }
-      mutateResume((r) =>
-        replaceBulletText(
-          r, anchor.section, anchor.itemIndex, anchor.bulletIndex, text.trim(),
-        ),
-      );
+      let next: TailoredFullResume | null = null;
+      mutateResume((r) => {
+        next =
+          anchor.section === 'summary'
+            ? replaceSummarySentence(r, anchor.bulletIndex, text.trim())
+            : replaceBulletText(
+                r, anchor.section, anchor.itemIndex, anchor.bulletIndex, text.trim(),
+              );
+        return next;
+      });
       decideReview(address, 'edited');
+      if (next) reverifyAfterEdit(next);
     },
-    [result, mutateResume, decideReview],
+    [result, mutateResume, decideReview, reverifyAfterEdit],
   );
 
   // Manual re-score (scores are paid render+LLM jobs - never automatic on
@@ -913,19 +979,27 @@ export default function TailorPage() {
   }, [atsLoading]);
 
   /* ── Version + keyword + new-session helpers ─────────────────────────────── */
-  const handleAddKeyword = useCallback(
-    (kw: string) => {
+  const handleAttachEvidence = useCallback(
+    (term: string, target: EvidenceTarget) => {
       setResult((prev) => {
         if (!prev) return prev;
-        const category = inferSkillCategory(prev.tailored_resume, kw, similarity);
+        const withBullet = appendBulletOrClause(
+          prev.tailored_resume,
+          target.section,
+          target.itemIndex,
+          target.bulletIndex,
+          target.clause,
+          !!target.asNewBullet,
+        );
+        const category = inferSkillCategory(withBullet, term, similarity);
         return {
           ...prev,
-          tailored_resume: addSkillToCategory(prev.tailored_resume, category, kw),
+          tailored_resume: addSkillToCategory(withBullet, category, term),
         };
       });
       setScoreStale(true);
-      setAddedKeywords((prev) => new Set(prev).add(kw));
-      toast.success(`Added "${kw}" to your skills`);
+      apiService.trackCraftEvent('gap_attach_evidence', term);
+      toast.success(`Recorded ${term} against a bullet. Re-score to refresh the checklist.`);
     },
     [],
   );
@@ -972,13 +1046,14 @@ export default function TailorPage() {
     setCoverLetterLoading(false);
     coverLetterInFlightRef.current = false;
     coverLetterAbortRef.current?.abort();
-    setAddedKeywords(new Set());
     setInspectorTab('jd');
     setDownloadMenuOpen(false);
     setVersions([]);
     setDismissedNudges(new Set());
     setReviewDecisions({});
     setScoreStale(false);
+    setScoreDelta(null);
+    prevOverallRef.current = null;
     recordIdRef.current = null;
     atsAutoTriggered.current = false;
     setApplyPromptOpen(false);
@@ -1110,7 +1185,11 @@ export default function TailorPage() {
             active={inspectorTab}
             onChange={setInspectorTab}
             hasResult={!!result}
-            atsScore={result?.ats_scores?.overall ?? null}
+            atsScore={
+              result?.ats_scores && isAtsV2(result.ats_scores)
+                ? result.ats_scores.overall
+                : null
+            }
             atsLoading={atsLoading}
             atsStale={scoreStale}
             reviewPendingCount={reviewPendingCount}
@@ -1166,11 +1245,13 @@ export default function TailorPage() {
                 )}
                 <AtsScorePanel
                   scores={result?.ats_scores ?? null}
-                  onAddKeyword={handleAddKeyword}
-                  addedKeywords={addedKeywords}
+                  resume={result?.tailored_resume ?? null}
+                  matchGaps={result?.tailored_resume.match_gaps ?? null}
+                  onAttachEvidence={handleAttachEvidence}
                   stale={scoreStale}
                   onRescore={handleRescore}
                   rescoring={atsLoading}
+                  delta={scoreDelta}
                 />
               </div>
             }
@@ -1246,7 +1327,7 @@ export default function TailorPage() {
               </div>
             </div>
 
-            {result.ats_scores && (
+            {result.ats_scores && isAtsV2(result.ats_scores) && (
               <div
                 className={cn(
                   'hidden shrink-0 items-center gap-2 rounded-control border px-4 py-2 lg:flex',
@@ -1277,7 +1358,10 @@ export default function TailorPage() {
                         : 'text-destructive',
                   )}
                 >
-                  {result.ats_scores.overall}% ATS Match
+                  {result.ats_scores.overall} checklist
+                  {typeof scoreDelta === 'number' && scoreDelta !== 0
+                    ? ` (${scoreDelta > 0 ? '+' : ''}${scoreDelta})`
+                    : ''}
                 </span>
               </div>
             )}

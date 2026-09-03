@@ -2068,6 +2068,40 @@ class ApiService {
     );
   }
 
+  async verifyResume(
+    tailoredResume: import('../types/resume').TailoredFullResume,
+    jdAnalysis: import('../types/resume').JDAnalysis,
+    opts?: { recordId?: string; resumeId?: string; signal?: AbortSignal },
+  ): Promise<ApiResponse<{ verification: import('../types/resume').ResumeVerification }>> {
+    const submitResp = await this.request<{ job_id: string }>(
+      '/resume/verify',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          tailored_resume: tailoredResume,
+          jd_analysis: jdAnalysis,
+          record_id: opts?.recordId || '',
+          resume_id: opts?.resumeId || '',
+        }),
+      },
+      30000,
+    );
+    if (submitResp.error) return { error: submitResp.error };
+    if (!submitResp.data?.job_id) return { error: 'Failed to submit verification' };
+    return this.pollJob<{ verification: import('../types/resume').ResumeVerification }>(
+      submitResp.data.job_id,
+      120000,
+      opts?.signal,
+    );
+  }
+
+  trackCraftEvent(action: string, target?: string): void {
+    void this.request('/resume/craft-event', {
+      method: 'POST',
+      body: JSON.stringify({ action, target: target || '' }),
+    }).catch(() => undefined);
+  }
+
   /**
    * Settle a tailoring session record. Resume Platform v3: the tailor worker
    * persists the record itself and returns `record_id` in the job result  -

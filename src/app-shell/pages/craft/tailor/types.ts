@@ -10,9 +10,10 @@ import type {
   ATSScores,
   TailorPipelineResult,
   BackendTailorPhase,
+  MatchGaps,
 } from '@/types/resume';
 
-export type { TailoredFullResume, JDAnalysis, ATSScores, TailorPipelineResult };
+export type { TailoredFullResume, JDAnalysis, ATSScores, TailorPipelineResult, MatchGaps };
 
 /** Which inspector tab is active (right column). */
 export type InspectorTabKey = 'jd' | 'review' | 'ats' | 'regenerate' | 'cover';
