@@ -110,7 +110,10 @@ export function CombinedJobsPanel({
 
   const visibleJobs = useMemo(() => {
     const isApplied = (j: WorkdayJob) => isAppliedPipelineStatus(getJobStatus(j.job_id));
-    let out = jobs.filter((j) => j.days_ago != null && j.days_ago <= maxDays);
+    // Undated postings are KEPT - see WorkdayJobsPanel: a missing publish
+    // date is unknown, not old, and excluding it silently applied a recency
+    // test the posting could never be measured against.
+    let out = jobs.filter((j) => j.days_ago == null || j.days_ago <= maxDays);
     const q = search.trim().toLowerCase();
     if (q) out = out.filter((j) => `${j.title} ${j.company}`.toLowerCase().includes(q));
     if (seniority !== 'any') out = out.filter((j) => matchesSeniority(j, seniority));

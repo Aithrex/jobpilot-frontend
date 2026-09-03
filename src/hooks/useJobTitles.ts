@@ -39,9 +39,21 @@ export const JOB_TITLES_CAP = 40;
  *  fingerprint (server-cached after that). */
 const THIN_RESUME_TITLES = 4;
 
-/** Browser cache key. Kept as the pre-existing combined-feed key so saved
- *  setups survive this refactor untouched. */
-const CACHE_KEY = 'combined_jobs_prefs_v1';
+/**
+ * Browser cache key.
+ *
+ * Bumped to v2 deliberately. Every v1 cache holds titles from before the
+ * backend canonicalized them - held titles like "Software Engineer, Contract"
+ * and synthesized ones like "Cloud Engineer AWS Terraform", which match no
+ * real posting. Because a cached set with an unchanged fingerprint is used
+ * verbatim and nothing here ever repaired a title, those browsers would keep
+ * an empty feed forever. The bump re-seeds every browser exactly once from
+ * `match_titles`, after which curation is respected again.
+ *
+ * v1 is deliberately NOT in `LEGACY_CACHE_KEYS`: migrating it would carry the
+ * defective titles straight back in, which is the whole thing being repaired.
+ */
+const CACHE_KEY = 'combined_jobs_prefs_v2';
 
 /** The retired per-panel keys. Read once, for migration only, so a user who
  *  only ever used Career portals keeps the titles they curated there. */
@@ -167,6 +179,7 @@ async function loadTitleSeed(): Promise<JobTitleSeed> {
       fingerprint: seed.data.fingerprint ?? '',
       resume_titles: seed.data.resume_titles,
       synth_titles: seed.data.synth_titles ?? [],
+      match_titles: seed.data.match_titles ?? [],
       resume_count: seed.data.resume_count ?? 0,
       cached: seed.data.cached ?? true,
     };
@@ -231,18 +244,40 @@ export function hydrateJobTitles(): Promise<void> {
       const cachedFp = readCachedFingerprint();
       const fingerprintUnchanged = Boolean(fp) && cachedFp === fp;
 
+      // What we actually search with. `resume_titles` are titles the person
+      // has HELD - "Software Engineering Intern", "Software Engineer,
+      // Contract" - and matching a posting against those found 50 of 30,342
+      // live postings, 49 of them internships. `match_titles` is the same
+      // intent rewritten by the backend into canonical role names that do
+      // match. Fall back to held titles only for a backend too old to send it.
+      const seedTitles = seed.match_titles?.length ? seed.match_titles : resumeTitles;
+
       let titles: string[];
       if (saved.length && fingerprintUnchanged) {
+        // The user's own curation wins outright. Merging the seed back in
+        // here would make DELETING a title impossible - it would reappear on
+        // every reload - which is the mirror image of the bug this change
+        // exists to fix. Browsers holding a pre-canonicalization set are
+        // repaired once by the CACHE_KEY bump instead.
         titles = saved.slice(0, JOB_TITLES_CAP);
       } else if (saved.length) {
-        titles = mergeTitles(saved, resumeTitles);
+        // Resumes changed, so the FRESH seed leads. This was `mergeTitles(
+        // saved, resumeTitles)` - stale titles first - which put the new ones
+        // at the tail where `JOB_TITLES_CAP` cut them off, so re-uploading a
+        // resume could not fix a broken title set.
+        titles = mergeTitles(seedTitles, saved);
       } else {
-        titles = resumeTitles.slice(0, JOB_TITLES_CAP);
+        titles = seedTitles.slice(0, JOB_TITLES_CAP);
       }
 
-      const thin = resumeTitles.length < THIN_RESUME_TITLES;
+      // Only for a backend that cannot canonicalize. When `match_titles` is
+      // present the synth has already been folded into it server-side, and
+      // the old `resumeTitles.length < 4` gate was actively harmful: it
+      // switched the rescue OFF for users with several resumes, who have the
+      // most held titles and therefore the most unmatchable ones.
       const needSynth =
-        thin &&
+        !seed.match_titles?.length &&
+        resumeTitles.length < THIN_RESUME_TITLES &&
         seed.resume_count > 0 &&
         !(saved.length && fingerprintUnchanged);
       if (needSynth) {
@@ -255,7 +290,10 @@ export function hydrateJobTitles(): Promise<void> {
       }
 
       lastSyncedFingerprint = fp || lastSyncedFingerprint;
-      setState({ titles, resumeTitles, ready: true });
+      // `resumeTitles` is the ChipsInput "Reset" target. It must be the
+      // searchable set, not the held one - resetting used to restore exactly
+      // the titles that match nothing.
+      setState({ titles, resumeTitles: seedTitles, ready: true });
       if (titles.length) persistTitles(titles, fp || undefined);
     } catch {
       // A failed seed must not leave every panel stuck behind `ready`. Clear

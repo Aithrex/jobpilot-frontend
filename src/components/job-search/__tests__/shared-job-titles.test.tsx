@@ -46,7 +46,10 @@ vi.mock('@/lib/api', () => ({
 
 const api = apiService as unknown as Record<string, Mock>;
 
-const SHARED_CACHE_KEY = 'combined_jobs_prefs_v1';
+// Must track `useJobTitles.CACHE_KEY`. Bumped to v2 with the title
+// canonicalization change, which abandons every v1 cache on purpose - see
+// the comment on CACHE_KEY.
+const SHARED_CACHE_KEY = 'combined_jobs_prefs_v2';
 const SEED_FINGERPRINT = 'fp-resume-set-1';
 const RESUME_TITLES = [
   'Backend Engineer',

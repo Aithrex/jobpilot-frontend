@@ -400,7 +400,11 @@ export function WorkdayJobsPanel({
   const [industries, setIndustries] = useState<string[]>(prefs.industries ?? []);
   const [location, setLocation] = useState(prefs.location ?? '');
   const [remoteOnly, setRemoteOnly] = useState(prefs.remoteOnly ?? false);
-  const [recency, setRecency] = useState<RecencyChoice>(prefs.recency ?? 'today');
+  // '7d', not 'today'. `maxDays` for 'today' is 0, so the default view
+  // client-side discarded everything in the 30-day payload the scan had just
+  // fetched except postings dated within the last 24 hours - which reads to
+  // the user as "there are no jobs", not as "you are looking at one day".
+  const [recency, setRecency] = useState<RecencyChoice>(prefs.recency ?? '7d');
   const [customDays, setCustomDays] = useState(prefs.customDays ?? 2);
   const [groupByCompany, setGroupByCompany] = useState(prefs.groupByCompany ?? false);
   const [seniorityFilter, setSeniorityFilter] = useState<string>(prefs.seniorityFilter ?? 'any');
@@ -599,7 +603,11 @@ export function WorkdayJobsPanel({
 
   const recencyJobs = useMemo(() => {
     const all = result?.jobs ?? [];
-    return all.filter((j) => j.days_ago != null && j.days_ago <= maxDays);
+    // An undated posting is KEPT. `days_ago == null` means we could not read
+    // a publish date, not that the job is old, and dropping it applied the
+    // recency filter to postings it was never able to test - the same
+    // "unknown is not a no" rule the backend applies to salary and work mode.
+    return all.filter((j) => j.days_ago == null || j.days_ago <= maxDays);
   }, [result, maxDays]);
 
   // Location dropdown options derived from the recency window's postings.

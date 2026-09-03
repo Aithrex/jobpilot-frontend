@@ -318,8 +318,17 @@ export interface ParsedResume {
 /** GET /api/jobs/title-seed — never hits the LLM. */
 export interface JobTitleSeed {
   fingerprint: string;
+  /** Titles the candidate has HELD, internships included. Not searchable. */
   resume_titles: string[];
   synth_titles: string[];
+  /**
+   * The titles to actually SEARCH with: canonical role names the backend has
+   * verified against its own posting vocabulary. `resume_titles` and
+   * `synth_titles` are inputs to this, not substitutes for it - held titles
+   * carry internships and the synthesized ones carry stack suffixes, and
+   * neither matches a real posting title. Absent on older backends.
+   */
+  match_titles?: string[];
   resume_count: number;
   cached: boolean;
 }
