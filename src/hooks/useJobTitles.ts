@@ -133,10 +133,24 @@ function readCache(key: string): CachedPrefs {
   }
 }
 
-/** Saved titles, falling back to the retired per-panel keys once. */
-function readCachedTitles(): string[] {
+/**
+ * Saved titles, falling back to the retired per-panel keys once.
+ *
+ * `allowLegacy` is false whenever the server has canonical `match_titles`.
+ * The retired keys were written before titles were canonicalized, so they
+ * hold exactly what this change exists to remove — held titles like
+ * "Associate Software Developer Intern" and pre-normalisation spellings like
+ * "Cloud/DevOps Engineer". Bumping CACHE_KEY to v2 was not enough on its own:
+ * with v2 empty the fallback re-imported those titles from the legacy keys,
+ * and because `readCachedFingerprint` only ever reads CACHE_KEY the result
+ * looked like a fingerprint MISMATCH, which merges rather than replaces. A
+ * user on the fixed build still saw three intern/legacy titles appended to
+ * their sixteen canonical ones.
+ */
+function readCachedTitles(allowLegacy = true): string[] {
   const own = (readCache(CACHE_KEY).titles ?? []).filter(Boolean);
   if (own.length) return own;
+  if (!allowLegacy) return [];
   for (const key of LEGACY_CACHE_KEYS) {
     const legacy = (readCache(key).titles ?? []).filter(Boolean);
     if (legacy.length) return legacy;
@@ -240,7 +254,9 @@ export function hydrateJobTitles(): Promise<void> {
         return;
       }
 
-      const saved = readCachedTitles();
+      // Legacy per-panel caches are only trusted when the server has no
+      // canonical list to offer. See `readCachedTitles`.
+      const saved = readCachedTitles(!seed.match_titles?.length);
       const cachedFp = readCachedFingerprint();
       const fingerprintUnchanged = Boolean(fp) && cachedFp === fp;
 

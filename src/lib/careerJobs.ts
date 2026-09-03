@@ -234,7 +234,74 @@ export function sortJobsByMode(
         (a.days_ago ?? 99) - (b.days_ago ?? 99),
     );
   }
-  return out;
+  return diversifyByBoard(out);
+}
+
+/** How many rows one board may hold per rendered page before the rest are
+ *  pushed back. Ordering only - nothing is dropped. */
+const BOARD_PAGE_CAP = 3;
+/** The page size the feed renders at. */
+const BOARD_PAGE_SIZE = 20;
+/** Only the head is reordered; past this the list keeps pure sort order. */
+const BOARD_DIVERSITY_DEPTH = 250;
+
+/**
+ * The board a row came from: `ats:tenant`, falling back to the company name.
+ *
+ * Deliberately NOT `company`. JPMorgan's Oracle instance serves three CX
+ * sites under ONE tenant (`jpmc`) and stamps its postings with three
+ * different names - "JPMorgan Chase", "NUTMEG CONTAINER CORPORATION" and
+ * "CHASE FAMILY LIMITED PARTNERSHIP NO. 5". Those are legal entities, not
+ * employers; keyed on the name they read as three companies. This is the same
+ * key the tech feed's `_diversify_employers` uses, for the same measured
+ * reason.
+ */
+function boardKey(j: WorkdayJob): string {
+  const ats = (j.ats ?? '').trim().toLowerCase();
+  const tenant = (j.tenant ?? '').trim().toLowerCase();
+  return ats && tenant ? `${ats}:${tenant}` : (j.company ?? '').trim().toLowerCase();
+}
+
+/**
+ * Reorder so one board cannot monopolise the first pages.
+ *
+ * The tech feed has had this since it shipped; these tab feeds never did, and
+ * they are the surface most users are actually on. Measured live for one
+ * account: 15 of the first 20 cards were JPMorgan's `jpmc` tenant under its
+ * three names, and the first Amazon requisition - a genuine match, scored 84 -
+ * sat at rank 47. The user reported it as "Amazon shows while the search runs,
+ * then goes down when it completes", which is exactly what interleaving a
+ * second source into a single-board-dominated list looks like.
+ *
+ * ORDERING only: `match_score` is untouched and nothing is removed, so a
+ * board's fourth-best role lands on the next page rather than disappearing.
+ * Stable - within a board, relative order is preserved exactly.
+ */
+export function diversifyByBoard(rows: WorkdayJob[]): WorkdayJob[] {
+  if (rows.length <= BOARD_PAGE_SIZE) return rows;
+  const head = rows.slice(0, BOARD_DIVERSITY_DEPTH);
+  const tail = rows.slice(BOARD_DIVERSITY_DEPTH);
+
+  const buckets = new Map<string, WorkdayJob[]>();
+  for (const row of head) {
+    const key = boardKey(row);
+    const bucket = buckets.get(key);
+    if (bucket) bucket.push(row);
+    else buckets.set(key, [row]);
+  }
+
+  const out: WorkdayJob[] = [];
+  while (out.length < head.length) {
+    let placed = 0;
+    for (const bucket of buckets.values()) {
+      if (!bucket.length || placed >= BOARD_PAGE_SIZE) continue;
+      const take = Math.min(BOARD_PAGE_CAP, bucket.length, BOARD_PAGE_SIZE - placed);
+      out.push(...bucket.splice(0, take));
+      placed += take;
+    }
+    if (placed === 0) break; // nothing left to place - never loop forever
+  }
+  return [...out, ...tail];
 }
 
 /**
