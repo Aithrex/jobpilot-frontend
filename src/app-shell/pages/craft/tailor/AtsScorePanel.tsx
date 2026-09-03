@@ -105,35 +105,10 @@ export function AtsScorePanel({
     .sort((a, b) => b.room - a.room)
     .slice(0, 4);
 
-  if (!v2) {
-    return (
-      <div className="space-y-5 p-5 sm:p-6">
-        <div className="rounded-container border border-warning/40 bg-warning/10 px-4 py-3">
-          <p className="text-xs text-foreground">
-            <span className="font-semibold">Legacy score hidden.</span> The
-            stored number is from the old LLM scanner and is not the current
-            ATS score. Re-score to replace it.
-          </p>
-          {onRescore && (
-            <button
-              type="button"
-              onClick={onRescore}
-              disabled={rescoring}
-              className="mt-2 rounded-control border border-warning/50 px-2.5 py-1 text-[11px] font-semibold text-warning hover:bg-warning/15 disabled:opacity-50"
-            >
-              {rescoring ? 'Re-scoring...' : 'Score with current ATS'}
-            </button>
-          )}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-5 p-5 sm:p-6">
 
-      {/* Staleness banner - the score describes a previous version */}
-      {v2 && stale && (
+      {stale && (
         <div className="flex items-center justify-between gap-3 rounded-container border border-warning/40 bg-warning/10 px-4 py-3">
           <p className="text-xs text-foreground">
             <span className="font-semibold">
@@ -145,8 +120,7 @@ export function AtsScorePanel({
         </div>
       )}
 
-      {/* Render failure - invalidates everything else, lead with it */}
-      {v2 && scores.render_error && (
+      {scores.render_error && (
         <div className="flex items-start gap-2.5 rounded-container border border-destructive/40 bg-destructive/10 px-4 py-3">
           <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
           <p className="text-xs leading-relaxed text-foreground">
@@ -159,79 +133,118 @@ export function AtsScorePanel({
         </div>
       )}
 
-      {/* Overall score ring — v1 numbers are theater; do not render them. */}
-      {v2 && (
-        <div className="rounded-container border border-border bg-card p-6 shadow-soft">
-          <div className="flex items-center gap-6">
-            <ScoreRing score={scores.overall} delta={delta} />
-            <div className="flex-1">
-              <p className="text-base font-semibold text-foreground">
-                Overall ATS Score
-              </p>
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                Deterministic, research-backed rubric: 75-80 is the honest target band; scores above 85 usually
-                mean keyword stuffing, not a better resume.
-              </p>
-            </div>
+      <div className="rounded-container border border-border bg-card p-6 shadow-soft">
+        <div className="flex items-center gap-6">
+          <ScoreRing score={scores.overall} delta={delta} />
+          <div className="flex-1">
+            <p className="text-base font-semibold text-foreground">
+              Overall ATS Score
+            </p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Weighted score across keyword match, skills alignment, and ATS scanners.
+            </p>
           </div>
         </div>
-      )}
+      </div>
 
-      {/* Score breakdown + per-vendor column */}
       <div className="grid gap-4 md:grid-cols-2">
         <div className={SURFACE}>
           <p className="mb-4 text-sm font-semibold text-foreground">
             Score Breakdown
           </p>
           <div className="space-y-3">
-            {ATS_V2_RUBRIC.map(({ key, label, weight }) => (
-              <ScoreBar
-                key={key}
-                label={`${label} (${weight}%)`}
-                score={
-                  key === 'hard_skill_match' && scores.hard_skill_unscored
-                    ? 0
-                    : (scores[key] ?? 0)
-                }
-                unavailable={
-                  key === 'hard_skill_match' && scores.hard_skill_unscored
-                    ? 'No JD keywords found'
-                    : undefined
-                }
-              />
-            ))}
-            <ScoreBar
-              label="Experience Relevance (advisory)"
-              score={scores.experience_relevance ?? 0}
-              color="bg-primary"
-              unavailable={
-                scores.experience_relevance == null ? 'Unavailable' : undefined
-              }
-            />
+            {v2 ? (
+              <>
+                {ATS_V2_RUBRIC.map(({ key, label, weight }) => (
+                  <ScoreBar
+                    key={key}
+                    label={`${label} (${weight}%)`}
+                    score={scores[key] ?? 0}
+                  />
+                ))}
+                <ScoreBar
+                  label="Experience Relevance (advisory)"
+                  score={scores.experience_relevance ?? 0}
+                  color="bg-primary"
+                />
+              </>
+            ) : (
+              <>
+                <ScoreBar label="Keyword Match" score={scores.keyword_match} />
+                <ScoreBar
+                  label="Keyword Frequency"
+                  score={scores.keyword_frequency}
+                />
+                <ScoreBar label="Skills Alignment" score={scores.skills_alignment} />
+                <ScoreBar
+                  label="Experience Relevance"
+                  score={scores.experience_relevance ?? 0}
+                />
+                <ScoreBar
+                  label="Quantifiable Impact"
+                  score={scores.quantifiable_impact}
+                />
+                <ScoreBar label="Bullet Quality" score={scores.bullet_quality} />
+                <ScoreBar label="Format Score" score={scores.format_score} />
+                <ScoreBar
+                  label="Section Completeness"
+                  score={scores.section_completeness}
+                />
+              </>
+            )}
           </div>
         </div>
         <div className={SURFACE}>
           <p className="mb-1 text-sm font-semibold text-foreground">
-            ATS Compatibility Checks
+            {v2 ? 'ATS Compatibility Checks' : 'ATS Scanner Scores'}
           </p>
-          <p className="mb-3 text-[11px] leading-snug text-muted-foreground">
-            Real parse-compatibility checks per platform. ATS don't score
-            resumes; they parse them. These verify yours parses.
-          </p>
-          <div className="space-y-2.5">
-            {scores.vendor_compat &&
-              Object.entries(scores.vendor_compat).map(([vendor, entry]) =>
-                entry ? (
-                  <VendorChecklistCard
-                    key={vendor}
-                    vendor={VENDOR_LABELS[vendor] ?? vendor}
-                    entry={entry}
+          {v2 ? (
+            <>
+              <p className="mb-3 text-[11px] leading-snug text-muted-foreground">
+                Real parse-compatibility checks per platform. ATS don't score
+                resumes; they parse them. These verify yours parses.
+              </p>
+              <div className="space-y-2.5">
+                {scores.vendor_compat &&
+                  Object.entries(scores.vendor_compat).map(([vendor, entry]) =>
+                    entry ? (
+                      <VendorChecklistCard
+                        key={vendor}
+                        vendor={VENDOR_LABELS[vendor] ?? vendor}
+                        entry={entry}
+                      />
+                    ) : null,
+                  )}
+              </div>
+            </>
+          ) : (
+            <div className="mt-3 space-y-3">
+              {scores.scanners &&
+                Object.entries(scores.scanners).map(([n, s]) => (
+                  <ScoreBar
+                    key={n}
+                    label={VENDOR_LABELS[n] ?? n}
+                    score={s}
                   />
-                ) : null,
-              )}
-          </div>
+                ))}
+            </div>
+          )}
         </div>
       </div>
+
+      {!v2 && scores.ai_screener && (
+        <div className={SURFACE}>
+          <p className="mb-4 text-sm font-semibold text-foreground">
+            AI Screener Analysis
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <ScoreBar label="Overall" score={scores.ai_screener.overall} color="bg-primary" />
+            <ScoreBar label="Relevance" score={scores.ai_screener.relevance} color="bg-primary" />
+            <ScoreBar label="Seniority Fit" score={scores.ai_screener.seniority_fit} color="bg-primary" />
+            <ScoreBar label="Culture Fit" score={scores.ai_screener.culture_fit} color="bg-primary" />
+          </div>
+        </div>
+      )}
 
       {/* PDF parseability */}
       {scores.pdf_parseable_score !== undefined && (

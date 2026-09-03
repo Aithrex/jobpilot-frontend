@@ -85,7 +85,6 @@ import {
   appendBulletOrClause,
 } from '@/lib/resumeMutations';
 import { resolveAnchor } from '@/lib/reviewAnchors';
-import { isAtsV2 } from '@/lib/atsScores';
 import type { EvidenceTarget } from './tailor/MatchGapsPanel';
 import { similarity, bestMatch } from '@/lib/textDiff';
 import { ProgressStepper } from './tailor/ProgressStepper';
@@ -1186,7 +1185,7 @@ export default function TailorPage() {
             onChange={setInspectorTab}
             hasResult={!!result}
             atsScore={
-              result?.ats_scores && isAtsV2(result.ats_scores)
+              typeof result?.ats_scores?.overall === 'number'
                 ? result.ats_scores.overall
                 : null
             }
@@ -1327,7 +1326,7 @@ export default function TailorPage() {
               </div>
             </div>
 
-            {result.ats_scores && isAtsV2(result.ats_scores) && (
+            {typeof result.ats_scores?.overall === 'number' && (
               <div
                 className={cn(
                   'hidden shrink-0 items-center gap-2 rounded-control border px-4 py-2 lg:flex',
