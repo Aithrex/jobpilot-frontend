@@ -217,8 +217,16 @@ export function sortJobsByMode(
 ): WorkdayJob[] {
   const out = [...jobs];
   const appliedOf = opts?.isApplied ?? (() => false);
+  // Tiers, most-reachable first. `sponsorship_demoted` is set by the server
+  // only for a user who declared they need sponsorship, and only on rows the
+  // employer is already known to sponsor rarely or to have refused - it is a
+  // DEMOTION, never a filter, so the row stays one page down rather than
+  // disappearing. Weighted above `applied` because a role you cannot take is
+  // less use than one you already applied to.
   const pin = (j: WorkdayJob) =>
-    (appliedOf(j) ? 2 : 0) + (isMarketplaceListing(j) ? 1 : 0);
+    (j.sponsorship_demoted ? 4 : 0) +
+    (appliedOf(j) ? 2 : 0) +
+    (isMarketplaceListing(j) ? 1 : 0);
   if (sortBy === 'newest') {
     out.sort(
       (a, b) =>

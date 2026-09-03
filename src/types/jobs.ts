@@ -454,6 +454,12 @@ export interface WorkdayJob {
   is_remote: boolean;
   /** Catalog slug of the company that served this row. */
   tenant: string;
+  /**
+   * Set by the server only when this user declared they need visa
+   * sponsorship AND the employer is known to sponsor rarely or to have
+   * refused. Ordering only - the row is still shown, one tier down.
+   */
+  sponsorship_demoted?: boolean;
   industry: string;
   /** Career-pages rows: which ATS hosts this posting (greenhouse, lever,
    *  ashby, smartrecruiters, workable, recruitee). Absent on Workday rows.
