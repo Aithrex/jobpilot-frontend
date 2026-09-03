@@ -999,7 +999,7 @@ export default function TailorPage() {
       });
       setScoreStale(true);
       apiService.trackCraftEvent('gap_attach_evidence', term);
-      toast.success(`Recorded ${term} against a bullet. Re-score to refresh the checklist.`);
+      toast.success(`Recorded ${term} against a bullet. Re-score to refresh the ATS score.`);
     },
     [],
   );
@@ -1358,7 +1358,7 @@ export default function TailorPage() {
                         : 'text-destructive',
                   )}
                 >
-                  {result.ats_scores.overall} checklist
+                  {result.ats_scores.overall} ATS
                   {typeof scoreDelta === 'number' && scoreDelta !== 0
                     ? ` (${scoreDelta > 0 ? '+' : ''}${scoreDelta})`
                     : ''}

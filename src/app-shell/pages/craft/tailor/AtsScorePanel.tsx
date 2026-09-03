@@ -112,7 +112,7 @@ export function AtsScorePanel({
           <p className="text-xs text-foreground">
             <span className="font-semibold">Legacy score hidden.</span> The
             stored number is from the old LLM scanner and is not the current
-            checklist. Re-score to replace it.
+            ATS score. Re-score to replace it.
           </p>
           {onRescore && (
             <button
@@ -121,7 +121,7 @@ export function AtsScorePanel({
               disabled={rescoring}
               className="mt-2 rounded-control border border-warning/50 px-2.5 py-1 text-[11px] font-semibold text-warning hover:bg-warning/15 disabled:opacity-50"
             >
-              {rescoring ? 'Re-scoring...' : 'Score with current checklist'}
+              {rescoring ? 'Re-scoring...' : 'Score with current ATS'}
             </button>
           )}
         </div>
@@ -137,7 +137,7 @@ export function AtsScorePanel({
         <div className="flex items-center justify-between gap-3 rounded-container border border-warning/40 bg-warning/10 px-4 py-3">
           <p className="text-xs text-foreground">
             <span className="font-semibold">
-              {rescoring ? 'Updating checklist…' : 'Edited since scored'}
+              {rescoring ? 'Updating ATS score…' : 'Edited since scored'}
             </span>
             {!rescoring &&
               ' The numbers below reflect the pre-edit resume and will refresh shortly.'}
@@ -166,12 +166,11 @@ export function AtsScorePanel({
             <ScoreRing score={scores.overall} delta={delta} />
             <div className="flex-1">
               <p className="text-base font-semibold text-foreground">
-                Resume checklist
+                Overall ATS Score
               </p>
               <p className="mt-0.5 text-xs text-muted-foreground">
-                Internal checklist of evidenced relevance and parse quality —
-                not a prediction that any ATS will pass or reject this resume.
-                75–80 is the honest target; higher often means stuffing.
+                Deterministic, research-backed rubric: 75-80 is the honest target band; scores above 85 usually
+                mean keyword stuffing, not a better resume.
               </p>
             </div>
           </div>
@@ -308,7 +307,7 @@ export function AtsScorePanel({
           <p className="text-sm font-semibold text-foreground">Listed, not demonstrated</p>
           <p className="mt-1 text-[11px] text-muted-foreground">
             These JD terms sit only in Skills. Mention them in a bullet to earn
-            credit — listing them moves the checklist by +0.
+            credit — listing them moves the ATS score by +0.
           </p>
           <p className="mt-2 text-xs text-foreground">
             {scores.unevidenced_keywords.join(', ')}
@@ -340,7 +339,7 @@ export function AtsScorePanel({
             What would help most
           </p>
           <p className="mb-3 text-[11px] text-muted-foreground">
-            Ranked by room left on the checklist. None of these ask you to
+            Ranked by room left on the ATS score. None of these ask you to
             invent a skill.
           </p>
           <ul className="space-y-2">
@@ -348,7 +347,7 @@ export function AtsScorePanel({
               <li key={row.key} className="flex items-start justify-between gap-3 text-xs">
                 <span className="text-foreground">{row.action}</span>
                 <span className="shrink-0 tabular-nums text-muted-foreground">
-                  {row.weight}% of checklist
+                  {row.weight}% of ATS score
                 </span>
               </li>
             ))}

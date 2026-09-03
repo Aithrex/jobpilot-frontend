@@ -58,7 +58,7 @@ export function NudgeBar({
         <>
           Resume regenerated:{' '}
           <strong className="text-foreground">
-            checklist is now {result.ats_scores.overall}/100
+            ATS score is now {result.ats_scores.overall}/100
           </strong>
           . Download your updated version when ready.
         </>
@@ -84,7 +84,7 @@ export function NudgeBar({
           </strong>
         </>
       ),
-      actionLabel: 'Review checklist',
+      actionLabel: 'Review ATS',
       onAction: onReviewAts,
     });
   }
