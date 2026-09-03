@@ -5,6 +5,7 @@ import { ApplyConfirmDialog } from '@/components/job-search/JobCard';
 import { PillSwitch } from '@/components/ui/pill-switch';
 import { useJobSearch } from '@/hooks/useJobSearch';
 import { isTechFeedEnabled } from '@/lib/techFeedFlag';
+import { useAuth } from '@/contexts/AuthContext';
 import type { CareerPortalVariant } from '@/types/jobs';
 
 // Lazy on purpose: the flag ships OFF, so the unified feed must not weigh down
@@ -36,7 +37,10 @@ export default function CareerPortalsTab() {
   // Read once at mount: the flag must not flip mid-session and swap the whole
   // surface out from under an in-flight scan. Clearing the localStorage
   // override (or VITE_TECH_FEED) and reloading is the rollback.
-  const [techFeed] = useState(isTechFeedEnabled);
+  const { user, isAdmin } = useAuth();
+  const [techFeed] = useState(() =>
+    isTechFeedEnabled({ email: user?.email, isAdmin }),
+  );
   const [active, setActive] = useState<CareerPortalVariant>('workday');
   const [visited, setVisited] = useState<Set<CareerPortalVariant>>(
     () => new Set<CareerPortalVariant>(['workday']),

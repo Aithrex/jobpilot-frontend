@@ -250,6 +250,7 @@ export function TechFeedPanel({
   const [dismissed, setDismissed] = useState<Set<string>>(() => loadNotInterestedIds());
   const [sheetOpen, setSheetOpen] = useState(false);
   const [saveName, setSaveName] = useState('');
+  const [alertEnabled, setAlertEnabled] = useState(false);
 
   const visibleJobs = useMemo(
     () => jobs.filter((job) => !dismissed.has(job.job_id)),
@@ -541,13 +542,26 @@ export function TechFeedPanel({
               onClick={() => {
                 // Fire and forget: the local write is synchronous inside the
                 // hook, so the chip appears whether or not the network does.
-                void save(saveName, filters);
+                void save(saveName, filters, {
+                  enabled: alertEnabled,
+                  frequency: 'daily',
+                });
                 setSaveName('');
+                setAlertEnabled(false);
               }}
             >
               <Star className="h-3.5 w-3.5" aria-hidden />
               Save search
             </Button>
+            <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <input
+                type="checkbox"
+                checked={alertEnabled}
+                onChange={(event) => setAlertEnabled(event.target.checked)}
+                className="h-3.5 w-3.5"
+              />
+              Daily email digest
+            </label>
             {saved.length > 0 && (
               <ul className="flex flex-wrap items-center gap-1.5" aria-label="Saved searches">
                 {saved.map((entry) => (

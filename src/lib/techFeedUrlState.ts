@@ -434,7 +434,11 @@ function newId(): string {
   return `tfs_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
-export function persistSavedSearch(name: string, filters: TechFeedFilters): SavedTechFeedSearch[] {
+export function persistSavedSearch(
+  name: string,
+  filters: TechFeedFilters,
+  alerts?: SavedTechFeedSearch['alerts'],
+): SavedTechFeedSearch[] {
   const entry: SavedTechFeedSearch = {
     id: newId(),
     name: name.trim() || 'Untitled search',
@@ -442,6 +446,7 @@ export function persistSavedSearch(name: string, filters: TechFeedFilters): Save
     // search the user already saved.
     filters: { ...filters },
     createdAt: new Date().toISOString(),
+    alerts: alerts ?? { enabled: false, frequency: 'daily' },
   };
   const next = [entry, ...loadSavedSearches()].slice(0, 50);
   writeJson(SAVED_SEARCHES_KEY, next);
@@ -540,10 +545,10 @@ export function useSavedTechFeedSearches(options: { enabled?: boolean } = {}) {
   }, [enabled, adopt]);
 
   const save = useCallback(
-    async (name: string, filters: TechFeedFilters) => {
+    async (name: string, filters: TechFeedFilters, alerts?: SavedTechFeedSearch['alerts']) => {
       // Local first, always: the user sees the search appear whether or not
       // the network is there.
-      const local = persistSavedSearch(name, filters);
+      const local = persistSavedSearch(name, filters, alerts);
       setSaved(local);
       const entry = local[0];
       if (!enabled || !entry) return;
@@ -552,6 +557,7 @@ export function useSavedTechFeedSearches(options: { enabled?: boolean } = {}) {
           id: entry.id,
           name: entry.name,
           filters: techFeedFiltersToRequest(entry.filters),
+          alerts: entry.alerts,
         }),
       );
       if (res.error || !res.data) {

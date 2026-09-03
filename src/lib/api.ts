@@ -4132,6 +4132,24 @@ class ApiService {
     );
   }
 
+  async requestTechFeedCompany(body: { company_name: string; career_url?: string }) {
+    return this.request<{ request_id: string; status: string; company_name: string }>(
+      '/jobs/tech-feed/company-requests',
+      { method: 'POST', body: JSON.stringify(body) },
+    );
+  }
+
+  async getTechFeedCompanyRequest(id: string) {
+    return this.request<{ request_id: string; status: string; company_name: string }>(
+      `/jobs/tech-feed/company-requests/${encodeURIComponent(id)}`,
+      { method: 'GET' },
+    );
+  }
+
+  async getAdminTechFeedOps() {
+    return this.request<Record<string, unknown>>('/admin/ops/tech-feed');
+  }
+
   // --- Saved searches: server-owned, locally mirrored ------------------
   async listTechFeedSavedSearches() {
     return this.request<import('../types/techFeed').TechFeedSavedSearchesResponse>(
@@ -4147,7 +4165,12 @@ class ApiService {
    * is what makes an offline queue safe to drain. 409 means the account is at
    * its cap - a well-formed request against a full account, not bad input.
    */
-  async saveTechFeedSearch(body: { id: string; name: string; filters: unknown }) {
+  async saveTechFeedSearch(body: {
+    id: string;
+    name: string;
+    filters: unknown;
+    alerts?: unknown;
+  }) {
     return this.request<import('../types/techFeed').TechFeedSavedSearchesResponse>(
       '/jobs/tech-feed/saved-searches',
       { method: 'POST', body: JSON.stringify(body) },

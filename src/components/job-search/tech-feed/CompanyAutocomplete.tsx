@@ -26,6 +26,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Building2, Check, Loader2, Search, X } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { apiService } from '@/lib/api';
 import { cn } from '@/lib/utils';
@@ -61,6 +62,10 @@ export function CompanyAutocomplete({
   /** `employer_id -> company`, for everything we have ever resolved. */
   const [known, setKnown] = useState<Record<string, TechFeedCompany>>({});
   const [unresolvedIds, setUnresolvedIds] = useState<string[]>([]);
+  const [requestOpen, setRequestOpen] = useState(false);
+  const [careerUrl, setCareerUrl] = useState('');
+  const [requestState, setRequestState] = useState<string | null>(null);
+  const [requestBusy, setRequestBusy] = useState(false);
   /**
    * Ids we have already asked about, resolved or not.
    *
@@ -258,6 +263,78 @@ export function CompanyAutocomplete({
           </ul>
         )}
       </div>
+
+      {!searching && draft.trim().length >= MIN_QUERY && results.length === 0 && (
+        <div className="rounded-md border border-dashed border-border p-2 text-xs">
+          <p className="text-muted-foreground">
+            No matching company. Requesting it queues a review and does not guarantee
+            immediate inclusion.
+          </p>
+          {!requestOpen ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="mt-2 h-8 text-xs"
+              onClick={() => setRequestOpen(true)}
+            >
+              Request this company
+            </Button>
+          ) : (
+            <form
+              className="mt-2 space-y-2"
+              onSubmit={(event) => {
+                event.preventDefault();
+                setRequestBusy(true);
+                void apiService
+                  .requestTechFeedCompany({
+                    company_name: draft.trim(),
+                    career_url: careerUrl.trim() || undefined,
+                  })
+                  .then((res) => {
+                    if (res.error) {
+                      setRequestState(res.error);
+                      return;
+                    }
+                    setRequestState(res.data?.status ?? 'submitted');
+                  })
+                  .finally(() => setRequestBusy(false));
+              }}
+            >
+              <label className="block text-[11px] text-muted-foreground" htmlFor="company-request-url">
+                Official careers URL (optional)
+              </label>
+              <Input
+                id="company-request-url"
+                value={careerUrl}
+                onChange={(event) => setCareerUrl(event.target.value)}
+                placeholder="https://example.com/careers"
+                className="h-8 text-xs"
+                autoComplete="off"
+              />
+              <Button
+                type="submit"
+                size="sm"
+                className="h-8 text-xs"
+                disabled={requestBusy}
+              >
+                {requestBusy ? 'Submitting...' : 'Submit request'}
+              </Button>
+              {requestState && (
+                <p role="status" className="text-[11px] text-muted-foreground">
+                  {requestState === 'submitted' && 'Request submitted for review.'}
+                  {requestState === 'already_requested' && 'This company was already requested.'}
+                  {requestState === 'accepted' && 'This company is already in the feed.'}
+                  {requestState === 'rejected' && 'This request was not accepted.'}
+                  {!['submitted', 'already_requested', 'accepted', 'rejected'].includes(
+                    requestState,
+                  ) && requestState}
+                </p>
+              )}
+            </form>
+          )}
+        </div>
+      )}
 
       {chips.length === 0 ? (
         <p className="text-[11px] text-muted-foreground">

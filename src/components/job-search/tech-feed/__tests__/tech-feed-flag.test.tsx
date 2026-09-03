@@ -42,6 +42,9 @@ vi.mock('@/components/job-search/JobCard', () => ({
   ApplyConfirmDialog: ({ job }: { job: { title: string } | null }) =>
     job ? <div data-testid="apply-confirm-dialog">{job.title}</div> : null,
 }));
+vi.mock('@/contexts/AuthContext', () => ({
+  useAuth: () => ({ user: { email: 'tester@example.com' }, isAdmin: false }),
+}));
 vi.mock('@/hooks/useJobSearch', () => ({
   useJobSearch: () => ({
     isJobSaved: () => false,
@@ -91,6 +94,17 @@ describe('tech feed flag resolution', () => {
     setTechFeedOverride(null);
     expect(window.localStorage.getItem(TECH_FEED_OVERRIDE_KEY)).toBeNull();
     expect(isTechFeedEnabled()).toBe(false);
+  });
+
+  test('admin audience turns the feed on without the build flag', () => {
+    expect(isTechFeedEnabled({ isAdmin: true })).toBe(true);
+  });
+
+  test('beta percentage is sticky per email', () => {
+    vi.stubEnv('VITE_TECH_FEED_BETA_PCT', '100');
+    expect(isTechFeedEnabled({ email: 'beta@example.com' })).toBe(true);
+    vi.stubEnv('VITE_TECH_FEED_BETA_PCT', '0');
+    expect(isTechFeedEnabled({ email: 'beta@example.com' })).toBe(false);
   });
 
   test('a garbage override value falls through to the build flag', () => {

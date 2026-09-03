@@ -697,6 +697,14 @@ export interface SavedTechFeedSearch {
   fingerprint?: string;
   /** True while this search exists only in this browser. */
   pendingSync?: boolean;
+  alerts?: {
+    enabled: boolean;
+    frequency?: 'daily';
+    timezone?: string;
+    last_evaluated_at?: string | null;
+    last_delivered_at?: string | null;
+    paused_reason?: string | null;
+  };
 }
 
 /**

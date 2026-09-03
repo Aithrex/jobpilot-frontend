@@ -56,8 +56,19 @@ export function applyTechFeedUrlOverride(search?: string): boolean | null {
   return parsed;
 }
 
+export type TechFeedAudience = {
+  email?: string | null;
+  isAdmin?: boolean;
+};
+
+function hashPercent(email: string): number {
+  let h = 0;
+  for (let i = 0; i < email.length; i += 1) h = (h * 31 + email.charCodeAt(i)) >>> 0;
+  return h % 100;
+}
+
 /** The single gate. Read once at mount so the answer cannot change mid-render. */
-export function isTechFeedEnabled(): boolean {
+export function isTechFeedEnabled(audience: TechFeedAudience = {}): boolean {
   const fromUrl = applyTechFeedUrlOverride();
   if (fromUrl !== null) return fromUrl;
 
@@ -69,6 +80,14 @@ export function isTechFeedEnabled(): boolean {
     /* private mode - fall through to the build flag */
   }
   if (override !== null) return override;
+
+  if (audience.isAdmin) return true;
+
+  const pctRaw = import.meta.env.VITE_TECH_FEED_BETA_PCT as string | undefined;
+  const pct = Number.parseInt(String(pctRaw ?? ''), 10);
+  if (Number.isFinite(pct) && pct > 0 && audience.email) {
+    if (hashPercent(audience.email.toLowerCase()) < Math.min(100, pct)) return true;
+  }
 
   return parse(import.meta.env.VITE_TECH_FEED as string | undefined) ?? false;
 }
