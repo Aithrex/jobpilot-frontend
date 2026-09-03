@@ -290,24 +290,51 @@ export function diversifyByBoard(rows: WorkdayJob[]): WorkdayJob[] {
   const head = rows.slice(0, BOARD_DIVERSITY_DEPTH);
   const tail = rows.slice(BOARD_DIVERSITY_DEPTH);
 
-  const buckets = new Map<string, WorkdayJob[]>();
-  for (const row of head) {
-    const key = boardKey(row);
-    const bucket = buckets.get(key);
-    if (bucket) bucket.push(row);
-    else buckets.set(key, [row]);
-  }
-
+  // Fill one page at a time: walk what is left IN RANKED ORDER and take the
+  // first `BOARD_PAGE_SIZE` rows that keep every board at or under the cap.
+  // Anything skipped stays queued, in order, and gets first refusal on the
+  // next page.
+  //
+  // The first version of this dealt rows round-robin - three from each board
+  // in turn - which capped the boards correctly and destroyed the ordering
+  // doing it. Sorted by Best match the page read 98, 98, 97, 94, 91, 80, 91,
+  // 81, 90, 77: every time the deal moved to the next board it dropped to
+  // that board's top row, whatever it scored. A feed sorted by score has to
+  // descend, or the sort control is not telling the truth.
   const out: WorkdayJob[] = [];
-  while (out.length < head.length) {
-    let placed = 0;
-    for (const bucket of buckets.values()) {
-      if (!bucket.length || placed >= BOARD_PAGE_SIZE) continue;
-      const take = Math.min(BOARD_PAGE_CAP, bucket.length, BOARD_PAGE_SIZE - placed);
-      out.push(...bucket.splice(0, take));
-      placed += take;
+  let pending = head;
+  while (pending.length) {
+    const used = new Map<string, number>();
+    const page: WorkdayJob[] = [];
+    let held: WorkdayJob[] = [];
+    for (const row of pending) {
+      if (page.length >= BOARD_PAGE_SIZE) {
+        held.push(row);
+        continue;
+      }
+      const key = boardKey(row);
+      if (key && (used.get(key) ?? 0) >= BOARD_PAGE_CAP) {
+        held.push(row);
+        continue;
+      }
+      used.set(key, (used.get(key) ?? 0) + 1);
+      page.push(row);
     }
-    if (placed === 0) break; // nothing left to place - never loop forever
+    // Top up a short page from what was held back. The cap is best-effort,
+    // not a quota: when the remaining rows genuinely ARE one board there is
+    // no diversity to be had, and emitting a four-row page would shift every
+    // later page boundary while showing the user less.
+    if (page.length < BOARD_PAGE_SIZE && held.length) {
+      const take = BOARD_PAGE_SIZE - page.length;
+      page.push(...held.slice(0, take));
+      held = held.slice(take);
+    }
+    if (!page.length) {
+      out.push(...held);
+      break;
+    }
+    out.push(...page);
+    pending = held;
   }
   return [...out, ...tail];
 }

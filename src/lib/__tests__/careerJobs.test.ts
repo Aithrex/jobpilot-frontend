@@ -212,3 +212,62 @@ describe('seniority filtering', () => {
     expect(seniorityOf(job({ title: 'Registered Nurse' }))).toBe('unknown');
   });
 });
+
+describe('board diversity preserves the sort', () => {
+  /**
+   * 100 rows, scores strictly descending, over TEN boards - enough that a
+   * 20-row page can hold 3 from each without the best-effort top-up firing.
+   * Board A owns the twelve highest scores, which is the shape that broke it:
+   * JPMorgan's `jpmc` tenant held 15 of the first 20 cards.
+   */
+  const feed = (): WorkdayJob[] =>
+    Array.from({ length: 100 }, (_, i) =>
+      row({
+        job_id: `j-${i}`,
+        title: `Engineer ${i}`,
+        match_score: 100 - i,
+        days_ago: 0,
+        ats: 'workday',
+        tenant: i < 12 ? 'boardA' : `board${'BCDEFGHIJ'[i % 9]}`,
+      }),
+    );
+
+  test('page one still descends by score', () => {
+    const out = sortJobsByMode(feed(), 'score');
+    const page = out.slice(0, 20).map((j) => j.match_score ?? 0);
+    // The first implementation dealt round-robin and produced
+    // 98, 98, 97, 94, 91, 80, 91, 81 - a sawtooth. Ordering is the contract:
+    // a feed sorted by score must descend, or the sort control lies.
+    for (let i = 1; i < page.length; i += 1) {
+      expect(page[i]).toBeLessThanOrEqual(page[i - 1]);
+    }
+  });
+
+  test('no board takes more than the cap on a page, and nothing is dropped', () => {
+    const input = feed();
+    const out = sortJobsByMode(input, 'score');
+    expect(out).toHaveLength(input.length);
+    expect(new Set(out.map((j) => j.job_id)).size).toBe(input.length);
+
+    const counts = new Map<string, number>();
+    for (const j of out.slice(0, 20)) {
+      const k = `${j.ats}:${j.tenant}`;
+      counts.set(k, (counts.get(k) ?? 0) + 1);
+    }
+    // boardA holds the 12 highest scores; only 3 may sit on page one.
+    expect(Math.max(...counts.values())).toBeLessThanOrEqual(3);
+  });
+
+  test('a page that genuinely is one board is filled, not shortened', () => {
+    const single = Array.from({ length: 40 }, (_, i) =>
+      row({ job_id: `s-${i}`, match_score: 100 - i, ats: 'workday', tenant: 'only' }),
+    );
+    const out = sortJobsByMode(single, 'score');
+    expect(out).toHaveLength(40);
+    // Best-effort cap: with no diversity available the page is topped up
+    // rather than emitted four rows long.
+    expect(out.slice(0, 20).map((j) => j.match_score)).toEqual(
+      single.slice(0, 20).map((j) => j.match_score),
+    );
+  });
+});
