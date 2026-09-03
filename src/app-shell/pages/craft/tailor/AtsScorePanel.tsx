@@ -1,12 +1,15 @@
 /**
  * ATS score inspector panel (Tailor right column).
  *
- * Pre-checklist ATS engine UI: Overall ATS Score + v2 honest rubric bars
- * and vendor parse-compat checks. Stored hybrid/v1 records still render
- * their keyword/scanner breakdown — never hide a score as "legacy".
+ * Presentational only - typed props in, render out. Branches on the score
+ * schema version: v2 (honest deterministic rubric + real per-vendor parse
+ * checklists) vs v1 (stored records from before the cutover, which still
+ * carry the legacy scanner/ai_screener blocks). Old records must render
+ * forever - never assume v2 fields.
  */
-import { CheckCircle2, AlertTriangle, ShieldAlert } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, XCircle, Info, ShieldAlert } from 'lucide-react';
 
+import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   ScoreRing,
@@ -15,35 +18,30 @@ import {
   VendorChecklistCard,
 } from '@/components/resume/tailored/ScoreDisplay';
 import { isAtsV2, ATS_V2_RUBRIC, VENDOR_LABELS } from '@/lib/atsScores';
-import { MatchGapsPanel, type EvidenceTarget } from './MatchGapsPanel';
 
-import type { ATSScores, MatchGaps, TailoredFullResume } from '@/types/resume';
+import type { ATSScores } from './types';
 
 const SURFACE = 'rounded-container border border-border bg-card p-5 shadow-soft';
 
 interface AtsScorePanelProps {
   scores: ATSScores | null;
-  resume?: TailoredFullResume | null;
-  matchGaps?: MatchGaps | null;
-  onAttachEvidence?: (term: string, target: EvidenceTarget) => void;
+  onAddKeyword: (kw: string) => void;
+  addedKeywords: Set<string>;
   /** True when the resume changed after this score was computed. */
   stale?: boolean;
   onRescore?: () => void;
   rescoring?: boolean;
-  /** Overall delta after an edit-triggered rescore. Null when none. */
-  delta?: number | null;
 }
 
 export function AtsScorePanel({
   scores,
-  resume = null,
-  matchGaps = null,
-  onAttachEvidence,
+  onAddKeyword,
+  addedKeywords,
   stale = false,
   onRescore,
   rescoring = false,
-  delta = null,
 }: AtsScorePanelProps) {
+  // ── Loading state - mirror the real layout (ring card + bar rows). ──
   if (scores === null) {
     return (
       <div className="space-y-5 p-5 sm:p-6" aria-busy="true">
@@ -79,31 +77,32 @@ export function AtsScorePanel({
   }
 
   const v2 = isAtsV2(scores);
+  const classified = scores.missing_keywords_classified;
 
   return (
     <div className="space-y-5 p-5 sm:p-6">
+      {/* Staleness banner - the score describes a previous version */}
       {stale && (
         <div className="flex items-center justify-between gap-3 rounded-container border border-warning/40 bg-warning/10 px-4 py-3">
           <p className="text-xs text-foreground">
-            <span className="font-semibold">
-              {rescoring ? 'Updating ATS score…' : 'Edited since scored'}
-            </span>
-            {!rescoring &&
-              ' The numbers below reflect the pre-edit resume and will refresh shortly.'}
+            <span className="font-semibold">Edited since scored</span>. The
+            numbers below reflect the pre-edit resume.
           </p>
-          {onRescore && !rescoring && (
+          {onRescore && (
             <button
               type="button"
               onClick={onRescore}
-              className="shrink-0 rounded-control border border-warning/50 px-2.5 py-1 text-[11px] font-semibold text-warning hover:bg-warning/15"
+              disabled={rescoring}
+              className="shrink-0 rounded-control border border-warning/50 px-2.5 py-1 text-[11px] font-semibold text-warning hover:bg-warning/15 disabled:opacity-50"
             >
-              Re-score
+              {rescoring ? 'Re-scoring...' : 'Re-score'}
             </button>
           )}
         </div>
       )}
 
-      {scores.render_error && (
+      {/* Render failure - invalidates everything else, lead with it */}
+      {v2 && scores.render_error && (
         <div className="flex items-start gap-2.5 rounded-container border border-destructive/40 bg-destructive/10 px-4 py-3">
           <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
           <p className="text-xs leading-relaxed text-foreground">
@@ -116,9 +115,10 @@ export function AtsScorePanel({
         </div>
       )}
 
+      {/* Overall score ring */}
       <div className="rounded-container border border-border bg-card p-6 shadow-soft">
         <div className="flex items-center gap-6">
-          <ScoreRing score={scores.overall} delta={delta} />
+          <ScoreRing score={scores.overall} />
           <div className="flex-1">
             <p className="text-base font-semibold text-foreground">
               Overall ATS Score
@@ -132,6 +132,7 @@ export function AtsScorePanel({
         </div>
       </div>
 
+      {/* Score breakdown + per-vendor column */}
       <div className="grid gap-4 md:grid-cols-2">
         <div className={SURFACE}>
           <p className="mb-4 text-sm font-semibold text-foreground">
@@ -217,6 +218,7 @@ export function AtsScorePanel({
         </div>
       </div>
 
+      {/* PDF parseability */}
       {scores.pdf_parseable_score !== undefined && (
         <PDFParseabilityCard
           score={scores.pdf_parseable_score}
@@ -225,6 +227,7 @@ export function AtsScorePanel({
         />
       )}
 
+      {/* AI screener - v1 records only (v2 removed the pseudo-signal) */}
       {!v2 && scores.ai_screener && (
         <div className={SURFACE}>
           <p className="mb-4 text-sm font-semibold text-foreground">
@@ -239,6 +242,7 @@ export function AtsScorePanel({
         </div>
       )}
 
+      {/* Strengths + suggestions */}
       <div className="grid gap-4 md:grid-cols-2">
         {scores.strengths?.length > 0 && (
           <div className={SURFACE}>
@@ -280,21 +284,68 @@ export function AtsScorePanel({
         )}
       </div>
 
-      {onAttachEvidence &&
-        matchGaps &&
-        ((matchGaps.defensible?.length ?? 0) +
-          (matchGaps.learnable?.length ?? 0) +
-          (matchGaps.stretch?.length ?? 0) >
-          0) && (
+      {/* Missing keywords - classification-aware when the backend provides it:
+          only real SKILLS are one-click addable; logistics terms are
+          informational; compliance frameworks need real domain evidence. */}
+      {scores.missing_keywords?.length > 0 && (
         <div className={SURFACE}>
-          <p className="mb-3 text-sm font-semibold text-foreground">
-            What the role asks that you have not shown
-          </p>
-          <MatchGapsPanel
-            gaps={matchGaps}
-            resume={resume}
-            onAttachEvidence={onAttachEvidence}
-          />
+          <div className="mb-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <XCircle className="h-4 w-4 text-destructive" />
+              <p className="text-sm font-semibold text-foreground">
+                Missing Keywords
+              </p>
+            </div>
+            <span className="text-[10px] text-muted-foreground">
+              Click a skill to add it. Only claim what you can defend
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {(classified?.skills ?? scores.missing_keywords).map((kw) => {
+              const added = addedKeywords.has(kw);
+              return (
+                <button
+                  key={kw}
+                  type="button"
+                  onClick={() => !added && onAddKeyword(kw)}
+                  disabled={added}
+                  className={cn(
+                    'group inline-flex items-center gap-1 rounded-control border px-2.5 py-1 text-[11px] font-medium transition-all duration-200',
+                    added
+                      ? 'cursor-default border-success/25 bg-success/10 text-success'
+                      : 'border-destructive/25 bg-destructive/10 text-destructive hover:-translate-y-px hover:border-primary/40 hover:bg-primary/15 hover:text-primary',
+                  )}
+                >
+                  {added ? (
+                    <CheckCircle2 className="h-3 w-3" />
+                  ) : (
+                    <span className="text-[13px] leading-none opacity-60 group-hover:opacity-100">+</span>
+                  )}
+                  {kw}
+                </button>
+              );
+            })}
+            {classified?.compliance.map((kw) => (
+              <span
+                key={kw}
+                title="Compliance frameworks need real domain experience. Add only if your history genuinely shows it."
+                className="inline-flex items-center gap-1 rounded-control border border-warning/30 bg-warning/10 px-2.5 py-1 text-[11px] font-medium text-warning"
+              >
+                <AlertTriangle className="h-3 w-3" />
+                {kw}
+              </span>
+            ))}
+            {classified?.logistics.map((kw) => (
+              <span
+                key={kw}
+                title="Describes the job's working arrangement. Not a resume skill."
+                className="inline-flex items-center gap-1 rounded-control border border-border bg-muted px-2.5 py-1 text-[11px] font-medium text-muted-foreground"
+              >
+                <Info className="h-3 w-3" />
+                {kw}
+              </span>
+            ))}
+          </div>
         </div>
       )}
     </div>
