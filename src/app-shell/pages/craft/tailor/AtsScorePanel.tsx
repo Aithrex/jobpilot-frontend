@@ -1,11 +1,8 @@
 /**
  * ATS score inspector panel (Tailor right column).
  *
- * Presentational only - typed props in, render out. Branches on the score
- * schema version: v2 (honest deterministic rubric + real per-vendor parse
- * checklists) vs v1 (stored records from before the cutover, which still
- * carry the legacy scanner/ai_screener blocks). Old records must render
- * forever - never assume v2 fields.
+ * Always the hybrid engine: overall + keyword/skills/impact bars +
+ * per-vendor scanner scores. Never hide a stored score as "legacy".
  */
 import { CheckCircle2, AlertTriangle, ShieldAlert } from 'lucide-react';
 
@@ -14,9 +11,8 @@ import {
   ScoreRing,
   ScoreBar,
   PDFParseabilityCard,
-  VendorChecklistCard,
 } from '@/components/resume/tailored/ScoreDisplay';
-import { isAtsV2, ATS_V2_RUBRIC, VENDOR_LABELS } from '@/lib/atsScores';
+import { VENDOR_LABELS } from '@/lib/atsScores';
 import { MatchGapsPanel, type EvidenceTarget } from './MatchGapsPanel';
 
 import type { ATSScores, MatchGaps, TailoredFullResume } from '@/types/resume';
@@ -35,19 +31,6 @@ interface AtsScorePanelProps {
   /** Overall delta after an edit-triggered rescore. Null when none. */
   delta?: number | null;
 }
-
-const LEVERS: Array<{
-  key: ATSScores extends never ? never : keyof ATSScores | string;
-  action: string;
-  weight: number;
-}> = [
-  { key: 'quantified_impact', action: 'Add a metric to a bullet that lacks one', weight: 15 },
-  { key: 'readability', action: 'Reword a weak bullet opener', weight: 7 },
-  { key: 'recency_relevance', action: 'Name a JD term in your most recent role', weight: 8 },
-  { key: 'title_alignment', action: 'Align the summary with the target role family', weight: 15 },
-  { key: 'ats_parseability', action: 'Resolve a two-page overflow honestly', weight: 15 },
-  { key: 'section_completeness', action: 'Fill an empty section', weight: 10 },
-];
 
 export function AtsScorePanel({
   scores,
@@ -93,17 +76,6 @@ export function AtsScorePanel({
       </div>
     );
   }
-
-  const v2 = isAtsV2(scores);
-  const levers = LEVERS
-    .map((row) => {
-      const raw = scores[row.key as keyof ATSScores];
-      const value = typeof raw === 'number' ? raw : 0;
-      return { ...row, score: value, room: ((100 - value) * row.weight) / 100 };
-    })
-    .filter((row) => row.score < 90)
-    .sort((a, b) => b.room - a.room)
-    .slice(0, 4);
 
   return (
     <div className="space-y-5 p-5 sm:p-6">
@@ -153,86 +125,46 @@ export function AtsScorePanel({
             Score Breakdown
           </p>
           <div className="space-y-3">
-            {v2 ? (
-              <>
-                {ATS_V2_RUBRIC.map(({ key, label, weight }) => (
-                  <ScoreBar
-                    key={key}
-                    label={`${label} (${weight}%)`}
-                    score={scores[key] ?? 0}
-                  />
-                ))}
-                <ScoreBar
-                  label="Experience Relevance (advisory)"
-                  score={scores.experience_relevance ?? 0}
-                  color="bg-primary"
-                />
-              </>
-            ) : (
-              <>
-                <ScoreBar label="Keyword Match" score={scores.keyword_match} />
-                <ScoreBar
-                  label="Keyword Frequency"
-                  score={scores.keyword_frequency}
-                />
-                <ScoreBar label="Skills Alignment" score={scores.skills_alignment} />
-                <ScoreBar
-                  label="Experience Relevance"
-                  score={scores.experience_relevance ?? 0}
-                />
-                <ScoreBar
-                  label="Quantifiable Impact"
-                  score={scores.quantifiable_impact}
-                />
-                <ScoreBar label="Bullet Quality" score={scores.bullet_quality} />
-                <ScoreBar label="Format Score" score={scores.format_score} />
-                <ScoreBar
-                  label="Section Completeness"
-                  score={scores.section_completeness}
-                />
-              </>
-            )}
+            <ScoreBar label="Keyword Match" score={scores.keyword_match} />
+            <ScoreBar
+              label="Keyword Frequency"
+              score={scores.keyword_frequency}
+            />
+            <ScoreBar label="Skills Alignment" score={scores.skills_alignment} />
+            <ScoreBar
+              label="Experience Relevance"
+              score={scores.experience_relevance ?? 0}
+            />
+            <ScoreBar
+              label="Quantifiable Impact"
+              score={scores.quantifiable_impact}
+            />
+            <ScoreBar label="Bullet Quality" score={scores.bullet_quality} />
+            <ScoreBar label="Format Score" score={scores.format_score} />
+            <ScoreBar
+              label="Section Completeness"
+              score={scores.section_completeness}
+            />
           </div>
         </div>
         <div className={SURFACE}>
           <p className="mb-1 text-sm font-semibold text-foreground">
-            {v2 ? 'ATS Compatibility Checks' : 'ATS Scanner Scores'}
+            ATS Scanner Scores
           </p>
-          {v2 ? (
-            <>
-              <p className="mb-3 text-[11px] leading-snug text-muted-foreground">
-                Real parse-compatibility checks per platform. ATS don't score
-                resumes; they parse them. These verify yours parses.
-              </p>
-              <div className="space-y-2.5">
-                {scores.vendor_compat &&
-                  Object.entries(scores.vendor_compat).map(([vendor, entry]) =>
-                    entry ? (
-                      <VendorChecklistCard
-                        key={vendor}
-                        vendor={VENDOR_LABELS[vendor] ?? vendor}
-                        entry={entry}
-                      />
-                    ) : null,
-                  )}
-              </div>
-            </>
-          ) : (
-            <div className="mt-3 space-y-3">
-              {scores.scanners &&
-                Object.entries(scores.scanners).map(([n, s]) => (
-                  <ScoreBar
-                    key={n}
-                    label={VENDOR_LABELS[n] ?? n}
-                    score={s}
-                  />
-                ))}
-            </div>
-          )}
+          <div className="mt-3 space-y-3">
+            {scores.scanners &&
+              Object.entries(scores.scanners).map(([n, s]) => (
+                <ScoreBar
+                  key={n}
+                  label={VENDOR_LABELS[n] ?? n}
+                  score={s}
+                />
+              ))}
+          </div>
         </div>
       </div>
 
-      {!v2 && scores.ai_screener && (
+      {scores.ai_screener && (
         <div className={SURFACE}>
           <p className="mb-4 text-sm font-semibold text-foreground">
             AI Screener Analysis
@@ -346,27 +278,6 @@ export function AtsScorePanel({
         </div>
       )}
 
-      {v2 && levers.length > 0 && (
-        <div className={SURFACE}>
-          <p className="mb-1 text-sm font-semibold text-foreground">
-            What would help most
-          </p>
-          <p className="mb-3 text-[11px] text-muted-foreground">
-            Ranked by room left on the ATS score. None of these ask you to
-            invent a skill.
-          </p>
-          <ul className="space-y-2">
-            {levers.map((row) => (
-              <li key={row.key} className="flex items-start justify-between gap-3 text-xs">
-                <span className="text-foreground">{row.action}</span>
-                <span className="shrink-0 tabular-nums text-muted-foreground">
-                  {row.weight}% of ATS score
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
     </div>
   );
 }
