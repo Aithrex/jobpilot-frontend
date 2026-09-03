@@ -400,11 +400,14 @@ export function WorkdayJobsPanel({
   const [industries, setIndustries] = useState<string[]>(prefs.industries ?? []);
   const [location, setLocation] = useState(prefs.location ?? '');
   const [remoteOnly, setRemoteOnly] = useState(prefs.remoteOnly ?? false);
-  // '7d', not 'today'. `maxDays` for 'today' is 0, so the default view
-  // client-side discarded everything in the 30-day payload the scan had just
-  // fetched except postings dated within the last 24 hours - which reads to
-  // the user as "there are no jobs", not as "you are looking at one day".
-  const [recency, setRecency] = useState<RecencyChoice>(prefs.recency ?? '7d');
+  // 'today' is the intended default: this is a daily-check surface. It was
+  // briefly widened to '7d' because 'today' was returning almost nothing -
+  // but the cause was never the window. Undated postings were being dropped
+  // client-side, and the server's candidate window was itself only ~1 day
+  // wide, so "today" was a slice of a slice. With both fixed, today alone
+  // carries 838 of this account's 2,633 rows (31.8%), and the segmented
+  // control widens it in one click.
+  const [recency, setRecency] = useState<RecencyChoice>(prefs.recency ?? 'today');
   const [customDays, setCustomDays] = useState(prefs.customDays ?? 2);
   const [groupByCompany, setGroupByCompany] = useState(prefs.groupByCompany ?? false);
   const [seniorityFilter, setSeniorityFilter] = useState<string>(prefs.seniorityFilter ?? 'any');

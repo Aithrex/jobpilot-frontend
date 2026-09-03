@@ -86,11 +86,12 @@ export function CombinedJobsProvider({ children }: { children: React.ReactNode }
   const [remoteOnly, setRemoteOnly] = useState(initialPrefs.remoteOnly ?? false);
   const [customizeOpen, setCustomizeOpen] = useState(false);
   const [search, setSearch] = useState('');
-  // Freshest first, but a WEEK - not a day. Opening on 'today' (maxDays 0)
-  // hid all but the last 24 hours of an already-fetched 30-day payload; the
-  // segmented control still shows per-window counts so narrowing to today or
-  // widening to 30 days is one click.
-  const [recency, setRecency] = useState<WorkdayRecency>('7d');
+  // Freshest first: open on today's postings. What made this look broken was
+  // never the window - undated rows were dropped client-side and the server's
+  // own candidate window was ~1 day wide, so "today" was a slice of a slice.
+  // Both are fixed; the segmented control shows per-window counts so widening
+  // to 1/3/7/30 days stays one click.
+  const [recency, setRecency] = useState<WorkdayRecency>('today');
   const [seniority, setSeniority] = useState('any');
   const [minScore, setMinScore] = useState(0);
   const [sponsorFilter, setSponsorFilter] = useState<SponsorFilter>('friendly');
