@@ -287,6 +287,36 @@ export interface AssessmentStageStatus {
  * assessment-v2 result (schema_version 4). No invented numeric overall —
  * use requirement counts, stages, and findings instead.
  */
+export interface AssessmentCoverageSummary {
+  priority?: string;
+  percentage?: number | null;
+  satisfied?: number;
+  partial?: number;
+  not_demonstrated?: number;
+  uncertain?: number;
+  total?: number;
+  numerator?: number;
+  denominator?: number;
+  provisional?: boolean;
+  incomplete_extraction?: boolean;
+  status?: string;
+  label?: string;
+}
+
+export interface AssessmentLedgerRow {
+  requirement_id: string;
+  display_text?: string;
+  priority?: string;
+  document_state?: AssessmentDocumentState | string;
+  source_state?: AssessmentSourceState | string;
+  claim_state?: AssessmentClaimState | string;
+  match_method?: string;
+  unmet_qualifiers?: string[];
+  document_refs?: { span: string; section?: string; entity?: string }[];
+  source_refs?: { fact_id?: string; entity?: string; text?: string }[];
+  reason?: string;
+}
+
 export interface AssessmentV2Result {
   assessment_id: string;
   schema_version: 4;
@@ -304,6 +334,9 @@ export interface AssessmentV2Result {
   top_actions?: string[];
   /** Always null for new assessment-v2 results. Never coerce to 0. */
   overall: null;
+  required_coverage?: AssessmentCoverageSummary | null;
+  preferred_coverage?: AssessmentCoverageSummary | null;
+  ledger?: { requirements?: AssessmentLedgerRow[] } | null;
 }
 
 export interface ATSScores {
@@ -347,6 +380,21 @@ export interface ATSScores {
   coverage_kind?: string;
   coverage_numerator?: number | null;
   coverage_denominator?: number | null;
+  coverage_status?: string;
+  coverage_provisional?: boolean;
+  overall_unavailable?: boolean;
+  required_coverage?: AssessmentCoverageSummary | null;
+  preferred_coverage?: AssessmentCoverageSummary | null;
+  term_presence?: {
+    label?: string;
+    percentage?: number;
+    found?: string[];
+    missing?: string[];
+    denominator?: number;
+    note?: string;
+  } | null;
+  ledger?: { requirements?: AssessmentLedgerRow[] } | null;
+  layout_warnings?: string[];
   vendor_scores_measured?: boolean;
   requirement_diagnostics?: Array<{
     jd_text: string;
@@ -359,6 +407,8 @@ export interface ATSScores {
     match_method?: string;
     unmet_qualifiers?: string[];
     in_denominator?: boolean;
+    document_state?: string;
+    reason?: string;
   }>;
   suggestions: string[];
   missing_keywords: string[];
