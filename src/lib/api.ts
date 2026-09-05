@@ -2062,6 +2062,7 @@ class ApiService {
     tailoredResume: import('../types/resume').TailoredFullResume,
     jdAnalysis: import('../types/resume').JDAnalysis,
     signal?: AbortSignal,
+    opts?: { recordId?: string; versionId?: string; format?: 'pdf' | 'docx'; idempotencyKey?: string },
   ): Promise<ApiResponse<{ ats_scores: import('../types/resume').ATSScores }>> {
     const submitResp = await this.request<{ job_id: string }>(
       '/resume/ats-scores',
@@ -2070,6 +2071,10 @@ class ApiService {
         body: JSON.stringify({
           tailored_resume: tailoredResume,
           jd_analysis: jdAnalysis,
+          record_id: opts?.recordId || '',
+          version_id: opts?.versionId || '',
+          format: opts?.format || 'pdf',
+          idempotency_key: opts?.idempotencyKey || '',
         }),
       },
       30000,
@@ -2432,6 +2437,8 @@ class ApiService {
       source: 'initial' | 'regenerated' | 'edited';
       user_feedback?: string;
       ats_scores?: import('../types/resume').ATSScores;
+      /** Server assessment id — preferred over client-authored scores when v2 is on. */
+      assessment_id?: string;
       parent_version_id?: string;
       set_current?: boolean;
     },
@@ -2440,6 +2447,7 @@ class ApiService {
       version_id: string;
       version_number: number;
       content_hash: string;
+      assessment_id?: string;
       created: boolean;
     }>
   > {

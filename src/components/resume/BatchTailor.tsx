@@ -11,6 +11,7 @@ import { QuotaLimitDialog } from '@/components/quota/QuotaLimitDialog';
 import { useUpgrade } from '@/components/billing/UpgradeModalProvider';
 import { useFeedback } from '@/components/feedback/FeedbackWidget';
 import { buildCoverLetterFilename } from '@/lib/filename';
+import { atsOverall } from '@/lib/atsScores';
 import { stageBatchHandoff } from '@/lib/craftHandoff';
 
 interface JDEntry {
@@ -742,20 +743,33 @@ export default function BatchTailor() {
                         Scoring...
                       </span>
                     )}
-                    {job.atsScores?.status === 'done' && job.atsScores.data && (
-                      <span
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold border ${
-                          (job.atsScores.data.overall ?? 0) >= 80
-                            ? 'text-success bg-success/10 border-success/30'
-                            : (job.atsScores.data.overall ?? 0) >= 60
-                            ? 'text-warning bg-warning/10 border-warning/30'
-                            : 'text-destructive bg-destructive/10 border-destructive/30'
-                        }`}
-                        title={`Checklist · keyword ${job.atsScores.data.keyword_match ?? '?'} · format ${job.atsScores.data.format_score ?? '?'}`}
-                      >
-                        Checklist {Math.round(job.atsScores.data.overall ?? 0)}
-                      </span>
-                    )}
+                    {job.atsScores?.status === 'done' && job.atsScores.data && (() => {
+                      const overall = atsOverall(job.atsScores.data);
+                      if (typeof overall !== 'number') {
+                        return (
+                          <span
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold border text-muted-foreground bg-muted/40 border-border"
+                            title="Assessment complete — no overall percentage for this result"
+                          >
+                            Reviewed
+                          </span>
+                        );
+                      }
+                      return (
+                        <span
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold border ${
+                            overall >= 80
+                              ? 'text-success bg-success/10 border-success/30'
+                              : overall >= 60
+                              ? 'text-warning bg-warning/10 border-warning/30'
+                              : 'text-destructive bg-destructive/10 border-destructive/30'
+                          }`}
+                          title={`Checklist · keyword ${job.atsScores.data.keyword_match ?? '?'} · format ${job.atsScores.data.format_score ?? '?'}`}
+                        >
+                          Checklist {Math.round(overall)}
+                        </span>
+                      );
+                    })()}
                     {job.atsScores?.status === 'failed' && (
                       <button
                         onClick={() => handleGenerateAts(job)}

@@ -9,6 +9,7 @@
 import type { ReactNode } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Sparkles, Lightbulb, PenLine, X, type LucideIcon } from 'lucide-react';
+import { hasNumericAtsOverall, isAssessmentV2 } from '@/lib/atsScores';
 import type { TailorPipelineResult } from './types';
 
 interface Nudge {
@@ -47,9 +48,25 @@ export function NudgeBar({
   if (!result) return null;
 
   const nudges: Nudge[] = [];
+  const scores = result.ats_scores;
 
-  // Score improvement after regen
-  if (versionsCount >= 2 && typeof result.ats_scores?.overall === 'number') {
+  // assessment-v2: surface top actions instead of overall % nudges.
+  if (scores && isAssessmentV2(scores) && (scores.top_actions?.length ?? 0) > 0) {
+    nudges.push({
+      id: `v2-action-${scores.assessment_id || 'draft'}`,
+      icon: Lightbulb,
+      text: (
+        <>
+          <strong className="text-foreground">{scores.top_actions![0]}</strong>
+        </>
+      ),
+      actionLabel: 'Review',
+      onAction: onReviewAts,
+    });
+  }
+
+  // Score improvement after regen — legacy numeric overall only.
+  if (versionsCount >= 2 && hasNumericAtsOverall(scores)) {
     nudges.push({
       id: `improved-${versionsCount}`,
       icon: Sparkles,
@@ -57,7 +74,7 @@ export function NudgeBar({
         <>
           Resume regenerated:{' '}
           <strong className="text-foreground">
-            ATS score is now {result.ats_scores.overall}/100
+            ATS score is now {scores!.overall}/100
           </strong>
           . Download your updated version when ready.
         </>
@@ -68,12 +85,15 @@ export function NudgeBar({
   }
 
   // Weak evidenced coverage — never frame adding a skill as a score bump.
+  // Skip when assessment-v2 (no skills_alignment / overall meters).
   if (
-    result.ats_scores &&
-    (result.ats_scores.skills_alignment ?? 100) < 70
+    scores &&
+    !isAssessmentV2(scores) &&
+    typeof scores.skills_alignment === 'number' &&
+    scores.skills_alignment < 70
   ) {
     nudges.push({
-      id: `skills-${result.ats_scores.overall}`,
+      id: `skills-${scores.overall ?? 'na'}`,
       icon: Lightbulb,
       text: (
         <>

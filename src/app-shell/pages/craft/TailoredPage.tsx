@@ -30,6 +30,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { apiService } from '@/lib/api';
+import { atsOverall } from '@/lib/atsScores';
 import { isTrimmedOutcome, resumeTrimDescription } from '@/lib/resumeLayoutSpec';
 import { formatDate } from '@/components/resume/ResumeDashboard';
 import type { TailoringRecord, TailoringVersion } from '@/types/resume';
@@ -160,15 +161,20 @@ export default function TailoredPage() {
       const ts = rec.created_at ? new Date(rec.created_at).getTime() : 0;
       if (from && ts < from) return false;
       if (to && ts > to) return false;
-      const ats = rec.ats_scores?.overall;
-      if (atsMin > 0 && (ats === undefined || ats < atsMin)) return false;
+      const ats = atsOverall(rec.ats_scores);
+      // Null/missing overall (assessment-v2) is not a numeric score — never coerce to 0.
+      if (atsMin > 0 && (typeof ats !== 'number' || ats < atsMin)) return false;
       if (hasRegensOnly && (rec.versions?.length || 0) < 2) return false;
       return true;
     });
     list = list.slice().sort((a, b) => {
       if (sortKey === 'ats') {
-        const sa = a.ats_scores?.overall ?? -1;
-        const sb = b.ats_scores?.overall ?? -1;
+        const sa = atsOverall(a.ats_scores);
+        const sb = atsOverall(b.ats_scores);
+        // Missing/null overall sorts last; do not invent 0.
+        if (typeof sa !== 'number' && typeof sb !== 'number') return 0;
+        if (typeof sa !== 'number') return 1;
+        if (typeof sb !== 'number') return -1;
         return sb - sa;
       }
       const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
@@ -188,8 +194,14 @@ export default function TailoredPage() {
     return {
       week: records.filter(r => ts(r) >= weekAgo).length,
       month: records.filter(r => ts(r) >= monthAgo).length,
-      highAts: records.filter(r => (r.ats_scores?.overall ?? 0) >= 80).length,
-      needsWork: records.filter(r => (r.ats_scores?.overall ?? 100) < 60 && r.ats_scores?.overall !== undefined).length,
+      highAts: records.filter(r => {
+        const o = atsOverall(r.ats_scores);
+        return typeof o === 'number' && o >= 80;
+      }).length,
+      needsWork: records.filter(r => {
+        const o = atsOverall(r.ats_scores);
+        return typeof o === 'number' && o < 60;
+      }).length,
       multiVersion: records.filter(r => (r.versions?.length || 0) >= 2).length,
       offers: records.filter(r => r.application?.status === 'offer').length,
       interviewing: records.filter(r => r.application?.status === 'interviewing').length,
@@ -631,7 +643,7 @@ export default function TailoredPage() {
           {filtered.map(rec => {
             const title = rec.jd_analysis?.job_title || 'Untitled Role';
             const company = rec.jd_analysis?.company;
-            const ats = rec.ats_scores?.overall;
+            const ats = atsOverall(rec.ats_scores);
             const isOpen = expanded.has(rec.record_id);
             const versions = (rec.versions || []).slice().sort((a, b) => b.version_number - a.version_number);
             const currentId = rec.current_version_id || versions[0]?.version_id;
@@ -661,7 +673,7 @@ export default function TailoredPage() {
                             </span>
                           </>
                         )}
-                        {ats !== undefined && (
+                        {typeof ats === 'number' && (
                           <>
                             <span>·</span>
                             <span className={`font-semibold ${atsColor(ats)}`}>ATS {ats}/100</span>
@@ -776,7 +788,7 @@ export default function TailoredPage() {
                       const dlPdfKey = `${rec.record_id}-${v.version_id}-pdf`;
                       const dlDocxKey = `${rec.record_id}-${v.version_id}-docx`;
                       const badge = sourceBadge[v.source];
-                      const vAts = v.ats_scores?.overall;
+                      const vAts = atsOverall(v.ats_scores);
                       return (
                         <div key={v.version_id} className="rounded-control border border-border bg-muted/30 px-3 py-2.5">
                           <div className="flex items-center gap-2 flex-wrap">

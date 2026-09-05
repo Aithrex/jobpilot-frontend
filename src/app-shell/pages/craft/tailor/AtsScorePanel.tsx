@@ -12,9 +12,10 @@ import {
   ScoreBar,
   PDFParseabilityCard,
 } from '@/components/resume/tailored/ScoreDisplay';
-import { VENDOR_LABELS } from '@/lib/atsScores';
+import { VENDOR_LABELS, isAssessmentV2 } from '@/lib/atsScores';
 import { MatchGapsPanel, type EvidenceTarget } from './MatchGapsPanel';
 import { DocumentAssessmentPanel } from './DocumentAssessmentPanel';
+import { AssessmentV2Panel } from './AssessmentV2Panel';
 
 import type { ATSScores, MatchGaps, TailoredFullResume } from '@/types/resume';
 
@@ -46,6 +47,16 @@ export function AtsScorePanel({
   delta = null,
 }: AtsScorePanelProps) {
   const assessment = scores?.document_assessment ?? resume?.document_assessment;
+  if (scores && isAssessmentV2(scores)) {
+    return (
+      <AssessmentV2Panel
+        scores={scores}
+        stale={stale}
+        onRecheck={onRescore}
+        checking={rescoring}
+      />
+    );
+  }
   if (assessment) return <DocumentAssessmentPanel assessment={assessment} resume={resume} recordId={recordId} stale={stale} onRecheck={onRescore} checking={rescoring} />;
   // ── Loading state - mirror the real layout (ring card + bar rows). ──
   if (scores === null) {

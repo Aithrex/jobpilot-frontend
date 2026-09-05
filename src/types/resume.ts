@@ -209,6 +209,7 @@ export interface MissingKeywordsClassified {
  * `tailoring_records` keep the v1 shape forever - branch with `isAtsV2()`
  * from `@/lib/atsScores`.
  */
+/** Evidence-led v3 sidecar (schema_version 3 / evidence-v1). */
 export interface DocumentAssessment {
   version: string;
   content_hash: string;
@@ -222,11 +223,103 @@ export interface DocumentAssessment {
   questions: { id: string; requirement: string; question: string }[];
 }
 
+/** assessment-v2 display buckets (schema_version 4). Mutually exclusive. */
+export type AssessmentDisplayBucket =
+  | 'supported_and_satisfied'
+  | 'partial_or_related'
+  | 'not_demonstrated'
+  | 'conflict'
+  | 'unknown';
+
+export type AssessmentDocumentState =
+  | 'satisfied'
+  | 'partially_supported'
+  | 'not_demonstrated'
+  | 'contradicted'
+  | 'unknown';
+
+export type AssessmentSourceState =
+  | 'supported'
+  | 'listed_only'
+  | 'related'
+  | 'not_evidenced'
+  | 'contradicted'
+  | 'unknown';
+
+export type AssessmentClaimState =
+  | 'supported_explicit'
+  | 'supported_semantic'
+  | 'unverified'
+  | 'contradicted';
+
+export interface AssessmentRequirementEvaluation {
+  requirement_id: string;
+  document_state: AssessmentDocumentState;
+  source_state: AssessmentSourceState;
+  claim_state: AssessmentClaimState;
+  match_method: 'exact' | 'recognized_alias' | 'semantic' | 'none';
+  unmet_qualifiers?: string[];
+  reason?: string;
+  document_refs?: { span: string; section?: string; entity?: string }[];
+  source_refs?: { fact_id: string; entity?: string; text?: string }[];
+}
+
+export interface AssessmentRequirementCounts {
+  required: Partial<Record<AssessmentDisplayBucket, number>>;
+  preferred: Partial<Record<AssessmentDisplayBucket, number>>;
+  unspecified: Partial<Record<AssessmentDisplayBucket, number>>;
+}
+
+export interface AssessmentStageStatus {
+  processing: 'pending' | 'running' | 'complete' | 'partial' | 'failed' | 'superseded';
+  artifact: 'passed' | 'issues' | 'failed' | 'unchecked';
+  source_check: 'complete' | 'partial' | 'unresolved';
+  reader: 'completed' | 'unavailable' | 'partial';
+  comparison: 'comparable' | 'not_comparable' | 'unavailable';
+}
+
+/**
+ * assessment-v2 result (schema_version 4). No invented numeric overall —
+ * use requirement counts, stages, and findings instead.
+ */
+export interface AssessmentV2Result {
+  assessment_id: string;
+  schema_version: 4;
+  assessment_version: 'assessment-v2';
+  stages: AssessmentStageStatus;
+  evaluations?: AssessmentRequirementEvaluation[];
+  counts?: AssessmentRequirementCounts;
+  findings?: {
+    kind: string;
+    severity: string;
+    explanation: string;
+    requirement_id?: string;
+    references?: { kind: string; value: string; secondary?: string }[];
+  }[];
+  top_actions?: string[];
+  /** Always null for new assessment-v2 results. Never coerce to 0. */
+  overall: null;
+}
+
 export interface ATSScores {
   assessment_version?: string;
   document_assessment?: DocumentAssessment;
-  schema_version?: number; // 2 on honest-rubric backends; absent on v1
+  /** 2 = legacy honest rubric; 3 = evidence-v1 sidecar; 4 = assessment-v2. */
+  schema_version?: number;
+  /**
+   * Numeric overall for legacy hybrid/v2 rubrics only.
+   * assessment-v2 and evidence-led results use null — do not coerce to 0
+   * for sort, meters, or nudge copy (use atsOverall() / isAssessmentV2()).
+   */
   overall: number | null;
+  /** Present when schema_version === 4 (may also ride as a top-level sibling). */
+  assessment_id?: string;
+  stages?: AssessmentStageStatus;
+  evaluations?: AssessmentRequirementEvaluation[];
+  counts?: AssessmentRequirementCounts;
+  findings?: AssessmentV2Result['findings'];
+  top_actions?: string[];
+  canonical_requirements?: { id: string; display_text?: string; text?: string }[];
   // ── v2 rubric dimensions (absent on v1 records) ──
   hard_skill_match?: number;
   title_alignment?: number;
