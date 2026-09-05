@@ -16,6 +16,33 @@ export function splitSummarySentences(summary: string): string[] {
 
 export type BulletSection = 'experience' | 'projects';
 
+/** Preserve edits by source id, and invalidate every assessment of old prose. */
+function trackEdit(before: TailoredFullResume, after: TailoredFullResume,
+  section?: BulletSection, itemIndex?: number, bulletIndex?: number, removed = false): TailoredFullResume {
+  if (!before.tailoring_run) return after;
+  const preferences = { ...before.tailoring_preferences };
+  const entity = `${section}.${itemIndex}`;
+  const row = before.tailoring_run.provenance.filter(p => p.entity === entity)[bulletIndex ?? -1];
+  if (row) {
+    if (removed) {
+      preferences.omitted_fact_ids = [...new Set([...(preferences.omitted_fact_ids || []), row.fact_id])];
+    } else if (section !== undefined && itemIndex !== undefined && bulletIndex !== undefined) {
+      preferences.locked_fact_ids = [...new Set([...(preferences.locked_fact_ids || []), row.fact_id])];
+      preferences.locked_text = { ...preferences.locked_text, [row.fact_id]: after[section][itemIndex].bullets[bulletIndex] };
+    }
+  }
+  if (before.summary !== after.summary) {
+    preferences.summary_locked = true;
+    preferences.omit_summary = !after.summary.trim();
+  }
+  const provenance = removed && row
+    ? before.tailoring_run.provenance.filter(p => p !== row)
+    : before.tailoring_run.provenance;
+  return { ...after, document_assessment: undefined, verification: undefined,
+    ats_keyword_audit: undefined, match_gaps: undefined, tailoring_preferences: preferences,
+    tailoring_run: { ...before.tailoring_run, provenance } };
+}
+
 export function replaceBulletText(
   resume: TailoredFullResume,
   section: BulletSection,
@@ -25,7 +52,7 @@ export function replaceBulletText(
 ): TailoredFullResume {
   const items = resume[section];
   if (items?.[itemIndex]?.bullets?.[bulletIndex] === undefined) return resume;
-  return {
+  return trackEdit(resume, {
     ...resume,
     [section]: items.map((item, i) =>
       i === itemIndex
@@ -35,7 +62,7 @@ export function replaceBulletText(
           }
         : item,
     ),
-  };
+  }, section, itemIndex, bulletIndex);
 }
 
 export function removeBulletAt(
@@ -46,14 +73,14 @@ export function removeBulletAt(
 ): TailoredFullResume {
   const items = resume[section];
   if (!items?.[itemIndex]) return resume;
-  return {
+  return trackEdit(resume, {
     ...resume,
     [section]: items.map((item, i) =>
       i === itemIndex
         ? { ...item, bullets: item.bullets.filter((_, j) => j !== bulletIndex) }
         : item,
     ),
-  };
+  }, section, itemIndex, bulletIndex, true);
 }
 
 export function replaceSummarySentence(
@@ -65,7 +92,7 @@ export function replaceSummarySentence(
   if (sentenceIndex < 0 || sentenceIndex >= sentences.length) return resume;
   const next = sentences.slice();
   next[sentenceIndex] = text.trim();
-  return { ...resume, summary: next.join(' ') };
+  return trackEdit(resume, { ...resume, summary: next.join(' ') });
 }
 
 export function removeSummarySentence(
@@ -75,7 +102,7 @@ export function removeSummarySentence(
   const sentences = splitSummarySentences(resume.summary || '');
   if (sentenceIndex < 0 || sentenceIndex >= sentences.length) return resume;
   const next = sentences.filter((_, i) => i !== sentenceIndex);
-  return { ...resume, summary: next.join(' ') };
+  return trackEdit(resume, { ...resume, summary: next.join(' ') });
 }
 
 export function appendBulletOrClause(
@@ -98,12 +125,12 @@ export function appendBulletOrClause(
           ? `${b.replace(/\s+$/, '')} ${trimmed.endsWith('.') ? trimmed : `${trimmed}.`}`
           : b,
       );
-  return {
+  return trackEdit(resume, {
     ...resume,
     [section]: items.map((item, i) =>
       i === itemIndex ? { ...item, bullets: nextBullets } : item,
     ),
-  };
+  }, section, itemIndex, asNewBullet ? undefined : bulletIndex);
 }
 
 /** Lookup key for `_skill_headings.map` — mirrors the backend's raw variant. */
@@ -161,7 +188,7 @@ export function addSkillToCategory(
   // Front, not back: these come from the missing-keywords panel, so they are
   // JD-aligned by construction, and _polish_skills orders JD-aligned first.
   skills[category] = [keyword, ...existing];
-  return { ...resume, skills };
+  return trackEdit(resume, { ...resume, skills });
 }
 
 /**

@@ -1595,7 +1595,7 @@ class ApiService {
   }
 
   async tailorResume(jobDescription: string) {
-    return this.request<{ tailored: import('../types/jobs').TailoredResume }>(
+    const response = await this.request<{ tailored: import('../types/jobs').TailoredResume; job_id?: string }>(
       '/jobs/tailor-resume',
       {
         method: 'POST',
@@ -1603,6 +1603,13 @@ class ApiService {
       },
       30000,
     );
+    if (!response.data?.job_id) return response;
+    const completed = await this.pollJob<import('../types/resume').TailorPipelineResult>(response.data.job_id, 300000);
+    if (!completed.data) return { error: completed.error || 'Tailoring failed' };
+    const resume = completed.data.tailored_resume;
+    return { data: { tailored: { summary: resume.summary,
+      skills: Object.values(resume.skills).flat(),
+      experience_bullets: resume.experience.flatMap(e => e.bullets), keywords_to_add: [] } } };
   }
 
   async getSavedJobs() {
@@ -1902,7 +1909,7 @@ class ApiService {
 
     return this.pollJob<{
       tailored_resume: import('../types/resume').TailoredFullResume;
-    }>(submitResp.data.job_id, 120000, signal);
+    }>(submitResp.data.job_id, 300000, signal);
   }
 
   // Combined endpoint: extracts JD analysis AND tailors the resume inside a
@@ -1970,7 +1977,7 @@ class ApiService {
       base_selection?: import('../types/resume').BaseResumeSelection;
     }>(
       submitResp.data.job_id,
-      120000,
+      300000,
       signal,
       // While processing, the only partial the tailor job writes is the
       // progress marker - forward it when present.
@@ -1979,6 +1986,13 @@ class ApiService {
         if (p?.phase && onProgress) onProgress(p);
       },
       onStatus,
+    );
+  }
+
+  async confirmTailoringExperience(recordId: string, entity: string, text: string) {
+    return this.request<{ fact_id: string; message: string }>(
+      `/resume/records/${encodeURIComponent(recordId)}/experience`,
+      { method: 'POST', body: JSON.stringify({ entity, text, confirmed: true }) },
     );
   }
 
@@ -2022,7 +2036,7 @@ class ApiService {
 
     return this.pollJob<{
       tailored_resume: import('../types/resume').TailoredFullResume;
-    }>(submitResp.data.job_id, 120000, signal);
+    }>(submitResp.data.job_id, 300000, signal);
   }
 
   async rewriteBullet(
@@ -2031,7 +2045,7 @@ class ApiService {
     company?: string,
     jdKeywords?: string[],
   ): Promise<ApiResponse<{ rewritten: string }>> {
-    return this.request('/resume/rewrite-bullet', {
+    const response = await this.request<{ rewritten: string; job_id?: string }>('/resume/rewrite-bullet', {
       method: 'POST',
       body: JSON.stringify({
         bullet,
@@ -2040,6 +2054,8 @@ class ApiService {
         jd_keywords: jdKeywords || [],
       }),
     });
+    if (!response.data?.job_id) return response;
+    return this.pollJob<{ rewritten: string }>(response.data.job_id, 120000);
   }
 
   async fetchATSScores(

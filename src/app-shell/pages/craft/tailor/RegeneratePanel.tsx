@@ -14,14 +14,14 @@ import { Textarea } from '@/components/ui/textarea';
 type Tier = 'high' | 'style' | 'extra';
 
 const SUGGESTIONS: { tier: Tier; label: string }[] = [
-  { tier: 'high', label: 'Quantify impact with numbers' },
-  { tier: 'high', label: 'Add more metrics to bullets' },
-  { tier: 'high', label: 'Highlight cloud / AWS experience' },
+  { tier: 'high', label: 'Lead with the most relevant accomplishments' },
+  { tier: 'high', label: 'Make my contribution clearer' },
+  { tier: 'high', label: 'Surface transferable experience' },
   { tier: 'style', label: 'Make the summary more concise' },
-  { tier: 'style', label: 'Use stronger action verbs' },
-  { tier: 'style', label: 'Make it more technical' },
-  { tier: 'extra', label: 'Emphasize leadership experience' },
-  { tier: 'extra', label: 'Add team / collaboration keywords' },
+  { tier: 'style', label: 'Use simpler, more natural wording' },
+  { tier: 'style', label: 'Remove repeated claims' },
+  { tier: 'extra', label: 'Clarify outcomes already in my resume' },
+  { tier: 'extra', label: 'Reduce unnecessary jargon' },
 ];
 
 /** Detect whether a suggestion is already reflected in the feedback text. */

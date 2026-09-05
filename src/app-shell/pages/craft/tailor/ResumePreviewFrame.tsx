@@ -89,7 +89,7 @@ export function ResumePreviewFrame({
   return (
     <div className="relative surface shadow-soft rounded-container overflow-hidden flex flex-col lg:max-h-[calc(100vh-140px)]">
       {/* Resume-strength meter - vertical bar hugging the left edge. */}
-      {result?.ats_scores &&
+      {result?.ats_scores && typeof result.ats_scores.overall === 'number' &&
         (() => {
           const s = result.ats_scores.overall;
           const tone = scoreTone(s);
@@ -178,6 +178,16 @@ export function ResumePreviewFrame({
                 previous={previousResume}
                 current={result.tailored_resume}
               />
+            )}
+            {result.tailored_resume.summary_write?.source === 'base' && (
+              <p
+                role="status"
+                className="rounded-container border border-border bg-card px-3 py-2 text-[12px] text-muted-foreground"
+              >
+                The professional summary could not be rewritten for this job,
+                so the version from your base resume is shown. The rest of the
+                resume was still tailored.
+              </p>
             )}
             <motion.div
               key={`loaded-${regenView}`}

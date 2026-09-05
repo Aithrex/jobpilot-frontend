@@ -14,12 +14,14 @@ import {
 } from '@/components/resume/tailored/ScoreDisplay';
 import { VENDOR_LABELS } from '@/lib/atsScores';
 import { MatchGapsPanel, type EvidenceTarget } from './MatchGapsPanel';
+import { DocumentAssessmentPanel } from './DocumentAssessmentPanel';
 
 import type { ATSScores, MatchGaps, TailoredFullResume } from '@/types/resume';
 
 const SURFACE = 'rounded-container border border-border bg-card p-5 shadow-soft';
 
 interface AtsScorePanelProps {
+  recordId?: string;
   scores: ATSScores | null;
   resume?: TailoredFullResume | null;
   matchGaps?: MatchGaps | null;
@@ -33,6 +35,7 @@ interface AtsScorePanelProps {
 }
 
 export function AtsScorePanel({
+  recordId,
   scores,
   resume = null,
   matchGaps = null,
@@ -42,6 +45,8 @@ export function AtsScorePanel({
   rescoring = false,
   delta = null,
 }: AtsScorePanelProps) {
+  const assessment = scores?.document_assessment ?? resume?.document_assessment;
+  if (assessment) return <DocumentAssessmentPanel assessment={assessment} resume={resume} recordId={recordId} stale={stale} onRecheck={onRescore} checking={rescoring} />;
   // ── Loading state - mirror the real layout (ring card + bar rows). ──
   if (scores === null) {
     return (
@@ -107,7 +112,7 @@ export function AtsScorePanel({
 
       <div className="rounded-container border border-border bg-card p-6 shadow-soft">
         <div className="flex items-center gap-6">
-          <ScoreRing score={scores.overall} delta={delta} />
+          {typeof scores.overall === 'number' && <ScoreRing score={scores.overall} delta={delta} />}
           <div className="flex-1">
             <p className="text-base font-semibold text-foreground">
               Overall ATS Score

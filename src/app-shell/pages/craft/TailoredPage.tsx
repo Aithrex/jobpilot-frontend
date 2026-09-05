@@ -783,7 +783,7 @@ export default function TailoredPage() {
                             <span className="text-xs font-semibold text-foreground">v{v.version_number}</span>
                             <span className={`text-xs tracking-wide px-1.5 py-0.5 rounded border ${badge.cls}`}>{badge.label}</span>
                             {isCurrent && <span className="text-xs tracking-wide px-1.5 py-0.5 rounded bg-success/15 text-success border border-success/25">Current</span>}
-                            {vAts !== undefined && (
+                            {typeof vAts === 'number' && (
                               <span className={`text-xs font-medium ${atsColor(vAts)}`}>ATS {vAts}</span>
                             )}
                             <span className="text-xs text-muted-foreground ml-auto">{formatDate(v.created_at)}</span>

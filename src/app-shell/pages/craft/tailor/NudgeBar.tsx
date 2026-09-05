@@ -9,7 +9,6 @@
 import type { ReactNode } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Sparkles, Lightbulb, PenLine, X, type LucideIcon } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import type { TailorPipelineResult } from './types';
 
 interface Nudge {
@@ -50,7 +49,7 @@ export function NudgeBar({
   const nudges: Nudge[] = [];
 
   // Score improvement after regen
-  if (versionsCount >= 2 && result.ats_scores) {
+  if (versionsCount >= 2 && typeof result.ats_scores?.overall === 'number') {
     nudges.push({
       id: `improved-${versionsCount}`,
       icon: Sparkles,

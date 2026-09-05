@@ -43,6 +43,21 @@ export interface ATSKeywordAudit {
 }
 
 export interface TailoredFullResume {
+  document_assessment?: DocumentAssessment;
+  tailoring_run?: {
+    policy_version: string;
+    content_hash: string;
+    source_hash: string;
+    jd_hash: string;
+    provenance: { fact_id: string; entity: string; text: string; state: string }[];
+  };
+  tailoring_preferences?: {
+    locked_fact_ids?: string[];
+    locked_text?: Record<string, string>;
+    omitted_fact_ids?: string[];
+    summary_locked?: boolean;
+    omit_summary?: boolean;
+  };
   contact: ResumeContact;
   summary: string;
   skills: Record<string, string[]>;
@@ -67,6 +82,20 @@ export interface TailoredFullResume {
   _skill_headings?: { map: Record<string, string>; order: string[] };
   /** FLASH-tiered missing required terms. Honest replacement for click-to-add. */
   match_gaps?: MatchGaps;
+  /** Deferred-summary writer sidecar. Absent on records tailored before it shipped. */
+  summary_write?: SummaryWriteDiagnostic;
+}
+
+export interface SummaryWriteDiagnostic {
+  writer_revision: string;
+  role_label: string;
+  jd_family_key?: string;
+  candidate_family_key?: string;
+  support?: number;
+  source: "generated" | "base";
+  attempts: number;
+  reasons: string[];
+  refreshed_after_augment?: boolean;
 }
 
 export interface JDAnalysis {
@@ -180,9 +209,24 @@ export interface MissingKeywordsClassified {
  * `tailoring_records` keep the v1 shape forever - branch with `isAtsV2()`
  * from `@/lib/atsScores`.
  */
+export interface DocumentAssessment {
+  version: string;
+  content_hash: string;
+  jd_hash: string;
+  ready: boolean;
+  source_status: string;
+  analysis_completeness: string;
+  requirements: { id: string; text: string; priority: string; state: string; visible: boolean; locations: string[]; support_basis?: string }[];
+  artifact: { format: string; status: string; issues: string[]; bytes_hash?: string; content_hash: string };
+  reader_review: { status: string; apparent_role?: string; apparent_level?: string; reason?: string; findings: { kind: string; quote: string; explanation: string }[] };
+  questions: { id: string; requirement: string; question: string }[];
+}
+
 export interface ATSScores {
+  assessment_version?: string;
+  document_assessment?: DocumentAssessment;
   schema_version?: number; // 2 on honest-rubric backends; absent on v1
-  overall: number;
+  overall: number | null;
   // ── v2 rubric dimensions (absent on v1 records) ──
   hard_skill_match?: number;
   title_alignment?: number;

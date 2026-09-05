@@ -918,22 +918,21 @@ export default function TailorPage() {
         decideReview(address, 'edited');
         return;
       }
-      // Nearest original bullet from the SAME section of the base resume.
-      const candidates = (baseResume[anchor.section] || []).flatMap(
-        (entry) => entry.bullets || [],
-      );
+      const section = anchor.section;
+      // Restore only from the actual source entry, never another employer.
+      const candidates = baseResume[section]?.[anchor.itemIndex]?.bullets || [];
       const original = bestMatch(item.text, candidates, 0.35);
       if (original) {
         mutateResume((r) =>
           replaceBulletText(
-            r, anchor.section, anchor.itemIndex, anchor.bulletIndex, original,
+            r, section, anchor.itemIndex, anchor.bulletIndex, original,
           ),
         );
         decideReview(address, 'restored');
         toast.success('Restored your original wording');
       } else {
         mutateResume((r) =>
-          removeBulletAt(r, anchor.section, anchor.itemIndex, anchor.bulletIndex),
+          removeBulletAt(r, section, anchor.itemIndex, anchor.bulletIndex),
         );
         decideReview(address, 'removed');
         toast.success('No matching original. Bullet removed');
@@ -1243,6 +1242,7 @@ export default function TailorPage() {
                   </div>
                 )}
                 <AtsScorePanel
+                  recordId={recordIdRef.current || undefined}
                   scores={result?.ats_scores ?? null}
                   resume={result?.tailored_resume ?? null}
                   matchGaps={result?.tailored_resume.match_gaps ?? null}
