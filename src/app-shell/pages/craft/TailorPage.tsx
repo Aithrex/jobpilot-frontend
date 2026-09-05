@@ -606,8 +606,8 @@ export default function TailorPage() {
         a.download = r.filename || `resume.${fmt}`;
         a.click();
         URL.revokeObjectURL(u);
-        if (isTrimmedOutcome(r.outcome)) {
-          toast.warning('Some content was trimmed to fit the page', {
+        if (isTrimmedOutcome(r.outcome) || (r.dropped?.length ?? 0) > 0) {
+          toast.warning('Content omitted to fit', {
             description: resumeTrimDescription(r.dropped?.length || 0),
           });
         } else {

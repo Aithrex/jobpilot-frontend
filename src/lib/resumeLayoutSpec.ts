@@ -37,13 +37,19 @@ export const RESUME_LAYOUT_SPEC = {
 
 export type ResumeSectionKey = (typeof RESUME_LAYOUT_SPEC.section_order)[number];
 
-/** User-facing copy when the renderer dropped content to fit the page. */
-export function resumeTrimDescription(droppedCount: number): string {
+/** User-facing copy when content was omitted to fit the page. */
+export function resumeTrimDescription(droppedCount: number, disclosure?: string): string {
+  if (disclosure && disclosure.trim()) return disclosure.trim();
   return droppedCount > 0
-    ? `Removed ${droppedCount} item(s) from the downloaded file (oldest roles/projects first). Your editor copy is unchanged.`
-    : "The downloaded file is shorter than the preview. Your editor copy is unchanged.";
+    ? `Content omitted to fit: ${droppedCount} item${droppedCount === 1 ? '' : 's'} retained for optional restore.`
+    : 'Preview and download use the same selected resume content.';
 }
 
 export function isTrimmedOutcome(outcome?: string): boolean {
-  return outcome === "trimmed_to_one" || outcome === "trimmed_to_two";
+  return (
+    outcome === 'trimmed_to_one' ||
+    outcome === 'trimmed_to_two' ||
+    outcome === 'one_page_not_possible' ||
+    outcome === 'needs_shortening_choice'
+  );
 }
