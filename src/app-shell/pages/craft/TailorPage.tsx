@@ -78,15 +78,13 @@ import { BaseResumeUsedBanner } from './tailor/BaseResumeUsedBanner';
 import {
   replaceBulletText,
   removeBulletAt,
-  addSkillToCategory,
-  inferSkillCategory,
   replaceSummarySentence,
   removeSummarySentence,
   appendBulletOrClause,
 } from '@/lib/resumeMutations';
 import { resolveAnchor } from '@/lib/reviewAnchors';
 import type { EvidenceTarget } from './tailor/MatchGapsPanel';
-import { similarity, bestMatch } from '@/lib/textDiff';
+import { bestMatch } from '@/lib/textDiff';
 import { ProgressStepper } from './tailor/ProgressStepper';
 import { NudgeBar } from './tailor/NudgeBar';
 import { ResumePreviewFrame } from './tailor/ResumePreviewFrame';
@@ -989,15 +987,14 @@ export default function TailorPage() {
           target.clause,
           !!target.asNewBullet,
         );
-        const category = inferSkillCategory(withBullet, term, similarity);
         return {
           ...prev,
-          tailored_resume: addSkillToCategory(withBullet, category, term),
+          tailored_resume: withBullet,
         };
       });
       setScoreStale(true);
       apiService.trackCraftEvent('gap_attach_evidence', term);
-      toast.success(`Recorded ${term} against a bullet. Re-score to refresh the ATS score.`);
+      toast.success(`Recorded ${term} against a bullet. Recheck to refresh the review — it will not rewrite the resume.`);
     },
     [],
   );

@@ -122,14 +122,19 @@ export interface JDAnalysis {
 export interface MatchGapItem {
   item: string;
   why: string;
+  span?: string;
+  section?: string;
+  match_method?: string;
 }
 
 export interface MatchGaps {
-  required_coverage?: number;
-  coverage_percentage?: number;
+  required_coverage?: number | null;
+  coverage_percentage?: number | null;
+  already_demonstrated?: MatchGapItem[];
   defensible: MatchGapItem[];
   learnable: MatchGapItem[];
   stretch: MatchGapItem[];
+  incomplete?: boolean;
 }
 
 /** @deprecated v1 LLM-simulated per-vendor scores - v2 backends emit
@@ -337,8 +342,24 @@ export interface ATSScores {
   experience_relevance: number | null;
   quantifiable_impact: number;
   bullet_quality: number;
-  format_score: number;
+  format_score: number | null;
   section_completeness: number;
+  coverage_kind?: string;
+  coverage_numerator?: number | null;
+  coverage_denominator?: number | null;
+  vendor_scores_measured?: boolean;
+  requirement_diagnostics?: Array<{
+    jd_text: string;
+    classification: string;
+    canonical_identity: string;
+    accepted_aliases?: string[];
+    matched_span?: string;
+    matched_section?: string;
+    source_support?: string;
+    match_method?: string;
+    unmet_qualifiers?: string[];
+    in_denominator?: boolean;
+  }>;
   suggestions: string[];
   missing_keywords: string[];
   strengths: string[];

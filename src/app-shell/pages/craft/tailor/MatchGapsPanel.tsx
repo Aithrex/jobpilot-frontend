@@ -1,11 +1,11 @@
 /**
- * Tiered match-gap guidance. Replaces one-click missing-keyword chips.
+ * Canonical match-gap guidance.
  *
- * defensible — user must point at a bullet (or write one) before anything
- * is added. learnable — genuine gap, no add affordance. stretch — collapsed.
+ * already_demonstrated — covered; expandable matched text, no task.
+ * Genuine unknowns stay optional. Recheck never rewrites the resume.
  */
 import { useMemo, useState } from 'react';
-import { ChevronDown, HelpCircle, Info, MapPin } from 'lucide-react';
+import { ChevronDown, HelpCircle, Info } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -67,7 +67,38 @@ function bulletOptions(resume: TailoredFullResume | null): BulletOpt[] {
   return out;
 }
 
-function DefensibleRow({
+function DemonstratedRow({ entry }: { entry: MatchGapItem }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="rounded-control border border-border bg-card px-3 py-2.5">
+      <button
+        type="button"
+        className="flex w-full items-start justify-between gap-2 text-left"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+      >
+        <div className="min-w-0">
+          <p className="text-[12.5px] font-medium text-foreground">{entry.item}</p>
+          <p className="mt-0.5 text-[11px] text-muted-foreground">
+            Shown on the resume{entry.section ? ` · ${entry.section}` : ''}
+          </p>
+        </div>
+        <ChevronDown className={cn('mt-0.5 h-3.5 w-3.5 shrink-0', open && 'rotate-180')} />
+      </button>
+      {open && (
+        <div className="mt-2 space-y-1 border-t border-border pt-2 text-[11px] text-muted-foreground">
+          {entry.span && (
+            <p className="leading-snug text-foreground">“{entry.span.trim()}”</p>
+          )}
+          {entry.why && <p>{entry.why}</p>}
+          {entry.match_method && <p>Match: {entry.match_method}</p>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function OptionalExperienceRow({
   entry,
   options,
   onAttach,
@@ -98,19 +129,18 @@ function DefensibleRow({
           type="button"
           size="sm"
           variant="outline"
-          className="h-7 shrink-0 gap-1 px-2 text-[11px]"
+          className="h-7 shrink-0 px-2 text-[11px]"
           onClick={() => setOpen((v) => !v)}
         >
-          <MapPin className="h-3 w-3" />
-          Where did you use it?
+          Have relevant experience?
         </Button>
       </div>
       {open && (
         <div className="mt-2.5 space-y-2 border-t border-border pt-2.5">
           <p className="text-[11px] text-muted-foreground">
-            Point at a bullet and add a short clause naming how you used{' '}
-            <span className="font-medium text-foreground">{entry.item}</span>.
-            We will not add it as a bare skill.
+            Optional. Add experience only if you actually used{' '}
+            <span className="font-medium text-foreground">{entry.item}</span>
+            {' '}on a specific job or project. This does not rewrite the rest of the resume.
           </p>
           {options.length > 0 && (
             <select
@@ -121,7 +151,7 @@ function DefensibleRow({
               }}
               className="w-full rounded-control border border-border bg-background px-2 py-1.5 text-[11px] text-foreground"
             >
-              <option value="">Select a bullet…</option>
+              <option value="">Select a job or project…</option>
               {options.map((opt) => (
                 <option key={opt.id} value={opt.id}>
                   {opt.label}: {opt.text.slice(0, 80)}
@@ -136,7 +166,7 @@ function DefensibleRow({
               checked={asNew}
               onChange={(e) => setAsNew(e.target.checked)}
             />
-            Write a new bullet on the most recent role instead
+            Write a new bullet on the selected role
           </label>
           <Textarea
             value={clause}
@@ -151,21 +181,20 @@ function DefensibleRow({
             disabled={!canSubmit}
             onClick={() => {
               const opt = options.find((o) => o.id === selected);
-              const fallback = options[0];
-              const target = asNew || !opt ? fallback : opt;
-              if (!target && !asNew) return;
+              if (!opt && !asNew) return;
+              if (!opt) return;
               onAttach(entry.item, {
-                section: target?.section ?? 'experience',
-                itemIndex: target?.itemIndex ?? 0,
-                bulletIndex: asNew ? -1 : (target?.bulletIndex ?? 0),
+                section: opt.section,
+                itemIndex: opt.itemIndex,
+                bulletIndex: asNew ? -1 : opt.bulletIndex,
                 clause: clause.trim(),
-                asNewBullet: asNew || !opt,
+                asNewBullet: asNew,
               });
               setOpen(false);
               setClause('');
             }}
           >
-            Attach evidence
+            Add this experience
           </Button>
         </div>
       )}
@@ -182,25 +211,58 @@ export function MatchGapsPanel({
   const options = useMemo(() => bulletOptions(resume), [resume]);
 
   if (!gaps) return null;
+  const demonstrated = gaps.already_demonstrated || [];
   const defensible = gaps.defensible || [];
   const learnable = gaps.learnable || [];
   const stretch = gaps.stretch || [];
-  if (!defensible.length && !learnable.length && !stretch.length) return null;
+  if (
+    !demonstrated.length &&
+    !defensible.length &&
+    !learnable.length &&
+    !stretch.length &&
+    !gaps.incomplete
+  ) {
+    return null;
+  }
 
   return (
     <div className="space-y-4">
+      {gaps.incomplete && (
+        <p className="text-[11px] text-muted-foreground">
+          Some requirement checks could not be completed. This is not a perfect match score.
+        </p>
+      )}
+
+      {demonstrated.length > 0 && (
+        <div>
+          <p className="mb-1.5 text-sm font-semibold text-foreground">
+            Already shown
+          </p>
+          <p className="mb-2 text-[11px] text-muted-foreground">
+            These requirements are on the final resume. Expand to see the matched text.
+            No evidence attachment is needed.
+          </p>
+          <div className="space-y-1.5">
+            {demonstrated.map((entry) => (
+              <DemonstratedRow key={entry.item} entry={entry} />
+            ))}
+          </div>
+        </div>
+      )}
+
       {defensible.length > 0 && (
         <div>
           <p className="mb-1.5 text-sm font-semibold text-foreground">
-            You likely have these
+            Related experience (optional)
           </p>
           <p className="mb-2 text-[11px] text-muted-foreground">
-            Adjacent to what you already do. Adding requires pointing at a
-            bullet — listing them in Skills earns no credit.
+            Adjacent to what you already do. Add only if you have used the named tool
+            or responsibility. Skills-list mentions can satisfy a skills-list requirement;
+            production use, ownership, and duration need the matching context.
           </p>
           <div className="space-y-1.5">
             {defensible.map((entry) => (
-              <DefensibleRow
+              <OptionalExperienceRow
                 key={entry.item}
                 entry={entry}
                 options={options}
@@ -215,10 +277,11 @@ export function MatchGapsPanel({
         <div>
           <p className="mb-1.5 flex items-center gap-1.5 text-sm font-semibold text-foreground">
             <HelpCircle className="h-3.5 w-3.5 text-warning" />
-            Genuine gaps
+            Not shown on this resume
           </p>
           <p className="mb-2 text-[11px] text-muted-foreground">
-            Not on this resume. Do not add them unless you have used them.
+            Not found after a complete search of the final document. Do not add them
+            unless you have used them on a real job or project.
           </p>
           <ul className="space-y-1.5">
             {learnable.map((entry) => (

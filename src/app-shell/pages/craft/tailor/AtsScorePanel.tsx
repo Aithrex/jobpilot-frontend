@@ -126,10 +126,15 @@ export function AtsScorePanel({
           {typeof scores.overall === 'number' && <ScoreRing score={scores.overall} delta={delta} />}
           <div className="flex-1">
             <p className="text-base font-semibold text-foreground">
-              Overall ATS Score
+              Internal document coverage
             </p>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              Weighted score across keyword match, skills alignment, and ATS scanners.
+              Required JD terms clearly shown on this resume
+              {typeof scores.coverage_numerator === 'number' &&
+              typeof scores.coverage_denominator === 'number'
+                ? ` (${scores.coverage_numerator}/${scores.coverage_denominator})`
+                : ''}
+              . This is not an ATS pass probability or employer score.
             </p>
           </div>
         </div>
@@ -141,55 +146,65 @@ export function AtsScorePanel({
             Score Breakdown
           </p>
           <div className="space-y-3">
-            <ScoreBar label="Keyword Match" score={scores.keyword_match} />
+            <ScoreBar label="Required-term coverage" score={scores.keyword_match} />
+            <ScoreBar label="Skills alignment" score={scores.skills_alignment} />
+            {typeof scores.experience_relevance === 'number' && (
+              <ScoreBar
+                label="Experience relevance (reviewer)"
+                score={scores.experience_relevance}
+              />
+            )}
             <ScoreBar
-              label="Keyword Frequency"
-              score={scores.keyword_frequency}
-            />
-            <ScoreBar label="Skills Alignment" score={scores.skills_alignment} />
-            <ScoreBar
-              label="Experience Relevance"
-              score={scores.experience_relevance ?? 0}
-            />
-            <ScoreBar
-              label="Quantifiable Impact"
+              label="Quantifiable impact"
               score={scores.quantifiable_impact}
             />
-            <ScoreBar label="Bullet Quality" score={scores.bullet_quality} />
-            <ScoreBar label="Format Score" score={scores.format_score} />
+            {typeof scores.format_score === 'number' && (
+              <ScoreBar label="File format check" score={scores.format_score} />
+            )}
             <ScoreBar
-              label="Section Completeness"
+              label="Section completeness"
               score={scores.section_completeness}
             />
           </div>
         </div>
-        <div className={SURFACE}>
-          <p className="mb-1 text-sm font-semibold text-foreground">
-            ATS Scanner Scores
-          </p>
-          <div className="mt-3 space-y-3">
-            {scores.scanners &&
-              Object.entries(scores.scanners).map(([n, s]) => (
+        {scores.vendor_scores_measured && scores.scanners && (
+          <div className={SURFACE}>
+            <p className="mb-1 text-sm font-semibold text-foreground">
+              Vendor checklist
+            </p>
+            <div className="mt-3 space-y-3">
+              {Object.entries(scores.scanners).map(([n, s]) => (
                 <ScoreBar
                   key={n}
                   label={VENDOR_LABELS[n] ?? n}
                   score={s}
                 />
               ))}
+            </div>
           </div>
-        </div>
+        )}
+        {!scores.vendor_scores_measured && (
+          <div className={SURFACE}>
+            <p className="mb-1 text-sm font-semibold text-foreground">
+              Employer / vendor scores
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Not measured. Simulated Workday, Greenhouse, or other vendor
+              numbers are not shown as results.
+            </p>
+          </div>
+        )}
       </div>
 
-      {scores.ai_screener && (
+      {scores.vendor_scores_measured && scores.ai_screener && (
         <div className={SURFACE}>
           <p className="mb-4 text-sm font-semibold text-foreground">
-            AI Screener Analysis
+            Reviewer notes
           </p>
           <div className="grid gap-3 sm:grid-cols-2">
             <ScoreBar label="Overall" score={scores.ai_screener.overall} color="bg-primary" />
             <ScoreBar label="Relevance" score={scores.ai_screener.relevance} color="bg-primary" />
             <ScoreBar label="Seniority Fit" score={scores.ai_screener.seniority_fit} color="bg-primary" />
-            <ScoreBar label="Culture Fit" score={scores.ai_screener.culture_fit} color="bg-primary" />
           </div>
         </div>
       )}
@@ -278,7 +293,8 @@ export function AtsScorePanel({
 
       {onAttachEvidence &&
         matchGaps &&
-        ((matchGaps.defensible?.length ?? 0) +
+        ((matchGaps.already_demonstrated?.length ?? 0) +
+          (matchGaps.defensible?.length ?? 0) +
           (matchGaps.learnable?.length ?? 0) +
           (matchGaps.stretch?.length ?? 0) >
           0) && (
