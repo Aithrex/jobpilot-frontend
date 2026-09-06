@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Repository-local pre-push hook. Install with:
+#   node scripts/install-pre-push-hook.mjs
+set -euo pipefail
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT"
+echo "pre-push: node scripts/verify.mjs --full --cache"
+exec node scripts/verify.mjs --full --cache

@@ -9,6 +9,9 @@ Vite 5 + React 18 + TypeScript SPA — the client for the **Aspirely** AI career
 - `pnpm test` — Vitest (jsdom + RTL + jest-dom). `pnpm test:watch` to iterate. Single file: `pnpm test src/path/to.test.tsx`
 - `pnpm lint` — ESLint 9 (flat config) · `pnpm format` — Prettier
 - `pnpm copy:check` — ASCII copy sweep (guards smart quotes / non-ASCII in UI copy)
+- `node scripts/verify.mjs --fast` — Vitest only (change-focused)
+- `node scripts/verify.mjs --full` — **CI-equivalent**: frozen install + test + production build. Same command as `.github/workflows/tests.yml` and the optional pre-push hook. `pnpm copy:check` / `pnpm lint` remain recommended local checks (the tree has pre-existing findings).
+- `node scripts/install-pre-push-hook.mjs` — repository-local pre-push hook (does not change global Git config). CI remains authoritative.
 
 ## Hard invariants (breaking these breaks login or the build)
 1. **`vite build` only — never add a `tsc` gate.** The repo HAS known pre-existing TS errors. **Don't fix them; just don't add new ones.**
@@ -142,3 +145,13 @@ code they describe.
 
 ## Agents & skills
 `.claude/agents/` holds a scoped subagent suite (`orchestrator`, `frontend-engineer`, `uiux-designer`, `security-engineer`, `performance-engineer`, `staff-engineer`, `qa-test-engineer`, `devops-engineer`). Start with **`orchestrator`** for fuzzy asks; see `.claude/agents/README.md`. `.claude/skills/` adds `page-cro`, `react-state-management`, `typescript-advanced-types`.
+
+## Agent verification (required)
+
+While implementing: `node scripts/verify.mjs --fast`.
+Before declaring ready: `node scripts/verify.mjs --full` when frontend
+files or shared contracts changed. Fix regressions this change caused.
+A later edit that affects checked behavior invalidates an earlier green
+run — rerun. Report exact commands and results. Never claim “all tests
+pass” from a subset. Never skip, weaken, or suppress checks to obtain a
+green result. See [`docs/verification.md`](docs/verification.md).

@@ -7,6 +7,7 @@ Developer documentation for the JobPilot web app. Start here.
 | Doc | Read it when you want to… |
 | --- | --- |
 | **[Getting started](getting-started.md)** | Run the app locally, configure env vars, troubleshoot |
+| **[Verification](verification.md)** | Fast vs full pre-push/CI commands and the repository-local hook |
 | **[Architecture](architecture.md)** | Understand routing, providers, the workspace, and the design system |
 | **[API reference](api-reference.md)** | Look up any backend endpoint the frontend calls (grouped by domain) |
 | **[Frontend views → endpoints](frontend-views.md)** | See exactly which endpoints each screen/component requires |

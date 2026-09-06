@@ -152,7 +152,10 @@ describe('techFeedJobToJob known values still travel', () => {
         salary: { ...NO_SALARY, min_annual: 120000, max_annual: 140000, currency: 'USD', published: true },
       }),
     );
-    expect(posting.salary).toBe('USD 120,000 - 140,000');
+    // Adapter uses host-locale toLocaleString(); CI is en-US, Windows may not be.
+    expect(posting.salary).toBe(
+      `USD ${Number(120000).toLocaleString()} - ${Number(140000).toLocaleString()}`,
+    );
   });
 
   test('remote and on-site both resolve to a real boolean', () => {
