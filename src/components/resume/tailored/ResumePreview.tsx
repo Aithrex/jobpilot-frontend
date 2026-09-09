@@ -92,16 +92,25 @@ export function ResumePreview({ resume }: { resume: TailoredFullResume }) {
               }
             />
             <div className="space-y-4">
-              {resume.experience.map((exp, i) => (
-                <div key={i}>
+              {resume.experience.map((exp, i) => {
+                const prev = i > 0 ? resume.experience[i - 1] : null;
+                const grouped = Boolean(
+                  prev &&
+                    (prev.company || "").trim().toLowerCase().replace(/\s*\([^)]*\)\s*$/, "") ===
+                      (exp.company || "").trim().toLowerCase().replace(/\s*\([^)]*\)\s*$/, ""),
+                );
+                return (
+                <div key={exp.content_id || i}>
                   <div className="flex justify-between items-start gap-2">
                     <div>
-                      <p className="text-[13.5px] font-semibold text-gray-900 dark:text-white">
-                        {exp.company}
-                        {exp.location ? `, ${exp.location}` : ""}
-                      </p>
+                      {!grouped && (
+                        <p className="text-[13.5px] font-semibold text-gray-900 dark:text-white">
+                          {exp.company}
+                          {exp.location ? `, ${exp.location}` : ""}
+                        </p>
+                      )}
                       {(exp.title || exp.type) && (
-                        <p className="text-[12px] text-gray-600 dark:text-gray-300 italic mt-0.5">
+                        <p className={`text-[12px] text-gray-600 dark:text-gray-300 italic ${grouped ? "" : "mt-0.5"}`}>
                           {exp.title}
                           {exp.title && exp.type ? " · " : ""}
                           {exp.type || ""}
@@ -126,7 +135,8 @@ export function ResumePreview({ resume }: { resume: TailoredFullResume }) {
                     ))}
                   </ul>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
@@ -267,6 +277,71 @@ export function ResumePreview({ resume }: { resume: TailoredFullResume }) {
             </div>
           </div>
         )}
+        {(resume.additional_sections || []).map((sec, si) => {
+          const heading = (sec.original_heading || sec.heading || "Additional").toUpperCase();
+          const entries = sec.entries || [];
+          const raw = (sec.raw_text || "").trim();
+          if (!entries.length && !raw && sec.parse_status !== "unresolved") return null;
+          return (
+            <div className="group" key={sec.content_id || si}>
+              <ST
+                title={heading}
+                copyText={() =>
+                  [
+                    heading,
+                    raw,
+                    ...entries.map((e) =>
+                      [
+                        [e.title, e.organization, e.dates].filter(Boolean).join(" — "),
+                        e.body,
+                        ...(e.bullets || []).map((b) => `  • ${b}`),
+                      ]
+                        .filter(Boolean)
+                        .join("\n"),
+                    ),
+                  ]
+                    .filter(Boolean)
+                    .join("\n\n")
+                }
+              />
+              {raw && !entries.length ? (
+                <p className="text-[12.5px] text-gray-700 dark:text-gray-200 leading-[1.65]">{raw}</p>
+              ) : null}
+              <div className="space-y-3">
+                {entries.map((e, ei) => (
+                  <div key={e.content_id || ei}>
+                    <div className="flex justify-between items-start gap-2">
+                      <p className="text-[13.5px] font-semibold text-gray-900 dark:text-white">
+                        {[e.title, e.organization].filter(Boolean).join(" | ")}
+                      </p>
+                      <span className="text-[11px] text-gray-500 dark:text-gray-400 whitespace-nowrap shrink-0">
+                        {e.dates}
+                      </span>
+                    </div>
+                    {e.body ? (
+                      <p className="text-[12.5px] text-gray-700 dark:text-gray-200 mt-1 leading-[1.65]">
+                        {e.body}
+                      </p>
+                    ) : null}
+                    <ul className="mt-1 space-y-1">
+                      {(e.bullets || []).map((b, j) => (
+                        <li
+                          key={j}
+                          className="text-[12.5px] text-gray-700 dark:text-gray-200 flex gap-2 leading-[1.65]"
+                        >
+                          <span className="text-purple-500 dark:text-purple-400 shrink-0 mt-0.5">
+                            &bull;
+                          </span>
+                          <span>{b}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

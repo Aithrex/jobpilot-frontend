@@ -9,6 +9,7 @@ export interface ResumeContact {
 }
 
 export interface ResumeExperience {
+  content_id?: string;
   title: string;
   company: string;
   location: string;
@@ -18,6 +19,7 @@ export interface ResumeExperience {
 }
 
 export interface ResumeEducation {
+  content_id?: string;
   degree: string;
   institution: string;
   location: string;
@@ -27,10 +29,34 @@ export interface ResumeEducation {
 }
 
 export interface ResumeProject {
+  content_id?: string;
   name: string;
   dates: string;
   bullets: string[];
   tech: string;
+}
+
+export interface ResumeAdditionalEntry {
+  content_id?: string;
+  title?: string;
+  organization?: string;
+  location?: string;
+  dates?: string;
+  url?: string;
+  bullets?: string[];
+  body?: string;
+}
+
+export interface ResumeAdditionalSection {
+  content_id?: string;
+  heading: string;
+  original_heading?: string;
+  semantic_type?: string;
+  layout_supported?: string;
+  parse_status?: string;
+  raw_text?: string;
+  reason?: string;
+  entries?: ResumeAdditionalEntry[];
 }
 
 export interface ATSKeywordAudit {
@@ -65,6 +91,16 @@ export interface TailoredFullResume {
   education: ResumeEducation[];
   certifications: string[];
   projects: ResumeProject[];
+  additional_sections?: ResumeAdditionalSection[];
+  content_manifest?: Record<string, unknown>;
+  content_selection?: {
+    selection_version?: string;
+    page_outcome?: string;
+    disclosure?: string;
+    omitted_bullets?: Array<Record<string, unknown>>;
+    attempts?: number;
+    preservation?: { ok?: boolean; status?: string; errors?: string[]; warnings?: string[] };
+  };
   /** Tailor-chosen skills heading; must be one of the renderer whitelist. */
   skills_section_title?: string;
   target_role?: string;
