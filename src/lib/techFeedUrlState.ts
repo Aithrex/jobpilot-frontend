@@ -22,6 +22,7 @@ import { useSearchParams } from 'react-router-dom';
 import { apiService } from '@/lib/api';
 
 import type {
+  AccessBarrierHandling,
   ApplyMode,
   EmployerKindFilter,
   EmployerScope,
@@ -79,6 +80,10 @@ export const DEFAULT_TECH_FEED_FILTERS: TechFeedFilters = {
   sponsorshipPreference: null,
   workAuthorization: [],
   requiresClearance: null,
+  // Shown, but ranked below postings with no stated barrier. Never hidden by
+  // default - see `AccessBarrierHandling`.
+  clearanceRoles: 'demote',
+  noSponsorshipRoles: 'demote',
   postedWithinDays: DEFAULT_POSTED_WITHIN_DAYS,
   includeUndated: true,
   applyMode: 'any',
@@ -162,6 +167,8 @@ export const TECH_FEED_PARAM_KEYS: string[] = [
   'employer_scope',
   'employer_kind',
   'clearance',
+  'clearance_roles',
+  'nosponsor_roles',
   'days',
   'undated',
   'apply',
@@ -220,6 +227,7 @@ const EMPLOYER_KINDS: readonly EmployerKindFilter[] = [
   'marketplace',
 ];
 const APPLY_MODES: readonly ApplyMode[] = ['any', 'direct_apply'];
+const BARRIER_HANDLING: readonly AccessBarrierHandling[] = ['show', 'demote', 'hide'];
 const SORTS: readonly TechFeedSort[] = ['relevance', 'newest', 'salary'];
 
 export { TECH_SCOPES, WORK_MODES, SENIORITIES, EMPLOYER_KINDS, SORTS };
@@ -258,6 +266,12 @@ export function filtersToSearchParams(filters: TechFeedFilters): URLSearchParams
   if (filters.employerKind !== d.employerKind) params.set('employer_kind', filters.employerKind);
   if (filters.requiresClearance !== null) {
     params.set('clearance', filters.requiresClearance ? '1' : '0');
+  }
+  if (filters.clearanceRoles !== d.clearanceRoles) {
+    params.set('clearance_roles', filters.clearanceRoles);
+  }
+  if (filters.noSponsorshipRoles !== d.noSponsorshipRoles) {
+    params.set('nosponsor_roles', filters.noSponsorshipRoles);
   }
   if (filters.postedWithinDays !== d.postedWithinDays) {
     params.set('days', String(filters.postedWithinDays));
@@ -315,6 +329,12 @@ export function searchParamsToFilters(params: URLSearchParams): TechFeedFilters 
     workAuthorization: parseList(params.get('work_auth')),
     requiresClearance:
       params.get('clearance') === null ? null : parseBool(params.get('clearance'), false),
+    clearanceRoles: parseEnum(params.get('clearance_roles'), BARRIER_HANDLING, d.clearanceRoles),
+    noSponsorshipRoles: parseEnum(
+      params.get('nosponsor_roles'),
+      BARRIER_HANDLING,
+      d.noSponsorshipRoles,
+    ),
     postedWithinDays: clampDays(parseNumber(params.get('days')) ?? d.postedWithinDays),
     includeUndated: parseBool(params.get('undated'), d.includeUndated),
     applyMode: parseEnum(params.get('apply'), APPLY_MODES, d.applyMode),
@@ -378,6 +398,9 @@ export function techFeedFiltersToRequest(filters: TechFeedFilters): TechFeedSear
     company_categories: listOrUndefined(filters.companyCategories),
     sponsorship_preference: filters.sponsorshipPreference ?? undefined,
     work_authorization: listOrUndefined(filters.workAuthorization),
+    // `clearanceRoles` / `noSponsorshipRoles` are deliberately absent: they
+    // are presentation, applied over the rows the server returned, so the
+    // "N suppressed" count is a count of real rows rather than an estimate.
     requires_clearance: filters.requiresClearance ?? undefined,
     posted_within_days: clampDays(filters.postedWithinDays),
     include_undated: filters.includeUndated ? undefined : false,

@@ -10,7 +10,7 @@ import { SearchX } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { DEFAULT_TECH_FEED_FILTERS } from '@/lib/techFeedUrlState';
-import type { TechFeedFilters } from '@/types/techFeed';
+import type { TechFeedCoverage, TechFeedFilters } from '@/types/techFeed';
 
 export interface BroadeningSuggestion {
   id: string;
@@ -135,6 +135,23 @@ export function broadeningSuggestions(filters: TechFeedFilters): BroadeningSugge
       patch: { requiresClearance: null },
     });
   }
+  // A `hide` can empty a page on its own, and it is the one filter whose
+  // effect is invisible once the page is empty - there is nothing left to
+  // count. Offer it back explicitly.
+  if (filters.clearanceRoles === 'hide') {
+    out.push({
+      id: 'clearance-roles',
+      label: 'Show clearance roles again',
+      patch: { clearanceRoles: 'demote' },
+    });
+  }
+  if (filters.noSponsorshipRoles === 'hide') {
+    out.push({
+      id: 'nosponsor-roles',
+      label: 'Show "no sponsorship" postings again',
+      patch: { noSponsorshipRoles: 'demote' },
+    });
+  }
 
   return out;
 }
@@ -145,6 +162,35 @@ interface TechFeedEmptyStateProps {
   onReset: () => void;
   /** How many suggestions to show before the reset escape hatch. */
   limit?: number;
+  /**
+   * The coverage block from the same response. An empty PRISTINE search is
+   * usually not "there are no such jobs" - it is "we do not index many of the
+   * employers who post them". That is our gap, and saying so is the difference
+   * between a user who tries a different search and one who concludes the
+   * market is dead.
+   */
+  coverage?: TechFeedCoverage | null;
+}
+
+/** The coverage share, rendered ONLY with its age. Null when unmeasured. */
+function coverageLine(coverage: TechFeedCoverage | null | undefined): string | null {
+  const measured = coverage?.measured;
+  if (!measured) return null;
+  if (!measured.available) {
+    return 'We have not measured how much of the employer universe we cover yet, so we cannot tell you how big our gap is. That is unknown, not zero.';
+  }
+  const share = measured.employer_coverage_pct;
+  const denominator = measured.technology_employer_denominator;
+  if (typeof share !== 'number' || !Number.isFinite(share) || !denominator) return null;
+
+  const age =
+    typeof measured.age_hours === 'number' && Number.isFinite(measured.age_hours)
+      ? measured.age_hours < 48
+        ? `${Math.max(1, Math.round(measured.age_hours))} hours ago`
+        : `${Math.round(measured.age_hours / 24)} days ago`
+      : 'at an unknown time';
+
+  return `We currently index ${(share * 100).toFixed(1)}% of the ${denominator.toLocaleString()} technology employers we hold evidence for (measured ${age}). A thin result here is often our coverage gap, not the market.`;
 }
 
 export function TechFeedEmptyState({
@@ -152,10 +198,12 @@ export function TechFeedEmptyState({
   onApply,
   onReset,
   limit = 5,
+  coverage = null,
 }: TechFeedEmptyStateProps) {
   const suggestions = broadeningSuggestions(filters).slice(0, limit);
   const isPristine =
     JSON.stringify(filters) === JSON.stringify({ ...DEFAULT_TECH_FEED_FILTERS, query: filters.query });
+  const coverageNote = coverageLine(coverage);
 
   return (
     <div
@@ -170,6 +218,17 @@ export function TechFeedEmptyState({
             ? 'Nothing in the index matches that search yet. Try different keywords.'
             : 'Nothing in the index matches every filter at once. Loosen one and try again.'}
         </p>
+        {/* Our gap, stated as ours. Always with the measurement's age - a
+            coverage figure with no age could be a week old and read as
+            current, and "not measured" is unknown, never zero. */}
+        {coverageNote && (
+          <p
+            className="mx-auto max-w-md text-xs leading-relaxed text-muted-foreground"
+            data-testid="tech-feed-empty-coverage"
+          >
+            {coverageNote}
+          </p>
+        )}
       </div>
 
       {suggestions.length > 0 && (

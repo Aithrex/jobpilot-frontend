@@ -155,11 +155,42 @@ export function TechFeedHealthBanner({
             {pct(measured?.employer_coverage_pct)} of{' '}
             {(measured?.technology_employer_denominator ?? 0).toLocaleString()}{' '}
             technology employers covered
-            {measurementStale && (
-              <Badge variant="outline" className="ml-1 text-[10px]">
-                measured {formatAge(measured?.age_hours)}
-              </Badge>
-            )}
+            {/*
+              The AGE travels with the FIGURE, always - not only when the
+              measurement has gone stale. These numbers come from a stored
+              snapshot, so a share shown on its own reads as "right now" when
+              it may be days old, and the stale badge appearing only sometimes
+              taught the eye that no badge meant live. A stale measurement is
+              additionally called out in words below.
+            */}
+            <Badge
+              variant="outline"
+              className={cn(
+                'ml-1 text-[10px]',
+                measurementStale && 'border-warning/40 text-warning',
+              )}
+              data-testid="tech-feed-coverage-age"
+            >
+              measured {formatAge(measured?.age_hours)}
+              {measurementStale ? ' - out of date' : ''}
+            </Badge>
+          </span>
+        )}
+
+        {/*
+          No stored measurement is a real answer and renders as one. It is
+          NOT a coverage of zero and must never be rendered as a number.
+        */}
+        {coverage?.measured && !coverage.measured.available && (
+          <span
+            className="inline-flex items-center gap-1 italic"
+            data-testid="tech-feed-coverage-unknown"
+            title={
+              'Nobody has stored a coverage measurement yet. The share we ' +
+              'cover is unknown, which is not the same as zero.'
+            }
+          >
+            Employer coverage not measured yet - unknown, not zero
           </span>
         )}
 

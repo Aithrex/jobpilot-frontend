@@ -24,7 +24,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { CompanyLogo } from '@/components/CompanyLogo';
 import { useCombinedJobsCtx } from '@/components/job-search/CombinedJobsProvider';
 import { WhyThisScoreButton } from '@/components/job-search/JobFitDetails';
-import { fitBand } from '@/components/job-search/fitBands';
+import { fitBandOf } from '@/components/job-search/fitBands';
 import { toJob } from '@/lib/careerJobs';
 import { toTitleCase } from '@/lib/format';
 import { listContainer, listItem } from '@/lib/motion';
@@ -50,7 +50,9 @@ function RowSkeleton() {
 }
 
 function MatchRow({ job }: { job: Job }) {
-  const band = fitBand(job.match_score);
+  // The ROW, not the number: a `match_score` with no engine version stamp
+  // gets no band words and no figure. See `fitBands.isFitScored`.
+  const band = fitBandOf(job);
   const title = toTitleCase(job.title);
   const company = toTitleCase(job.company);
   const location = toTitleCase(job.location);

@@ -29,7 +29,9 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { DEFAULT_TECH_FEED_PAGE_SIZE, useTechFeed } from '@/hooks/useTechFeed';
 import { useTechFeedTaxonomy } from '@/hooks/useTechFeedTaxonomy';
+import { isTechFeedScored } from '@/lib/techFeedEligibility';
 import { loadNotInterestedIds, reconcileNotInterested } from '@/lib/techFeedNotInterested';
+import { partitionByAccessBarrier } from '@/lib/techFeedWorkAuth';
 import { useSavedTechFeedSearches, useTechFeedFilters } from '@/lib/techFeedUrlState';
 import {
   activeFilterKeys,
@@ -42,12 +44,14 @@ import {
 } from '@/lib/techFeedTelemetry';
 import { cn } from '@/lib/utils';
 import { TechFeedEmptyState } from '@/components/job-search/tech-feed/TechFeedEmptyState';
+import { TechFeedScoringNotice } from '@/components/job-search/tech-feed/TechFeedScoringNotice';
+import { TechFeedSuppressionNotice } from '@/components/job-search/tech-feed/TechFeedSuppressionNotice';
 import { TechFeedFacets } from '@/components/job-search/tech-feed/TechFeedFacets';
 import { TechFeedFilters } from '@/components/job-search/tech-feed/TechFeedFilters';
 import { TechFeedHealthBanner } from '@/components/job-search/tech-feed/TechFeedHealthBanner';
 import { TechFeedJobCard } from '@/components/job-search/tech-feed/TechFeedJobCard';
 import type { Job } from '@/types/jobs';
-import type { TechFeedSort, TechFeedUnappliedFilter } from '@/types/techFeed';
+import type { TechFeedJob, TechFeedSort, TechFeedUnappliedFilter } from '@/types/techFeed';
 
 const SORT_OPTIONS: Array<{ value: TechFeedSort; label: string }> = [
   { value: 'relevance', label: 'Best match' },
@@ -257,6 +261,32 @@ export function TechFeedPanel({
     [jobs, dismissed],
   );
 
+  /**
+   * Show / demote / hide, applied over the rows the server actually returned.
+   *
+   * Demoting is the default, so nothing disappears unless the user asked for
+   * it, and whatever a `hide` removed is counted and offered straight back.
+   */
+  const partition = useMemo(
+    () =>
+      partitionByAccessBarrier(visibleJobs, {
+        clearanceRoles: filters.clearanceRoles,
+        noSponsorshipRoles: filters.noSponsorshipRoles,
+      }),
+    [visibleJobs, filters.clearanceRoles, filters.noSponsorshipRoles],
+  );
+
+  /**
+   * How many rows on this page carry no score at all.
+   *
+   * A feed of "Not scored" cards has exactly one likely cause and one fix, and
+   * saying neither leaves the user staring at a page that looks broken.
+   */
+  const unscoredCount = useMemo(
+    () => visibleJobs.filter((job) => !isTechFeedScored(job)).length,
+    [visibleJobs],
+  );
+
   const labels = useMemo(() => {
     const map: Record<string, string> = {};
     for (const family of families) {
@@ -373,6 +403,36 @@ export function TechFeedPanel({
     observer.observe(node);
     return () => observer.disconnect();
   }, [hasMore]);
+
+  // One card renderer, used by both the primary list and the demoted group.
+  // A demoted card is the SAME card with the same five flows - nothing about
+  // it is degraded, it is only lower on the page.
+  const renderCard = (job: TechFeedJob) => (
+    <TechFeedJobCard
+      job={job}
+      labels={labels}
+      searchId={searchId}
+      onNotInterested={onNotInterested}
+      onRestore={onRestore}
+      saved={isJobSaved?.(job.job_id) ?? false}
+      jobStatus={getJobStatus?.(job.job_id) ?? null}
+      onSave={(posting) => {
+        onCardEngagement('card_save', posting.ats);
+        saveJob?.(posting);
+      }}
+      onUnsave={unsaveJob}
+      onEngagement={onCardEngagement}
+      onQuickApply={quickApply}
+      onApplyWithTailor={beginApplyWithTailor}
+      onAutoApply={autoApply}
+      autoApplying={autoApplyingId === job.job_id}
+      applyConfirmPending={isApplyConfirmPending?.(job.job_id) ?? false}
+      applyConfirmModalJobId={applyConfirmJobId}
+      onConfirmApplied={(posting) => confirmApplied?.(posting.job_id, posting)}
+      onConfirmNotYet={dismissApplyConfirm}
+      onAlreadyApplied={markAlreadyApplied}
+    />
+  );
 
   const countLabel = isLoading
     ? 'Searching the index'
@@ -633,39 +693,64 @@ export function TechFeedPanel({
           ) : isLoading ? (
             <ResultsSkeleton />
           ) : visibleJobs.length === 0 ? (
-            <TechFeedEmptyState filters={filters} onApply={patchFilters} onReset={resetFilters} />
+            <TechFeedEmptyState
+              filters={filters}
+              onApply={patchFilters}
+              onReset={resetFilters}
+              coverage={coverage}
+            />
           ) : (
             <>
-              <ul className="space-y-3" aria-label="Search results">
-                {visibleJobs.map((job) => (
-                  <li key={job.job_id}>
-                    <TechFeedJobCard
-                      job={job}
-                      labels={labels}
-                      searchId={searchId}
-                      onNotInterested={onNotInterested}
-                      onRestore={onRestore}
-                      saved={isJobSaved?.(job.job_id) ?? false}
-                      jobStatus={getJobStatus?.(job.job_id) ?? null}
-                      onSave={(posting) => {
-                        onCardEngagement('card_save', posting.ats);
-                        saveJob?.(posting);
-                      }}
-                      onUnsave={unsaveJob}
-                      onEngagement={onCardEngagement}
-                      onQuickApply={quickApply}
-                      onApplyWithTailor={beginApplyWithTailor}
-                      onAutoApply={autoApply}
-                      autoApplying={autoApplyingId === job.job_id}
-                      applyConfirmPending={isApplyConfirmPending?.(job.job_id) ?? false}
-                      applyConfirmModalJobId={applyConfirmJobId}
-                      onConfirmApplied={(posting) => confirmApplied?.(posting.job_id, posting)}
-                      onConfirmNotYet={dismissApplyConfirm}
-                      onAlreadyApplied={markAlreadyApplied}
-                    />
-                  </li>
-                ))}
-              </ul>
+              <TechFeedScoringNotice
+                unscoredCount={unscoredCount}
+                totalCount={visibleJobs.length}
+              />
+
+              <TechFeedSuppressionNotice
+                hiddenTotal={partition.hiddenTotal}
+                hiddenClearance={partition.hiddenClearance}
+                hiddenNoSponsorship={partition.hiddenNoSponsorship}
+                filters={filters}
+                onPatch={patchFilters}
+              />
+
+              {partition.primary.length > 0 ? (
+                <ul className="space-y-3" aria-label="Search results">
+                  {partition.primary.map((job) => (
+                    <li key={job.job_id}>{renderCard(job)}</li>
+                  ))}
+                </ul>
+              ) : (
+                partition.demoted.length > 0 && (
+                  <p className="text-xs text-muted-foreground" data-testid="tech-feed-all-demoted">
+                    Every posting on this page states a barrier - a clearance, or no
+                    sponsorship. They are listed below rather than removed.
+                  </p>
+                )
+              )}
+
+              {/* Demoted, not deleted. The heading names the reason so the
+                  group reads as a fact about those postings rather than as a
+                  second-class shelf, and every card in it is fully usable. */}
+              {partition.demoted.length > 0 && (
+                <section className="space-y-3" data-testid="tech-feed-demoted">
+                  <div className="flex items-center gap-2 border-t border-border pt-3">
+                    <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Postings that state a barrier ({partition.demoted.length})
+                    </h3>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    These require a security clearance, or state that the employer does
+                    not sponsor. They are still here, and you can still apply - they are
+                    just not at the top.
+                  </p>
+                  <ul className="space-y-3" aria-label="Postings that state a barrier">
+                    {partition.demoted.map((job) => (
+                      <li key={job.job_id}>{renderCard(job)}</li>
+                    ))}
+                  </ul>
+                </section>
+              )}
 
               <div ref={sentinelRef} aria-hidden className="h-px" />
 

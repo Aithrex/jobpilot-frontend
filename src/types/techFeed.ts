@@ -41,6 +41,24 @@ export type TechFeedSeniority =
 
 export type EmployerScope = 'any' | 'tech_only';
 
+/**
+ * What to do with postings that STATE a barrier the reader would have to
+ * clear - an active security clearance, or an explicit refusal to sponsor.
+ *
+ * The default is `demote`, never `hide`. A hard default filter silently
+ * deletes reachable jobs: a cleared role can be worth pursuing, an employer
+ * who wrote "no sponsorship" on one requisition may sponsor on another, and a
+ * user who never sees a posting cannot disagree with us about it. Demoting
+ * keeps every result reachable while putting the ones with a stated barrier
+ * below the ones without.
+ *
+ * This is a PRESENTATION preference and is applied client-side, over the page
+ * the server actually returned. It is deliberately not sent to the search:
+ * the count of what it suppressed has to be a count of rows we were handed,
+ * or the "N hidden" line would be a guess.
+ */
+export type AccessBarrierHandling = 'show' | 'demote' | 'hide';
+
 export type EmployerKindFilter = 'any' | 'direct_employer' | 'staffing' | 'marketplace';
 
 export type EmployerKind = 'direct_employer' | 'staffing' | 'marketplace';
@@ -211,8 +229,33 @@ export interface TechFeedJob {
 
   salary: TechFeedSalary;
 
+  /**
+   * The posting's own words about sponsorship, as a token. Legacy and
+   * free-form: read it through `sponsorshipStanceOf()` in
+   * `lib/techFeedWorkAuth.ts`, which maps a CLOSED list of known tokens and
+   * treats everything else as "not stated". Never string-match it in a
+   * component.
+   */
   sponsorship: string | null;
   clearance_required: boolean | null;
+
+  /**
+   * The normalized stance, when the server computes it.
+   *
+   * @contract PROVISIONAL - `offers` / `refuses` / `unstated`. Preferred over
+   * the legacy `sponsorship` token whenever present; silence stays `unstated`
+   * and is never read as either of the other two.
+   */
+  sponsorship_stance?: import('./workAuthorization').SponsorshipStance;
+
+  /**
+   * The employer's H-1B filing history, with the MANDATED framing. Absent
+   * means we have no data, and no data renders as NOTHING - never as a zero.
+   *
+   * @contract PROVISIONAL - see `EmployerSponsorshipSignal` in
+   * `types/workAuthorization.ts` for the exact fields.
+   */
+  employer_sponsorship?: import('./workAuthorization').EmployerSponsorshipSignal | null;
 
   source: string;
   ats: string;
@@ -668,6 +711,10 @@ export interface TechFeedFilters {
   sponsorshipPreference: string | null;
   workAuthorization: string[];
   requiresClearance: boolean | null;
+  /** Postings stating a security-clearance requirement. Default `demote`. */
+  clearanceRoles: AccessBarrierHandling;
+  /** Postings stating the employer does not sponsor. Default `demote`. */
+  noSponsorshipRoles: AccessBarrierHandling;
   postedWithinDays: number;
   includeUndated: boolean;
   applyMode: ApplyMode;

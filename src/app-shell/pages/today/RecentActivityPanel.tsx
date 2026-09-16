@@ -17,7 +17,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
-import { fitBand } from '@/components/job-search/fitBands';
+import { fitBand, isFitScored } from '@/components/job-search/fitBands';
 import { cn } from '@/lib/utils';
 import { PanelCard, PanelEmpty, PanelError, ZoneHeading, StatusPill, Stat } from './primitives';
 
@@ -33,9 +33,17 @@ function shortDate(iso: string | undefined): string {
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
+/**
+ * The tracker row's score, or null for "we never scored this".
+ *
+ * Gated on the engine's own version stamp as well as on the number, because a
+ * saved row can carry a `match_score` written by an older path that these band
+ * words do not describe. No stamp, no number - see `fitBands.isFitScored`.
+ */
 function matchPct(job: SavedJob): number | null {
   const m = job.job_data?.match_score;
   if (typeof m !== 'number' || m <= 0) return null;
+  if (!isFitScored(job.job_data)) return null;
   return m <= 1 ? Math.round(m * 100) : Math.round(m);
 }
 

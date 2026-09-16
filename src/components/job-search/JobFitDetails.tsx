@@ -19,8 +19,8 @@ import {
   AUTO_APPLY_GATE,
   FEASIBILITY_META,
   SENIORITY_LABEL,
-  fitBand,
-  isScored,
+  fitBandOf,
+  isFitScored,
 } from './fitBands';
 import type { Job } from '@/types/jobs';
 
@@ -124,8 +124,16 @@ export interface JobFitDetailsProps {
 
 /** The explanation body. Reused by the popover and by any inline placement. */
 export function JobFitDetails({ job, className }: JobFitDetailsProps) {
-  const band = fitBand(job.match_score);
-  const scored = isScored(job.match_score);
+  /**
+   * Takes the ROW, not the number. `isScored` only asked whether the integer
+   * was above zero, so a 45 that arrived without the engine's version stamp
+   * rendered as "Possible match, 45 / 100" - band words, and a denominator,
+   * attached to a number this UI could not vouch for. The stamp is the licence
+   * to say anything at all about the number; without it the honest reading is
+   * "Not scored", which this component already knows how to say well.
+   */
+  const band = fitBandOf(job);
+  const scored = isFitScored(job) && (job.match_score ?? 0) > 0;
   const matched = job.matched_skills ?? [];
   const missing = job.missing_skills ?? [];
   const fit = normalizeFit(job.fit);
@@ -257,7 +265,7 @@ export function JobFitDetails({ job, className }: JobFitDetailsProps) {
  */
 export function WhyThisScoreButton({ job, className }: { job: Job; className?: string }) {
   const [open, setOpen] = useState(false);
-  const band = fitBand(job.match_score);
+  const band = fitBandOf(job);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>

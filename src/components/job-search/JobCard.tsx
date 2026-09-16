@@ -22,6 +22,8 @@ import { CompanyLogo } from '@/components/CompanyLogo';
 import { JobAnalysisModal } from './JobAnalysisModal';
 import { JobTrustBadge } from './JobTrustBadge';
 import { VisaFlagChips } from './JobVisaSignals';
+import { EmployerSponsorshipBadge } from './WorkAuthorizationSignals';
+import { legacySponsorshipSignal } from '@/lib/sponsorshipSignal';
 import { ReferralModal } from './ReferralModal';
 import { WhyThisScoreButton } from './JobFitDetails';
 import { fitBandOf } from './fitBands';
@@ -489,6 +491,10 @@ export function JobCard({
                 {job.is_remote && <SignalPill icon={Wifi} label="Remote" tone="remote" />}
                 {job.contract_friendly && <SignalPill icon={FileSignature} label="Contract" tone="contract" />}
                 {job.visa_flags && <VisaFlagChips flags={job.visa_flags} />}
+                {/* The employer's filing history, in the one framing this
+                    product uses for it. Renders NOTHING without data - an
+                    absence of filings is not evidence about an employer. */}
+                <EmployerSponsorshipBadge signal={legacySponsorshipSignal(job.sponsorship)} />
               </div>
             )}
 

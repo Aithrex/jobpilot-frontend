@@ -19,6 +19,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, AlertCircle, CalendarClock, ShieldCheck, Save, Info } from 'lucide-react';
+import { WorkAuthorizationCard } from '@/components/visa/WorkAuthorizationCard';
 import type { VisaProfile, VisaMilestone, VisaStatusCode } from '@/types/visa';
 
 const STATUS_LABELS: Record<VisaStatusCode, string> = {
@@ -151,6 +152,11 @@ export default function VisaTimelineTab() {
           your account. Nothing is shared.
         </p>
       </div>
+
+      {/* The one work-authorization question. It sits ABOVE the visa profile
+          because it is the answer the job feed reads, it is optional, and it
+          is useful to somebody who will never fill in an OPT date. */}
+      <WorkAuthorizationCard />
 
       <Card>
         <CardHeader className="pb-3">

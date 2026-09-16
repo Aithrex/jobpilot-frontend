@@ -12,6 +12,13 @@
 
 import { toast } from 'sonner';
 
+import {
+  isWorkAuthorizationStatus,
+  legacyNeedsSponsorshipFlag,
+  type WorkAuthorizationPreference,
+  type WorkAuthorizationStatus,
+} from '../types/workAuthorization';
+
 const LLM_RETRIES_EXHAUSTED_TOAST_ID = 'llm-retries-exhausted';
 
 function notifyLLMRetriesExhausted(): void {
@@ -399,6 +406,75 @@ class ApiService {
       '/auth/preferences',
       { method: 'PUT', body: JSON.stringify(prefs) },
     );
+  }
+
+  // ── Work authorization preference ────────────────────────────
+  //
+  // THE ONE PLACE this preference crosses the wire. See
+  // `src/types/workAuthorization.ts` for the full contract and for the fields
+  // still being agreed with the backend.
+  //
+  // Transport today is the EXISTING preferences endpoint, which already takes
+  // an open record and already round-trips it on `GET /auth/profile` - so this
+  // ships against a deployed route rather than an invented one. When the
+  // dedicated `/api/resume/visa/work-authorization` endpoint lands, these two
+  // methods are the only thing that changes.
+  //
+  // `needs_sponsorship` is written ALONGSIDE the new key, because onboarding
+  // has been writing that boolean since before this question existed and
+  // something server-side may still read it. It is derived, never authoritative:
+  // it cannot express "prefer not to say" or "authorized now, sponsorship
+  // later", which is exactly why the new key exists.
+
+  /** Read the stored answer. Absent/garbage reads as `unset`, never as a guess. */
+  async getWorkAuthorization(): Promise<ApiResponse<WorkAuthorizationPreference>> {
+    const res = await this.getProfile();
+    if (res.error || !res.data) {
+      return { error: res.error ?? 'Could not read your profile', status: res.status };
+    }
+    const prefs = (res.data.preferences ?? {}) as Record<string, unknown>;
+    const raw = prefs.work_authorization;
+    const updated = prefs.work_authorization_updated_at;
+    return {
+      data: {
+        status: isWorkAuthorizationStatus(raw) ? raw : 'unset',
+        updated_at: typeof updated === 'string' ? updated : null,
+        persisted: isWorkAuthorizationStatus(raw),
+      },
+      status: res.status,
+    };
+  }
+
+  /**
+   * Persist the answer.
+   *
+   * The refreshed profile is read back and the key CHECKED, so a server that
+   * silently drops an unknown preference key is reported as "not saved"
+   * instead of being rendered as saved. A preference the user believes is set
+   * is worse than one they know is not.
+   */
+  async saveWorkAuthorization(
+    status: WorkAuthorizationStatus,
+  ): Promise<ApiResponse<WorkAuthorizationPreference>> {
+    const legacy = legacyNeedsSponsorshipFlag(status);
+    const res = await this.savePreferences({
+      work_authorization: status,
+      work_authorization_updated_at: new Date().toISOString(),
+      ...(legacy === null ? {} : { needs_sponsorship: legacy }),
+    });
+    if (res.error) return { error: res.error, status: res.status, errorPayload: res.errorPayload };
+
+    const prefs = ((res.data?.preferences ?? {}) as Record<string, unknown>) ?? {};
+    const echoed = prefs.work_authorization;
+    const updated = prefs.work_authorization_updated_at;
+    return {
+      data: {
+        status,
+        updated_at: typeof updated === 'string' ? updated : null,
+        persisted: isWorkAuthorizationStatus(echoed) && echoed === status,
+      },
+      status: res.status,
+    };
   }
 
   // ── Billing / plan (freemium) ────────────────────────────────

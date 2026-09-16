@@ -65,6 +65,20 @@ describe('health banner coverage', () => {
     expect(line).toHaveTextContent('2,624');
   });
 
+  test('a FRESH measurement still renders its age beside the figure', () => {
+    // The age travels with the figure ALWAYS. Showing it only when stale
+    // teaches the eye that no badge means live, and these numbers come from a
+    // stored snapshot that can be hours old while looking current.
+    render(
+      <TechFeedHealthBanner
+        coverage={coverage({ stale: false, age_hours: 6 })}
+        sourceHealth={HEALTHY}
+        warnings={[]}
+      />,
+    );
+    expect(screen.getByTestId('tech-feed-coverage-age')).toHaveTextContent(/measured 6 hours ago/i);
+  });
+
   test('a STALE measurement is labelled with its age, not silently shown', () => {
     render(
       <TechFeedHealthBanner

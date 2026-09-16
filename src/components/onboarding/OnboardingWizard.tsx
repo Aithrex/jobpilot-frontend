@@ -10,8 +10,10 @@ import { apiService } from '@/lib/api';
 import { MultiAgentProcessing } from './MultiAgentProcessing';
 import {
   Sparkles, X, Loader2, Check, UploadCloud, FileText, RotateCcw, Linkedin,
-  Briefcase, MapPin, GraduationCap, Plane, ArrowRight, ArrowLeft, ShieldCheck,
+  Briefcase, MapPin, GraduationCap, ArrowRight, ArrowLeft, ShieldCheck,
 } from 'lucide-react';
+import { WorkAuthorizationQuestion } from '@/components/visa/WorkAuthorizationQuestion';
+import { legacyNeedsSponsorshipFlag } from '@/types/workAuthorization';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import {
@@ -343,7 +345,15 @@ export default function OnboardingWizard() {
       prefs.target_role = answers.roles[0];
     }
     if (answers.level) prefs.experience_level = answers.level;
-    if (answers.needsSponsorship) prefs.needs_sponsorship = answers.needsSponsorship === 'yes';
+    // Work authorization. The new key is authoritative; the legacy boolean is
+    // written alongside it ONLY when the answer can be expressed as one, so
+    // "prefer not to say" and an unanswered question never turn into `false`.
+    if (answers.workAuthorization !== 'unset') {
+      prefs.work_authorization = answers.workAuthorization;
+      prefs.work_authorization_updated_at = new Date().toISOString();
+      const legacy = legacyNeedsSponsorshipFlag(answers.workAuthorization);
+      if (legacy !== null) prefs.needs_sponsorship = legacy;
+    }
     if (answers.locations.length) prefs.target_locations = answers.locations;
     if (answers.remote) prefs.remote_pref = answers.remote;
     const cf = Number(answers.compFloor);
@@ -909,16 +919,13 @@ function QuestionsStep({ answers, defaults, update, saving, onBack, onSkip, onFi
           </div>
         </div>
 
-        {/* Visa sponsorship */}
-        <div>
-          <Label className="mb-2 flex items-center gap-1.5 text-sm">
-            <Plane className="h-4 w-4 text-muted-foreground" /> Will you need visa sponsorship?
-          </Label>
-          <div className="flex flex-wrap gap-2">
-            <Chip active={answers.needsSponsorship === 'yes'} onClick={() => update({ needsSponsorship: 'yes' })}>Yes, now or soon</Chip>
-            <Chip active={answers.needsSponsorship === 'no'} onClick={() => update({ needsSponsorship: 'no' })}>No, I'm authorized</Chip>
-          </div>
-        </div>
+        {/* Work authorization. Optional, unset by default, and never a gate -
+            the Continue button does not read this answer. */}
+        <WorkAuthorizationQuestion
+          bare
+          value={answers.workAuthorization}
+          onChange={(workAuthorization) => update({ workAuthorization })}
+        />
 
         {/* Locations + remote */}
         <div>

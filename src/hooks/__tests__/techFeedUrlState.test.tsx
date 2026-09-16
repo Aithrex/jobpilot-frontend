@@ -61,6 +61,8 @@ const FULLY_LOADED: TechFeedFilters = {
   sponsorshipPreference: 'needs_sponsorship',
   workAuthorization: ['us_citizen'],
   requiresClearance: false,
+  clearanceRoles: 'hide',
+  noSponsorshipRoles: 'show',
   postedWithinDays: 90,
   includeUndated: false,
   applyMode: 'direct_apply',
@@ -162,6 +164,25 @@ describe('tech feed URL state', () => {
       apply_mode: 'direct_apply',
       sort: 'newest',
     });
+  });
+
+  test('show/demote/hide never reaches the wire - it is presentation', () => {
+    // These act on the rows the server already returned, so the "N hidden"
+    // count is a count of real rows. Sending them would make it an estimate.
+    const request = techFeedFiltersToRequest(FULLY_LOADED) as Record<string, unknown>;
+    expect(request.clearance_roles).toBeUndefined();
+    expect(request.nosponsor_roles).toBeUndefined();
+    expect(request.clearanceRoles).toBeUndefined();
+    expect(request.noSponsorshipRoles).toBeUndefined();
+  });
+
+  test('a barrier preference at its default stays out of the URL', () => {
+    // demote IS the default: nothing is hidden unless the user asked.
+    expect(DEFAULT_TECH_FEED_FILTERS.clearanceRoles).toBe('demote');
+    expect(DEFAULT_TECH_FEED_FILTERS.noSponsorshipRoles).toBe('demote');
+    const params = filtersToSearchParams(DEFAULT_TECH_FEED_FILTERS);
+    expect(params.get('clearance_roles')).toBeNull();
+    expect(params.get('nosponsor_roles')).toBeNull();
   });
 
   test('a default search sends only the fields the server cannot infer', () => {

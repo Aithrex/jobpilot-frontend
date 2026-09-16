@@ -24,6 +24,8 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { ChipsInput } from '@/components/job-search/ChipsInput';
+import { useWorkAuthorization } from '@/hooks/useWorkAuthorization';
+import { needsSponsorship } from '@/types/workAuthorization';
 import { CompanyAutocomplete } from './CompanyAutocomplete';
 import { CompanyCategoryPicker } from './CompanyCategoryPicker';
 import { cn } from '@/lib/utils';
@@ -36,6 +38,7 @@ import {
   WORK_MODES,
 } from '@/lib/techFeedUrlState';
 import type {
+  AccessBarrierHandling,
   TechFeedFamily,
   TechFeedFilters as TechFeedFilterState,
   TechFeedSeniority,
@@ -218,6 +221,46 @@ function SwitchRow({
       </div>
       <Switch id={id} checked={checked} onCheckedChange={onCheckedChange} />
     </div>
+  );
+}
+
+/**
+ * Show / demote / hide, for a stated access barrier.
+ *
+ * Three states rather than a switch, because the honest middle option is the
+ * default and a two-state control cannot express it. The current state is
+ * always visible as a selected radio, and moving off it is one click - a
+ * filter that quietly deletes results has to be one the user can SEE is on.
+ */
+function BarrierHandlingGroup({
+  name,
+  legend,
+  value,
+  onChange,
+  showLabel,
+  demoteLabel,
+  hideLabel,
+}: {
+  name: string;
+  legend: string;
+  value: AccessBarrierHandling;
+  onChange: (value: AccessBarrierHandling) => void;
+  showLabel: string;
+  demoteLabel: string;
+  hideLabel: string;
+}) {
+  return (
+    <ChoiceGroup
+      name={name}
+      legend={legend}
+      value={value}
+      onChange={(next) => onChange(next as AccessBarrierHandling)}
+      options={[
+        { value: 'show', label: showLabel },
+        { value: 'demote', label: demoteLabel },
+        { value: 'hide', label: hideLabel },
+      ]}
+    />
   );
 }
 
@@ -483,6 +526,13 @@ export function TechFeedFilters({
   useEffect(() => {
     saveTechFeedUiState({ advancedOpen });
   }, [advancedOpen]);
+
+  // The saved work-authorization answer, read only to OFFER it. It never
+  // patches the filters on its own: a search that silently narrows itself
+  // from a profile setting is a search the user cannot debug.
+  const { status: workAuthStatus } = useWorkAuthorization();
+  const sponsorshipNudge =
+    needsSponsorship(workAuthStatus) && filters.sponsorshipPreference === null;
 
   // The Workday CATALOG fan-out that used to back the company suggestions is
   // gone. It fetched an entire industry catalog to render twelve chips whose
@@ -758,20 +808,73 @@ export function TechFeedFilters({
         </div>
       </FilterGroup>
 
-      <FilterGroup title="Sponsorship">
-        <ChoiceGroup
-          name="tech-feed-sponsorship"
-          legend="Visa sponsorship"
-          value={filters.sponsorshipPreference ?? 'any'}
-          onChange={(value) =>
-            onPatch({ sponsorshipPreference: value === 'any' ? null : value })
-          }
-          options={[
-            { value: 'any', label: 'No preference' },
-            { value: 'needs_sponsorship', label: 'I need visa sponsorship' },
-            { value: 'no_sponsorship_needed', label: 'I do not need sponsorship' },
-          ]}
-        />
+      <FilterGroup
+        title="Sponsorship and clearance"
+        description="These act on what a posting STATES. A posting that says nothing is never moved or hidden."
+      >
+        <div className="space-y-3">
+          <ChoiceGroup
+            name="tech-feed-sponsorship"
+            legend="Visa sponsorship"
+            value={filters.sponsorshipPreference ?? 'any'}
+            onChange={(value) =>
+              onPatch({ sponsorshipPreference: value === 'any' ? null : value })
+            }
+            options={[
+              { value: 'any', label: 'No preference' },
+              { value: 'needs_sponsorship', label: 'I need visa sponsorship' },
+              { value: 'no_sponsorship_needed', label: 'I do not need sponsorship' },
+            ]}
+          />
+
+          {/* The saved answer is OFFERED, never applied behind the user's
+              back. A filter that appears without being chosen is a filter
+              nobody can find to turn off. */}
+          {sponsorshipNudge && (
+            <div className="rounded-lg border border-primary/30 bg-primary/5 p-2.5">
+              <p className="text-[11px] leading-snug text-foreground">
+                Your profile says you will need visa sponsorship. Want this search to
+                use that?
+              </p>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="mt-1.5 h-7 text-xs focus-visible:ring-2 focus-visible:ring-ring"
+                onClick={() => onPatch({ sponsorshipPreference: 'needs_sponsorship' })}
+              >
+                Apply my saved answer
+              </Button>
+            </div>
+          )}
+
+          <BarrierHandlingGroup
+            name="tech-feed-clearance-roles"
+            legend="Roles needing a security clearance"
+            value={filters.clearanceRoles}
+            onChange={(clearanceRoles) => onPatch({ clearanceRoles })}
+            showLabel="Show them in normal order"
+            demoteLabel="Show them, but lower down"
+            hideLabel="Hide them"
+          />
+
+          <BarrierHandlingGroup
+            name="tech-feed-nosponsor-roles"
+            legend="Postings that state no sponsorship"
+            value={filters.noSponsorshipRoles}
+            onChange={(noSponsorshipRoles) => onPatch({ noSponsorshipRoles })}
+            showLabel="Show them in normal order"
+            demoteLabel="Show them, but lower down"
+            hideLabel="Hide them"
+          />
+
+          {(filters.clearanceRoles === 'hide' || filters.noSponsorshipRoles === 'hide') && (
+            <p className="text-[11px] leading-snug text-muted-foreground">
+              Hiding removes reachable jobs from your results. The count of what it
+              removed is shown above the list, and one click puts them back.
+            </p>
+          )}
+        </div>
       </FilterGroup>
 
       <Separator />

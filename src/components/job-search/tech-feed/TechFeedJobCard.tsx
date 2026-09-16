@@ -52,7 +52,14 @@ import { toast } from 'sonner';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { GuestFitBreakdown, normalizeFit } from '@/components/guest/GuestFitBreakdown';
 import { fitBand } from '@/components/job-search/fitBands';
+import {
+  ClearanceRequiredBadge,
+  EmployerSponsorshipBadge,
+  NoSponsorshipBadge,
+} from '@/components/job-search/WorkAuthorizationSignals';
 import { NotInterestedMenu } from '@/components/job-search/tech-feed/NotInterestedMenu';
 import { apiService } from '@/lib/api';
 import { cacheJdText, readCachedJdText, stagePendingTailorJob } from '@/lib/craftHandoff';
@@ -60,12 +67,18 @@ import { isAppliedSavedJob } from '@/lib/savedJobs';
 import {
   eligibilityOf,
   ineligibleReasonsOf,
+  isTechFeedScored,
   requirementsToCheck,
   roleAlignmentLabel,
   roleAlignmentOf,
 } from '@/lib/techFeedEligibility';
+import {
+  clearanceRequirementOf,
+  statesNoSponsorship,
+} from '@/lib/techFeedWorkAuth';
 import { techFeedJobToJob } from '@/lib/techFeedJobAdapter';
 import { cn } from '@/lib/utils';
+import type { GuestFitScore } from '@/types/guest';
 import type { Job } from '@/types/jobs';
 import type { TechFeedFeedbackReason, TechFeedJob } from '@/types/techFeed';
 
@@ -232,10 +245,35 @@ export function TechFeedJobCard({
   const ineligibleReasons = ineligibleReasonsOf(job);
   const alignment = roleAlignmentOf(job);
   const requirements = requirementsToCheck(job);
+  /**
+   * A number is only shown when the ENGINE stamped it.
+   *
+   * `eligibility` alone is not enough: a server that says `eligible` on a row
+   * it never scored leaves `match_score` at 0, and this card used to render
+   * that as "0% match" beside a "Not scored" label. An account with no parsed
+   * resume saw a page of zeroes and read them as a verdict. The stamp is the
+   * only thing that licenses a number - see `fitBands.isFitScored` for why.
+   */
+  const scored = isTechFeedScored(job) && job.match_score > 0;
   const band = fitBand(job.match_score);
+
+  // The stated facts about THIS posting's access barriers. Both are the
+  // employer speaking; neither is an assessment of the person reading.
+  const clearance = clearanceRequirementOf(job);
+  const noSponsorship = statesNoSponsorship(job);
+  const employerSponsorship = job.employer_sponsorship;
+
+  // The score's receipts, when the engine sent them. `fit` is an open record
+  // on the wire; `normalizeFit` renders only the parts it recognises and
+  // returns null when the v2 block is absent, so an older row loses nothing.
+  const fitBreakdown = useMemo(
+    () => (scored ? normalizeFit(job.fit as GuestFitScore | null | undefined) : null),
+    [job.fit, scored],
+  );
 
   const [saving, setSaving] = useState(false);
   const [tailoring, setTailoring] = useState(false);
+  const [fitOpen, setFitOpen] = useState(false);
 
   const locationText = job.locations?.length
     ? job.locations
@@ -378,10 +416,15 @@ export function TechFeedJobCard({
               <ShieldAlert className="h-3 w-3" aria-hidden />
               Does not meet a stated requirement
             </Badge>
-          ) : eligibility === 'not_scored' ? (
+          ) : !scored || eligibility === 'not_scored' ? (
             <Badge
               variant="outline"
               className="border-dashed border-border bg-muted/50 font-normal text-muted-foreground"
+              title={
+                'We have not compared this posting to your resume. That is ' +
+                'usually because there is no parsed resume on your account yet.'
+              }
+              data-testid="tech-feed-not-scored"
             >
               Not scored
             </Badge>
@@ -412,6 +455,34 @@ export function TechFeedJobCard({
               {reason}
             </li>
           ))}
+        </ul>
+      )}
+
+      {/* Work-authorization signals. Facts about the posting and the employer:
+          what the employer stated, and what the public filing record shows.
+          Each renders only when the data says so - nothing here is inferred
+          from silence, and none of it is a judgement about the reader. */}
+      {(clearance || noSponsorship || employerSponsorship) && (
+        <ul
+          className="mt-3 flex flex-wrap items-center gap-1.5"
+          aria-label="Work authorization and clearance signals"
+          data-testid="tech-feed-work-auth-signals"
+        >
+          {clearance && (
+            <li>
+              <ClearanceRequiredBadge detail={clearance.detail} />
+            </li>
+          )}
+          {noSponsorship && (
+            <li>
+              <NoSponsorshipBadge />
+            </li>
+          )}
+          {employerSponsorship && (
+            <li>
+              <EmployerSponsorshipBadge signal={employerSponsorship} />
+            </li>
+          )}
         </ul>
       )}
 
@@ -600,6 +671,33 @@ export function TechFeedJobCard({
             ))}
           </ul>
         </div>
+      )}
+
+      {/* The score's receipts. A 45 with a visible breakdown is a reason; a
+          bare 45 is a verdict nobody can argue with. Rendered only from what
+          the engine sent - `normalizeFit` invents no component and no band. */}
+      {fitBreakdown && (
+        <Collapsible open={fitOpen} onOpenChange={setFitOpen} className="mt-3">
+          <CollapsibleTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-7 gap-1 px-2 text-xs text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+              data-testid="tech-feed-why-score"
+            >
+              {fitOpen ? 'Hide the score breakdown' : 'Why this score'}
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="mt-2 space-y-2">
+            {fitBreakdown.explanation && (
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                {fitBreakdown.explanation}
+              </p>
+            )}
+            <GuestFitBreakdown fit={fitBreakdown} />
+          </CollapsibleContent>
+        </Collapsible>
       )}
 
       {/* Stated gates the resume is silent about. A requirement to READ, never

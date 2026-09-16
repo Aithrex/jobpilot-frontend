@@ -9,6 +9,7 @@
  *      a closed wizard must not nag on every later sign-in. Home can reopen it.
  */
 import type { ResumeStatus } from '@/types/resume';
+import { isWorkAuthorizationStatus, type WorkAuthorizationStatus } from '@/types/workAuthorization';
 
 export const ONBOARDING_STORAGE_KEY = 'jobpilot.onboarding.v1';
 /** Set when the user dismisses the wizard. Survives sign-out so we do not nag. */
@@ -37,6 +38,13 @@ export const ROLE_SUGGESTIONS = [
   'ML Engineer',
 ];
 
+/**
+ * @deprecated The yes/no sponsorship answer. Kept only so a wizard state
+ * persisted by an older build still parses. The live answer is
+ * `OnboardingAnswers.workAuthorization`, which can express the two states a
+ * boolean could not: "authorized now, sponsorship later" and "prefer not to
+ * say".
+ */
 export type SponsorshipAnswer = 'yes' | 'no' | '';
 
 export interface OnboardingDefaults {
@@ -49,7 +57,11 @@ export interface OnboardingDefaults {
 export interface OnboardingAnswers {
   roles: string[];
   level: string;
-  needsSponsorship: SponsorshipAnswer;
+  /**
+   * Work authorization. Defaults to `unset` and stays there unless the user
+   * answers - onboarding never infers it and never requires it.
+   */
+  workAuthorization: WorkAuthorizationStatus;
   locations: string[];
   remote: string;
   compFloor: string;
@@ -72,7 +84,7 @@ export const EMPTY_DEFAULTS: OnboardingDefaults = {
 export const EMPTY_ANSWERS: OnboardingAnswers = {
   roles: [],
   level: '',
-  needsSponsorship: '',
+  workAuthorization: 'unset',
   locations: [],
   remote: 'Remote',
   compFloor: '',
@@ -150,6 +162,20 @@ export function mergeStatusDefaults(
   return { roles, skills, locations: base.locations, level };
 }
 
+/**
+ * Merge a persisted answer set onto the defaults, discarding a
+ * `workAuthorization` this build does not recognise. A stale or hand-edited
+ * value must read as "not answered" rather than travel to the server as a
+ * status nothing can interpret.
+ */
+function normalizeAnswers(stored: Partial<OnboardingAnswers> | undefined): OnboardingAnswers {
+  const merged = { ...EMPTY_ANSWERS, ...(stored || {}) };
+  if (!isWorkAuthorizationStatus(merged.workAuthorization)) {
+    merged.workAuthorization = 'unset';
+  }
+  return merged;
+}
+
 export function loadOnboardingState(): PersistedOnboarding | null {
   if (typeof window === 'undefined') return null;
   try {
@@ -160,7 +186,7 @@ export function loadOnboardingState(): PersistedOnboarding | null {
       stepIndex: typeof parsed.stepIndex === 'number' ? parsed.stepIndex : 0,
       resumeDone: !!parsed.resumeDone,
       defaults: { ...EMPTY_DEFAULTS, ...(parsed.defaults || {}) },
-      answers: { ...EMPTY_ANSWERS, ...(parsed.answers || {}) },
+      answers: normalizeAnswers(parsed.answers),
     };
   } catch {
     return null;
