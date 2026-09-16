@@ -220,7 +220,32 @@ export interface SponsorshipDataWindow {
  * @contract `TechFeedJob.employer_sponsorship`, and the same block on
  * `GET /api/jobs/sponsorship`.
  */
+/**
+ * Which of THREE answers a sponsorship lookup got. They are different facts
+ * and they must not look alike on screen.
+ *
+ *  - `signal`        - the employer is in the filing data with counts. The
+ *    mandated sentence is rendered;
+ *  - `census_absent` - the employer IS in the dataset and provably filed no
+ *    H-1B petitions in the covered period. That is a FACT and a useful one to
+ *    an international candidate (458 employers, 12,753 active postings -
+ *    Northrop Grumman, SpaceX, Anduril). It is rendered as what the record
+ *    shows FOR THAT PERIOD, never as "this employer does not sponsor";
+ *  - `no_data`       - no row at all: an aggregator, or a name we could not
+ *    match. We make NO claim. Renders as nothing - not zero, not "unknown",
+ *    and above all not as `census_absent`. Conflating the two would tell
+ *    somebody an employer does not sponsor when all that happened is that our
+ *    name matching failed.
+ *
+ * @contract PROVISIONAL - mirrors `sponsorship_service.lookup_status(name)`.
+ * Absent is read as `signal` when counts are present and `no_data` otherwise,
+ * so an older payload cannot accidentally produce a "filed nothing" claim.
+ */
+export type SponsorshipLookupStatus = 'signal' | 'census_absent' | 'no_data';
+
 export interface EmployerSponsorshipSignal {
+  /** Which of the three answers this is. See `SponsorshipLookupStatus`. */
+  status?: SponsorshipLookupStatus;
   /**
    * What the count is scoped to.
    *
@@ -261,10 +286,19 @@ export interface EmployerSponsorshipSignal {
   /** The window the counts actually cover. The period in the sentence. */
   data_window?: SponsorshipDataWindow | null;
   /**
-   * Free-text vintage, e.g. "FY2026". Used when `data_window.label` is
-   * absent. Always rendered beside the count.
+   * The PERIOD the data covers, as a string: "FY2026".
+   *
+   * Rendered AS-IS and never parsed as a date. It used to carry an ISO
+   * datetime that was actually our import time, which made one-year-old
+   * government data look like it had been measured this morning. If a date is
+   * ever wanted, `data_imported_at` is the honest field for it.
    */
   data_vintage?: string | null;
+  /**
+   * When WE fetched the dataset (ISO 8601). This is provenance about us, not
+   * about the data's period, and it is never used as the vintage.
+   */
+  data_imported_at?: string | null;
   /** e.g. "USCIS H-1B Employer Data Hub". Always rendered beside the count. */
   source?: string | null;
   source_url?: string | null;
@@ -308,17 +342,62 @@ export function sponsorshipPeriodLabel(
 }
 
 /**
+ * Which of the three answers this payload represents, resolved defensively.
+ *
+ * A payload with no `status` is read as `signal` when it carries counts and
+ * `no_data` otherwise. `census_absent` is NEVER inferred: claiming an
+ * employer filed nothing is a statement about them, and it is only ever made
+ * because the server said so.
+ */
+export function sponsorshipLookupStatus(
+  signal: EmployerSponsorshipSignal | null | undefined,
+): SponsorshipLookupStatus {
+  if (!signal) return 'no_data';
+  if (signal.status === 'census_absent') return 'census_absent';
+  if (signal.status === 'signal' || signal.status === 'no_data') return signal.status;
+  const count = signal.similar_role_approvals;
+  return typeof count === 'number' && Number.isFinite(count) && count > 0 ? 'signal' : 'no_data';
+}
+
+/**
  * Is there enough here to say the sentence?
  *
- * Two conditions, both required: a positive count, and a window to date it
- * against. A count with no vintage is not publishable under the framing this
- * signal is bound by, so it renders as nothing rather than as a bare number.
+ * Three conditions: the lookup found a signal, the count is positive, and
+ * there is a window to date it against. A count with no vintage is not
+ * publishable under the framing this signal is bound by, so it renders as
+ * nothing rather than as a bare number.
  */
 export function hasSponsorshipEvidence(
   signal: EmployerSponsorshipSignal | null | undefined,
 ): signal is EmployerSponsorshipSignal {
-  if (!signal) return false;
+  if (!signal || sponsorshipLookupStatus(signal) !== 'signal') return false;
   const count = signal.similar_role_approvals;
   if (typeof count !== 'number' || !Number.isFinite(count) || count <= 0) return false;
   return sponsorshipPeriodLabel(signal) !== null;
+}
+
+/**
+ * Can we say "filed no H-1B petitions in <period>"?
+ *
+ * Requires the server's explicit `census_absent` AND a period to bound the
+ * claim. "Filed nothing" with no period attached is a claim about all of
+ * history, which is not what the dataset supports.
+ */
+export function hasCensusAbsentEvidence(
+  signal: EmployerSponsorshipSignal | null | undefined,
+): signal is EmployerSponsorshipSignal {
+  if (!signal || sponsorshipLookupStatus(signal) !== 'census_absent') return false;
+  return sponsorshipPeriodLabel(signal) !== null;
+}
+
+/**
+ * Will the badge render anything at all?
+ *
+ * Callers use this to decide whether to emit a list item around it, so a
+ * `no_data` payload does not leave an empty row on the card.
+ */
+export function isSponsorshipSignalRenderable(
+  signal: EmployerSponsorshipSignal | null | undefined,
+): boolean {
+  return hasSponsorshipEvidence(signal) || hasCensusAbsentEvidence(signal);
 }

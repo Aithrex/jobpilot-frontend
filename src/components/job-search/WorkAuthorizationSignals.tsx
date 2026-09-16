@@ -22,21 +22,35 @@
  *    data. Not a zero, not "unknown odds", not a grey placeholder: an absence
  *    of filings in a public dataset is not evidence about an employer.
  *
- *    The PERIOD comes from `data_window`, never from the name of the field
- *    holding the count. The store's field is called `approvals_5y` and holds
- *    a single fiscal year; writing "the last 5 years" from the field name
- *    would overstate the evidence fivefold in the one sentence that has to be
- *    exactly right. A count we cannot date is not rendered at all.
+ *    The PERIOD comes from `data_window` / `data_vintage`, never from the name
+ *    of the field holding the count. The store's field is called
+ *    `approvals_5y` and holds a single fiscal year; writing "the last 5 years"
+ *    from the field name would overstate the evidence fivefold in the one
+ *    sentence that has to be exactly right. A count we cannot date is not
+ *    rendered at all. `data_vintage` is a PERIOD STRING ("FY2026") and is
+ *    printed as-is - it is never parsed as a date.
+ *
+ * THREE OUTCOMES, THREE RENDERINGS. A lookup returns a signal, a proven
+ * census absence, or nothing, and the last two must never look alike:
+ *
+ *  - `signal`        -> the sentence, in the positive-evidence tint;
+ *  - `census_absent` -> "Filed no H-1B petitions in FY2026", in a neutral
+ *    tint, because it is a dated fact about the record and NOT a claim that
+ *    the employer would refuse to sponsor;
+ *  - `no_data`       -> nothing at all. An unmatched employer name is our
+ *    failure, and dressing it up as "filed nothing" would put a damaging
+ *    claim about a company in our mouth on the strength of a string match.
  *
  * Accessibility: every badge carries an icon and a text label, so none of the
  * three encodes its meaning in colour alone. Tints are semantic tokens
  * (`warning`, `success`, `muted`) which carry AA foregrounds in both themes.
  */
-import { BadgeCheck, ShieldAlert, ShieldOff } from 'lucide-react';
+import { BadgeCheck, FileX2, ShieldAlert, ShieldOff } from 'lucide-react';
 
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { cn } from '@/lib/utils';
 import {
+  hasCensusAbsentEvidence,
   hasSponsorshipEvidence,
   sponsorshipPeriodLabel,
   type EmployerSponsorshipSignal,
@@ -100,6 +114,10 @@ export function EmployerSponsorshipBadge({
   signal: EmployerSponsorshipSignal | null | undefined;
   className?: string;
 }) {
+  // A proven absence is its own answer, and its own component.
+  if (hasCensusAbsentEvidence(signal)) {
+    return <CensusAbsentBadge signal={signal} className={className} />;
+  }
   if (!hasSponsorshipEvidence(signal)) return null;
 
   const count = signal.similar_role_approvals as number;
@@ -177,6 +195,84 @@ export function EmployerSponsorshipBadge({
         )}
         {/* The backend's sentence, verbatim. It is what makes the number safe
             to publish, so it is never paraphrased and never dropped. */}
+        {signal.disclaimer && (
+          <p
+            className="border-t border-border/70 pt-2 text-[10px] leading-snug text-muted-foreground"
+            data-testid="signal-sponsorship-disclaimer"
+          >
+            {signal.disclaimer}
+          </p>
+        )}
+      </HoverCardContent>
+    </HoverCard>
+  );
+}
+
+/**
+ * "This employer filed no H-1B petitions in <period>."
+ *
+ * A dated fact about the public record, and a genuinely useful one to someone
+ * who needs sponsorship - it is why this is shown rather than swallowed. Three
+ * things it is careful not to be:
+ *
+ *  - not a prediction. It says what the record shows for a period, in the past
+ *    tense, and never that the employer "does not sponsor";
+ *  - not an error state. Neutral tint, not destructive: the employer has done
+ *    nothing wrong and the user has hit no problem;
+ *  - not the same as no data. This badge only ever renders off the server's
+ *    explicit `census_absent`, never off a missing row.
+ */
+function CensusAbsentBadge({
+  signal,
+  className,
+}: {
+  signal: EmployerSponsorshipSignal;
+  className?: string;
+}) {
+  const period = sponsorshipPeriodLabel(signal) as string;
+  const sentence = `Filed no H-1B petitions in ${period}`;
+  const provenance = [signal.source, signal.data_vintage ?? period].filter(Boolean).join(' - ');
+
+  return (
+    <HoverCard openDelay={120} closeDelay={80}>
+      <HoverCardTrigger asChild>
+        <button
+          type="button"
+          className={cn(
+            CHIP,
+            'border-border bg-muted text-muted-foreground',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+            className,
+          )}
+          data-testid="signal-sponsorship-census-absent"
+        >
+          <FileX2 className="h-3 w-3" aria-hidden />
+          {sentence}
+        </button>
+      </HoverCardTrigger>
+      <HoverCardContent align="start" className="w-80 space-y-2">
+        <p className="text-xs font-semibold text-foreground">{sentence}</p>
+        <p className="text-[11px] leading-snug text-muted-foreground">
+          This employer appears in the filing data for {period} with no H-1B
+          petitions recorded. That is what the public record shows for that
+          period. It is not a statement about whether they would sponsor
+          anyone, and it does not mean you cannot apply.
+        </p>
+        {provenance && (
+          <p className="text-[10px] text-muted-foreground" data-testid="signal-sponsorship-source">
+            Source: {provenance}
+          </p>
+        )}
+        {signal.source_url && (
+          <a
+            href={signal.source_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="interactive inline-block text-[10px] font-medium text-primary underline"
+          >
+            Check the filing data yourself
+          </a>
+        )}
         {signal.disclaimer && (
           <p
             className="border-t border-border/70 pt-2 text-[10px] leading-snug text-muted-foreground"

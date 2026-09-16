@@ -71,6 +71,32 @@ describe('job card signals', () => {
       /employer states no sponsorship/i,
     );
   });
+
+  test('a no_data sponsorship payload leaves no empty row behind', () => {
+    renderCard(
+      makeTechFeedJob({
+        sponsorship: null,
+        clearance_required: null,
+        employer_sponsorship: { status: 'no_data' },
+      }),
+    );
+    expect(screen.queryByTestId('tech-feed-work-auth-signals')).not.toBeInTheDocument();
+  });
+
+  test('a census absence reaches the card', () => {
+    renderCard(
+      makeTechFeedJob({
+        employer_sponsorship: {
+          status: 'census_absent',
+          data_vintage: 'FY2026',
+          source: 'USCIS H-1B Employer Data Hub',
+        },
+      }),
+    );
+    expect(screen.getByTestId('signal-sponsorship-census-absent')).toHaveTextContent(
+      'Filed no H-1B petitions in FY2026',
+    );
+  });
 });
 
 describe('employer sponsorship signal', () => {
@@ -123,6 +149,25 @@ describe('employer sponsorship signal', () => {
     expect(badge).not.toHaveTextContent(/5 years/);
   });
 
+  test('data_vintage is a PERIOD string and is printed, never parsed as a date', () => {
+    // It used to carry our import timestamp. Anything that formatted it as a
+    // date turned one-year-old government data into "measured today".
+    render(
+      <EmployerSponsorshipBadge
+        signal={{
+          status: 'signal',
+          similar_role_approvals: 13069,
+          data_vintage: 'FY2026',
+          source: 'USCIS H-1B Employer Data Hub',
+          data_imported_at: '2026-09-16T06:52:28.114000+00:00',
+        }}
+      />,
+    );
+    const badge = screen.getByTestId('signal-employer-sponsorship');
+    expect(badge).toHaveTextContent('Sponsored 13,069 people in similar roles in FY2026');
+    expect(badge).not.toHaveTextContent(/2026-09-16/);
+  });
+
   test('a single fiscal year span is written as that year, not as a range', () => {
     render(
       <EmployerSponsorshipBadge
@@ -136,6 +181,50 @@ describe('employer sponsorship signal', () => {
     expect(screen.getByTestId('signal-employer-sponsorship')).toHaveTextContent(
       'Sponsored 1 person in similar roles in FY2026',
     );
+  });
+});
+
+describe('three outcomes, three renderings', () => {
+  test('a proven census absence is a dated fact, not a refusal to sponsor', () => {
+    // 458 employers, 12,753 active postings - Northrop Grumman, SpaceX,
+    // Anduril. Worth showing; worth showing carefully.
+    render(
+      <EmployerSponsorshipBadge
+        signal={{
+          status: 'census_absent',
+          employer_name: 'Northrop Grumman',
+          data_vintage: 'FY2026',
+          source: 'USCIS H-1B Employer Data Hub',
+        }}
+      />,
+    );
+    const badge = screen.getByTestId('signal-sponsorship-census-absent');
+    expect(badge).toHaveTextContent('Filed no H-1B petitions in FY2026');
+    expect(badge).not.toHaveTextContent(/does not sponsor/i);
+  });
+
+  test('no row at all renders nothing - not zero, not "filed nothing"', () => {
+    const { container } = render(<EmployerSponsorshipBadge signal={{ status: 'no_data' }} />);
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  test('census absence is NEVER inferred from a missing count', () => {
+    // An unmatched employer name is our failure. Dressing it up as "filed
+    // nothing" would put a damaging claim about a company in our mouth.
+    const { container } = render(
+      <EmployerSponsorshipBadge
+        signal={{ similar_role_approvals: null, data_vintage: 'FY2026', source: 'USCIS' }}
+      />,
+    );
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  test('a census absence with no period is not published either', () => {
+    // "Filed nothing" with no period is a claim about all of history.
+    const { container } = render(
+      <EmployerSponsorshipBadge signal={{ status: 'census_absent', source: 'USCIS' }} />,
+    );
+    expect(container).toBeEmptyDOMElement();
   });
 });
 

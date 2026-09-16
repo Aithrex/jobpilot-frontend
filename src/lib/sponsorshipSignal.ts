@@ -38,6 +38,10 @@ export function legacySponsorshipSignal(
   if (approvals === null || !Number.isFinite(approvals) || approvals <= 0) return null;
 
   return {
+    // The legacy endpoint has no census-absence concept: it either has counts
+    // or it has nothing. Stating `signal` explicitly keeps the three-outcome
+    // reader from ever inferring "filed nothing" from this shape.
+    status: 'signal',
     // The legacy payload counts H-1B approvals for the EMPLOYER. It is not
     // role-scoped, so it is marked as such and renders the employer-wide
     // sentence rather than borrowing "in similar roles".

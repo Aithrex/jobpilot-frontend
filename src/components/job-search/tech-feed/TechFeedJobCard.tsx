@@ -78,6 +78,7 @@ import {
 } from '@/lib/techFeedWorkAuth';
 import { techFeedJobToJob } from '@/lib/techFeedJobAdapter';
 import { cn } from '@/lib/utils';
+import { isSponsorshipSignalRenderable } from '@/types/workAuthorization';
 import type { GuestFitScore } from '@/types/guest';
 import type { Job } from '@/types/jobs';
 import type { TechFeedFeedbackReason, TechFeedJob } from '@/types/techFeed';
@@ -261,7 +262,11 @@ export function TechFeedJobCard({
   // employer speaking; neither is an assessment of the person reading.
   const clearance = clearanceRequirementOf(job);
   const noSponsorship = statesNoSponsorship(job);
-  const employerSponsorship = job.employer_sponsorship;
+  // Renderable, not merely present: a `no_data` payload is an object that
+  // draws nothing, and gating on truthiness alone would leave an empty row.
+  const employerSponsorship = isSponsorshipSignalRenderable(job.employer_sponsorship)
+    ? job.employer_sponsorship
+    : null;
 
   // The score's receipts, when the engine sent them. `fit` is an open record
   // on the wire; `normalizeFit` renders only the parts it recognises and
