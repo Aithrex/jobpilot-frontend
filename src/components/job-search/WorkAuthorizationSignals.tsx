@@ -15,12 +15,18 @@
  *  - `EmployerSponsorshipBadge` - the MANDATED framing, and the only sentence
  *    this product is allowed to say about H-1B history:
  *
- *        "Sponsored N people in similar roles in the last 5 years"
+ *        "Sponsored N people in similar roles in <the window the data covers>"
  *
  *    always beside its source and its data vintage, with the backend's own
  *    `disclaimer` rendered verbatim, and rendering NOTHING when there is no
  *    data. Not a zero, not "unknown odds", not a grey placeholder: an absence
  *    of filings in a public dataset is not evidence about an employer.
+ *
+ *    The PERIOD comes from `data_window`, never from the name of the field
+ *    holding the count. The store's field is called `approvals_5y` and holds
+ *    a single fiscal year; writing "the last 5 years" from the field name
+ *    would overstate the evidence fivefold in the one sentence that has to be
+ *    exactly right. A count we cannot date is not rendered at all.
  *
  * Accessibility: every badge carries an icon and a text label, so none of the
  * three encodes its meaning in colour alone. Tints are semantic tokens
@@ -32,6 +38,7 @@ import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/h
 import { cn } from '@/lib/utils';
 import {
   hasSponsorshipEvidence,
+  sponsorshipPeriodLabel,
   type EmployerSponsorshipSignal,
 } from '@/types/workAuthorization';
 
@@ -82,8 +89,9 @@ function formatCount(value: number): string {
 /**
  * The sentence, and only the sentence.
  *
- * `hasSponsorshipEvidence` is the gate: no positive similar-role count means
- * this component returns null and the card shows nothing in its place.
+ * `hasSponsorshipEvidence` is the gate: no positive count, or a count the
+ * payload cannot date, and this component returns null with nothing in its
+ * place.
  */
 export function EmployerSponsorshipBadge({
   signal,
@@ -95,16 +103,19 @@ export function EmployerSponsorshipBadge({
   if (!hasSponsorshipEvidence(signal)) return null;
 
   const count = signal.similar_role_approvals as number;
-  const years = signal.period_years && signal.period_years > 0 ? signal.period_years : 5;
   const people = `${formatCount(count)} ${count === 1 ? 'person' : 'people'}`;
+  // Never the field name. `hasSponsorshipEvidence` has already refused to
+  // render anything this returns null for.
+  const period = sponsorshipPeriodLabel(signal) as string;
   // The mandated sentence. The employer-wide variant exists only so the
   // legacy, non-role-scoped payload cannot borrow the words "similar roles".
   const sentence =
     signal.scope === 'employer_wide'
-      ? `Sponsored ${people} across all roles in the last ${years} years`
-      : `Sponsored ${people} in similar roles in the last ${years} years`;
+      ? `Sponsored ${people} across all roles in ${period}`
+      : `Sponsored ${people} in similar roles in ${period}`;
 
-  const provenance = [signal.source, signal.data_vintage].filter(Boolean).join(' - ');
+  const provenance = [signal.source, signal.data_vintage ?? period].filter(Boolean).join(' - ');
+  const windowMismatch = signal.data_window?.service_claim_mismatch === true;
 
   return (
     <HoverCard openDelay={120} closeDelay={80}>
@@ -133,6 +144,20 @@ export function EmployerSponsorshipBadge({
         {typeof signal.total_approvals === 'number' && signal.total_approvals > 0 && (
           <p className="text-[11px] text-muted-foreground">
             {formatCount(signal.total_approvals)} across all roles over the same period.
+          </p>
+        )}
+        {/* A known inconsistency, disclosed rather than smoothed over: the
+            service still advertises a five-year window while the stored data
+            covers the period above. The reader is told which one the number
+            on screen came from. */}
+        {windowMismatch && (
+          <p
+            className="text-[11px] leading-snug text-warning"
+            data-testid="signal-sponsorship-window-mismatch"
+          >
+            This count covers {period}. Our sponsorship service still describes
+            its data as a five-year window; the figure above is the period the
+            data actually covers.
           </p>
         )}
         {provenance && (

@@ -160,22 +160,62 @@ export interface WorkAuthorizationPreference {
 export type SponsorshipStance = 'offers' | 'refuses' | 'unstated';
 
 /**
+ * The window a sponsorship count actually covers.
+ *
+ * This block exists because the field carrying the count is called
+ * `approvals_5y` and the service that serves it advertises a five-year
+ * window, while the stored data is ONE fiscal year (FY2026, from the USCIS
+ * Employer Data Hub). The payload knows: it sets `service_claim_mismatch`.
+ *
+ * The client therefore never says "in the last 5 years" because a field is
+ * named `_5y`. It says the window this block reports, and if this block
+ * reports no window at all the signal is not rendered - a count with no
+ * vintage is not interpretable, and publishing it would be the exact claim
+ * the mandated framing exists to prevent.
+ *
+ * @contract PROVISIONAL - `sponsorship_signals.data_window`.
+ */
+export interface SponsorshipDataWindow {
+  /**
+   * The window as the backend would write it, e.g. "FY2026". This is what the
+   * sentence renders, verbatim, when it is present.
+   */
+  label?: string | null;
+  start_fiscal_year?: number | null;
+  end_fiscal_year?: number | null;
+  /** How many years the data actually spans. 1 for a single fiscal year. */
+  years?: number | null;
+  /**
+   * True when the SERVICE advertises a wider window than the data covers.
+   * Surfaced in the detail panel, in words - a known inconsistency the reader
+   * is told about rather than one the UI papers over.
+   */
+  service_claim_mismatch?: boolean;
+}
+
+/**
  * The employer H-1B sponsorship signal, with its MANDATED framing.
  *
- * The only sentence this may ever produce is
+ * The sentence is always of the form
  *
- *     "Sponsored N people in similar roles in the last 5 years"
+ *     "Sponsored N people in similar roles in <the window the data covers>"
  *
- * shown with `source` and `data_vintage`. It is a count of past filings, not a
+ * shown with `source` and its vintage. It is a count of past filings, not a
  * forecast, not a probability, and not immigration advice. `disclaimer` is
  * written by the backend and is rendered VERBATIM - it is the sentence that
  * makes the number safe to publish, so the client never paraphrases it and
  * never drops it.
  *
+ * The period is taken from `data_window`, NEVER from the name of the field
+ * carrying the count. `approvals_5y` currently holds one fiscal year; a UI
+ * that trusted the field name would publish a five-fold overstatement of the
+ * evidence in the most consequential sentence this product says.
+ *
  * When there is no data the whole component renders NOTHING. Not "0", not
  * "unknown odds", not a grey placeholder: an absence of filings in a public
  * dataset is not evidence that an employer does not sponsor, and rendering it
- * as a zero would tell the user something we do not know.
+ * as a zero would tell the user something we do not know. The same is true
+ * when there is a count but no window to date it against.
  *
  * @contract `TechFeedJob.employer_sponsorship`, and the same block on
  * `GET /api/jobs/sponsorship`.
@@ -197,35 +237,88 @@ export interface EmployerSponsorshipSignal {
   /** The display name. Rendered; ids are not. */
   employer_name?: string;
   /**
-   * Approvals for roles comparable to THIS posting, over `period_years`.
-   * This is the number the mandated sentence counts. Null or absent means we
-   * have no similar-role data and the component renders nothing.
+   * Approvals for roles comparable to THIS posting, over `data_window`.
+   * This is the number the sentence counts. Null or absent means we have no
+   * similar-role data and the component renders nothing.
+   *
+   * @contract the store calls this `approvals_5y`. The name is wrong for the
+   * data behind it and must not be read as a five-year claim - see
+   * `SponsorshipDataWindow`.
    */
   similar_role_approvals?: number | null;
   /** What "similar roles" resolved to, so the claim is checkable. */
   similar_role_label?: string | null;
   /** All approvals for the employer over the same window. Context only. */
   total_approvals?: number | null;
-  /** The window the counts cover. Rendered as "the last N years". */
-  period_years?: number | null;
-  /** e.g. "FY2020-FY2024". Always rendered beside the count. */
+  /**
+   * Denials over the same window (`denials_5y`).
+   *
+   * Received and typed so the contract is complete, and deliberately NOT
+   * rendered: an approval/denial ratio is read as odds, and this product does
+   * not tell anyone their odds.
+   */
+  denials?: number | null;
+  /** The window the counts actually cover. The period in the sentence. */
+  data_window?: SponsorshipDataWindow | null;
+  /**
+   * Free-text vintage, e.g. "FY2026". Used when `data_window.label` is
+   * absent. Always rendered beside the count.
+   */
   data_vintage?: string | null;
   /** e.g. "USCIS H-1B Employer Data Hub". Always rendered beside the count. */
   source?: string | null;
   source_url?: string | null;
+  /** NAICS code for the employer, as filed. Context for the detail panel. */
+  naics?: string | null;
+  /** Where the filings were located, as filed. */
+  location?: string | null;
   /** Rendered verbatim. Never rewritten, never summarized, never omitted. */
   disclaimer?: string | null;
 }
 
 /**
- * Is there enough here to say the mandated sentence?
+ * The period phrase for the sentence, or null when the payload cannot date
+ * its own count.
  *
- * A signal with no positive similar-role count renders nothing at all.
+ * Order of trust: the window's own label, then a year span we can write, then
+ * the free-text vintage. The field NAME is never consulted.
+ */
+export function sponsorshipPeriodLabel(
+  signal: EmployerSponsorshipSignal | null | undefined,
+): string | null {
+  if (!signal) return null;
+  const window = signal.data_window;
+
+  const label = window?.label?.trim();
+  if (label) return label;
+
+  const start = window?.start_fiscal_year;
+  const end = window?.end_fiscal_year;
+  if (typeof start === 'number' && typeof end === 'number') {
+    return start === end ? `FY${start}` : `FY${start}-FY${end}`;
+  }
+
+  const years = window?.years;
+  if (typeof years === 'number' && Number.isFinite(years) && years > 0) {
+    return years === 1 ? 'the last year' : `the last ${Math.round(years)} years`;
+  }
+
+  const vintage = signal.data_vintage?.trim();
+  return vintage || null;
+}
+
+/**
+ * Is there enough here to say the sentence?
+ *
+ * Two conditions, both required: a positive count, and a window to date it
+ * against. A count with no vintage is not publishable under the framing this
+ * signal is bound by, so it renders as nothing rather than as a bare number.
  */
 export function hasSponsorshipEvidence(
   signal: EmployerSponsorshipSignal | null | undefined,
 ): signal is EmployerSponsorshipSignal {
   if (!signal) return false;
   const count = signal.similar_role_approvals;
-  return typeof count === 'number' && Number.isFinite(count) && count > 0;
+  if (typeof count !== 'number' || !Number.isFinite(count) || count <= 0) return false;
+  return sponsorshipPeriodLabel(signal) !== null;
 }

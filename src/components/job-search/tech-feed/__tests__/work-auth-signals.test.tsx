@@ -82,26 +82,59 @@ describe('employer sponsorship signal', () => {
   test('renders nothing for a zero - an absent filing is not a zero', () => {
     const { container } = render(
       <EmployerSponsorshipBadge
-        signal={{ similar_role_approvals: 0, source: 'USCIS', data_vintage: 'FY2020-FY2024' }}
+        signal={{ similar_role_approvals: 0, source: 'USCIS', data_vintage: 'FY2026' }}
       />,
     );
     expect(container).toBeEmptyDOMElement();
   });
 
-  test('says the mandated sentence, in the past tense, with its provenance', () => {
+  test('renders nothing for a count it cannot date', () => {
+    // A number with no vintage is not publishable under this framing.
+    const { container } = render(
+      <EmployerSponsorshipBadge
+        signal={{ similar_role_approvals: 63, source: 'USCIS H-1B Employer Data Hub' }}
+      />,
+    );
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  test('says the sentence with the window the DATA covers, not the field name', () => {
+    // `approvals_5y` holds ONE fiscal year. Writing "the last 5 years" off
+    // the field name would overstate the evidence fivefold.
     render(
       <EmployerSponsorshipBadge
         signal={{
           similar_role_approvals: 63,
-          period_years: 5,
+          data_window: {
+            label: 'FY2026',
+            start_fiscal_year: 2026,
+            end_fiscal_year: 2026,
+            years: 1,
+            service_claim_mismatch: true,
+          },
           source: 'USCIS H-1B Employer Data Hub',
-          data_vintage: 'FY2020-FY2024',
+          data_vintage: 'FY2026',
           disclaimer: 'Past filings are not a prediction of any individual outcome.',
         }}
       />,
     );
+    const badge = screen.getByTestId('signal-employer-sponsorship');
+    expect(badge).toHaveTextContent('Sponsored 63 people in similar roles in FY2026');
+    expect(badge).not.toHaveTextContent(/5 years/);
+  });
+
+  test('a single fiscal year span is written as that year, not as a range', () => {
+    render(
+      <EmployerSponsorshipBadge
+        signal={{
+          similar_role_approvals: 1,
+          data_window: { start_fiscal_year: 2026, end_fiscal_year: 2026 },
+          source: 'USCIS H-1B Employer Data Hub',
+        }}
+      />,
+    );
     expect(screen.getByTestId('signal-employer-sponsorship')).toHaveTextContent(
-      'Sponsored 63 people in similar roles in the last 5 years',
+      'Sponsored 1 person in similar roles in FY2026',
     );
   });
 });

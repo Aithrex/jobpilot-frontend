@@ -35,6 +35,26 @@ function noContentResponse(): Response {
   } as unknown as Response;
 }
 
+/**
+ * The tz offset the client should be sending, as it survives the wire.
+ *
+ * `-new Date().getTimezoneOffset()` is NEGATIVE ZERO in a UTC environment,
+ * and negative zero does not survive JSON: `JSON.stringify(-0)` is `"0"`, so
+ * the body the assertion reads back always holds `+0`. `toBe` is `Object.is`,
+ * which is the one comparison in JavaScript that separates the two - so the
+ * bare expression passed on every developer machine outside UTC and failed on
+ * CI, which runs UTC, with "expected +0 to be -0".
+ *
+ * The sign of zero is not a fact about anybody's timezone and the backend
+ * cannot observe it. Normalizing it here keeps the assertion about the thing
+ * it was always about: the client sends the VIEWER's offset from UTC, in
+ * minutes, on every search.
+ */
+function expectedTzOffsetMinutes(): number {
+  const offset = -new Date().getTimezoneOffset();
+  return offset === 0 ? 0 : offset;
+}
+
 const fetchMock = vi.fn();
 
 beforeEach(() => {
@@ -65,7 +85,7 @@ describe('apiService.searchTechFeed', () => {
     const body = lastBody();
     expect(body.query).toBe('go');
     expect(body.page_size).toBe(25);
-    expect(body.tz_offset_minutes).toBe(-new Date().getTimezoneOffset());
+    expect(body.tz_offset_minutes).toBe(expectedTzOffsetMinutes());
     expect(resp.status).toBe(200);
     expect(isTechFeedCursorExpired(resp.data)).toBe(false);
   });
@@ -73,7 +93,7 @@ describe('apiService.searchTechFeed', () => {
   test('a caller cannot override tz_offset_minutes with a stale value', async () => {
     fetchMock.mockResolvedValue(jsonResponse(makeTechFeedResponse()));
     await apiService.searchTechFeed({ tz_offset_minutes: 999 });
-    expect(lastBody().tz_offset_minutes).toBe(-new Date().getTimezoneOffset());
+    expect(lastBody().tz_offset_minutes).toBe(expectedTzOffsetMinutes());
   });
 
   test('410 cursor_expired is returned as data, never as an error or a logout', async () => {
