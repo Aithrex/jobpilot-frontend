@@ -13,11 +13,14 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ApplyConfirmDialog, JOB_FEED_GRID_CLASS, JobCard, JOB_CARD_CLASS } from '@/components/job-search/JobCard';
 import { JobFeedPager } from '@/components/job-search/JobFeedPager';
 import { useCombinedJobsCtx } from '@/components/job-search/CombinedJobsProvider';
-import { RECENCY_OPTIONS, matchesSeniority, sortJobsByMode, isAppliedPipelineStatus, toJob } from '@/lib/careerJobs';
+import { JOB_FEED_PAGE_SIZE, RECENCY_OPTIONS, matchesSeniority, sortJobsByMode, isAppliedPipelineStatus, toJob } from '@/lib/careerJobs';
 import { cn } from '@/lib/utils';
 import type { Job, WorkdayJob } from '@/types/jobs';
 
-const PAGE_SIZE = 24;
+// ONE page size, shared with `diversifyByBoard`. When these two disagreed the
+// board cap was applied on a different boundary than the one rendered, and a
+// cap of 3 showed 6 cards from one employer. Do not re-declare it locally.
+const PAGE_SIZE = JOB_FEED_PAGE_SIZE;
 
 function formatAgo(ms: number): string {
   const s = Math.max(0, Math.round((Date.now() - ms) / 1000));

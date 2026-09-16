@@ -197,6 +197,19 @@ export interface SponsorshipSignal {
 export interface VisaFlag {
   value: boolean | null;
   evidence: string;
+  /**
+   * Magnitude, on `sponsors_h1b` only (backend
+   * `discover_filters_service._sponsors_h1b_flag`).
+   *
+   * `value` alone answers "did they file at all", which is the same answer
+   * for RTX (6 petitions in FY2026 against 1,465 active postings) and Cisco
+   * (1,222). A chip rendered from the boolean cannot tell those apart, so the
+   * count and band travel with it and the chip states the number.
+   */
+  band?: 'none' | 'low' | 'moderate' | 'strong' | null;
+  approvals?: number | null;
+  /** Fiscal period the count covers, e.g. `"FY2026"` - never an ISO date. */
+  period?: string | null;
 }
 
 export interface VisaFlags {

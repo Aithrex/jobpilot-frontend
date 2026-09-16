@@ -111,6 +111,25 @@ const POSITIVE_KEYS: FlagKey[] = [
   'e_verify',
 ];
 
+/**
+ * The H-1B chip states its SIZE, and is toned by it.
+ *
+ * `sponsors_h1b.value` answers "did they file at all", and rendered as a bare
+ * "Sponsors H-1B" chip it said the same thing about RTX and Cisco: RTX filed
+ * 6 petitions in FY2026 while holding 1,465 active postings, Cisco filed
+ * 1,222. To someone on F1-OPT reading a feed, the first one read as an
+ * invitation to spend an application on an employer that sponsors roughly
+ * once per 250 openings. The count is the whole signal, so the chip carries
+ * it, and a `low` band is toned as a caution rather than a green tick.
+ */
+function h1bChip(flag: VisaFlags['sponsors_h1b']): { label: string; low: boolean } {
+  const approvals = typeof flag?.approvals === 'number' ? flag.approvals : null;
+  const low = flag?.band === 'low';
+  if (approvals == null) return { label: FLAG_LABELS.sponsors_h1b, low };
+  const period = flag?.period ? ` ${flag.period}` : '';
+  return { label: `H-1B: ${approvals.toLocaleString()}${period}`, low };
+}
+
 export function VisaFlagChips({ flags }: { flags: VisaFlags }) {
   const positives = POSITIVE_KEYS.filter((k) => flags[k]?.value === true);
   const clearance = flags.clearance_required?.value === true;
@@ -119,16 +138,23 @@ export function VisaFlagChips({ flags }: { flags: VisaFlags }) {
 
   return (
     <div className="flex flex-wrap gap-1">
-      {positives.map((k) => (
+      {positives.map((k) => {
+        const h1b = k === 'sponsors_h1b' ? h1bChip(flags.sponsors_h1b) : null;
+        return (
         <span
           key={k}
           title={flags[k]?.evidence || undefined}
-          className="inline-flex items-center gap-0.5 rounded-md border border-success/25 bg-success/10 px-1.5 py-0.5 text-[10px] font-medium text-success"
+          className={
+            h1b?.low
+              ? 'inline-flex items-center gap-0.5 rounded-md border border-warning/30 bg-warning/10 px-1.5 py-0.5 text-[10px] font-medium text-warning'
+              : 'inline-flex items-center gap-0.5 rounded-md border border-success/25 bg-success/10 px-1.5 py-0.5 text-[10px] font-medium text-success'
+          }
         >
           <BadgeCheck className="h-2.5 w-2.5" />
-          {FLAG_LABELS[k]}
+          {h1b ? h1b.label : FLAG_LABELS[k]}
         </span>
-      ))}
+        );
+      })}
       {clearance && (
         <span
           title={flags.clearance_required?.evidence || 'This role requires a security clearance.'}

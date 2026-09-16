@@ -248,8 +248,23 @@ export function sortJobsByMode(
 /** How many rows one board may hold per rendered page before the rest are
  *  pushed back. Ordering only - nothing is dropped. */
 const BOARD_PAGE_CAP = 3;
-/** The page size the feed renders at. */
-const BOARD_PAGE_SIZE = 20;
+/**
+ * The page size the feed renders at. **This MUST equal the page size the
+ * panel actually paginates with** (`CombinedJobsPanel`), which is why both
+ * now import this one constant instead of declaring their own.
+ *
+ * They disagreed: diversity grouped rows into pages of 20 while the panel
+ * rendered 24. A cap of 3 per 20 means visible page one held all of diversity
+ * page one (3 RTX) plus the first four rows of diversity page two (up to 3
+ * more) - so a cap of three put SIX RTX cards on page one. Measured on a live
+ * F1-OPT account whose feed showed exactly that: 6 of the first 24 cards were
+ * RTX, on one Workday tenant holding 1,465 active postings.
+ *
+ * The cap was never broken; it was being applied on a different page boundary
+ * than the one the user sees, which is indistinguishable from broken.
+ */
+export const JOB_FEED_PAGE_SIZE = 24;
+const BOARD_PAGE_SIZE = JOB_FEED_PAGE_SIZE;
 /** Only the head is reordered; past this the list keeps pure sort order. */
 const BOARD_DIVERSITY_DEPTH = 250;
 
