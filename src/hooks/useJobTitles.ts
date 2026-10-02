@@ -28,7 +28,7 @@
  */
 import { useCallback, useEffect, useSyncExternalStore } from 'react';
 import { apiService } from '@/lib/api';
-import type { JobTitleSeed } from '@/types/jobs';
+import type { ExperienceView, JobTitleSeed } from '@/types/jobs';
 
 /** Hard ceiling on the title set. The scan endpoints fan out per title, so an
  *  unbounded list is a slow scan, not a better one. */
@@ -79,6 +79,8 @@ interface JobTitlesState {
   ready: boolean;
   /** True while the LLM title synthesizer is running. */
   suggesting: boolean;
+  /** The levels the board opens on, from the seed. Null until it loads. */
+  experienceView: ExperienceView | null;
 }
 
 const INITIAL: JobTitlesState = {
@@ -86,6 +88,7 @@ const INITIAL: JobTitlesState = {
   resumeTitles: [],
   ready: false,
   suggesting: false,
+  experienceView: null,
 };
 
 let state: JobTitlesState = INITIAL;
@@ -196,6 +199,7 @@ async function loadTitleSeed(): Promise<JobTitleSeed> {
       match_titles: seed.data.match_titles ?? [],
       resume_count: seed.data.resume_count ?? 0,
       cached: seed.data.cached ?? true,
+      experience_view: seed.data.experience_view,
     };
   }
   // Deploy skew: older backends have no /title-seed. Fall back to the
@@ -249,8 +253,9 @@ export function hydrateJobTitles(): Promise<void> {
       const fp = seed.fingerprint;
       const resumeTitles = seed.resume_titles.slice(0, JOB_TITLES_CAP);
 
+      const experienceView = seed.experience_view ?? null;
       if (state.ready && lastSyncedFingerprint === fp && fp) {
-        setState({ resumeTitles });
+        setState({ resumeTitles, experienceView });
         return;
       }
 
@@ -309,7 +314,7 @@ export function hydrateJobTitles(): Promise<void> {
       // `resumeTitles` is the ChipsInput "Reset" target. It must be the
       // searchable set, not the held one - resetting used to restore exactly
       // the titles that match nothing.
-      setState({ titles, resumeTitles: seedTitles, ready: true });
+      setState({ titles, resumeTitles: seedTitles, experienceView, ready: true });
       if (titles.length) persistTitles(titles, fp || undefined);
     } catch {
       // A failed seed must not leave every panel stuck behind `ready`. Clear
@@ -378,6 +383,8 @@ export interface JobTitlesController {
   ready: boolean;
   smartSuggestTitles: () => Promise<void>;
   suggesting: boolean;
+  /** The levels the board opens on; null until the seed has loaded. */
+  experienceView: ExperienceView | null;
 }
 
 /**
@@ -406,5 +413,6 @@ export function useJobTitles(enabled = true): JobTitlesController {
     ready: snapshot.ready,
     smartSuggestTitles,
     suggesting: snapshot.suggesting,
+    experienceView: snapshot.experienceView,
   };
 }

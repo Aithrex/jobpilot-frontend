@@ -329,6 +329,19 @@ export interface ParsedResume {
 }
 
 /** GET /api/jobs/title-seed — never hits the LLM. */
+/**
+ * The levels a candidate's board opens on (`GET /api/jobs/title-seed`).
+ * Server-computed from the onboarding level and the active resume's years;
+ * both bands when they disagree or the years sit on a band edge.
+ * `levels: []` = all levels (nothing known about the candidate).
+ */
+export interface ExperienceView {
+  levels: Array<'intern' | 'entry' | 'mid' | 'senior'>;
+  source: 'preference+resume' | 'preference' | 'resume' | 'none';
+  years: number | null;
+  preference: string | null;
+}
+
 export interface JobTitleSeed {
   fingerprint: string;
   /** Titles the candidate has HELD, internships included. Not searchable. */
@@ -344,6 +357,8 @@ export interface JobTitleSeed {
   match_titles?: string[];
   resume_count: number;
   cached: boolean;
+  /** Absent on backends older than fit-v2.3. */
+  experience_view?: ExperienceView;
 }
 
 export interface TailoredResume {
@@ -436,7 +451,13 @@ export type WorkdayRecency = 'today' | '24h' | '3d' | '7d' | '30d';
 
 export type CareerPortalFeasibility = 'strong' | 'possible' | 'stretch' | 'skip';
 
-export type CareerPortalSeniority = 'intern' | 'entry' | 'mid' | 'senior';
+/** Every band the server stores (`fit_score.LEVELS` + unknown). This listed
+ *  four, so `principal`, `staff`, `director`, `executive` and `unknown` - all
+ *  of which the feed sends - typed as impossible, and code mapping bands to
+ *  views had nothing to make it handle them (principal went missing). */
+export type CareerPortalSeniority =
+  | 'intern' | 'entry' | 'mid' | 'senior' | 'staff' | 'principal'
+  | 'director' | 'executive' | 'unknown';
 
 /**
  * JD-level visa signal for portal rows - a discrete band, NOT the

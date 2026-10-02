@@ -27,11 +27,13 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { Switch } from '@/components/ui/switch';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { ChipsInput } from '@/components/job-search/ChipsInput';
 import { useCombinedJobsCtx } from '@/components/job-search/CombinedJobsProvider';
 import { JOB_TITLES_CAP } from '@/hooks/useJobTitles';
 import { PillSwitch } from '@/components/ui/pill-switch';
 import { cn } from '@/lib/utils';
+import { levelNote, sameLevels, type SeniorityLevel } from '@/lib/careerJobs';
 
 const ANY_STATE = '__any__';
 
@@ -47,13 +49,12 @@ const US_STATES = [
   'West Virginia', 'Wisconsin', 'Wyoming',
 ] as const;
 
-const SENIORITY_OPTIONS = [
-  { key: 'any', label: 'Any level' },
+const LEVEL_OPTIONS: ReadonlyArray<{ key: SeniorityLevel; label: string }> = [
   { key: 'intern', label: 'Intern' },
   { key: 'entry', label: 'Entry' },
   { key: 'mid', label: 'Mid' },
   { key: 'senior', label: 'Senior+' },
-] as const;
+];
 
 const MIN_SCORE_OPTIONS = [0, 40, 60, 80] as const;
 
@@ -141,8 +142,10 @@ export function JobFeedSheet() {
     customizeOpen,
     setCustomizeOpen,
     resetScope,
-    seniority,
-    setSeniority,
+    seniorityLevels,
+    setSeniorityLevels,
+    resetSeniorityLevels,
+    experienceView,
     minScore,
     setMinScore,
     sponsorFilter,
@@ -331,18 +334,50 @@ export function JobFeedSheet() {
           <section>
             <FieldLabel>Filters</FieldLabel>
             <div className="space-y-3">
-              <Select value={seniority} onValueChange={setSeniority}>
-                <SelectTrigger className="h-10" aria-label="Seniority">
-                  <SelectValue placeholder="Seniority" />
-                </SelectTrigger>
-                <SelectContent>
-                  {SENIORITY_OPTIONS.map((o) => (
-                    <SelectItem key={o.key} value={o.key}>
+              <div>
+                <div className="mb-1.5 flex items-center justify-between gap-2">
+                  <p className="text-[11px] font-medium text-muted-foreground">Experience level</p>
+                  <div className="flex items-center gap-3">
+                    {experienceView && experienceView.levels.length > 0 &&
+                      !sameLevels(seniorityLevels, experienceView.levels) && (
+                        <button
+                          type="button"
+                          onClick={resetSeniorityLevels}
+                          className="text-[11px] font-medium text-primary hover:underline"
+                        >
+                          My level
+                        </button>
+                      )}
+                    {seniorityLevels.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setSeniorityLevels([])}
+                        className="text-[11px] font-medium text-primary hover:underline"
+                      >
+                        All levels
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <ToggleGroup
+                  type="multiple"
+                  variant="outline"
+                  size="sm"
+                  aria-label="Experience level"
+                  value={seniorityLevels}
+                  onValueChange={(v) => setSeniorityLevels(v as SeniorityLevel[])}
+                  className="grid grid-cols-4 gap-1"
+                >
+                  {LEVEL_OPTIONS.map((o) => (
+                    <ToggleGroupItem key={o.key} value={o.key} className="h-9 text-xs">
                       {o.label}
-                    </SelectItem>
+                    </ToggleGroupItem>
                   ))}
-                </SelectContent>
-              </Select>
+                </ToggleGroup>
+                <p className="mt-1.5 text-[11px] text-muted-foreground" data-testid="seniority-basis">
+                  {levelNote(seniorityLevels, experienceView)}
+                </p>
+              </div>
 
               <div>
                 <p className="mb-1.5 text-[11px] font-medium text-muted-foreground">Match</p>

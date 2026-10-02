@@ -6,9 +6,46 @@ import {
   useCombinedJobs,
   type CombinedJobsController,
 } from '@/hooks/useCombinedJobs';
-import type { WorkdayRecency } from '@/types/jobs';
+import { useJobTitles } from '@/hooks/useJobTitles';
+import { SENIORITY_LEVELS, type SeniorityLevel } from '@/lib/careerJobs';
+import type { ExperienceView, WorkdayRecency } from '@/types/jobs';
 
 const AUTO_SYNC_MS = 30 * 60 * 1000;
+
+/** A level choice the user made on purpose, and the default it replaced. */
+const SENIORITY_KEY = 'combined_jobs_seniority_v1';
+interface SeniorityOverride {
+  levels: SeniorityLevel[];
+  /** `levels.join('|')` of the default this replaced. When the default moves
+   *  (a new resume, a changed onboarding level) the override is stale. */
+  basis: string;
+}
+
+function readSeniorityOverride(): SeniorityOverride | null {
+  try {
+    const raw = window.localStorage.getItem(SENIORITY_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<SeniorityOverride>;
+    if (!Array.isArray(parsed.levels) || typeof parsed.basis !== 'string') return null;
+    return {
+      levels: SENIORITY_LEVELS.filter((l) => parsed.levels!.includes(l)),
+      basis: parsed.basis,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function writeSeniorityOverride(v: SeniorityOverride | null): void {
+  try {
+    if (v) window.localStorage.setItem(SENIORITY_KEY, JSON.stringify(v));
+    else window.localStorage.removeItem(SENIORITY_KEY);
+  } catch {
+    /* storage unavailable: the choice lasts for this session only */
+  }
+}
+
+const basisOf = (view: ExperienceView | null) => (view?.levels ?? []).join('|');
 
 export type SponsorFilter = 'all' | 'friendly' | 'proven';
 export type SortBy = 'score' | 'newest';
@@ -48,8 +85,14 @@ interface CombinedJobsContextValue extends CombinedJobsController {
   setSearch: (v: string) => void;
   recency: WorkdayRecency;
   setRecency: (v: WorkdayRecency) => void;
-  seniority: string;
-  setSeniority: (v: string) => void;
+  /** Levels the board shows. `[]` = every level. Opens on the candidate's
+   *  own (`experienceView`); a deliberate change is remembered. */
+  seniorityLevels: SeniorityLevel[];
+  setSeniorityLevels: (v: SeniorityLevel[]) => void;
+  /** Back to the candidate's own levels. */
+  resetSeniorityLevels: () => void;
+  /** Where the default came from, for the "Showing ... because ..." line. */
+  experienceView: ExperienceView | null;
   minScore: number;
   setMinScore: (v: number) => void;
   sponsorFilter: SponsorFilter;
@@ -92,12 +135,44 @@ export function CombinedJobsProvider({ children }: { children: React.ReactNode }
   // Both are fixed; the segmented control shows per-window counts so widening
   // to 1/3/7/30 days stays one click.
   const [recency, setRecency] = useState<WorkdayRecency>('today');
-  const [seniority, setSeniority] = useState('any');
+  // Opens on the candidate's OWN levels. It opened on every level until
+  // 2026-10-02, and every current user is early-career: a zero-year user's
+  // first screen held an architect role and two executive ones.
+  const { experienceView } = useJobTitles(started);
+  const [seniorityLevels, setSeniorityState] = useState<SeniorityLevel[]>(
+    () => readSeniorityOverride()?.levels ?? [],
+  );
+  useEffect(() => {
+    if (!experienceView) return;
+    const saved = readSeniorityOverride();
+    if (saved && saved.basis === basisOf(experienceView)) {
+      setSeniorityState(saved.levels);
+      return;
+    }
+    if (saved) writeSeniorityOverride(null); // the default moved under it
+    setSeniorityState(experienceView.levels);
+  }, [experienceView]);
+  const setSeniorityLevels = useCallback(
+    (levels: SeniorityLevel[]) => {
+      const ordered = SENIORITY_LEVELS.filter((l) => levels.includes(l));
+      setSeniorityState(ordered);
+      writeSeniorityOverride({ levels: ordered, basis: basisOf(experienceView) });
+    },
+    [experienceView],
+  );
+  const resetSeniorityLevels = useCallback(() => {
+    writeSeniorityOverride(null);
+    setSeniorityState(experienceView?.levels ?? []);
+  }, [experienceView]);
   const [minScore, setMinScore] = useState(0);
   const [sponsorFilter, setSponsorFilter] = useState<SponsorFilter>('friendly');
   // Discovery default: hide already-applied so the list stays actionable.
   const [showApplied, setShowApplied] = useState(false);
-  const [sortBy, setSortBy] = useState<SortBy>('newest');
+  // Best match first. Newest-first put whatever was posted last at the top
+  // regardless of fit: replaying every user's board on 2026-10-02, the
+  // best-match first screen had a median match of ~80 against ~50-70, and far
+  // fewer postings asking for years the candidate does not have.
+  const [sortBy, setSortBy] = useState<SortBy>('score');
   const [page, setPage] = useState(1);
 
   const ensureStarted = useCallback(() => setStarted(true), []);
@@ -155,8 +230,10 @@ export function CombinedJobsProvider({ children }: { children: React.ReactNode }
     setSearch,
     recency,
     setRecency,
-    seniority,
-    setSeniority,
+    seniorityLevels,
+    setSeniorityLevels,
+    resetSeniorityLevels,
+    experienceView,
     minScore,
     setMinScore,
     sponsorFilter,

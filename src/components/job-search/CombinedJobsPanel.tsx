@@ -13,7 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ApplyConfirmDialog, JOB_FEED_GRID_CLASS, JobCard, JOB_CARD_CLASS } from '@/components/job-search/JobCard';
 import { JobFeedPager } from '@/components/job-search/JobFeedPager';
 import { useCombinedJobsCtx } from '@/components/job-search/CombinedJobsProvider';
-import { JOB_FEED_PAGE_SIZE, RECENCY_OPTIONS, matchesSeniority, sortJobsByMode, isAppliedPipelineStatus, toJob } from '@/lib/careerJobs';
+import { JOB_FEED_PAGE_SIZE, RECENCY_OPTIONS, matchesSeniorityLevels, sortJobsByMode, isAppliedPipelineStatus, toJob } from '@/lib/careerJobs';
 import { cn } from '@/lib/utils';
 import type { Job, WorkdayJob } from '@/types/jobs';
 
@@ -94,7 +94,7 @@ export function CombinedJobsPanel({
     search,
     recency,
     setRecency,
-    seniority,
+    seniorityLevels,
     minScore,
     sponsorFilter,
     showApplied,
@@ -102,6 +102,9 @@ export function CombinedJobsPanel({
     page,
     setPage,
   } = useCombinedJobsCtx();
+  // A string, so the effects below re-run when the CHOICE changes, not when
+  // an equal array is rebuilt.
+  const seniorityKey = seniorityLevels.join('|');
 
   // Kick off the very first scan when the tab opens (idempotent; the provider
   // keeps it running afterwards even if you leave the page).
@@ -119,7 +122,10 @@ export function CombinedJobsPanel({
     let out = jobs.filter((j) => j.days_ago == null || j.days_ago <= maxDays);
     const q = search.trim().toLowerCase();
     if (q) out = out.filter((j) => `${j.title} ${j.company}`.toLowerCase().includes(q));
-    if (seniority !== 'any') out = out.filter((j) => matchesSeniority(j, seniority));
+    if (seniorityKey) {
+      const levels = seniorityKey.split('|');
+      out = out.filter((j) => matchesSeniorityLevels(j, levels));
+    }
     if (minScore > 0) out = out.filter((j) => (j.match_score ?? 0) >= minScore);
     if (sponsorFilter === 'friendly') out = out.filter((j) => j.sponsorship !== 'refused');
     else if (sponsorFilter === 'proven') out = out.filter((j) => j.sponsorship === 'likely');
@@ -130,7 +136,7 @@ export function CombinedJobsPanel({
     jobs,
     maxDays,
     search,
-    seniority,
+    seniorityKey,
     minScore,
     sponsorFilter,
     sortBy,
@@ -152,7 +158,7 @@ export function CombinedJobsPanel({
       return;
     }
     setPage(1);
-  }, [recency, search, seniority, minScore, sponsorFilter, showApplied, sortBy, setPage]);
+  }, [recency, search, seniorityKey, minScore, sponsorFilter, showApplied, sortBy, setPage]);
 
   const pagedJobs = useMemo(
     () => visibleJobs.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
