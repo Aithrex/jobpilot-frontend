@@ -26,6 +26,29 @@ resource "aws_s3_bucket_versioning" "frontend" {
   }
 }
 
+# Versioning keeps every replaced asset forever: each deploy overwrites
+# index.html and re-uploads hashed bundles, and by 2026-10 the bucket held
+# 3.1 GB of old versions behind 13 MB of live files. 30 days of history is
+# enough to roll a deploy back; older versions expire.
+resource "aws_s3_bucket_lifecycle_configuration" "frontend" {
+  bucket = aws_s3_bucket.frontend.id
+
+  rule {
+    id     = "expire-noncurrent"
+    status = "Enabled"
+    filter {}
+
+    noncurrent_version_expiration {
+      noncurrent_days = 30
+    }
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 7
+    }
+  }
+
+  depends_on = [aws_s3_bucket_versioning.frontend]
+}
+
 # Allow only this CloudFront distribution (via OAC) to read objects.
 data "aws_iam_policy_document" "frontend_oac" {
   statement {
