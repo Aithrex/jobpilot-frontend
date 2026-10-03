@@ -18,7 +18,9 @@ import {
   CombinedJobsProvider,
   useCombinedJobsCtx,
 } from '@/components/job-search/CombinedJobsProvider';
-import { levelNote, matchesSeniorityLevels, seniorityOf } from '@/lib/careerJobs';
+import { matchesSeniorityLevels, seniorityOf } from '@/lib/careerJobs';
+import { ExperienceLevelPicker } from '@/components/job-search/ExperienceLevelPicker';
+import userEvent from '@testing-library/user-event';
 import type { ExperienceView, WorkdayJob } from '@/types/jobs';
 
 vi.mock('@/lib/api', () => ({
@@ -146,9 +148,11 @@ describe('level matching', () => {
     expect(seniorityOf(job({ title: 'Software Engineer I' }))).toBe('entry');
   });
 
-  test('principal postings belong to Senior+, not to mid', () => {
+  test('principal postings belong to Staff+, not to mid or senior', () => {
     expect(matchesSeniorityLevels(job({ seniority: 'principal' }), ['mid'])).toBe(false);
-    expect(matchesSeniorityLevels(job({ seniority: 'principal' }), ['senior'])).toBe(true);
+    expect(matchesSeniorityLevels(job({ seniority: 'principal' }), ['mid', 'senior'])).toBe(false);
+    expect(matchesSeniorityLevels(job({ seniority: 'principal' }), ['staff'])).toBe(true);
+    expect(matchesSeniorityLevels(job({ seniority: 'senior' }), ['staff'])).toBe(false);
   });
 
   test('several levels at once, and [] is every level', () => {
@@ -159,15 +163,49 @@ describe('level matching', () => {
   });
 });
 
-describe('the note says why', () => {
-  test('explains a default from both inputs', () => {
-    expect(levelNote(['entry', 'mid'], JUNIOR_3Y)).toBe(
-      'Matched to your level (Junior) and 3 yrs on your resume. Roles that state no level are always shown.',
+describe('the experience control on the board', () => {
+  function mountPicker() {
+    return render(
+      <CombinedJobsProvider>
+        <Probe />
+        <ExperienceLevelPicker />
+      </CombinedJobsProvider>,
     );
+  }
+
+  test('says what is applied and that it is the candidate\'s own level', async () => {
+    seed(JUNIOR_3Y);
+    mountPicker();
+    const trigger = await screen.findByRole('button', { name: /Experience level: Entry \+ Mid/ });
+    expect(trigger).toHaveTextContent('Your level');
   });
 
-  test('a manual choice and "all" read differently', () => {
-    expect(levelNote(['senior'], JUNIOR_3Y)).toMatch(/^Your selection\./);
-    expect(levelNote([], JUNIOR_3Y)).toBe('Showing every level.');
+  test('each level says what it means, and the candidate\'s level is one tap away', async () => {
+    seed(JUNIOR_3Y);
+    const user = userEvent.setup();
+    mountPicker();
+    await user.click(await screen.findByRole('button', { name: /Experience level: Entry \+ Mid/ }));
+    expect(screen.getByText('Matched to you: Entry + Mid')).toBeInTheDocument();
+    expect(screen.getByText('Junior - 3 yrs on your resume')).toBeInTheDocument();
+    expect(screen.getByText('0-2 years')).toBeInTheDocument();
+    expect(screen.getByText('8+ years, leads, managers')).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: /Entry level/ })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: /Senior/ })).not.toBeChecked();
+
+    await user.click(screen.getByRole('button', { name: 'Show all levels' }));
+    expect(levelsShown()).toBe('ALL');
+    expect(screen.getByText('Showing every level.')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Use my level' }));
+    expect(levelsShown()).toBe('entry,mid');
+  });
+
+  test('ticking a level adds it', async () => {
+    seed(JUNIOR_3Y);
+    const user = userEvent.setup();
+    mountPicker();
+    await user.click(await screen.findByRole('button', { name: /Experience level/ }));
+    await user.click(screen.getByRole('checkbox', { name: /Internship/ }));
+    expect(levelsShown()).toBe('intern,entry,mid');
   });
 });

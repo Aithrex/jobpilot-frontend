@@ -3,9 +3,10 @@ import { Sparkles } from 'lucide-react';
 import { useCombinedJobsCtx } from '@/components/job-search/CombinedJobsProvider';
 import { RECENCY_OPTIONS } from '@/lib/careerJobs';
 import { PillSwitch } from '@/components/ui/pill-switch';
+import { ExperienceLevelPicker } from '@/components/job-search/ExperienceLevelPicker';
 
 /**
- * For-you listing chrome: recency windows + Newest / Best match + open vs
+ * For-you listing chrome: experience level, recency windows + Newest / Best match + open vs
  * applied. Lives under the Jobs section tabs so it stays visible even before
  * the first scan result.
  */
@@ -35,6 +36,7 @@ export function JobsRefineBar() {
       role="toolbar"
       aria-label="Listing recency and sort"
     >
+      <ExperienceLevelPicker />
       <PillSwitch
         aria-label="Posting recency"
         value={recency}

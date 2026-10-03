@@ -336,7 +336,7 @@ export interface ParsedResume {
  * `levels: []` = all levels (nothing known about the candidate).
  */
 export interface ExperienceView {
-  levels: Array<'intern' | 'entry' | 'mid' | 'senior'>;
+  levels: Array<'intern' | 'entry' | 'mid' | 'senior' | 'staff'>;
   source: 'preference+resume' | 'preference' | 'resume' | 'none';
   years: number | null;
   preference: string | null;

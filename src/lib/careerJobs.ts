@@ -1,4 +1,4 @@
-import type { Job, WorkdayJob, WorkdayRecency, ExperienceView } from '@/types/jobs';
+import type { Job, WorkdayJob, WorkdayRecency } from '@/types/jobs';
 
 /**
  * Shared career-portal helpers used by the combined Job Opportunities feed.
@@ -45,7 +45,7 @@ const STATE_NAMES: Record<string, string> = {
 };
 
 /** The four choices the seniority filter offers, plus 'any'. */
-export type SeniorityView = 'any' | 'intern' | 'entry' | 'mid' | 'senior';
+export type SeniorityView = 'any' | 'intern' | 'entry' | 'mid' | 'senior' | 'staff';
 
 /** Backend band (`fit_score.LEVELS`) -> the view it belongs under.
  *
@@ -59,12 +59,14 @@ const VIEW_OF_BAND: Record<string, SeniorityView> = {
   entry: 'entry',
   mid: 'mid',
   senior: 'senior',
-  staff: 'senior',
+  // "Staff+" is its own view since 2026-10-03. As one "Senior+" view, a
+  // four-year candidate on Mid + Senior was shown principal and director roles.
+  staff: 'staff',
   // Was missing, so every `principal` posting fell through to the `?? 'mid'`
   // default below and was shown to mid-level candidates (2,244 live, 2026-10).
-  principal: 'senior',
-  director: 'senior',
-  executive: 'senior',
+  principal: 'staff',
+  director: 'staff',
+  executive: 'staff',
 };
 
 /** Title-based seniority, mirroring the backend classifier - a fallback for
@@ -110,12 +112,22 @@ export function matchesSeniority(j: WorkdayJob, view: string): boolean {
   if (!view || view === 'any') return true;
   const band = seniorityOf(j);
   if (!band || band === 'unknown') return true;
-  return (VIEW_OF_BAND[band] ?? 'mid') === view;
+  const of = VIEW_OF_BAND[band] ?? 'mid';
+  // The legacy single-select panels label 'senior' as "Senior+": it still
+  // covers the staff view there.
+  return of === view || (view === 'senior' && of === 'staff');
+}
+
+/** The view a posting belongs to, or 'unknown' when it states no level. */
+export function seniorityViewOf(j: WorkdayJob): SeniorityLevel | 'unknown' {
+  const band = seniorityOf(j);
+  if (!band || band === 'unknown') return 'unknown';
+  return (VIEW_OF_BAND[band] ?? 'mid') as SeniorityLevel;
 }
 
 /** The levels a board can be narrowed to. An empty list means every level. */
 export type SeniorityLevel = Exclude<SeniorityView, 'any'>;
-export const SENIORITY_LEVELS: readonly SeniorityLevel[] = ['intern', 'entry', 'mid', 'senior'];
+export const SENIORITY_LEVELS: readonly SeniorityLevel[] = ['intern', 'entry', 'mid', 'senior', 'staff'];
 
 /** Does this posting belong in ANY of the chosen levels? `[]` = all levels.
  *  'unknown' always passes, for the reason `matchesSeniority` gives. */
@@ -128,22 +140,6 @@ export function matchesSeniorityLevels(j: WorkdayJob, levels: readonly string[])
 
 export const sameLevels = (a: readonly string[], b: readonly string[]) =>
   a.length === b.length && a.every((l, i) => l === b[i]);
-
-/** One line saying WHY the board shows these levels. */
-export function levelNote(levels: readonly string[], view: ExperienceView | null): string {
-  if (!levels.length) return 'Showing every level.';
-  if (!view || !view.levels.length || !sameLevels(levels, view.levels)) {
-    return 'Your selection. Roles that state no level are always shown.';
-  }
-  const years = view.years != null ? `${view.years} yr${view.years === 1 ? '' : 's'} on your resume` : '';
-  const basis =
-    view.source === 'preference+resume'
-      ? `your level (${view.preference}) and ${years}`
-      : view.source === 'preference'
-        ? `your level (${view.preference})`
-        : years;
-  return `Matched to ${basis}. Roles that state no level are always shown.`;
-}
 
 /** Bucket a posted location string into a dropdown key. */
 export function locationKeyOf(job: WorkdayJob): string {
