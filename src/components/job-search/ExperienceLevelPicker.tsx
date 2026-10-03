@@ -96,7 +96,7 @@ export function ExperienceLevelList({ className }: { className?: string }) {
           </div>
           {isMine ? (
             <span className="inline-flex shrink-0 items-center gap-1 text-[11px] font-medium text-primary">
-              <Check className="h-3.5 w-3.5" aria-hidden /> Applied
+              <Check className="h-3.5 w-3.5" aria-hidden /> Active
             </span>
           ) : (
             <Button size="sm" className="h-8 shrink-0" onClick={resetSeniorityLevels}>
@@ -183,7 +183,7 @@ export function ExperienceLevelPicker() {
           )}
         >
           <BriefcaseBusiness className="h-3.5 w-3.5" aria-hidden />
-          <span className="text-muted-foreground">Experience:</span>
+          <span className="hidden text-muted-foreground sm:inline">Experience:</span>
           <span>{summary(seniorityLevels)}</span>
           {isMine && (
             <span className="rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold text-primary">

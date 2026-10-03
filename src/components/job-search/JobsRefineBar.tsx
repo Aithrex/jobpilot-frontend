@@ -42,6 +42,7 @@ export function JobsRefineBar() {
         value={recency}
         onValueChange={setRecency}
         layoutId="jobs-recency-pill"
+        className="shrink-0"
         options={RECENCY_OPTIONS.map((opt) => ({
           value: opt.key,
           title:
@@ -59,6 +60,7 @@ export function JobsRefineBar() {
         value={sortBy}
         onValueChange={setSortBy}
         layoutId="jobs-sort-pill"
+        className="shrink-0"
         options={[
           { value: 'newest', label: 'Newest' },
           { value: 'score', label: 'Best match' },
@@ -69,6 +71,7 @@ export function JobsRefineBar() {
         value={showApplied ? 'all' : 'open'}
         onValueChange={(v) => setShowApplied(v === 'all')}
         layoutId="jobs-applied-pill"
+        className="shrink-0"
         options={[
           { value: 'open', label: 'Open', title: 'Hide roles you already applied to' },
           {
