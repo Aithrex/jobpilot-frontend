@@ -96,16 +96,30 @@ export function KpiRow({
   readiness,
   streak,
   funnel,
+  orientation = 'grid',
 }: {
   loading: boolean;
   overview: DashboardOverview | null;
   readiness: CareerReadiness | null;
   streak: StreakLike | null;
   funnel: PipelineFunnel | null;
+  /**
+   * Layout of the four cards. 'grid' (default) is the standalone 4-up row;
+   * 'rail' is the command-center right column - 2-up on tablet, a single
+   * vertical column only at xl where it sits beside the hero. Presentational
+   * only; no metric changes. BOTH the loading and data branches read the same
+   * `wrap` so loading and loaded share one layout (no shift).
+   */
+  orientation?: 'grid' | 'rail';
 }) {
+  const wrap =
+    orientation === 'rail'
+      ? 'grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-1'
+      : 'grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4';
+
   if (loading) {
     return (
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className={wrap}>
         <StatCardSkeleton />
         <StatCardSkeleton />
         <StatCardSkeleton />
@@ -139,7 +153,7 @@ export function KpiRow({
     : null;
 
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className={wrap}>
       <StatCard
         label="Applications sent"
         icon={Send}

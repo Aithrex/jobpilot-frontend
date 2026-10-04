@@ -5,6 +5,7 @@
  */
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { describe, expect, test, vi, beforeEach, type Mock } from 'vitest';
 
 import { apiService } from '@/lib/api';
@@ -36,10 +37,6 @@ vi.mock('@/app-shell/pages/today/TopMatchesPanel', () => ({
 
 vi.mock('@/app-shell/pages/today/ResumeEntryPanel', () => ({
   ResumeEntryPanel: () => <div data-testid="resume-entry" />,
-}));
-
-vi.mock('@/app-shell/pages/today/FeatureLaunchpad', () => ({
-  FeatureLaunchpad: () => <div data-testid="launchpad" />,
 }));
 
 const api = apiService as unknown as Record<string, Mock>;
@@ -79,10 +76,15 @@ function hang() {
 }
 
 function renderHome() {
+  // The live-dashboard return mounts AutoApplyPreviewBar, which reads
+  // useAutoSubmit (React Query), so Home needs a QueryClientProvider.
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <MemoryRouter>
-      <TodayPage />
-    </MemoryRouter>,
+    <QueryClientProvider client={qc}>
+      <MemoryRouter>
+        <TodayPage />
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
 }
 

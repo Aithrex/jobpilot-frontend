@@ -99,7 +99,7 @@ export const NAV_ITEMS: NavItem[] = [
   { to: "home", label: "Home", icon: Home, hint: "Daily briefing and shortcuts" },
   { to: "jobs", label: "Jobs", icon: Briefcase, hint: "Roles picked for you" },
   { to: "resume", label: "Resume", icon: PenLine, hint: "Tailor and manage resumes" },
-  { to: "apply", label: "Apply", icon: LayoutList, hint: "Tracker, Auto-Apply, and inbox" },
+  { to: "apply", label: "Apply", icon: LayoutList, hint: "Tracker, inbox, and daily pipeline" },
   { to: "grow", label: "Grow", icon: Sprout, hint: "Skills, interview, and network" },
 ];
 
@@ -235,13 +235,12 @@ export const APPLY_SECTIONS: NavSection[] = [
     hint: "Application board: notes, interviews, and later stages",
     keywords: "pipeline kanban status applied interview offer",
   },
-  {
-    to: "auto-apply",
-    label: "Auto-Apply",
-    icon: Send,
-    hint: "Queue roles and let Aspirely fill the forms",
-    keywords: "autopilot submit automation approve review",
-  },
+  // Auto-Apply is ON HOLD and demoted: removed from the Apply nav strip (and
+  // therefore from the command palette, inline search, and More sheet) so a
+  // paused feature does not advertise itself as a live destination. The ROUTE
+  // `/app/apply/auto-apply` is kept in App.tsx so deep links, emailed approve
+  // links, and the Home "Preview Auto-Apply" CTA stay reachable. Re-adding the
+  // section here is the one-line path to bringing it back when it ships.
   {
     to: "inbox",
     label: "Inbox",
@@ -336,7 +335,7 @@ export const SETTINGS_SECTIONS: NavSection[] = [
     to: "autonomy",
     label: "Autonomy",
     icon: Gauge,
-    hint: "How far Auto-Apply may go without you",
+    hint: "Set how far Auto-Apply will go once it is back on",
     keywords: "auto apply autopilot threshold approval",
   },
   {

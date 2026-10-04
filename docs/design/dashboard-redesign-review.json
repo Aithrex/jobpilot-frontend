@@ -1,0 +1,27 @@
+{
+  "verdict": "APPROVED",
+  "findings": [
+    {
+      "severity": "NIT",
+      "title": "Removing FeatureLaunchpad leaves an unused mock in today-first-run.test.tsx",
+      "where": "docs/design/dashboard-redesign.md section 9; src/app-shell/pages/__tests__/today-first-run.test.tsx lines 41-44",
+      "problem": "The test mocks FeatureLaunchpad as a stub but never queries or asserts on it, so removing the render does not break the test; the mock just becomes dead code.",
+      "fix": "When removing the FeatureLaunchpad render and import from TodayPage, also delete the now-orphaned vi.mock('@/app-shell/pages/today/FeatureLaunchpad', ...) block so the test does not mislead a reader. Optional housekeeping; not required for correctness."
+    },
+    {
+      "severity": "NIT",
+      "title": "copy:check reject rule not stated for ASCII copy strings",
+      "where": "docs/design/dashboard-redesign.md section 8; package.json copy:check",
+      "problem": "The doc names pnpm copy:check as a gate but does not state its rule (fails on any non-ASCII byte). The doc's prose uses en/em dashes, so an implementer copying strings out of it could paste a Unicode dash.",
+      "fix": "Add one line to section 8: 'copy:check fails on any non-ASCII byte in user-facing copy; use a hyphen-minus - never an en/em dash.' The specified replacement strings are already ASCII and will pass."
+    },
+    {
+      "severity": "NIT",
+      "title": "First-run early return does not reference FeatureLaunchpad; note it for the import-removal step",
+      "where": "docs/design/dashboard-redesign.md section 9; src/app-shell/pages/TodayPage.tsx lines 235-255",
+      "problem": "Only the main return renders FeatureLaunchpad; the firstRunHome early return does not. The doc does not spell this out, which could make an implementer hesitate before dropping the import.",
+      "fix": "Add a clarifying clause to section 9: 'the firstRunHome early return does not render FeatureLaunchpad, so dropping the import affects only the main return.' Purely clarifying."
+    }
+  ],
+  "reviewDoc": "d:\\Aithrex\\jobpilot-frontend\\.worktrees\\dashboard-redesign\\docs\\design\\dashboard-redesign-review.md"
+}

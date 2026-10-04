@@ -1,23 +1,28 @@
 /**
  * Home - daily briefing at `/app/home`.
  *
- * Reading order is the 9am question order, most urgent first:
+ * A full-bleed two-column command center (`.page-full`) so a wide monitor is
+ * spent on structure, not empty gutters. The reading order is the 9am question
+ * order, most urgent first:
  *
+ *   0. PAUSED PREVIEW    AutoApplyPreviewBar - a thin glass bar (desktop) /
+ *                        swipe strip (mobile) for the on-hold Auto-Apply, read
+ *                        only, never live.
  *   1. WHAT NEEDS ME?    HeroPanel - the Today inbox: approvals, hand-offs,
- *                        nudges. If anything is blocking, it is the first
- *                        thing on the screen.
- *   2. WHERE DO I STAND? KpiRow - sent today, streak, funnel, readiness.
- *   3. WHAT'S NEW?       TopMatchesPanel - the strongest roles scored against
- *                        this resume, with one obvious way into the full list.
- *   4. SET-UP GAP        ResumeEntryPanel - self-gating; loud only when there
- *                        is no base resume, quiet once there is.
- *   5. WHERE ELSE?       FeatureLaunchpad - the product tour, below the fold.
- *   6. WHAT'S CHANGING?  Trend + funnel.
- *   7. WHY?              Recent roles table.
+ *                        nudges (left column top).
+ *   2. WHAT'S STRONG?    TopMatchesPanel - the best roles scored against this
+ *                        resume (left column, below the hero).
+ *   3. WHERE DO I STAND? KpiRow (rail) - sent today, streak, funnel, readiness,
+ *                        beside the hero on xl rather than stranded below it.
+ *   4. SET-UP GAP        ResumeEntryPanel - self-gating; loud when there is no
+ *                        base resume, a quiet affordance once there is.
+ *   5. WHAT'S CHANGING?  Trend + funnel.
+ *   6. WHY?              Recent roles table.
  *
- * The launchpad and the resume prompt used to sit ABOVE the status panels, so a
- * user with three approvals waiting opened Home and saw four static marketing
- * tiles first. Status now wins the fold; the tour is where a tour belongs.
+ * The static product-tour tiles (FeatureLaunchpad) were cut from Home: they
+ * solved discovery, not an applying pain, and are covered by the palette, the
+ * More sheet, and nav. Status wins the fold; every surviving panel earns its
+ * place by removing a real manual-apply pain.
  *
  * First-run empty Home (upload + continue setup) is only for a settled empty
  * workspace. While dashboard fetches are in flight we keep the real layout and
@@ -41,7 +46,10 @@ import type { TodayInbox } from '@/types/todayInbox';
 
 import { HeroPanel, type HeroModel, type HeroInputItem } from './today/HeroPanel';
 import { ResumeEntryPanel } from './today/ResumeEntryPanel';
-import { FeatureLaunchpad } from './today/FeatureLaunchpad';
+// FeatureLaunchpad (the static product-tour tiles) is intentionally no longer
+// rendered on Home - discoverability is covered by the command palette, the
+// mobile More sheet, and primary nav. The file is retained for reuse.
+import { AutoApplyPreviewBar } from './today/AutoApplyPreviewBar';
 import { KpiRow } from './today/KpiCards';
 import { ApplicationTrend, ConversionFunnel } from './today/PipelinePanels';
 import { RecentActivityPanel } from './today/RecentActivityPanel';
@@ -233,7 +241,7 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
   // land on if they close the overlay without finishing.
   if (firstRunHome) {
     return (
-      <div className="page-measure space-y-8">
+      <div className="page-full space-y-8">
         <motion.header {...rise(0)} className="space-y-2">
           <p className="overline leading-none">Home</p>
           <h1 className="text-title font-display text-foreground">
@@ -254,7 +262,7 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
   }
 
   return (
-    <div className="page-measure space-y-8">
+    <div className="page-full space-y-8">
       {/* Page header */}
       <motion.header {...rise(0)} className="flex flex-wrap items-end justify-between gap-3">
         <div className="space-y-1">
@@ -294,33 +302,45 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
         </div>
       )}
 
-      {/* Zone A - What needs me, and where do I stand? */}
-      <motion.section {...rise(1)} aria-label="Today's status" className="space-y-4">
-        <HeroPanel model={hero} onRetry={() => void load()} />
-        <KpiRow
-          loading={firstLoad && loading}
-          overview={overview}
-          readiness={readiness}
-          streak={streak}
-          funnel={funnel}
-        />
-      </motion.section>
+      {/* Row 1 - Auto-Apply, demoted to a paused preview (read-only). */}
+      <AutoApplyPreviewBar />
 
-      {/* Zone A2 - What's new and strong? The founder's "top jobs on landing".
-          Owns its own async states off the shared job feed, so it never blocks
-          (or is blocked by) the dashboard fetches above. */}
-      <motion.section {...rise(2)} aria-label="Top matches">
-        <TopMatchesPanel />
-      </motion.section>
+      {/* The command center: one grid, two columns on xl, single column below.
+          LEFT (2fr) is the "do something now" narrative - what needs me, then
+          what's strong. RIGHT (1fr) is the at-a-glance scoreboard, beside the
+          hero on wide screens instead of stranded below it. */}
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+        <div className="space-y-6 xl:col-span-2">
+          {/* Zone A - What needs me right now? */}
+          <motion.section {...rise(1)} aria-label="What needs you">
+            <HeroPanel model={hero} onRetry={() => void load()} />
+          </motion.section>
+
+          {/* Zone A2 - What's strong? The founder's "top jobs on landing".
+              Owns its own async states off the shared job feed, so it never
+              blocks (or is blocked by) the dashboard fetches above. */}
+          <motion.section {...rise(2)} aria-label="Top matches">
+            <TopMatchesPanel />
+          </motion.section>
+        </div>
+
+        {/* Zone A3 - Where do I stand? KPI rail in the narrow right column. */}
+        <motion.section {...rise(3)} aria-label="Where you stand" className="xl:col-span-1">
+          <KpiRow
+            orientation="rail"
+            loading={firstLoad && loading}
+            overview={overview}
+            readiness={readiness}
+            streak={streak}
+            funnel={funnel}
+          />
+        </motion.section>
+      </div>
 
       {/* Resume upload entry point - the primary onboarding action when the
           user has no base resume; a quiet, discoverable affordance once they do. */}
-      <motion.div {...rise(3)}>
-        <ResumeEntryPanel onUploaded={() => void load()} />
-      </motion.div>
-
       <motion.div {...rise(4)}>
-        <FeatureLaunchpad />
+        <ResumeEntryPanel onUploaded={() => void load()} />
       </motion.div>
 
       {/* Zone B - What's changing? */}
