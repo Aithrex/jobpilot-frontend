@@ -1,35 +1,36 @@
 /**
  * Home - daily briefing at `/app/home`.
  *
- * A full-bleed two-column command center (`.page-full`) so a wide monitor is
- * spent on structure, not empty gutters. The reading order is the 9am question
- * order, most urgent first:
+ * A full-bleed command center (`.page-full`) so a wide monitor is spent on
+ * structure, not empty gutters. The reading order is the 9am question order:
  *
  *   0. PAUSED PREVIEW    AutoApplyPreviewBar - a thin glass bar (desktop) /
  *                        swipe strip (mobile) for the on-hold Auto-Apply, read
  *                        only, never live.
- *   1. WHAT NEEDS ME?    HeroPanel - the Today inbox: approvals, hand-offs,
- *                        nudges (left column top).
+ *   1. WHERE DO I STAND? KpiRow (strip) - sent today, pipeline, interview rate,
+ *                        readiness. A confident, scannable horizontal rail that
+ *                        is now the first thing the user reads.
  *   2. WHAT'S STRONG?    TopMatchesPanel - the best roles scored against this
- *                        resume (left column, below the hero).
- *   3. WHERE DO I STAND? KpiRow (rail) - sent today, streak, funnel, readiness,
- *                        beside the hero on xl rather than stranded below it.
- *   4. SET-UP GAP        ResumeEntryPanel - self-gating; loud when there is no
+ *                        resume, filtered to the candidate's own experience
+ *                        level (mirrors the "For you" board default). The lead
+ *                        of the main content column.
+ *   3. SET-UP GAP        ResumeEntryPanel - self-gating; loud when there is no
  *                        base resume, a quiet affordance once there is.
- *   5. WHAT'S CHANGING?  Trend + funnel.
- *   6. WHY?              Recent roles table.
+ *   4. WHAT'S CHANGING?  Trend + funnel.
+ *   5. WHY?              Recent roles table.
  *
- * The static product-tour tiles (FeatureLaunchpad) were cut from Home: they
- * solved discovery, not an applying pain, and are covered by the palette, the
- * More sheet, and nav. Status wins the fold; every surviving panel earns its
- * place by removing a real manual-apply pain.
+ * The Today-inbox hero ("needs your input") was removed from Home for now; its
+ * component and fetch are retained in the repo so the capability can return.
+ * The static product-tour tiles (FeatureLaunchpad) were cut earlier for the
+ * same reason: Home shows status and the strongest next move, and every
+ * surviving panel earns its place by removing a real manual-apply pain.
  *
  * First-run empty Home (upload + continue setup) is only for a settled empty
  * workspace. While dashboard fetches are in flight we keep the real layout and
  * its skeletons - otherwise an unfinished onboarding flag flashes the empty
  * page, then swaps in KPIs/matches and drops Continue workspace setup.
  */
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -42,9 +43,10 @@ import type { DashboardOverview } from '@/types/overview';
 import type { CareerReadiness } from '@/types/career';
 import type { PipelineFunnel } from '@/types/pipeline';
 import type { SavedJob } from '@/types/jobs';
-import type { TodayInbox } from '@/types/todayInbox';
 
-import { HeroPanel, type HeroModel, type HeroInputItem } from './today/HeroPanel';
+// HeroPanel (the Today-inbox "needs your input" block) is intentionally no
+// longer mounted on Home - the capability and `apiService.getTodayInbox` are
+// retained in the repo so it can return later. See the layout note below.
 import { ResumeEntryPanel } from './today/ResumeEntryPanel';
 // FeatureLaunchpad (the static product-tour tiles) is intentionally no longer
 // rendered on Home - discoverability is covered by the command palette, the
@@ -127,7 +129,6 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
   const [streak, setStreak] = useState<StreakData | null>(null);
   const [funnel, setFunnel] = useState<PipelineFunnel | null>(null);
   const [savedJobs, setSavedJobs] = useState<SavedJob[] | null>(null);
-  const [inbox, setInbox] = useState<TodayInbox | null>(null);
 
   const [err, setErr] = useState({ overview: false, streak: false, funnel: false, saved: false });
   const [loading, setLoading] = useState(true);
@@ -137,13 +138,12 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [ovR, crR, stR, pfR, sjR, tiR] = await Promise.all([
+    const [ovR, crR, stR, pfR, sjR] = await Promise.all([
       apiService.getOverview().catch(() => ({ error: 'x' }) as const),
       apiService.getCareerReadiness().catch(() => ({ error: 'x' }) as const),
       apiService.getApplicationStreak().catch(() => ({ error: 'x' }) as const),
       apiService.getPipelineFunnel().catch(() => ({ error: 'x' }) as const),
       apiService.getSavedJobs().catch(() => ({ error: 'x' }) as const),
-      apiService.getTodayInbox().catch(() => ({ error: 'x' }) as const),
     ]);
 
     if (ok(ovR)) setOverview(ovR.data as DashboardOverview);
@@ -156,8 +156,6 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
       setFunnel(pfR.data as PipelineFunnel);
     }
     if (ok(sjR)) setSavedJobs(((sjR.data as { jobs?: SavedJob[] }).jobs as SavedJob[]) || []);
-    // Today inbox is best-effort - a failure just falls back to today's status.
-    if (ok(tiR)) setInbox(tiR.data as TodayInbox);
 
     setErr({
       overview: !ok(ovR),
@@ -198,32 +196,6 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
     countsUnknown,
   });
   const setupOpen = user?.onboarded === false;
-
-  /* ── Zone A hero model - Today inbox first, else today's status ──────────── */
-  const hero: HeroModel = useMemo(() => {
-    const items: HeroInputItem[] = (inbox?.items ?? []).slice(0, 4).map((it) => ({
-      id: it.id,
-      kind: it.kind,
-      title: it.title,
-      detail: it.detail,
-      deepLink: it.deep_link,
-      actionLabel: it.action_label,
-    }));
-
-    // Core failure = we can't even show today's status.
-    const coreFailed = err.overview && err.streak;
-    const state: HeroModel['state'] = firstLoad && loading ? 'loading' : coreFailed ? 'error' : 'ready';
-
-    return {
-      state,
-      needsCount: inbox?.count ?? 0,
-      items,
-      queueAvailable: inbox !== null,
-      appliedToday: streak?.today_count ?? 0,
-      streakDays: streak?.current_streak ?? 0,
-      totalApps: overview?.applications.total ?? streak?.total_applications ?? 0,
-    };
-  }, [inbox, streak, overview, err.overview, err.streak, firstLoad, loading]);
 
   const panelState = (isErr: boolean): 'loading' | 'error' | 'ready' =>
     firstLoad && loading ? 'loading' : isErr ? 'error' : 'ready';
@@ -302,49 +274,40 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
         </div>
       )}
 
-      {/* Row 1 - Auto-Apply, demoted to a paused preview (read-only). */}
+      {/* Row 0 - Auto-Apply, demoted to a paused preview (read-only). */}
       <AutoApplyPreviewBar />
 
-      {/* The command center: one grid, two columns on xl, single column below.
-          LEFT (2fr) is the "do something now" narrative - what needs me, then
-          what's strong. RIGHT (1fr) is the at-a-glance scoreboard, beside the
-          hero on wide screens instead of stranded below it. */}
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-        <div className="space-y-6 xl:col-span-2">
-          {/* Zone A - What needs me right now? */}
-          <motion.section {...rise(1)} aria-label="What needs you">
-            <HeroPanel model={hero} onRetry={() => void load()} />
-          </motion.section>
+      {/* Zone 1 - Where do I stand? With the hero gone this is the first thing
+          the user reads: a confident, scannable horizontal KPI strip across the
+          full width (4-up on lg, 2-up on md, stacked below). */}
+      <motion.section {...rise(1)} aria-label="Where you stand">
+        <KpiRow
+          orientation="grid"
+          loading={firstLoad && loading}
+          overview={overview}
+          readiness={readiness}
+          streak={streak}
+          funnel={funnel}
+        />
+      </motion.section>
 
-          {/* Zone A2 - What's strong? The founder's "top jobs on landing".
-              Owns its own async states off the shared job feed, so it never
-              blocks (or is blocked by) the dashboard fetches above. */}
-          <motion.section {...rise(2)} aria-label="Top matches">
-            <TopMatchesPanel />
-          </motion.section>
-        </div>
-
-        {/* Zone A3 - Where do I stand? KPI rail in the narrow right column. */}
-        <motion.section {...rise(3)} aria-label="Where you stand" className="xl:col-span-1">
-          <KpiRow
-            orientation="rail"
-            loading={firstLoad && loading}
-            overview={overview}
-            readiness={readiness}
-            streak={streak}
-            funnel={funnel}
-          />
-        </motion.section>
-      </div>
+      {/* Zone 2 - What's strong? The founder's "top jobs on landing", now the
+          lead of the command center with the hero gone. It owns its own async
+          states off the shared job feed, so it never blocks (or is blocked by)
+          the dashboard fetches above. Full width so the matches read as the
+          primary surface of the page. */}
+      <motion.section {...rise(2)} aria-label="Top matches">
+        <TopMatchesPanel />
+      </motion.section>
 
       {/* Resume upload entry point - the primary onboarding action when the
           user has no base resume; a quiet, discoverable affordance once they do. */}
-      <motion.div {...rise(4)}>
+      <motion.div {...rise(3)}>
         <ResumeEntryPanel onUploaded={() => void load()} />
       </motion.div>
 
-      {/* Zone B - What's changing? */}
-      <motion.section {...rise(5)} aria-label="Trends" className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      {/* Zone 3 - What's changing? */}
+      <motion.section {...rise(4)} aria-label="Trends" className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <ApplicationTrend
             state={panelState(err.streak)}
@@ -361,8 +324,8 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
         </div>
       </motion.section>
 
-      {/* Zone C - Why? */}
-      <motion.section {...rise(6)} aria-label="Recent roles">
+      {/* Zone 4 - Why? */}
+      <motion.section {...rise(5)} aria-label="Recent roles">
         <RecentActivityPanel
           state={panelState(err.saved)}
           jobs={savedJobs}

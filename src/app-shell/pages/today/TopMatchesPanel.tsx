@@ -19,13 +19,22 @@
 import { useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
-import { ArrowRight, ArrowUpRight, Briefcase, Loader2, MapPin, Search, Upload } from 'lucide-react';
+import {
+  ArrowRight,
+  ArrowUpRight,
+  Briefcase,
+  BriefcaseBusiness,
+  Loader2,
+  MapPin,
+  Search,
+  Upload,
+} from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CompanyLogo } from '@/components/CompanyLogo';
 import { useCombinedJobsCtx } from '@/components/job-search/CombinedJobsProvider';
 import { WhyThisScoreButton } from '@/components/job-search/JobFitDetails';
 import { fitBandOf } from '@/components/job-search/fitBands';
-import { toJob } from '@/lib/careerJobs';
+import { matchesSeniorityLevels, sortJobsByMode, toJob, type SeniorityLevel } from '@/lib/careerJobs';
 import { toTitleCase } from '@/lib/format';
 import { listContainer, listItem } from '@/lib/motion';
 import { cn } from '@/lib/utils';
@@ -35,6 +44,20 @@ import { PanelCard, PanelEmpty, PanelError, Stat, ZoneHeading } from './primitiv
 const JOBS_HREF = '/app/jobs/for-you';
 const RESUME_HREF = '/app/resume/library';
 const TOP_N = 5;
+
+/** Short labels mirrored from ExperienceLevelPicker so the dashboard chip reads
+ *  the same vocabulary as the "For you" board's experience control. */
+const LEVEL_SHORT: Record<SeniorityLevel, string> = {
+  intern: 'Intern',
+  entry: 'Entry',
+  mid: 'Mid',
+  senior: 'Senior',
+  staff: 'Staff+',
+};
+
+function levelSummary(levels: readonly SeniorityLevel[]): string {
+  return levels.map((l) => LEVEL_SHORT[l]).join(' + ');
+}
 
 function RowSkeleton() {
   return (
@@ -118,7 +141,7 @@ function MatchRow({ job }: { job: Job }) {
 export function TopMatchesPanel() {
   const feed = useCombinedJobsCtx();
   const reduce = useReducedMotion();
-  const { ensureStarted } = feed;
+  const { ensureStarted, seniorityLevels, experienceView, sortBy } = feed;
 
   // Warm the shared scan. Idempotent, and `useAutoSync` fires a NON-forced
   // (server-cached) initial run, so this costs what opening Jobs costs.
@@ -126,10 +149,28 @@ export function TopMatchesPanel() {
     ensureStarted();
   }, [ensureStarted]);
 
-  const rows = useMemo(
-    () => feed.jobs.slice(0, TOP_N).map((j) => toJob(j, 'portal')),
-    [feed.jobs],
-  );
+  // Mirror the "For you" board's DEFAULT exactly, so the two surfaces cannot
+  // drift: restrict to the candidate's own experience levels (the provider
+  // seeds `seniorityLevels` from the server `experience_view`) and order
+  // best-match-first with the same `sortBy`. These are the very functions the
+  // board uses (`matchesSeniorityLevels`, `sortJobsByMode`) - not a re-impl.
+  // While the view is still resolving, `seniorityLevels` is `[]`, which
+  // `matchesSeniorityLevels` treats as every level, so we fall back to current
+  // behavior rather than crashing or showing a misleading chip.
+  const seniorityKey = seniorityLevels.join('|');
+  const rows = useMemo(() => {
+    const levels = seniorityKey ? (seniorityKey.split('|') as SeniorityLevel[]) : [];
+    const filtered = feed.jobs.filter((j) => matchesSeniorityLevels(j, levels));
+    return sortJobsByMode(filtered, sortBy)
+      .slice(0, TOP_N)
+      .map((j) => toJob(j, 'portal'));
+  }, [feed.jobs, seniorityKey, sortBy]);
+
+  // The active experience-level view, surfaced as a compact read-only chip.
+  // Only shown once the server view has resolved to real levels - never a
+  // misleading "Entry" while it is still loading or on an older backend.
+  const activeLevels = (experienceView?.levels ?? []) as SeniorityLevel[];
+  const showExperienceChip = activeLevels.length > 0;
 
   const sourceStates = [feed.states.workday, feed.states.careers, feed.states.mncs];
   const failedCount = sourceStates.filter((s) => s.error).length;
@@ -243,6 +284,24 @@ export function TopMatchesPanel() {
         hint="Scored against your resume. Strongest first."
         action={exploreLink}
       />
+
+      {showExperienceChip && (
+        <p className="mb-3 flex flex-wrap items-center gap-2 text-caption text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/5 px-2.5 py-1 text-[0.75rem] font-medium text-primary">
+            <BriefcaseBusiness className="h-3.5 w-3.5" aria-hidden />
+            {levelSummary(activeLevels)}
+          </span>
+          <span className="min-w-0">
+            Matched to your experience level.{' '}
+            <Link
+              to={JOBS_HREF}
+              className="interactive rounded-sm font-medium text-primary underline-offset-2 hover:underline"
+            >
+              Change on the board
+            </Link>
+          </span>
+        </p>
+      )}
 
       {feed.resumeSkillCount === 0 && (
         <p className="mb-3 flex items-start gap-2 rounded-control border border-warning/30 bg-warning/10 p-2.5 text-caption text-warning">

@@ -141,6 +141,19 @@ describe('TodayPage first-run vs live dashboard', () => {
     expect(screen.queryByText(/this home fills in/i)).not.toBeInTheDocument();
   });
 
+  test('the Today-inbox hero is gone from Home', async () => {
+    // The "needs your input" / "items need you today" block was removed from
+    // the dashboard; its fetch must not run on load either.
+    api.getOverview.mockResolvedValue(overview(7));
+    api.getApplicationStreak.mockResolvedValue(streak(7, 7));
+    renderHome();
+    expect(await screen.findByRole('button', { name: /refresh dashboard/i })).toBeEnabled();
+    expect(screen.queryByText(/needs your input/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/need you today/i)).not.toBeInTheDocument();
+    // The now-unneeded Today-inbox fetch is no longer wired on Home.
+    expect(api.getTodayInbox).not.toHaveBeenCalled();
+  });
+
   test('after load, a truly empty unfinished workspace still gets the focused setup home', async () => {
     api.getOverview.mockResolvedValue(overview(0));
     api.getApplicationStreak.mockResolvedValue(streak(0));
