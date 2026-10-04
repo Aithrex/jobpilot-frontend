@@ -1,0 +1,13 @@
+{
+  "verdict": "APPROVED",
+  "findings": [
+    {
+      "severity": "nit",
+      "blocking": false,
+      "label": "Box-drawing chars in component comments",
+      "detail": "AutoApplyPreviewBar.tsx uses the box-drawing character U+2500 in two JSX divider comments. It is non-ASCII and contradicts the commit's 'clean ASCII' claim, but scripts/ascii-copy-sweep.mjs (pnpm copy:check) only sweeps em/en dashes, curly quotes, ellipsis, and accented Latin letters, so no gate fails. Optional: replace with ASCII dashes for consistency with the house ASCII rule.",
+      "file": "src/app-shell/pages/today/AutoApplyPreviewBar.tsx"
+    }
+  ],
+  "reviewDoc": "d:\\Aithrex\\jobpilot-frontend\\.worktrees\\dashboard-redesign\\docs\\design\\dashboard-implementation-review.md"
+}
