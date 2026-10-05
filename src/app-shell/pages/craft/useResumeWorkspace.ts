@@ -31,6 +31,7 @@ export function useResumeWorkspace(): ResumeWorkspaceData {
   const [tailoredState, setTailoredState] = useState<PanelState>('loading');
   const [resumes, setResumes] = useState<ResumeAssetRow[]>([]);
   const [records, setRecords] = useState<TailoringRecord[]>([]);
+  const [tailoredCount, setTailoredCount] = useState(0);
 
   const load = useCallback(async () => {
     setResumesState('loading');
@@ -38,7 +39,7 @@ export function useResumeWorkspace(): ResumeWorkspaceData {
 
     const [baseResp, recResp] = await Promise.all([
       apiService.listBaseResumes(),
-      apiService.listTailoringRecords(),
+      apiService.getTailoringHistoryPage({ page_size: 5, sort: 'newest' }),
     ]);
 
     if (baseResp.data) {
@@ -50,6 +51,7 @@ export function useResumeWorkspace(): ResumeWorkspaceData {
 
     if (recResp.data) {
       setRecords((recResp.data.records || []) as TailoringRecord[]);
+      setTailoredCount(recResp.data.total);
       setTailoredState('ready');
     } else {
       setTailoredState('error');
@@ -91,7 +93,7 @@ export function useResumeWorkspace(): ResumeWorkspaceData {
     activeResume,
     recentRecords,
     resumeCount: resumes.length,
-    tailoredCount: records.length,
+    tailoredCount,
     reload: () => void load(),
   };
 }

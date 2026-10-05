@@ -23,7 +23,7 @@ import type { ResumeAssetRow, TailoringRecord } from '@/types/resume';
 vi.mock('@/lib/api', () => ({
   apiService: {
     listBaseResumes: vi.fn(),
-    listTailoringRecords: vi.fn(),
+    getTailoringHistoryPage: vi.fn(),
     downloadResumeFile: vi.fn(),
     getApplicationStreak: vi.fn(),
     getDailyUsage: vi.fn(),
@@ -82,7 +82,7 @@ function renderShell(path: string) {
 beforeEach(() => {
   vi.clearAllMocks();
   api.listBaseResumes.mockResolvedValue({ data: { versions: baseResumes() } });
-  api.listTailoringRecords.mockResolvedValue({ data: { records: tailoringRecords() } });
+  api.getTailoringHistoryPage.mockResolvedValue({ data: { records: tailoringRecords(), total: 123, next_cursor: null } });
   // Default: the preview download fails, which exercises the fallback path.
   // Individual tests opt into a successful blob.
   api.downloadResumeFile.mockRejectedValue(new Error('no file'));
@@ -175,7 +175,7 @@ describe('Resume health panel', () => {
 
   test('states gaps honestly instead of inventing a score', async () => {
     api.listBaseResumes.mockResolvedValue({ data: { versions: [] } });
-    api.listTailoringRecords.mockResolvedValue({ data: { records: [] } });
+    api.getTailoringHistoryPage.mockResolvedValue({ data: { records: [], total: 0, next_cursor: null } });
 
     renderShell('/app/resume/tailor');
     const dock = await screen.findByRole('navigation', { name: /resume sections/i });
@@ -201,7 +201,7 @@ describe('Resume health panel', () => {
   test('shows no ratio while data is still unknown', async () => {
     // An endpoint that errors leaves its checks indeterminate - the panel must
     // not present a confident "n/3" built on a failed read.
-    api.listTailoringRecords.mockResolvedValue({ error: 'boom' });
+    api.getTailoringHistoryPage.mockResolvedValue({ error: 'boom' });
 
     renderShell('/app/resume/tailor');
     const dock = await screen.findByRole('navigation', { name: /resume sections/i });
@@ -246,7 +246,7 @@ describe('Resume overview', () => {
   });
 
   test('each panel fails independently and stays retryable', async () => {
-    api.listTailoringRecords.mockResolvedValue({ error: 'boom' });
+    api.getTailoringHistoryPage.mockResolvedValue({ error: 'boom' });
     renderShell('/app/resume');
 
     // The resume panel still renders its data...
@@ -340,7 +340,8 @@ describe('Overview panel', () => {
     expect(await within(panel).findByText('3')).toBeInTheDocument();
     // Counts are raw list lengths, not derived metrics.
     expect(within(panel).getByText('1 file')).toBeInTheDocument();
-    expect(within(panel).getByText('1 version')).toBeInTheDocument();
+    expect(within(panel).getByText('123 versions')).toBeInTheDocument();
+    expect(api.getTailoringHistoryPage).toHaveBeenCalledWith({ page_size: 5, sort: 'newest' });
     // Quota reuses QuotaMeter.
     expect(within(panel).getByText('Tailors today')).toBeInTheDocument();
     expect(within(panel).getByText('2 / 5')).toBeInTheDocument();

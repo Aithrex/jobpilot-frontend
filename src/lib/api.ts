@@ -2242,12 +2242,18 @@ class ApiService {
     return this.request('/resume/versions');
   }
 
-  /**
-   * `view: 'list'` asks the backend to project server-side and return only the
-   * fields a tracker row renders. Everything else on this endpoint still gets
-   * the full shape, so interview prep and the tailored-resumes page are
-   * unaffected.
-   */
+  /** One history page. The caller explicitly requests subsequent pages. */
+  async getTailoringHistoryPage(
+    options: import('../types/tailoringHistory').TailoringHistoryRequest = {},
+  ): Promise<ApiResponse<import('../types/tailoringHistory').TailoringHistoryPage>> {
+    const params = new URLSearchParams({ page_size: '50' });
+    Object.entries(options).forEach(([key, value]) => {
+      if (value !== undefined && value !== '') params.set(key, String(value));
+    });
+    return this.request(`/resume/tailoring-history?${params.toString()}`);
+  }
+
+  /** Legacy full-list consumers; use getTailoringHistoryPage for history browsing. */
   async listTailoringRecords(
     opts: { view?: 'list' } = {},
   ): Promise<ApiResponse<{ records: import('../types/resume').TailoringRecord[] }>> {

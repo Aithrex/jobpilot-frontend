@@ -41,6 +41,20 @@ afterEach(() => {
 });
 
 describe('tailoring history pagination', () => {
+  test('on-demand history returns one page without following its cursor', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { records: [{ record_id: 'r1' }], total: 1000, next_cursor: 'next' }));
+    const response = await apiService.getTailoringHistoryPage({ q: 'C++ & SQL', company: 'A+B', sort: 'ats', multi_version: true });
+    expect(response.data?.total).toBe(1000);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const url = new URL(String(fetchMock.mock.calls[0][0]), 'https://example.com');
+    expect(url.pathname).toContain('/resume/tailoring-history');
+    expect(url.searchParams.get('q')).toBe('C++ & SQL');
+    expect(url.searchParams.get('company')).toBe('A+B');
+    expect(url.searchParams.get('sort')).toBe('ats');
+    expect(url.searchParams.get('multi_version')).toBe('true');
+    expect(url.searchParams.get('page_size')).toBe('50');
+  });
+
   test('empty history finishes after one request', async () => {
     fetchMock.mockResolvedValueOnce(jsonResponse(200, { records: [], next_offset: null }));
     expect((await apiService.listTailoringRecords()).data?.records).toEqual([]);

@@ -2,9 +2,9 @@
  * TailoredPage - the tailoring history browser in the Craft section
  * (lazy-mounted at /app/resume/tailored).
  *
- * Extracted verbatim (behaviour-preserving) from the ResumeParser monolith's
+ * Originally extracted from the ResumeParser monolith's
  * `TailoredResumesTab` for the app shell. Self-fetching + prop-less: it lists
- * every tailoring session (records + versions) with chip-based filtering,
+ * one page of tailoring sessions at a time with server-side filtering,
  * quick presets, an advanced drawer, per-version PDF/DOCX download, set-current,
  * version-diff compare, and a legacy "earlier downloads" drawer.
  *
@@ -34,6 +34,8 @@ import { atsOverall } from '@/lib/atsScores';
 import { isTrimmedOutcome, resumeTrimDescription } from '@/lib/resumeLayoutSpec';
 import { formatDate } from '@/components/resume/ResumeDashboard';
 import type { TailoringRecord, TailoringVersion } from '@/types/resume';
+import type { HistoryPreset, TailoringHistoryQuery } from '@/types/tailoringHistory';
+import { useTailoringHistory } from './useTailoringHistory';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PanelError } from '@/app-shell/pages/today/primitives';
 import {
@@ -87,10 +89,7 @@ const STATUS_CHIP: Record<string, { label: string; cls: string }> = {
 };
 
 export default function TailoredPage() {
-  const [records, setRecords] = useState<TailoringRecord[]>([]);
-  const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState<string | null>(null);
-  const [error, setError] = useState('');
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState<string | null>(null);
   const [diffRecord, setDiffRecord] = useState<TailoringRecord | null>(null);
@@ -102,8 +101,8 @@ export default function TailoredPage() {
 
   // Filters
   const [search, setSearch] = useState('');
-  const [companyFilter, setCompanyFilter] = useState<string>('all');
-  const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [companyFilter, setCompanyFilter] = useState<string>('');
+  const [roleFilter, setRoleFilter] = useState<string>('');
   const [dateFrom, setDateFrom] = useState<string>('');
   const [dateTo, setDateTo] = useState<string>('');
   const [atsMin, setAtsMin] = useState<number>(0);
@@ -111,130 +110,39 @@ export default function TailoredPage() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [sortKey, setSortKey] = useState<SortKey>('newest');
   const [advancedOpen, setAdvancedOpen] = useState(false);
-  // Active quick-preset tokens (pure client-side derivations of the other filter state)
-  const [quickPreset, setQuickPreset] = useState<string | null>(null);
+  // Presets and their counts are evaluated across the full history on the server.
+  const [quickPreset, setQuickPreset] = useState<HistoryPreset | null>(null);
 
-  const fetchAll = useCallback(async () => {
-    setLoading(true);
-    setError('');
-    // Resume Platform v3: generated files live on tailoring-record version
-    // refs (versions[].files) - the legacy GET /resume/generated list is
-    // dead (always []) and is no longer queried.
-    const recResp = await apiService.listTailoringRecords();
-    if (recResp.data) setRecords((recResp.data.records || []) as TailoringRecord[]);
-    if (recResp.error) setError(recResp.error);
-    setLoading(false);
-  }, []);
-  useEffect(() => { fetchAll(); }, [fetchAll]);
+  const [debouncedText, setDebouncedText] = useState({ search: '', company: '', role: '' });
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedText({
+      search: search.trim(), company: companyFilter.trim(), role: roleFilter.trim(),
+    }), 300);
+    return () => window.clearTimeout(timer);
+  }, [search, companyFilter, roleFilter]);
 
-  // Derived filter lists
-  const { companies, roles } = useMemo(() => {
-    const c = new Set<string>(), r = new Set<string>();
-    records.forEach(rec => {
-      const co = rec.jd_analysis?.company;
-      const ro = rec.jd_analysis?.job_title;
-      if (co && co !== 'Not specified') c.add(co);
-      if (ro) r.add(ro);
-    });
-    return { companies: Array.from(c).sort(), roles: Array.from(r).sort() };
-  }, [records]);
+  const query = useMemo<TailoringHistoryQuery>(() => ({
+    q: debouncedText.search || undefined,
+    company: debouncedText.company || undefined,
+    role: debouncedText.role || undefined,
+    status: statusFilter === 'all' ? undefined : statusFilter,
+    date_from: dateFrom || undefined, date_to: dateTo || undefined,
+    ats_min: atsMin > 0 ? atsMin : undefined,
+    multi_version: hasRegensOnly || undefined,
+    preset: quickPreset || undefined,
+    sort: sortKey,
+  }), [debouncedText, statusFilter, dateFrom, dateTo, atsMin, hasRegensOnly, quickPreset, sortKey]);
+  const {
+    records, setRecords, total, summary, nextCursor, loading, loadingMore,
+    error, moreError, loadMore, reload: fetchAll,
+  } = useTailoringHistory(query);
+  const presetCounts = summary?.presets || {
+    week: 0, month: 0, highAts: 0, needsWork: 0, multiVersion: 0, offers: 0, interviewing: 0, pending: 0,
+  };
 
-  // Apply filters + sort
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    const from = dateFrom ? new Date(dateFrom).getTime() : null;
-    const to = dateTo ? new Date(dateTo).getTime() + 86400000 : null;
-    let list = records.filter(rec => {
-      const title = rec.jd_analysis?.job_title || '';
-      const company = rec.jd_analysis?.company || '';
-      if (q) {
-        const skillsHay = (rec.jd_analysis?.required_skills || []).join(' ');
-        const hay = `${title} ${company} ${skillsHay}`.toLowerCase();
-        if (!hay.includes(q)) return false;
-      }
-      if (companyFilter !== 'all' && company !== companyFilter) return false;
-      if (roleFilter !== 'all' && title !== roleFilter) return false;
-      if (statusFilter !== 'all') {
-        const s = rec.application?.status || 'draft';
-        if (s !== statusFilter) return false;
-      }
-      const ts = rec.created_at ? new Date(rec.created_at).getTime() : 0;
-      if (from && ts < from) return false;
-      if (to && ts > to) return false;
-      const ats = atsOverall(rec.ats_scores);
-      // Null/missing overall (assessment-v2) is not a numeric score — never coerce to 0.
-      if (atsMin > 0 && (typeof ats !== 'number' || ats < atsMin)) return false;
-      if (hasRegensOnly && (rec.versions?.length || 0) < 2) return false;
-      return true;
-    });
-    list = list.slice().sort((a, b) => {
-      if (sortKey === 'ats') {
-        const sa = atsOverall(a.ats_scores);
-        const sb = atsOverall(b.ats_scores);
-        // Missing/null overall sorts last; do not invent 0.
-        if (typeof sa !== 'number' && typeof sb !== 'number') return 0;
-        if (typeof sa !== 'number') return 1;
-        if (typeof sb !== 'number') return -1;
-        return sb - sa;
-      }
-      const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
-      const tb = b.created_at ? new Date(b.created_at).getTime() : 0;
-      return sortKey === 'newest' ? tb - ta : ta - tb;
-    });
-    return list;
-  }, [records, search, companyFilter, roleFilter, statusFilter, dateFrom, dateTo, atsMin, hasRegensOnly, sortKey]);
-
-  // Preset counters drive the quick-chip badges so users can see at a glance
-  // how many records match a given lens before applying it.
-  const presetCounts = useMemo(() => {
-    const now = Date.now();
-    const weekAgo = now - 7 * 86400000;
-    const monthAgo = now - 30 * 86400000;
-    const ts = (r: TailoringRecord) => r.created_at ? new Date(r.created_at).getTime() : 0;
-    return {
-      week: records.filter(r => ts(r) >= weekAgo).length,
-      month: records.filter(r => ts(r) >= monthAgo).length,
-      highAts: records.filter(r => {
-        const o = atsOverall(r.ats_scores);
-        return typeof o === 'number' && o >= 80;
-      }).length,
-      needsWork: records.filter(r => {
-        const o = atsOverall(r.ats_scores);
-        return typeof o === 'number' && o < 60;
-      }).length,
-      multiVersion: records.filter(r => (r.versions?.length || 0) >= 2).length,
-      offers: records.filter(r => r.application?.status === 'offer').length,
-      interviewing: records.filter(r => r.application?.status === 'interviewing').length,
-      pending: records.filter(r => {
-        const d = r.application?.next_action_date;
-        if (!d) return false;
-        const diff = new Date(d).getTime() - now;
-        return diff <= 3 * 86400000; // ≤ 3 days (incl. overdue)
-      }).length,
-    };
-  }, [records]);
-
-  const applyPreset = useCallback((key: string) => {
-    // Clear only the fields the preset controls, preserve search etc.
+  const applyPreset = useCallback((key: HistoryPreset) => {
     setDateFrom(''); setDateTo(''); setAtsMin(0); setHasRegensOnly(false); setStatusFilter('all');
-    const now = new Date();
-    const iso = (d: Date) => d.toISOString().slice(0, 10);
-    switch (key) {
-      case 'week': {
-        const from = new Date(now); from.setDate(from.getDate() - 7);
-        setDateFrom(iso(from)); setDateTo(iso(now)); break;
-      }
-      case 'month': {
-        const from = new Date(now); from.setDate(from.getDate() - 30);
-        setDateFrom(iso(from)); setDateTo(iso(now)); break;
-      }
-      case 'highAts': setAtsMin(80); setSortKey('ats'); break;
-      case 'needsWork': setAtsMin(1); setSortKey('ats'); break;
-      case 'multiVersion': setHasRegensOnly(true); break;
-      case 'offers': setStatusFilter('offer'); break;
-      case 'interviewing': setStatusFilter('interviewing'); break;
-      case 'pending': setStatusFilter('interviewing'); break; // closest proxy
-    }
+    if (key === 'highAts' || key === 'needsWork') setSortKey('ats');
     setQuickPreset(key);
   }, []);
 
@@ -242,8 +150,8 @@ export default function TailoredPage() {
   const activeChips = useMemo(() => {
     const chips: { key: string; label: string; clear: () => void }[] = [];
     if (search.trim()) chips.push({ key: 'search', label: `"${search.trim()}"`, clear: () => setSearch('') });
-    if (companyFilter !== 'all') chips.push({ key: 'company', label: companyFilter, clear: () => setCompanyFilter('all') });
-    if (roleFilter !== 'all') chips.push({ key: 'role', label: roleFilter, clear: () => setRoleFilter('all') });
+    if (companyFilter) chips.push({ key: 'company', label: companyFilter, clear: () => setCompanyFilter('') });
+    if (roleFilter) chips.push({ key: 'role', label: roleFilter, clear: () => setRoleFilter('') });
     if (statusFilter !== 'all') {
       const nice = STATUS_CHIP[statusFilter]?.label || statusFilter;
       chips.push({ key: 'status', label: nice, clear: () => setStatusFilter('all') });
@@ -253,11 +161,18 @@ export default function TailoredPage() {
     }
     if (atsMin > 0) chips.push({ key: 'ats', label: `ATS ≥ ${atsMin}`, clear: () => setAtsMin(0) });
     if (hasRegensOnly) chips.push({ key: 'regens', label: 'Multi-version', clear: () => setHasRegensOnly(false) });
+    if (quickPreset) {
+      const names: Record<HistoryPreset, string> = {
+        week: 'This week', month: 'Last 30 days', highAts: 'High match 80+', needsWork: 'Needs work',
+        multiVersion: 'Multi-version', offers: 'Offers', interviewing: 'Interviewing', pending: 'Due soon',
+      };
+      chips.push({ key: 'preset', label: names[quickPreset], clear: () => setQuickPreset(null) });
+    }
     return chips;
-  }, [search, companyFilter, roleFilter, statusFilter, dateFrom, dateTo, atsMin, hasRegensOnly]);
+  }, [search, companyFilter, roleFilter, statusFilter, dateFrom, dateTo, atsMin, hasRegensOnly, quickPreset]);
 
   const resetFilters = useCallback(() => {
-    setSearch(''); setCompanyFilter('all'); setRoleFilter('all'); setStatusFilter('all');
+    setSearch(''); setCompanyFilter(''); setRoleFilter(''); setStatusFilter('all');
     setDateFrom(''); setDateTo(''); setAtsMin(0); setHasRegensOnly(false); setSortKey('newest');
     setQuickPreset(null);
   }, []);
@@ -265,6 +180,12 @@ export default function TailoredPage() {
   // When a record is expanded for the first time, lazy-fetch the full record
   // so we have jd_text + version bodies available for download/reference.
   const [jdOpenFor, setJdOpenFor] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    if (loading) {
+      setExpanded(new Set());
+      setJdOpenFor(new Set());
+    }
+  }, [loading]);
   const toggleExpanded = useCallback(async (id: string) => {
     setExpanded(prev => {
       const next = new Set(prev);
@@ -341,10 +262,13 @@ export default function TailoredPage() {
       } else {
         toast.success(`Downloaded ${fmt.toUpperCase()}`);
       }
-      // Refresh record to pick up the new file cache
-      fetchAll();
+      // Refresh only this record; preserve the loaded pages and filters.
+      const refreshed = await apiService.getTailoringRecord(rec.record_id);
+      if (refreshed.data?.record) {
+        setRecords(previous => previous.map(row => row.record_id === rec.record_id ? refreshed.data!.record : row));
+      }
     }
-  }, [fetchAll]);
+  }, [setRecords]);
 
   const handleSetCurrent = useCallback(async (recordId: string, versionId: string) => {
     const resp = await apiService.setCurrentResumeVersion(recordId, versionId);
@@ -380,29 +304,8 @@ export default function TailoredPage() {
       return;
     }
     toast.success('Record deleted');
-    setRecords(prev => prev.filter(r => r.record_id !== recordId));
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="space-y-3">
-        <Skeleton className="h-14 rounded-container" />
-        <Skeleton className="h-20 rounded-container" />
-        <Skeleton className="h-20 rounded-container" />
-      </div>
-    );
-  }
-
-  // Records failed and there's nothing to show - full recoverable error state.
-  if (error && records.length === 0) {
-    return (
-      <PanelError
-        title="Couldn't load your tailored resumes"
-        body={error}
-        onRetry={fetchAll}
-      />
-    );
-  }
+    fetchAll();
+  }, [fetchAll]);
 
   const focusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background';
   const selectCls = `w-full min-h-11 px-2.5 py-1.5 rounded-control bg-muted border border-border text-xs text-foreground ${focusRing}`;
@@ -415,7 +318,7 @@ export default function TailoredPage() {
           <p className="overline">Craft · Tailored</p>
           <h2 className="font-display text-h2 text-foreground">Tailored Resumes</h2>
           <p className="text-caption text-muted-foreground">
-            {records.length} tailoring session{records.length === 1 ? '' : 's'} · {filtered.length} shown
+            {total} matching session{total === 1 ? '' : 's'} · {records.length} loaded
           </p>
         </div>
         <button
@@ -427,24 +330,8 @@ export default function TailoredPage() {
         </button>
       </header>
 
-      {error && (
-        <div
-          role="alert"
-          className="px-4 py-3 rounded-container bg-destructive/10 border border-destructive/30 flex flex-wrap items-center justify-between gap-3"
-        >
-          <p className="text-sm text-destructive">{error}</p>
-          <button
-            type="button"
-            onClick={fetchAll}
-            className={`inline-flex min-h-11 items-center gap-1.5 rounded-control border border-destructive/30 bg-card px-3.5 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10 ${focusRing}`}
-          >
-            <RefreshCw className="w-3.5 h-3.5" aria-hidden="true" /> Try again
-          </button>
-        </div>
-      )}
-
       {/* Filter bar - chip-based with smart presets + applied-filter chips */}
-      {records.length > 0 && (
+      {(
         <div className="rounded-container border border-border surface overflow-hidden">
           {/* Row 1 - search + sort */}
           <div className="px-4 py-3 flex items-center gap-3 flex-wrap border-b border-border">
@@ -452,6 +339,7 @@ export default function TailoredPage() {
               <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
               <input
                 value={search}
+                maxLength={200}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Search role, company, required skills..."
                 aria-label="Search tailored resumes"
@@ -500,7 +388,7 @@ export default function TailoredPage() {
               { k: 'interviewing',  label: 'Interviewing',   count: presetCounts.interviewing, icon: MessagesSquare },
               { k: 'offers',        label: 'Offers',         count: presetCounts.offers,       icon: Flame },
               { k: 'pending',       label: 'Due soon',       count: presetCounts.pending,      icon: Zap },
-            ] as { k: string; label: string; count: number; icon: LucideIcon }[]).map(p => {
+            ] as { k: HistoryPreset; label: string; count: number; icon: LucideIcon }[]).map(p => {
               const active = quickPreset === p.k;
               const dim = p.count === 0;
               const Icon = p.icon;
@@ -554,7 +442,7 @@ export default function TailoredPage() {
             )}
             <div className="flex-1" />
             <span className="text-xs text-muted-foreground">
-              <b className="text-foreground">{filtered.length}</b> of {records.length}
+              <b className="text-foreground">{records.length}</b> of {total}
             </span>
             <button
               onClick={() => setAdvancedOpen(o => !o)}
@@ -575,16 +463,12 @@ export default function TailoredPage() {
           {advancedOpen && (
             <div id="advanced-filters" className="px-4 pb-4 pt-1 border-t border-border grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 bg-muted/30">
               <FilterInput label="Company">
-                <select value={companyFilter} onChange={e => setCompanyFilter(e.target.value)} className={selectCls}>
-                  <option value="all">All companies</option>
-                  {companies.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
+                <input value={companyFilter} onChange={e => setCompanyFilter(e.target.value)}
+                  placeholder="Any company" maxLength={200} className={inputCls} />
               </FilterInput>
               <FilterInput label="Role">
-                <select value={roleFilter} onChange={e => setRoleFilter(e.target.value)} className={selectCls}>
-                  <option value="all">All roles</option>
-                  {roles.map(r => <option key={r} value={r}>{r}</option>)}
-                </select>
+                <input value={roleFilter} onChange={e => setRoleFilter(e.target.value)}
+                  placeholder="Any role" maxLength={200} className={inputCls} />
               </FilterInput>
               <FilterInput label="Status">
                 <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className={selectCls}>
@@ -625,7 +509,14 @@ export default function TailoredPage() {
       )}
 
       {/* Records */}
-      {records.length === 0 ? (
+      {loading ? (
+        <div role="status" aria-label="Loading tailored resumes" className="space-y-3">
+          <Skeleton className="h-20 rounded-container" />
+          <Skeleton className="h-20 rounded-container" />
+        </div>
+      ) : error ? (
+        <PanelError title="Couldn't load your tailored resumes" body={error} onRetry={fetchAll} />
+      ) : records.length === 0 && summary?.total === 0 ? (
         <div className="rounded-container border border-dashed border-border bg-muted/30 p-10 text-center">
           <Sparkles className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
           <p className="text-sm text-foreground">No tailored resumes yet</p>
@@ -633,14 +524,14 @@ export default function TailoredPage() {
             Go to the Tailor tab and paste a job description to create one
           </p>
         </div>
-      ) : filtered.length === 0 ? (
+      ) : records.length === 0 ? (
         <div className="rounded-container border border-dashed border-border bg-muted/30 p-8 text-center">
           <p className="text-sm text-foreground">No matches for the current filters.</p>
           <button onClick={resetFilters} className="mt-2 text-xs text-primary hover:text-primary/80">Clear filters</button>
         </div>
       ) : (
         <div className="space-y-2.5">
-          {filtered.map(rec => {
+          {records.map(rec => {
             const title = rec.jd_analysis?.job_title || 'Untitled Role';
             const company = rec.jd_analysis?.company;
             const ats = atsOverall(rec.ats_scores);
@@ -837,6 +728,16 @@ export default function TailoredPage() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {!loading && !error && nextCursor && (
+        <div className="flex flex-col items-center gap-2">
+          {moreError && <p role="alert" className="text-sm text-destructive">{moreError}</p>}
+          <button type="button" onClick={() => void loadMore()} disabled={loadingMore}
+            className={`min-h-11 px-5 rounded-control border border-border bg-card text-sm disabled:opacity-50 ${focusRing}`}>
+            {loadingMore ? 'Loading more...' : moreError ? 'Try loading more again' : 'Load more resumes'}
+          </button>
         </div>
       )}
 
