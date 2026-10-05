@@ -2251,8 +2251,28 @@ class ApiService {
   async listTailoringRecords(
     opts: { view?: 'list' } = {},
   ): Promise<ApiResponse<{ records: import('../types/resume').TailoringRecord[] }>> {
-    const qs = opts.view === 'list' ? '?view=list' : '';
-    return this.request(`/resume/tailoring-records${qs}`);
+    if (opts.view === 'list') {
+      return this.request('/resume/tailoring-records?view=list');
+    }
+    type Page = {
+      records: import('../types/resume').TailoringRecord[];
+      next_offset?: number | null;
+    };
+    const records: Page['records'] = [];
+    let offset = 0;
+    while (true) {
+      const response = await this.request<Page>(
+        `/resume/tailoring-records?page_size=50&offset=${offset}`,
+      );
+      if (response.error || !response.data) return response;
+      records.push(...(response.data.records || []));
+      const next = response.data.next_offset;
+      if (next == null) return { data: { records } };
+      if (!Number.isInteger(next) || next <= offset) {
+        return { error: 'Could not load the complete tailoring history. Please try again.' };
+      }
+      offset = next;
+    }
   }
 
   async getApplicationStreak(): Promise<

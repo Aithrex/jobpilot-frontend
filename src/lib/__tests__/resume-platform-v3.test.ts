@@ -40,6 +40,51 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+describe('tailoring history pagination', () => {
+  test('empty history finishes after one request', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { records: [], next_offset: null }));
+    expect((await apiService.listTailoringRecords()).data?.records).toEqual([]);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  test('accepts an older backend response during deployment', async () => {
+    const record = { record_id: 'legacy', versions: [{ version_id: 'v1' }] };
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { records: [record] }));
+    expect((await apiService.listTailoringRecords()).data?.records).toEqual([record]);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  test('loads every page and preserves version metadata', async () => {
+    const first = { record_id: 'r1', versions: [{ version_id: 'v1' }] };
+    const second = { record_id: 'r2', versions: [{ version_id: 'v2' }] };
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { records: [first], next_offset: 1 }));
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { records: [second], next_offset: null }));
+    expect((await apiService.listTailoringRecords()).data?.records).toEqual([first, second]);
+    expect(String(fetchMock.mock.calls[0][0])).toContain('page_size=50&offset=0');
+    expect(String(fetchMock.mock.calls[1][0])).toContain('page_size=50&offset=1');
+  });
+
+  test('a later page failure does not return an incomplete history as success', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { records: [{ record_id: 'r1' }], next_offset: 1 }));
+    fetchMock.mockResolvedValueOnce(jsonResponse(500, { error: 'History unavailable' }));
+    const response = await apiService.listTailoringRecords();
+    expect(response.error).toBeTruthy();
+    expect(response.data).toBeUndefined();
+  });
+
+  test('rejects a cursor that cannot advance', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { records: [], next_offset: 0 }));
+    expect((await apiService.listTailoringRecords()).error).toBeTruthy();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  test('keeps the tracker projection on its existing path', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { records: [] }));
+    await apiService.listTailoringRecords({ view: 'list' });
+    expect(String(fetchMock.mock.calls[0][0])).toMatch(/tailoring-records\?view=list$/);
+  });
+});
+
 describe('upload error surfaces', () => {
   test('503 storage_unavailable maps to user-safe copy (not a logout)', async () => {
     fetchMock.mockResolvedValueOnce(

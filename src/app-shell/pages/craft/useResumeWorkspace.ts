@@ -133,7 +133,11 @@ export function resumeHealth(data: ResumeWorkspaceData): ResumeHealth {
     { label: hasActive ? 'Active resume set' : 'No active resume', done: hasActive },
     { label: parsed ? 'Resume parsed and ready' : 'Resume not parsed yet', done: parsed },
     {
-      label: hasTailored ? 'Recent version saved' : 'Nothing tailored yet',
+      label: tailoredState === 'error'
+        ? 'Tailored history unavailable'
+        : tailoredState === 'loading'
+          ? 'Checking tailored versions...'
+          : hasTailored ? 'Recent version saved' : 'Nothing tailored yet',
       done: hasTailored,
     },
   ];

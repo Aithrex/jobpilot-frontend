@@ -210,6 +210,8 @@ describe('Resume health panel', () => {
       expect(within(dock).getByText('Active resume set')).toBeInTheDocument(),
     );
     expect(within(dock).queryByText(/^\d\/3$/)).toBeNull();
+    expect(within(dock).getByText('Tailored history unavailable')).toBeInTheDocument();
+    expect(within(dock).queryByText('Nothing tailored yet')).toBeNull();
   });
 });
 
