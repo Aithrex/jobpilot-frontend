@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Sparkles } from 'lucide-react';
 import { useCombinedJobsCtx } from '@/components/job-search/CombinedJobsProvider';
-import { RECENCY_OPTIONS } from '@/lib/careerJobs';
+import { RECENCY_OPTIONS, recencyAgeOf } from '@/lib/careerJobs';
 import { PillSwitch } from '@/components/ui/pill-switch';
 import { ExperienceLevelPicker } from '@/components/job-search/ExperienceLevelPicker';
 
@@ -24,8 +24,9 @@ export function JobsRefineBar() {
   const recencyCounts = useMemo(() => {
     const counts: Record<string, number> = { today: 0, '24h': 0, '3d': 0, '7d': 0, '30d': 0 };
     for (const j of jobs ?? []) {
-      if (j.days_ago == null) continue;
-      for (const opt of RECENCY_OPTIONS) if (j.days_ago <= opt.maxDays) counts[opt.key] += 1;
+      const age = recencyAgeOf(j);
+      if (age == null) continue;
+      for (const opt of RECENCY_OPTIONS) if (age <= opt.maxDays) counts[opt.key] += 1;
     }
     return counts;
   }, [jobs]);

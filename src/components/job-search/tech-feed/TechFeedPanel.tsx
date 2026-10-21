@@ -185,7 +185,7 @@ function AppliedFiltersSummary({
 export interface TechFeedPanelProps {
   className?: string;
   isJobSaved?: (jobId: string) => boolean;
-  getJobStatus?: (jobId: string) => string | null;
+  getJobStatus?: (jobId: string, applyLink?: string) => string | null;
   saveJob?: (job: Job) => void | Promise<unknown>;
   unsaveJob?: (jobId: string) => void | Promise<unknown>;
   quickApply?: (job: Job, opts?: { skipOpen?: boolean }) => void | Promise<unknown>;
@@ -415,7 +415,7 @@ export function TechFeedPanel({
       onNotInterested={onNotInterested}
       onRestore={onRestore}
       saved={isJobSaved?.(job.job_id) ?? false}
-      jobStatus={getJobStatus?.(job.job_id) ?? null}
+      jobStatus={getJobStatus?.(job.job_id, job.apply_url || job.canonical_url) ?? null}
       onSave={(posting) => {
         onCardEngagement('card_save', posting.ats);
         saveJob?.(posting);

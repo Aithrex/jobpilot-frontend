@@ -7,7 +7,7 @@
  */
 import { describe, expect, test } from 'vitest';
 
-import { jobTitleOf, matchesSeniority, mergeJobs, seniorityOf, sortJobsByMode, toJob, isAppliedPipelineStatus } from '@/lib/careerJobs';
+import { applyUrlKey, inRecencyWindow, jobTitleOf, matchesSeniority, mergeJobs, recencyAgeOf, seniorityOf, sortJobsByMode, toJob, isAppliedPipelineStatus } from '@/lib/careerJobs';
 import type { WorkdayJob } from '@/types/jobs';
 
 function row(overrides: Partial<WorkdayJob>): WorkdayJob {
@@ -269,5 +269,50 @@ describe('board diversity preserves the sort', () => {
     expect(out.slice(0, 20).map((j) => j.match_score)).toEqual(
       single.slice(0, 20).map((j) => j.match_score),
     );
+  });
+});
+
+describe('recency windows judge undated rows by first sighting', () => {
+  // Reported 2026-10-21: Rippling / JazzHR rows (no published date) showed
+  // under "Today" days after they were first seen, because any row with
+  // `days_ago == null` passed every window.
+  test('a dated row is judged by its post date', () => {
+    expect(inRecencyWindow(row({ days_ago: 0 }), 0)).toBe(true);
+    expect(inRecencyWindow(row({ days_ago: 1 }), 0)).toBe(false);
+  });
+  test('an undated row first seen days ago is not Today', () => {
+    const r = row({ days_ago: null, first_seen_days_ago: 3 });
+    expect(recencyAgeOf(r)).toBe(3);
+    expect(inRecencyWindow(r, 0)).toBe(false);
+    expect(inRecencyWindow(r, 3)).toBe(true);
+  });
+  test('an undated row first seen today stays in Today', () => {
+    expect(inRecencyWindow(row({ days_ago: null, first_seen_days_ago: 0 }), 0)).toBe(true);
+  });
+  test('a row with no age at all is kept (unknown is not old)', () => {
+    expect(recencyAgeOf(row({ days_ago: null }))).toBeNull();
+    expect(inRecencyWindow(row({ days_ago: null }), 0)).toBe(true);
+  });
+});
+
+describe('applyUrlKey - the same posting under a new card id', () => {
+  test('drops tracking and the apply suffix, keeps the job address', () => {
+    expect(applyUrlKey('https://ats.rippling.com/acme/jobs/5f1c?utm_source=x&src=li'))
+      .toBe(applyUrlKey('https://ats.rippling.com/acme/jobs/5f1c/'));
+    expect(applyUrlKey('https://jobs.lever.co/acme/abc/apply?lever-source=LinkedIn'))
+      .toBe(applyUrlKey('https://jobs.lever.co/acme/abc'));
+  });
+  test('functional identifiers in the query are preserved', () => {
+    expect(applyUrlKey('https://acme.com/careers?gh_jid=1')).not.toBe(applyUrlKey('https://acme.com/careers?gh_jid=2'));
+    expect(applyUrlKey('https://jobs.ashbyhq.com/acme?ashby_jid=a')).not.toBe(applyUrlKey('https://jobs.ashbyhq.com/acme'));
+  });
+  test('a generic portal with no job address does not equal a specific job', () => {
+    expect(applyUrlKey('https://portal.jobdiva.com/jobs?a=1'))
+      .not.toBe(applyUrlKey('https://portal.jobdiva.com/jobs?a=1&jobid=99'));
+  });
+  test('garbage and non-web schemes never match', () => {
+    expect(applyUrlKey('')).toBe('');
+    expect(applyUrlKey('mailto:jobs@acme.com')).toBe('');
+    expect(applyUrlKey('not a url')).toBe('');
   });
 });

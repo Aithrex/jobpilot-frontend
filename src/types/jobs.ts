@@ -506,6 +506,9 @@ export interface WorkdayJob {
   sector?: string;
   /** Whole days since posting (0 = today). null/undefined = unknown. */
   days_ago?: number | null;
+  /** Inventory rows with no published date: whole days since the crawler
+   *  FIRST SAW the posting live. A lower bound on its age, never a post date. */
+  first_seen_days_ago?: number | null;
   logo?: string;
   description?: string;
   salary?: string;

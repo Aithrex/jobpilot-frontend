@@ -217,6 +217,53 @@ const APPLIED_PIPELINE = new Set([
   'withdrawn',
 ]);
 
+/** The age a recency window judges a row by, or null when nothing is known.
+ *
+ *  A published date wins. An undated row (Rippling, JazzHR, iCIMS and Atlassian
+ *  list none) is judged by when we first saw it live: that is a lower bound on
+ *  its age, so a row first seen three days ago cannot be "Today". These rows
+ *  used to pass EVERY window, which is how Today filled with postings from
+ *  earlier days (reported 2026-10-21). Only a row with neither stays in. */
+export function recencyAgeOf(j: Pick<WorkdayJob, 'days_ago' | 'first_seen_days_ago'>): number | null {
+  if (j.days_ago != null) return j.days_ago;
+  if (j.first_seen_days_ago != null) return j.first_seen_days_ago;
+  return null;
+}
+
+export function inRecencyWindow(
+  j: Pick<WorkdayJob, 'days_ago' | 'first_seen_days_ago'>,
+  maxDays: number,
+): boolean {
+  const age = recencyAgeOf(j);
+  return age == null || age <= maxDays;
+}
+
+/** Query parameters that only say how someone ARRIVED at a posting. Anything
+ *  else stays, because many boards address the job itself in the query
+ *  (`gh_jid`, `ashby_jid`, `jobId`, Paycom's `clientkey`). */
+const TRACKING_PARAMS = /^(utm_[a-z_]+|gh_src|lever-source|lever-origin|source|src|ref|referrer|trk|trackingid|refid|mode|oga|fbclid|gclid|mc_[a-z]+)$/i;
+
+/** One posting's original application link, normalised so the same posting
+ *  reached through a tracking link or a re-issued card still compares equal.
+ *  Returns '' when the link is missing or unparseable: an empty key never
+ *  matches anything. */
+export function applyUrlKey(url: string | null | undefined): string {
+  if (!url) return '';
+  let u: URL;
+  try {
+    u = new URL(String(url).trim());
+  } catch {
+    return '';
+  }
+  if (u.protocol !== 'https:' && u.protocol !== 'http:') return '';
+  const kept = [...u.searchParams.entries()]
+    .filter(([k]) => !TRACKING_PARAMS.test(k))
+    .sort(([a], [b]) => a.localeCompare(b));
+  const query = kept.length ? `?${new URLSearchParams(kept).toString()}` : '';
+  const path = u.pathname.replace(/\/+$/, '').replace(/\/(apply|application)$/i, '');
+  return `${u.hostname.toLowerCase().replace(/^www\./, '')}${path}${query}`;
+}
+
 export function isAppliedPipelineStatus(status: string | null | undefined): boolean {
   if (!status) return false;
   return APPLIED_PIPELINE.has(String(status).toLowerCase());

@@ -1,8 +1,9 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { apiService } from '@/lib/api';
 import { openJobPosting } from '@/lib/jobPosting';
+import { applyUrlKey } from '@/lib/careerJobs';
 import { SAVED_JOBS_QUERY_KEY } from '@/hooks/useSavedJobTabCounts';
 import type { Job, SavedJob, JobSearchFilters, JobSearchOptions, BatchSearchResponse, VisaFlags, VisaFilters } from '@/types/jobs';
 
@@ -651,10 +652,25 @@ export function useJobSearch() {
   }, [savedJobs]);
 
   // --- Get saved status for a job ---
-  const getJobStatus = useCallback((jobId: string): string | null => {
-    const saved = savedJobs.find(j => j.job_id === jobId);
-    return saved?.status || null;
+  // By id first; then by the posting's own application link. A re-crawled or
+  // re-issued card can carry a new id for the SAME posting, and an applied
+  // job came back into the feed that way (reported 2026-10-21). The link is
+  // the posting's address, not a title match: two openings with the same
+  // title are still two openings.
+  const savedByUrl = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const s of savedJobs) {
+      const key = applyUrlKey(s.apply_link);
+      if (key && s.status && !map.has(key)) map.set(key, s.status);
+    }
+    return map;
   }, [savedJobs]);
+  const getJobStatus = useCallback((jobId: string, applyLink?: string): string | null => {
+    const saved = savedJobs.find(j => j.job_id === jobId);
+    if (saved?.status) return saved.status;
+    const key = applyUrlKey(applyLink);
+    return (key && savedByUrl.get(key)) || null;
+  }, [savedJobs, savedByUrl]);
 
   // Load saved jobs on mount
   useEffect(() => {

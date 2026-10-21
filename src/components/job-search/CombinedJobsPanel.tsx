@@ -13,7 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ApplyConfirmDialog, JOB_FEED_GRID_CLASS, JobCard, JOB_CARD_CLASS } from '@/components/job-search/JobCard';
 import { JobFeedPager } from '@/components/job-search/JobFeedPager';
 import { useCombinedJobsCtx } from '@/components/job-search/CombinedJobsProvider';
-import { JOB_FEED_PAGE_SIZE, RECENCY_OPTIONS, matchesSeniorityLevels, sortJobsByMode, isAppliedPipelineStatus, toJob } from '@/lib/careerJobs';
+import { JOB_FEED_PAGE_SIZE, RECENCY_OPTIONS, inRecencyWindow, matchesSeniorityLevels, sortJobsByMode, isAppliedPipelineStatus, toJob } from '@/lib/careerJobs';
 import { cn } from '@/lib/utils';
 import type { Job, WorkdayJob } from '@/types/jobs';
 
@@ -37,7 +37,7 @@ function formatCountdown(sec: number): string {
 
 interface CombinedJobsPanelProps {
   isJobSaved: (jobId: string) => boolean;
-  getJobStatus: (jobId: string) => string | null;
+  getJobStatus: (jobId: string, applyLink?: string) => string | null;
   saveJob: (job: Job) => void | Promise<unknown>;
   unsaveJob: (jobId: string) => void | Promise<unknown>;
   quickApply: (job: Job, opts?: { skipOpen?: boolean }) => void | Promise<unknown>;
@@ -115,11 +115,10 @@ export function CombinedJobsPanel({
   const maxDays = RECENCY_OPTIONS.find((o) => o.key === recency)?.maxDays ?? 3;
 
   const visibleJobs = useMemo(() => {
-    const isApplied = (j: WorkdayJob) => isAppliedPipelineStatus(getJobStatus(j.job_id));
-    // Undated postings are KEPT - see WorkdayJobsPanel: a missing publish
-    // date is unknown, not old, and excluding it silently applied a recency
-    // test the posting could never be measured against.
-    let out = jobs.filter((j) => j.days_ago == null || j.days_ago <= maxDays);
+    const isApplied = (j: WorkdayJob) => isAppliedPipelineStatus(getJobStatus(j.job_id, j.apply_link));
+    // Undated postings are judged by when we first saw them - see
+    // `recencyAgeOf`. Only a row with no age at all is kept unconditionally.
+    let out = jobs.filter((j) => inRecencyWindow(j, maxDays));
     const q = search.trim().toLowerCase();
     if (q) out = out.filter((j) => `${j.title} ${j.company}`.toLowerCase().includes(q));
     if (seniorityKey) {
@@ -197,7 +196,7 @@ export function CombinedJobsPanel({
       <JobCard
         job={toJob(job, 'career portal')}
         saved={isJobSaved(job.job_id)}
-        jobStatus={getJobStatus(job.job_id)}
+        jobStatus={getJobStatus(job.job_id, job.apply_link)}
         onSave={() => saveJob(toJob(job, 'career portal'))}
         onUnsave={() => unsaveJob(job.job_id)}
         onQuickApply={(opts) => quickApply(toJob(job, 'career portal'), opts)}

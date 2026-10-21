@@ -74,7 +74,7 @@ interface JobSearchPanelProps {
   markAlreadyApplied?: (job: Job) => void | Promise<unknown>;
   autoApply?: (job: Job) => Promise<unknown>;
   autoApplyingId?: string | null;
-  getJobStatus: (jobId: string) => string | null;
+  getJobStatus: (jobId: string, applyLink?: string) => string | null;
   batchMeta: BatchMeta | null;
   hasSearched: boolean;
   filtersLoaded: boolean;
@@ -534,7 +534,7 @@ export function JobSearchPanel({
                 key={job.job_id}
                 job={job}
                 saved={isJobSaved(job.job_id)}
-                jobStatus={getJobStatus(job.job_id)}
+                jobStatus={getJobStatus(job.job_id, job.apply_link)}
                 onSave={() => saveJob(job)}
                 onUnsave={() => unsaveJob(job.job_id)}
                 onQuickApply={(opts) => void quickApply(job, opts)}

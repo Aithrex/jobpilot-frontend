@@ -26,7 +26,7 @@ import { JobFeedPager } from '@/components/job-search/JobFeedPager';
 import { useAutoSync } from '@/hooks/useAutoSync';
 import { JOB_TITLES_CAP, useJobTitles } from '@/hooks/useJobTitles';
 import { apiService } from '@/lib/api';
-import { jobTitleOf, matchesSeniority, sortJobsByMode, isAppliedPipelineStatus } from '@/lib/careerJobs';
+import { inRecencyWindow, jobTitleOf, matchesSeniority, recencyAgeOf, sortJobsByMode, isAppliedPipelineStatus } from '@/lib/careerJobs';
 // (job listings are free & auth-only - no entitlement/upgrade wiring here)
 import {
   Sheet,
@@ -333,7 +333,7 @@ function toJob(j: WorkdayJob, fallbackSource: string): Job {
 
 interface WorkdayJobsPanelProps {
   isJobSaved: (jobId: string) => boolean;
-  getJobStatus: (jobId: string) => string | null;
+  getJobStatus: (jobId: string, applyLink?: string) => string | null;
   saveJob: (job: Job) => void | Promise<unknown>;
   unsaveJob: (jobId: string) => void | Promise<unknown>;
   quickApply: (job: Job, opts?: { skipOpen?: boolean }) => void | Promise<unknown>;
@@ -606,11 +606,10 @@ export function WorkdayJobsPanel({
 
   const recencyJobs = useMemo(() => {
     const all = result?.jobs ?? [];
-    // An undated posting is KEPT. `days_ago == null` means we could not read
-    // a publish date, not that the job is old, and dropping it applied the
-    // recency filter to postings it was never able to test - the same
-    // "unknown is not a no" rule the backend applies to salary and work mode.
-    return all.filter((j) => j.days_ago == null || j.days_ago <= maxDays);
+    // An undated posting is judged by when we first saw it live (a lower
+    // bound on its age); only a row with no age at all is kept regardless -
+    // the same "unknown is not a no" rule the backend applies to salary.
+    return all.filter((j) => inRecencyWindow(j, maxDays));
   }, [result, maxDays]);
 
   // Location dropdown options derived from the recency window's postings.
@@ -639,7 +638,7 @@ export function WorkdayJobsPanel({
 
   const visibleJobs = useMemo(() => {
     const isApplied = (j: (typeof recencyJobs)[number]) =>
-      isAppliedPipelineStatus(getJobStatus(j.job_id));
+      isAppliedPipelineStatus(getJobStatus(j.job_id, j.apply_link));
     let out = recencyJobs;
     if (seniorityFilter !== 'any') out = out.filter((j) => matchesSeniority(j, seniorityFilter));
     if (minScore > 0) out = out.filter((j) => (j.match_score ?? 0) >= minScore);
@@ -702,9 +701,10 @@ export function WorkdayJobsPanel({
       '30d': 0,
     };
     for (const j of all) {
-      if (j.days_ago == null) continue;
+      const age = recencyAgeOf(j);
+      if (age == null) continue;
       for (const opt of RECENCY_OPTIONS) {
-        if (j.days_ago <= opt.maxDays) counts[opt.key] += 1;
+        if (age <= opt.maxDays) counts[opt.key] += 1;
       }
     }
     return counts;
@@ -787,7 +787,7 @@ export function WorkdayJobsPanel({
       <JobCard
         job={toJob(job, fallbackSource)}
         saved={isJobSaved(job.job_id)}
-        jobStatus={getJobStatus(job.job_id)}
+        jobStatus={getJobStatus(job.job_id, job.apply_link)}
         onSave={() => saveJob(toJob(job, fallbackSource))}
         onUnsave={() => unsaveJob(job.job_id)}
         onQuickApply={(opts) => quickApply(toJob(job, fallbackSource), opts)}

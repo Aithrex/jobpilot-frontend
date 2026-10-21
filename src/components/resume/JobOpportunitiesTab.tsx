@@ -75,7 +75,7 @@ function JobList({
           key={job.job_id}
           job={job}
           saved={jobSearch.isJobSaved(job.job_id)}
-          jobStatus={jobSearch.getJobStatus(job.job_id)}
+          jobStatus={jobSearch.getJobStatus(job.job_id, job.apply_link)}
           onSave={() => jobSearch.saveJob(job)}
           onUnsave={() => jobSearch.unsaveJob(job.job_id)}
           onQuickApply={(opts) => void jobSearch.quickApply(job, opts)}
