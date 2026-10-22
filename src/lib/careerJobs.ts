@@ -241,7 +241,13 @@ export function inRecencyWindow(
 /** Query parameters that only say how someone ARRIVED at a posting. Anything
  *  else stays, because many boards address the job itself in the query
  *  (`gh_jid`, `ashby_jid`, `jobId`, Paycom's `clientkey`). */
-const TRACKING_PARAMS = /^(utm_[a-z_]+|gh_src|lever-source|lever-origin|source|src|ref|referrer|trk|trackingid|refid|mode|oga|fbclid|gclid|mc_[a-z]+)$/i;
+const TRACKING_PARAMS = /^(utm_[a-z_]+|gh_src|lever-source|lever-origin|source|src|ref|referrer|trk|trackingid|refid|mode|oga|fbclid|gclid|mc_[a-z]+|jr_id|iis|iisn)$/i;
+
+/** A fragment that addresses a job (JobDiva `#/jobs/33273835`, `#job=123`).
+ *  Some portals route every requisition through ONE base URL and name the job
+ *  only after `#`; dropping it made three different jobs one key, so applying
+ *  to one marked all three applied. Kept only when it carries a 4+ digit id. */
+const JOB_FRAGMENT = /(\d{4,})/;
 
 /** One posting's original application link, normalised so the same posting
  *  reached through a tracking link or a re-issued card still compares equal.
@@ -261,7 +267,9 @@ export function applyUrlKey(url: string | null | undefined): string {
     .sort(([a], [b]) => a.localeCompare(b));
   const query = kept.length ? `?${new URLSearchParams(kept).toString()}` : '';
   const path = u.pathname.replace(/\/+$/, '').replace(/\/(apply|application)$/i, '');
-  return `${u.hostname.toLowerCase().replace(/^www\./, '')}${path}${query}`;
+  const frag = JOB_FRAGMENT.exec(u.hash || '');
+  const fragment = frag ? `#job=${frag[1]}` : '';
+  return `${u.hostname.toLowerCase().replace(/^www\./, '')}${path}${query}${fragment}`;
 }
 
 export function isAppliedPipelineStatus(status: string | null | undefined): boolean {

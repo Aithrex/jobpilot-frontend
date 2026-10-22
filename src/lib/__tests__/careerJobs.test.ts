@@ -310,6 +310,13 @@ describe('applyUrlKey - the same posting under a new card id', () => {
     expect(applyUrlKey('https://portal.jobdiva.com/jobs?a=1'))
       .not.toBe(applyUrlKey('https://portal.jobdiva.com/jobs?a=1&jobid=99'));
   });
+  test('a job id after # keeps one portal from collapsing distinct jobs', () => {
+    const a = applyUrlKey('https://portal.jobdiva.com/portal/?a=scalence#/jobs/33273835');
+    const b = applyUrlKey('https://portal.jobdiva.com/portal/?a=scalence#/jobs/33273299');
+    expect(a).not.toBe(b);
+    expect(applyUrlKey('https://acme.com/careers?jr_id=abc&gh_jid=7'))
+      .toBe(applyUrlKey('https://acme.com/careers?gh_jid=7'));
+  });
   test('garbage and non-web schemes never match', () => {
     expect(applyUrlKey('')).toBe('');
     expect(applyUrlKey('mailto:jobs@acme.com')).toBe('');
