@@ -9,6 +9,10 @@
  * The preset is a SHORTCUT over the independent toggles, not a separate
  * setting: "Direct employers only" is exactly the six business-model
  * exclusions, and "Hide employers we couldn't verify" stays independent of it.
+ * A user who never chose gets the server's RECOMMENDED filters (preset
+ * `custom`, `set_by: "default"`): agencies, placements, marketplaces, gig work
+ * and talent pools hidden; consultancies and unverified employers shown with
+ * their label. "Direct employers only" is offered as the stricter option.
  * What is on is always stated in words below the toggles.
  */
 import { useId, type ReactNode } from 'react';
@@ -25,9 +29,11 @@ import {
   EXCLUSION_KEYS,
   EXCLUSION_LABEL,
   activeExclusionKeys,
+  isRecommendedExclusions,
   preferencesSummary,
   presetFor,
   withExclusion,
+  withRecommended,
   withStrictDirect,
 } from '@/lib/employerPolicy';
 import { cn } from '@/lib/utils';
@@ -75,6 +81,7 @@ export function EmployerPreferencesForm({ compact = false, className }: Employer
   }
 
   const strict = presetFor(preferences.exclude) === 'strict_direct';
+  const recommended = isRecommendedExclusions(preferences.exclude);
   const active = activeExclusionKeys(preferences);
   const presetId = `${baseId}-preset`;
 
@@ -83,11 +90,11 @@ export function EmployerPreferencesForm({ compact = false, className }: Employer
       <div className="flex items-start justify-between gap-3 rounded-lg border border-primary/30 bg-primary/[0.06] p-3">
         <div className="space-y-0.5">
           <Label htmlFor={presetId} className="text-sm font-semibold">
-            Direct employers only (recommended)
+            Direct employers only
           </Label>
           <p className="text-xs text-muted-foreground">
-            Hides staffing agencies, consultancies, client placements, marketplaces, gig work and
-            talent pools.
+            The strictest setting. Hides staffing agencies, consultancies, client placements,
+            marketplaces, gig work and talent pools.
           </p>
         </div>
         <Switch
@@ -96,6 +103,31 @@ export function EmployerPreferencesForm({ compact = false, className }: Employer
           disabled={saving}
           onCheckedChange={(on) => void save(withStrictDirect(preferences, on))}
         />
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-2" data-testid="employer-prefs-recommended">
+        <p className="text-xs text-muted-foreground">
+          {recommended ? (
+            <>
+              <span className="font-semibold text-foreground">Recommended filters</span> are on:
+              consultancies and unverified employers are shown, with their label.
+            </>
+          ) : (
+            'Recommended: hide agencies, placements, marketplaces, gig work and talent pools.'
+          )}
+        </p>
+        {!recommended && (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs"
+            disabled={saving}
+            onClick={() => void save(withRecommended(preferences))}
+          >
+            Use recommended
+          </Button>
+        )}
       </div>
 
       <fieldset className="space-y-2" disabled={saving}>
@@ -141,7 +173,10 @@ export function EmployerPreferencesForm({ compact = false, className }: Employer
           'Nothing hidden: every employer type is shown.'
         )}
         {!saving && preferences.set_by === 'default' && (
-          <span className="block">This is the default for new accounts. Changing a toggle saves it as your choice.</span>
+          <span className="block">
+            You have not changed these yet - they are the recommended defaults. Changing a toggle
+            saves it as your choice.
+          </span>
         )}
       </p>
     </div>

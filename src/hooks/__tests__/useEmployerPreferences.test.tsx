@@ -13,7 +13,7 @@ import {
   useEmployerPreferences,
 } from '@/hooks/useEmployerPreferences';
 import { apiService } from '@/lib/api';
-import { STRICT_DIRECT_DEFAULT, withExclusion } from '@/lib/employerPolicy';
+import { RECOMMENDED_DEFAULT, withExclusion } from '@/lib/employerPolicy';
 
 vi.mock('@/lib/api', () => ({
   apiService: {
@@ -33,15 +33,17 @@ function wrapper({ children }: { children: React.ReactNode }) {
 beforeEach(() => {
   vi.clearAllMocks();
   client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity } } });
-  api.getEmployerPreferences.mockResolvedValue({ data: STRICT_DIRECT_DEFAULT, status: 200 });
+  api.getEmployerPreferences.mockResolvedValue({ data: RECOMMENDED_DEFAULT, status: 200 });
 });
 
 describe('useEmployerPreferences', () => {
   test('loads what the server returns, including set_by', async () => {
     const { result } = renderHook(() => useEmployerPreferences(), { wrapper });
     await waitFor(() => expect(result.current.preferences).not.toBeNull());
-    expect(result.current.preferences?.preset).toBe('strict_direct');
+    // The server default is the recommended CUSTOM set, not strict.
+    expect(result.current.preferences?.preset).toBe('custom');
     expect(result.current.preferences?.set_by).toBe('default');
+    expect(result.current.preferences?.exclude.consultancy).toBe(false);
   });
 
   test('a save is optimistic, then refreshes the feeds and announces the change', async () => {
@@ -85,7 +87,7 @@ describe('useEmployerPreferences', () => {
     });
     expect(ok).toBe(false);
     expect(result.current.preferences?.exclude.staffing).toBe(true);
-    expect(client.getQueryData(EMPLOYER_PREFERENCES_QUERY_KEY)).toEqual(STRICT_DIRECT_DEFAULT);
+    expect(client.getQueryData(EMPLOYER_PREFERENCES_QUERY_KEY)).toEqual(RECOMMENDED_DEFAULT);
     expect(invalidate).not.toHaveBeenCalledWith({ queryKey: ['tech-feed', 'search'] });
   });
 

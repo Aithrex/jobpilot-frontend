@@ -11,7 +11,9 @@
 import { describe, expect, test } from 'vitest';
 
 import {
-  STRICT_DIRECT_DEFAULT,
+  RECOMMENDED_DEFAULT,
+  STRICT_DIRECT_PREFERENCES,
+  withRecommended,
   activeExclusionKeys,
   applicationDestinationHost,
   availabilityLineOf,
@@ -201,10 +203,27 @@ describe('policy block and counts', () => {
 });
 
 describe('preferences', () => {
-  test('the documented default is strict_direct with unknown shown', () => {
-    expect(STRICT_DIRECT_DEFAULT.preset).toBe('strict_direct');
-    expect(STRICT_DIRECT_DEFAULT.exclude.unknown_business_model).toBe(false);
-    expect(activeExclusionKeys(STRICT_DIRECT_DEFAULT)).toHaveLength(6);
+  test('the server default is the recommended custom set: consultancy and unknown shown', () => {
+    expect(RECOMMENDED_DEFAULT.preset).toBe('custom');
+    expect(RECOMMENDED_DEFAULT.set_by).toBe('default');
+    expect(RECOMMENDED_DEFAULT.exclude.consultancy).toBe(false);
+    expect(RECOMMENDED_DEFAULT.exclude.unknown_business_model).toBe(false);
+    expect(activeExclusionKeys(RECOMMENDED_DEFAULT)).toEqual([
+      'staffing',
+      'client_placement',
+      'talent_marketplace',
+      'task_gig',
+      'talent_community',
+    ]);
+    expect(presetFor(RECOMMENDED_DEFAULT.exclude)).toBe('custom');
+    expect(preferencesSummary(RECOMMENDED_DEFAULT)).toBe('Recommended employer filters');
+  });
+
+  test('a default read from the wire keeps set_by and its custom preset', () => {
+    const prefs = preferencesOf({ ...RECOMMENDED_DEFAULT, version: 'employer-policy-1.0.0' });
+    expect(prefs?.preset).toBe('custom');
+    expect(prefs?.set_by).toBe('default');
+    expect(prefs?.exclude.consultancy).toBe(false);
   });
 
   test('a missing exclusion key is NOT excluded, and set_by is kept', () => {
@@ -215,15 +234,30 @@ describe('preferences', () => {
     expect(preferencesOf({ preset: 'off' })).toBeNull();
   });
 
-  test('turning one exclusion off leaves the preset as custom', () => {
-    const next = withExclusion(STRICT_DIRECT_DEFAULT, 'consultancy', false);
+  test('"Direct employers only" is the stricter option on top of the default', () => {
+    const strict = withStrictDirect(RECOMMENDED_DEFAULT, true);
+    expect(strict.preset).toBe('strict_direct');
+    expect(strict.exclude.consultancy).toBe(true);
+    expect(strict.exclude.unknown_business_model).toBe(false);
+    expect(strict.set_by).toBe('user');
+    expect(preferencesSummary(strict)).toBe('Direct employers only');
+    expect(strict.exclude).toEqual(STRICT_DIRECT_PREFERENCES.exclude);
+    // And back to recommended.
+    const back = withRecommended(strict);
+    expect(back.exclude).toEqual(RECOMMENDED_DEFAULT.exclude);
+    expect(back.set_by).toBe('user');
+  });
+
+  test('turning one exclusion off from strict leaves the preset as custom', () => {
+    const next = withExclusion(STRICT_DIRECT_PREFERENCES, 'consultancy', false);
     expect(next.preset).toBe('custom');
-    expect(next.set_by).toBe('user');
-    expect(preferencesSummary(next)).toBe('5 employer types hidden');
+    expect(preferencesSummary(next)).toBe('Recommended employer filters');
+    const fewer = withExclusion(next, 'staffing', false);
+    expect(preferencesSummary(fewer)).toBe('4 employer types hidden');
   });
 
   test('the strict preset toggles the six business-model keys and leaves unknown alone', () => {
-    const withUnknown = withExclusion(STRICT_DIRECT_DEFAULT, 'unknown_business_model', true);
+    const withUnknown = withExclusion(STRICT_DIRECT_PREFERENCES, 'unknown_business_model', true);
     const off = withStrictDirect(withUnknown, false);
     expect(off.exclude.unknown_business_model).toBe(true);
     expect(off.preset).toBe('custom');

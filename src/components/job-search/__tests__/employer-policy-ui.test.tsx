@@ -19,7 +19,8 @@ import { JobCard } from '@/components/job-search/JobCard';
 import { TechFeedJobCard } from '@/components/job-search/tech-feed/TechFeedJobCard';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { apiService } from '@/lib/api';
-import { STRICT_DIRECT_DEFAULT } from '@/lib/employerPolicy';
+import { RECOMMENDED_DEFAULT } from '@/lib/employerPolicy';
+import { EmployerPreferencesForm } from '@/components/job-search/EmployerPreferencesControl';
 import { makeTechFeedJob } from '@/test/techFeedFixtures';
 import type { Job } from '@/types/jobs';
 
@@ -81,7 +82,7 @@ function renderCard(job: Job, extra: Partial<React.ComponentProps<typeof JobCard
 
 beforeEach(() => {
   vi.clearAllMocks();
-  api.getEmployerPreferences.mockResolvedValue({ data: STRICT_DIRECT_DEFAULT, status: 200 });
+  api.getEmployerPreferences.mockResolvedValue({ data: RECOMMENDED_DEFAULT, status: 200 });
 });
 
 describe('JobCard', () => {
@@ -131,6 +132,15 @@ describe('JobCard', () => {
     });
     expect(screen.getByTestId('job-trust-line')).toHaveTextContent('Warning signs found');
     expect(screen.getByTestId('job-trust-line')).toHaveTextContent('Asks for a training fee');
+  });
+
+  test.each([
+    ['consultancy', 'Consultancy'],
+    ['mixed', 'Mixed business'],
+  ])('a %s employer shown by the default carries its label', (kind, label) => {
+    renderCard({ ...BASE, employer_profile: { kind: kind as 'consultancy' | 'mixed' } });
+    expect(screen.getByTestId('employer-category')).toHaveTextContent(label);
+    expect(screen.getByTestId('employer-category')).not.toHaveTextContent(/direct/i);
   });
 
   test('a confirmed application says so', () => {
@@ -192,5 +202,23 @@ describe('policy counts and empty state', () => {
     expect(screen.getByRole('button', { name: /Adjust employer filters/ })).toBeInTheDocument();
     // Rendering the empty state wrote nothing.
     expect(api.saveEmployerPreferences).not.toHaveBeenCalled();
+  });
+});
+
+describe('preferences form', () => {
+  test('a server default renders as recommended filters, with strict offered as the stricter option', async () => {
+    wrap(<EmployerPreferencesForm />);
+    expect(await screen.findByTestId('employer-prefs-recommended')).toHaveTextContent(
+      'Recommended filters are on',
+    );
+    const strict = screen.getByRole('switch', { name: 'Direct employers only' });
+    expect(strict).toHaveAttribute('aria-checked', 'false');
+    expect(screen.getByRole('switch', { name: 'Consultancies and outsourcing' })).toHaveAttribute(
+      'aria-checked',
+      'false',
+    );
+    expect(screen.getByRole('switch', { name: 'Staffing agencies' })).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByTestId('employer-prefs-summary')).toHaveTextContent('recommended defaults');
+    expect(screen.queryByRole('button', { name: 'Use recommended' })).not.toBeInTheDocument();
   });
 });
