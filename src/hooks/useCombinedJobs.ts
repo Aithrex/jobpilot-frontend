@@ -2,6 +2,8 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import { useJobTitles } from '@/hooks/useJobTitles';
 import { apiService } from '@/lib/api';
 import { mergeJobs } from '@/lib/careerJobs';
+import { mergePolicies } from '@/lib/employerPolicy';
+import type { PolicyBlock } from '@/types/employerPolicy';
 import type { WorkdayJob, WorkdayJobsParams } from '@/types/jobs';
 
 /**
@@ -40,6 +42,7 @@ const EMPTY_STATE: SourceState = {
 };
 
 const INIT_SOURCES: Record<SourceKey, WorkdayJob[]> = { workday: [], careers: [], mncs: [] };
+const INIT_POLICIES: Record<SourceKey, PolicyBlock | null> = { workday: null, careers: null, mncs: null };
 const INIT_STATES: Record<SourceKey, SourceState> = {
   workday: { ...EMPTY_STATE },
   careers: { ...EMPTY_STATE },
@@ -126,6 +129,11 @@ export interface CombinedJobsController {
   lastScanTitles: string[] | null;
   /** True when results exist but the title set changed since that scan. */
   titlesPending: boolean;
+  /**
+   * The direct-employer policy the server applied across the three scans,
+   * with its exclusion counts summed. Null on an older backend.
+   */
+  policy: PolicyBlock | null;
   /** Fire all three scans. `force` bypasses the server cache. */
   run: (
     force: boolean,
@@ -142,6 +150,7 @@ export interface CombinedJobsController {
 export function useCombinedJobs(enabled = true): CombinedJobsController {
   const [sources, setSources] = useState<Record<SourceKey, WorkdayJob[]>>(INIT_SOURCES);
   const [states, setStates] = useState<Record<SourceKey, SourceState>>(INIT_STATES);
+  const [policies, setPolicies] = useState<Record<SourceKey, PolicyBlock | null>>(INIT_POLICIES);
   const [lastScanTitles, setLastScanTitles] = useState<string[] | null>(null);
   const [resumeSkillCount, setResumeSkillCount] = useState<number | null>(null);
   const [hasResult, setHasResult] = useState(false);
@@ -169,6 +178,7 @@ export function useCombinedJobs(enabled = true): CombinedJobsController {
         if (partial?.jobs?.length) {
           setSources((s) => ({ ...s, [key]: partial.jobs }));
         }
+        if (partial?.policy) setPolicies((p) => ({ ...p, [key]: partial.policy ?? null }));
         setStates((s) => ({
           ...s,
           [key]: {
@@ -189,6 +199,9 @@ export function useCombinedJobs(enabled = true): CombinedJobsController {
       const data = resp.data;
       if (data) {
         setSources((s) => ({ ...s, [key]: data.jobs }));
+        // Absent on an older backend - and then it must not keep a previous
+        // scan's counts, which would describe a different result set.
+        setPolicies((p) => ({ ...p, [key]: data.policy ?? null }));
         setStates((s) => ({
           ...s,
           [key]: {
@@ -236,6 +249,10 @@ export function useCombinedJobs(enabled = true): CombinedJobsController {
   );
 
   const jobs = useMemo(() => mergeJobs(sources.workday, sources.careers, sources.mncs), [sources]);
+  const policy = useMemo(
+    () => mergePolicies([policies.workday, policies.careers, policies.mncs]),
+    [policies],
+  );
 
   const loading = states.workday.loading || states.careers.loading || states.mncs.loading;
   const progress = useMemo(() => {
@@ -268,6 +285,7 @@ export function useCombinedJobs(enabled = true): CombinedJobsController {
     canSearch,
     lastScanTitles,
     titlesPending,
+    policy,
     run,
   };
 }

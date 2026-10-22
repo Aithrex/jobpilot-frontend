@@ -4,9 +4,10 @@ import { useCombinedJobsCtx } from '@/components/job-search/CombinedJobsProvider
 import { RECENCY_OPTIONS, recencyAgeOf } from '@/lib/careerJobs';
 import { PillSwitch } from '@/components/ui/pill-switch';
 import { ExperienceLevelPicker } from '@/components/job-search/ExperienceLevelPicker';
+import { EmployerFiltersPopover } from '@/components/job-search/EmployerPreferencesControl';
 
 /**
- * For-you listing chrome: experience level, recency windows + Newest / Best match + open vs
+ * For-you listing chrome: experience level, employer types, recency windows + Newest / Best match + open vs
  * applied. Lives under the Jobs section tabs so it stays visible even before
  * the first scan result.
  */
@@ -38,6 +39,8 @@ export function JobsRefineBar() {
       aria-label="Listing recency and sort"
     >
       <ExperienceLevelPicker />
+      {/* Server-enforced employer types. Hides itself on a backend without them. */}
+      <EmployerFiltersPopover />
       <PillSwitch
         aria-label="Posting recency"
         value={recency}

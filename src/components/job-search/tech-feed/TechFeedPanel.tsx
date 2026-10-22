@@ -44,6 +44,8 @@ import {
 } from '@/lib/techFeedTelemetry';
 import { cn } from '@/lib/utils';
 import { TechFeedEmptyState } from '@/components/job-search/tech-feed/TechFeedEmptyState';
+import { EmployerFilteredEmptyState, EmployerPolicySummary } from '@/components/job-search/EmployerPolicyNotice';
+import { excludedBreakdown } from '@/lib/employerPolicy';
 import { TechFeedScoringNotice } from '@/components/job-search/tech-feed/TechFeedScoringNotice';
 import { TechFeedSuppressionNotice } from '@/components/job-search/tech-feed/TechFeedSuppressionNotice';
 import { TechFeedFacets } from '@/components/job-search/tech-feed/TechFeedFacets';
@@ -249,7 +251,11 @@ export function TechFeedPanel({
     searchId,
     isFetching,
     refetch,
+    policy,
   } = useTechFeed({ filters });
+  // The server's employer policy removed every match. Say so and offer the
+  // toggles; never widen the policy to fill the page.
+  const allExcludedByPolicy = jobs.length === 0 && excludedBreakdown(policy).total > 0;
 
   const [dismissed, setDismissed] = useState<Set<string>>(() => loadNotInterestedIds());
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -582,6 +588,8 @@ export function TechFeedPanel({
 
           <AppliedFiltersSummary applied={appliedFilters} unapplied={unappliedFilters} />
 
+          {!allExcludedByPolicy && <EmployerPolicySummary policy={policy} />}
+
           {/* Saved searches */}
           <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted/20 p-2">
             <Label htmlFor="tech-feed-save-name" className="sr-only">
@@ -692,6 +700,8 @@ export function TechFeedPanel({
             </Alert>
           ) : isLoading ? (
             <ResultsSkeleton />
+          ) : allExcludedByPolicy ? (
+            <EmployerFilteredEmptyState policy={policy} />
           ) : visibleJobs.length === 0 ? (
             <TechFeedEmptyState
               filters={filters}
