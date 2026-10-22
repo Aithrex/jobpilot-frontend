@@ -61,9 +61,12 @@ import {
   NoSponsorshipBadge,
 } from '@/components/job-search/WorkAuthorizationSignals';
 import { NotInterestedMenu } from '@/components/job-search/tech-feed/NotInterestedMenu';
+import { JobEmployerContext } from '@/components/job-search/JobEmployerContext';
 import { apiService } from '@/lib/api';
 import { cacheJdText, readCachedJdText, stagePendingTailorJob } from '@/lib/craftHandoff';
 import { isAppliedSavedJob } from '@/lib/savedJobs';
+import { applicationStateLabel } from '@/lib/applicationState';
+import { availabilityOf, employerProfileOf } from '@/lib/employerPolicy';
 import {
   eligibilityOf,
   ineligibleReasonsOf,
@@ -300,6 +303,14 @@ export function TechFeedJobCard({
     return Array.from(boards);
   }, [job.source_variants, job.ats, job.source]);
 
+  // The employer-policy blocks supersede the legacy single-axis fields when
+  // the row carries them: `employer_kind` can read "direct_employer" for an
+  // employer whose business model is unknown, and `last_verified_at` carries
+  // no method. Absent blocks leave the legacy rendering untouched.
+  const hasEmployerProfile = employerProfileOf(job) !== null;
+  const hasAvailability = availabilityOf(job) !== null;
+  const appState = applicationStateLabel(jobStatus, { opened: applyConfirmPending });
+
   const specialties = (job.role_specialties ?? []).slice(0, 4);
   const applyHref = job.apply_url || job.canonical_url;
   const title = job.normalized_title || job.title_raw;
@@ -435,7 +446,11 @@ export function TechFeedJobCard({
             </Badge>
           ) : (
             <>
-              <Badge variant="secondary" className="tabular-nums">
+              <Badge
+                variant="secondary"
+                className="tabular-nums"
+                title="How well your resume covers this posting. Not a chance of getting an interview."
+              >
                 {Math.round(job.match_score)}% match
               </Badge>
               <span
@@ -561,7 +576,7 @@ export function TechFeedJobCard({
           <dd className="text-muted-foreground" data-testid="tech-feed-posted">
             <span className={cn(posted.caveat ? 'italic' : 'text-foreground')}>{posted.text}</span>
             {posted.caveat && <span className="block">{posted.caveat}</span>}
-            {verified && (
+            {verified && !hasAvailability && (
               <span className="block text-foreground" data-testid="tech-feed-verified">
                 Live on the source board, {verified}
               </span>
@@ -593,15 +608,17 @@ export function TechFeedJobCard({
         aria-label="Where this posting came from"
         data-testid="tech-feed-provenance"
       >
-        <li>
-          <Badge
-            variant={job.employer_kind === 'direct_employer' ? 'secondary' : 'outline'}
-            className="gap-1 font-normal"
-          >
-            <Globe2 className="h-3 w-3" aria-hidden />
-            {EMPLOYER_KIND_LABEL[job.employer_kind] ?? humanize(job.employer_kind)}
-          </Badge>
-        </li>
+        {!hasEmployerProfile && (
+          <li>
+            <Badge
+              variant={job.employer_kind === 'direct_employer' ? 'secondary' : 'outline'}
+              className="gap-1 font-normal"
+            >
+              <Globe2 className="h-3 w-3" aria-hidden />
+              {EMPLOYER_KIND_LABEL[job.employer_kind] ?? humanize(job.employer_kind)}
+            </Badge>
+          </li>
+        )}
         {job.source && (
           <li>
             <Badge variant="outline" className="font-normal text-muted-foreground">
@@ -631,6 +648,15 @@ export function TechFeedJobCard({
           </Badge>
         </li>
       </ul>
+
+      {/* Employer type, posting relationship, availability with its method,
+          the application destination and any warnings. Renders nothing for a
+          row from a backend that predates employer-policy-1.0.0. */}
+      <JobEmployerContext
+        row={job}
+        sourceLabel={job.source ? humanize(job.source) : null}
+        className="mt-2"
+      />
 
       {/* Duplicates / variants */}
       {(otherLocations > 0 || otherBoards.length > 0) && (
@@ -881,8 +907,8 @@ export function TechFeedJobCard({
         />
 
         {jobStatus && (
-          <span className="ml-auto text-[11px] text-muted-foreground">
-            In your tracker: {humanize(jobStatus)}
+          <span className="ml-auto text-[11px] text-muted-foreground" data-testid="tech-feed-tracker-state">
+            In your tracker: {appState?.label ?? humanize(jobStatus)}
           </span>
         )}
       </div>

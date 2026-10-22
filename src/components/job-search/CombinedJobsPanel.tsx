@@ -12,8 +12,11 @@ import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ApplyConfirmDialog, JOB_FEED_GRID_CLASS, JobCard, JOB_CARD_CLASS } from '@/components/job-search/JobCard';
 import { JobFeedPager } from '@/components/job-search/JobFeedPager';
+import { EmployerFilteredEmptyState, EmployerPolicySummary } from '@/components/job-search/EmployerPolicyNotice';
 import { useCombinedJobsCtx } from '@/components/job-search/CombinedJobsProvider';
 import { JOB_FEED_PAGE_SIZE, RECENCY_OPTIONS, inRecencyWindow, matchesSeniorityLevels, sortJobsByMode, isAppliedPipelineStatus, toJob } from '@/lib/careerJobs';
+import { excludedBreakdown } from '@/lib/employerPolicy';
+import { isHiddenJob } from '@/lib/hiddenJobs';
 import { cn } from '@/lib/utils';
 import type { Job, WorkdayJob } from '@/types/jobs';
 
@@ -50,8 +53,9 @@ interface CombinedJobsPanelProps {
   markAlreadyApplied?: (job: Job) => void | Promise<unknown>;
   autoApply?: (job: Job) => void | Promise<unknown>;
   autoApplyingId?: string | null;
+  /** Job ids and `url:` apply-URL keys - see `lib/hiddenJobs.ts`. */
   hiddenJobIds?: Set<string>;
-  onHideJob?: (jobId: string) => void;
+  onHideJob?: (jobId: string, applyLink?: string) => void;
   showApplyOverlay?: boolean;
 }
 
@@ -101,7 +105,11 @@ export function CombinedJobsPanel({
     sortBy,
     page,
     setPage,
+    policy,
   } = useCombinedJobsCtx();
+  // The server removed every row for the user's employer-type choice. Said as
+  // such, with the way to change it - never answered by widening on our own.
+  const allExcludedByPolicy = jobs.length === 0 && excludedBreakdown(policy).total > 0;
   // A string, so the effects below re-run when the CHOICE changes, not when
   // an equal array is rebuilt.
   const seniorityKey = seniorityLevels.join('|');
@@ -128,7 +136,7 @@ export function CombinedJobsPanel({
     if (minScore > 0) out = out.filter((j) => (j.match_score ?? 0) >= minScore);
     if (sponsorFilter === 'friendly') out = out.filter((j) => j.sponsorship !== 'refused');
     else if (sponsorFilter === 'proven') out = out.filter((j) => j.sponsorship === 'likely');
-    if (hiddenJobIds?.size) out = out.filter((j) => !hiddenJobIds.has(j.job_id));
+    if (hiddenJobIds?.size) out = out.filter((j) => !isHiddenJob(hiddenJobIds, j));
     if (!showApplied) out = out.filter((j) => !isApplied(j));
     return sortJobsByMode(out, sortBy, { isApplied });
   }, [
@@ -208,7 +216,7 @@ export function CombinedJobsPanel({
         onAlreadyApplied={markAlreadyApplied ? () => markAlreadyApplied(toJob(job, 'career portal')) : undefined}
         onAutoApply={autoApply ? () => autoApply(toJob(job, 'career portal')) : undefined}
         autoApplying={autoApplyingId === job.job_id}
-        onHide={onHideJob ? () => onHideJob(job.job_id) : undefined}
+        onHide={onHideJob ? () => onHideJob(job.job_id, job.apply_link) : undefined}
       />
     </motion.div>
   );
@@ -249,6 +257,8 @@ export function CombinedJobsPanel({
           className="h-1.5"
         />
       )}
+
+      {!loading && !allExcludedByPolicy && <EmployerPolicySummary policy={policy} />}
 
       {resumeSkillCount === 0 && hasResult && (
         <div className="flex items-start gap-2 rounded-xl border border-warning/40 bg-warning/10 px-4 py-3 text-xs text-foreground/85">
@@ -296,7 +306,8 @@ export function CombinedJobsPanel({
       )}
 
       {/* ── Empty state ── */}
-      {!loading && hasResult && visibleJobs.length === 0 && (
+      {!loading && hasResult && allExcludedByPolicy && <EmployerFilteredEmptyState policy={policy} />}
+      {!loading && hasResult && visibleJobs.length === 0 && !allExcludedByPolicy && (
         <div className="rounded-2xl border border-dashed border-border bg-card/50 p-10 text-center text-sm text-muted-foreground">
           <Radar className="mx-auto mb-3 h-8 w-8 opacity-40" aria-hidden />
           <p>No roles match these filters in this window.</p>

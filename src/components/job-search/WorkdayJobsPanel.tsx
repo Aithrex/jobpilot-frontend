@@ -36,6 +36,8 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
+import { EmployerFilteredEmptyState, EmployerPolicySummary } from '@/components/job-search/EmployerPolicyNotice';
+import { excludedBreakdown } from '@/lib/employerPolicy';
 import { cn } from '@/lib/utils';
 import { PillSwitch } from '@/components/ui/pill-switch';
 import type {
@@ -1316,7 +1318,15 @@ export function WorkdayJobsPanel({
             )}
           </p>
 
-          {visibleJobs.length === 0 ? (
+          {!streaming && !(result.jobs.length === 0 && excludedBreakdown(result.policy).total > 0) && (
+            <EmployerPolicySummary policy={result.policy} />
+          )}
+
+          {!streaming && result.jobs.length === 0 && excludedBreakdown(result.policy).total > 0 ? (
+            // Every row was removed by the user's employer-type choice on the
+            // server. Said as such; the filters are never widened for them.
+            <EmployerFilteredEmptyState policy={result.policy} />
+          ) : visibleJobs.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-border bg-card/50 p-10 text-center text-sm text-muted-foreground">
               <Building2 className="mx-auto mb-3 h-8 w-8 opacity-40" aria-hidden />
               <p>No postings in this window.</p>

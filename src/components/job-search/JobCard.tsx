@@ -21,6 +21,7 @@ import {
 import { CompanyLogo } from '@/components/CompanyLogo';
 import { JobAnalysisModal } from './JobAnalysisModal';
 import { JobTrustBadge } from './JobTrustBadge';
+import { JobEmployerContext } from './JobEmployerContext';
 import { VisaFlagChips } from './JobVisaSignals';
 import { EmployerSponsorshipBadge } from './WorkAuthorizationSignals';
 import { legacySponsorshipSignal } from '@/lib/sponsorshipSignal';
@@ -31,6 +32,8 @@ import { apiService, companyLogoSrc } from '@/lib/api';
 import { stagePendingTailorJob, cacheJdText, readCachedJdText } from '@/lib/craftHandoff';
 import { openJobPosting } from '@/lib/jobPosting';
 import { isAppliedSavedJob } from '@/lib/savedJobs';
+import { applicationStateLabel } from '@/lib/applicationState';
+import { trustOf } from '@/lib/employerPolicy';
 import { cn } from '@/lib/utils';
 import { hueFromString, toTitleCase, decodeJobHtml } from '@/lib/format';
 import { useCountUp } from '@/hooks/useCountUp';
@@ -61,7 +64,7 @@ interface JobCardProps {
   onConfirmNotYet?: () => void;
   onApplyWithTailor?: () => void | Promise<unknown>;
   onAlreadyApplied?: () => void | Promise<unknown>;
-  /** Hide this posting from For you (session-only). */
+  /** Hide this posting from For you. Persisted by id and by apply URL (`lib/hiddenJobs`). */
   onHide?: () => void;
 }
 
@@ -416,7 +419,14 @@ export function JobCard({
     sourceLabel ? `Via ${sourceLabel}` : '',
     job.posted_text || job.date_posted || '',
   ].filter(Boolean);
-  const hasSignals = job.trust_band || job.h1b_sponsor || job.is_remote || job.contract_friendly || job.visa_flags;
+  // The legacy band yields to the evidence-backed `trust` block when the row
+  // carries one: two trust readings on one card would contradict each other.
+  const showLegacyTrust = !!job.trust_band && !trustOf(job);
+  const hasSignals = showLegacyTrust || job.h1b_sponsor || job.is_remote || job.contract_friendly || job.visa_flags;
+  // Opening the posting is not applying. Saved/opened states are shown only
+  // while we wait for the user's answer; Save already shows "Saved".
+  const appState = applicationStateLabel(jobStatus, { opened: !!applyConfirmPending });
+  const showAppState = !!appState && (!appState.preApplication || !!applyConfirmPending) && !showInlineApplyConfirm;
   const inAppliedPipeline = isAppliedSavedJob({ status: jobStatus ?? undefined });
   const skills = job.matched_skills ?? [];
 
@@ -471,9 +481,12 @@ export function JobCard({
           </div>
 
           <div className="min-h-[3.5rem] shrink-0 space-y-1.5">
+            {/* Employer type, availability, destination and warnings - only
+                when the server sent the employer-policy blocks. */}
+            <JobEmployerContext row={job} sourceLabel={sourceLabel || null} />
             {hasSignals && (
               <div className="flex flex-wrap items-center gap-1.5">
-                {job.trust_band && (
+                {showLegacyTrust && job.trust_band && (
                   <>
                     <JobTrustBadge band={job.trust_band} score={job.trust_score} reasons={job.trust_reasons} />
                     <button
@@ -549,6 +562,20 @@ export function JobCard({
           </AnimatePresence>
 
           <div className="mt-auto space-y-2 border-t border-border/40 pt-2.5">
+            {showAppState && appState && (
+              <p
+                className={cn(
+                  'text-[11px] font-medium',
+                  appState.tone === 'positive' && 'text-success',
+                  appState.tone === 'caution' && 'text-warning',
+                  appState.tone === 'danger' && 'text-destructive',
+                  appState.tone === 'neutral' && 'text-muted-foreground',
+                )}
+                data-testid="job-application-state"
+              >
+                {appState.label}
+              </p>
+            )}
             {showInlineApplyConfirm ? (
               <div
                 role="group"
@@ -559,7 +586,7 @@ export function JobCard({
                   Did you apply for <span className="font-semibold">{job.title}</span>?
                 </p>
                 <p className="mt-0.5 text-[11px] text-muted-foreground">
-                  Yes moves it to Applied. Not yet leaves it in Draft.
+                  Opening the posting is not applying. Yes moves it to Applied; Not yet leaves it in Draft.
                 </p>
                 <div className="mt-2 flex flex-wrap items-center gap-1.5">
                   <Button size="sm" onClick={onConfirmApplied} className="h-9 min-w-[7.5rem] gap-1.5 text-xs font-semibold">

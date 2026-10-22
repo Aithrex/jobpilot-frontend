@@ -21,6 +21,8 @@ import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 
 import { apiService } from '@/lib/api';
 import { serializeTechFeedFilters, techFeedFiltersToRequest } from '@/lib/techFeedUrlState';
+import { policyOf } from '@/lib/employerPolicy';
+import type { PolicyBlock } from '@/types/employerPolicy';
 import {
   isTechFeedCursorExpired,
   type TechFeedCoverage,
@@ -73,6 +75,12 @@ export interface UseTechFeedResult {
   searchId: string | null;
   isFetching: boolean;
   refetch: () => void;
+  /**
+   * The direct-employer policy the server applied to this search, with what
+   * it excluded. From page one, like `total`: it describes the search. Null
+   * on an older backend.
+   */
+  policy: PolicyBlock | null;
 }
 
 export function useTechFeed({
@@ -201,5 +209,6 @@ export function useTechFeed({
     searchId: firstPage?.search_id ?? null,
     isFetching: query.isFetching,
     refetch,
+    policy: policyOf(firstPage?.policy),
   };
 }

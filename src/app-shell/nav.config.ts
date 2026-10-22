@@ -5,6 +5,7 @@ import {
   Bookmark,
   Bot,
   Briefcase,
+  Building2,
   CalendarDays,
   ClipboardList,
   CreditCard,
@@ -316,6 +317,13 @@ export const SETTINGS_SECTIONS: NavSection[] = [
     icon: Mail,
     hint: "Your managed application address and forwarding",
     keywords: "email forwarding address",
+  },
+  {
+    to: "employer-types",
+    label: "Employer types",
+    icon: Building2,
+    hint: "Direct employers only, or include agencies and marketplaces",
+    keywords: "staffing agency consultancy recruiter marketplace direct employer filter gig",
   },
   {
     to: "employer-logins",

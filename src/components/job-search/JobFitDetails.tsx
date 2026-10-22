@@ -165,6 +165,12 @@ export function JobFitDetails({ job, className }: JobFitDetailsProps) {
           )}
         </div>
         <p className="text-caption leading-relaxed text-muted-foreground">{band.meaning}</p>
+        {scored && (
+          <p className="text-caption leading-relaxed text-muted-foreground" data-testid="fit-not-odds">
+            Fit compares your resume with what this posting asks for. It is not your chance of
+            getting an interview.
+          </p>
+        )}
       </div>
 
       {!scored ? (
