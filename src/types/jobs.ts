@@ -1,3 +1,15 @@
+import type { EmployerPolicyRowFields, PolicyBlock } from './employerPolicy';
+
+export type {
+  Availability,
+  EmployerPolicyRowFields,
+  EmployerPreferences,
+  EmployerProfile,
+  PolicyBlock,
+  PostingProfile,
+  TrustBlock,
+} from './employerPolicy';
+
 export type VisaStatus = 'sponsor_verified' | 'likely_sponsor' | 'no_sponsorship' | 'unknown';
 
 export interface DailyPipelineRecord {
@@ -230,7 +242,12 @@ export interface VisaFilters {
   exclude_clearance?: boolean;
 }
 
-export interface Job {
+/**
+ * A posting as `JobCard` renders it. The `EmployerPolicyRowFields` blocks
+ * (employer_profile / posting_profile / availability / trust) are optional:
+ * an older backend omits them and the card renders exactly as before.
+ */
+export interface Job extends EmployerPolicyRowFields {
   job_id: string;
   title: string;
   company: string;
@@ -407,6 +424,8 @@ export interface JobSearchResponse {
   skipped_sources?: Record<string, string>;
   cache_hits?: number;
   cache_bypassed?: boolean;
+  /** Direct-employer policy the server applied to this list. Absent on older backends. */
+  policy?: PolicyBlock;
 }
 
 export interface BatchSearchParams {
@@ -438,6 +457,7 @@ export interface BatchSearchResponse {
   selected_sources?: string[];
   skipped_sources?: Record<string, string>;
   cache_bypassed?: boolean;
+  policy?: PolicyBlock;
 }
 
 // ── Career portals (direct Workday + career-page ATS fan-out) ──────────────
@@ -472,7 +492,7 @@ export type CareerPortalSponsorship = 'likely' | 'rare' | 'unknown' | 'refused';
  *  extension of `Job` - portal rows carry catalog metadata (tenant/industry),
  *  a string sponsorship band, and several `Job`-required fields only
  *  optionally. The panel normalizes rows into `Job` for `JobCard`. */
-export interface WorkdayJob {
+export interface WorkdayJob extends EmployerPolicyRowFields {
   job_id: string;
   title: string;
   /** Tolerated source-side variants of `title` - some fetcher rows carry the
@@ -591,6 +611,11 @@ export interface WorkdayJobsResult {
   progress?: WorkdayJobsProgress;
   /** True on streaming partials - the jobs list is a provisional top slice. */
   streaming?: boolean;
+  /**
+   * Direct-employer policy the server applied to THIS catalog's rows: what it
+   * excluded and why. Absent on older backends - render nothing then.
+   */
+  policy?: PolicyBlock;
 }
 
 /**

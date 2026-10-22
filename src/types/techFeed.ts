@@ -22,6 +22,8 @@
  *    keeps rendering.
  */
 
+import type { EmployerPolicyRowFields, PolicyBlock } from './employerPolicy';
+
 // ── Enumerations ─────────────────────────────────────────────────
 
 export type TechScope = 'core' | 'adjacent' | 'non_tech' | 'unknown';
@@ -194,7 +196,13 @@ export interface TechFeedLocationVariant {
   url: string;
 }
 
-export interface TechFeedJob {
+/**
+ * `employer_kind` is the LEGACY single-axis label. When the row carries
+ * `employer_profile` (contract employer-policy-1.0.0) the card reads that
+ * instead, because `employer_kind` can say `direct_employer` for an employer
+ * whose business model is actually unknown.
+ */
+export interface TechFeedJob extends EmployerPolicyRowFields {
   job_id: string;
   dedupe_group_id: string;
   employer_id: string;
@@ -617,6 +625,11 @@ export interface TechFeedSearchResponse {
   source_health: TechFeedSourceHealth;
   warnings: string[];
   diagnostics: Record<string, unknown>;
+  /**
+   * Direct-employer policy applied to this search: the exclusions in force and
+   * how many matches each one removed. Absent on older backends.
+   */
+  policy?: PolicyBlock;
   /** Never set by the server - the discriminant against `TechFeedCursorExpired`. */
   cursor_expired?: false;
 }

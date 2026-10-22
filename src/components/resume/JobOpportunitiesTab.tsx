@@ -37,7 +37,7 @@ function JobList({
   emptyTitle: string;
   emptyBody: string;
   jobSearch: ReturnType<typeof useJobSearch>;
-  onHideJob?: (jobId: string) => void;
+  onHideJob?: (jobId: string, applyLink?: string) => void;
   loading?: boolean;
 }) {
   if (loading) {
@@ -87,7 +87,7 @@ function JobList({
           onAlreadyApplied={() => void jobSearch.markAlreadyApplied(job)}
           onAutoApply={() => void jobSearch.autoApply(job)}
           autoApplying={jobSearch.autoApplyingId === job.job_id}
-          onHide={onHideJob ? () => onHideJob(job.job_id) : undefined}
+          onHide={onHideJob ? () => onHideJob(job.job_id, job.apply_link) : undefined}
         />
       ))}
     </div>
@@ -102,8 +102,10 @@ export default function JobOpportunitiesTab({ embedded }: JobOpportunitiesTabPro
   const jobSearch = useJobSearch();
   const [hiddenJobIds, setHiddenJobIds] = useState<Set<string>>(loadHiddenJobIds);
 
-  const hideJob = (jobId: string) => {
-    setHiddenJobIds(persistHiddenJobId(jobId));
+  // Persisted by id AND by the posting's apply URL, so a hidden job stays
+  // hidden after a refresh and after a re-crawl issues it a new id.
+  const hideJob = (jobId: string, applyLink?: string) => {
+    setHiddenJobIds(persistHiddenJobId(jobId, applyLink));
   };
 
   const savedRows = useMemo(

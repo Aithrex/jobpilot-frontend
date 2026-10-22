@@ -4272,6 +4272,32 @@ class ApiService {
     );
   }
 
+  // --- Direct-employer policy preferences (employer-policy-1.0.0) -------
+  //
+  // Under the EXISTING /api/jobs/tech-feed subpath, so no new edge route.
+  // The SERVER enforces these on every served list (search, tech feed, the
+  // portal scans, recommendations, alerts, auto-apply selection); the client
+  // only reads and writes the choice. A user who never chose gets the
+  // documented default with `set_by: "default"`.
+
+  async getEmployerPreferences() {
+    return this.request<import('../types/employerPolicy').EmployerPreferences>(
+      '/jobs/tech-feed/employer-preferences',
+      { method: 'GET' },
+    );
+  }
+
+  /** Replace the caller's exclusions. Returns the stored preferences. */
+  async saveEmployerPreferences(prefs: import('../types/employerPolicy').EmployerPreferencesUpdate) {
+    return this.request<import('../types/employerPolicy').EmployerPreferences>(
+      '/jobs/tech-feed/employer-preferences',
+      {
+        method: 'PUT',
+        body: JSON.stringify({ preset: prefs.preset, exclude: prefs.exclude }),
+      },
+    );
+  }
+
   async getAdminTechFeedOps() {
     return this.request<Record<string, unknown>>('/admin/ops/tech-feed');
   }
