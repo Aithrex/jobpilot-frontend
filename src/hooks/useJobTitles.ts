@@ -197,6 +197,7 @@ async function loadTitleSeed(): Promise<JobTitleSeed> {
       resume_titles: seed.data.resume_titles,
       synth_titles: seed.data.synth_titles ?? [],
       match_titles: seed.data.match_titles ?? [],
+      off_domain_titles: seed.data.off_domain_titles ?? [],
       resume_count: seed.data.resume_count ?? 0,
       cached: seed.data.cached ?? true,
       experience_view: seed.data.experience_view,
@@ -261,7 +262,18 @@ export function hydrateJobTitles(): Promise<void> {
 
       // Legacy per-panel caches are only trusted when the server has no
       // canonical list to offer. See `readCachedTitles`.
-      const saved = readCachedTitles(!seed.match_titles?.length);
+      //
+      // A saved chip the server names as a different occupation for this
+      // user is dropped. "Suggest from resume" used to hand an electrical
+      // engineer SDE and IT-support titles, and because a saved set wins
+      // outright below, those chips kept searching software jobs on every
+      // visit (reported 2026-10-21). Exact titles only - the client never
+      // classifies anything itself - and never one the seed itself proposes.
+      const offDomain = new Set((seed.off_domain_titles ?? []).map((t) => t.toLowerCase()));
+      const seedKeys = new Set((seed.match_titles ?? []).map((t) => t.toLowerCase()));
+      const saved = readCachedTitles(!seed.match_titles?.length).filter(
+        (t) => !offDomain.has(t.toLowerCase()) || seedKeys.has(t.toLowerCase()),
+      );
       const cachedFp = readCachedFingerprint();
       const fingerprintUnchanged = Boolean(fp) && cachedFp === fp;
 
