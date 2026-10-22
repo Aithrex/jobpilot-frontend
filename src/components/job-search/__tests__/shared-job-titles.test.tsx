@@ -262,6 +262,35 @@ describe('shared job titles', () => {
     expect(api.suggestPipelineFilters).not.toHaveBeenCalled();
   });
 
+  test('4a. saved chips the server names as off-domain are dropped on load', async () => {
+    // An electrical engineer's chips after the old "Suggest from resume":
+    // software and IT-support titles saved alongside her own.
+    localStorage.setItem(
+      SHARED_CACHE_KEY,
+      JSON.stringify({
+        titles: ['Electrical Engineer', 'Software Development Engineer', 'IT Support Technician'],
+        fingerprint: SEED_FINGERPRINT,
+      }),
+    );
+    api.getTitleSeed.mockResolvedValue(
+      okTitleSeed({
+        resume_titles: ['Electrical Design Trainee'],
+        match_titles: ['Electrical Engineer', 'Power Systems Engineer'],
+        off_domain_titles: ['Software Development Engineer', 'IT Support Technician'],
+      }),
+    );
+    const user = userEvent.setup();
+    renderBothSurfaces();
+
+    await openJobFeed(user);
+    expect(await screen.findByLabelText('Remove Electrical Engineer')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Remove Software Development Engineer')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Remove IT Support Technician')).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(cachedTitles()).not.toContain('Software Development Engineer'),
+    );
+  });
+
   test('4b. a changed fingerprint merges new resume titles into the saved set', async () => {
     const user = userEvent.setup();
     localStorage.setItem(

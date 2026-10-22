@@ -355,6 +355,12 @@ export interface JobTitleSeed {
    * neither matches a real posting title. Absent on older backends.
    */
   match_titles?: string[];
+  /**
+   * Titles that are a DIFFERENT occupation for this user (an electrical
+   * engineer's stale "Software Development Engineer" / "IT Support" chips).
+   * A saved chip set drops exact matches on load. Absent on older backends.
+   */
+  off_domain_titles?: string[];
   resume_count: number;
   cached: boolean;
   /** Absent on backends older than fit-v2.3. */
