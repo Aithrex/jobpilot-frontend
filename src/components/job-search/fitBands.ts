@@ -64,7 +64,7 @@ const GOOD: FitBand = {
 const POSSIBLE: FitBand = {
   key: 'possible',
   label: 'Possible match',
-  meaning: 'Partly covered. You will need to make the case in a tailored resume.',
+  meaning: 'Reachable, but you will need to make the case in a tailored resume.',
   text: 'text-warning',
   chip: 'border-warning/30 bg-warning/10 text-warning',
   stroke: 'hsl(var(--warning))',
