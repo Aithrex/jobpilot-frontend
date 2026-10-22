@@ -57,7 +57,7 @@ export function EmployerPolicySummary({ policy, className }: EmployerPolicyProps
       )}
       {unverified > 0 && (
         <span data-testid="employer-policy-unverified">
-          {breakdown.total > 0 ? '· ' : ''}
+          {breakdown.total > 0 ? '- ' : ''}
           {unverified} shown from employers we couldn't verify
         </span>
       )}

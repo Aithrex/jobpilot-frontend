@@ -25,7 +25,7 @@ import {
 import { cn } from '@/lib/utils';
 import type { EmployerPolicyRowFields } from '@/types/employerPolicy';
 
-export const EXPLANATION_TONE_CLASS: Record<ExplanationTone, string> = {
+const EXPLANATION_TONE_CLASS: Record<ExplanationTone, string> = {
   positive: 'border-success/30 bg-success/10 text-success',
   neutral: 'border-border bg-secondary text-secondary-foreground',
   caution: 'border-warning/30 bg-warning/10 text-warning',
