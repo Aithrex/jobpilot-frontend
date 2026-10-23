@@ -217,9 +217,10 @@ describe('preferences form', () => {
     );
     const strict = screen.getByRole('switch', { name: 'Direct employers only' });
     expect(strict).toHaveAttribute('aria-checked', 'false');
+    // Owner decision 2026-10-23: consultancies are hidden by the recommended filters.
     expect(screen.getByRole('switch', { name: 'Consultancies and outsourcing' })).toHaveAttribute(
       'aria-checked',
-      'false',
+      'true',
     );
     expect(screen.getByRole('switch', { name: 'Staffing agencies' })).toHaveAttribute('aria-checked', 'true');
     expect(screen.getByTestId('employer-prefs-summary')).toHaveTextContent('recommended defaults');
