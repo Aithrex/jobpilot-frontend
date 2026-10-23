@@ -12,6 +12,7 @@ import { describe, expect, test } from 'vitest';
 
 import {
   RECOMMENDED_DEFAULT,
+  isRecommended,
   STRICT_DIRECT_PREFERENCES,
   withRecommended,
   activeExclusionKeys,
@@ -203,19 +204,22 @@ describe('policy block and counts', () => {
 });
 
 describe('preferences', () => {
-  test('the server default is the recommended custom set: consultancy and unknown shown', () => {
+  test('the server default (2026-10-23) hides staffing and consultancies under preset custom', () => {
     expect(RECOMMENDED_DEFAULT.preset).toBe('custom');
     expect(RECOMMENDED_DEFAULT.set_by).toBe('default');
-    expect(RECOMMENDED_DEFAULT.exclude.consultancy).toBe(false);
+    expect(RECOMMENDED_DEFAULT.exclude.consultancy).toBe(true);
     expect(RECOMMENDED_DEFAULT.exclude.unknown_business_model).toBe(false);
     expect(activeExclusionKeys(RECOMMENDED_DEFAULT)).toEqual([
       'staffing',
+      'consultancy',
       'client_placement',
       'talent_marketplace',
       'task_gig',
       'talent_community',
     ]);
-    expect(presetFor(RECOMMENDED_DEFAULT.exclude)).toBe('custom');
+    // Same toggles as strict; the PRESET is what keeps recognized firms shown.
+    expect(isRecommended(RECOMMENDED_DEFAULT)).toBe(true);
+    expect(isRecommended(STRICT_DIRECT_PREFERENCES)).toBe(false);
     expect(preferencesSummary(RECOMMENDED_DEFAULT)).toBe('Recommended employer filters');
   });
 
@@ -223,7 +227,7 @@ describe('preferences', () => {
     const prefs = preferencesOf({ ...RECOMMENDED_DEFAULT, version: 'employer-policy-1.0.0' });
     expect(prefs?.preset).toBe('custom');
     expect(prefs?.set_by).toBe('default');
-    expect(prefs?.exclude.consultancy).toBe(false);
+    expect(prefs?.exclude.consultancy).toBe(true);
   });
 
   test('a missing exclusion key is NOT excluded, and set_by is kept', () => {
@@ -245,15 +249,21 @@ describe('preferences', () => {
     // And back to recommended.
     const back = withRecommended(strict);
     expect(back.exclude).toEqual(RECOMMENDED_DEFAULT.exclude);
+    expect(back.preset).toBe('custom');
     expect(back.set_by).toBe('user');
+    expect(preferencesSummary(back)).toBe('Recommended employer filters');
   });
 
   test('turning one exclusion off from strict leaves the preset as custom', () => {
     const next = withExclusion(STRICT_DIRECT_PREFERENCES, 'consultancy', false);
     expect(next.preset).toBe('custom');
-    expect(preferencesSummary(next)).toBe('Recommended employer filters');
+    expect(preferencesSummary(next)).toBe('5 employer types hidden');
     const fewer = withExclusion(next, 'staffing', false);
     expect(preferencesSummary(fewer)).toBe('4 employer types hidden');
+    // Turning it back on returns to the recommended filters, never to strict.
+    const again = withExclusion(withExclusion(fewer, 'staffing', true), 'consultancy', true);
+    expect(again.preset).toBe('custom');
+    expect(preferencesSummary(again)).toBe('Recommended employer filters');
   });
 
   test('the strict preset toggles the six business-model keys and leaves unknown alone', () => {
@@ -261,9 +271,11 @@ describe('preferences', () => {
     const off = withStrictDirect(withUnknown, false);
     expect(off.exclude.unknown_business_model).toBe(true);
     expect(off.preset).toBe('custom');
-    const allOff = withExclusion(off, 'unknown_business_model', false);
-    expect(allOff.preset).toBe('off');
-    expect(preferencesSummary(allOff)).toBe('All employer types');
-    expect(presetFor(withStrictDirect(allOff, true).exclude)).toBe('strict_direct');
+    // Switching strict off lands on the recommended filters.
+    const recommended = withExclusion(off, 'unknown_business_model', false);
+    expect(recommended.preset).toBe('custom');
+    expect(preferencesSummary(recommended)).toBe('Recommended employer filters');
+    expect(withStrictDirect(recommended, true).preset).toBe('strict_direct');
+    expect(presetFor(withStrictDirect(recommended, true).exclude)).toBe('strict_direct');
   });
 });

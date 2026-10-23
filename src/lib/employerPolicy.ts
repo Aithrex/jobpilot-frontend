@@ -489,7 +489,7 @@ export const EXCLUSION_LABEL: Record<EmployerExclusionKey, { label: string; hint
   },
   consultancy: {
     label: 'Consultancies and outsourcing',
-    hint: 'IT services and outsourcing firms. Shown by default, labelled "Consultancy".',
+    hint: 'IT services and outsourcing firms. Hidden by default, except large recognized firms (Deloitte, Accenture, IBM, Infosys, TCS...).',
   },
   client_placement: {
     label: 'Third-party client placements',
@@ -519,12 +519,17 @@ function exclusions(fill: (key: EmployerExclusionKey) => boolean): EmployerExclu
 
 /**
  * The exclusions the server applies for a user who never chose
- * (`set_by: "default"`): staffing, client placements, marketplaces, gig work
- * and talent pools are hidden; consultancies and unverified employers are
- * shown WITH their label. On the wire this is preset `custom`.
+ * (`set_by: "default"`, owner decision 2026-10-23): staffing agencies, small
+ * consultancies, client placements, marketplaces, gig work and talent pools
+ * are hidden; LARGE RECOGNIZED firms (Insight Global, Randstad, Deloitte,
+ * Infosys...) and unverified employers are shown. On the wire this is preset
+ * `custom` - the same toggles as "Direct employers only", whose preset
+ * `strict_direct` hides the recognized firms too. The preset is what tells
+ * the two apart, so it is never re-derived from the toggles alone.
  */
 export const RECOMMENDED_EXCLUDED_KEYS: readonly EmployerExclusionKey[] = [
   'staffing',
+  'consultancy',
   'client_placement',
   'talent_marketplace',
   'task_gig',
@@ -544,15 +549,20 @@ export const STRICT_DIRECT_PREFERENCES: EmployerPreferences = {
   set_by: 'user',
 };
 
-/** True when the exclusions are exactly the server's recommended default. */
+/** True when the toggles are exactly the recommended set (see `isRecommended` for the preset too). */
 export function isRecommendedExclusions(exclude: EmployerExclusions): boolean {
   return EXCLUSION_KEYS.every((key) => exclude[key] === RECOMMENDED_EXCLUDED_KEYS.includes(key));
+}
+
+/** The recommended filters: the recommended toggles under preset `custom`. */
+export function isRecommended(prefs: EmployerPreferences | null | undefined): boolean {
+  return !!prefs && prefs.preset !== 'strict_direct' && isRecommendedExclusions(prefs.exclude);
 }
 
 /** Back to the recommended set, as the user's own choice. */
 export function withRecommended(prefs: EmployerPreferences): EmployerPreferences {
   const exclude = { ...RECOMMENDED_DEFAULT.exclude };
-  return { ...prefs, exclude, preset: presetFor(exclude), set_by: 'user' };
+  return { ...prefs, exclude, preset: 'custom', set_by: 'user' };
 }
 
 /**
@@ -586,14 +596,24 @@ export function withExclusion(
   value: boolean,
 ): EmployerPreferences {
   const exclude = { ...prefs.exclude, [key]: value };
-  return { ...prefs, exclude, preset: presetFor(exclude), set_by: 'user' };
+  // Toggling one key never silently turns the recommended filters into
+  // "Direct employers only" - only the preset switch does that.
+  let preset = presetFor(exclude);
+  if (preset === 'strict_direct' && prefs.preset !== 'strict_direct') preset = 'custom';
+  return { ...prefs, exclude, preset, set_by: 'user' };
 }
 
 /** Turn the "Direct employers only" preset on or off. The unverified toggle is left alone. */
 export function withStrictDirect(prefs: EmployerPreferences, on: boolean): EmployerPreferences {
   const exclude = { ...prefs.exclude };
-  for (const key of STRICT_DIRECT_KEYS) exclude[key] = on;
-  return { ...prefs, exclude, preset: presetFor(exclude), set_by: 'user' };
+  if (on) {
+    for (const key of STRICT_DIRECT_KEYS) exclude[key] = true;
+    return { ...prefs, exclude, preset: 'strict_direct', set_by: 'user' };
+  }
+  // Off: back to the recommended filters, which hide the same types but keep
+  // the large recognized firms.
+  for (const key of STRICT_DIRECT_KEYS) exclude[key] = RECOMMENDED_EXCLUDED_KEYS.includes(key);
+  return { ...prefs, exclude, preset: 'custom', set_by: 'user' };
 }
 
 export function activeExclusionKeys(prefs: EmployerPreferences | null | undefined): EmployerExclusionKey[] {
@@ -604,10 +624,10 @@ export function activeExclusionKeys(prefs: EmployerPreferences | null | undefine
 /** Short summary for a trigger button: what is on, in words. */
 export function preferencesSummary(prefs: EmployerPreferences | null | undefined): string {
   if (!prefs) return 'Employer types';
-  if (isRecommendedExclusions(prefs.exclude)) return 'Recommended employer filters';
+  if (isRecommended(prefs)) return 'Recommended employer filters';
   const active = activeExclusionKeys(prefs);
   const hidesUnknown = prefs.exclude.unknown_business_model;
-  if (presetFor(prefs.exclude) === 'strict_direct') {
+  if (prefs.preset === 'strict_direct') {
     return hidesUnknown ? 'Direct employers only, verified' : 'Direct employers only';
   }
   if (!active.length) return 'All employer types';

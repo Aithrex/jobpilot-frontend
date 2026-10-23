@@ -43,7 +43,7 @@ describe('useEmployerPreferences', () => {
     // The server default is the recommended CUSTOM set, not strict.
     expect(result.current.preferences?.preset).toBe('custom');
     expect(result.current.preferences?.set_by).toBe('default');
-    expect(result.current.preferences?.exclude.consultancy).toBe(false);
+    expect(result.current.preferences?.exclude.consultancy).toBe(true);
   });
 
   test('a save is optimistic, then refreshes the feeds and announces the change', async () => {

@@ -10,9 +10,10 @@
  * setting: "Direct employers only" is exactly the six business-model
  * exclusions, and "Hide employers we couldn't verify" stays independent of it.
  * A user who never chose gets the server's RECOMMENDED filters (preset
- * `custom`, `set_by: "default"`): agencies, placements, marketplaces, gig work
- * and talent pools hidden; consultancies and unverified employers shown with
- * their label. "Direct employers only" is offered as the stricter option.
+ * `custom`, `set_by: "default"`): agencies, small consultancies, placements,
+ * marketplaces, gig work and talent pools hidden; large recognized firms and
+ * unverified employers shown. "Direct employers only" (preset `strict_direct`)
+ * hides the recognized firms too.
  * What is on is always stated in words below the toggles.
  */
 import { useId, type ReactNode } from 'react';
@@ -29,9 +30,8 @@ import {
   EXCLUSION_KEYS,
   EXCLUSION_LABEL,
   activeExclusionKeys,
-  isRecommendedExclusions,
+  isRecommended,
   preferencesSummary,
-  presetFor,
   withExclusion,
   withRecommended,
   withStrictDirect,
@@ -80,8 +80,8 @@ export function EmployerPreferencesForm({ compact = false, className }: Employer
     );
   }
 
-  const strict = presetFor(preferences.exclude) === 'strict_direct';
-  const recommended = isRecommendedExclusions(preferences.exclude);
+  const strict = preferences.preset === 'strict_direct';
+  const recommended = isRecommended(preferences);
   const active = activeExclusionKeys(preferences);
   const presetId = `${baseId}-preset`;
 
@@ -93,8 +93,9 @@ export function EmployerPreferencesForm({ compact = false, className }: Employer
             Direct employers only
           </Label>
           <p className="text-xs text-muted-foreground">
-            The strictest setting. Hides staffing agencies, consultancies, client placements,
-            marketplaces, gig work and talent pools.
+            The strictest setting. Hides every staffing agency and consultancy - large
+            recognized firms included - plus client placements, marketplaces, gig work and
+            talent pools.
           </p>
         </div>
         <Switch
@@ -110,10 +111,11 @@ export function EmployerPreferencesForm({ compact = false, className }: Employer
           {recommended ? (
             <>
               <span className="font-semibold text-foreground">Recommended filters</span> are on:
-              consultancies and unverified employers are shown, with their label.
+              staffing agencies and small consultancies are hidden; large recognized firms
+              (Insight Global, Randstad, Deloitte, Infosys...) are shown, with their label.
             </>
           ) : (
-            'Recommended: hide agencies, placements, marketplaces, gig work and talent pools.'
+            'Recommended: hide agencies, small consultancies, placements, marketplaces, gig work and talent pools; keep large recognized firms.'
           )}
         </p>
         {!recommended && (
