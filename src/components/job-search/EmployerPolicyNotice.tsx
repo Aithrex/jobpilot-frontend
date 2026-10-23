@@ -29,8 +29,10 @@ interface EmployerPolicyProps {
 export function EmployerPolicySummary({ policy, className }: EmployerPolicyProps) {
   if (!policy) return null;
   const breakdown = excludedBreakdown(policy);
-  const unverified = policy.unverified_shown ?? 0;
-  if (breakdown.total === 0 && unverified === 0) return null;
+  // Only what the filters HID is reported here. A count of shown rows from
+  // unclassified employers ("561 shown from employers we couldn't verify")
+  // read as a problem with the feed and explained nothing a user could act on.
+  if (breakdown.total === 0) return null;
 
   return (
     <p
@@ -38,29 +40,19 @@ export function EmployerPolicySummary({ policy, className }: EmployerPolicyProps
       data-testid="employer-policy-summary"
     >
       <Filter className="h-3.5 w-3.5 shrink-0" aria-hidden />
-      {breakdown.total > 0 && (
-        <>
-          <span data-testid="employer-policy-excluded">
-            Hidden by your employer filters: {breakdown.text}
-          </span>
-          <EmployerFiltersPopover>
-            <Button
-              type="button"
-              variant="link"
-              className="h-auto p-0 text-xs font-semibold"
-              data-testid="employer-policy-show"
-            >
-              Show them
-            </Button>
-          </EmployerFiltersPopover>
-        </>
-      )}
-      {unverified > 0 && (
-        <span data-testid="employer-policy-unverified">
-          {breakdown.total > 0 ? '- ' : ''}
-          {unverified} shown from employers we couldn't verify
-        </span>
-      )}
+      <span data-testid="employer-policy-excluded">
+        Hidden by your employer filters: {breakdown.text}
+      </span>
+      <EmployerFiltersPopover>
+        <Button
+          type="button"
+          variant="link"
+          className="h-auto p-0 text-xs font-semibold"
+          data-testid="employer-policy-show"
+        >
+          Show them
+        </Button>
+      </EmployerFiltersPopover>
     </p>
   );
 }

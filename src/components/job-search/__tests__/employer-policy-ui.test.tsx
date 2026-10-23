@@ -93,11 +93,11 @@ describe('JobCard', () => {
     expect(screen.getByText('Screened')).toBeInTheDocument();
   });
 
-  test('an unknown employer reads as unverified, never as direct', () => {
+  test('an unknown employer gets no type chip, and is never called direct', () => {
     renderCard({ ...BASE, employer_profile: { kind: 'unknown', basis: 'none' } });
-    const chip = screen.getByTestId('employer-category');
-    expect(chip).toHaveTextContent('Employer type unverified');
-    expect(chip).not.toHaveTextContent(/direct/i);
+    expect(screen.queryByTestId('employer-category')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Employer type unverified/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/direct employer/i)).not.toBeInTheDocument();
   });
 
   test('shows category, relationship, availability with method and the destination host', () => {
@@ -163,7 +163,7 @@ describe('TechFeedJobCard', () => {
         onNotInterested={() => {}}
       />,
     );
-    expect(screen.getByTestId('employer-category')).toHaveTextContent('Employer type unverified');
+    expect(screen.queryByTestId('employer-category')).not.toBeInTheDocument();
     expect(screen.queryByText('Direct employer')).not.toBeInTheDocument();
   });
 });
@@ -189,9 +189,13 @@ describe('policy counts and empty state', () => {
       'Hidden by your employer filters: 12 staffing, 5 consultancy, 3 talent marketplace',
     );
     expect(screen.getByRole('button', { name: 'Show them' })).toBeInTheDocument();
-    expect(screen.getByTestId('employer-policy-unverified')).toHaveTextContent(
-      "2 shown from employers we couldn't verify",
-    );
+    // Shown rows from unclassified employers are not reported as a problem.
+    expect(screen.queryByTestId('employer-policy-unverified')).not.toBeInTheDocument();
+  });
+
+  test('nothing hidden: no counts line even with unclassified employers shown', () => {
+    const { container } = wrap(<EmployerPolicySummary policy={{ excluded_counts: {}, unverified_shown: 561 }} />);
+    expect(container).toBeEmptyDOMElement();
   });
 
   test('everything filtered: the empty state says so and offers the filters', () => {

@@ -70,7 +70,12 @@ export function JobEmployerContext({
 }: JobEmployerContextProps) {
   if (!hasEmployerPolicyFields(row)) return null;
 
-  const category = employerCategoryOf(row);
+  // An employer we have not classified gets NO chip. "Employer type
+  // unverified" sat on most cards (86% of employers have no classification
+  // evidence yet - Stripe and SpaceX among them) and read as a warning about
+  // the job. It is still never called direct; it is simply not labelled.
+  const known = employerCategoryOf(row);
+  const category = known && known.kind !== 'unknown' ? known : null;
   const relationship = postingRelationshipLabels(row);
   // "Seen on the employer's board" is said only of an employer we classified
   // as an operating business - otherwise the board we saw may be an agency's.
