@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { useAutoSync } from '@/hooks/useAutoSync';
 import {
   loadCombinedPrefs,
@@ -7,7 +7,6 @@ import {
   type CombinedJobsController,
 } from '@/hooks/useCombinedJobs';
 import { useJobTitles } from '@/hooks/useJobTitles';
-import { EMPLOYER_PREFERENCES_CHANGED_EVENT } from '@/hooks/useEmployerPreferences';
 import { SENIORITY_LEVELS, type SeniorityLevel } from '@/lib/careerJobs';
 import type { ExperienceView, WorkdayRecency } from '@/types/jobs';
 
@@ -206,19 +205,6 @@ export function CombinedJobsProvider({ children }: { children: React.ReactNode }
     isBusy: feed.loading,
     onSync: (force) => feed.run(force, { location: scanLocation, remoteOnly, usOnly }),
   });
-
-  // A saved employer-type choice changes what the SERVER serves, so re-run the
-  // scan once it lands. Not forced: the choice is applied when the list is
-  // served, so there is no reason to re-crawl every board for it.
-  const resyncRef = useRef<() => void>(() => {});
-  resyncRef.current = () => {
-    if (started && feed.hasResult && !feed.loading) autoSync.sync(false);
-  };
-  useEffect(() => {
-    const onChange = () => resyncRef.current();
-    window.addEventListener(EMPLOYER_PREFERENCES_CHANGED_EVENT, onChange);
-    return () => window.removeEventListener(EMPLOYER_PREFERENCES_CHANGED_EVENT, onChange);
-  }, []);
 
   const value: CombinedJobsContextValue = {
     ...feed,

@@ -84,7 +84,6 @@ const BillingTab = lazy(() => import('@/components/billing/BillingTab'));
 const NotificationsTab = lazy(() => import('@/components/resume/NotificationsTab'));
 const MailboxSettingsPanel = lazy(() => import('@/app-shell/settings/MailboxSettingsPanel'));
 const EmployerLoginsPanel = lazy(() => import('@/app-shell/settings/EmployerLoginsPanel'));
-const EmployerPreferencesPanel = lazy(() => import('@/app-shell/settings/EmployerPreferencesPanel'));
 const VerifyForwardPanel = lazy(() => import('@/app-shell/settings/VerifyForwardPanel'));
 const BetaLabTab = lazy(() => import('@/components/beta/BetaLabTab'));
 
@@ -229,7 +228,7 @@ function AppContent() {
                 <Route path="visa" element={<VisaTimelineTab />} />
                 <Route path="mailbox" element={<MailboxSettingsPanel />} />
                 <Route path="mailbox/verify-forward" element={<VerifyForwardPanel />} />
-                <Route path="employer-types" element={<EmployerPreferencesPanel />} />
+                <Route path="employer-types" element={<Navigate to="/app/settings" replace />} />
                 <Route path="employer-logins" element={<EmployerLoginsPanel />} />
                 <Route path="billing" element={<BillingTab />} />
                 <Route path="notifications" element={<NotificationsTab />} />

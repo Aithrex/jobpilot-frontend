@@ -14,13 +14,11 @@ import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { beforeEach, describe, expect, test, vi, type Mock } from 'vitest';
 
-import { EmployerFilteredEmptyState, EmployerPolicySummary } from '@/components/job-search/EmployerPolicyNotice';
 import { JobCard } from '@/components/job-search/JobCard';
 import { TechFeedJobCard } from '@/components/job-search/tech-feed/TechFeedJobCard';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { apiService } from '@/lib/api';
 import { RECOMMENDED_DEFAULT } from '@/lib/employerPolicy';
-import { EmployerPreferencesForm } from '@/components/job-search/EmployerPreferencesControl';
 import { makeTechFeedJob } from '@/test/techFeedFixtures';
 import type { Job } from '@/types/jobs';
 
@@ -165,65 +163,5 @@ describe('TechFeedJobCard', () => {
     );
     expect(screen.queryByTestId('employer-category')).not.toBeInTheDocument();
     expect(screen.queryByText('Direct employer')).not.toBeInTheDocument();
-  });
-});
-
-describe('policy counts and empty state', () => {
-  test('older backend: nothing rendered', () => {
-    const { container } = wrap(
-      <>
-        <EmployerPolicySummary policy={undefined} />
-        <EmployerFilteredEmptyState policy={undefined} />
-      </>,
-    );
-    expect(container).toBeEmptyDOMElement();
-  });
-
-  test('the counts line names each exclusion and offers to show them', () => {
-    wrap(
-      <EmployerPolicySummary
-        policy={{ excluded_counts: { staffing: 12, consultancy: 5, talent_marketplace: 3 }, unverified_shown: 2 }}
-      />,
-    );
-    expect(screen.getByTestId('employer-policy-excluded')).toHaveTextContent(
-      'Hidden by your employer filters: 12 staffing, 5 consultancy, 3 talent marketplace',
-    );
-    expect(screen.getByRole('button', { name: 'Show them' })).toBeInTheDocument();
-    // Shown rows from unclassified employers are not reported as a problem.
-    expect(screen.queryByTestId('employer-policy-unverified')).not.toBeInTheDocument();
-  });
-
-  test('nothing hidden: no counts line even with unclassified employers shown', () => {
-    const { container } = wrap(<EmployerPolicySummary policy={{ excluded_counts: {}, unverified_shown: 561 }} />);
-    expect(container).toBeEmptyDOMElement();
-  });
-
-  test('everything filtered: the empty state says so and offers the filters', () => {
-    wrap(<EmployerFilteredEmptyState policy={{ excluded_counts: { staffing: 4 } }} />);
-    const empty = screen.getByTestId('employer-policy-empty');
-    expect(empty).toHaveTextContent('Your employer filters hid every match here');
-    expect(empty).toHaveTextContent("4 staffing were hidden. We don't widen your filters for you");
-    expect(screen.getByRole('button', { name: /Adjust employer filters/ })).toBeInTheDocument();
-    // Rendering the empty state wrote nothing.
-    expect(api.saveEmployerPreferences).not.toHaveBeenCalled();
-  });
-});
-
-describe('preferences form', () => {
-  test('a server default renders as recommended filters, with strict offered as the stricter option', async () => {
-    wrap(<EmployerPreferencesForm />);
-    expect(await screen.findByTestId('employer-prefs-recommended')).toHaveTextContent(
-      'Recommended filters are on',
-    );
-    const strict = screen.getByRole('switch', { name: 'Direct employers only' });
-    expect(strict).toHaveAttribute('aria-checked', 'false');
-    // Owner decision 2026-10-23: consultancies are hidden by the recommended filters.
-    expect(screen.getByRole('switch', { name: 'Consultancies and outsourcing' })).toHaveAttribute(
-      'aria-checked',
-      'true',
-    );
-    expect(screen.getByRole('switch', { name: 'Staffing agencies' })).toHaveAttribute('aria-checked', 'true');
-    expect(screen.getByTestId('employer-prefs-summary')).toHaveTextContent('recommended defaults');
-    expect(screen.queryByRole('button', { name: 'Use recommended' })).not.toBeInTheDocument();
   });
 });
