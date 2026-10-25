@@ -57,6 +57,8 @@ interface CombinedJobsPanelProps {
   showApplyOverlay?: boolean;
 }
 
+const SOURCE_LABEL = { workday: 'Workday', careers: 'company career pages', mncs: 'large employers' } as const;
+
 export function CombinedJobsPanel({
   isJobSaved,
   getJobStatus,
@@ -103,7 +105,14 @@ export function CombinedJobsPanel({
     sortBy,
     page,
     setPage,
+    states,
   } = useCombinedJobsCtx();
+  // A source whose scan failed is SAID, never silently dropped: on 2026-10-22
+  // two of the three lists failed to download and the page quietly showed the
+  // third, which read as "the jobs got worse".
+  const failedSources = (['workday', 'careers', 'mncs'] as const).filter(
+    (key) => !!states?.[key] && !states[key].loading && !!states[key].error,
+  );
   // A string, so the effects below re-run when the CHOICE changes, not when
   // an equal array is rebuilt.
   const seniorityKey = seniorityLevels.join('|');
@@ -250,6 +259,23 @@ export function CombinedJobsPanel({
           value={progress.total ? (progress.done / progress.total) * 100 : 8}
           className="h-1.5"
         />
+      )}
+
+      {!loading && failedSources.length > 0 && (
+        <div
+          className="flex flex-wrap items-center gap-2 rounded-xl border border-warning/40 bg-warning/10 px-4 py-3 text-xs text-foreground/85"
+          role="status"
+          data-testid="jobs-source-failed"
+        >
+          <AlertCircle className="h-3.5 w-3.5 shrink-0 text-warning" aria-hidden />
+          <span>
+            Some jobs could not load ({failedSources.map((k) => SOURCE_LABEL[k]).join(', ')}). Showing
+            the rest.
+          </span>
+          <Button type="button" size="sm" variant="outline" className="h-7 text-xs" onClick={() => sync(false)}>
+            Try again
+          </Button>
+        </div>
       )}
 
       {resumeSkillCount === 0 && hasResult && (
