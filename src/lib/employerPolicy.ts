@@ -489,7 +489,7 @@ export const EXCLUSION_LABEL: Record<EmployerExclusionKey, { label: string; hint
   },
   consultancy: {
     label: 'Consultancies and outsourcing',
-    hint: 'IT services and outsourcing firms. Hidden by default, except large recognized firms (Deloitte, Accenture, IBM, Infosys, TCS...).',
+    hint: 'IT services and outsourcing firms. Hidden by default. Engineering design firms and product companies with a services arm are only hidden by "Direct employers only".',
   },
   client_placement: {
     label: 'Third-party client placements',
@@ -519,12 +519,12 @@ function exclusions(fill: (key: EmployerExclusionKey) => boolean): EmployerExclu
 
 /**
  * The exclusions the server applies for a user who never chose
- * (`set_by: "default"`, owner decision 2026-10-23): staffing agencies, small
+ * (`set_by: "default"`, owner decision 2026-10-24): staffing agencies,
  * consultancies, client placements, marketplaces, gig work and talent pools
- * are hidden; LARGE RECOGNIZED firms (Insight Global, Randstad, Deloitte,
- * Infosys...) and unverified employers are shown. On the wire this is preset
+ * are hidden; engineering design firms, mixed product/government-technology
+ * employers and unverified employers are shown. On the wire this is preset
  * `custom` - the same toggles as "Direct employers only", whose preset
- * `strict_direct` hides the recognized firms too. The preset is what tells
+ * `strict_direct` hides those two employer kinds too. The preset is what tells
  * the two apart, so it is never re-derived from the toggles alone.
  */
 export const RECOMMENDED_EXCLUDED_KEYS: readonly EmployerExclusionKey[] = [
