@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 
 import { apiService } from '@/lib/api';
 import { cn } from '@/lib/utils';
+import { appliedDayOf, formatCivilDay } from '@/lib/applicationDates';
 import type { GmailSuggestion } from '@/types/gmail';
 export type { GmailSuggestion } from '@/types/gmail';
 
@@ -99,6 +100,16 @@ export default function GmailSuggestions({
         const selectedRecord = selectedRecords[s.suggestion_id];
         const needsChoice = Boolean(s.requires_record_selection);
         const received = s.email_received_at ? new Date(s.email_received_at) : null;
+        const candidates = (s.candidate_records || []).map((candidate) => {
+          const dateFormat: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', year: 'numeric' };
+          const applied = formatCivilDay(candidate.applied_date, dateFormat);
+          const added = applied ? '' : formatCivilDay(appliedDayOf({ applied_at: candidate.created_at }), dateFormat);
+          const date = applied ? ` - Applied ${applied}` : added ? ` - Added ${added}` : '';
+          return {
+            recordId: candidate.record_id,
+            label: `${candidate.title || 'Untitled role'} - ${candidate.company || 'Unknown company'}${date}`,
+          };
+        });
         return (
           <li
             key={s.suggestion_id}
@@ -159,10 +170,12 @@ export default function GmailSuggestions({
                     }
                   >
                     <option value="">Select the matching role...</option>
-                    {(s.candidate_records || []).map((candidate) => (
-                      <option key={candidate.record_id} value={candidate.record_id}>
-                        {candidate.title || 'Untitled role'} -{' '}
-                        {candidate.company || 'Unknown company'}
+                    {candidates.map((candidate) => (
+                      <option key={candidate.recordId} value={candidate.recordId}>
+                        {candidate.label}
+                        {candidates.filter((other) => other.label === candidate.label).length > 1
+                          ? ` - Application ${candidate.recordId.slice(-8)}`
+                          : ''}
                       </option>
                     ))}
                   </select>
