@@ -3,6 +3,8 @@ export interface GmailSyncSummary {
   auto_applied: number;
   suggested: number;
   ignored: number;
+  deferred?: number;
+  model_calls?: number;
   has_more?: boolean;
   ambiguous_matches?: number;
   skipped_already_seen?: number;
@@ -20,17 +22,20 @@ export interface GmailStatus {
   last_sync_summary?: GmailSyncSummary | null;
 }
 
+export type GmailOutcome =
+  'applied' | 'interviewing' | 'offer' | 'rejected' | 'ghosted' | 'withdrawn';
+
 export interface GmailSuggestion {
   suggestion_id: string;
-  record_id: string;
+  record_id: string | null;
   company?: string;
   title?: string;
   from_name?: string;
   from_address?: string;
   subject?: string;
   snippet?: string;
-  current_status: string;
-  suggested_status: string;
+  current_status: string | null;
+  suggested_status: string | null;
   confidence: number;
   reason?: string;
   applied: boolean;
@@ -48,6 +53,9 @@ export interface GmailSuggestion {
     created_at?: string | null;
   }[];
   requires_record_selection?: boolean;
+  requires_status_selection?: boolean;
+  requires_application_match?: boolean;
+  email_role?: string;
   evidence_message_id?: string;
   gmail_thread_id?: string;
 }

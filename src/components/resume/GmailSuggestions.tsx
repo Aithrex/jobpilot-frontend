@@ -12,7 +12,7 @@ import { toast } from 'sonner';
 import { apiService } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { appliedDayOf, formatCivilDay } from '@/lib/applicationDates';
-import type { GmailSuggestion } from '@/types/gmail';
+import type { GmailOutcome, GmailSuggestion } from '@/types/gmail';
 export type { GmailSuggestion } from '@/types/gmail';
 
 const STATUS_TONE: Record<string, string> = {
@@ -26,6 +26,15 @@ const STATUS_TONE: Record<string, string> = {
   withdrawn: 'text-muted-foreground',
 };
 
+const OUTCOMES: { value: GmailOutcome; label: string }[] = [
+  { value: 'applied', label: 'Application received' },
+  { value: 'interviewing', label: 'Interviewing' },
+  { value: 'offer', label: 'Offer' },
+  { value: 'rejected', label: 'Rejected' },
+  { value: 'ghosted', label: 'No response' },
+  { value: 'withdrawn', label: 'Withdrawn' },
+];
+
 /**
  * Owns the suggestion list so both the tracker and the Settings panel get the
  * same fetch, optimistic removal and error handling.
@@ -33,11 +42,14 @@ const STATUS_TONE: Record<string, string> = {
 export function useGmailSuggestions(enabled: boolean, onChanged?: () => void) {
   const [suggestions, setSuggestions] = useState<GmailSuggestion[]>([]);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const reload = useCallback(async () => {
     if (!enabled) return;
+    setLoadError(null);
     const resp = await apiService.listGmailSuggestions(false);
     if (resp.data) setSuggestions(resp.data.suggestions || []);
+    else setLoadError(resp.error || 'Could not load the complete Gmail review queue.');
   }, [enabled]);
 
   useEffect(() => {
@@ -45,11 +57,13 @@ export function useGmailSuggestions(enabled: boolean, onChanged?: () => void) {
   }, [reload]);
 
   const apply = useCallback(
-    async (id: string, recordId?: string) => {
+    async (id: string, recordId?: string, status?: GmailOutcome) => {
       setBusyId(id);
-      const resp = recordId
-        ? await apiService.applyGmailSuggestion(id, recordId)
-        : await apiService.applyGmailSuggestion(id);
+      const resp = status
+        ? await apiService.applyGmailSuggestion(id, recordId, status)
+        : recordId
+          ? await apiService.applyGmailSuggestion(id, recordId)
+          : await apiService.applyGmailSuggestion(id);
       setBusyId(null);
       if (resp.error) {
         toast.error(resp.error);
@@ -72,13 +86,23 @@ export function useGmailSuggestions(enabled: boolean, onChanged?: () => void) {
     setSuggestions((prev) => prev.filter((s) => s.suggestion_id !== id));
   }, []);
 
-  return { suggestions, busyId, apply, dismiss, reload, setSuggestions };
+  return { suggestions, busyId, apply, dismiss, reload, setSuggestions, loadError };
+}
+
+export function GmailReviewLoadError({ error, onRetry }: { error: string | null; onRetry: () => void }) {
+  if (!error) return null;
+  return (
+    <p role="alert" className="rounded-lg border border-destructive/30 p-3 text-label text-destructive">
+      {error}{' '}
+      <button type="button" className="font-medium underline" onClick={onRetry}>Retry email reviews</button>
+    </p>
+  );
 }
 
 interface GmailSuggestionsProps {
   suggestions: GmailSuggestion[];
   busyId: string | null;
-  onApply: (id: string, recordId?: string) => void;
+  onApply: (id: string, recordId?: string, status?: GmailOutcome) => void;
   onDismiss: (id: string) => void;
   className?: string;
 }
@@ -91,6 +115,7 @@ export default function GmailSuggestions({
   className,
 }: GmailSuggestionsProps) {
   const [selectedRecords, setSelectedRecords] = useState<Record<string, string>>({});
+  const [selectedStatuses, setSelectedStatuses] = useState<Record<string, GmailOutcome | ''>>({});
   if (suggestions.length === 0) return null;
 
   return (
@@ -98,12 +123,34 @@ export default function GmailSuggestions({
       {suggestions.map((s) => {
         const confidence = Math.round((s.confidence || 0) * 100);
         const selectedRecord = selectedRecords[s.suggestion_id];
-        const needsChoice = Boolean(s.requires_record_selection);
+        const selectedStatus = selectedStatuses[s.suggestion_id];
+        const needsStatus = Boolean(s.requires_status_selection || !s.suggested_status);
+        const needsChoice = Boolean(s.requires_record_selection || needsStatus);
         const received = s.email_received_at ? new Date(s.email_received_at) : null;
-        const candidates = (s.candidate_records || []).map((candidate) => {
-          const dateFormat: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', year: 'numeric' };
+        const records: NonNullable<GmailSuggestion['candidate_records']> =
+          s.candidate_records ??
+          (s.record_id
+            ? [
+                {
+                  record_id: s.record_id,
+                  company: s.company || '',
+                  title: s.title || '',
+                },
+              ]
+            : []);
+        const needsMatch = Boolean(
+          s.requires_application_match || (needsChoice && records.length === 0),
+        );
+        const candidates = records.map((candidate) => {
+          const dateFormat: Intl.DateTimeFormatOptions = {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+          };
           const applied = formatCivilDay(candidate.applied_date, dateFormat);
-          const added = applied ? '' : formatCivilDay(appliedDayOf({ applied_at: candidate.created_at }), dateFormat);
+          const added = applied
+            ? ''
+            : formatCivilDay(appliedDayOf({ applied_at: candidate.created_at }), dateFormat);
           const date = applied ? ` - Applied ${applied}` : added ? ` - Added ${added}` : '';
           return {
             recordId: candidate.record_id,
@@ -117,7 +164,7 @@ export default function GmailSuggestions({
           >
             <div className="w-full min-w-0 flex-auto sm:w-auto sm:flex-1">
               <p className="truncate text-body font-medium text-foreground">
-                {needsChoice
+                {needsChoice && !needsMatch
                   ? 'Choose the application for this update'
                   : s.title || 'Untitled role'}
                 {s.company && (
@@ -125,14 +172,24 @@ export default function GmailSuggestions({
                 )}
               </p>
               <p className="text-label text-muted-foreground">
-                <span className={STATUS_TONE[s.current_status] || STATUS_TONE.draft}>
-                  {s.current_status}
-                </span>
-                {' → '}
-                <span className={STATUS_TONE[s.suggested_status] || STATUS_TONE.draft}>
-                  {s.suggested_status}
-                </span>
-                <span className="tabular-nums"> - {confidence}% status confidence</span>
+                {needsStatus ? (
+                  'Outcome needs review'
+                ) : (
+                  <>
+                    {s.current_status && (
+                      <>
+                        <span className={STATUS_TONE[s.current_status] || STATUS_TONE.draft}>
+                          {s.current_status}
+                        </span>
+                        {' → '}
+                      </>
+                    )}
+                    <span className={STATUS_TONE[s.suggested_status || ''] || STATUS_TONE.draft}>
+                      {s.suggested_status}
+                    </span>
+                    <span className="tabular-nums"> - {confidence}% status confidence</span>
+                  </>
+                )}
               </p>
               {s.subject && (
                 <p className="mt-1 break-words text-label font-medium text-foreground">
@@ -154,7 +211,13 @@ export default function GmailSuggestions({
                   <p>{Math.round(s.match_confidence * 100)}% application match confidence</p>
                 )}
               </div>
-              {needsChoice && (
+              {needsMatch && (
+                <p className="mt-3 text-label text-muted-foreground">
+                  No matching application is available in your tracker. This email is kept here for
+                  review; no application status has been changed.
+                </p>
+              )}
+              {needsChoice && !needsMatch && (
                 <label className="mt-3 block text-label font-medium text-foreground">
                   Choose application
                   <select
@@ -181,19 +244,55 @@ export default function GmailSuggestions({
                   </select>
                 </label>
               )}
+              {needsStatus && !needsMatch && (
+                <label className="mt-3 block text-label font-medium text-foreground">
+                  Choose outcome
+                  <select
+                    aria-label="Choose outcome"
+                    className="mt-1 block w-full rounded-md border border-input bg-background p-2 text-body text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    value={selectedStatus || ''}
+                    disabled={busyId === s.suggestion_id}
+                    onChange={(event) =>
+                      setSelectedStatuses((prev) => ({
+                        ...prev,
+                        [s.suggestion_id]:
+                          OUTCOMES.find((outcome) => outcome.value === event.target.value)?.value ||
+                          '',
+                      }))
+                    }
+                  >
+                    <option value="">Select the outcome confirmed by this email...</option>
+                    {OUTCOMES.map((outcome) => (
+                      <option key={outcome.value} value={outcome.value}>
+                        {outcome.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
             </div>
 
             <div className="flex shrink-0 items-center gap-1.5">
-              <button
-                type="button"
-                disabled={busyId === s.suggestion_id || (needsChoice && !selectedRecord)}
-                onClick={() =>
-                  needsChoice ? onApply(s.suggestion_id, selectedRecord) : onApply(s.suggestion_id)
-                }
-                className="rounded-md bg-primary px-2.5 py-1 text-label font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
-              >
-                Update status
-              </button>
+              {!needsMatch && (
+                <button
+                  type="button"
+                  disabled={
+                    busyId === s.suggestion_id ||
+                    (needsChoice && !selectedRecord) ||
+                    (needsStatus && !selectedStatus)
+                  }
+                  onClick={() =>
+                    needsStatus && selectedStatus
+                      ? onApply(s.suggestion_id, selectedRecord, selectedStatus)
+                      : needsChoice
+                        ? onApply(s.suggestion_id, selectedRecord)
+                        : onApply(s.suggestion_id)
+                  }
+                  className="rounded-md bg-primary px-2.5 py-1 text-label font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+                >
+                  Update status
+                </button>
+              )}
               <button
                 type="button"
                 disabled={busyId === s.suggestion_id}

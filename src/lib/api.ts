@@ -3348,16 +3348,45 @@ class ApiService {
   async listGmailSuggestions(includeResolved = false): Promise<
     ApiResponse<{
       suggestions: import('../types/gmail').GmailSuggestion[];
+      total?: number;
     }>
   > {
-    const qs = includeResolved ? '?include_resolved=true' : '';
-    return this.request(`/resume/gmail/suggestions${qs}`);
+    type Page = {
+      suggestions: import('../types/gmail').GmailSuggestion[];
+      total?: number;
+      has_more?: boolean;
+      offset?: number;
+    };
+    const suggestions: Page['suggestions'] = [];
+    const seen = new Set<string>();
+    const incomplete = { error: 'Could not load the complete Gmail review queue. Please try again.' };
+    let offset = 0;
+    for (let pageNumber = 0; pageNumber < 100; pageNumber++) {
+      const response = await this.request<Page>(
+        `/resume/gmail/suggestions?offset=${offset}${includeResolved ? '&include_resolved=true' : ''}`,
+      );
+      if (response.error || !response.data) return response;
+      const page = response.data;
+      if (!Array.isArray(page.suggestions) || (page.offset != null && page.offset !== offset)) return incomplete;
+      for (const suggestion of page.suggestions) {
+        if (!suggestion.suggestion_id || seen.has(suggestion.suggestion_id)) return incomplete;
+        seen.add(suggestion.suggestion_id);
+        suggestions.push(suggestion);
+      }
+      if (!page.has_more) {
+        if (page.total != null && page.total !== suggestions.length) return incomplete;
+        return { data: { suggestions, total: suggestions.length } };
+      }
+      if (page.suggestions.length === 0) return incomplete;
+      offset += page.suggestions.length;
+    }
+    return incomplete;
   }
 
-  async applyGmailSuggestion(suggestionId: string, recordId?: string): Promise<ApiResponse<{ suggestion: import('../types/gmail').GmailSuggestion }>> {
+  async applyGmailSuggestion(suggestionId: string, recordId?: string, status?: import('../types/gmail').GmailOutcome): Promise<ApiResponse<{ suggestion: import('../types/gmail').GmailSuggestion }>> {
     return this.request(`/resume/gmail/suggestions/${encodeURIComponent(suggestionId)}/apply`, {
       method: 'POST',
-      ...(recordId ? { body: JSON.stringify({ record_id: recordId }) } : {}),
+      ...(recordId || status ? { body: JSON.stringify({ ...(recordId ? { record_id: recordId } : {}), ...(status ? { status } : {}) }) } : {}),
     });
   }
 

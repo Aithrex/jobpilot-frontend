@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { apiService } from '@/lib/api';
-import GmailSuggestions, { useGmailSuggestions } from '@/components/resume/GmailSuggestions';
+import GmailSuggestions, { GmailReviewLoadError, useGmailSuggestions } from '@/components/resume/GmailSuggestions';
 import type { GmailStatus, GmailSyncSummary } from '@/types/gmail';
 
 /** Gmail mark - Google's literal brand colors (intentional; all chrome around it stays tokenized). */
@@ -53,6 +53,7 @@ export default function GmailIntegration({
     dismiss: handleDismiss,
     reload: loadSuggestions,
     setSuggestions,
+    loadError: suggestionsError,
   } = useGmailSuggestions(showReviewQueue && Boolean(status?.connected), onSyncComplete);
 
   useEffect(() => {
@@ -368,11 +369,16 @@ export default function GmailIntegration({
             Last batch: {status.last_sync_summary.messages_scanned} emails checked,{' '}
             {status.last_sync_summary.auto_applied} statuses updated,{' '}
             {status.last_sync_summary.suggested} suggestions.
+            {Boolean(status.last_sync_summary.deferred) &&
+              ` ${status.last_sync_summary.deferred} ${status.last_sync_summary.deferred === 1 ? 'needs' : 'need'} an outcome review.`}
             {status.has_more && ' More mail remains. Continue sync to finish this scan.'}
           </p>
         )}
       </div>
 
+      {showReviewQueue && status.connected && (
+        <GmailReviewLoadError error={suggestionsError} onRetry={() => void loadSuggestions()} />
+      )}
       {showReviewQueue && status.connected && pendingCount > 0 && (
         <div className="rounded-2xl border border-primary/25 bg-primary/[0.04] p-3">
           <div className="flex items-center justify-between mb-2">
