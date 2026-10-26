@@ -30,7 +30,7 @@
  * its skeletons - otherwise an unfinished onboarding flag flashes the empty
  * page, then swaps in KPIs/matches and drops Continue workspace setup.
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowRight, ClipboardList, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -43,7 +43,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import type { DashboardOverview } from '@/types/overview';
 import type { CareerReadiness } from '@/types/career';
 import type { PipelineFunnel } from '@/types/pipeline';
-import type { SavedJob } from '@/types/jobs';
+import type { TailoringRecord } from '@/types/resume';
 
 // HeroPanel (the Today-inbox "needs your input" block) is intentionally no
 // longer mounted on Home - the capability and `apiService.getTodayInbox` are
@@ -56,15 +56,7 @@ import { KpiRow } from './today/KpiCards';
 import { ApplicationTrend, ConversionFunnel } from './today/PipelinePanels';
 import { RecentActivityPanel } from './today/RecentActivityPanel';
 import { TopMatchesPanel } from './today/TopMatchesPanel';
-
-interface StreakData {
-  current_streak: number;
-  longest_streak: number;
-  today_count: number;
-  total_applications: number;
-  last_application_date: string | null;
-  heatmap: { date: string; count: number }[];
-}
+import { summarizeApplicationActivity } from './today/applicationActivity';
 
 interface TodayPageProps {
   userName?: string | null;
@@ -126,11 +118,10 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
   const reduceMotion = useReducedMotion();
   const [overview, setOverview] = useState<DashboardOverview | null>(null);
   const [readiness, setReadiness] = useState<CareerReadiness | null>(null);
-  const [streak, setStreak] = useState<StreakData | null>(null);
+  const [records, setRecords] = useState<TailoringRecord[] | null>(null);
   const [funnel, setFunnel] = useState<PipelineFunnel | null>(null);
-  const [savedJobs, setSavedJobs] = useState<SavedJob[] | null>(null);
 
-  const [err, setErr] = useState({ overview: false, streak: false, funnel: false, saved: false });
+  const [err, setErr] = useState({ overview: false, records: false, funnel: false });
   const [loading, setLoading] = useState(true);
   const [firstLoad, setFirstLoad] = useState(true);
   // Announced to screen readers after a user-triggered Refresh completes.
@@ -138,12 +129,11 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [ovR, crR, stR, pfR, sjR] = await Promise.all([
+    const [ovR, crR, recordsR, pfR] = await Promise.all([
       apiService.getOverview().catch(() => ({ error: 'x' }) as const),
       apiService.getCareerReadiness().catch(() => ({ error: 'x' }) as const),
-      apiService.getApplicationStreak().catch(() => ({ error: 'x' }) as const),
+      apiService.listTailoringRecords({ view: 'list' }).catch(() => ({ error: 'x' }) as const),
       apiService.getPipelineFunnel().catch(() => ({ error: 'x' }) as const),
-      apiService.getSavedJobs().catch(() => ({ error: 'x' }) as const),
     ]);
 
     if (ok(ovR)) setOverview(ovR.data as DashboardOverview);
@@ -151,22 +141,20 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
     if (ok(crR) && Array.isArray((crR.data as CareerReadiness).dimensions)) {
       setReadiness(crR.data as CareerReadiness);
     }
-    if (ok(stR)) setStreak(stR.data as StreakData);
+    setRecords(ok(recordsR) ? recordsR.data.records : null);
     if (ok(pfR) && Array.isArray((pfR.data as PipelineFunnel).stages)) {
       setFunnel(pfR.data as PipelineFunnel);
     }
-    if (ok(sjR)) setSavedJobs(((sjR.data as { jobs?: SavedJob[] }).jobs as SavedJob[]) || []);
 
     setErr({
       overview: !ok(ovR),
-      streak: !ok(stR),
+      records: !ok(recordsR),
       funnel: !ok(pfR),
-      saved: !ok(sjR),
     });
     setLoading(false);
     setFirstLoad(false);
     // Whether anything a panel depends on failed - the Refresh announcement.
-    return !ok(ovR) || !ok(stR) || !ok(pfR) || !ok(sjR);
+    return !ok(ovR) || !ok(recordsR) || !ok(pfR);
   }, []);
 
   useEffect(() => {
@@ -187,8 +175,9 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
   const displayName = userName ?? user?.name ?? user?.email?.split('@')[0] ?? null;
   const name = givenName(displayName);
   const settled = !(firstLoad && loading);
-  const applicationCount = overview?.applications.total ?? streak?.total_applications ?? 0;
-  const countsUnknown = settled && err.overview && err.streak;
+  const applicationCount = overview?.applications.total ?? records?.length ?? 0;
+  const countsUnknown = settled && err.overview && err.records;
+  const activity = useMemo(() => records ? summarizeApplicationActivity(records) : null, [records]);
   const firstRunHome = shouldShowFirstRunHome({
     onboarded: user?.onboarded,
     settled,
@@ -296,7 +285,7 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
           loading={firstLoad && loading}
           overview={overview}
           readiness={readiness}
-          streak={streak}
+          applicationsToday={activity?.todayCount ?? null}
           funnel={funnel}
         />
       </motion.section>
@@ -320,8 +309,9 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
       <motion.section {...rise(4)} aria-label="Trends" className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <ApplicationTrend
-            state={panelState(err.streak)}
-            heatmap={streak?.heatmap ?? null}
+            state={panelState(err.records)}
+            heatmap={activity?.heatmap ?? null}
+            undatedCount={activity?.undatedCount ?? 0}
             onRetry={() => void load()}
           />
         </div>
@@ -335,10 +325,10 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
       </motion.section>
 
       {/* Zone 4 - Why? */}
-      <motion.section {...rise(5)} aria-label="Recent roles">
+      <motion.section {...rise(5)} aria-label="Recent applications">
         <RecentActivityPanel
-          state={panelState(err.saved)}
-          jobs={savedJobs}
+          state={panelState(err.records)}
+          applications={activity?.datedRecords ?? null}
           onRetry={() => void load()}
         />
       </motion.section>
