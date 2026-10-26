@@ -1,7 +1,7 @@
 /**
  * Zone B - "What's changing?"  Trend + funnel.
  *
- *  • ApplicationTrend: a 30-day area chart built from the streak heatmap. The
+ *  • ApplicationTrend: a 30-day area chart built from application dates. The
  *    Y-axis starts at zero (never truncated) and the series carries a text
  *    alternative - a visible caption plus an sr-only data table.
  *  • ConversionFunnel: horizontal, zero-based bars for the application funnel
@@ -48,10 +48,12 @@ const trendConfig: ChartConfig = {
 export function ApplicationTrend({
   state,
   heatmap,
+  undatedCount = 0,
   onRetry,
 }: {
   state: 'loading' | 'error' | 'ready';
   heatmap: HeatCell[] | null;
+  undatedCount?: number;
   onRetry: () => void;
 }) {
   const series = useMemo(() => {
@@ -77,11 +79,7 @@ export function ApplicationTrend({
     <PanelCard>
       <ZoneHeading
         title="Applications, last 30 days"
-        hint={
-          state === 'ready' && windowTotal > 0
-            ? undefined
-            : 'Your daily send-rate will chart here as you apply.'
-        }
+        hint="Uses the application dates recorded in your tracker."
       />
 
       {state === 'loading' ? (
@@ -91,8 +89,8 @@ export function ApplicationTrend({
       ) : windowTotal === 0 ? (
         <PanelEmpty
           icon={LineChart}
-          title="No applications in the last 30 days"
-          body="Once you start applying, this chart shows your momentum day by day."
+          title="No dated applications in the last 30 days"
+          body="Record an application date in the tracker to include it in this chart."
         />
       ) : (
         <figure className="m-0">
@@ -158,6 +156,11 @@ export function ApplicationTrend({
             </tbody>
           </table>
         </figure>
+      )}
+      {state === 'ready' && undatedCount > 0 && (
+        <p className="mt-3 text-caption text-muted-foreground">
+          {undatedCount} {undatedCount === 1 ? 'application has' : 'applications have'} no recorded application date and {undatedCount === 1 ? 'is' : 'are'} excluded from the timeline. Add dates in the tracker.
+        </p>
       )}
     </PanelCard>
   );

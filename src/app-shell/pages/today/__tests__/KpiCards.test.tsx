@@ -13,7 +13,7 @@ test('Home labels tracked roles honestly and includes every open stage like the 
   const overview = {
     applications: { total: 685, active: 500, interviewing: 0, offers: 0, by_status: { draft: 100, interested: 85, applied: 500 } },
   } as DashboardOverview;
-  render(<KpiRow loading={false} overview={overview} readiness={null} streak={null} funnel={null} />);
+  render(<KpiRow loading={false} overview={overview} readiness={null} applicationsToday={null} funnel={null} />);
   expect(screen.queryByText('Applications sent')).not.toBeInTheDocument();
   const tracked = screen.getByText('Tracked roles').parentElement!.parentElement!;
   const open = screen.getByText('Open roles').parentElement!.parentElement!;
@@ -31,10 +31,10 @@ function wrapperClass(container: HTMLElement): string {
 describe('KpiRow orientation', () => {
   test('rail: loading and loaded branches share the xl:grid-cols-1 wrapper', () => {
     const loading = render(
-      <KpiRow orientation="rail" loading overview={null} readiness={null} streak={null} funnel={null} />,
+      <KpiRow orientation="rail" loading overview={null} readiness={null} applicationsToday={null} funnel={null} />,
     );
     const loaded = render(
-      <KpiRow orientation="rail" loading={false} overview={null} readiness={null} streak={null} funnel={null} />,
+      <KpiRow orientation="rail" loading={false} overview={null} readiness={null} applicationsToday={null} funnel={null} />,
     );
 
     expect(wrapperClass(loading.container)).toContain('xl:grid-cols-1');
@@ -45,10 +45,10 @@ describe('KpiRow orientation', () => {
 
   test('default (orientation omitted): the 4-up grid wrapper', () => {
     const loading = render(
-      <KpiRow loading overview={null} readiness={null} streak={null} funnel={null} />,
+      <KpiRow loading overview={null} readiness={null} applicationsToday={null} funnel={null} />,
     );
     const loaded = render(
-      <KpiRow loading={false} overview={null} readiness={null} streak={null} funnel={null} />,
+      <KpiRow loading={false} overview={null} readiness={null} applicationsToday={null} funnel={null} />,
     );
 
     expect(wrapperClass(loading.container)).toContain('lg:grid-cols-4');

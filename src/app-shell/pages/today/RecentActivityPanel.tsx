@@ -7,7 +7,6 @@
  */
 import { Link } from 'react-router-dom';
 import { ArrowRight, Search } from 'lucide-react';
-import type { SavedJob } from '@/types/jobs';
 import {
   Table,
   TableBody,
@@ -17,55 +16,32 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
-import { fitBand, isFitScored } from '@/components/job-search/fitBands';
-import { cn } from '@/lib/utils';
+import { formatCivilDay } from '@/lib/applicationDates';
+import { companyOf, titleOf } from '@/components/tracker/trackerUtils';
+import { statusKeyOf } from '@/components/tracker/trackerConfig';
+import type { DatedApplication } from './applicationActivity';
 import { PanelCard, PanelEmpty, PanelError, ZoneHeading, StatusPill, Stat } from './primitives';
 
 /** Full pipeline lives in Applications; job search in Discover. */
-const APPLICATIONS_HREF = '/app/apply';
-const FIND_ROLES_HREF = '/app/jobs/for-you';
+const APPLICATIONS_HREF = '/app/apply/tracker';
 const MAX_ROWS = 8;
-
-function shortDate(iso: string | undefined): string {
-  if (!iso) return ' - ';
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return ' - ';
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-}
-
-/**
- * The tracker row's score, or null for "we never scored this".
- *
- * Gated on the engine's own version stamp as well as on the number, because a
- * saved row can carry a `match_score` written by an older path that these band
- * words do not describe. No stamp, no number - see `fitBands.isFitScored`.
- */
-function matchPct(job: SavedJob): number | null {
-  const m = job.job_data?.match_score;
-  if (typeof m !== 'number' || m <= 0) return null;
-  if (!isFitScored(job.job_data)) return null;
-  return m <= 1 ? Math.round(m * 100) : Math.round(m);
-}
 
 export function RecentActivityPanel({
   state,
-  jobs,
+  applications,
   onRetry,
 }: {
   state: 'loading' | 'error' | 'ready';
-  jobs: SavedJob[] | null;
+  applications: DatedApplication[] | null;
   onRetry: () => void;
 }) {
-  const rows = (jobs ?? [])
-    .slice()
-    .sort((a, b) => (b.saved_at || '').localeCompare(a.saved_at || ''))
-    .slice(0, MAX_ROWS);
+  const rows = (applications ?? []).slice(0, MAX_ROWS);
 
   return (
     <PanelCard>
       <ZoneHeading
-        title="Recent roles"
-        hint="The latest roles you've saved or applied to."
+        title="Recent applications"
+        hint="Latest recorded application dates, across all tracker stages."
         action={
           state === 'ready' && rows.length > 0 ? (
             <Link
@@ -84,7 +60,6 @@ export function RecentActivityPanel({
             <div key={i} className="flex items-center gap-4">
               <Skeleton className="h-4 flex-1" />
               <Skeleton className="h-6 w-24" />
-              <Skeleton className="h-4 w-10" />
               <Skeleton className="h-4 w-12" />
             </div>
           ))}
@@ -94,14 +69,14 @@ export function RecentActivityPanel({
       ) : rows.length === 0 ? (
         <PanelEmpty
           icon={Search}
-          title="No roles saved yet"
-          body="Save roles from Discover and they'll collect here so you can act on them fast."
+          title="No dated applications yet"
+          body="Your saved roles and drafts stay in the tracker. Record an application date to include a role here."
           action={
             <Link
-              to={FIND_ROLES_HREF}
+              to={APPLICATIONS_HREF}
               className="inline-flex min-h-11 items-center gap-2 rounded-control bg-primary px-4 text-caption font-semibold text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
-              Find roles <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+              Open tracker <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
             </Link>
           }
         />
@@ -112,42 +87,27 @@ export function RecentActivityPanel({
               <TableRow className="hover:bg-transparent">
                 <TableHead className="text-caption">Role</TableHead>
                 <TableHead className="text-caption">Status</TableHead>
-                <TableHead className="text-right text-caption">Fit</TableHead>
-                <TableHead className="text-right text-caption">Saved</TableHead>
+                <TableHead className="text-right text-caption">Applied</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rows.map((job) => {
-                const m = matchPct(job);
+              {rows.map(({ record, day }) => {
                 return (
-                  <TableRow key={job._id || job.job_id}>
+                  <TableRow key={record.record_id}>
                     <TableCell className="max-w-[16rem] py-3">
                       <span className="block truncate text-body font-medium text-foreground">
-                        {job.job_data?.title || 'Untitled role'}
+                        {titleOf(record)}
                       </span>
                       <span className="block truncate text-caption text-muted-foreground">
-                        {job.job_data?.company || 'Unknown company'}
+                        {companyOf(record) || 'Unknown company'}
                       </span>
                     </TableCell>
                     <TableCell className="py-3">
-                      <StatusPill status={job.status} />
-                    </TableCell>
-                    <TableCell className="py-3 text-right">
-                      {m === null ? (
-                        // A missing score is "we never scored this", NOT a zero.
-                        // Saying so out loud beats a bare dash that reads as a
-                        // failure. Verbose only for assistive tech.
-                        <span className="text-caption text-muted-foreground">
-                          <span aria-hidden>--</span>
-                          <span className="sr-only">Not scored</span>
-                        </span>
-                      ) : (
-                        <Stat className={cn('text-body font-medium', fitBand(m).text)}>{m}</Stat>
-                      )}
+                      <StatusPill status={statusKeyOf(record.application?.status)} />
                     </TableCell>
                     <TableCell className="py-3 text-right">
                       <Stat className="text-caption text-muted-foreground">
-                        {shortDate(job.saved_at)}
+                        {formatCivilDay(day)}
                       </Stat>
                     </TableCell>
                   </TableRow>

@@ -21,12 +21,6 @@ import type { CareerReadiness } from '@/types/career';
 import type { PipelineFunnel } from '@/types/pipeline';
 import { StatCardSkeleton, Stat } from './primitives';
 
-interface StreakLike {
-  today_count: number;
-  current_streak: number;
-  total_applications: number;
-}
-
 type TrendDir = 'up' | 'down' | 'flat';
 
 function TrendChip({ dir, label }: { dir: TrendDir; label: string }) {
@@ -94,14 +88,14 @@ export function KpiRow({
   loading,
   overview,
   readiness,
-  streak,
+  applicationsToday,
   funnel,
   orientation = 'grid',
 }: {
   loading: boolean;
   overview: DashboardOverview | null;
   readiness: CareerReadiness | null;
-  streak: StreakLike | null;
+  applicationsToday: number | null;
   funnel: PipelineFunnel | null;
   /**
    * Layout of the four cards. 'grid' (default) is the standalone 4-up row;
@@ -130,7 +124,6 @@ export function KpiRow({
 
   /* All tracker records include saved roles and drafts, not just submissions. */
   const totalApps = overview?.applications.total ?? null;
-  const today = streak?.today_count ?? 0;
 
   // Match the tracker's Active scope: every role except a closed outcome.
   const statuses = overview?.applications.by_status;
@@ -160,10 +153,10 @@ export function KpiRow({
         label="Tracked roles"
         icon={Send}
         value={totalApps === null ? null : totalApps}
-        trend={streak ? (
-          today > 0
-            ? { dir: 'up', label: `${today} applied today` }
-            : { dir: 'flat', label: 'none applied today' }
+        trend={applicationsToday !== null ? (
+          applicationsToday > 0
+            ? { dir: 'up', label: `${applicationsToday} recorded today` }
+            : { dir: 'flat', label: 'none recorded today' }
         ) : undefined}
         context="Includes saved roles and drafts, across all stages"
       />

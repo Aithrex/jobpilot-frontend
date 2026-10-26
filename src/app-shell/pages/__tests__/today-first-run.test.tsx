@@ -15,9 +15,8 @@ vi.mock('@/lib/api', () => ({
   apiService: {
     getOverview: vi.fn(),
     getCareerReadiness: vi.fn(),
-    getApplicationStreak: vi.fn(),
+    listTailoringRecords: vi.fn(),
     getPipelineFunnel: vi.fn(),
-    getSavedJobs: vi.fn(),
     getTodayInbox: vi.fn(),
   },
 }));
@@ -57,15 +56,13 @@ function overview(total: number) {
   };
 }
 
-function streak(total: number, today = 0) {
+function history(total: number) {
   return {
     data: {
-      current_streak: today > 0 ? 1 : 0,
-      longest_streak: today > 0 ? 1 : 0,
-      today_count: today,
-      total_applications: total,
-      last_application_date: null,
-      heatmap: [],
+      records: Array.from({ length: total }, (_, i) => ({
+        record_id: `record-${i}`, user_email: 'test@example.com',
+        created_at: '2026-01-01T12:00:00Z', application: { status: 'draft' },
+      })),
     },
     status: 200,
   };
@@ -76,8 +73,6 @@ function hang() {
 }
 
 function renderHome() {
-  // The live-dashboard return mounts AutoApplyPreviewBar, which reads
-  // useAutoSubmit (React Query), so Home needs a QueryClientProvider.
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
@@ -119,13 +114,12 @@ describe('TodayPage first-run vs live dashboard', () => {
     auth.onboarded = false;
     api.getCareerReadiness.mockResolvedValue({ error: 'x' });
     api.getPipelineFunnel.mockResolvedValue({ error: 'x' });
-    api.getSavedJobs.mockResolvedValue({ data: { jobs: [] }, status: 200 });
     api.getTodayInbox.mockResolvedValue({ error: 'x' });
   });
 
   test('while loading, keeps the dashboard layout and Continue workspace setup', () => {
     api.getOverview.mockImplementation(hang);
-    api.getApplicationStreak.mockImplementation(hang);
+    api.listTailoringRecords.mockImplementation(hang);
     renderHome();
     expect(screen.getByRole('button', { name: /refresh dashboard/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /continue workspace setup/i })).toBeInTheDocument();
@@ -134,7 +128,7 @@ describe('TodayPage first-run vs live dashboard', () => {
 
   test('after load, a workspace with applications keeps Continue workspace setup', async () => {
     api.getOverview.mockResolvedValue(overview(7));
-    api.getApplicationStreak.mockResolvedValue(streak(7, 7));
+    api.listTailoringRecords.mockResolvedValue(history(7));
     renderHome();
     expect(await screen.findByRole('button', { name: /refresh dashboard/i })).toBeEnabled();
     expect(screen.getByRole('button', { name: /continue workspace setup/i })).toBeInTheDocument();
@@ -145,7 +139,7 @@ describe('TodayPage first-run vs live dashboard', () => {
     // The "needs your input" / "items need you today" block was removed from
     // the dashboard; its fetch must not run on load either.
     api.getOverview.mockResolvedValue(overview(7));
-    api.getApplicationStreak.mockResolvedValue(streak(7, 7));
+    api.listTailoringRecords.mockResolvedValue(history(7));
     renderHome();
     expect(await screen.findByRole('button', { name: /refresh dashboard/i })).toBeEnabled();
     expect(screen.queryByText(/needs your input/i)).not.toBeInTheDocument();
@@ -156,7 +150,7 @@ describe('TodayPage first-run vs live dashboard', () => {
 
   test('after load, a truly empty unfinished workspace still gets the focused setup home', async () => {
     api.getOverview.mockResolvedValue(overview(0));
-    api.getApplicationStreak.mockResolvedValue(streak(0));
+    api.listTailoringRecords.mockResolvedValue(history(0));
     renderHome();
     await waitFor(() => {
       expect(screen.getByText(/this home fills in/i)).toBeInTheDocument();

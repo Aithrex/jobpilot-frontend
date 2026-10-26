@@ -45,3 +45,13 @@ Manual application entry and a review queue for importing previously untracked a
 Restore a feature only after its return criteria are met. Re-add navigation, route, cards and settings together with regression coverage. Never delete backend sourcing services based on a removed screen name.
 
 Release checks: frontend `node scripts/verify.mjs --full`; backend Python 3.12 `python scripts/verify.py --full` with mongomock; independent review; responsive light/dark inspection using mocked data. See the pull requests for exact results.
+
+## Live verification follow-up: Home application history
+
+Verified on **2026-10-25 (America/Phoenix)** after the initial cleanup merge. Home's application chart still consumed `/resume/streak`, whose historical backfill counts tailoring-record creation dates. The tracker instead uses the recorded application date. Home's recent table consumed `/jobs/saved` sorted by the original save time, so neither surface represented the application history shown in the tracker.
+
+Home now loads the same fully paginated slim records as the tracker once for its timeline, today's recorded applications, and Recent applications table. The stored `application.applied_date` takes precedence; legacy `applied_at` timestamps use the shared timezone helper. Creation and update times never stand in for submission dates. Submissions remain in history after rejection, an offer, or moving a role back to Saved. Saved roles and drafts without an application date do not count as submissions. Missing or invalid dates on submitted-stage records are reported as excluded from the timeline, and a failed page load shows retry states instead of zero.
+
+The recent table is now explicitly application history, ordered by application day and labelled Applied, with a link to the complete tracker. No production data or cached streak records are rewritten. Existing streak consumers elsewhere retain their behavior.
+
+Regression verification: reproduced the chart/source and failed-history bugs before implementation; the focused Home suite passes 16 tests covering date boundaries, older records applied to recently, civil dates, legacy UTC timestamps/statuses, progressed/closed records, undated drafts, invalid dates, failed loads and first-run behavior. Touched-file ESLint reports zero errors and the existing TodayPage Fast Refresh warning. Full-suite/build and live-browser verification are recorded with the follow-up pull request.
