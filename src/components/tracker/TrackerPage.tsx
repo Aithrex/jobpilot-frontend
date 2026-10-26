@@ -13,7 +13,7 @@ import type { ApplicationStatus } from '@/types/resume';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { PanelError } from '@/app-shell/pages/today/primitives';
-import GmailSuggestions, { useGmailSuggestions } from '@/components/resume/GmailSuggestions';
+import GmailSuggestions, { GmailReviewLoadError, useGmailSuggestions } from '@/components/resume/GmailSuggestions';
 import GmailIntegration from '@/components/resume/GmailIntegration';
 import { appliedDayOf } from '@/lib/applicationDates';
 
@@ -66,6 +66,7 @@ export default function TrackerPage() {
     apply: applySuggestion,
     dismiss: dismissSuggestion,
     reload: reloadSuggestions,
+    loadError: suggestionsError,
   } = useGmailSuggestions(true, refetchSilent);
 
   // The pane needs room for the list beside it; below this it becomes a sheet.
@@ -238,6 +239,7 @@ export default function TrackerPage() {
           </div>
         </section>
       )}
+      <GmailReviewLoadError error={suggestionsError} onRetry={() => void reloadSuggestions()} />
       {suggestions.length > 0 && (scope !== 'focus' || loading || filtered.length === 0) && (
         <div className="overflow-hidden rounded-xl border border-border bg-card">
           <TrackerSection

@@ -48,6 +48,22 @@ function basisLine(view: ExperienceView): string {
   return years;
 }
 
+/** Explain the total without hiding roles whose postings omit experience. */
+export function ExperienceCountBreakdown({ className }: { className?: string }) {
+  const { seniorityLevels, levelCounts: counts, visibleJobs } = useCombinedJobsCtx();
+  const total = `${visibleJobs.length} role${visibleJobs.length === 1 ? '' : 's'}`;
+  const parts = seniorityLevels.map((level) => `${counts[level]} ${SHORT[level]}`);
+  parts.push(`${counts.unknown} no level stated`);
+
+  return (
+    <p aria-label="Experience count breakdown" className={cn('text-xs leading-relaxed text-muted-foreground', className)}>
+      {seniorityLevels.length
+        ? `${total} = ${parts.join(' + ')}`
+        : `${total} across all levels, including ${counts.unknown} with no level stated`}
+    </p>
+  );
+}
+
 /** The checklist itself. Rendered in the board popover and in the drawer. */
 export function ExperienceLevelList({ className }: { className?: string }) {
   const { seniorityLevels, setSeniorityLevels, resetSeniorityLevels, experienceView, levelCounts: counts } =
@@ -94,6 +110,7 @@ export function ExperienceLevelList({ className }: { className?: string }) {
 
       <fieldset>
         <legend className="sr-only">Experience levels to show</legend>
+        <ExperienceCountBreakdown className="mb-1 font-medium text-foreground" />
         <p className="mb-2 text-[11px] text-muted-foreground">Counts use your selected date window and other filters.</p>
         <ul className="space-y-1">
           {SENIORITY_LEVELS.map((level) => {
@@ -128,13 +145,21 @@ export function ExperienceLevelList({ className }: { className?: string }) {
               </li>
             );
           })}
+          <li className="flex items-center gap-3 rounded-md bg-muted/60 px-2 py-2">
+            <Check className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-medium leading-tight">No level stated</span>
+              <span className="block text-[11px] text-muted-foreground">Always included so you don't miss a role</span>
+            </span>
+            <span className="shrink-0 font-mono text-[11px] tabular-nums text-muted-foreground">{counts.unknown}</span>
+          </li>
         </ul>
       </fieldset>
 
       <div className="flex items-center justify-between gap-2 border-t pt-3">
         <p className="text-[11px] leading-snug text-muted-foreground" data-testid="seniority-basis">
           {seniorityLevels.length
-            ? `Roles that state no level are always shown (${counts.unknown}).`
+            ? 'Selected levels and roles with no level stated are shown.'
             : 'Showing every level.'}
         </p>
         {seniorityLevels.length > 0 && (
@@ -180,7 +205,11 @@ export function ExperienceLevelPicker() {
           <ChevronDown className="h-3.5 w-3.5 opacity-60" aria-hidden />
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-[22rem] p-3">
+      <PopoverContent
+        align="start"
+        className="w-[22rem] max-w-[calc(100vw-2rem)] overflow-y-auto p-3"
+        style={{ maxHeight: 'var(--radix-popover-content-available-height, 80vh)' }}
+      >
         <p className="mb-2 text-sm font-semibold">Experience level</p>
         <ExperienceLevelList />
       </PopoverContent>

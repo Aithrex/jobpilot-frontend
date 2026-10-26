@@ -2,6 +2,7 @@ import { act, render, screen, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, expect, test, vi } from 'vitest';
+import userEvent from '@testing-library/user-event';
 import { CombinedJobsProvider, useCombinedJobsCtx } from '@/components/job-search/CombinedJobsProvider';
 import { CombinedJobsPanel } from '@/components/job-search/CombinedJobsPanel';
 import { JobsRefineBar } from '@/components/job-search/JobsRefineBar';
@@ -91,4 +92,38 @@ test('pagination distinguishes the visible page from the total matching populati
   expect(screen.getByText(`Showing 1-${JOB_FEED_PAGE_SIZE} of ${state.jobs.length} matching roles`)).toBeInTheDocument();
   expect(screen.getByRole('radio', { name: new RegExp(`^Today ${state.jobs.length}$`) })).toBeInTheDocument();
   expect(within(screen.getByRole('region', { name: 'Top matches' })).getAllByRole('listitem')).toHaveLength(5);
+});
+
+test('experience totals visibly include unspecified levels without dropping or reordering roles', async () => {
+  const cohort = (level: string, count: number) => Array.from({ length: count }, (_, index) =>
+    row(`${level}-${index}`, { seniority: level, days_ago: index === 0 ? 0 : 2 }));
+  const selected = [...cohort('entry', 44), ...cohort('mid', 103), ...cohort('unknown', 60)];
+  state.jobs = [...selected, ...cohort('senior', 7), row('older', { days_ago: 5 })];
+  const user = userEvent.setup();
+  mount();
+  act(() => feed.setRecency('3d'));
+  await waitFor(() => expect(feed.visibleJobs).toHaveLength(207));
+
+  const equation = '207 roles = 44 Entry + 103 Mid + 60 no level stated';
+  expect(screen.getByLabelText('Experience count breakdown')).toHaveTextContent(equation);
+  expect(screen.getByRole('radio', { name: '3 days 207' })).toBeChecked();
+  const expectedOrder = [...selected.filter((job) => job.days_ago === 0), ...selected.filter((job) => job.days_ago === 2)];
+  expect(feed.visibleJobs.map((job) => job.job_id)).toEqual(expectedOrder.map((job) => job.job_id));
+  expect(screen.getAllByTestId('job-card')).toHaveLength(JOB_FEED_PAGE_SIZE);
+  expect(screen.getByText(`Showing 1-${JOB_FEED_PAGE_SIZE} of 207 matching roles`)).toBeInTheDocument();
+
+  await user.click(screen.getByRole('button', { name: 'Experience level: Entry + Mid' }));
+  expect(screen.getAllByLabelText('Experience count breakdown')).toHaveLength(2);
+  expect(screen.getAllByLabelText('Experience count breakdown').every((item) => item.textContent === equation)).toBe(true);
+  expect(screen.getByText('No level stated')).toBeInTheDocument();
+
+  act(() => feed.setRecency('today'));
+  await waitFor(() => expect(feed.visibleJobs).toHaveLength(3));
+  expect(screen.getAllByLabelText('Experience count breakdown').every((item) =>
+    item.textContent === '3 roles = 1 Entry + 1 Mid + 1 no level stated')).toBe(true);
+
+  await user.click(screen.getByRole('button', { name: 'Show all levels' }));
+  expect(feed.visibleJobs).toHaveLength(4);
+  expect(screen.getAllByLabelText('Experience count breakdown').every((item) =>
+    item.textContent === '4 roles across all levels, including 1 with no level stated')).toBe(true);
 });

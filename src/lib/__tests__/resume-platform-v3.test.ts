@@ -40,6 +40,52 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+describe('Gmail outcome review transport', () => {
+  test('loads the complete review queue beyond the first 100 items', async () => {
+    const suggestions = Array.from({ length: 105 }, (_, index) => ({ suggestion_id: `review-${index}` }));
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { suggestions: suggestions.slice(0, 100), total: 105, has_more: true, offset: 0 }));
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { suggestions: suggestions.slice(100), total: 105, has_more: false, offset: 100 }));
+    const response = await apiService.listGmailSuggestions(true);
+    expect(response.data?.suggestions).toEqual(suggestions);
+    expect(response.data?.total).toBe(105);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const urls = fetchMock.mock.calls.map(([url]) => new URL(String(url), 'https://example.com'));
+    expect(urls.map((url) => url.searchParams.get('offset'))).toEqual(['0', '100']);
+    expect(urls.every((url) => url.searchParams.get('include_resolved') === 'true')).toBe(true);
+  });
+
+  test('a failed later review page never returns a partial queue as complete', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { suggestions: [{ suggestion_id: 'first' }], total: 2, has_more: true, offset: 0 }));
+    fetchMock.mockResolvedValueOnce(jsonResponse(500, { error: 'Review unavailable' }));
+    const response = await apiService.listGmailSuggestions();
+    expect(response.data).toBeUndefined();
+    expect(response.error).toBeTruthy();
+  });
+
+  test('a repeated review page stops safely instead of looping or duplicating rows', async () => {
+    const page = { suggestions: [{ suggestion_id: 'first' }], total: 2, has_more: true, offset: 0 };
+    fetchMock.mockResolvedValue(jsonResponse(200, page));
+    const response = await apiService.listGmailSuggestions();
+    expect(response.data).toBeUndefined();
+    expect(response.error).toBeTruthy();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  test('sends the explicitly selected application and outcome together', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { suggestion: { suggestion_id: 'review' } }));
+    await apiService.applyGmailSuggestion('review', 'application-1', 'rejected');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(String(fetchMock.mock.calls[0][0])).toContain('/resume/gmail/suggestions/review/apply');
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ record_id: 'application-1', status: 'rejected' });
+  });
+
+  test('does not send a status override for an existing known-outcome suggestion', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { suggestion: { suggestion_id: 'known' } }));
+    await apiService.applyGmailSuggestion('known', 'application-1');
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ record_id: 'application-1' });
+  });
+});
+
 describe('tailoring history pagination', () => {
   test('on-demand history returns one page without following its cursor', async () => {
     fetchMock.mockResolvedValueOnce(jsonResponse(200, { records: [{ record_id: 'r1' }], total: 1000, next_cursor: 'next' }));

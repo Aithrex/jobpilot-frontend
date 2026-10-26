@@ -61,3 +61,17 @@ Regression verification: reproduced the chart/source and failed-history bugs bef
 The first authorized live batch completed on **2026-10-25 (America/Phoenix)**. A completed batch with more mail remaining deliberately does not advance the full-scan watermark. The connection now says First scan partially complete instead of last sync never, and labels its counters Last batch. Duplicate company/role choices display recorded application dates, falling back to creation dates and a short application reference only when labels remain identical. These are display changes; selecting an application still requires explicit review.
 
 Offline verification: 733 tests passed, one existing todo, production build passed. The owner limited live processing to one batch; subsequent checks use the existing scan results and do not trigger another scan.
+
+## Gmail follow-up: low-cost outcome review
+
+On **2026-10-25 (America/Phoenix)** the owner authorized finishing the remaining Gmail scan in batches, keeping costs low and reviewing source email evidence in this session. This supersedes the earlier one-batch limit. Rules-first processing preserves unclear outcomes in the review queue instead of inventing a status or silently discarding the email. A nullable suggested outcome requires an explicit application and outcome selection before Update status is enabled. Emails for roles without a matching tracked application remain visible with an explanation and no update action. Existing known-outcome suggestions retain their fixed status and application-selection safeguards. The last-batch summary identifies how many suggestions need outcome review.
+
+The existing apply endpoint accepts an optional `status` only for suggestions requiring outcome review; the backend remains responsible for owned-record checks, allowed outcomes, chronology and application identity. No browser credentials, raw source emails or real inbox content are stored in fixtures.
+
+The review endpoint now supplies a complete validated total and offset pagination. The shared frontend API loads every page sequentially before presenting the queue, so the tracker and Settings do not silently stop at 100 suggestions. A failed, repeated, empty continuation or changed-total page produces a visible retry instead of an incomplete success. Legacy single-page responses remain supported during deployment.
+
+## Live verification follow-up: experience count breakdown
+
+On **2026-10-25 (America/Phoenix)**, the three-day view showed 207 roles while the selected level rows showed 44 Entry and 103 Mid. The remaining 60 roles had no stated experience level and were already included by design. The old footer made that contribution easy to miss.
+
+The toolbar and experience menu now show the complete equation, and No level stated has its own always-included row. Every figure comes from the existing shared selection and updates with the active date and other filters. No filtering, ingestion, deduplication, match scores, ranking, or pagination logic changed. A regression verifies all 207 matching roles remain present and ordered, including all 60 unspecified-level roles, then checks date-window and all-level changes.
