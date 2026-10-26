@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { apiService } from '@/lib/api';
 import { openJobPosting } from '@/lib/jobPosting';
 import { applyUrlKey } from '@/lib/careerJobs';
-import { SAVED_JOBS_QUERY_KEY } from '@/hooks/useSavedJobTabCounts';
+import { fetchSavedJobs, SAVED_JOBS_QUERY_KEY, useSavedJobs } from '@/hooks/useSavedJobTabCounts';
 import type { Job, SavedJob, JobSearchFilters, JobSearchOptions, BatchSearchResponse, VisaFlags, VisaFilters } from '@/types/jobs';
 
 /**
@@ -57,6 +57,7 @@ export const DEFAULT_FILTERS: JobSearchFilters = {
 
 const PENDING_APPLY_KEY = 'aspirely.pending-apply-confirm';
 const PENDING_APPLY_JOBS_KEY = 'aspirely.pending-apply-jobs';
+const EMPTY_SAVED_JOBS: SavedJob[] = [];
 
 function readPendingApplyIds(): string[] {
   try {
@@ -134,12 +135,13 @@ export function useJobSearch() {
     void queryClient.invalidateQueries({ queryKey: SAVED_JOBS_QUERY_KEY });
   }, [queryClient]);
   const [jobs, setJobs] = useState<Job[]>([]);
-  const [savedJobs, setSavedJobs] = useState<SavedJob[]>(
-    () => queryClient.getQueryData<SavedJob[]>(SAVED_JOBS_QUERY_KEY) ?? [],
-  );
-  const [savedJobsLoading, setSavedJobsLoading] = useState(
-    () => queryClient.getQueryData(SAVED_JOBS_QUERY_KEY) == null,
-  );
+  const savedQuery = useSavedJobs();
+  const savedJobs = savedQuery.data ?? EMPTY_SAVED_JOBS;
+  const savedJobsLoading = savedQuery.isLoading;
+  const setSavedJobs = useCallback((update: SavedJob[] | ((prev: SavedJob[]) => SavedJob[])) => {
+    queryClient.setQueryData<SavedJob[]>(SAVED_JOBS_QUERY_KEY, (prev = []) =>
+      typeof update === 'function' ? update(prev) : update);
+  }, [queryClient]);
   const [filters, setFilters] = useState<JobSearchFilters>(DEFAULT_FILTERS);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -338,16 +340,10 @@ export function useJobSearch() {
 
   // --- Saved jobs ---
   const loadSavedJobs = useCallback(async () => {
-    const hadCache = queryClient.getQueryData(SAVED_JOBS_QUERY_KEY) != null;
-    if (!hadCache) setSavedJobsLoading(true);
     try {
-      const resp = await apiService.getSavedJobs();
-      if (resp.data) {
-        setSavedJobs(resp.data.jobs);
-        queryClient.setQueryData(SAVED_JOBS_QUERY_KEY, resp.data.jobs);
-      }
-    } finally {
-      setSavedJobsLoading(false);
+      await queryClient.fetchQuery({ queryKey: SAVED_JOBS_QUERY_KEY, queryFn: fetchSavedJobs });
+    } catch {
+      // Keep the last successful snapshot; the query retains the read error.
     }
   }, [queryClient]);
 
@@ -358,7 +354,7 @@ export function useJobSearch() {
       bumpSavedTabCounts();
     }
     return resp;
-  }, [bumpSavedTabCounts]);
+  }, [bumpSavedTabCounts, setSavedJobs]);
 
   const unsaveJob = useCallback(async (jobId: string) => {
     const resp = await apiService.deleteSavedJob(jobId);
@@ -367,7 +363,7 @@ export function useJobSearch() {
       bumpSavedTabCounts();
     }
     return resp;
-  }, [bumpSavedTabCounts]);
+  }, [bumpSavedTabCounts, setSavedJobs]);
 
   const updateJobStatus = useCallback(async (jobId: string, status: string, notes?: string) => {
     const resp = await apiService.updateSavedJob(jobId, { status, notes });
@@ -376,7 +372,7 @@ export function useJobSearch() {
       bumpSavedTabCounts();
     }
     return resp;
-  }, [bumpSavedTabCounts]);
+  }, [bumpSavedTabCounts, setSavedJobs]);
 
   const [pendingApplyIds, setPendingApplyIds] = useState<Set<string>>(
     () => new Set(readPendingApplyIds()),
@@ -506,7 +502,7 @@ export function useJobSearch() {
       description: 'It’s in Apply → Tracker under Applied.',
     });
     return resp;
-  }, [updateJobStatus, resolvePosting, bumpSavedTabCounts]);
+  }, [updateJobStatus, resolvePosting, bumpSavedTabCounts, setSavedJobs]);
 
   const dismissApplyConfirm = useCallback((jobId: string) => {
     deferredTailorPending.current.delete(jobId);
@@ -556,7 +552,7 @@ export function useJobSearch() {
       description: 'Tracker shows Applied with your base resume until you tailor.',
     });
     return resp;
-  }, [bumpSavedTabCounts]);
+  }, [bumpSavedTabCounts, setSavedJobs]);
 
   // Open the posting, keep the job where it is, then ask "Did you apply?"
   const quickApply = useCallback(async (
@@ -583,7 +579,7 @@ export function useJobSearch() {
     persistPendingApplyJob(job);
     setPendingApplyIds((prev) => new Set(prev).add(job.job_id));
     setApplyConfirmJob(job);
-  }, [savedJobs]);
+  }, [savedJobs, setSavedJobs]);
 
   // Tailor-from-Apply opens the posting first (same as apply-without-tailoring),
   // records tailor_started, and defers Did-you-apply until the user returns from
@@ -605,7 +601,7 @@ export function useJobSearch() {
     deferredTailorPending.current.add(job.job_id);
     setPendingApplyIds((prev) => new Set(prev).add(job.job_id));
     setApplyConfirmJob(job);
-  }, []);
+  }, [setSavedJobs]);
 
   // --- Auto Apply: queue into ledger (prepare/gather/submit per user mode) ---
   const [autoApplyingId, setAutoApplyingId] = useState<string | null>(null);
@@ -660,7 +656,7 @@ export function useJobSearch() {
   const savedByUrl = useMemo(() => {
     const map = new Map<string, string>();
     for (const s of savedJobs) {
-      const key = applyUrlKey(s.apply_link);
+      const key = applyUrlKey(s.job_data?.apply_link);
       if (key && s.status && !map.has(key)) map.set(key, s.status);
     }
     return map;
@@ -674,9 +670,8 @@ export function useJobSearch() {
 
   // Load saved jobs on mount
   useEffect(() => {
-    loadSavedJobs();
     loadSavedFilters();
-  }, [loadSavedJobs, loadSavedFilters]);
+  }, [loadSavedFilters]);
 
   return {
     jobs,

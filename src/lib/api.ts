@@ -2257,9 +2257,6 @@ class ApiService {
   async listTailoringRecords(
     opts: { view?: 'list' } = {},
   ): Promise<ApiResponse<{ records: import('../types/resume').TailoringRecord[] }>> {
-    if (opts.view === 'list') {
-      return this.request('/resume/tailoring-records?view=list');
-    }
     type Page = {
       records: import('../types/resume').TailoringRecord[];
       next_offset?: number | null;
@@ -2268,7 +2265,7 @@ class ApiService {
     let offset = 0;
     while (true) {
       const response = await this.request<Page>(
-        `/resume/tailoring-records?page_size=50&offset=${offset}`,
+        `/resume/tailoring-records?page_size=${opts.view === 'list' ? 100 : 50}&offset=${offset}${opts.view === 'list' ? '&view=list' : ''}`,
       );
       if (response.error || !response.data) return response;
       records.push(...(response.data.records || []));
@@ -3309,13 +3306,7 @@ class ApiService {
   // ============================================
 
   async getGmailStatus(): Promise<
-    ApiResponse<{
-      configured: boolean;
-      connected: boolean;
-      gmail_address?: string | null;
-      last_synced_at?: string | null;
-      pending_suggestions: number;
-    }>
+    ApiResponse<import('../types/gmail').GmailStatus>
   > {
     return this.request('/resume/gmail/status');
   }
@@ -3346,16 +3337,8 @@ class ApiService {
 
   async pollGmailSyncJob(jobId: string): Promise<
     ApiResponse<{
-      status: 'processing' | 'completed' | 'failed';
-      result?: {
-        messages_scanned: number;
-        auto_applied: number;
-        suggested: number;
-        ignored: number;
-        skipped_already_seen?: number;
-        skipped_no_match?: number;
-        skipped_already_in_status?: number;
-      };
+      status: 'queued' | 'processing' | 'completed' | 'failed';
+      result?: import('../types/gmail').GmailSyncSummary;
       error?: string;
     }>
   > {
@@ -3364,32 +3347,18 @@ class ApiService {
 
   async listGmailSuggestions(includeResolved = false): Promise<
     ApiResponse<{
-      suggestions: Array<{
-        suggestion_id: string;
-        record_id: string;
-        company?: string;
-        title?: string;
-        from_name?: string;
-        from_address?: string;
-        subject?: string;
-        snippet?: string;
-        current_status: string;
-        suggested_status: string;
-        confidence: number;
-        reason?: string;
-        applied: boolean;
-        dismissed: boolean;
-        auto_applied?: boolean;
-        created_at?: string;
-      }>;
+      suggestions: import('../types/gmail').GmailSuggestion[];
     }>
   > {
     const qs = includeResolved ? '?include_resolved=true' : '';
     return this.request(`/resume/gmail/suggestions${qs}`);
   }
 
-  async applyGmailSuggestion(suggestionId: string): Promise<ApiResponse<{ suggestion: any }>> {
-    return this.request(`/resume/gmail/suggestions/${suggestionId}/apply`, { method: 'POST' });
+  async applyGmailSuggestion(suggestionId: string, recordId?: string): Promise<ApiResponse<{ suggestion: import('../types/gmail').GmailSuggestion }>> {
+    return this.request(`/resume/gmail/suggestions/${encodeURIComponent(suggestionId)}/apply`, {
+      method: 'POST',
+      ...(recordId ? { body: JSON.stringify({ record_id: recordId }) } : {}),
+    });
   }
 
   async dismissGmailSuggestion(suggestionId: string): Promise<ApiResponse<{ ok: boolean }>> {

@@ -46,7 +46,6 @@ import {
   Target,
   Wallet,
   Wand2,
-  Zap,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -229,8 +228,6 @@ export function TechFeedJobCard({
   onUnsave,
   onQuickApply,
   onApplyWithTailor,
-  onAutoApply,
-  autoApplying = false,
   applyConfirmPending = false,
   applyConfirmModalJobId,
   onConfirmApplied,
@@ -862,24 +859,6 @@ export function TechFeedJobCard({
               <BookmarkPlus className="h-3.5 w-3.5" aria-hidden />
             )}
             {saved ? 'Saved' : 'Save'}
-          </Button>
-        )}
-
-        {onAutoApply && (
-          <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            disabled={autoApplying}
-            className="gap-1.5 text-xs focus-visible:ring-2 focus-visible:ring-ring"
-            onClick={() => void onAutoApply(posting)}
-          >
-            {autoApplying ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
-            ) : (
-              <Zap className="h-3.5 w-3.5" aria-hidden />
-            )}
-            Auto Apply
           </Button>
         )}
 

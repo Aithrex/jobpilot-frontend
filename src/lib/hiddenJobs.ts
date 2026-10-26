@@ -21,6 +21,7 @@ const LEGACY_SESSION_KEY = 'aspirely.hidden-jobs';
 /** Oldest entries fall off past this, so the list cannot grow without bound. */
 const MAX_ENTRIES = 2000;
 const URL_PREFIX = 'url:';
+export const HIDDEN_JOBS_CHANGED = 'jobs:hidden-changed';
 
 function parseList(raw: string | null): string[] {
   try {
@@ -71,6 +72,7 @@ export function persistHiddenJobId(jobId: string, applyLink?: string | null): Se
   const urlKey = applyUrlKey(applyLink);
   if (urlKey) add(`${URL_PREFIX}${urlKey}`);
   writeKeys(keys);
+  window.dispatchEvent(new CustomEvent(HIDDEN_JOBS_CHANGED, { detail: keys }));
   return new Set(keys);
 }
 

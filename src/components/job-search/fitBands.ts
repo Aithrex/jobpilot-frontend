@@ -54,7 +54,7 @@ const STRONG: FitBand = {
 const GOOD: FitBand = {
   key: 'good',
   label: 'Good match',
-  meaning: 'Worth applying to. This is the bar Auto-Apply uses to queue a role.',
+  meaning: 'Worth reviewing: your experience aligns with many of the published requirements.',
   text: 'text-primary',
   chip: 'border-primary/30 bg-primary/10 text-primary',
   stroke: 'hsl(var(--primary))',

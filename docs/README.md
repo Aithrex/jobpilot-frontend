@@ -6,6 +6,7 @@ Developer documentation for the JobPilot web app. Start here.
 
 | Doc | Read it when you want to… |
 | --- | --- |
+| **[Focused workspace decision](product/2026-10-25-focused-workspace.md)** | Hidden features, reasons, retained dependencies, count semantics, tracker improvements and restoration criteria |
 | **[Getting started](getting-started.md)** | Run the app locally, configure env vars, troubleshoot |
 | **[Verification](verification.md)** | Fast vs full pre-push/CI commands and the repository-local hook |
 | **[Architecture](architecture.md)** | Understand routing, providers, the workspace, and the design system |

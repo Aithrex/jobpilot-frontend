@@ -32,8 +32,6 @@ import { LinkedInArchiveCard } from './LinkedInArchiveCard';
 
 import { DirectiveBlock } from './DirectiveBlock';
 import { ActivitySpine, type SpineNode } from './ActivitySpine';
-import AutoApplyEntryCard from '@/components/autoSubmit/AutoApplyEntryCard';
-import AutoApplyModeControls from '@/components/autoSubmit/AutoApplyModeControls';
 import { WIDGETS } from './widgets/registry';
 import { spanClass, WidgetSkeleton } from './widgets/primitives';
 import { scoredMatches } from './widgets/selectors';
@@ -221,10 +219,6 @@ export default function DashboardTab({ userName, onNavigate }: DashboardTabProps
             <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               More insights
             </h2>
-
-            {/* Auto-Apply entry point - self-hides when the feature is unavailable */}
-            <AutoApplyEntryCard onOpen={() => onNavigate('auto-apply')} />
-            <AutoApplyModeControls />
 
             {/* The generated, relevance-ranked widget grid */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 [grid-auto-flow:dense]">

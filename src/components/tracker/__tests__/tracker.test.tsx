@@ -31,7 +31,9 @@ vi.mock('@/lib/api', () => ({
 
 // The Gmail connect/sync panel does its own network work and lives in the
 // Insights sheet; the suggestion queue it feeds is exercised directly.
-vi.mock('@/components/resume/GmailIntegration', () => ({ default: () => null }));
+vi.mock('@/components/resume/GmailIntegration', () => ({
+  default: () => <button>Connect Gmail</button>,
+}));
 
 const TODAY = localDayISO();
 const YESTERDAY = localDayISO(-1);
@@ -120,6 +122,29 @@ beforeEach(() => {
 });
 
 describe('scopes', () => {
+  test('Gmail remains available when the tracker is empty', async () => {
+    listTailoringRecords.mockResolvedValue({ data: { records: [] } });
+    renderTracker();
+    await screen.findByText('No applications yet');
+    expect(screen.getByRole('button', { name: 'Connect Gmail' })).toBeInTheDocument();
+  });
+
+  test('rejected summary opens the closed records instead of the active scope', async () => {
+    listTailoringRecords.mockResolvedValue({
+      data: {
+        records: [
+          record('r-live', 'Live Role', TODAY),
+          record('r-dead', 'Rejected Role', LONG_AGO, 'rejected'),
+        ],
+      },
+    });
+    const user = userEvent.setup();
+    renderTracker();
+    await user.click(await screen.findByRole('button', { name: 'Rejected 1' }));
+    expect(scopeButton('All')).toHaveAttribute('aria-checked', 'true');
+    expect(screen.queryByText('Live Role')).not.toBeInTheDocument();
+    expect(screen.getByText('Rejected Role')).toBeInTheDocument();
+  });
   test('the tracker opens on Focus, not on everything', async () => {
     renderTracker();
 
@@ -253,8 +278,38 @@ describe('the Focus queue', () => {
     const inbox = await screen.findByRole('button', { name: /^From your inbox 1/ });
     expect(inbox).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Apply' }));
+    await user.click(screen.getByRole('button', { name: 'Update status' }));
     await waitFor(() => expect(applyGmailSuggestion).toHaveBeenCalledWith('s-1'));
+  });
+
+  test('pending inbox reviews remain visible once when Focus has no search matches', async () => {
+    listGmailSuggestions.mockResolvedValue({
+      data: {
+        suggestions: [
+          {
+            suggestion_id: 'review-filtered',
+            record_id: 'r-today',
+            title: 'Inbox review role',
+            company: 'Acme',
+            current_status: 'applied',
+            suggested_status: 'interviewing',
+            confidence: 0.92,
+            applied: false,
+            dismissed: false,
+          },
+        ],
+      },
+    });
+    const user = userEvent.setup();
+    renderTracker();
+    await screen.findByRole('button', { name: /^From your inbox 1/ });
+    await user.type(
+      screen.getByRole('textbox', { name: 'Search applications' }),
+      'No role matches this',
+    );
+    expect(screen.getByText('Nothing matches those filters.')).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /^From your inbox 1/ })).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: 'Update status' })).toHaveLength(1);
   });
 });
 

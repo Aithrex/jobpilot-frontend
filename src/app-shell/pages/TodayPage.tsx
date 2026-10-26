@@ -32,7 +32,8 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
-import { RefreshCw } from 'lucide-react';
+import { ArrowRight, ClipboardList, RefreshCw } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { rise as riseIn } from '@/lib/motion';
 import { toTitleCase } from '@/lib/format';
@@ -51,7 +52,6 @@ import { ResumeEntryPanel } from './today/ResumeEntryPanel';
 // FeatureLaunchpad (the static product-tour tiles) is intentionally no longer
 // rendered on Home - discoverability is covered by the command palette, the
 // mobile More sheet, and primary nav. The file is retained for reuse.
-import { AutoApplyPreviewBar } from './today/AutoApplyPreviewBar';
 import { KpiRow } from './today/KpiCards';
 import { ApplicationTrend, ConversionFunnel } from './today/PipelinePanels';
 import { RecentActivityPanel } from './today/RecentActivityPanel';
@@ -274,8 +274,18 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
         </div>
       )}
 
-      {/* Row 0 - Auto-Apply, demoted to a paused preview (read-only). */}
-      <AutoApplyPreviewBar />
+      <section aria-label="Application tracker" className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start gap-3">
+          <ClipboardList className="mt-1 h-5 w-5 shrink-0 text-primary" aria-hidden />
+          <div>
+            <h2 className="font-display font-semibold">Keep every application in view</h2>
+            <p className="text-sm text-muted-foreground">Connect Gmail, review replies, and follow up from your application tracker.</p>
+          </div>
+        </div>
+        <Link to="/app/apply/tracker" className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+          Open tracker <ArrowRight className="h-4 w-4" aria-hidden />
+        </Link>
+      </section>
 
       {/* Zone 1 - Where do I stand? With the hero gone this is the first thing
           the user reads: a confident, scannable horizontal KPI strip across the

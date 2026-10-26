@@ -8,18 +8,14 @@ import {
   CalendarDays,
   ClipboardList,
   CreditCard,
-  Eye,
   FileCheck2,
   FolderOpen,
-  Gauge,
-  Globe,
   Home,
   Inbox,
   KeyRound,
   Layers,
   LayoutList,
   Mail,
-  Mic,
   PenLine,
   Plane,
   PlugZap,
@@ -99,7 +95,7 @@ export const NAV_ITEMS: NavItem[] = [
   { to: "home", label: "Home", icon: Home, hint: "Daily briefing and shortcuts" },
   { to: "jobs", label: "Jobs", icon: Briefcase, hint: "Roles picked for you" },
   { to: "resume", label: "Resume", icon: PenLine, hint: "Tailor and manage resumes" },
-  { to: "apply", label: "Apply", icon: LayoutList, hint: "Tracker, inbox, and daily pipeline" },
+  { to: "apply", label: "Tracker", icon: LayoutList, hint: "Applications, Gmail updates, and follow-ups" },
   { to: "grow", label: "Grow", icon: Sprout, hint: "Skills, interview, and network" },
 ];
 
@@ -123,13 +119,6 @@ export const JOBS_SECTIONS: NavSection[] = [
     icon: Briefcase,
     hint: "Matched roles scored against your resume",
     keywords: "search browse matches fit score opportunities discover",
-  },
-  {
-    to: "portals",
-    label: "Career Portals",
-    icon: Globe,
-    hint: "Scan employer career sites directly",
-    keywords: "workday greenhouse lever ashby ats companies",
   },
   {
     to: "saved",
@@ -176,20 +165,6 @@ export const RESUME_SECTIONS: NavSection[] = [
     hint: "Everything you have already tailored",
     keywords: "history downloads generated",
   },
-  {
-    to: "six-seconds",
-    label: "Six Seconds",
-    icon: Eye,
-    hint: "What a recruiter sees in the first glance",
-    keywords: "scan skim first impression recruiter",
-  },
-  {
-    to: "voice",
-    label: "Voice",
-    icon: Mic,
-    hint: "How your writing sounds across your resume",
-    keywords: "tone writing style",
-  },
 ];
 
 /**
@@ -209,7 +184,6 @@ export interface NavGroup {
 export const RESUME_GROUPS: NavGroup[] = [
   { label: "Create", items: ["tailor", "batch"] },
   { label: "Manage", items: ["library", "tailored"] },
-  { label: "Insights", items: ["six-seconds", "voice"] },
 ];
 
 /**
@@ -224,7 +198,6 @@ export const RESUME_RAIL_LABELS: Record<string, string> = {
   batch: "Batch tailor",
   library: "Resume library",
   tailored: "Tailored versions",
-  voice: "Voice analysis",
 };
 
 export const APPLY_SECTIONS: NavSection[] = [
@@ -235,12 +208,8 @@ export const APPLY_SECTIONS: NavSection[] = [
     hint: "Application board: notes, interviews, and later stages",
     keywords: "pipeline kanban status applied interview offer",
   },
-  // Auto-Apply is ON HOLD and demoted: removed from the Apply nav strip (and
-  // therefore from the command palette, inline search, and More sheet) so a
-  // paused feature does not advertise itself as a live destination. The ROUTE
-  // `/app/apply/auto-apply` is kept in App.tsx so deep links, emailed approve
-  // links, and the Home "Preview Auto-Apply" CTA stay reachable. Re-adding the
-  // section here is the one-line path to bringing it back when it ships.
+  // Deferred product surfaces and their old-route redirects are documented
+  // in docs/product/2026-10-25-focused-workspace.md.
   {
     to: "inbox",
     label: "Inbox",
@@ -330,13 +299,6 @@ export const SETTINGS_SECTIONS: NavSection[] = [
     icon: PlugZap,
     hint: "Gmail, GitHub, and LinkedIn connections",
     keywords: "connect gmail github linkedin oauth",
-  },
-  {
-    to: "autonomy",
-    label: "Autonomy",
-    icon: Gauge,
-    hint: "Set how far Auto-Apply will go once it is back on",
-    keywords: "auto apply autopilot threshold approval",
   },
   {
     to: "billing",

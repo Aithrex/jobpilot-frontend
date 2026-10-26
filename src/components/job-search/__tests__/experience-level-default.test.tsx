@@ -10,6 +10,7 @@
  */
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { useEffect } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { beforeEach, describe, expect, test, vi, type Mock } from 'vitest';
 
 import { apiService } from '@/lib/api';
@@ -32,6 +33,7 @@ vi.mock('@/lib/api', () => ({
     searchWorkdayJobs: vi.fn(),
     searchCareerPagesJobs: vi.fn(),
     searchMncJobs: vi.fn(),
+    getSavedJobs: vi.fn(),
   },
 }));
 
@@ -69,9 +71,11 @@ function Probe() {
 
 function mount() {
   return render(
+    <QueryClientProvider client={new QueryClient()}>
     <CombinedJobsProvider>
       <Probe />
-    </CombinedJobsProvider>,
+    </CombinedJobsProvider>
+    </QueryClientProvider>,
   );
 }
 
@@ -81,6 +85,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   resetJobTitlesStore();
   window.localStorage.clear();
+  api.getSavedJobs.mockResolvedValue({ data: { jobs: [] } });
   const empty = { data: { ok: true, jobs: [], total: 0, errors: [] }, status: 200 };
   for (const fn of ['searchWorkdayJobs', 'searchCareerPagesJobs', 'searchMncJobs']) {
     api[fn].mockResolvedValue(empty);
@@ -166,10 +171,12 @@ describe('level matching', () => {
 describe('the experience control on the board', () => {
   function mountPicker() {
     return render(
+      <QueryClientProvider client={new QueryClient()}>
       <CombinedJobsProvider>
         <Probe />
         <ExperienceLevelPicker />
-      </CombinedJobsProvider>,
+      </CombinedJobsProvider>
+      </QueryClientProvider>,
     );
   }
 

@@ -92,10 +92,21 @@ describe('tailoring history pagination', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
-  test('keeps the tracker projection on its existing path', async () => {
-    fetchMock.mockResolvedValueOnce(jsonResponse(200, { records: [] }));
-    await apiService.listTailoringRecords({ view: 'list' });
-    expect(String(fetchMock.mock.calls[0][0])).toMatch(/tailoring-records\?view=list$/);
+  test('drains every slim tracker page instead of showing a capped total', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { records: [{ record_id: 'r1' }], next_offset: 1, total: 2 }));
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { records: [{ record_id: 'r2' }], next_offset: null, total: 2 }));
+    const response = await apiService.listTailoringRecords({ view: 'list' });
+    expect(response.data?.records.map((r) => r.record_id)).toEqual(['r1', 'r2']);
+    for (const [url] of fetchMock.mock.calls) expect(String(url)).toContain('view=list');
+    expect(String(fetchMock.mock.calls[1][0])).toContain('offset=1');
+  });
+
+  test('a failed tracker page cannot be presented as a complete list', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { records: [{ record_id: 'r1' }], next_offset: 1, total: 2 }));
+    fetchMock.mockResolvedValueOnce(jsonResponse(503, { error: 'Unavailable' }));
+    const response = await apiService.listTailoringRecords({ view: 'list' });
+    expect(response.error).toBeTruthy();
+    expect(response.data).toBeUndefined();
   });
 });
 

@@ -160,18 +160,15 @@ describe('the five flows fire from the tech-feed card', () => {
     });
   });
 
-  test('auto-apply queues the adapted posting', async () => {
-    const user = userEvent.setup();
+  test('paused submission automation stays hidden even when a handler exists', () => {
     const spies = renderCard();
-
-    await user.click(screen.getByRole('button', { name: /Auto Apply/ }));
-    expect(spies.onAutoApply).toHaveBeenCalledTimes(1);
-    expect(spies.onAutoApply.mock.calls[0][0]).toMatchObject({ job_id: 'job-1' });
+    expect(screen.queryByRole('button', { name: /Auto Apply/ })).not.toBeInTheDocument();
+    expect(spies.onAutoApply).not.toHaveBeenCalled();
   });
 
-  test('a queueing card says it is working instead of accepting a second click', () => {
+  test('historical queueing state does not expose the paused action', () => {
     renderCard(makeTechFeedJob(), { autoApplying: true });
-    expect(screen.getByRole('button', { name: /Auto Apply/ })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: /Auto Apply/ })).not.toBeInTheDocument();
   });
 
   test('the did-you-apply prompt answers into the tracker', async () => {

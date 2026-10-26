@@ -123,7 +123,7 @@ export default function MailboxSettingsPanel() {
         <MailX className="mx-auto mb-2 h-6 w-6 text-muted-foreground" aria-hidden="true" />
         <p className="text-sm font-medium text-foreground">Managed mailbox isn't available yet</p>
         <p className="mx-auto mt-1 max-w-sm text-xs text-muted-foreground">
-          Your private application address turns on with Auto-Apply.
+          Your managed application address is not available yet. You can connect Gmail from the application tracker.
         </p>
       </div>
     );

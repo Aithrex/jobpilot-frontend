@@ -12,16 +12,16 @@ import { cn } from "@/lib/utils";
 
 const FEATURES = [
   {
-    to: appPath("apply", "auto-apply"),
-    title: "Auto-Apply",
-    blurb: "Queue matching roles. We prepare answers; you approve or go hands-free.",
+    to: appPath("apply", "tracker"),
+    title: "Application tracker",
+    blurb: "Connect Gmail, review application updates, and plan your next follow-up.",
     icon: Send,
     badge: "New",
   },
   {
     to: appPath("jobs", "for-you"),
     title: "Jobs for you",
-    blurb: "Matched roles from career portals and your resume signal.",
+    blurb: "Relevant roles from employer sites, matched to your resume.",
     icon: Briefcase,
   },
   {

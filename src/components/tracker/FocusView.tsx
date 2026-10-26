@@ -23,7 +23,7 @@ interface FocusViewProps {
   records: TailoringRecord[];
   suggestions: GmailSuggestion[];
   suggestionBusyId: string | null;
-  onApplySuggestion: (id: string) => void;
+  onApplySuggestion: (id: string, recordId?: string) => void;
   onDismissSuggestion: (id: string) => void;
   selectedId: string | null;
   savingId: string | null;

@@ -18,7 +18,6 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
-import GmailIntegration from '@/components/resume/GmailIntegration';
 
 import { STATUSES } from './trackerConfig';
 import type { FunnelData, Reframe, StaleApp } from './useTrackerData';
@@ -39,7 +38,6 @@ interface InsightsSheetProps {
   funnelLoading: boolean;
   staleApps: StaleApp[];
   reframe: Reframe | null;
-  onSyncComplete: () => void;
   onDismissStale: (recordId: string) => void;
 }
 
@@ -71,7 +69,6 @@ export default function InsightsSheet({
   funnelLoading,
   staleApps,
   reframe,
-  onSyncComplete,
   onDismissStale,
 }: InsightsSheetProps) {
   const [followups, setFollowups] = useState<Record<string, { subject: string; message: string }>>(
@@ -111,8 +108,8 @@ export default function InsightsSheet({
         <div className="mt-6 space-y-7">
           <Section title="At a glance">
             <div>
-              <MetricRow label="Total applications" value={metrics.total} />
-              <MetricRow label="Active" value={metrics.active} />
+              <MetricRow label="Tracked roles" value={metrics.total} />
+              <MetricRow label="Open roles" value={metrics.active} />
               <MetricRow label="Interviewing" value={metrics.interviewing} />
               <MetricRow label="Offers" value={metrics.offers} />
               <MetricRow
@@ -249,7 +246,6 @@ export default function InsightsSheet({
           )}
 
           <Section title="Email sync">
-            <GmailIntegration onSyncComplete={onSyncComplete} />
             <p className="text-label text-muted-foreground">
               <Link
                 to="/app/settings/integrations"

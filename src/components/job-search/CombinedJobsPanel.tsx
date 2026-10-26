@@ -13,7 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ApplyConfirmDialog, JOB_FEED_GRID_CLASS, JobCard, JOB_CARD_CLASS } from '@/components/job-search/JobCard';
 import { JobFeedPager } from '@/components/job-search/JobFeedPager';
 import { useCombinedJobsCtx } from '@/components/job-search/CombinedJobsProvider';
-import { JOB_FEED_PAGE_SIZE, RECENCY_OPTIONS, inRecencyWindow, matchesSeniorityLevels, sortJobsByMode, isAppliedPipelineStatus, toJob } from '@/lib/careerJobs';
+import { JOB_FEED_PAGE_SIZE, RECENCY_OPTIONS, toJob } from '@/lib/careerJobs';
 import { isHiddenJob } from '@/lib/hiddenJobs';
 import { cn } from '@/lib/utils';
 import type { Job, WorkdayJob } from '@/types/jobs';
@@ -51,8 +51,6 @@ interface CombinedJobsPanelProps {
   markAlreadyApplied?: (job: Job) => void | Promise<unknown>;
   autoApply?: (job: Job) => void | Promise<unknown>;
   autoApplyingId?: string | null;
-  /** Job ids and `url:` apply-URL keys - see `lib/hiddenJobs.ts`. */
-  hiddenJobIds?: Set<string>;
   onHideJob?: (jobId: string, applyLink?: string) => void;
   showApplyOverlay?: boolean;
 }
@@ -74,7 +72,6 @@ export function CombinedJobsPanel({
   markAlreadyApplied,
   autoApply,
   autoApplyingId,
-  hiddenJobIds,
   onHideJob,
   showApplyOverlay = true,
 }: CombinedJobsPanelProps) {
@@ -83,6 +80,7 @@ export function CombinedJobsPanel({
   // running scan (and its 30-min auto-sync) survive navigating between pages.
   const {
     jobs,
+    visibleJobs,
     loading,
     progress,
     ready,
@@ -123,39 +121,8 @@ export function CombinedJobsPanel({
     ensureStarted();
   }, [ensureStarted]);
 
-  const maxDays = RECENCY_OPTIONS.find((o) => o.key === recency)?.maxDays ?? 3;
-
-  const visibleJobs = useMemo(() => {
-    const isApplied = (j: WorkdayJob) => isAppliedPipelineStatus(getJobStatus(j.job_id, j.apply_link));
-    // Undated postings are judged by when we first saw them - see
-    // `recencyAgeOf`. Only a row with no age at all is kept unconditionally.
-    let out = jobs.filter((j) => inRecencyWindow(j, maxDays));
-    const q = search.trim().toLowerCase();
-    if (q) out = out.filter((j) => `${j.title} ${j.company}`.toLowerCase().includes(q));
-    if (seniorityKey) {
-      const levels = seniorityKey.split('|');
-      out = out.filter((j) => matchesSeniorityLevels(j, levels));
-    }
-    if (minScore > 0) out = out.filter((j) => (j.match_score ?? 0) >= minScore);
-    if (sponsorFilter === 'friendly') out = out.filter((j) => j.sponsorship !== 'refused');
-    else if (sponsorFilter === 'proven') out = out.filter((j) => j.sponsorship === 'likely');
-    if (hiddenJobIds?.size) out = out.filter((j) => !isHiddenJob(hiddenJobIds, j));
-    if (!showApplied) out = out.filter((j) => !isApplied(j));
-    return sortJobsByMode(out, sortBy, { isApplied });
-  }, [
-    jobs,
-    maxDays,
-    search,
-    seniorityKey,
-    minScore,
-    sponsorFilter,
-    sortBy,
-    hiddenJobIds,
-    showApplied,
-    getJobStatus,
-  ]);
-
   const pageCount = Math.max(1, Math.ceil(visibleJobs.length / PAGE_SIZE));
+  const maxDays = RECENCY_OPTIONS.find((option) => option.key === recency)!.maxDays;
   useEffect(() => {
     setPage((p) => Math.min(Math.max(1, p), pageCount));
   }, [pageCount, setPage]);
@@ -254,6 +221,11 @@ export function CombinedJobsPanel({
           <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary" aria-hidden />
         )}
       </div>
+      {pageCount > 1 && (
+        <p className="text-xs tabular-nums text-muted-foreground">
+          Showing {(page - 1) * PAGE_SIZE + 1}-{Math.min(page * PAGE_SIZE, roleCount)} of {roleCount} matching roles
+        </p>
+      )}
       {loading && (
         <Progress
           value={progress.total ? (progress.done / progress.total) * 100 : 8}

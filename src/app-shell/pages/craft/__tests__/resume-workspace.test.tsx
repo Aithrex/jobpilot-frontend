@@ -116,16 +116,16 @@ describe('Resume workspace navigation', () => {
     // sheet content is not open, so the rail is the only section nav present.
     const rail = await screen.findByRole('navigation', { name: /resume sections/i });
 
-    for (const heading of ['Create', 'Manage', 'Insights']) {
+    for (const heading of ['Create', 'Manage']) {
       expect(within(rail).getByText(heading)).toBeInTheDocument();
     }
   });
 
-  test('keeps the "Six Seconds" product name verbatim', async () => {
+  test('hides deferred resume analysis tools', async () => {
     renderShell('/app/resume/tailor');
     const rail = await screen.findByRole('navigation', { name: /resume sections/i });
 
-    expect(within(rail).getByRole('link', { name: /six seconds/i })).toBeInTheDocument();
+    expect(within(rail).queryByRole('link', { name: /six seconds|voice analysis/i })).not.toBeInTheDocument();
     // The rejected rename must not appear anywhere.
     expect(screen.queryByText(/first-glance scan/i)).not.toBeInTheDocument();
   });
@@ -278,8 +278,6 @@ describe('No duplicated controls', () => {
   // were each reachable twice from one viewport. The dock is now the only
   // place tools launch from.
   test.each([
-    ['Six Seconds', /^six seconds$/i],
-    ['Voice analysis', /^voice analysis$/i],
     ['Tailor a resume', /^tailor a resume$/i],
   ])('%s appears exactly once on the overview', async (_label, pattern) => {
     renderShell('/app/resume');
@@ -292,9 +290,10 @@ describe('No duplicated controls', () => {
     renderShell('/app/resume');
     const dock = await screen.findByRole('navigation', { name: /resume sections/i });
 
-    for (const pattern of [/^six seconds$/i, /^voice analysis$/i, /^tailor a resume$/i]) {
+    for (const pattern of [/^tailor a resume$/i]) {
       expect(within(dock).getByRole('link', { name: pattern })).toBeInTheDocument();
     }
+    expect(screen.queryByRole('link', { name: /six seconds|voice analysis/i })).not.toBeInTheDocument();
   });
 });
 
