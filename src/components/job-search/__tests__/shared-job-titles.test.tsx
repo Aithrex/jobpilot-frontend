@@ -14,6 +14,7 @@
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { beforeEach, describe, expect, test, vi, type Mock } from 'vitest';
 
 import { apiService } from '@/lib/api';
@@ -118,6 +119,7 @@ function JobFeedOpener() {
 /** For you (Job feed drawer) and Careers (Live listings Customize), side by side. */
 function renderBothSurfaces() {
   return render(
+    <QueryClientProvider client={new QueryClient()}>
     <MemoryRouter>
       <TooltipProvider>
         <CombinedJobsProvider>
@@ -131,7 +133,8 @@ function renderBothSurfaces() {
           </div>
         </CombinedJobsProvider>
       </TooltipProvider>
-    </MemoryRouter>,
+    </MemoryRouter>
+    </QueryClientProvider>,
   );
 }
 
@@ -401,7 +404,7 @@ describe('shared job titles', () => {
     expect(api.suggestPipelineFilters).not.toHaveBeenCalled();
   });
 
-  test('8. Job feed drawer shows shared titles and Career Portals note', async () => {
+  test('8. Job feed drawer explains how titles shape For you matches', async () => {
     const user = userEvent.setup();
     renderBothSurfaces();
 
@@ -409,7 +412,7 @@ describe('shared job titles', () => {
     for (const title of RESUME_TITLES) {
       expect(await screen.findByLabelText(`Remove ${title}`)).toBeInTheDocument();
     }
-    expect(screen.getByText(/titles are shared with career portals/i)).toBeInTheDocument();
+    expect(screen.getByText(/these titles shape your for you matches across employer sites/i)).toBeInTheDocument();
   });
 
   test('9. Job feed is the For-you editor; Careers Customize sees the same set', async () => {

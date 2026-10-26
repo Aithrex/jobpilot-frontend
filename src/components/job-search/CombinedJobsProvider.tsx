@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useAutoSync } from '@/hooks/useAutoSync';
 import {
   loadCombinedPrefs,
@@ -7,7 +7,10 @@ import {
   type CombinedJobsController,
 } from '@/hooks/useCombinedJobs';
 import { useJobTitles } from '@/hooks/useJobTitles';
-import { SENIORITY_LEVELS, type SeniorityLevel } from '@/lib/careerJobs';
+import { applyUrlKey, SENIORITY_LEVELS, type SeniorityLevel } from '@/lib/careerJobs';
+import { useSavedJobs } from '@/hooks/useSavedJobTabCounts';
+import { HIDDEN_JOBS_CHANGED, loadHiddenJobIds, persistHiddenJobId } from '@/lib/hiddenJobs';
+import { selectForYouJobs } from '@/lib/forYouSelection';
 import type { ExperienceView, WorkdayRecency } from '@/types/jobs';
 
 const AUTO_SYNC_MS = 30 * 60 * 1000;
@@ -50,7 +53,10 @@ const basisOf = (view: ExperienceView | null) => (view?.levels ?? []).join('|');
 export type SponsorFilter = 'all' | 'friendly' | 'proven';
 export type SortBy = 'score' | 'newest';
 
-interface CombinedJobsContextValue extends CombinedJobsController {
+interface CombinedJobsContextValue extends CombinedJobsController, ReturnType<typeof selectForYouJobs> {
+  hiddenJobIds: Set<string>;
+  hideJob: (jobId: string, applyLink?: string) => void;
+  getJobStatus: (jobId: string, applyLink?: string) => string | null;
   /** Live countdown / freshness from the background auto-sync. */
   lastSyncedAt: number | null;
   secondsUntilNext: number | null;
@@ -174,6 +180,41 @@ export function CombinedJobsProvider({ children }: { children: React.ReactNode }
   // fewer postings asking for years the candidate does not have.
   const [sortBy, setSortBy] = useState<SortBy>('score');
   const [page, setPage] = useState(1);
+  const { data: savedJobs } = useSavedJobs(started);
+  const [hiddenJobIds, setHiddenJobIds] = useState(loadHiddenJobIds);
+  useEffect(() => {
+    const refresh = (event: Event) => {
+      const keys = (event as CustomEvent<string[]>).detail;
+      setHiddenJobIds(Array.isArray(keys) ? new Set(keys) : loadHiddenJobIds());
+    };
+    window.addEventListener(HIDDEN_JOBS_CHANGED, refresh);
+    window.addEventListener('storage', refresh);
+    return () => {
+      window.removeEventListener(HIDDEN_JOBS_CHANGED, refresh);
+      window.removeEventListener('storage', refresh);
+    };
+  }, []);
+  const hideJob = useCallback((jobId: string, applyLink?: string) => {
+    setHiddenJobIds(persistHiddenJobId(jobId, applyLink));
+  }, []);
+  const statusIndex = useMemo(() => {
+    const ids = new Map<string, string>();
+    const urls = new Map<string, string>();
+    for (const saved of savedJobs ?? []) {
+      ids.set(saved.job_id, saved.status);
+      const key = applyUrlKey(saved.job_data?.apply_link);
+      if (key && !urls.has(key)) urls.set(key, saved.status);
+    }
+    return { ids, urls };
+  }, [savedJobs]);
+  const getJobStatus = useCallback((jobId: string, applyLink?: string) =>
+    statusIndex.ids.get(jobId) || statusIndex.urls.get(applyUrlKey(applyLink)) || null,
+  [statusIndex]);
+  const selection = useMemo(() => selectForYouJobs(feed.jobs, {
+    recency, search, seniorityLevels, minScore, sponsorFilter, showApplied, sortBy,
+    hiddenJobIds, getJobStatus,
+  }), [feed.jobs, recency, search, seniorityLevels, minScore, sponsorFilter,
+    showApplied, sortBy, hiddenJobIds, getJobStatus]);
 
   const ensureStarted = useCallback(() => setStarted(true), []);
 
@@ -208,6 +249,10 @@ export function CombinedJobsProvider({ children }: { children: React.ReactNode }
 
   const value: CombinedJobsContextValue = {
     ...feed,
+    ...selection,
+    hiddenJobIds,
+    hideJob,
+    getJobStatus,
     lastSyncedAt: autoSync.lastSyncedAt,
     secondsUntilNext: autoSync.secondsUntilNext,
     sync: autoSync.sync,

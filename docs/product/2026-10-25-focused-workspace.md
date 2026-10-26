@@ -1,0 +1,47 @@
+# Focused workspace and reliable tracking
+
+Decision date: **2026-10-25 (America/Phoenix)**. Owner-requested product cleanup. The primary path is **For you -> tailor/apply -> Application tracker**.
+
+## Refined execution brief
+
+Make For you the primary discovery destination. Resolve conflicting counts and Home recommendations using one selected population. Hide duplicate or deferred features. Make Gmail connection, status evidence, rejection review and follow-ups visible in the tracker. Preserve records, manual application confirmation, resume integrity and shared ingestion. Execute investigate -> regression -> implement -> verify -> review loops, then merge verified changes to main.
+
+## Hidden features and dependencies
+
+| Surface | Why hidden | Retained dependencies | Old route | Return criteria |
+| --- | --- | --- | --- | --- |
+| Career Portals | Duplicated For you and exposed sourcing terminology | Workday/career-page/MNC ingestion and APIs, discovery, shared titles, adapters, scoring and saved/applied records | `/app/jobs/portals` -> `/app/jobs/for-you` | A demonstrated distinct user task and coherent counts; provider names alone do not justify a workspace |
+| Auto Apply | Paused automation still appeared in Home, cards, approval links and settings, implying readiness | Engine source, ledger/history, manual Apply/confirmation, tailoring and backend controls | `/app/apply/auto-apply` -> tracker; `/app/settings/autonomy` -> integrations | Verified end-to-end submissions, recoverable failures, explicit consent and a separate readiness review |
+| Six Seconds | Secondary analysis distracted from resume preparation | Component/API source and historical analysis | `/app/resume/six-seconds` -> library | Validated demand, actionable results and a clear place in the resume workflow |
+| Voice analysis | Additional terminology and navigation without a necessary daily task | Component/API source and historical analysis | `/app/resume/voice` -> library | Clear purpose, reliable output and demonstrated benefit alongside tailoring |
+
+Removal covers navigation, command search, mobile menus, Home, shared job-card actions, resume rail, legacy widgets, billing promotions and direct routes. Old approval tokens no longer open a submission dialog. Backend workers and account preferences are not changed by UI hiding; existing production pause controls remain authoritative. No production records or ingestion configuration were edited.
+
+## Why the numbers differed
+
+Date chips counted raw jobs by age; cards also filtered experience, query, score, sponsorship, hidden jobs and application status. Experience facets used the entire loaded inventory. Home applied only experience. Thus one input could show 19 in a chip, 3 cards and hundreds in an experience menu.
+
+`src/lib/forYouSelection.ts` defines one population. Cards and Home consume its ordered results. Date facets apply every filter except date; experience facets apply every filter except selected experience, including the selected date. Unknown dates use the same rule everywhere. Shared saved-job status and hidden state keep counts current after apply/hide. Pagination distinguishes the current page from the total. Home previews the first five results of the same selection.
+
+Home's former “Applications sent” included saved roles and drafts. It now says “Tracked roles”. “Open roles” uses the tracker's non-closed scope. Interview rates require a submitted-stage denominator; unavailable data is not zero.
+
+## Tracker improvements
+
+- Gmail connection, sync status and review are on the primary tracker, including empty/loading states.
+- Summary counts describe all records; filtered scope counts and CSV export describe the current view.
+- Rejections have a direct filter. Notes, next actions, follow-up dates and stage editing remain available.
+- Email review shows company/role candidates and matching evidence. Ambiguity requires a role selection; status confidence alone cannot establish identity.
+- Slim records are paginated rather than silently capped at 1,000. Failed loads are surfaced.
+- CSV export escapes delimiters and neutralizes spreadsheet formula prefixes.
+
+Gmail requires the existing server OAuth switch, credentials and user consent. Disabled configuration shows an explicit unavailable state. This change does not access the owner's mailbox or enable production OAuth. First sync examines the last 60 days, all folders except promotions/social, in bounded resumable batches. It matches recorded applications; it does not invent applications from unrelated mail or claim a complete historical import.
+
+## Remaining opportunities
+
+Manual application entry and a review queue for importing previously untracked applications would help migrations. They need a dedicated creation/identity contract; company-only email is insufficient evidence. Calendar-backed interviews and durable outcome history are useful next steps. This cleanup implements the immediate essentials without inventing events or statuses.
+
+## Restoration and verification
+
+Restore a feature only after its return criteria are met. Re-add navigation, route, cards and settings together with regression coverage. Never delete backend sourcing services based on a removed screen name.
+
+Release checks: frontend `node scripts/verify.mjs --full`; backend Python 3.12 `python scripts/verify.py --full` with mongomock; independent review; responsive light/dark inspection using mocked data. See the pull requests for exact results.

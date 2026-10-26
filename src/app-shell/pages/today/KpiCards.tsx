@@ -128,18 +128,20 @@ export function KpiRow({
     );
   }
 
-  /* 1 - Applications sent (context: today + streak) */
-  const totalApps = overview?.applications.total ?? streak?.total_applications ?? null;
+  /* All tracker records include saved roles and drafts, not just submissions. */
+  const totalApps = overview?.applications.total ?? null;
   const today = streak?.today_count ?? 0;
-  const streakDays = streak?.current_streak ?? 0;
 
-  /* 2 - Active pipeline (context: interviewing + offers) */
-  const active = overview?.applications.active ?? null;
+  // Match the tracker's Active scope: every role except a closed outcome.
+  const statuses = overview?.applications.by_status;
+  const active = overview && statuses
+    ? Math.max(0, overview.applications.total - (statuses.rejected ?? 0) - (statuses.withdrawn ?? 0) - (statuses.ghosted ?? 0))
+    : null;
   const interviewing = overview?.applications.interviewing ?? 0;
   const offers = overview?.applications.offers ?? 0;
 
   /* 3 - Interview rate (context: the basis - advanced of applied) */
-  const appliedCount = stageCount(funnel, ['applied']) ?? overview?.applications.total ?? null;
+  const appliedCount = stageCount(funnel, ['applied']);
   const interviewCount = stageCount(funnel, ['interview', 'interviewing']);
   const interviewRate =
     appliedCount && appliedCount > 0 && interviewCount != null
@@ -155,35 +157,25 @@ export function KpiRow({
   return (
     <div className={wrap}>
       <StatCard
-        label="Applications sent"
+        label="Tracked roles"
         icon={Send}
         value={totalApps === null ? null : totalApps}
-        trend={
+        trend={streak ? (
           today > 0
-            ? { dir: 'up', label: `+${today} today` }
-            : { dir: 'flat', label: 'none today' }
-        }
-        context={
-          streakDays > 0 ? (
-            <>
-              <Stat>{streakDays}</Stat>-day streak going
-            </>
-          ) : totalApps && totalApps > 0 ? (
-            'Send one today to start a streak'
-          ) : (
-            'Your first application starts here'
-          )
-        }
+            ? { dir: 'up', label: `${today} applied today` }
+            : { dir: 'flat', label: 'none applied today' }
+        ) : undefined}
+        context="Includes saved roles and drafts, across all stages"
       />
 
       <StatCard
-        label="Active pipeline"
+        label="Open roles"
         icon={Briefcase}
         value={active === null ? null : active}
         context={
           active && active > 0 ? (
             <>
-              <Stat>{interviewing}</Stat> interviewing · <Stat>{offers}</Stat>{' '}
+              Saved through offer: <Stat>{interviewing}</Stat> interviewing · <Stat>{offers}</Stat>{' '}
               {offers === 1 ? 'offer' : 'offers'}
             </>
           ) : (

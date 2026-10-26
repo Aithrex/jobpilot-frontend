@@ -116,7 +116,7 @@ export function ResumeEntryPanel({ onUploaded }: { onUploaded?: () => void }) {
           <div className="min-w-0 space-y-1">
             <h2 className="font-semibold text-foreground">Upload your resume</h2>
             <p className="text-sm text-muted-foreground">
-              Add your resume to unlock tailoring, job matching, and auto-apply.
+              Add your resume to tailor applications and find matching roles.
             </p>
           </div>
         </div>

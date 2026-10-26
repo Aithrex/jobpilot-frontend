@@ -1,41 +1,21 @@
-/**
- * Removing Auto-Apply from the nav strip must NOT remove its route. Deep links,
- * emailed approve links, and the Home "Preview Auto-Apply" CTA all rely on
- * `/app/apply/auto-apply` still resolving to AutoApplyTab. This mirrors the
- * `apply` subtree from App.tsx with a probe standing in for the heavy tab, and
- * asserts the probe mounts at that path.
- */
+/** Actual retired routes are covered in product-cleanup.test.tsx. */
 import { render, screen } from '@testing-library/react';
-import { MemoryRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { describe, expect, test } from 'vitest';
+import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { expect, test, vi } from 'vitest';
+import ApplicationsPage from '@/app-shell/pages/ApplicationsPage';
 
-function AutoApplyProbe() {
-  return <div data-testid="auto-apply-tab">Auto-Apply</div>;
-}
+vi.mock('@/components/autoSubmit/ApproveLinkConfirm', () => ({
+  default: () => <div>Submission approval dialog</div>,
+}));
 
-function renderAt(path: string) {
-  return render(
-    <MemoryRouter initialEntries={[path]}>
-      <Routes>
-        <Route path="/app/apply">
-          <Route index element={<Navigate to="tracker" replace />} />
-          <Route path="tracker" element={<div data-testid="tracker" />} />
-          {/* Route kept even though the nav section was removed. */}
-          <Route path="auto-apply" element={<AutoApplyProbe />} />
-        </Route>
-      </Routes>
+test('an old approval URL cannot open submission controls in the tracker layout', () => {
+  render(
+    <MemoryRouter initialEntries={['/app/apply?approve=old-token']}>
+      <Routes><Route path="/app/apply" element={<ApplicationsPage />} /></Routes>
     </MemoryRouter>,
   );
-}
-
-describe('Auto-Apply route stays reachable after nav removal', () => {
-  test('/app/apply/auto-apply still mounts the tab', () => {
-    renderAt('/app/apply/auto-apply');
-    expect(screen.getByTestId('auto-apply-tab')).toBeInTheDocument();
-  });
-
-  test('/app/apply index still redirects to the tracker (not auto-apply)', () => {
-    renderAt('/app/apply');
-    expect(screen.getByTestId('tracker')).toBeInTheDocument();
-  });
+  expect(screen.getByRole('heading', { name: 'Application tracker' })).toBeInTheDocument();
+  expect(screen.queryByText('Submission approval dialog')).not.toBeInTheDocument();
+  expect(screen.queryByText(/auto.apply/i)).not.toBeInTheDocument();
+  expect(screen.getByRole('link', { name: 'Tracker' })).toBeInTheDocument();
 });

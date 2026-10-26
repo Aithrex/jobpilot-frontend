@@ -1,11 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Link, useLocation, useOutletContext } from 'react-router-dom';
 import { useJobSearch } from '@/hooks/useJobSearch';
 import { CombinedJobsPanel } from '@/components/job-search/CombinedJobsPanel';
 import { ApplyConfirmDialog, JOB_FEED_GRID_CLASS, JobCard } from '@/components/job-search/JobCard';
 import { Button } from '@/components/ui/button';
 import { appPath } from '@/app-shell/nav.config';
-import { loadHiddenJobIds, persistHiddenJobId } from '@/lib/hiddenJobs';
+import { useCombinedJobsCtx } from '@/components/job-search/CombinedJobsProvider';
 import type { Job } from '@/types/jobs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { isAppliedSavedJob } from '@/lib/savedJobs';
@@ -100,13 +100,7 @@ export default function JobOpportunitiesTab({ embedded }: JobOpportunitiesTabPro
   const { pathname } = useLocation();
   const view = viewFromPath(pathname);
   const jobSearch = useJobSearch();
-  const [hiddenJobIds, setHiddenJobIds] = useState<Set<string>>(loadHiddenJobIds);
-
-  // Persisted by id AND by the posting's apply URL, so a hidden job stays
-  // hidden after a refresh and after a re-crawl issues it a new id.
-  const hideJob = (jobId: string, applyLink?: string) => {
-    setHiddenJobIds(persistHiddenJobId(jobId, applyLink));
-  };
+  const { hideJob } = useCombinedJobsCtx();
 
   const savedRows = useMemo(
     () => jobSearch.savedJobs.filter((row) => !isAppliedSavedJob(row)),
@@ -144,7 +138,6 @@ export default function JobOpportunitiesTab({ embedded }: JobOpportunitiesTabPro
           markAlreadyApplied={jobSearch.markAlreadyApplied}
           autoApply={jobSearch.autoApply}
           autoApplyingId={jobSearch.autoApplyingId}
-          hiddenJobIds={hiddenJobIds}
           onHideJob={hideJob}
           showApplyOverlay={view === 'browse'}
         />

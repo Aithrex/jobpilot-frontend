@@ -234,7 +234,7 @@ export function JobFeedSheet() {
               }
               accentClass="border-border bg-muted/60 text-foreground"
               emptyState="Add a title"
-              helperText="Titles are shared with Career Portals."
+              helperText="These titles shape your For you matches across employer sites."
             />
             <Button
               type="button"

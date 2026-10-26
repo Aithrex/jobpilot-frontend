@@ -48,7 +48,6 @@ const TodayPage = lazy(() => import('@/app-shell/pages/TodayPage'));
 const ApplicationsPage = lazy(() => import('@/app-shell/pages/ApplicationsPage'));
 const TrackerPage = lazy(() => import('@/components/tracker/TrackerPage'));
 const MailboxInboxTab = lazy(() => import('@/components/mailbox/MailboxInboxTab'));
-const AutoApplyTab = lazy(() => import('@/components/autoSubmit/AutoApplyTab'));
 const PipelineSection = lazy(() => import('@/app-shell/pages/PipelineSection'));
 const GrowPage = lazy(() => import('@/app-shell/pages/GrowPage'));
 const DiscoverPage = lazy(() => import('@/app-shell/pages/DiscoverPage'));
@@ -64,7 +63,6 @@ const EventsTab = lazy(() => import('@/components/resume/EventsTab'));
 const InterviewPrepTab = lazy(() => import('@/components/resume/InterviewPrepTab'));
 const CareerCopilotTab = lazy(() => import('@/components/resume/CareerCopilotTab'));
 const JobOpportunitiesTab = lazy(() => import('@/components/resume/JobOpportunitiesTab'));
-const CareerPortalsTab = lazy(() => import('@/components/resume/CareerPortalsTab'));
 
 // Craft mounts the resume tools directly as nested sections.
 const ResumeOverviewPage = lazy(() => import('@/app-shell/pages/craft/ResumeOverviewPage'));
@@ -72,14 +70,11 @@ const TailorPage = lazy(() => import('@/app-shell/pages/craft/TailorPage'));
 const MyResumesPage = lazy(() => import('@/app-shell/pages/craft/MyResumesPage'));
 const TailoredPage = lazy(() => import('@/app-shell/pages/craft/TailoredPage'));
 const BatchTailor = lazy(() => import('@/components/resume/BatchTailor'));
-const SixSecondsTab = lazy(() => import('@/components/resume/SixSecondsTab'));
-const VoiceGraphTab = lazy(() => import('@/components/resume/VoiceGraphTab'));
 
 // Settings hub sections.
 const VisaTimelineTab = lazy(() => import('@/components/visa/VisaTimelineTab'));
 const ProfileTab = lazy(() => import('@/app-shell/settings/ProfileTab'));
 const IntegrationsPanel = lazy(() => import('@/app-shell/settings/IntegrationsPanel'));
-const AutonomyPanel = lazy(() => import('@/app-shell/settings/AutonomyPanel'));
 const BillingTab = lazy(() => import('@/components/billing/BillingTab'));
 const NotificationsTab = lazy(() => import('@/components/resume/NotificationsTab'));
 const MailboxSettingsPanel = lazy(() => import('@/app-shell/settings/MailboxSettingsPanel'));
@@ -190,7 +185,7 @@ function AppContent() {
               <Route path="apply" element={<ApplicationsPage />}>
                 <Route index element={<Navigate to="tracker" replace />} />
                 <Route path="tracker" element={<TrackerPage />} />
-                <Route path="auto-apply" element={<AutoApplyTab />} />
+                <Route path="auto-apply" element={<Navigate to="/app/apply/tracker" replace />} />
                 <Route path="inbox" element={<MailboxInboxTab />} />
                 <Route path="pipeline" element={<PipelineSection />} />
               </Route>
@@ -207,7 +202,7 @@ function AppContent() {
                 <Route path="for-you" element={<JobOpportunitiesTab />} />
                 <Route path="saved" element={<JobOpportunitiesTab />} />
                 <Route path="applied" element={<JobOpportunitiesTab />} />
-                <Route path="portals" element={<CareerPortalsTab />} />
+                <Route path="portals" element={<Navigate to="/app/jobs/for-you" replace />} />
               </Route>
               <Route path="resume" element={<CraftPage />}>
                 {/* The Resume workspace overview. This used to redirect to
@@ -217,14 +212,14 @@ function AppContent() {
                 <Route path="batch" element={<BatchTailor />} />
                 <Route path="library" element={<MyResumesPage />} />
                 <Route path="tailored" element={<TailoredPage />} />
-                <Route path="six-seconds" element={<SixSecondsTab />} />
-                <Route path="voice" element={<VoiceGraphTab />} />
+                <Route path="six-seconds" element={<Navigate to="/app/resume/library" replace />} />
+                <Route path="voice" element={<Navigate to="/app/resume/library" replace />} />
               </Route>
               <Route path="settings" element={<SettingsPage />}>
                 <Route index element={<Navigate to="profile" replace />} />
                 <Route path="profile" element={<ProfileTab />} />
                 <Route path="integrations" element={<IntegrationsPanel />} />
-                <Route path="autonomy" element={<AutonomyPanel />} />
+                <Route path="autonomy" element={<Navigate to="/app/settings/integrations" replace />} />
                 <Route path="visa" element={<VisaTimelineTab />} />
                 <Route path="mailbox" element={<MailboxSettingsPanel />} />
                 <Route path="mailbox/verify-forward" element={<VerifyForwardPanel />} />

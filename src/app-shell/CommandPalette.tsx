@@ -102,7 +102,7 @@ export function CommandPalette() {
         <CommandEmpty>
           <span className="block text-sm font-medium text-foreground">No matches</span>
           <span className="mt-1 block text-caption text-muted-foreground">
-            Try a feature name like &quot;auto-apply&quot;, &quot;billing&quot; or
+            Try a feature name like &quot;tracker&quot;, &quot;billing&quot; or
             &quot;sponsorship&quot;.
           </span>
         </CommandEmpty>

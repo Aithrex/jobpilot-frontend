@@ -257,7 +257,7 @@ export function JobFitDetails({ job, className }: JobFitDetailsProps) {
         <Info className="mt-0.5 h-3 w-3 shrink-0" aria-hidden />
         <span>
           Scored 0-100 against the requirements this posting actually published.{' '}
-          {AUTO_APPLY_GATE} and above is the bar Auto-Apply uses to queue a role.
+          {AUTO_APPLY_GATE} and above is a good match. Review the requirements before applying.
         </span>
       </p>
     </div>

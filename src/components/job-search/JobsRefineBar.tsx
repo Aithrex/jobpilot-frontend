@@ -1,7 +1,6 @@
-import { useMemo } from 'react';
 import { Sparkles } from 'lucide-react';
 import { useCombinedJobsCtx } from '@/components/job-search/CombinedJobsProvider';
-import { RECENCY_OPTIONS, recencyAgeOf } from '@/lib/careerJobs';
+import { RECENCY_OPTIONS } from '@/lib/careerJobs';
 import { PillSwitch } from '@/components/ui/pill-switch';
 import { ExperienceLevelPicker } from '@/components/job-search/ExperienceLevelPicker';
 
@@ -12,7 +11,7 @@ import { ExperienceLevelPicker } from '@/components/job-search/ExperienceLevelPi
  */
 export function JobsRefineBar() {
   const {
-    jobs,
+    recencyCounts,
     recency,
     setRecency,
     sortBy,
@@ -20,16 +19,6 @@ export function JobsRefineBar() {
     showApplied,
     setShowApplied,
   } = useCombinedJobsCtx();
-
-  const recencyCounts = useMemo(() => {
-    const counts: Record<string, number> = { today: 0, '24h': 0, '3d': 0, '7d': 0, '30d': 0 };
-    for (const j of jobs ?? []) {
-      const age = recencyAgeOf(j);
-      if (age == null) continue;
-      for (const opt of RECENCY_OPTIONS) if (age <= opt.maxDays) counts[opt.key] += 1;
-    }
-    return counts;
-  }, [jobs]);
 
   return (
     <div
@@ -47,7 +36,7 @@ export function JobsRefineBar() {
         options={RECENCY_OPTIONS.map((opt) => ({
           value: opt.key,
           title:
-            'Posting dates use your timezone. Each window includes everything newer, so Today is inside Since yesterday.',
+            'Counts use your current filters and timezone. Windows overlap. Roles with no known date remain included.',
           label: (
             <>
               {opt.label}

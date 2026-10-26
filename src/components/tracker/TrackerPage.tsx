@@ -5,15 +5,16 @@
  * full pipeline one click away as a rail of stages. The selected application
  * sits open beside it on the right; below `xl` that pane becomes a sheet.
  */
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ClipboardList, MousePointerClick } from 'lucide-react';
+import { ClipboardList, Download, MousePointerClick } from 'lucide-react';
 
 import type { ApplicationStatus } from '@/types/resume';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { PanelError } from '@/app-shell/pages/today/primitives';
-import { useGmailSuggestions } from '@/components/resume/GmailSuggestions';
+import GmailSuggestions, { useGmailSuggestions } from '@/components/resume/GmailSuggestions';
+import GmailIntegration from '@/components/resume/GmailIntegration';
 import { appliedDayOf } from '@/lib/applicationDates';
 
 import ApplicationDetail from './ApplicationDetail';
@@ -26,6 +27,8 @@ import { focusCount, isClosed, scopeRecords, type Scope } from './trackerScopes'
 import { useMediaQuery } from './useMediaQuery';
 import { useTrackerData, type ApplicationPatch } from './useTrackerData';
 import { titleOf } from './trackerUtils';
+import TrackerSection from './TrackerSection';
+import { downloadApplicationsCsv } from './trackerExport';
 
 export default function TrackerPage() {
   const {
@@ -71,17 +74,6 @@ export default function TrackerPage() {
   // is the path everywhere else, and is also the keyboard path.
   const canDrag = useMediaQuery('(hover: hover) and (pointer: fine)');
 
-  /**
-   * The OAuth callback lands on `?gmail=linked`, and GmailIntegration reacts to
-   * that flag on mount. It lives inside the Insights sheet, so the sheet has to
-   * open or the confirmation would never fire and the flag would stick.
-   */
-  useEffect(() => {
-    if (new URLSearchParams(window.location.search).get('gmail') === 'linked') {
-      setInsightsOpen(true);
-    }
-  }, []);
-
   const dateRange = useMemo(
     () => presetRange(datePreset, customFrom, customTo),
     [datePreset, customFrom, customTo],
@@ -109,16 +101,15 @@ export default function TrackerPage() {
   const scoped = useMemo(() => scopeRecords(filtered, scope), [filtered, scope]);
 
   /**
-   * Counts come off the unfiltered set, so the control keeps saying how much
-   * work each scope holds even while a filter is narrowing the view.
+   * Every scope count uses the same search/date/stage filters as the rows.
    */
   const scopeCounts = useMemo(
     () => ({
-      focus: focusCount(records),
-      active: records.filter((r) => !isClosed(r)).length,
-      all: records.length,
+      focus: focusCount(filtered),
+      active: filtered.filter((r) => !isClosed(r)).length,
+      all: filtered.length,
     }),
-    [records],
+    [filtered],
   );
 
   const selected = useMemo(
@@ -126,8 +117,9 @@ export default function TrackerPage() {
     [records, selectedId],
   );
 
-  const filtersActive = statusFilter.size > 0 || !!dateRange;
+  const filtersActive = statusFilter.size > 0 || !!dateRange || !!search.trim();
   const clearFilters = useCallback(() => {
+    setSearch('');
     setStatusFilter(new Set());
     setDatePreset('all');
     setCustomFrom('');
@@ -175,8 +167,8 @@ export default function TrackerPage() {
 
   /** A Gmail suggestion changes a stage, so the list has to catch up with it. */
   const handleApplySuggestion = useCallback(
-    (id: string) => {
-      void applySuggestion(id);
+    (id: string, recordId?: string) => {
+      void applySuggestion(id, recordId);
     },
     [applySuggestion],
   );
@@ -186,9 +178,90 @@ export default function TrackerPage() {
     void reloadSuggestions();
   }, [refetchSilent, reloadSuggestions]);
 
+  const header = (
+    <div className="space-y-4">
+      <GmailIntegration onSyncComplete={handleSyncComplete} showReviewQueue={false} />
+      {!loading && !loadError && (
+        <section
+          aria-label="Application summary"
+          className="rounded-xl border border-border bg-card p-4 shadow-soft"
+        >
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-body font-semibold text-foreground">Your application tracker</h2>
+              <p className="text-label text-muted-foreground">
+                Tracked roles: {records.length}. Open roles: {metrics.active}. Across your whole
+                tracker, including saved jobs and drafts.
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!scoped.length}
+              onClick={() => downloadApplicationsCsv(scoped)}
+            >
+              <Download className="mr-1.5 h-4 w-4" aria-hidden />
+              Export current view
+            </Button>
+          </div>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {(
+              [
+                ['applied', 'Awaiting response'],
+                ['interviewing', 'Interviewing'],
+                ['offer', 'Offers'],
+                ['rejected', 'Rejected'],
+              ] as const
+            ).map(([stage, label]) => {
+              const count = records.filter(
+                (r) => statusKeyOf(r.application?.status) === stage,
+              ).length;
+              return (
+                <button
+                  key={stage}
+                  type="button"
+                  aria-label={`${label} ${count}`}
+                  onClick={() => {
+                    clearFilters();
+                    setScope('all');
+                    setStatusFilter(new Set([stage]));
+                  }}
+                  className="rounded-lg border border-border bg-background p-3 text-left transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <span className="block text-label text-muted-foreground">{label}</span>
+                  <span className="mt-1 block font-display text-2xl font-semibold tabular-nums text-foreground">
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      )}
+      {suggestions.length > 0 && (scope !== 'focus' || loading || filtered.length === 0) && (
+        <div className="overflow-hidden rounded-xl border border-border bg-card">
+          <TrackerSection
+            label="From your inbox"
+            count={suggestions.length}
+            dot="bg-info"
+            meta="review before updating"
+          >
+            <GmailSuggestions
+              suggestions={suggestions}
+              busyId={suggestionBusyId}
+              onApply={handleApplySuggestion}
+              onDismiss={dismissSuggestion}
+            />
+          </TrackerSection>
+        </div>
+      )}
+    </div>
+  );
+
   if (loading) {
     return (
       <div className="space-y-4">
+        {header}
         <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3">
           <span
             role="status"
@@ -204,28 +277,36 @@ export default function TrackerPage() {
 
   if (loadError && records.length === 0) {
     return (
-      <PanelError
-        title="Couldn't load your applications"
-        body={loadError}
-        onRetry={() => refetch()}
-      />
+      <div className="space-y-4">
+        {header}
+        <PanelError
+          title="Couldn't load your applications"
+          body={loadError}
+          onRetry={() => refetch()}
+        />
+      </div>
     );
   }
 
   if (records.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-border p-12 text-center">
-        <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-          <ClipboardList className="h-6 w-6" aria-hidden />
+      <div className="space-y-4">
+        {header}
+        <div className="rounded-2xl border border-dashed border-border p-12 text-center">
+          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+            <ClipboardList className="h-6 w-6" aria-hidden />
+          </div>
+          <p className="font-display text-body font-semibold text-foreground">
+            No applications yet
+          </p>
+          <p className="mx-auto mt-1 max-w-sm text-label text-muted-foreground">
+            Save a job from For you or confirm an application to start tracking it here. Gmail can
+            then match replies to those roles.
+          </p>
+          <Button asChild className="mt-4">
+            <Link to="/app/resume/tailor">Tailor a resume</Link>
+          </Button>
         </div>
-        <p className="font-display text-body font-semibold text-foreground">No applications yet</p>
-        <p className="mx-auto mt-1 max-w-sm text-label text-muted-foreground">
-          Tailor a resume or save a job from Discover and it lands here. Applying without tailoring
-          still shows up, marked as base resume.
-        </p>
-        <Button asChild className="mt-4">
-          <Link to="/app/resume/tailor">Tailor a resume</Link>
-        </Button>
       </div>
     );
   }
@@ -244,6 +325,15 @@ export default function TrackerPage() {
 
   return (
     <div className="flex flex-col gap-4">
+      {header}
+      {loadError && (
+        <p role="alert" className="text-label text-destructive">
+          Your last refresh failed. Showing previously loaded applications.{' '}
+          <button className="underline" onClick={() => void refetchSilent()}>
+            Retry
+          </button>
+        </p>
+      )}
       <TrackerToolbar
         scope={scope}
         onScopeChange={setScope}
@@ -342,7 +432,6 @@ export default function TrackerPage() {
         funnelLoading={funnelLoading}
         staleApps={staleApps}
         reframe={reframe}
-        onSyncComplete={handleSyncComplete}
         onDismissStale={dismissStale}
       />
     </div>

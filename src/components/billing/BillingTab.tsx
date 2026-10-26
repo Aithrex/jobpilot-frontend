@@ -25,8 +25,6 @@ const USAGE_ORDER = [
   'tailor',
   'ats_scores',
   'cover_letter',
-  'auto_submit',
-  'autoapply_answer',
   'mock_evaluate',
   'practice_question',
   'quiz',
@@ -106,7 +104,7 @@ export default function BillingTab() {
                 <p className="font-bold">{PLAN_LABEL[p]}</p>
                 <p className="mt-1 text-2xl font-extrabold">${PLAN_PRICE[p]}<span className="text-sm font-medium text-muted-foreground">/mo</span></p>
                 <ul className="mt-3 flex-1 space-y-1.5 text-xs text-muted-foreground">
-                  {(data.plans?.[p]?.features || []).slice(0, 6).map((f) => (
+                  {(data.plans?.[p]?.features || []).filter((f) => !['auto_apply', 'auto_submit', 'six_seconds', 'voice_graph'].includes(f)).slice(0, 6).map((f) => (
                     <li key={f} className="flex items-center gap-1.5">
                       <Check className="h-3 w-3 shrink-0 text-primary" />
                       <span>{f.replace(/_/g, ' ')}</span>

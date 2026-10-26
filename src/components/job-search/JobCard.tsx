@@ -3,7 +3,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import {
   MapPin, ExternalLink, BookmarkPlus, BookmarkCheck, Sparkles, Target,
   FileText, Wand2, Users, ShieldCheck, CircleOff, Plane, Wifi,
-  FileSignature, Zap, Loader2, ChevronDown,
+  FileSignature, Loader2, ChevronDown,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
@@ -231,7 +231,7 @@ export function ApplyConfirmDialog({
 }
 
 export function JobCard({
-  job, saved, jobStatus, onSave, onUnsave, onQuickApply, onAutoApply, autoApplying,
+  job, saved, jobStatus, onSave, onUnsave, onQuickApply,
   applyConfirmPending, applyConfirmModalJobId, onConfirmApplied, onConfirmNotYet,
   onApplyWithTailor, onAlreadyApplied, onHide,
 }: JobCardProps) {
@@ -645,19 +645,6 @@ export function JobCard({
                   </Button>
                 </div>
                 <div className="flex flex-wrap items-center gap-1.5">
-                  {onAutoApply && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => void onAutoApply()}
-                      disabled={autoApplying || inAppliedPipeline}
-                      title="Queue this job for Aspirely auto-apply"
-                      className="h-9 gap-1.5 px-2.5 text-xs font-semibold text-muted-foreground hover:bg-transparent hover:text-primary"
-                    >
-                      <Zap className="h-3.5 w-3.5" />
-                      {autoApplying ? 'Queuing…' : 'Auto Apply'}
-                    </Button>
-                  )}
                   {!inAppliedPipeline && (
                     <Button
                       size="sm"

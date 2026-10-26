@@ -17,6 +17,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { TopMatchesPanel } from '@/app-shell/pages/today/TopMatchesPanel';
 import type { ExperienceView, WorkdayJob } from '@/types/jobs';
 import type { SeniorityLevel } from '@/lib/careerJobs';
+import { selectForYouJobs } from '@/lib/forYouSelection';
 
 // Keep the row chrome light and provider-free: the fit button and the logo
 // both read context/network we do not need for a filter/order assertion.
@@ -35,6 +36,14 @@ const ctx = {
   seniorityLevels: [] as SeniorityLevel[],
   experienceView: null as ExperienceView | null,
   sortBy: 'score' as 'score' | 'newest',
+  recency: 'today' as const,
+  search: '',
+  minScore: 0,
+  sponsorFilter: 'friendly' as const,
+  showApplied: false,
+  hiddenJobIds: new Set<string>(),
+  getJobStatus: (_id: string) => null as string | null,
+  get visibleJobs() { return selectForYouJobs(this.jobs, this).visibleJobs; },
   ready: true,
   canSearch: true,
   loading: false,
@@ -104,9 +113,27 @@ beforeEach(() => {
   ctx.seniorityLevels = [];
   ctx.experienceView = null;
   ctx.sortBy = 'score';
+  ctx.hiddenJobIds = new Set();
+  ctx.getJobStatus = () => null;
 });
 
 describe('dashboard matches respect the default experience view', () => {
+  test('Home excludes older, hidden, applied and sponsorship-refused roles from the same 19-role feed', () => {
+    ctx.seniorityLevels = ['entry', 'mid'];
+    ctx.experienceView = JUNIOR_VIEW;
+    ctx.jobs = [
+      ...Array.from({ length: 12 }, (_, i) => ({ ...job(`senior-${i}`, `Senior Role ${i}`, 'senior', 99), days_ago: 0 })),
+      { ...job('hidden', 'Hidden Role', 'entry', 99), days_ago: 0 },
+      { ...job('applied', 'Applied Role', 'entry', 98), days_ago: 0 },
+      { ...job('refused', 'Refused Role', 'entry', 97), days_ago: 0, sponsorship: 'refused' },
+      { ...job('older', 'Older Role', 'entry', 96), days_ago: 5 },
+      ...Array.from({ length: 3 }, (_, i) => ({ ...job(`visible-${i}`, `Visible Role ${i}`, 'entry', 90 - i), days_ago: 0 })),
+    ] as WorkdayJob[];
+    ctx.hiddenJobIds = new Set(['hidden']);
+    ctx.getJobStatus = (id) => id === 'applied' ? 'applied' : null;
+    renderPanel();
+    expect(rowTitles().map((title) => title.split(' (')[0])).toEqual(['Visible Role 0', 'Visible Role 1', 'Visible Role 2']);
+  });
   test('a junior view keeps only entry/mid roles, best-match-first', () => {
     // The provider seeds seniorityLevels from the server view.
     ctx.seniorityLevels = ['entry', 'mid'];
@@ -128,7 +155,7 @@ describe('dashboard matches respect the default experience view', () => {
     ctx.experienceView = JUNIOR_VIEW;
     renderPanel();
     expect(screen.getByText('Entry + Mid')).toBeInTheDocument();
-    expect(screen.getByText(/matched to your experience level/i)).toBeInTheDocument();
+    expect(screen.getByText(/using your selected experience levels/i)).toBeInTheDocument();
   });
 
   test('no server view: every level shows and no chip is rendered', () => {
@@ -141,6 +168,14 @@ describe('dashboard matches respect the default experience view', () => {
     expect(titles.join(' | ')).toContain('VP Of Engineering');
     expect(titles.join(' | ')).toContain('Principal Architect');
     // No misleading chip while there is no resolved view.
-    expect(screen.queryByText(/matched to your experience level/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/using your selected experience levels/i)).not.toBeInTheDocument();
+  });
+
+  test('the experience chip shows an override rather than the inferred default', () => {
+    ctx.seniorityLevels = ['staff'];
+    ctx.experienceView = JUNIOR_VIEW;
+    renderPanel();
+    expect(screen.getByText('Staff+')).toBeInTheDocument();
+    expect(screen.queryByText('Entry + Mid')).not.toBeInTheDocument();
   });
 });

@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import { BriefcaseBusiness, Check, ChevronDown, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -7,7 +6,6 @@ import { useCombinedJobsCtx } from '@/components/job-search/CombinedJobsProvider
 import {
   SENIORITY_LEVELS,
   sameLevels,
-  seniorityViewOf,
   type SeniorityLevel,
 } from '@/lib/careerJobs';
 import { cn } from '@/lib/utils';
@@ -50,22 +48,10 @@ function basisLine(view: ExperienceView): string {
   return years;
 }
 
-function useLevelCounts() {
-  const { jobs } = useCombinedJobsCtx();
-  return useMemo(() => {
-    const counts: Record<SeniorityLevel | 'unknown', number> = {
-      intern: 0, entry: 0, mid: 0, senior: 0, staff: 0, unknown: 0,
-    };
-    for (const j of jobs ?? []) counts[seniorityViewOf(j)] += 1;
-    return counts;
-  }, [jobs]);
-}
-
 /** The checklist itself. Rendered in the board popover and in the drawer. */
 export function ExperienceLevelList({ className }: { className?: string }) {
-  const { seniorityLevels, setSeniorityLevels, resetSeniorityLevels, experienceView } =
+  const { seniorityLevels, setSeniorityLevels, resetSeniorityLevels, experienceView, levelCounts: counts } =
     useCombinedJobsCtx();
-  const counts = useLevelCounts();
   const mine = experienceView?.levels ?? [];
   const isMine = mine.length > 0 && sameLevels(seniorityLevels, mine);
 
@@ -108,6 +94,7 @@ export function ExperienceLevelList({ className }: { className?: string }) {
 
       <fieldset>
         <legend className="sr-only">Experience levels to show</legend>
+        <p className="mb-2 text-[11px] text-muted-foreground">Counts use your selected date window and other filters.</p>
         <ul className="space-y-1">
           {SENIORITY_LEVELS.map((level) => {
             const checked = seniorityLevels.includes(level);

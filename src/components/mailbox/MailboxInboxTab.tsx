@@ -115,7 +115,7 @@ export default function MailboxInboxTab() {
       <PanelEmpty
         icon={MailX}
         title="Managed mailbox isn't available yet"
-        body="Your private application address turns on with Auto-Apply. Check back soon."
+        body="Your managed application address is not available yet. Connect Gmail from the application tracker to review updates."
       />
     );
   }
