@@ -55,3 +55,9 @@ Home now loads the same fully paginated slim records as the tracker once for its
 The recent table is now explicitly application history, ordered by application day and labelled Applied, with a link to the complete tracker. No production data or cached streak records are rewritten. Existing streak consumers elsewhere retain their behavior.
 
 Regression verification: reproduced the chart/source and failed-history bugs before implementation; the focused Home suite passes 16 tests covering date boundaries, older records applied to recently, civil dates, legacy UTC timestamps/statuses, progressed/closed records, undated drafts, invalid dates, failed loads and first-run behavior. Touched-file ESLint reports zero errors and the existing TodayPage Fast Refresh warning. Full-suite/build and live-browser verification are recorded with the follow-up pull request.
+
+## Live verification follow-up: Gmail review clarity
+
+The first authorized live batch completed on **2026-10-25 (America/Phoenix)**. A completed batch with more mail remaining deliberately does not advance the full-scan watermark. The connection now says First scan partially complete instead of last sync never, and labels its counters Last batch. Duplicate company/role choices display recorded application dates, falling back to creation dates and a short application reference only when labels remain identical. These are display changes; selecting an application still requires explicit review.
+
+Offline verification: 733 tests passed, one existing todo, production build passed. The owner limited live processing to one batch; subsequent checks use the existing scan results and do not trigger another scan.

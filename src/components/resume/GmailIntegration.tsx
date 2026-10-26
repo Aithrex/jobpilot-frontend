@@ -296,8 +296,12 @@ export default function GmailIntegration({
             <p className="mt-1 text-label text-muted-foreground break-words">
               {status.connected ? (
                 <>
-                  {status.gmail_address || ' - '} · last sync{' '}
-                  {formatRelative(status.last_synced_at)}
+                  {status.gmail_address || ' - '} ·{' '}
+                  {status.last_synced_at
+                    ? `Last full scan ${formatRelative(status.last_synced_at)}`
+                    : status.has_more
+                      ? 'First scan partially complete'
+                      : 'No full scan completed yet'}
                 </>
               ) : (
                 'Match confirmations, interviews, and rejections to the right company and role. Uncertain matches stay yours to review.'
@@ -361,7 +365,7 @@ export default function GmailIntegration({
         </details>
         {status.connected && status.last_sync_summary && (
           <p className="mt-2 text-label text-muted-foreground" role="status">
-            Last scan: {status.last_sync_summary.messages_scanned} emails checked,{' '}
+            Last batch: {status.last_sync_summary.messages_scanned} emails checked,{' '}
             {status.last_sync_summary.auto_applied} statuses updated,{' '}
             {status.last_sync_summary.suggested} suggestions.
             {status.has_more && ' More mail remains. Continue sync to finish this scan.'}

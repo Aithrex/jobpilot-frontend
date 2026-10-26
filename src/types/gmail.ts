@@ -40,7 +40,13 @@ export interface GmailSuggestion {
   email_received_at?: string;
   match_confidence?: number;
   match_reason?: string;
-  candidate_records?: { record_id: string; company: string; title: string }[];
+  candidate_records?: {
+    record_id: string;
+    company: string;
+    title: string;
+    applied_date?: string | null;
+    created_at?: string | null;
+  }[];
   requires_record_selection?: boolean;
   evidence_message_id?: string;
   gmail_thread_id?: string;
