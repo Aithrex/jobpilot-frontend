@@ -10,6 +10,7 @@
  * - /api/admin - Super-admin console (stats, users, feedback, quotas)
  */
 
+import { viewerTimeZone, viewerTzOffsetMinutes } from './viewerTimezone';
 import { toast } from 'sonner';
 
 import {
@@ -685,7 +686,7 @@ class ApiService {
   /** Minutes ahead of UTC (IST=+330) — the app's tz_offset_minutes convention.
    *  Drives the backend's local-midnight day-unlock math. */
   private hubTz() {
-    return -new Date().getTimezoneOffset();
+    return viewerTzOffsetMinutes();
   }
 
   /** Chapter selection + admin preview + timezone, as a POST body. */
@@ -1345,7 +1346,7 @@ class ApiService {
     const body: Record<string, unknown> = {
       guest_id: guestId,
       // Viewer timezone: "posted today" is the USER's calendar day.
-      tz_offset_minutes: -new Date().getTimezoneOffset(),
+      tz_offset_minutes: viewerTzOffsetMinutes(),
     };
     if (deviceToken) body.device_token = deviceToken;
     if (seniority) body.seniority = seniority;
@@ -2219,7 +2220,7 @@ class ApiService {
   }): Promise<ApiResponse<{ record_id: string; updated?: boolean }>> {
     let tz: string | undefined;
     try {
-      tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      tz = viewerTimeZone();
     } catch {
       tz = undefined;
     }
@@ -2293,7 +2294,7 @@ class ApiService {
   > {
     let tz = '';
     try {
-      tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      tz = viewerTimeZone();
     } catch {
       tz = '';
     }
@@ -2607,7 +2608,7 @@ class ApiService {
     // rather than only on applied, matching what save-record already does.
     let tz: string | undefined;
     try {
-      tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      tz = viewerTimeZone();
     } catch {
       tz = undefined;
     }
@@ -3972,7 +3973,7 @@ class ApiService {
         method: 'POST',
         // Viewer timezone rides every scan: "posted today" is computed in
         // the USER's calendar day server-side, not UTC's.
-        body: JSON.stringify({ tz_offset_minutes: -new Date().getTimezoneOffset(), ...params }),
+        body: JSON.stringify({ tz_offset_minutes: viewerTzOffsetMinutes(), ...params }),
       },
       30000,
     );
@@ -4014,7 +4015,7 @@ class ApiService {
       '/jobs/career-pages/search',
       {
         method: 'POST',
-        body: JSON.stringify({ tz_offset_minutes: -new Date().getTimezoneOffset(), ...params }),
+        body: JSON.stringify({ tz_offset_minutes: viewerTzOffsetMinutes(), ...params }),
       },
       30000,
     );
@@ -4054,7 +4055,7 @@ class ApiService {
       '/jobs/mnc/search',
       {
         method: 'POST',
-        body: JSON.stringify({ tz_offset_minutes: -new Date().getTimezoneOffset(), ...params }),
+        body: JSON.stringify({ tz_offset_minutes: viewerTzOffsetMinutes(), ...params }),
       },
       30000,
     );
@@ -4112,7 +4113,7 @@ class ApiService {
         // absent rather than a null the backend has to interpret.
         body: JSON.stringify({
           ...params,
-          tz_offset_minutes: -new Date().getTimezoneOffset(),
+          tz_offset_minutes: viewerTzOffsetMinutes(),
         }),
       },
       opts?.timeoutMs ?? 30000,

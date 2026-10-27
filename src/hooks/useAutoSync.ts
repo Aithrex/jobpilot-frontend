@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { viewerTzOffsetMinutes } from '@/lib/viewerTimezone';
 
 export type SyncReason = 'initial' | 'interval' | 'manual';
 
@@ -27,10 +28,13 @@ interface UseAutoSyncOptions {
  *  the server still reads the previous day. */
 const NEW_DAY_GRACE_MS = 2 * 60 * 1000;
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** The next midnight in the VIEWER's zone (browser, or the zone pinned in
+ *  Settings) - the day "Today" is counted in. */
 function nextLocalMidnight(t: number): number {
-  const d = new Date(t);
-  d.setHours(24, 0, 0, 0);
-  return d.getTime();
+  const offset = viewerTzOffsetMinutes(new Date(t)) * 60_000;
+  return (Math.floor((t + offset) / DAY_MS) + 1) * DAY_MS - offset;
 }
 
 interface AutoSyncState {

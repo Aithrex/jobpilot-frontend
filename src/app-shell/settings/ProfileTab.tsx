@@ -6,6 +6,7 @@ import { CheckCircle2, ChevronDown } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiService } from "@/lib/api";
 import PasswordCard from "./PasswordCard";
+import TimezoneCard from "./TimezoneCard";
 
 const ROLE_OPTIONS = [
   "Software Engineer",
@@ -449,6 +450,8 @@ export default function ProfileTab() {
       </div>
 
       <PasswordCard />
+
+      <TimezoneCard />
 
       <div className="rounded-2xl border border-gray-200 dark:border-white/[0.07] bg-white/60 dark:bg-gray-900/40 backdrop-blur-sm shadow-xl shadow-black/5 dark:shadow-black/20 p-6 space-y-5">
         <div className="flex items-center justify-between gap-3">

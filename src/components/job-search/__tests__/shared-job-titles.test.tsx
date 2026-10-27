@@ -605,3 +605,14 @@ describe('saved titles belong to the account that saved them', () => {
     expect(cachedTitles()).toEqual(['Java Developer', 'Tej Typed Role']);
   });
 });
+
+describe('the feed follows the time zone', () => {
+  test('a zone change (travel or Settings) re-fetches a feed that already ran', async () => {
+    renderBothSurfaces();
+    await waitFor(() => expect(api.searchMncJobs).toHaveBeenCalledTimes(1));
+    act(() => {
+      window.dispatchEvent(new CustomEvent('timezone:changed'));
+    });
+    await waitFor(() => expect(api.searchMncJobs).toHaveBeenCalledTimes(2));
+  });
+});

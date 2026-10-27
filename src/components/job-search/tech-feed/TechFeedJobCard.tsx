@@ -29,6 +29,7 @@
  * the tracker the rest of the product reads.
  */
 import { useMemo, useState } from 'react';
+import { viewerTimeZone, viewerTzOffsetMinutes } from '@/lib/viewerTimezone';
 import {
   BookmarkCheck,
   BookmarkPlus,
@@ -160,12 +161,12 @@ export function formatDate(iso: string | null): string | null {
   // West of UTC a stored midnight renders as the previous evening, so a job
   // dated Oct 26 read "Posted Oct 25" across the US. There the UTC calendar
   // date is the published one; east of UTC the local date already is.
-  const westOfUtc = date.getTimezoneOffset() > 0;
+  const westOfUtc = viewerTzOffsetMinutes(date) < 0;
   return date.toLocaleDateString(undefined, {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
-    ...(westOfUtc && encodesCalendarDate(date) ? { timeZone: 'UTC' } : {}),
+    timeZone: westOfUtc && encodesCalendarDate(date) ? 'UTC' : viewerTimeZone(),
   });
 }
 

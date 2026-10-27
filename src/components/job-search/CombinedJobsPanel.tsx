@@ -15,6 +15,7 @@ import { ApplyConfirmDialog, JOB_FEED_GRID_CLASS, JobCard, JOB_CARD_CLASS } from
 import { JobFeedPager } from '@/components/job-search/JobFeedPager';
 import { useCombinedJobsCtx } from '@/components/job-search/CombinedJobsProvider';
 import { useJobTitles } from '@/hooks/useJobTitles';
+import { timeZoneName, useViewerTimeZone } from '@/lib/viewerTimezone';
 import { JOB_FEED_PAGE_SIZE, RECENCY_OPTIONS, toJob } from '@/lib/careerJobs';
 import { isHiddenJob } from '@/lib/hiddenJobs';
 import { cn } from '@/lib/utils';
@@ -109,6 +110,7 @@ export function CombinedJobsPanel({
   } = useCombinedJobsCtx();
   // The store, read without starting hydration - the provider owns that.
   const { reviewTitles, resolveReview } = useJobTitles(false);
+  const viewerZone = useViewerTimeZone();
   // A source whose scan failed is SAID, never silently dropped: on 2026-10-22
   // two of the three lists failed to download and the page quietly showed the
   // third, which read as "the jobs got worse".
@@ -210,6 +212,9 @@ export function CombinedJobsPanel({
           ) : lastSyncedAt ? (
             <>
               Updated {formatAgo(lastSyncedAt)} · {roleCount} roles
+              <span className="ml-1" data-testid="jobs-timezone">
+                · days in {timeZoneName(viewerZone, 'short')}
+              </span>
               {secondsUntilNext != null && (
                 <span className="ml-1 font-mono tabular-nums text-primary">
                   · next sync {formatCountdown(secondsUntilNext)}

@@ -1,6 +1,7 @@
 import { Sparkles } from 'lucide-react';
 import { useCombinedJobsCtx } from '@/components/job-search/CombinedJobsProvider';
 import { RECENCY_OPTIONS } from '@/lib/careerJobs';
+import { timeZoneName, useViewerTimeZone } from '@/lib/viewerTimezone';
 import { PillSwitch } from '@/components/ui/pill-switch';
 import { ExperienceCountBreakdown, ExperienceLevelPicker } from '@/components/job-search/ExperienceLevelPicker';
 
@@ -19,6 +20,7 @@ export function JobsRefineBar() {
     showApplied,
     setShowApplied,
   } = useCombinedJobsCtx();
+  const zone = timeZoneName(useViewerTimeZone());
 
   return (
     <div className="space-y-2">
@@ -37,7 +39,7 @@ export function JobsRefineBar() {
           options={RECENCY_OPTIONS.map((opt) => ({
             value: opt.key,
             title:
-              'Days follow your own timezone. Today and Yesterday are single days; "Last N days" includes today. Counts use your current filters. Roles with no known date remain included.',
+              `Days are counted in ${zone} (Settings > Profile). Today and Yesterday are single days; "Last N days" includes today. Counts use your current filters. Roles with no known date remain included.`,
             label: (
               <>
                 {opt.label}

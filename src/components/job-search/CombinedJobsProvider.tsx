@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { TIMEZONE_CHANGED } from '@/lib/viewerTimezone';
 import { useAutoSync } from '@/hooks/useAutoSync';
 import {
   loadCombinedPrefs,
@@ -272,6 +273,16 @@ export function CombinedJobsProvider({ children }: { children: React.ReactNode }
     seenRevision.current = syncRevision;
     if (feed.hasResult) sync(true);
   }, [syncRevision, feed.hasResult, sync]);
+  // "Today" is the viewer's calendar day. When the zone moves - travel, a DST
+  // switch, or a zone pinned in Settings - the feed re-fetches at once rather
+  // than showing the old zone's days until the next 30-minute tick.
+  useEffect(() => {
+    const onZone = () => {
+      if (feed.hasResult) sync(true);
+    };
+    window.addEventListener(TIMEZONE_CHANGED, onZone);
+    return () => window.removeEventListener(TIMEZONE_CHANGED, onZone);
+  }, [feed.hasResult, sync]);
   const toastedSync = useRef<number | null>(null);
   useEffect(() => {
     if (!resumeSync || toastedSync.current === resumeSync.id) return;
