@@ -81,6 +81,24 @@ interface JobTitlesState {
   suggesting: boolean;
   /** The levels the board opens on, from the seed. Null until it loads. */
   experienceView: ExperienceView | null;
+  /** The last time a resume change re-derived the set, for the "titles
+   *  updated" notice and its Undo. Null when nothing changed. */
+  resumeSync: ResumeTitleSync | null;
+  /** Saved titles that are not from the current resume, on a set saved
+   *  before provenance was tracked. Shown once for the seeker to decide;
+   *  never removed silently. */
+  reviewTitles: string[];
+  /** Bumped whenever a resume change replaced titles, so a feed that has
+   *  already scanned re-runs with them instead of waiting for "Search". */
+  syncRevision: number;
+}
+
+export interface ResumeTitleSync {
+  id: number;
+  added: string[];
+  removed: string[];
+  /** The set before the sync - what Undo restores. */
+  previous: string[];
 }
 
 const INITIAL: JobTitlesState = {
@@ -89,6 +107,9 @@ const INITIAL: JobTitlesState = {
   ready: false,
   suggesting: false,
   experienceView: null,
+  resumeSync: null,
+  reviewTitles: [],
+  syncRevision: 0,
 };
 
 let state: JobTitlesState = INITIAL;
@@ -123,6 +144,11 @@ function getSnapshot(): JobTitlesState {
 interface CachedPrefs {
   titles?: string[];
   fingerprint?: string;
+  /** The titles that came FROM the resume (the seed, plus "Suggest from
+   *  resume") when `titles` was derived. Anything in `titles` outside it was
+   *  typed by the seeker; anything in it but missing from `titles` was
+   *  deleted by them. Absent on a set saved before 2026-10-26. */
+  seed?: string[];
   [key: string]: unknown;
 }
 
@@ -166,11 +192,17 @@ function readCachedFingerprint(): string {
   return typeof fp === 'string' ? fp : '';
 }
 
+/** The resume-derived baseline, or null on a set saved before it existed. */
+function readCachedSeed(): string[] | null {
+  const seed = readCache(CACHE_KEY).seed;
+  return Array.isArray(seed) ? seed.filter((t): t is string => typeof t === 'string') : null;
+}
+
 /**
  * Write-through persistence. Merges into the existing prefs object so the
  * scan params stored alongside (location, remoteOnly) are never dropped.
  */
-function persistTitles(titles: string[], fingerprint?: string) {
+function persistTitles(titles: string[], fingerprint?: string, seed?: string[]) {
   if (typeof window === 'undefined') return;
   try {
     const prev = readCache(CACHE_KEY);
@@ -180,12 +212,23 @@ function persistTitles(titles: string[], fingerprint?: string) {
         ...prev,
         titles,
         fingerprint: fingerprint ?? prev.fingerprint,
+        seed: seed ?? prev.seed,
       }),
     );
   } catch {
     /* storage full or unavailable: non-fatal, the set stays in memory */
   }
 }
+
+const lower = (titles: string[]) => new Set(titles.map((t) => t.toLowerCase()));
+const without = (titles: string[], drop: Set<string>) =>
+  titles.filter((t) => !drop.has(t.toLowerCase()));
+/** Uncapped case-insensitive union - a baseline is bookkeeping, not a search. */
+const union = (a: string[], b: string[]) => [...a, ...without(b, lower(a))];
+
+let syncId = 0;
+/** The resume-derived titles of the current seed, for resolving a review. */
+let currentSeedBase: string[] = [];
 
 // ── Seed fetch ──────────────────────────────────────────────────────────────
 
@@ -241,8 +284,10 @@ export function setJobTitles(next: string[] | ((prev: string[]) => string[])): v
  *
  * Resume-set fingerprint:
  *   - same fingerprint as last sync / localStorage → reuse chips, no LLM
- *   - fingerprint changed (upload / delete / reparse) → merge new resume
- *     titles into the user-edited set (never wipe custom chips)
+ *   - fingerprint changed (upload / delete / reparse) → the old resume's
+ *     titles give way to the new seed; typed chips and deletions are kept
+ *     (`seed` baseline). A set saved before the baseline existed keeps the
+ *     old merge and gets a one-time review instead of a silent change
  *   - union still thinner than THIN_RESUME_TITLES → use server-cached
  *     synth_titles, and only then call suggest-filters (itself cached)
  */
@@ -285,6 +330,8 @@ export function hydrateJobTitles(): Promise<void> {
       // match. Fall back to held titles only for a backend too old to send it.
       const seedTitles = seed.match_titles?.length ? seed.match_titles : resumeTitles;
 
+      const baseline = readCachedSeed();
+      let resumeSync: ResumeTitleSync | null = null;
       let titles: string[];
       if (saved.length && fingerprintUnchanged) {
         // The user's own curation wins outright. Merging the seed back in
@@ -293,8 +340,27 @@ export function hydrateJobTitles(): Promise<void> {
         // exists to fix. Browsers holding a pre-canonicalization set are
         // repaired once by the CACHE_KEY bump instead.
         titles = saved.slice(0, JOB_TITLES_CAP);
+      } else if (saved.length && baseline) {
+        // Resumes changed and we know where every saved title came from. The
+        // titles the OLD resume put there give way to the new seed; titles
+        // the seeker typed stay, and so do their deletions. Merging the whole
+        // old set back in (the branch below) left a seeker who changed resume
+        // searching for their previous roles (reported 2026-10-26).
+        const custom = without(saved, lower(baseline));
+        const deleted = lower(without(baseline, lower(saved)));
+        const fresh = without(seedTitles, deleted);
+        titles = mergeTitles(fresh.length ? fresh : seedTitles, custom);
+        const added = without(titles, lower(saved));
+        const removed = without(saved, lower(titles));
+        if (added.length || removed.length) {
+          syncId += 1;
+          resumeSync = { id: syncId, added, removed, previous: saved.slice(0, JOB_TITLES_CAP) };
+        }
       } else if (saved.length) {
-        // Resumes changed, so the FRESH seed leads. This was `mergeTitles(
+        // A set saved before provenance was tracked: a title outside the
+        // seed may be one the seeker typed or one an old resume put there,
+        // and nothing here can tell which. So it is NOT dropped - the review
+        // notice below asks once instead. Resumes changed, so the FRESH seed leads. This was `mergeTitles(
         // saved, resumeTitles)` - stale titles first - which put the new ones
         // at the tail where `JOB_TITLES_CAP` cut them off, so re-uploading a
         // resume could not fix a broken title set.
@@ -313,21 +379,42 @@ export function hydrateJobTitles(): Promise<void> {
         resumeTitles.length < THIN_RESUME_TITLES &&
         seed.resume_count > 0 &&
         !(saved.length && fingerprintUnchanged);
+      let seedBase = seedTitles;
       if (needSynth) {
         let synth = seed.synth_titles;
         if (!synth.length) {
           const suggested = await apiService.suggestPipelineFilters();
           synth = suggested.data?.suggestions?.workday_titles ?? [];
         }
-        if (synth.length) titles = mergeTitles(titles, synth);
+        if (synth.length) {
+          titles = mergeTitles(titles, synth);
+          seedBase = union(seedBase, synth);
+        }
       }
+      currentSeedBase = seedBase;
+
+      // Only a set with no recorded baseline is reviewed, and only for titles
+      // the current resume does not account for.
+      const reviewTitles = baseline === null && saved.length ? without(titles, lower(seedBase)) : [];
+      // The baseline to record: kept as-is while the resume set is unchanged
+      // (it may hold "Suggest from resume" titles), left unset while a review
+      // is pending, and the fresh seed otherwise.
+      const nextSeed =
+        (baseline && fingerprintUnchanged) || reviewTitles.length ? undefined : seedBase;
 
       lastSyncedFingerprint = fp || lastSyncedFingerprint;
       // `resumeTitles` is the ChipsInput "Reset" target. It must be the
       // searchable set, not the held one - resetting used to restore exactly
       // the titles that match nothing.
-      setState({ titles, resumeTitles: seedTitles, experienceView, ready: true });
-      if (titles.length) persistTitles(titles, fp || undefined);
+      setState({
+        titles,
+        resumeTitles: seedTitles,
+        experienceView,
+        ready: true,
+        reviewTitles,
+        ...(resumeSync ? { resumeSync, syncRevision: state.syncRevision + 1 } : {}),
+      });
+      if (titles.length) persistTitles(titles, fp || undefined, nextSeed);
     } catch {
       // A failed seed must not leave every panel stuck behind `ready`. Clear
       // the guard so the next mount retries.
@@ -363,10 +450,45 @@ export async function smartSuggestJobTitles(): Promise<void> {
   try {
     const resp = await apiService.suggestPipelineFilters();
     const suggested: string[] = resp.data?.suggestions?.workday_titles ?? [];
-    if (suggested.length) setJobTitles((prev) => mergeTitles(prev, suggested));
+    if (suggested.length) {
+      setJobTitles((prev) => mergeTitles(prev, suggested));
+      // Suggestions come FROM the resume, so they belong to the baseline and
+      // give way to a new resume like the seed does - not kept as if typed.
+      const base = readCachedSeed();
+      if (base && state.ready) persistTitles(state.titles, undefined, union(base, suggested));
+    }
   } finally {
     setState({ suggesting: false });
   }
+}
+
+/** Put back the set a resume change replaced. Those titles are then the
+ *  seeker's own choice, so the next resume change keeps them. */
+export function undoResumeTitleSync(): void {
+  const sync = state.resumeSync;
+  if (!sync) return;
+  setState({ resumeSync: null, syncRevision: state.syncRevision + 1 });
+  setJobTitles(sync.previous);
+}
+
+/**
+ * Answer the one-time review of titles the current resume does not account
+ * for. Either way the baseline is recorded, so the question is never asked
+ * again and later resume changes are handled automatically.
+ */
+export function resolveTitleReview(useResumeTitles: boolean): void {
+  const stale = lower(state.reviewTitles);
+  if (!stale.size) return;
+  let titles = state.titles;
+  if (useResumeTitles) {
+    titles = without(state.titles, stale);
+    if (!titles.length) titles = state.resumeTitles.slice(0, JOB_TITLES_CAP);
+  }
+  setState({
+    reviewTitles: [],
+    ...(useResumeTitles ? { titles, syncRevision: state.syncRevision + 1 } : {}),
+  });
+  persistTitles(titles, undefined, currentSeedBase);
 }
 
 /** Test-only: drop the shared set and the once-per-session hydration guard. */
@@ -374,6 +496,7 @@ export function resetJobTitlesStore(): void {
   state = INITIAL;
   hydration = null;
   lastSyncedFingerprint = null;
+  currentSeedBase = [];
   emit();
 }
 
@@ -397,6 +520,15 @@ export interface JobTitlesController {
   suggesting: boolean;
   /** The levels the board opens on; null until the seed has loaded. */
   experienceView: ExperienceView | null;
+  /** What the last resume change did to the set (null when nothing). */
+  resumeSync: ResumeTitleSync | null;
+  undoResumeSync: () => void;
+  /** Saved titles the current resume does not account for, awaiting a
+   *  one-time answer. Empty almost always. */
+  reviewTitles: string[];
+  resolveReview: (useResumeTitles: boolean) => void;
+  /** Bumped when a resume change replaced titles - re-scan on change. */
+  syncRevision: number;
 }
 
 /**
@@ -426,5 +558,10 @@ export function useJobTitles(enabled = true): JobTitlesController {
     smartSuggestTitles,
     suggesting: snapshot.suggesting,
     experienceView: snapshot.experienceView,
+    resumeSync: snapshot.resumeSync,
+    undoResumeSync: undoResumeTitleSync,
+    reviewTitles: snapshot.reviewTitles,
+    resolveReview: resolveTitleReview,
+    syncRevision: snapshot.syncRevision,
   };
 }

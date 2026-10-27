@@ -13,7 +13,10 @@ import type { WorkdayJob } from '@/types/jobs';
 
 const state = vi.hoisted(() => ({ jobs: [] as WorkdayJob[], saved: [] as unknown[] }));
 const view = vi.hoisted(() => ({ levels: ['entry', 'mid'], source: 'preference', years: 3, preference: 'Junior' }));
-vi.mock('@/hooks/useJobTitles', () => ({ useJobTitles: () => ({ experienceView: view }) }));
+vi.mock('@/hooks/useJobTitles', () => ({ useJobTitles: () => ({
+  experienceView: view, reviewTitles: [], resolveReview: vi.fn(),
+  resumeSync: null, undoResumeSync: vi.fn(), syncRevision: 0,
+}) }));
 vi.mock('@/hooks/useCombinedJobs', () => ({
   loadCombinedPrefs: () => ({}), saveCombinedPrefs: vi.fn(),
   useCombinedJobs: () => ({ jobs: state.jobs, ready: true, loading: false, hasResult: true,

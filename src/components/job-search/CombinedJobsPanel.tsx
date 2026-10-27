@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import {
   AlertCircle,
+  FileText,
   Loader2,
   Radar,
   Rocket,
@@ -13,6 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ApplyConfirmDialog, JOB_FEED_GRID_CLASS, JobCard, JOB_CARD_CLASS } from '@/components/job-search/JobCard';
 import { JobFeedPager } from '@/components/job-search/JobFeedPager';
 import { useCombinedJobsCtx } from '@/components/job-search/CombinedJobsProvider';
+import { useJobTitles } from '@/hooks/useJobTitles';
 import { JOB_FEED_PAGE_SIZE, RECENCY_OPTIONS, toJob } from '@/lib/careerJobs';
 import { isHiddenJob } from '@/lib/hiddenJobs';
 import { cn } from '@/lib/utils';
@@ -105,6 +107,8 @@ export function CombinedJobsPanel({
     setPage,
     states,
   } = useCombinedJobsCtx();
+  // The store, read without starting hydration - the provider owns that.
+  const { reviewTitles, resolveReview } = useJobTitles(false);
   // A source whose scan failed is SAID, never silently dropped: on 2026-10-22
   // two of the three lists failed to download and the page quietly showed the
   // third, which read as "the jobs got worse".
@@ -231,6 +235,27 @@ export function CombinedJobsPanel({
           value={progress.total ? (progress.done / progress.total) * 100 : 8}
           className="h-1.5"
         />
+      )}
+
+      {reviewTitles.length > 0 && (
+        <div
+          className="flex flex-wrap items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-xs text-foreground/85"
+          role="status"
+          data-testid="jobs-title-review"
+        >
+          <FileText className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
+          <span className="min-w-0 flex-1">
+            {reviewTitles.length === 1 ? 'This job title is' : 'These job titles are'} not from your
+            current resume: <span className="font-medium text-foreground">{reviewTitles.join(', ')}</span>.
+            {' '}They still shape your matches.
+          </span>
+          <Button type="button" size="sm" className="h-7 text-xs" onClick={() => resolveReview(true)}>
+            Use resume titles
+          </Button>
+          <Button type="button" size="sm" variant="outline" className="h-7 text-xs" onClick={() => resolveReview(false)}>
+            Keep my titles
+          </Button>
+        </div>
       )}
 
       {!loading && failedSources.length > 0 && (

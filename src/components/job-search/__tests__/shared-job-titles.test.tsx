@@ -11,14 +11,14 @@
  *
  * Only `apiService` is mocked; the store, hooks, providers and panels run real.
  */
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { beforeEach, describe, expect, test, vi, type Mock } from 'vitest';
 
 import { apiService } from '@/lib/api';
-import { resetJobTitlesStore } from '@/hooks/useJobTitles';
+import { resetJobTitlesStore, undoResumeTitleSync } from '@/hooks/useJobTitles';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import {
   CombinedJobsProvider,
@@ -426,5 +426,121 @@ describe('shared job titles', () => {
 
     await openCareersCustomize(user);
     expect(await screen.findByLabelText('Remove Staff Engineer')).toBeInTheDocument();
+  });
+});
+
+// ── A seeker who changes resume (reported 2026-10-26) ──────────────────────
+// The feed must follow the NEW resume: titles the old resume put there go,
+// titles the seeker typed and deletions they made stay, the feed re-scans, and
+// nobody whose resume did not change sees anything move.
+describe('resume change re-derives the search titles', () => {
+  const OLD_SEED = ['Backend Engineer', 'Data Engineer', 'Platform Engineer'];
+  const NEW_SEED = ['Registered Nurse', 'Clinical Nurse', 'Data Engineer'];
+
+  /** `seed: null` = a set saved before provenance existed. */
+  function savedWithBaseline(titles: string[], seed: string[] | null = OLD_SEED) {
+    localStorage.setItem(
+      SHARED_CACHE_KEY,
+      JSON.stringify({ titles, fingerprint: SEED_FINGERPRINT, ...(seed ? { seed } : {}) }),
+    );
+  }
+  const cachedSeed = () => JSON.parse(localStorage.getItem(SHARED_CACHE_KEY) ?? '{}').seed;
+  const newResume = () =>
+    api.getTitleSeed.mockResolvedValue(
+      okTitleSeed({ fingerprint: 'fp-new-resume', resume_titles: ['RN'], match_titles: NEW_SEED }),
+    );
+
+  test('old-resume titles are replaced; typed titles and deletions survive; Undo restores', async () => {
+    // Data Engineer was deleted by the seeker; Custom Role X was typed.
+    savedWithBaseline(['Backend Engineer', 'Platform Engineer', 'Custom Role X']);
+    newResume();
+    const user = userEvent.setup();
+    renderBothSurfaces();
+    await openJobFeed(user);
+
+    expect(await screen.findByLabelText('Remove Registered Nurse')).toBeInTheDocument();
+    expect(screen.getByLabelText('Remove Clinical Nurse')).toBeInTheDocument();
+    expect(screen.getByLabelText('Remove Custom Role X')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Remove Backend Engineer')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Remove Platform Engineer')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Remove Data Engineer')).not.toBeInTheDocument();
+    expect(cachedTitles()).toEqual(['Registered Nurse', 'Clinical Nurse', 'Custom Role X']);
+    expect(cachedSeed()).toEqual(NEW_SEED);
+    expect(screen.queryByTestId('jobs-title-review')).not.toBeInTheDocument();
+
+    act(() => undoResumeTitleSync());
+    await waitFor(() =>
+      expect(cachedTitles()).toEqual(['Backend Engineer', 'Platform Engineer', 'Custom Role X']),
+    );
+  });
+
+  test('a resume uploaded mid-session re-scans the feed with the new titles', async () => {
+    savedWithBaseline(OLD_SEED);
+    api.getTitleSeed.mockResolvedValue(okTitleSeed({ match_titles: OLD_SEED }));
+    renderBothSurfaces();
+    // Only the For-you feed scans MNC boards, so its calls count the feed's scans.
+    await waitFor(() => expect(api.searchMncJobs).toHaveBeenCalledTimes(1));
+    expect(api.searchMncJobs.mock.calls[0][0].titles).toEqual(OLD_SEED);
+
+    newResume();
+    act(() => {
+      window.dispatchEvent(new CustomEvent('resume:set-changed'));
+    });
+    await waitFor(() => expect(api.searchMncJobs).toHaveBeenCalledTimes(2));
+    expect(api.searchMncJobs.mock.calls[1][0].titles).toEqual(NEW_SEED);
+  });
+
+  test('an unchanged resume moves nothing and asks nothing', async () => {
+    savedWithBaseline(['Backend Engineer', 'Custom Role X']);
+    api.getTitleSeed.mockResolvedValue(okTitleSeed({ match_titles: OLD_SEED }));
+    const user = userEvent.setup();
+    renderBothSurfaces();
+    await openJobFeed(user);
+
+    expect(await screen.findByLabelText('Remove Custom Role X')).toBeInTheDocument();
+    expect(cachedTitles()).toEqual(['Backend Engineer', 'Custom Role X']);
+    expect(cachedSeed()).toEqual(OLD_SEED);
+    expect(screen.queryByTestId('jobs-title-review')).not.toBeInTheDocument();
+  });
+
+  test('a set saved before provenance asks once and changes nothing until answered', async () => {
+    savedWithBaseline(['Backend Engineer', 'Old Career Title'], null);
+    api.getTitleSeed.mockResolvedValue(okTitleSeed({ match_titles: OLD_SEED }));
+    const user = userEvent.setup();
+    const first = renderBothSurfaces();
+
+    const notice = await screen.findByTestId('jobs-title-review');
+    expect(notice).toHaveTextContent('Old Career Title');
+    expect(cachedTitles()).toEqual(['Backend Engineer', 'Old Career Title']);
+    expect(cachedSeed()).toBeUndefined();
+
+    await user.click(within(notice).getByRole('button', { name: 'Use resume titles' }));
+    await waitFor(() => expect(cachedTitles()).toEqual(['Backend Engineer']));
+    expect(cachedSeed()).toEqual(OLD_SEED);
+    expect(screen.queryByTestId('jobs-title-review')).not.toBeInTheDocument();
+
+    first.unmount();
+    resetJobTitlesStore();
+    renderBothSurfaces();
+    await waitFor(() => expect(api.getTitleSeed).toHaveBeenCalledTimes(2));
+    expect(screen.queryByTestId('jobs-title-review')).not.toBeInTheDocument();
+  });
+
+  test('"Keep my titles" keeps them and never asks again', async () => {
+    savedWithBaseline(['Backend Engineer', 'Hand Typed Role'], null);
+    api.getTitleSeed.mockResolvedValue(okTitleSeed({ match_titles: OLD_SEED }));
+    const user = userEvent.setup();
+    const first = renderBothSurfaces();
+
+    const notice = await screen.findByTestId('jobs-title-review');
+    await user.click(within(notice).getByRole('button', { name: 'Keep my titles' }));
+    await waitFor(() => expect(cachedSeed()).toEqual(OLD_SEED));
+    expect(cachedTitles()).toEqual(['Backend Engineer', 'Hand Typed Role']);
+
+    first.unmount();
+    resetJobTitlesStore();
+    renderBothSurfaces();
+    await waitFor(() => expect(api.getTitleSeed).toHaveBeenCalledTimes(2));
+    expect(screen.queryByTestId('jobs-title-review')).not.toBeInTheDocument();
   });
 });

@@ -1,4 +1,5 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import { useAutoSync } from '@/hooks/useAutoSync';
 import {
   loadCombinedPrefs,
@@ -6,7 +7,7 @@ import {
   useCombinedJobs,
   type CombinedJobsController,
 } from '@/hooks/useCombinedJobs';
-import { useJobTitles } from '@/hooks/useJobTitles';
+import { useJobTitles, type ResumeTitleSync } from '@/hooks/useJobTitles';
 import { applyUrlKey, SENIORITY_LEVELS, type SeniorityLevel } from '@/lib/careerJobs';
 import { useSavedJobs } from '@/hooks/useSavedJobTabCounts';
 import { HIDDEN_JOBS_CHANGED, loadHiddenJobIds, persistHiddenJobId } from '@/lib/hiddenJobs';
@@ -14,6 +15,17 @@ import { selectForYouJobs } from '@/lib/forYouSelection';
 import type { ExperienceView, WorkdayRecency } from '@/types/jobs';
 
 const AUTO_SYNC_MS = 30 * 60 * 1000;
+
+const listTitles = (titles: string[]) =>
+  titles.length > 3 ? `${titles.slice(0, 3).join(', ')} and ${titles.length - 3} more` : titles.join(', ');
+
+/** "Added A, B. Removed C." - what a resume change did to the search titles. */
+export function describeResumeSync(sync: Pick<ResumeTitleSync, 'added' | 'removed'>): string {
+  return [
+    sync.added.length ? `Added ${listTitles(sync.added)}.` : '',
+    sync.removed.length ? `Removed ${listTitles(sync.removed)}.` : '',
+  ].filter(Boolean).join(' ');
+}
 
 /** A level choice the user made on purpose, and the default it replaced. */
 const SENIORITY_KEY = 'combined_jobs_seniority_v1';
@@ -144,7 +156,7 @@ export function CombinedJobsProvider({ children }: { children: React.ReactNode }
   // Opens on the candidate's OWN levels. It opened on every level until
   // 2026-10-02, and every current user is early-career: a zero-year user's
   // first screen held an architect role and two executive ones.
-  const { experienceView } = useJobTitles(started);
+  const { experienceView, resumeSync, undoResumeSync, syncRevision } = useJobTitles(started);
   const [seniorityLevels, setSeniorityState] = useState<SeniorityLevel[]>(
     () => readSeniorityOverride()?.levels ?? [],
   );
@@ -249,6 +261,27 @@ export function CombinedJobsProvider({ children }: { children: React.ReactNode }
     isBusy: feed.loading,
     onSync: (force) => feed.run(force, { location: scanLocation, remoteOnly, usOnly }),
   });
+
+  // A resume change that replaced titles: say what moved, with Undo, and
+  // re-scan a feed that already ran on the old titles instead of leaving
+  // "Title changes need Search" for the seeker to notice.
+  const seenRevision = useRef(syncRevision);
+  const { sync } = autoSync;
+  useEffect(() => {
+    if (syncRevision === seenRevision.current) return;
+    seenRevision.current = syncRevision;
+    if (feed.hasResult) sync(true);
+  }, [syncRevision, feed.hasResult, sync]);
+  const toastedSync = useRef<number | null>(null);
+  useEffect(() => {
+    if (!resumeSync || toastedSync.current === resumeSync.id) return;
+    toastedSync.current = resumeSync.id;
+    toast('Job titles updated from your resume', {
+      description: describeResumeSync(resumeSync),
+      action: { label: 'Undo', onClick: undoResumeSync },
+      duration: 12000,
+    });
+  }, [resumeSync, undoResumeSync]);
 
   const value: CombinedJobsContextValue = {
     ...feed,
