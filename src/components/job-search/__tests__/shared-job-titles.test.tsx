@@ -18,7 +18,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { beforeEach, describe, expect, test, vi, type Mock } from 'vitest';
 
 import { apiService } from '@/lib/api';
-import { resetJobTitlesStore, undoResumeTitleSync } from '@/hooks/useJobTitles';
+import { hydrateJobTitles, resetJobTitlesStore, undoResumeTitleSync } from '@/hooks/useJobTitles';
+import { currentAccountKey } from '@/lib/accountKey';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import {
   CombinedJobsProvider,
@@ -542,5 +543,65 @@ describe('resume change re-derives the search titles', () => {
     renderBothSurfaces();
     await waitFor(() => expect(api.getTitleSeed).toHaveBeenCalledTimes(2));
     expect(screen.queryByTestId('jobs-title-review')).not.toBeInTheDocument();
+  });
+});
+
+// ── Two accounts on one browser (reported 2026-10-26) ──────────────────────
+// A brand-new account with one resume searched the previous account's titles:
+// logout cleared only the token, and the saved set was not tied to anyone.
+describe('saved titles belong to the account that saved them', () => {
+  const b64url = (o: object) =>
+    btoa(JSON.stringify(o)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const signIn = (sub: string) => {
+    localStorage.setItem('auth_token', `${b64url({ alg: 'HS256' })}.${b64url({ sub })}.sig`);
+    window.dispatchEvent(new CustomEvent('auth:token-changed'));
+  };
+  const BHAVYA_SEED = ['Network Engineer', 'Cloud Developer'];
+
+  test("a new account never inherits the previous account's titles", async () => {
+    signIn('tej@example.com');
+    const tejKey = currentAccountKey();
+    localStorage.setItem(SHARED_CACHE_KEY, JSON.stringify({
+      titles: ['Java Developer', 'Tej Typed Role'], fingerprint: 'fp-tej', seed: ['Java Developer'], owner: tejKey,
+    }));
+    signIn('bhavya@example.com');
+    api.getTitleSeed.mockResolvedValue(okTitleSeed({ fingerprint: 'fp-bhavya', match_titles: BHAVYA_SEED }));
+    const user = userEvent.setup();
+    renderBothSurfaces();
+    await openJobFeed(user);
+
+    expect(await screen.findByLabelText('Remove Network Engineer')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Remove Java Developer')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Remove Tej Typed Role')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('jobs-title-review')).not.toBeInTheDocument();
+    const saved = JSON.parse(localStorage.getItem(SHARED_CACHE_KEY) ?? '{}');
+    expect(saved.titles).toEqual(BHAVYA_SEED);
+    expect(saved.owner).toBe(currentAccountKey());
+    expect(saved.owner).not.toBe(tejKey);
+  });
+
+  test('switching account in the same tab drops the in-memory set and re-seeds', async () => {
+    signIn('tej@example.com');
+    api.getTitleSeed.mockResolvedValue(okTitleSeed({ fingerprint: 'fp-tej', match_titles: ['Java Developer'] }));
+    await act(async () => { await hydrateJobTitles(); });
+    expect(cachedTitles()).toEqual(['Java Developer']);
+
+    api.getTitleSeed.mockResolvedValue(okTitleSeed({ fingerprint: 'fp-bhavya', match_titles: BHAVYA_SEED }));
+    act(() => signIn('bhavya@example.com'));
+    await act(async () => { await hydrateJobTitles(); });
+    expect(cachedTitles()).toEqual(BHAVYA_SEED);
+    expect(api.getTitleSeed).toHaveBeenCalledTimes(2);
+  });
+
+  test('the same account signing in again keeps its own curated titles', async () => {
+    signIn('tej@example.com');
+    localStorage.setItem(SHARED_CACHE_KEY, JSON.stringify({
+      titles: ['Java Developer', 'Tej Typed Role'], fingerprint: SEED_FINGERPRINT,
+      seed: ['Java Developer'], owner: currentAccountKey(),
+    }));
+    signIn('tej@example.com');
+    api.getTitleSeed.mockResolvedValue(okTitleSeed({ match_titles: ['Java Developer'] }));
+    await act(async () => { await hydrateJobTitles(); });
+    expect(cachedTitles()).toEqual(['Java Developer', 'Tej Typed Role']);
   });
 });

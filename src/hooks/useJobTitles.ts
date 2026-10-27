@@ -28,6 +28,7 @@
  */
 import { useCallback, useEffect, useSyncExternalStore } from 'react';
 import { apiService } from '@/lib/api';
+import { currentAccountKey, ownedByAnotherAccount } from '@/lib/accountKey';
 import type { ExperienceView, JobTitleSeed } from '@/types/jobs';
 
 /** Hard ceiling on the title set. The scan endpoints fan out per title, so an
@@ -149,6 +150,8 @@ interface CachedPrefs {
    *  typed by the seeker; anything in it but missing from `titles` was
    *  deleted by them. Absent on a set saved before 2026-10-26. */
   seed?: string[];
+  /** `accountKey.currentAccountKey()` of the account that saved it. */
+  owner?: string;
   [key: string]: unknown;
 }
 
@@ -177,7 +180,7 @@ function readCache(key: string): CachedPrefs {
  * their sixteen canonical ones.
  */
 function readCachedTitles(allowLegacy = true): string[] {
-  const own = (readCache(CACHE_KEY).titles ?? []).filter(Boolean);
+  const own = (readOwnCache().titles ?? []).filter(Boolean);
   if (own.length) return own;
   if (!allowLegacy) return [];
   for (const key of LEGACY_CACHE_KEYS) {
@@ -187,14 +190,20 @@ function readCachedTitles(allowLegacy = true): string[] {
   return [];
 }
 
+/** The shared prefs, unless another account saved them on this browser. */
+function readOwnCache(): CachedPrefs {
+  const cache = readCache(CACHE_KEY);
+  return ownedByAnotherAccount(cache.owner) ? {} : cache;
+}
+
 function readCachedFingerprint(): string {
-  const fp = readCache(CACHE_KEY).fingerprint;
+  const fp = readOwnCache().fingerprint;
   return typeof fp === 'string' ? fp : '';
 }
 
 /** The resume-derived baseline, or null on a set saved before it existed. */
 function readCachedSeed(): string[] | null {
-  const seed = readCache(CACHE_KEY).seed;
+  const seed = readOwnCache().seed;
   return Array.isArray(seed) ? seed.filter((t): t is string => typeof t === 'string') : null;
 }
 
@@ -205,7 +214,8 @@ function readCachedSeed(): string[] | null {
 function persistTitles(titles: string[], fingerprint?: string, seed?: string[]) {
   if (typeof window === 'undefined') return;
   try {
-    const prev = readCache(CACHE_KEY);
+    // Another account's prefs are replaced wholesale, never merged into.
+    const prev = readOwnCache();
     window.localStorage.setItem(
       CACHE_KEY,
       JSON.stringify({
@@ -213,6 +223,7 @@ function persistTitles(titles: string[], fingerprint?: string, seed?: string[]) 
         titles,
         fingerprint: fingerprint ?? prev.fingerprint,
         seed: seed ?? prev.seed,
+        owner: currentAccountKey() || prev.owner,
       }),
     );
   } catch {
@@ -292,6 +303,7 @@ export function setJobTitles(next: string[] | ((prev: string[]) => string[])): v
  *     synth_titles, and only then call suggest-filters (itself cached)
  */
 export function hydrateJobTitles(): Promise<void> {
+  followAccount();
   if (hydration) return hydration;
   hydration = (async () => {
     try {
@@ -497,13 +509,35 @@ export function resetJobTitlesStore(): void {
   hydration = null;
   lastSyncedFingerprint = null;
   currentSeedBase = [];
+  storeAccount = null;
   emit();
+}
+
+/** The account the in-memory set was loaded for. */
+let storeAccount: string | null = null;
+
+/**
+ * Drop the in-memory set when a DIFFERENT account signs in on this tab. The
+ * store outlives logout (it is module state), so without this the next account
+ * kept the previous one's titles - and its finished hydration - until reload.
+ */
+function followAccount(): void {
+  const account = currentAccountKey();
+  if (storeAccount !== null && storeAccount !== account) {
+    state = INITIAL;
+    hydration = null;
+    lastSyncedFingerprint = null;
+    currentSeedBase = [];
+    emit();
+  }
+  storeAccount = account;
 }
 
 if (typeof window !== 'undefined') {
   window.addEventListener('resume:set-changed', () => {
     invalidateJobTitleSeed();
   });
+  window.addEventListener('auth:token-changed', followAccount);
 }
 
 // ── Hook ────────────────────────────────────────────────────────────────────

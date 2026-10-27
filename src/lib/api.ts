@@ -128,6 +128,9 @@ class ApiService {
     } else if (typeof window !== 'undefined') {
       localStorage.removeItem('auth_token');
     }
+    // Account-scoped client state (the job-title store) drops what it holds
+    // when the account changes - see `lib/accountKey`.
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('auth:token-changed'));
   }
 
   getToken(): string | null {

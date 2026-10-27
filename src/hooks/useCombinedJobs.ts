@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useJobTitles } from '@/hooks/useJobTitles';
 import { apiService } from '@/lib/api';
+import { currentAccountKey, ownedByAnotherAccount } from '@/lib/accountKey';
 import { mergeJobs } from '@/lib/careerJobs';
 import { mergePolicies } from '@/lib/employerPolicy';
 import type { PolicyBlock } from '@/types/employerPolicy';
@@ -66,12 +67,17 @@ export interface CombinedJobsPrefs {
   usState?: string;
   /** US-only narrowing: optional city. */
   city?: string;
+  /** `accountKey.currentAccountKey()` of the account that saved it. */
+  owner?: string;
 }
 
+/** The saved scan scope - unless another account saved it on this browser,
+ *  in which case it is not this seeker's and reads as nothing saved. */
 export function loadCombinedPrefs(): CombinedJobsPrefs {
   try {
     const raw = window.localStorage.getItem(COMBINED_PREFS_KEY);
-    return raw ? (JSON.parse(raw) as CombinedJobsPrefs) : {};
+    const prefs = raw ? (JSON.parse(raw) as CombinedJobsPrefs) : {};
+    return ownedByAnotherAccount(prefs.owner) ? {} : prefs;
   } catch {
     return {};
   }
@@ -80,9 +86,10 @@ export function loadCombinedPrefs(): CombinedJobsPrefs {
 /** Merges into the stored object so the shared title set is never dropped. */
 export function saveCombinedPrefs(prefs: CombinedJobsPrefs): void {
   try {
+    const prev = loadCombinedPrefs();
     window.localStorage.setItem(
       COMBINED_PREFS_KEY,
-      JSON.stringify({ ...loadCombinedPrefs(), ...prefs }),
+      JSON.stringify({ ...prev, ...prefs, owner: currentAccountKey() || prev.owner }),
     );
   } catch {
     /* storage full/unavailable - non-fatal */
