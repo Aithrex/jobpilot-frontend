@@ -69,3 +69,31 @@ describe('For you selection and facet counts', () => {
     expect(result.levelCounts.entry).toBe(1);
   });
 });
+
+describe('Today and Yesterday are single days - no card in both', () => {
+  const jobs = [
+    row('t1', { days_ago: 0 }), row('t2', { days_ago: 0 }),
+    row('y1', { days_ago: 1 }), row('y2', { days_ago: 1 }), row('y3', { days_ago: 1 }),
+    row('d2', { days_ago: 2 }), row('d3', { days_ago: 3 }), row('d6', { days_ago: 6 }),
+    row('seen-today', { days_ago: null, first_seen_days_ago: 0 }),
+    row('seen-yesterday', { days_ago: null, first_seen_days_ago: 1 }),
+  ];
+  const ids = (recency: ForYouFilters['recency']) =>
+    selectForYouJobs(jobs, filters({ recency })).visibleJobs.map((job) => job.job_id).sort();
+
+  test('Yesterday shows only yesterday, never today', () => {
+    expect(ids('today')).toEqual(['seen-today', 't1', 't2']);
+    expect(ids('yesterday')).toEqual(['seen-yesterday', 'y1', 'y2', 'y3']);
+    expect(ids('today').filter((id) => ids('yesterday').includes(id))).toEqual([]);
+  });
+
+  test('the wider windows still include today, so no role is lost', () => {
+    expect(ids('3d')).toEqual(['d2', 'd3', 'seen-today', 'seen-yesterday', 't1', 't2', 'y1', 'y2', 'y3']);
+    expect(ids('7d')).toHaveLength(jobs.length);
+  });
+
+  test('chip counts match what each chip lists', () => {
+    const { recencyCounts } = selectForYouJobs(jobs, filters());
+    expect(recencyCounts).toEqual({ today: 3, yesterday: 4, '3d': 9, '7d': 10, '30d': 10 });
+  });
+});

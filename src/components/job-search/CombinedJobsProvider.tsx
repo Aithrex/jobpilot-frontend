@@ -138,8 +138,8 @@ export function CombinedJobsProvider({ children }: { children: React.ReactNode }
   // Freshest first: open on today's postings. What made this look broken was
   // never the window - undated rows were dropped client-side and the server's
   // own candidate window was ~1 day wide, so "today" was a slice of a slice.
-  // Both are fixed; the segmented control shows per-window counts so widening
-  // to 1/3/7/30 days stays one click.
+  // Both are fixed; the segmented control shows per-window counts so moving
+  // to Yesterday or widening to 3/7/30 days stays one click.
   const [recency, setRecency] = useState<WorkdayRecency>('today');
   // Opens on the candidate's OWN levels. It opened on every level until
   // 2026-10-02, and every current user is early-career: a zero-year user's
@@ -243,6 +243,9 @@ export function CombinedJobsProvider({ children }: { children: React.ReactNode }
   const autoSync = useAutoSync({
     enabled: started && feed.ready,
     intervalMs: AUTO_SYNC_MS,
+    // "Today" / "Yesterday" are the viewer's calendar days: re-scan just past
+    // local midnight rather than up to 30 minutes later.
+    refreshOnNewDay: true,
     isBusy: feed.loading,
     onSync: (force) => feed.run(force, { location: scanLocation, remoteOnly, usOnly }),
   });

@@ -8,19 +8,42 @@ import type { Job, WorkdayJob, WorkdayRecency } from '@/types/jobs';
  */
 
 /**
- * Recency windows are CUMULATIVE calendar-day buckets in the VIEWER's
- * timezone (the client sends tz_offset_minutes with every scan; the backend
- * computes days_ago against the user's local today). Labels spell that out:
- * the old "1 day" read as "exactly one day ago" while it actually meant
- * "today + yesterday" - the source of the Today-vs-1-day confusion.
+ * Recency windows are calendar-day buckets in the VIEWER's timezone (the
+ * client sends tz_offset_minutes with every scan; the backend computes
+ * days_ago against the user's local today).
+ *
+ * Today and Yesterday are SINGLE days, so a seeker can work through today's
+ * roles and then yesterday's without seeing the same card twice. The wider
+ * windows are cumulative and say so ("Last 3 days" includes today). The old
+ * "Since yesterday" chip was cumulative too, and showed today's roles again.
  */
-export const RECENCY_OPTIONS: Array<{ key: WorkdayRecency; label: string; maxDays: number }> = [
-  { key: 'today', label: 'Today', maxDays: 0 },
-  { key: '24h', label: 'Since yesterday', maxDays: 1 },
-  { key: '3d', label: '3 days', maxDays: 3 },
-  { key: '7d', label: '7 days', maxDays: 7 },
-  { key: '30d', label: '30 days', maxDays: 30 },
+export const RECENCY_OPTIONS: Array<{
+  key: WorkdayRecency;
+  label: string;
+  minDays: number;
+  maxDays: number;
+}> = [
+  { key: 'today', label: 'Today', minDays: 0, maxDays: 0 },
+  { key: 'yesterday', label: 'Yesterday', minDays: 1, maxDays: 1 },
+  { key: '3d', label: 'Last 3 days', minDays: 0, maxDays: 3 },
+  { key: '7d', label: 'Last 7 days', minDays: 0, maxDays: 7 },
+  { key: '30d', label: 'Last 30 days', minDays: 0, maxDays: 30 },
 ];
+
+/** The one label for a posting's age, built from the SAME number the recency
+ *  chips filter on, so a card can never say "today" under Yesterday. The
+ *  vendor's own `posted_text` ("Posted Today") is frozen at scan time and
+ *  goes stale overnight; it is used only when there is no number - an
+ *  undated row's "First seen ..." reading. */
+export function postedAgeLabel(j: { days_ago?: number | null; posted_text?: string }): string {
+  const days = j.days_ago;
+  if (typeof days === 'number' && Number.isFinite(days)) {
+    if (days <= 0) return 'Posted today';
+    if (days === 1) return 'Posted yesterday';
+    return `Posted ${Math.round(days)} days ago`;
+  }
+  return (j.posted_text || '').trim();
+}
 
 const STATE_CODES = new Set([
   'AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA',
@@ -233,9 +256,10 @@ export function recencyAgeOf(j: Pick<WorkdayJob, 'days_ago' | 'first_seen_days_a
 export function inRecencyWindow(
   j: Pick<WorkdayJob, 'days_ago' | 'first_seen_days_ago'>,
   maxDays: number,
+  minDays = 0,
 ): boolean {
   const age = recencyAgeOf(j);
-  return age == null || age <= maxDays;
+  return age == null || (age >= minDays && age <= maxDays);
 }
 
 /** Query parameters that only say how someone ARRIVED at a posting. Anything

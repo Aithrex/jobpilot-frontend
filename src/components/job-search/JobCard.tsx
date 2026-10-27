@@ -34,6 +34,7 @@ import { openJobPosting } from '@/lib/jobPosting';
 import { isAppliedSavedJob } from '@/lib/savedJobs';
 import { applicationStateLabel } from '@/lib/applicationState';
 import { trustOf } from '@/lib/employerPolicy';
+import { postedAgeLabel } from '@/lib/careerJobs';
 import { cn } from '@/lib/utils';
 import { hueFromString, toTitleCase, decodeJobHtml } from '@/lib/format';
 import { useCountUp } from '@/hooks/useCountUp';
@@ -417,7 +418,7 @@ export function JobCard({
     toTitleCase(job.employment_type),
     job.seniority ? String(job.seniority).replace(/_/g, ' ') : '',
     sourceLabel ? `Via ${sourceLabel}` : '',
-    job.posted_text || job.date_posted || '',
+    postedAgeLabel(job) || job.date_posted || '',
   ].filter(Boolean);
   // The legacy band yields to the evidence-backed `trust` block when the row
   // carries one: two trust readings on one card would contradict each other.

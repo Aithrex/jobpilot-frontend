@@ -695,6 +695,7 @@ export function WorkdayJobsPanel({
     const all = result?.jobs ?? [];
     const counts: Record<WorkdayRecency, number> = {
       today: 0,
+      yesterday: 0,
       '24h': 0,
       '3d': 0,
       '7d': 0,

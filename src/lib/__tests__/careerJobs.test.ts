@@ -7,7 +7,7 @@
  */
 import { describe, expect, test } from 'vitest';
 
-import { applyUrlKey, inRecencyWindow, jobTitleOf, matchesSeniority, mergeJobs, recencyAgeOf, seniorityOf, sortJobsByMode, toJob, isAppliedPipelineStatus } from '@/lib/careerJobs';
+import { applyUrlKey, inRecencyWindow, jobTitleOf, matchesSeniority, mergeJobs, postedAgeLabel, recencyAgeOf, RECENCY_OPTIONS, seniorityOf, sortJobsByMode, toJob, isAppliedPipelineStatus } from '@/lib/careerJobs';
 import type { WorkdayJob } from '@/types/jobs';
 
 function row(overrides: Partial<WorkdayJob>): WorkdayJob {
@@ -321,5 +321,29 @@ describe('applyUrlKey - the same posting under a new card id', () => {
     expect(applyUrlKey('')).toBe('');
     expect(applyUrlKey('mailto:jobs@acme.com')).toBe('');
     expect(applyUrlKey('not a url')).toBe('');
+  });
+});
+
+describe('posted label and chips share one number', () => {
+  test('the label is built from days_ago, not the vendor text frozen at scan time', () => {
+    expect(postedAgeLabel({ days_ago: 0, posted_text: 'Posted Yesterday' })).toBe('Posted today');
+    expect(postedAgeLabel({ days_ago: 1, posted_text: 'Posted Today' })).toBe('Posted yesterday');
+    expect(postedAgeLabel({ days_ago: 4 })).toBe('Posted 4 days ago');
+  });
+
+  test('an undated row keeps its honest first-seen wording', () => {
+    expect(postedAgeLabel({ days_ago: null, posted_text: 'First seen today' })).toBe('First seen today');
+    expect(postedAgeLabel({})).toBe('');
+  });
+
+  test('every chip label agrees with the card label for the rows it lists', () => {
+    for (const days of [0, 1, 2, 3, 6, 7, 29, 30]) {
+      const label = postedAgeLabel({ days_ago: days });
+      for (const opt of RECENCY_OPTIONS) {
+        const listed = inRecencyWindow({ days_ago: days }, opt.maxDays, opt.minDays);
+        if (opt.key === 'today') expect(listed).toBe(label === 'Posted today');
+        if (opt.key === 'yesterday') expect(listed).toBe(label === 'Posted yesterday');
+      }
+    }
   });
 });

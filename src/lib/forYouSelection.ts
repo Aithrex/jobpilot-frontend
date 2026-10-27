@@ -27,7 +27,7 @@ export interface ForYouFilters {
 export function selectForYouJobs(jobs: WorkdayJob[], filters: ForYouFilters) {
   const { recency, search, seniorityLevels, minScore, sponsorFilter, showApplied, sortBy,
     hiddenJobIds, getJobStatus } = filters;
-  const maxDays = RECENCY_OPTIONS.find((option) => option.key === recency)!.maxDays;
+  const recencyWindow = RECENCY_OPTIONS.find((option) => option.key === recency) ?? RECENCY_OPTIONS[0];
   const query = search.trim().toLowerCase();
   const isApplied = (job: WorkdayJob) =>
     isAppliedPipelineStatus(getJobStatus(job.job_id, job.apply_link));
@@ -47,12 +47,12 @@ export function selectForYouJobs(jobs: WorkdayJob[], filters: ForYouFilters) {
   };
   const visible: WorkdayJob[] = [];
   for (const job of eligible) {
-    const inWindow = inRecencyWindow(job, maxDays);
+    const inWindow = inRecencyWindow(job, recencyWindow.maxDays, recencyWindow.minDays);
     const inLevel = matchesSeniorityLevels(job, seniorityLevels);
     if (inWindow) levelCounts[seniorityViewOf(job)] += 1;
     if (inLevel) {
       for (const option of RECENCY_OPTIONS) {
-        if (inRecencyWindow(job, option.maxDays)) recencyCounts[option.key] += 1;
+        if (inRecencyWindow(job, option.maxDays, option.minDays)) recencyCounts[option.key] += 1;
       }
       if (inWindow) visible.push(job);
     }

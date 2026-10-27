@@ -34,7 +34,7 @@ import { CompanyLogo } from '@/components/CompanyLogo';
 import { useCombinedJobsCtx } from '@/components/job-search/CombinedJobsProvider';
 import { WhyThisScoreButton } from '@/components/job-search/JobFitDetails';
 import { fitBandOf } from '@/components/job-search/fitBands';
-import { RECENCY_OPTIONS, toJob, type SeniorityLevel } from '@/lib/careerJobs';
+import { postedAgeLabel, RECENCY_OPTIONS, toJob, type SeniorityLevel } from '@/lib/careerJobs';
 import { toTitleCase } from '@/lib/format';
 import { listContainer, listItem } from '@/lib/motion';
 import { cn } from '@/lib/utils';
@@ -79,6 +79,7 @@ function MatchRow({ job }: { job: Job }) {
   const title = toTitleCase(job.title);
   const company = toTitleCase(job.company);
   const location = toTitleCase(job.location);
+  const posted = postedAgeLabel(job);
   const scored = band.key !== 'unscored';
 
   return (
@@ -117,6 +118,12 @@ function MatchRow({ job }: { job: Job }) {
               <span aria-hidden>·</span>
               <MapPin className="h-3 w-3 shrink-0" aria-hidden />
               <span className="truncate">{location}</span>
+            </>
+          )}
+          {posted && (
+            <>
+              <span aria-hidden>·</span>
+              <span className="shrink-0">{posted}</span>
             </>
           )}
         </p>

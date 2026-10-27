@@ -106,7 +106,7 @@ test('experience totals visibly include unspecified levels without dropping or r
 
   const equation = '207 roles = 44 Entry + 103 Mid + 60 no level stated';
   expect(screen.getByLabelText('Experience count breakdown')).toHaveTextContent(equation);
-  expect(screen.getByRole('radio', { name: '3 days 207' })).toBeChecked();
+  expect(screen.getByRole('radio', { name: 'Last 3 days 207' })).toBeChecked();
   const expectedOrder = [...selected.filter((job) => job.days_ago === 0), ...selected.filter((job) => job.days_ago === 2)];
   expect(feed.visibleJobs.map((job) => job.job_id)).toEqual(expectedOrder.map((job) => job.job_id));
   expect(screen.getAllByTestId('job-card')).toHaveLength(JOB_FEED_PAGE_SIZE);

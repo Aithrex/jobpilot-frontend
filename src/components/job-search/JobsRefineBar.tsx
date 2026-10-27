@@ -37,7 +37,7 @@ export function JobsRefineBar() {
           options={RECENCY_OPTIONS.map((opt) => ({
             value: opt.key,
             title:
-              'Counts use your current filters and timezone. Windows overlap. Roles with no known date remain included.',
+              'Days follow your own timezone. Today and Yesterday are single days; "Last N days" includes today. Counts use your current filters. Roles with no known date remain included.',
             label: (
               <>
                 {opt.label}

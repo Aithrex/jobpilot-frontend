@@ -16,6 +16,21 @@ interface UseAutoSyncOptions {
    *  manual refresh). Resolve when the run finishes so we can stamp
    *  `lastSyncedAt` and re-arm the countdown. */
   onSync: (force: boolean, reason: SyncReason) => Promise<unknown> | unknown;
+  /** Also re-run just after the viewer's local midnight. For results whose
+   *  labels are calendar days ("Today", "Yesterday"): a scan taken at 11pm
+   *  must not keep calling yesterday's roles "today" for up to an interval. */
+  refreshOnNewDay?: boolean;
+}
+
+/** Past local midnight before a day-rollover sync fires. The SERVER decides
+ *  which day it is, so a client clock a little fast must not re-scan while
+ *  the server still reads the previous day. */
+const NEW_DAY_GRACE_MS = 2 * 60 * 1000;
+
+function nextLocalMidnight(t: number): number {
+  const d = new Date(t);
+  d.setHours(24, 0, 0, 0);
+  return d.getTime();
 }
 
 interface AutoSyncState {
@@ -46,7 +61,16 @@ export function useAutoSync({
   intervalMs,
   isBusy,
   onSync,
+  refreshOnNewDay = false,
 }: UseAutoSyncOptions): AutoSyncState {
+  /** When the next sync is due after one that finished at `t`. */
+  const dueAfter = useCallback(
+    (t: number) => (refreshOnNewDay
+      ? Math.min(t + intervalMs, nextLocalMidnight(t) + NEW_DAY_GRACE_MS)
+      : t + intervalMs),
+    [intervalMs, refreshOnNewDay],
+  );
+
   const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
   const [nextSyncAt, setNextSyncAt] = useState<number | null>(null);
   const [nowTick, setNowTick] = useState<number>(() => Date.now());
@@ -69,9 +93,9 @@ export function useAutoSync({
     } finally {
       runningRef.current = false;
       setLastSyncedAt(Date.now());
-      setNextSyncAt(Date.now() + intervalMs);
+      setNextSyncAt(dueAfter(Date.now()));
     }
-  }, [intervalMs]);
+  }, [dueAfter]);
 
   // Initial auto-load - once, when auto sync first becomes enabled.
   useEffect(() => {
@@ -89,7 +113,7 @@ export function useAutoSync({
     if (!enabled) return;
 
     const base = lastSyncedAt ?? Date.now();
-    const delay = Math.max(0, base + intervalMs - Date.now());
+    const delay = Math.max(0, dueAfter(base) - Date.now());
     const id = window.setTimeout(() => {
       if (document.visibilityState !== 'visible' || isBusyRef.current) return;
       void doSync(true, 'interval');
@@ -109,7 +133,7 @@ export function useAutoSync({
       window.clearTimeout(id);
       document.removeEventListener('visibilitychange', onVisible);
     };
-  }, [enabled, intervalMs, lastSyncedAt, doSync]);
+  }, [enabled, dueAfter, lastSyncedAt, doSync]);
 
   // 1-second ticker purely for the countdown display; only armed once we have
   // a scheduled next sync so idle surfaces don't tick.

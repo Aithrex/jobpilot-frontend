@@ -473,7 +473,9 @@ export interface BatchSearchResponse {
 
 export type CareerPortalVariant = 'workday' | 'careers' | 'mncs';
 
-export type WorkdayRecency = 'today' | '24h' | '3d' | '7d' | '30d';
+/** `yesterday` is the For-you single-day window; `24h` remains only for the
+ *  legacy per-catalog panel, which still uses a cumulative "since yesterday". */
+export type WorkdayRecency = 'today' | 'yesterday' | '24h' | '3d' | '7d' | '30d';
 
 export type CareerPortalFeasibility = 'strong' | 'possible' | 'stretch' | 'skip';
 

@@ -142,11 +142,31 @@ function humanize(value: string): string {
   return value.replace(/[_-]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-function formatDate(iso: string | null): string | null {
+/** True when a timestamp ENCODES a calendar date rather than an instant - the
+ *  backend's `workday_jobs_service._calendar_date_of` rule. Boards publish a
+ *  date and ingest stores it as midnight UTC (or a Western-Hemisphere
+ *  midnight published as UTC, 01:00-11:30Z with no seconds). */
+function encodesCalendarDate(date: Date): boolean {
+  if (date.getUTCSeconds() || date.getUTCMilliseconds()) return false;
+  const h = date.getUTCHours();
+  const m = date.getUTCMinutes();
+  return (h === 0 && m === 0) || (h >= 1 && h <= 11 && (m === 0 || m === 30));
+}
+
+export function formatDate(iso: string | null): string | null {
   if (!iso) return null;
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return null;
-  return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+  // West of UTC a stored midnight renders as the previous evening, so a job
+  // dated Oct 26 read "Posted Oct 25" across the US. There the UTC calendar
+  // date is the published one; east of UTC the local date already is.
+  const westOfUtc = date.getTimezoneOffset() > 0;
+  return date.toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    ...(westOfUtc && encodesCalendarDate(date) ? { timeZone: 'UTC' } : {}),
+  });
 }
 
 function formatRelativeDays(days: number | null): string {
