@@ -354,14 +354,25 @@ export function hydrateJobTitles(): Promise<void> {
         titles = saved.slice(0, JOB_TITLES_CAP);
       } else if (saved.length && baseline) {
         // Resumes changed and we know where every saved title came from. The
-        // titles the OLD resume put there give way to the new seed; titles
-        // the seeker typed stay, and so do their deletions. Merging the whole
-        // old set back in (the branch below) left a seeker who changed resume
-        // searching for their previous roles (reported 2026-10-26).
+        // new seed leads; titles the seeker typed always stay, and so do
+        // their deletions.
+        //
+        // The OLD resume's titles stay too, behind the new ones, while the
+        // two resumes are the same kind of work: a new resume may widen the
+        // search but never shrink it - replacing them turned a full-stack
+        // and cloud set into a cloud-only one (reported 2026-10-27). Only a
+        // change of occupation, where the old titles share nothing with the
+        // new seed, retires them (the nurse who became an engineer must not
+        // keep searching nursing roles).
         const custom = without(saved, lower(baseline));
         const deleted = lower(without(baseline, lower(saved)));
         const fresh = without(seedTitles, deleted);
-        titles = mergeTitles(fresh.length ? fresh : seedTitles, custom);
+        const lead = fresh.length ? fresh : seedTitles;
+        const previous = without(saved, lower(custom));
+        const seedKeys = lower(seedTitles);
+        const sameWork = previous.some((t) => seedKeys.has(t.toLowerCase()));
+        const derived = sameWork ? union(lead, previous) : lead;
+        titles = mergeTitles(derived.slice(0, Math.max(0, JOB_TITLES_CAP - custom.length)), custom);
         const added = without(titles, lower(saved));
         const removed = without(saved, lower(titles));
         if (added.length || removed.length) {

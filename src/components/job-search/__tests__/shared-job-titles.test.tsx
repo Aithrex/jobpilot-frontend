@@ -436,7 +436,8 @@ describe('shared job titles', () => {
 // nobody whose resume did not change sees anything move.
 describe('resume change re-derives the search titles', () => {
   const OLD_SEED = ['Backend Engineer', 'Data Engineer', 'Platform Engineer'];
-  const NEW_SEED = ['Registered Nurse', 'Clinical Nurse', 'Data Engineer'];
+  // A change of OCCUPATION: nothing in common with OLD_SEED.
+  const NEW_SEED = ['Registered Nurse', 'Clinical Nurse', 'Nurse Practitioner'];
 
   /** `seed: null` = a set saved before provenance existed. */
   function savedWithBaseline(titles: string[], seed: string[] | null = OLD_SEED) {
@@ -465,7 +466,7 @@ describe('resume change re-derives the search titles', () => {
     expect(screen.queryByLabelText('Remove Backend Engineer')).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Remove Platform Engineer')).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Remove Data Engineer')).not.toBeInTheDocument();
-    expect(cachedTitles()).toEqual(['Registered Nurse', 'Clinical Nurse', 'Custom Role X']);
+    expect(cachedTitles()).toEqual(['Registered Nurse', 'Clinical Nurse', 'Nurse Practitioner', 'Custom Role X']);
     expect(cachedSeed()).toEqual(NEW_SEED);
     expect(screen.queryByTestId('jobs-title-review')).not.toBeInTheDocument();
 
@@ -473,6 +474,22 @@ describe('resume change re-derives the search titles', () => {
     await waitFor(() =>
       expect(cachedTitles()).toEqual(['Backend Engineer', 'Platform Engineer', 'Custom Role X']),
     );
+  });
+
+  test('a new resume in the same line of work widens the titles and never shrinks them', async () => {
+    // Reported 2026-10-27: a full-stack + cloud set became cloud-only.
+    const before = ['Software Engineer', 'Backend Engineer', 'Frontend Engineer', 'React Developer'];
+    savedWithBaseline([...before, 'Custom Role X'], before);
+    api.getTitleSeed.mockResolvedValue(okTitleSeed({
+      fingerprint: 'fp-cloud-resume', resume_titles: ['Cloud Engineer'],
+      match_titles: ['Cloud Engineer', 'Software Engineer', 'Aws Engineer', 'DevOps Engineer'],
+    }));
+    renderBothSurfaces();
+    await waitFor(() => expect(cachedTitles()).toHaveLength(8));
+    expect(cachedTitles()).toEqual([
+      'Cloud Engineer', 'Software Engineer', 'Aws Engineer', 'DevOps Engineer',
+      'Backend Engineer', 'Frontend Engineer', 'React Developer', 'Custom Role X',
+    ]);
   });
 
   test('a resume uploaded mid-session re-scans the feed with the new titles', async () => {
