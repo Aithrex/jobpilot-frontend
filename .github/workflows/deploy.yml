@@ -1,4 +1,4 @@
-name: Deploy Frontend to AWS
+name: Deploy Frontend to Oracle
 
 on:
   push:
@@ -10,7 +10,6 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  AWS_REGION: us-east-1
   API_URL: https://aspirely.me/api
 
 jobs:
@@ -52,6 +51,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: [await-tests]
     if: needs.await-tests.result == 'success' && !cancelled()
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -84,29 +85,31 @@ jobs:
       - name: Build
         run: pnpm build
 
-      - uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Sync to S3
+      # The box polls this branch and publishes it (infra/compose/pull-web.sh in
+      # the backend repo): new assets first, index.html last, so no downtime.
+      - name: Publish the build to the deploy branch
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          B="s3://${{ secrets.S3_BUCKET_NAME }}"
-          # Hashed assets — cache hard, delete removed files. Keep index.html out of this pass.
-          aws s3 sync dist/ "$B/" --delete \
-            --cache-control "public, max-age=31536000, immutable" \
-            --exclude "index.html"
-          # index.html — never cache, so new deploys are picked up instantly.
-          aws s3 cp dist/index.html "$B/index.html" \
-            --cache-control "no-cache, no-store, must-revalidate" \
-            --content-type "text/html"
+          echo "$GITHUB_SHA" > dist/deploy-version.txt
+          cd dist
+          git init -q -b deploy/web
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -qm "Build $GITHUB_SHA"
+          git push -q --force "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" deploy/web
 
-      - name: Invalidate CloudFront
+      - name: Wait for the live site to serve this build
         run: |
-          aws cloudfront create-invalidation \
-            --distribution-id "${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}" \
-            --paths "/*" --no-cli-pager
+          for attempt in $(seq 1 40); do
+            LIVE=$(curl -fsS --max-time 10 https://aspirely.me/deploy-version.txt || true)
+            echo "attempt ${attempt}: live=${LIVE:0:7}"
+            [ "$LIVE" = "$GITHUB_SHA" ] && exit 0
+            sleep 15
+          done
+          echo "::error::The site does not serve ${GITHUB_SHA:0:7} after 10 minutes; the previous build is still live."
+          exit 1
 
       - name: Summary
         run: |
