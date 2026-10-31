@@ -133,7 +133,7 @@ flag, replacing the three legacy panels when on. **Off by default.**
   clearance") renders as a requirement to check, never as a penalty.
 
 ## Deploy
-2-stage `Dockerfile` (Node 22 build → `nginx:alpine`). `nginx/default.conf` = SPA fallback (`try_files`) + security headers + gzip. Prod uses same-origin `/api` (CloudFront). CI: `.github/workflows/deploy.yml`.
+Prod runs on the Oracle box behind Cloudflare, same-origin with `/api`. CI (`.github/workflows/deploy.yml`) builds after tests pass and publishes `dist/` to the `deploy/web` branch; the box copies new assets first and swaps `index.html` last, so there is no downtime. Runbook: `infra/compose/README.md` in `jobpilot-backend`. The `Dockerfile` and `nginx/default.conf` here are not used in production.
 
 ## Docs
 **Start at [`docs/README.md`](docs/README.md)** — getting started, architecture,
