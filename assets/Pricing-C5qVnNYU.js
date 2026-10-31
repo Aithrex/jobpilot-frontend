@@ -1,0 +1,1 @@
+import{j as e,U as r,W as a,X as s}from"./index-CoSNRi93.js";import{P as i}from"./PublicPageShell-BqhDjPH1.js";function n(){return e.jsxs(i,{children:[e.jsx(r,{variant:"full",headingLevel:"h1"}),e.jsx(a,{}),e.jsx(s,{fallbackHref:"/register",fallbackLabel:"Create free account"})]})}export{n as default};
