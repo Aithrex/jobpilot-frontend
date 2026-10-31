@@ -1,5 +1,7 @@
 # JobPilot Deployment — Edge (frontend) + DNS
 
+> **Retired 2026-10-31.** This describes the AWS setup (S3, CloudFront, ACM), which has been deleted. It is kept for history. The site now runs on the Oracle box behind Cloudflare: see `infra/compose/README.md` in `jobpilot-backend`.
+
 `aspirely.me` is served by **one CloudFront distribution**:
 - `/*` → S3 bucket (this repo's built SPA, private via OAC)
 - `/api/*` → backend API Gateway (the `jobpilot-backend` Lambdas)
