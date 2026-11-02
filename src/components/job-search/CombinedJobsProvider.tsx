@@ -16,6 +16,11 @@ import { selectForYouJobs } from '@/lib/forYouSelection';
 import type { ExperienceView, WorkdayRecency } from '@/types/jobs';
 
 const AUTO_SYNC_MS = 30 * 60 * 1000;
+/** Fewer roles than this posted today and the board opens on the last 3 days
+ *  instead, and says so. Employers barely post on weekends: Sunday 2026-10-25
+ *  had 1,246 new postings against ~33,000 on a weekday, so a Today-only board
+ *  read as "the site has no jobs" every weekend. */
+export const THIN_TODAY = 20;
 
 const listTitles = (titles: string[]) =>
   titles.length > 3 ? `${titles.slice(0, 3).join(', ')} and ${titles.length - 3} more` : titles.join(', ');
@@ -104,6 +109,9 @@ interface CombinedJobsContextValue extends CombinedJobsController, ReturnType<ty
   setSearch: (v: string) => void;
   recency: WorkdayRecency;
   setRecency: (v: WorkdayRecency) => void;
+  /** True while the board opened on the last 3 days because Today was thin
+   *  (fewer than THIN_TODAY roles). Cleared the moment the user picks a window. */
+  recencyWidened: boolean;
   /** Levels the board shows. `[]` = every level. Opens on the candidate's
    *  own (`experienceView`); a deliberate change is remembered. */
   seniorityLevels: SeniorityLevel[];
@@ -153,7 +161,15 @@ export function CombinedJobsProvider({ children }: { children: React.ReactNode }
   // own candidate window was ~1 day wide, so "today" was a slice of a slice.
   // Both are fixed; the segmented control shows per-window counts so moving
   // to Yesterday or widening to 3/7/30 days stays one click.
-  const [recency, setRecency] = useState<WorkdayRecency>('today');
+  const [recency, setRecencyState] = useState<WorkdayRecency>('today');
+  // A window the user picked is theirs; only the opening default may widen.
+  const [recencyChosen, setRecencyChosen] = useState(false);
+  const [recencyWidened, setRecencyWidened] = useState(false);
+  const setRecency = useCallback((v: WorkdayRecency) => {
+    setRecencyChosen(true);
+    setRecencyWidened(false);
+    setRecencyState(v);
+  }, []);
   // Opens on the candidate's OWN levels. It opened on every level until
   // 2026-10-02, and every current user is early-career: a zero-year user's
   // first screen held an architect role and two executive ones.
@@ -229,6 +245,23 @@ export function CombinedJobsProvider({ children }: { children: React.ReactNode }
   }), [feed.jobs, recency, search, seniorityLevels, minScore, sponsorFilter,
     showApplied, sortBy, hiddenJobIds, getJobStatus]);
 
+  // Thin Today -> open on the last 3 days, once results are in. Narrows back
+  // to Today if a later sync finds enough (a new day, a new resume), and never
+  // overrides a window the user chose.
+  const todayCount = selection.recencyCounts.today;
+  const threeDayCount = selection.recencyCounts['3d'];
+  useEffect(() => {
+    if (recencyChosen || feed.loading || !feed.hasResult) return;
+    if (recency === 'today' && todayCount < THIN_TODAY && threeDayCount > todayCount) {
+      setRecencyState('3d');
+      setRecencyWidened(true);
+    } else if (recency === '3d' && recencyWidened && todayCount >= THIN_TODAY) {
+      setRecencyState('today');
+      setRecencyWidened(false);
+    }
+  }, [recencyChosen, feed.loading, feed.hasResult, recency, recencyWidened,
+    todayCount, threeDayCount]);
+
   const ensureStarted = useCallback(() => setStarted(true), []);
 
   const resetScope = useCallback(() => {
@@ -260,7 +293,7 @@ export function CombinedJobsProvider({ children }: { children: React.ReactNode }
     // local midnight rather than up to 30 minutes later.
     refreshOnNewDay: true,
     isBusy: feed.loading,
-    onSync: (force) => feed.run(force, { location: scanLocation, remoteOnly, usOnly }),
+    onSync: (force, reason) => feed.run(force, { location: scanLocation, remoteOnly, usOnly }, reason),
   });
 
   // A resume change that replaced titles: say what moved, with Undo, and
@@ -300,7 +333,9 @@ export function CombinedJobsProvider({ children }: { children: React.ReactNode }
     hiddenJobIds,
     hideJob,
     getJobStatus,
-    lastSyncedAt: autoSync.lastSyncedAt,
+    // When the board on screen was BUILT, not when this tab last asked: a
+    // stored board read at 10:05 that the server built at 09:50 is 15 min old.
+    lastSyncedAt: feed.builtAt ?? autoSync.lastSyncedAt,
     secondsUntilNext: autoSync.secondsUntilNext,
     sync: autoSync.sync,
     ensureStarted,
@@ -322,6 +357,7 @@ export function CombinedJobsProvider({ children }: { children: React.ReactNode }
     setSearch,
     recency,
     setRecency,
+    recencyWidened,
     seniorityLevels,
     setSeniorityLevels,
     resetSeniorityLevels,
