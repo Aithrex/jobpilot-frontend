@@ -586,6 +586,22 @@ export interface WorkdayJobsParams {
   /** Server-side US country facet on every tenant. Defaults to true. */
   us_only?: boolean;
   force_refresh?: boolean;
+  /** Which surface sent the scan. `for_you` scans are stored as that user's
+   *  board snapshot and kept warm by the server's 30-minute refresh. */
+  board?: 'for_you';
+}
+
+/** `POST /api/jobs/board/snapshot` - the For-you board the server built
+ *  ahead of time for exactly this request. */
+export interface BoardSnapshot {
+  available: boolean;
+  /** All three tabs present, recent, and built on the viewer's current day:
+   *  show it and do not scan. */
+  fresh: boolean;
+  built_at: string | null;
+  age_seconds: number | null;
+  refresh_minutes?: number;
+  sources: Partial<Record<'workday' | 'careers' | 'mncs', WorkdayJobsResult | null>>;
 }
 
 export interface WorkdayJobsProgress {

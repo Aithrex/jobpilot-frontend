@@ -3963,6 +3963,25 @@ class ApiService {
     });
   }
 
+  /**
+   * The For-you board the server already built for this exact request (the
+   * worker rebuilds every active user's board every 30 minutes). One read
+   * instead of three scans. Any failure reads as "nothing stored", so the
+   * caller simply scans.
+   */
+  async getBoardSnapshot(
+    params: import('../types/jobs').WorkdayJobsParams,
+  ): Promise<ApiResponse<import('../types/jobs').BoardSnapshot>> {
+    return this.request<import('../types/jobs').BoardSnapshot>(
+      '/jobs/board/snapshot',
+      {
+        method: 'POST',
+        body: JSON.stringify({ tz_offset_minutes: viewerTzOffsetMinutes(), ...params }),
+      },
+      30000,
+    );
+  }
+
   async searchWorkdayJobs(
     params: import('../types/jobs').WorkdayJobsParams,
     onPartial?: (partial: import('../types/jobs').WorkdayJobsResult) => void,

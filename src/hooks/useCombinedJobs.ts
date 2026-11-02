@@ -5,7 +5,8 @@ import { currentAccountKey, ownedByAnotherAccount } from '@/lib/accountKey';
 import { mergeJobs } from '@/lib/careerJobs';
 import { mergePolicies } from '@/lib/employerPolicy';
 import type { PolicyBlock } from '@/types/employerPolicy';
-import type { WorkdayJob, WorkdayJobsParams } from '@/types/jobs';
+import type { BoardSnapshot, WorkdayJob, WorkdayJobsParams, WorkdayJobsResult } from '@/types/jobs';
+import type { SyncReason } from '@/hooks/useAutoSync';
 
 /**
  * Combined Job feed scan (Workday + career pages + MNC).
@@ -141,10 +142,19 @@ export interface CombinedJobsController {
    * with its exclusion counts summed. Null on an older backend.
    */
   policy: PolicyBlock | null;
-  /** Fire all three scans. `force` bypasses the server cache. */
+  /** Epoch ms the board on screen was BUILT (by the server's refresh or by a
+   *  scan), or null before any. Drives "Updated N min ago". */
+  builtAt: number | null;
+  /**
+   * Bring the board up to date. Reads the server's stored board first
+   * (`/jobs/board/snapshot`): a fresh one is the answer and nothing scans; a
+   * stale one is shown at once while the three scans replace it. A forced
+   * manual sync (Sync now) always scans. `force` bypasses the server cache.
+   */
   run: (
     force: boolean,
     opts?: { location?: string; remoteOnly?: boolean; usOnly?: boolean },
+    reason?: SyncReason,
   ) => Promise<void>;
 }
 
@@ -161,6 +171,7 @@ export function useCombinedJobs(enabled = true): CombinedJobsController {
   const [lastScanTitles, setLastScanTitles] = useState<string[] | null>(null);
   const [resumeSkillCount, setResumeSkillCount] = useState<number | null>(null);
   const [hasResult, setHasResult] = useState(false);
+  const [builtAt, setBuiltAt] = useState<number | null>(null);
 
   // The search seed is SHARED with the Career-portal panels: one hydration
   // (resume seed + thin-resume synth), one saved set, one cap. Passing
@@ -177,6 +188,27 @@ export function useCombinedJobs(enabled = true): CombinedJobsController {
 
   const titlesRef = useRef<string[]>([]);
   titlesRef.current = titles;
+
+  /** Render one finished tab - from a scan or from the stored board. */
+  const applyResult = useCallback((key: SourceKey, data: WorkdayJobsResult) => {
+    setSources((s) => ({ ...s, [key]: data.jobs ?? [] }));
+    // Absent on an older backend - and then it must not keep a previous
+    // scan's counts, which would describe a different result set.
+    setPolicies((p) => ({ ...p, [key]: data.policy ?? null }));
+    setStates((s) => ({
+      ...s,
+      [key]: {
+        loading: false,
+        tenantsDone: data.tenants_done ?? 0,
+        tenantsTotal: data.tenants_total ?? 0,
+        withResults: data.tenants_with_results ?? 0,
+        cacheHit: !!data.cache_hit,
+        error: null,
+      },
+    }));
+    if (data.resume_skill_count != null) setResumeSkillCount(data.resume_skill_count);
+    setHasResult(true);
+  }, []);
 
   const runOne = useCallback(
     async (key: SourceKey, fn: typeof apiService.searchWorkdayJobs, params: WorkdayJobsParams) => {
@@ -203,34 +235,46 @@ export function useCombinedJobs(enabled = true): CombinedJobsController {
         }));
         return;
       }
-      const data = resp.data;
-      if (data) {
-        setSources((s) => ({ ...s, [key]: data.jobs }));
-        // Absent on an older backend - and then it must not keep a previous
-        // scan's counts, which would describe a different result set.
-        setPolicies((p) => ({ ...p, [key]: data.policy ?? null }));
-        setStates((s) => ({
-          ...s,
-          [key]: {
-            loading: false,
-            tenantsDone: data.tenants_done,
-            tenantsTotal: data.tenants_total,
-            withResults: data.tenants_with_results,
-            cacheHit: data.cache_hit,
-            error: null,
-          },
-        }));
-        if (data.resume_skill_count != null) setResumeSkillCount(data.resume_skill_count);
-        setHasResult(true);
-      }
+      if (resp.data) applyResult(key, resp.data);
     },
-    [],
+    [applyResult],
+  );
+
+  /**
+   * Show the board the server already built for these params. Returns
+   * 'fresh' (it is the answer), 'shown' (rendered, but a scan should follow)
+   * or 'none'. Never throws: a failed read is just "nothing stored".
+   */
+  const loadSnapshot = useCallback(
+    async (params: WorkdayJobsParams): Promise<'fresh' | 'shown' | 'none'> => {
+      let snap: BoardSnapshot | undefined;
+      try {
+        snap = (await apiService.getBoardSnapshot(params)).data;
+      } catch {
+        return 'none';
+      }
+      if (!snap?.available) return 'none';
+      let shown = false;
+      for (const key of ['workday', 'careers', 'mncs'] as SourceKey[]) {
+        const data = snap.sources?.[key];
+        if (data && Array.isArray(data.jobs)) {
+          applyResult(key, data);
+          shown = true;
+        }
+      }
+      if (!shown) return 'none';
+      const built = snap.built_at ? Date.parse(snap.built_at) : NaN;
+      setBuiltAt(Number.isFinite(built) ? built : null);
+      return snap.fresh ? 'fresh' : 'shown';
+    },
+    [applyResult],
   );
 
   const run = useCallback(
     async (
       force: boolean,
       opts?: { location?: string; remoteOnly?: boolean; usOnly?: boolean },
+      reason?: SyncReason,
     ) => {
       // Snapshot the ref the moment the scan starts so all three sources search
       // the exact same title set, even if the user keeps editing mid-scan.
@@ -244,15 +288,25 @@ export function useCombinedJobs(enabled = true): CombinedJobsController {
         // US-only is the default posture: the backend drops ambiguous/foreign
         // rows unless the user explicitly opts out. Sent on every scan.
         us_only: opts?.usOnly ?? true,
-        force_refresh: force,
+        // Marks these as the For-you board's scans: the server stores the
+        // result as this user's board and keeps it warm every 30 minutes.
+        board: 'for_you',
       };
+      // Opening the board, the 30-minute tick and the day rollover read the
+      // stored board first; only "Sync now" (manual + force) skips it. A
+      // fresh board needs no scan at all - which is the whole point: opening
+      // Jobs is a read, not three scans.
+      if (reason !== 'manual' || !force) {
+        if ((await loadSnapshot(params)) === 'fresh') return;
+      }
       await Promise.all([
-        runOne('workday', apiService.searchWorkdayJobs.bind(apiService), params),
-        runOne('careers', apiService.searchCareerPagesJobs.bind(apiService), params),
-        runOne('mncs', apiService.searchMncJobs.bind(apiService), params),
+        runOne('workday', apiService.searchWorkdayJobs.bind(apiService), { ...params, force_refresh: force }),
+        runOne('careers', apiService.searchCareerPagesJobs.bind(apiService), { ...params, force_refresh: force }),
+        runOne('mncs', apiService.searchMncJobs.bind(apiService), { ...params, force_refresh: force }),
       ]);
+      setBuiltAt(Date.now());
     },
-    [runOne],
+    [runOne, loadSnapshot],
   );
 
   const jobs = useMemo(() => mergeJobs(sources.workday, sources.careers, sources.mncs), [sources]);
@@ -293,6 +347,7 @@ export function useCombinedJobs(enabled = true): CombinedJobsController {
     lastScanTitles,
     titlesPending,
     policy,
+    builtAt,
     run,
   };
 }
