@@ -72,8 +72,10 @@ describe('jobTitleOf / toJob', () => {
   });
 
   test('sortJobsByMode Best match vs Newest', () => {
-    const a = row({ job_id: 'a', title: 'A', match_score: 90, days_ago: 5 });
-    const b = row({ job_id: 'b', title: 'B', match_score: 50, days_ago: 0 });
+    // Stamped: Best match ranks by band (strong 90 over possible 50), and an
+    // unstamped row is unscored. See best-match-bands.test.ts for the rest.
+    const a = row({ job_id: 'a', title: 'A', match_score: 90, days_ago: 5, score_version: 'fit-v2.9' });
+    const b = row({ job_id: 'b', title: 'B', match_score: 50, days_ago: 0, score_version: 'fit-v2.9' });
     expect(sortJobsByMode([a, b], 'score').map((j) => j.job_id)).toEqual(['a', 'b']);
     expect(sortJobsByMode([a, b], 'newest').map((j) => j.job_id)).toEqual(['b', 'a']);
   });

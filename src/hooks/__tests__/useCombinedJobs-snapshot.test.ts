@@ -87,3 +87,37 @@ describe('useCombinedJobs reads the stored board first', () => {
     expect(api.searchMncJobs.mock.calls[0][0]).toMatchObject({ force_refresh: true });
   });
 });
+
+describe('useCombinedJobs carries the end of the previous visit', () => {
+  it('reads seen_through from the stored board', async () => {
+    api.getBoardSnapshot.mockResolvedValue({
+      data: { ...snapshot(true).data, seen_through: '2026-11-03T12:00:00Z' },
+    });
+    const { result } = renderHook(() => useCombinedJobs(true));
+    await act(async () => { await result.current.run(false, {}, 'initial'); });
+    expect(result.current.seenThrough).toBe('2026-11-03T12:00:00Z');
+  });
+
+  it('absent or null means unknown', async () => {
+    api.getBoardSnapshot.mockResolvedValue({ data: { ...snapshot(true).data, seen_through: null } });
+    const { result } = renderHook(() => useCombinedJobs(true));
+    await act(async () => { await result.current.run(false, {}, 'initial'); });
+    expect(result.current.seenThrough).toBeNull();
+    api.getBoardSnapshot.mockResolvedValue(snapshot(true));
+    await act(async () => { await result.current.run(false, {}, 'interval'); });
+    expect(result.current.seenThrough).toBeNull();
+  });
+
+  it('keeps the first value for the session, so New does not shrink at a refresh', async () => {
+    api.getBoardSnapshot.mockResolvedValue({
+      data: { ...snapshot(true).data, seen_through: '2026-11-03T12:00:00Z' },
+    });
+    const { result } = renderHook(() => useCombinedJobs(true));
+    await act(async () => { await result.current.run(false, {}, 'initial'); });
+    api.getBoardSnapshot.mockResolvedValue({
+      data: { ...snapshot(true).data, seen_through: '2026-11-04T09:00:00Z' },
+    });
+    await act(async () => { await result.current.run(false, {}, 'interval'); });
+    expect(result.current.seenThrough).toBe('2026-11-03T12:00:00Z');
+  });
+});

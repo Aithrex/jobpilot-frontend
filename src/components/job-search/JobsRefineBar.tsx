@@ -3,6 +3,7 @@ import { useCombinedJobsCtx } from '@/components/job-search/CombinedJobsProvider
 import { RECENCY_OPTIONS } from '@/lib/careerJobs';
 import { timeZoneName, useViewerTimeZone } from '@/lib/viewerTimezone';
 import { PillSwitch } from '@/components/ui/pill-switch';
+import { cn } from '@/lib/utils';
 import { ExperienceCountBreakdown, ExperienceLevelPicker } from '@/components/job-search/ExperienceLevelPicker';
 
 /**
@@ -19,7 +20,14 @@ export function JobsRefineBar() {
     setSortBy,
     showApplied,
     setShowApplied,
+    seenThrough,
+    newCount,
+    newOnly,
+    setNewOnly,
   } = useCombinedJobsCtx();
+  // Only when the server told us when the last visit ended; while filtering,
+  // kept visible so the filter can always be turned off.
+  const showNewChip = !!seenThrough && (newCount > 0 || newOnly);
   const zone = timeZoneName(useViewerTimeZone());
 
   return (
@@ -48,6 +56,22 @@ export function JobsRefineBar() {
             ),
           }))}
         />
+        {showNewChip && (
+          <button
+            type="button"
+            aria-pressed={newOnly}
+            onClick={() => setNewOnly(!newOnly)}
+            title="Roles first seen since your last visit"
+            className={cn(
+              'inline-flex h-9 shrink-0 items-center gap-1 rounded-full border px-3 text-[11px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+              newOnly
+                ? 'border-info bg-info text-info-foreground'
+                : 'border-info/30 bg-info/10 text-info hover:bg-info/15',
+            )}
+          >
+            New <span className="tabular-nums">({newCount})</span>
+          </button>
+        )}
         <PillSwitch
           aria-label="Sort jobs"
           value={sortBy}
