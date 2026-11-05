@@ -296,6 +296,10 @@ export interface Job extends EmployerPolicyRowFields {
    * accounts with no parsed resume, both of which must read "Not scored".
    */
   score_version?: string;
+  /** See `WorkdayJob.score_basis`; spread onto `Job` by `toJob`. */
+  score_basis?: ScoreBasis;
+  /** See `WorkdayJob.first_seen_at`; spread onto `Job` by `toJob`. */
+  first_seen_at?: string;
   /** Ordering-only score: fit plus preference bonuses (H1B / remote / new-grad)
    *  that are deliberately kept OUT of `match_score`. Never display it. */
   rank_score?: number;
@@ -496,6 +500,9 @@ export type CareerPortalSeniority =
  */
 export type CareerPortalSponsorship = 'likely' | 'rare' | 'unknown' | 'refused';
 
+/** How a row's fit score was reached. Only `'title_only'` is sent today. */
+export type ScoreBasis = 'title_only';
+
 /** Job row returned by the portal search endpoints. Intentionally NOT an
  *  extension of `Job` - portal rows carry catalog metadata (tenant/industry),
  *  a string sponsorship band, and several `Job`-required fields only
@@ -549,6 +556,16 @@ export interface WorkdayJob extends EmployerPolicyRowFields {
    *  and ABSENT on streamed provisional rows, so the card can tell a real fit
    *  verdict from a mid-scan estimate. `toJob` spreads it onto `Job`. */
   score_version?: string;
+  /**
+   * `'title_only'` when the posting's description has not been read yet, so
+   * its score came from the title alone and is PROVISIONAL. The board never
+   * folds such a card away as a weaker match, and the card says the score
+   * will move. Absent on an older backend and on fully-read postings.
+   */
+  score_basis?: ScoreBasis;
+  /** ISO UTC instant the crawler first saw this posting live. Compared with
+   *  the snapshot's `seen_through` for "New since your last visit". */
+  first_seen_at?: string;
   /** Fit + retrieval/preference bonuses. Ordering only, never displayed. */
   rank_score?: number;
   /** FitScore v2 explanation block, when the row carries one. */
@@ -601,6 +618,9 @@ export interface BoardSnapshot {
   built_at: string | null;
   age_seconds: number | null;
   refresh_minutes?: number;
+  /** ISO UTC end of this user's PREVIOUS visit. Null or absent means unknown
+   *  (a first visit, or an older backend): then nothing is marked new. */
+  seen_through?: string | null;
   sources: Partial<Record<'workday' | 'careers' | 'mncs', WorkdayJobsResult | null>>;
 }
 

@@ -174,6 +174,34 @@ export function fitBandOf(row: ScoredRow | null | undefined): FitBand {
   return fitBand(row?.match_score);
 }
 
+/**
+ * Best-match rank of each band, best first. `unscored` sits after `possible`
+ * and before `weak`: "we have no verdict" is not a verdict that the posting is
+ * a poor fit, so it must not sink below rows we KNOW are weak - but it cannot
+ * claim a place among rows we know are good either.
+ */
+const BAND_RANK: Record<FitBandKey, number> = {
+  strong: 0,
+  good: 1,
+  possible: 2,
+  unscored: 3,
+  weak: 4,
+  unlikely: 5,
+};
+
+/** Sort key for Best match: lower is better. Reads `fitBandOf`, so the order
+ *  can never disagree with the band words printed on the cards. */
+export function fitBandRankOf(row: ScoredRow | null | undefined): number {
+  return BAND_RANK[fitBandOf(row).key];
+}
+
+/** True for a real verdict below "possible match" (weak or unlikely). An
+ *  unscored row is never weaker: there is nothing to judge it by. */
+export function isWeakerFit(row: ScoredRow | null | undefined): boolean {
+  const key = fitBandOf(row).key;
+  return key === 'weak' || key === 'unlikely';
+}
+
 /** Seniority band labels for career-portal rows (`WorkdayJob.seniority`). */
 export const SENIORITY_LABEL: Record<string, string> = {
   intern: 'Internship level',

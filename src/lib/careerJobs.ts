@@ -1,3 +1,4 @@
+import { fitBandRankOf } from '@/components/job-search/fitBands';
 import type { Job, WorkdayJob, WorkdayRecency } from '@/types/jobs';
 
 /**
@@ -319,17 +320,35 @@ function isBetter(candidate: WorkdayJob, current: WorkdayJob): boolean {
 export type SortJobsOptions = {
   /** When true for a row, that row sorts after all still-open roles. */
   isApplied?: (job: WorkdayJob) => boolean;
+  /**
+   * Best match only. True for a card the user has been shown on several
+   * visits without acting on (`lib/boardImpressions`). It sorts after the
+   * rest of ITS band and never below a lower band, so a strong match the user
+   * keeps passing still sits above every good one.
+   */
+  isPassedOver?: (job: WorkdayJob) => boolean;
 };
 
+/** Age for "newest first": a published date, else first sighting; undated
+ *  rows sort last. */
+const ageForSort = (j: WorkdayJob) => recencyAgeOf(j) ?? Number.POSITIVE_INFINITY;
+
 /** Stable Best match / Newest ordering for the merged multi-ATS feed.
- *  Tier order: open first-party → open marketplace → applied first-party →
- *  applied marketplace. */
+ *
+ *  Both modes keep the reachability tiers first: open first-party, open
+ *  marketplace, applied first-party, applied marketplace, then the
+ *  sponsorship-demoted copies of each.
+ *
+ *  Best match is then BANDS, newest first within a band - not a pure score
+ *  sort. Pure score buried a 78 posted this morning under every 79 from last
+ *  week; inside one band those two are the same verdict, and the newer one is
+ *  the one still worth applying to. Within a band: passed-over cards last,
+ *  then newest (undated last), then the higher score. */
 export function sortJobsByMode(
   jobs: WorkdayJob[],
   sortBy: 'score' | 'newest',
   opts?: SortJobsOptions,
 ): WorkdayJob[] {
-  const out = [...jobs];
   const appliedOf = opts?.isApplied ?? (() => false);
   // Tiers, most-reachable first. `sponsorship_demoted` is set by the server
   // only for a user who declared they need sponsorship, and only on rows the
@@ -342,21 +361,33 @@ export function sortJobsByMode(
     (appliedOf(j) ? 2 : 0) +
     (isMarketplaceListing(j) ? 1 : 0);
   if (sortBy === 'newest') {
+    const out = [...jobs];
     out.sort(
       (a, b) =>
         pin(a) - pin(b) ||
         (a.days_ago ?? 99) - (b.days_ago ?? 99) ||
         (b.match_score ?? 0) - (a.match_score ?? 0),
     );
-  } else {
-    out.sort(
-      (a, b) =>
-        pin(a) - pin(b) ||
-        (b.match_score ?? 0) - (a.match_score ?? 0) ||
-        (a.days_ago ?? 99) - (b.days_ago ?? 99),
-    );
+    return diversifyByBoard(out);
   }
-  return diversifyByBoard(out);
+  const passedOf = opts?.isPassedOver ?? (() => false);
+  // Keys are computed once per row: the board sorts up to ~3,000 cards.
+  const keyed = jobs.map((job) => ({
+    job,
+    pin: pin(job),
+    band: fitBandRankOf(job),
+    passed: passedOf(job) ? 1 : 0,
+    age: ageForSort(job),
+    score: job.match_score ?? 0,
+  }));
+  keyed.sort((a, b) => {
+    if (a.pin !== b.pin) return a.pin - b.pin;
+    if (a.band !== b.band) return a.band - b.band;
+    if (a.passed !== b.passed) return a.passed - b.passed;
+    if (a.age !== b.age) return a.age < b.age ? -1 : 1;
+    return b.score - a.score;
+  });
+  return diversifyByBoard(keyed.map((k) => k.job));
 }
 
 /** How many rows one board may hold per rendered page before the rest are

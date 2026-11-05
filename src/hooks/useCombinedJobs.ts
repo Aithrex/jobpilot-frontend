@@ -146,6 +146,13 @@ export interface CombinedJobsController {
    *  scan), or null before any. Drives "Updated N min ago". */
   builtAt: number | null;
   /**
+   * ISO UTC end of this user's previous visit, from the stored board, or null
+   * when unknown (first visit, older backend, no snapshot read yet). The first
+   * value this session receives is kept for the whole session, so "New since
+   * your last visit" does not shrink under the user at a 30-minute refresh.
+   */
+  seenThrough: string | null;
+  /**
    * Bring the board up to date. Reads the server's stored board first
    * (`/jobs/board/snapshot`): a fresh one is the answer and nothing scans; a
    * stale one is shown at once while the three scans replace it. A forced
@@ -172,6 +179,7 @@ export function useCombinedJobs(enabled = true): CombinedJobsController {
   const [resumeSkillCount, setResumeSkillCount] = useState<number | null>(null);
   const [hasResult, setHasResult] = useState(false);
   const [builtAt, setBuiltAt] = useState<number | null>(null);
+  const [seenThrough, setSeenThrough] = useState<string | null>(null);
 
   // The search seed is SHARED with the Career-portal panels: one hydration
   // (resume seed + thin-resume synth), one saved set, one cap. Passing
@@ -252,6 +260,10 @@ export function useCombinedJobs(enabled = true): CombinedJobsController {
         snap = (await apiService.getBoardSnapshot(params)).data;
       } catch {
         return 'none';
+      }
+      const through = snap?.seen_through;
+      if (typeof through === 'string' && through.trim()) {
+        setSeenThrough((prev) => prev ?? through);
       }
       if (!snap?.available) return 'none';
       let shown = false;
@@ -348,6 +360,7 @@ export function useCombinedJobs(enabled = true): CombinedJobsController {
     titlesPending,
     policy,
     builtAt,
+    seenThrough,
     run,
   };
 }

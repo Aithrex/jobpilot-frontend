@@ -18,6 +18,7 @@ import { useJobTitles } from '@/hooks/useJobTitles';
 import { timeZoneName, useViewerTimeZone } from '@/lib/viewerTimezone';
 import { JOB_FEED_PAGE_SIZE, RECENCY_OPTIONS, toJob } from '@/lib/careerJobs';
 import { isHiddenJob } from '@/lib/hiddenJobs';
+import { clearImpression, recordFirstPageImpressions } from '@/lib/boardImpressions';
 import { cn } from '@/lib/utils';
 import type { Job, WorkdayJob } from '@/types/jobs';
 
@@ -107,6 +108,11 @@ export function CombinedJobsPanel({
     page,
     setPage,
     states,
+    showWeaker,
+    setShowWeaker,
+    weakerMatchCount,
+    isNewJob,
+    newOnly,
   } = useCombinedJobsCtx();
   // The store, read without starting hydration - the provider owns that.
   const { reviewTitles, resolveReview } = useJobTitles(false);
@@ -141,12 +147,30 @@ export function CombinedJobsPanel({
       return;
     }
     setPage(1);
-  }, [recency, search, seniorityKey, minScore, sponsorFilter, showApplied, sortBy, setPage]);
+  }, [recency, search, seniorityKey, minScore, sponsorFilter, showApplied, sortBy, showWeaker,
+    newOnly, setPage]);
 
   const pagedJobs = useMemo(
     () => visibleJobs.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
     [visibleJobs, page],
   );
+
+  // Once per visit, count the cards on the first page the user is shown.
+  // A card seen on several visits with no action moves down its band next
+  // time (`lib/boardImpressions`). Cards already acted on are cleared instead.
+  useEffect(() => {
+    if (!hasResult || page !== 1 || !pagedJobs.length) return;
+    const linkOf = new Map(pagedJobs.map((j) => [j.job_id, j.apply_link]));
+    recordFirstPageImpressions(pagedJobs.map((j) => j.job_id), {
+      acted: (id) => !!getJobStatus(id, linkOf.get(id)),
+    });
+  }, [hasResult, page, pagedJobs, getJobStatus]);
+
+  /** Any action on a card means it was not passed over. */
+  const acted = <T,>(job: WorkdayJob, fn: () => T): T => {
+    clearImpression(job.job_id);
+    return fn();
+  };
 
   const cardMotion = (index: number) =>
     reduceMotion
@@ -181,18 +205,23 @@ export function CombinedJobsPanel({
         job={toJob(job, 'career portal')}
         saved={isJobSaved(job.job_id)}
         jobStatus={getJobStatus(job.job_id, job.apply_link)}
-        onSave={() => saveJob(toJob(job, 'career portal'))}
+        isNew={isNewJob(job)}
+        onSave={() => acted(job, () => saveJob(toJob(job, 'career portal')))}
         onUnsave={() => unsaveJob(job.job_id)}
-        onQuickApply={(opts) => quickApply(toJob(job, 'career portal'), opts)}
+        onQuickApply={(opts) => acted(job, () => quickApply(toJob(job, 'career portal'), opts))}
         applyConfirmPending={isApplyConfirmPending?.(job.job_id)}
         applyConfirmModalJobId={showApplyOverlay ? applyConfirmJob?.job_id : undefined}
         onConfirmApplied={confirmApplied ? () => void confirmApplied(job.job_id, job) : undefined}
         onConfirmNotYet={dismissApplyConfirm ? () => dismissApplyConfirm(job.job_id) : undefined}
-        onApplyWithTailor={beginApplyWithTailor ? () => beginApplyWithTailor(toJob(job, 'career portal')) : undefined}
-        onAlreadyApplied={markAlreadyApplied ? () => markAlreadyApplied(toJob(job, 'career portal')) : undefined}
-        onAutoApply={autoApply ? () => autoApply(toJob(job, 'career portal')) : undefined}
+        onApplyWithTailor={beginApplyWithTailor
+          ? () => acted(job, () => beginApplyWithTailor(toJob(job, 'career portal')))
+          : undefined}
+        onAlreadyApplied={markAlreadyApplied
+          ? () => acted(job, () => markAlreadyApplied(toJob(job, 'career portal')))
+          : undefined}
+        onAutoApply={autoApply ? () => acted(job, () => autoApply(toJob(job, 'career portal'))) : undefined}
         autoApplying={autoApplyingId === job.job_id}
-        onHide={onHideJob ? () => onHideJob(job.job_id, job.apply_link) : undefined}
+        onHide={onHideJob ? () => acted(job, () => onHideJob(job.job_id, job.apply_link)) : undefined}
       />
     </motion.div>
   );
@@ -233,6 +262,21 @@ export function CombinedJobsPanel({
       {pageCount > 1 && (
         <p className="text-xs tabular-nums text-muted-foreground">
           Showing {(page - 1) * PAGE_SIZE + 1}-{Math.min(page * PAGE_SIZE, roleCount)} of {roleCount} matching roles
+        </p>
+      )}
+      {weakerMatchCount > 0 && (
+        <p className="text-xs text-muted-foreground" data-testid="jobs-weaker-matches">
+          {showWeaker
+            ? `Showing ${weakerMatchCount} weaker ${weakerMatchCount === 1 ? 'match' : 'matches'}.`
+            : `${weakerMatchCount} weaker ${weakerMatchCount === 1 ? 'match' : 'matches'} hidden.`}{' '}
+          <button
+            type="button"
+            className="font-medium text-foreground/80 underline-offset-2 hover:text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            aria-pressed={showWeaker}
+            onClick={() => setShowWeaker(!showWeaker)}
+          >
+            {showWeaker ? 'Hide them' : 'Show them'}
+          </button>
         </p>
       )}
       {loading && (

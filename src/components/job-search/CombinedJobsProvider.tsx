@@ -12,8 +12,9 @@ import { useJobTitles, type ResumeTitleSync } from '@/hooks/useJobTitles';
 import { applyUrlKey, SENIORITY_LEVELS, type SeniorityLevel } from '@/lib/careerJobs';
 import { useSavedJobs } from '@/hooks/useSavedJobTabCounts';
 import { HIDDEN_JOBS_CHANGED, loadHiddenJobIds, persistHiddenJobId } from '@/lib/hiddenJobs';
-import { selectForYouJobs } from '@/lib/forYouSelection';
-import type { ExperienceView, WorkdayRecency } from '@/types/jobs';
+import { isNewSince, selectForYouJobs } from '@/lib/forYouSelection';
+import { isPassedOverIn, loadImpressions } from '@/lib/boardImpressions';
+import type { ExperienceView, WorkdayJob, WorkdayRecency } from '@/types/jobs';
 
 const AUTO_SYNC_MS = 30 * 60 * 1000;
 
@@ -62,6 +63,26 @@ function writeSeniorityOverride(v: SeniorityOverride | null): void {
 }
 
 const basisOf = (view: ExperienceView | null) => (view?.levels ?? []).join('|');
+
+/** "Show weaker matches" - remembered per browser. Default: folded away. */
+const SHOW_WEAKER_KEY = 'aspirely.board.showWeaker.v1';
+
+function readShowWeaker(): boolean {
+  try {
+    return window.localStorage.getItem(SHOW_WEAKER_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function writeShowWeaker(v: boolean): void {
+  try {
+    if (v) window.localStorage.setItem(SHOW_WEAKER_KEY, '1');
+    else window.localStorage.removeItem(SHOW_WEAKER_KEY);
+  } catch {
+    /* storage unavailable: the choice lasts for this session only */
+  }
+}
 
 export type SponsorFilter = 'all' | 'friendly' | 'proven';
 export type SortBy = 'score' | 'newest';
@@ -123,6 +144,16 @@ interface CombinedJobsContextValue extends CombinedJobsController, ReturnType<ty
   setSortBy: (v: SortBy) => void;
   page: number;
   setPage: (v: number | ((p: number) => number)) => void;
+  /** Weak and unlikely matches are folded away unless this is on. */
+  showWeaker: boolean;
+  setShowWeaker: (v: boolean) => void;
+  /** End of the previous visit (ISO UTC), or null when unknown. */
+  seenThrough: string | null;
+  /** True for a card first seen after the previous visit ended. */
+  isNewJob: (job: Pick<WorkdayJob, 'first_seen_at'>) => boolean;
+  /** Show only cards new since the previous visit. */
+  newOnly: boolean;
+  setNewOnly: (v: boolean) => void;
 }
 
 const CombinedJobsContext = createContext<CombinedJobsContextValue | null>(null);
@@ -197,6 +228,25 @@ export function CombinedJobsProvider({ children }: { children: React.ReactNode }
   // fewer postings asking for years the candidate does not have.
   const [sortBy, setSortBy] = useState<SortBy>('score');
   const [page, setPage] = useState(1);
+  const [showWeaker, setShowWeakerState] = useState(readShowWeaker);
+  const setShowWeaker = useCallback((v: boolean) => {
+    setShowWeakerState(v);
+    writeShowWeaker(v);
+  }, []);
+  const [newOnly, setNewOnly] = useState(false);
+  const seenThrough = feed.seenThrough ?? null;
+  const isNewJob = useCallback(
+    (job: Pick<WorkdayJob, 'first_seen_at'>) => isNewSince(job, seenThrough),
+    [seenThrough],
+  );
+  // Read ONCE, as the visit began: this visit's own impressions (recorded by
+  // the panel) take effect next visit, so the board never reshuffles under
+  // the user mid-session.
+  const [impressions] = useState(() => loadImpressions());
+  const isPassedOver = useCallback(
+    (job: WorkdayJob) => isPassedOverIn(impressions, job.job_id),
+    [impressions],
+  );
   const { data: savedJobs } = useSavedJobs(started);
   const [hiddenJobIds, setHiddenJobIds] = useState(loadHiddenJobIds);
   useEffect(() => {
@@ -229,9 +279,10 @@ export function CombinedJobsProvider({ children }: { children: React.ReactNode }
   [statusIndex]);
   const selection = useMemo(() => selectForYouJobs(feed.jobs, {
     recency, search, seniorityLevels, minScore, sponsorFilter, showApplied, sortBy,
-    hiddenJobIds, getJobStatus,
+    hiddenJobIds, getJobStatus, showWeaker, seenThrough, newOnly, isPassedOver,
   }), [feed.jobs, recency, search, seniorityLevels, minScore, sponsorFilter,
-    showApplied, sortBy, hiddenJobIds, getJobStatus]);
+    showApplied, sortBy, hiddenJobIds, getJobStatus, showWeaker, seenThrough, newOnly,
+    isPassedOver]);
 
   const ensureStarted = useCallback(() => setStarted(true), []);
 
@@ -342,6 +393,12 @@ export function CombinedJobsProvider({ children }: { children: React.ReactNode }
     setSortBy,
     page,
     setPage,
+    showWeaker,
+    setShowWeaker,
+    seenThrough,
+    isNewJob,
+    newOnly: newOnly && !!seenThrough,
+    setNewOnly,
   };
 
   return <CombinedJobsContext.Provider value={value}>{children}</CombinedJobsContext.Provider>;

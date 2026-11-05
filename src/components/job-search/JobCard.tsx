@@ -67,6 +67,8 @@ interface JobCardProps {
   onAlreadyApplied?: () => void | Promise<unknown>;
   /** Hide this posting from For you. Persisted by id and by apply URL (`lib/hiddenJobs`). */
   onHide?: () => void;
+  /** First seen after the user's previous visit (For you only). */
+  isNew?: boolean;
 }
 
 /**
@@ -232,7 +234,7 @@ export function ApplyConfirmDialog({
 }
 
 export function JobCard({
-  job, saved, jobStatus, onSave, onUnsave, onQuickApply,
+  job, saved, jobStatus, onSave, onUnsave, onQuickApply, isNew = false,
   applyConfirmPending, applyConfirmModalJobId, onConfirmApplied, onConfirmNotYet,
   onApplyWithTailor, onAlreadyApplied, onHide,
 }: JobCardProps) {
@@ -478,7 +480,21 @@ export function JobCard({
           </h3>
 
           <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
+            {isNew && (
+              <span
+                className="inline-flex items-center rounded-full border border-info/30 bg-info/10 px-1.5 py-px text-[10px] font-semibold text-info"
+                title="New since your last visit"
+                data-testid="job-new-badge"
+              >
+                New
+              </span>
+            )}
             <WhyThisScoreButton job={job} />
+            {job.score_basis === 'title_only' && (
+              <span className="text-[10.5px] leading-snug text-muted-foreground" data-testid="job-score-provisional">
+                Score updates when the description arrives.
+              </span>
+            )}
           </div>
 
           <div className="min-h-[3.5rem] shrink-0 space-y-1.5">
