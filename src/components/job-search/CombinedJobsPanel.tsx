@@ -99,7 +99,6 @@ export function CombinedJobsPanel({
     search,
     recency,
     setRecency,
-    recencyWidened,
     seniorityLevels,
     minScore,
     sponsorFilter,
@@ -223,18 +222,6 @@ export function CombinedJobsPanel({
               )}
             </>
           ) : null}
-          {recencyWidened && !loading && (
-            <span className="ml-1.5" data-testid="recency-widened">
-              Few roles were posted today, so this shows the last 3 days.{' '}
-              <button
-                type="button"
-                className="font-medium text-primary underline-offset-2 hover:underline"
-                onClick={() => setRecency('today')}
-              >
-                Show today only
-              </button>
-            </span>
-          )}
           {titlesPending && (
             <span className="ml-1.5 font-medium text-warning">Title changes need Search.</span>
           )}

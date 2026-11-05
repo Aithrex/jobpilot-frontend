@@ -1,17 +1,15 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
-import userEvent from '@testing-library/user-event';
 import { beforeEach, expect, test, vi } from 'vitest';
-import { CombinedJobsProvider, THIN_TODAY, useCombinedJobsCtx } from '@/components/job-search/CombinedJobsProvider';
+import { CombinedJobsProvider, useCombinedJobsCtx } from '@/components/job-search/CombinedJobsProvider';
 import { CombinedJobsPanel } from '@/components/job-search/CombinedJobsPanel';
 import { useJobSearch } from '@/hooks/useJobSearch';
 import type { WorkdayJob } from '@/types/jobs';
 
 /**
- * Employers barely post on weekends, so a board that opens on Today read as
- * "no jobs" every Saturday. Thin Today -> the last 3 days, said out loud, and
- * never over a window the user picked.
+ * The board always opens on Today, however few roles it holds (owner's call,
+ * 2026-11-04). It used to widen itself to the last 3 days below 20 roles.
  */
 const state = vi.hoisted(() => ({ jobs: [] as WorkdayJob[] }));
 vi.mock('@/hooks/useJobTitles', () => ({ useJobTitles: () => ({
@@ -61,34 +59,17 @@ beforeEach(() => {
   sessionStorage.clear();
 });
 
-test('a thin Today opens on the last 3 days and says why', async () => {
+test('a thin Today still opens on Today, with no widening notice', async () => {
   state.jobs = [...rows(4, 0, 't'), ...rows(30, 2, 'w')];
-  mount();
-  await waitFor(() => expect(feed.recency).toBe('3d'));
-  expect(feed.recencyWidened).toBe(true);
-  expect(screen.getByTestId('recency-widened')).toHaveTextContent('Few roles were posted today');
-});
-
-test('"Show today only" is the user\'s choice and sticks', async () => {
-  state.jobs = [...rows(4, 0, 't'), ...rows(30, 2, 'w')];
-  mount();
-  await waitFor(() => expect(feed.recency).toBe('3d'));
-  await userEvent.click(screen.getByRole('button', { name: 'Show today only' }));
-  await waitFor(() => expect(feed.recency).toBe('today'));
-  expect(feed.recencyWidened).toBe(false);
-  expect(screen.queryByTestId('recency-widened')).not.toBeInTheDocument();
-});
-
-test('a full Today stays on Today', async () => {
-  state.jobs = [...rows(THIN_TODAY, 0, 't'), ...rows(30, 2, 'w')];
   mount();
   await new Promise((r) => setTimeout(r, 50));
   expect(feed.recency).toBe('today');
-  expect(feed.recencyWidened).toBe(false);
+  expect(screen.queryByText(/Few roles were posted today/)).not.toBeInTheDocument();
+  expect(screen.getAllByTestId('job-card')).toHaveLength(4);
 });
 
-test('nothing more in 3 days than today: no pointless widening', async () => {
-  state.jobs = rows(3, 0, 't');
+test('an empty Today stays on Today', async () => {
+  state.jobs = rows(30, 2, 'w');
   mount();
   await new Promise((r) => setTimeout(r, 50));
   expect(feed.recency).toBe('today');
