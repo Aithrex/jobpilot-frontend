@@ -122,6 +122,9 @@ export function seniorityOf(j: WorkdayJob): string {
   // postings ask for 3+ years and "Program Manager 2" for 6-8. Mirrors
   // `fit_score.title_level` (fit-v2.3).
   if (/\b(level ?2|ii|2)\b/.test(t)) return 'mid';
+  // The band said in words (mirrors `fit_score` rung 8): "Mid-Level ...",
+  // "Intermediate Developer"; "Intermediate Care" is a hospital unit.
+  if (/\b(mid[- ]?level|mid[- ]?career|intermediate(?! care))\b/.test(t)) return 'mid';
   if (/\b(manager|supervisor|lead|foreman)\b/.test(t)) return 'mid';
   return 'unknown';
 }

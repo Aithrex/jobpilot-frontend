@@ -98,3 +98,14 @@ describe('level label', () => {
     expect(jobLevelLabel({ title: 'Software Engineer' }).text).toBe('Level not stated');
   });
 });
+
+describe('title fallback reads mid in words', () => {
+  it('Mid-Level and Intermediate titles are mid; Intermediate Care is not a band', async () => {
+    const { seniorityOf } = await import('@/lib/careerJobs');
+    const t = (title: string) => seniorityOf({ job_id: 'x', title } as WorkdayJob);
+    expect(t('Mid-Level Test & Evaluation Engineer')).toBe('mid');
+    expect(t('Intermediate Developer')).toBe('mid');
+    expect(t('Intermediate Care Nurse')).toBe('unknown');
+    expect(t('Junior Developer')).toBe('entry');
+  });
+});
