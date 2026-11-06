@@ -124,7 +124,8 @@ export function seniorityOf(j: WorkdayJob): string {
   if (/\b(level ?2|ii|2)\b/.test(t)) return 'mid';
   // The band said in words (mirrors `fit_score` rung 8): "Mid-Level ...",
   // "Intermediate Developer"; "Intermediate Care" is a hospital unit.
-  if (/\b(mid[- ]?level|mid[- ]?career|intermediate(?! care))\b/.test(t)) return 'mid';
+  // "Early-Mid Level" / "Entry-Mid" span two bands: left to the years.
+  if (/(?<!(?:early|entry)[- ])\b(mid[- ]?level|mid[- ]?career|intermediate(?! care))\b/.test(t)) return 'mid';
   if (/\b(manager|supervisor|lead|foreman)\b/.test(t)) return 'mid';
   return 'unknown';
 }

@@ -107,5 +107,6 @@ describe('title fallback reads mid in words', () => {
     expect(t('Intermediate Developer')).toBe('mid');
     expect(t('Intermediate Care Nurse')).toBe('unknown');
     expect(t('Junior Developer')).toBe('entry');
+    expect(t('Software Engineer - Embedded (Early-Mid Level)')).toBe('unknown');
   });
 });
