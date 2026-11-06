@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import {
   MapPin, ExternalLink, BookmarkPlus, BookmarkCheck, Sparkles, Target,
   FileText, Wand2, Users, ShieldCheck, CircleOff, Plane, Wifi,
-  FileSignature, Loader2, ChevronDown,
+  FileSignature, Loader2, ChevronDown, Scale, Clock3,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
@@ -30,13 +30,15 @@ import { WhyThisScoreButton } from './JobFitDetails';
 import { fitBandOf } from './fitBands';
 import { apiService, companyLogoSrc } from '@/lib/api';
 import { stagePendingTailorJob, cacheJdText, readCachedJdText } from '@/lib/craftHandoff';
+import { useJobDescription } from '@/hooks/useJobDescription';
+import { jobLevelLabel } from '@/lib/jobLevel';
 import { openJobPosting } from '@/lib/jobPosting';
 import { isAppliedSavedJob } from '@/lib/savedJobs';
 import { applicationStateLabel } from '@/lib/applicationState';
 import { trustOf } from '@/lib/employerPolicy';
 import { postedAgeLabel } from '@/lib/careerJobs';
 import { cn } from '@/lib/utils';
-import { hueFromString, toTitleCase, decodeJobHtml } from '@/lib/format';
+import { hueFromString, toTitleCase } from '@/lib/format';
 import { useCountUp } from '@/hooks/useCountUp';
 import type { Job } from '@/types/jobs';
 
@@ -45,7 +47,10 @@ export const JOB_FEED_GRID_CLASS = 'grid grid-cols-1 items-stretch gap-3 sm:grid
 
 /** Shared frosted surface — same recipe as the Job feed drawer. */
 export const JOB_CARD_CLASS =
-  'group relative flex h-full min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border liquid-glass shadow-none transition-[border-color,box-shadow] duration-200 hover:border-primary/40';
+  'job-card group relative flex h-full min-h-0 flex-1 flex-col overflow-hidden rounded-xl liquid-glass shadow-none';
+
+/** Older than this, a posting is shown greyed: still listed, visibly old. */
+export const STALE_AFTER_DAYS = 30;
 
 interface JobCardProps {
   job: Job;
@@ -69,6 +74,21 @@ interface JobCardProps {
   onHide?: () => void;
   /** First seen after the user's previous visit (For you only). */
   isNew?: boolean;
+  /** Open the quick-look panel. When set, a click or Enter on the card body opens it. */
+  onOpen?: () => void;
+  /** The keyboard cursor (J/K) is on this card. */
+  isCursor?: boolean;
+  /** In the compare tray, and the toggle for it. */
+  compareSelected?: boolean;
+  onToggleCompare?: () => void;
+  /** Likely reposts of this card folded under it. */
+  repostCount?: number;
+}
+
+/** A click that landed on one of the card's own controls, not its body. */
+function isControlClick(target: EventTarget | null): boolean {
+  return target instanceof Element
+    && !!target.closest('button, a, input, textarea, select, [role="button"], [role="menuitem"], [data-no-open]');
 }
 
 /**
@@ -178,7 +198,7 @@ function ActionIcon({ label, icon: Icon, onClick, disabled }: {
       disabled={disabled}
       title={label}
       aria-label={label}
-      className="grid h-8 w-8 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+      className="press grid h-8 w-8 place-items-center rounded-lg text-muted-foreground hover:bg-primary/10 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
     >
       <Icon className="h-3.5 w-3.5" aria-hidden />
     </button>
@@ -236,13 +256,12 @@ export function ApplyConfirmDialog({
 export function JobCard({
   job, saved, jobStatus, onSave, onUnsave, onQuickApply, isNew = false,
   applyConfirmPending, applyConfirmModalJobId, onConfirmApplied, onConfirmNotYet,
-  onApplyWithTailor, onAlreadyApplied, onHide,
+  onApplyWithTailor, onAlreadyApplied, onHide, onOpen, isCursor = false,
+  compareSelected = false, onToggleCompare, repostCount = 0,
 }: JobCardProps) {
   const reduceMotion = useReducedMotion();
   const [expanded, setExpanded] = useState(false);
-  const [jdText, setJdText] = useState('');
-  const [jdLoading, setJdLoading] = useState(false);
-  const [jdError, setJdError] = useState('');
+  const { text: jdText, loading: jdLoading, error: jdError } = useJobDescription(job, expanded);
   const [analysisOpen, setAnalysisOpen] = useState(false);
   const [analysisAction, setAnalysisAction] = useState<'summarize' | 'missing_skills' | 'cover_letter'>('summarize');
   const [tailoring, setTailoring] = useState(false);
@@ -324,50 +343,6 @@ export function JobCard({
     }
   };
 
-  useEffect(() => {
-    if (!expanded) return;
-    const stored = (job.description || '').trim();
-    if (stored) {
-      setJdText(decodeJobHtml(stored));
-      setJdLoading(false);
-      setJdError('');
-      return;
-    }
-    const url = job.apply_link || '';
-    if (!url) {
-      setJdText('');
-      setJdLoading(false);
-      setJdError('No description is stored for this listing.');
-      return;
-    }
-    const cached = readCachedJdText(url);
-    if (cached) {
-      setJdText(decodeJobHtml(cached));
-      setJdLoading(false);
-      setJdError('');
-      return;
-    }
-    let cancelled = false;
-    setJdLoading(true);
-    setJdError('');
-    setJdText('');
-    apiService.fetchJobDescription(url).then((resp) => {
-      if (cancelled) return;
-      setJdLoading(false);
-      if (resp.data?.ok && resp.data.jd_text) {
-        const jd = resp.data.jd_text.trim();
-        cacheJdText(url, jd);
-        setJdText(decodeJobHtml(jd));
-        return;
-      }
-      setJdError('We could not load this job description. Open the posting to read it.');
-    }).catch(() => {
-      if (cancelled) return;
-      setJdLoading(false);
-      setJdError('We could not load this job description. Open the posting to read it.');
-    });
-    return () => { cancelled = true; };
-  }, [expanded, job.description, job.apply_link, job.job_id]);
 
   const showInlineApplyConfirm =
     !!applyConfirmPending
@@ -415,13 +390,29 @@ export function JobCard({
   const company = toTitleCase(job.company);
   const location = toTitleCase(job.location);
   const sourceLabel = job.source ? toTitleCase(job.source) : '';
+  const level = jobLevelLabel(job);
   const meta = [
     job.salary,
     toTitleCase(job.employment_type),
-    job.seniority ? String(job.seniority).replace(/_/g, ' ') : '',
-    sourceLabel ? `Via ${sourceLabel}` : '',
     postedAgeLabel(job) || job.date_posted || '',
   ].filter(Boolean);
+  const rawDays = (job as Job & { days_ago?: number | null }).days_ago;
+  const daysOld = typeof rawDays === 'number' ? rawDays : null;
+  const stale = daysOld != null && daysOld > STALE_AFTER_DAYS;
+  const openable = !!onOpen;
+  const onCardClick = (e: React.MouseEvent) => {
+    if (!onOpen || isControlClick(e.target)) return;
+    // A text selection is reading, not a click.
+    if (window.getSelection()?.toString()) return;
+    onOpen();
+  };
+  const onCardKeyDown = (e: React.KeyboardEvent) => {
+    if (!onOpen || e.target !== e.currentTarget) return;
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onOpen();
+    }
+  };
   // The legacy band yields to the evidence-backed `trust` block when the row
   // carries one: two trust readings on one card would contradict each other.
   const showLegacyTrust = !!job.trust_band && !trustOf(job);
@@ -435,15 +426,27 @@ export function JobCard({
 
   return (
     <>
-      <div className={cn('flex min-h-0 flex-col', expanded ? 'h-auto' : 'h-full')}>
-      <Card className={cn(JOB_CARD_CLASS, expanded && 'h-auto overflow-visible')}>
+      <div
+        className={cn('flex min-h-0 flex-col', expanded ? 'h-auto' : 'h-full', isNew && 'job-new-glow')}
+      >
+      <Card
+        className={cn(JOB_CARD_CLASS, expanded && 'h-auto overflow-visible')}
+        data-job-card={job.job_id}
+        data-openable={openable ? 'true' : undefined}
+        data-cursor={isCursor ? 'true' : undefined}
+        data-stale={stale ? 'true' : undefined}
+        tabIndex={openable ? 0 : undefined}
+        aria-label={openable ? `${title} at ${company}. Press Enter for details.` : undefined}
+        onClick={onCardClick}
+        onKeyDown={onCardKeyDown}
+      >
         <span
           className="pointer-events-none absolute -right-16 -top-16 z-0 h-40 w-40 rounded-full opacity-40 blur-3xl"
           style={{ backgroundColor: `hsl(${hue} 70% 55% / 0.18)` }}
           aria-hidden
         />
         <span
-          className="pointer-events-none absolute inset-x-0 top-0 z-[1] h-1 opacity-70"
+          className="job-card-accent pointer-events-none absolute inset-x-0 top-0 z-[1] h-1 opacity-70"
           style={{ backgroundImage: `linear-gradient(90deg, hsl(${hue} 72% 56%), hsl(${(hue + 45) % 360} 72% 60%))` }}
           aria-hidden
         />
@@ -475,20 +478,34 @@ export function JobCard({
             </div>
           </div>
 
-          <h3 className="line-clamp-2 text-[14px] font-semibold leading-snug text-foreground" title={title}>
+          <h3 className="job-card-title line-clamp-2 text-[14px] font-semibold leading-snug tracking-[-0.01em] text-foreground" title={title}>
             {title}
           </h3>
 
           <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
             {isNew && (
               <span
-                className="inline-flex items-center rounded-full border border-info/30 bg-info/10 px-1.5 py-px text-[10px] font-semibold text-info"
+                className="job-new-chip inline-flex items-center gap-1 rounded-full border border-info/40 bg-info/10 px-1.5 py-px text-[10px] font-semibold text-info"
                 title="New since your last visit"
                 data-testid="job-new-badge"
               >
+                <span className="h-1.5 w-1.5 rounded-full bg-info" aria-hidden />
                 New
               </span>
             )}
+            <span
+              className={cn(
+                'inline-flex items-center rounded-full border px-1.5 py-px text-[10px] font-semibold',
+                level.kind === 'stated' && 'border-border bg-secondary text-secondary-foreground',
+                level.kind === 'estimated' && 'border-dashed border-border text-muted-foreground',
+                level.kind === 'unstated' && 'border-transparent text-muted-foreground/80',
+              )}
+              title={level.title}
+              data-testid="job-level"
+              data-level-kind={level.kind}
+            >
+              {level.text}
+            </span>
             <WhyThisScoreButton job={job} />
             {job.score_basis === 'title_only' && (
               <span className="text-[10.5px] leading-snug text-muted-foreground" data-testid="job-score-provisional">
@@ -550,8 +567,21 @@ export function JobCard({
           </div>
 
           {meta.length > 0 && (
-            <p className="truncate text-[11px] text-muted-foreground" title={meta.join(' · ')}>
+            <p className="truncate text-[11px] tabular-nums text-muted-foreground" title={meta.join(' · ')}>
               {meta.join(' · ')}
+            </p>
+          )}
+          {(stale || repostCount > 0) && (
+            <p className="flex flex-wrap items-center gap-x-2 text-[10.5px] text-muted-foreground" data-testid="job-age-note">
+              {stale && (
+                <span className="inline-flex items-center gap-1">
+                  <Clock3 className="h-3 w-3" aria-hidden />
+                  Posted {daysOld} days ago, may already be filled
+                </span>
+              )}
+              {repostCount > 0 && (
+                <span>Reposted {repostCount === 1 ? 'once' : `${repostCount} times`}</span>
+              )}
             </p>
           )}
 
@@ -721,6 +751,23 @@ export function JobCard({
               <ActionIcon label="Skill-gap analysis" icon={Target} onClick={() => openAnalysis('missing_skills')} />
               <ActionIcon label="Generate cover letter" icon={FileText} onClick={() => openAnalysis('cover_letter')} />
               <ActionIcon label="Find someone who can refer you" icon={Users} onClick={() => setReferralOpen(true)} />
+              {onToggleCompare && (
+                <button
+                  type="button"
+                  onClick={onToggleCompare}
+                  aria-pressed={compareSelected}
+                  title={compareSelected ? 'Remove from compare' : 'Add to compare (up to 3)'}
+                  className={cn(
+                    'press ml-auto inline-flex h-8 items-center gap-1 rounded-lg px-2 text-[11px] font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                    compareSelected
+                      ? 'bg-primary/10 text-primary'
+                      : 'text-muted-foreground hover:bg-primary/10 hover:text-primary',
+                  )}
+                >
+                  <Scale className="h-3.5 w-3.5" aria-hidden />
+                  {compareSelected ? 'Comparing' : 'Compare'}
+                </button>
+              )}
             </div>
           </div>
         </CardContent>

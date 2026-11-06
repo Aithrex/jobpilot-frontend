@@ -11,7 +11,7 @@ import {
 import { useJobTitles, type ResumeTitleSync } from '@/hooks/useJobTitles';
 import { applyUrlKey, SENIORITY_LEVELS, type SeniorityLevel } from '@/lib/careerJobs';
 import { useSavedJobs } from '@/hooks/useSavedJobTabCounts';
-import { HIDDEN_JOBS_CHANGED, loadHiddenJobIds, persistHiddenJobId } from '@/lib/hiddenJobs';
+import { HIDDEN_JOBS_CHANGED, loadHiddenJobIds, persistHiddenJobId, unhideJobId } from '@/lib/hiddenJobs';
 import { isNewSince, selectForYouJobs } from '@/lib/forYouSelection';
 import { isPassedOverIn, loadImpressions } from '@/lib/boardImpressions';
 import type { ExperienceView, WorkdayJob, WorkdayRecency } from '@/types/jobs';
@@ -84,12 +84,41 @@ function writeShowWeaker(v: boolean): void {
   }
 }
 
+/** Companies ticked in the grouped company checklist - remembered per browser. */
+const COMPANIES_KEY = 'aspirely.board.companies.v1';
+
+function readCompanies(): Set<string> {
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(COMPANIES_KEY) || '[]');
+    return new Set(Array.isArray(parsed) ? parsed.filter((k): k is string => typeof k === 'string') : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function writeCompanies(keys: Set<string>): void {
+  try {
+    if (keys.size) window.localStorage.setItem(COMPANIES_KEY, JSON.stringify([...keys]));
+    else window.localStorage.removeItem(COMPANIES_KEY);
+  } catch {
+    /* storage unavailable: the choice lasts for this session only */
+  }
+}
+
 export type SponsorFilter = 'all' | 'friendly' | 'proven';
 export type SortBy = 'score' | 'newest';
 
 interface CombinedJobsContextValue extends CombinedJobsController, ReturnType<typeof selectForYouJobs> {
   hiddenJobIds: Set<string>;
   hideJob: (jobId: string, applyLink?: string) => void;
+  /** Undo a hide (the triage toast's Undo). */
+  unhideJob: (jobId: string, applyLink?: string) => void;
+  /** Companies the board is narrowed to (`companyKeyOf`). Empty = all. */
+  companies: Set<string>;
+  setCompanies: (keys: Set<string>) => void;
+  /** Fold likely reposts under their first card. Default on. */
+  collapseReposts: boolean;
+  setCollapseReposts: (v: boolean) => void;
   getJobStatus: (jobId: string, applyLink?: string) => string | null;
   /** Live countdown / freshness from the background auto-sync. */
   lastSyncedAt: number | null;
@@ -264,6 +293,16 @@ export function CombinedJobsProvider({ children }: { children: React.ReactNode }
   const hideJob = useCallback((jobId: string, applyLink?: string) => {
     setHiddenJobIds(persistHiddenJobId(jobId, applyLink));
   }, []);
+  const unhideJob = useCallback((jobId: string, applyLink?: string) => {
+    setHiddenJobIds(unhideJobId(jobId, applyLink));
+  }, []);
+  const [companies, setCompaniesState] = useState<Set<string>>(readCompanies);
+  const setCompanies = useCallback((keys: Set<string>) => {
+    const next = new Set(keys);
+    setCompaniesState(next);
+    writeCompanies(next);
+  }, []);
+  const [collapseReposts, setCollapseReposts] = useState(true);
   const statusIndex = useMemo(() => {
     const ids = new Map<string, string>();
     const urls = new Map<string, string>();
@@ -280,9 +319,10 @@ export function CombinedJobsProvider({ children }: { children: React.ReactNode }
   const selection = useMemo(() => selectForYouJobs(feed.jobs, {
     recency, search, seniorityLevels, minScore, sponsorFilter, showApplied, sortBy,
     hiddenJobIds, getJobStatus, showWeaker, seenThrough, newOnly, isPassedOver,
+    companies, collapseReposts,
   }), [feed.jobs, recency, search, seniorityLevels, minScore, sponsorFilter,
     showApplied, sortBy, hiddenJobIds, getJobStatus, showWeaker, seenThrough, newOnly,
-    isPassedOver]);
+    isPassedOver, companies, collapseReposts]);
 
   const ensureStarted = useCallback(() => setStarted(true), []);
 
@@ -354,6 +394,11 @@ export function CombinedJobsProvider({ children }: { children: React.ReactNode }
     ...selection,
     hiddenJobIds,
     hideJob,
+    unhideJob,
+    companies,
+    setCompanies,
+    collapseReposts,
+    setCollapseReposts,
     getJobStatus,
     // When the board on screen was BUILT, not when this tab last asked: a
     // stored board read at 10:05 that the server built at 09:50 is 15 min old.

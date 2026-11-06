@@ -3,6 +3,9 @@ import tailwindcssAnimate from "tailwindcss-animate";
 import tailwindcssAspectRatio from "@tailwindcss/aspect-ratio";
 
 export default {
+  // Hover styles only on devices that can hover: on touch screens Tailwind 3's
+  // `hover:` otherwise sticks after a tap.
+  future: { hoverOnlyWhenSupported: true },
   darkMode: ["class"],
   content: ["./pages/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}"],
   prefix: "",

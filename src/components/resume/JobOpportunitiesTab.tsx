@@ -9,6 +9,8 @@ import { useCombinedJobsCtx } from '@/components/job-search/CombinedJobsProvider
 import type { Job } from '@/types/jobs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { isAppliedSavedJob } from '@/lib/savedJobs';
+import { SavedNextSteps } from '@/components/job-search/SavedNextSteps';
+import type { SavedJob } from '@/types/jobs';
 
 interface JobOpportunitiesTabProps {
   /** Mounted inside the /next app shell - the shell already renders the page
@@ -25,15 +27,43 @@ function viewFromPath(pathname: string): View {
   return 'browse';
 }
 
+function SavedCard({ job, jobSearch, onHideJob }: {
+  job: Job;
+  jobSearch: ReturnType<typeof useJobSearch>;
+  onHideJob?: (jobId: string, applyLink?: string) => void;
+}) {
+  return (
+    <JobCard
+      job={job}
+      saved={jobSearch.isJobSaved(job.job_id)}
+      jobStatus={jobSearch.getJobStatus(job.job_id, job.apply_link)}
+      onSave={() => jobSearch.saveJob(job)}
+      onUnsave={() => jobSearch.unsaveJob(job.job_id)}
+      onQuickApply={(opts) => void jobSearch.quickApply(job, opts)}
+      applyConfirmPending={jobSearch.isApplyConfirmPending(job.job_id)}
+      applyConfirmModalJobId={jobSearch.applyConfirmJob?.job_id}
+      onConfirmApplied={() => void jobSearch.confirmApplied(job.job_id, job)}
+      onConfirmNotYet={() => jobSearch.dismissApplyConfirm(job.job_id)}
+      onApplyWithTailor={() => void jobSearch.beginApplyWithTailor(job)}
+      onAlreadyApplied={() => void jobSearch.markAlreadyApplied(job)}
+      onAutoApply={() => void jobSearch.autoApply(job)}
+      autoApplying={jobSearch.autoApplyingId === job.job_id}
+      onHide={onHideJob ? () => onHideJob(job.job_id, job.apply_link) : undefined}
+    />
+  );
+}
+
 function JobList({
-  jobs,
+  rows,
+  mode,
   emptyTitle,
   emptyBody,
   jobSearch,
   onHideJob,
   loading,
 }: {
-  jobs: Job[];
+  rows: SavedJob[];
+  mode: 'saved' | 'applied';
   emptyTitle: string;
   emptyBody: string;
   jobSearch: ReturnType<typeof useJobSearch>;
@@ -60,7 +90,7 @@ function JobList({
       </div>
     );
   }
-  if (jobs.length === 0) {
+  if (rows.length === 0) {
     return (
       <div className="rounded-xl border border-dashed border-border px-4 py-10 text-center">
         <p className="text-sm font-semibold text-foreground">{emptyTitle}</p>
@@ -69,28 +99,12 @@ function JobList({
     );
   }
   return (
-    <div className={JOB_FEED_GRID_CLASS}>
-      {jobs.map((job) => (
-        <JobCard
-          key={job.job_id}
-          job={job}
-          saved={jobSearch.isJobSaved(job.job_id)}
-          jobStatus={jobSearch.getJobStatus(job.job_id, job.apply_link)}
-          onSave={() => jobSearch.saveJob(job)}
-          onUnsave={() => jobSearch.unsaveJob(job.job_id)}
-          onQuickApply={(opts) => void jobSearch.quickApply(job, opts)}
-          applyConfirmPending={jobSearch.isApplyConfirmPending(job.job_id)}
-          applyConfirmModalJobId={jobSearch.applyConfirmJob?.job_id}
-          onConfirmApplied={() => void jobSearch.confirmApplied(job.job_id, job)}
-          onConfirmNotYet={() => jobSearch.dismissApplyConfirm(job.job_id)}
-          onApplyWithTailor={() => void jobSearch.beginApplyWithTailor(job)}
-          onAlreadyApplied={() => void jobSearch.markAlreadyApplied(job)}
-          onAutoApply={() => void jobSearch.autoApply(job)}
-          autoApplying={jobSearch.autoApplyingId === job.job_id}
-          onHide={onHideJob ? () => onHideJob(job.job_id, job.apply_link) : undefined}
-        />
-      ))}
-    </div>
+    <SavedNextSteps
+      mode={mode}
+      rows={rows}
+      updateJobStatus={mode === 'applied' ? jobSearch.updateJobStatus : undefined}
+      renderCard={(row) => <SavedCard job={row.job_data} jobSearch={jobSearch} onHideJob={onHideJob} />}
+    />
   );
 }
 
@@ -145,7 +159,8 @@ export default function JobOpportunitiesTab({ embedded }: JobOpportunitiesTabPro
 
       {view === 'saved' && (
         <JobList
-          jobs={savedRows.map((row) => row.job_data).filter(Boolean)}
+          mode="saved"
+          rows={savedRows.filter((row) => !!row.job_data)}
           emptyTitle="Nothing saved yet"
           emptyBody="Save a role from For you. After you apply, it moves to Applied so it doesn't sit in both lists."
           jobSearch={jobSearch}
@@ -163,7 +178,8 @@ export default function JobOpportunitiesTab({ embedded }: JobOpportunitiesTabPro
             </Button>
           </p>
           <JobList
-            jobs={appliedRows.map((row) => row.job_data).filter(Boolean)}
+            mode="applied"
+            rows={appliedRows.filter((row) => !!row.job_data)}
             emptyTitle="No applications yet"
             emptyBody="Apply from For you, then confirm you submitted. Those roles live here, not under Saved."
             jobSearch={jobSearch}
