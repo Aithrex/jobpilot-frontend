@@ -112,7 +112,8 @@ test('experience totals visibly include unspecified levels without dropping or r
   expect(screen.getByRole('radio', { name: 'Last 3 days 207' })).toBeChecked();
   const expectedOrder = [...selected.filter((job) => job.days_ago === 0), ...selected.filter((job) => job.days_ago === 2)];
   expect(feed.visibleJobs.map((job) => job.job_id)).toEqual(expectedOrder.map((job) => job.job_id));
-  expect(screen.getAllByTestId('job-card')).toHaveLength(JOB_FEED_PAGE_SIZE);
+  // Cards that leave fade out for ~140ms before they unmount.
+  await waitFor(() => expect(screen.getAllByTestId('job-card')).toHaveLength(JOB_FEED_PAGE_SIZE));
   expect(screen.getByText(`Showing 1-${JOB_FEED_PAGE_SIZE} of 207 matching roles`)).toBeInTheDocument();
 
   await user.click(screen.getByRole('button', { name: 'Experience level: Entry + Mid' }));

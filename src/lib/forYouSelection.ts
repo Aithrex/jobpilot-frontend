@@ -1,4 +1,4 @@
-import type { WorkdayJob, WorkdayRecency } from '@/types/jobs';
+import type { CompanyType, WorkdayJob, WorkdayRecency } from '@/types/jobs';
 import {
   inRecencyWindow,
   isAppliedPipelineStatus,
@@ -31,6 +31,29 @@ export interface ForYouFilters {
   newOnly?: boolean;
   /** Cards passed over on several visits (`lib/boardImpressions`). */
   isPassedOver?: (job: WorkdayJob) => boolean;
+  /** Companies the board is narrowed to (`companyKeyOf`). Empty = all. */
+  companies?: ReadonlySet<string>;
+  /** Fold likely reposts (same company + title + city) under their first card. */
+  collapseReposts?: boolean;
+}
+
+/** One company on the board, for the grouped company checklist. */
+export interface CompanyFacet {
+  key: string;
+  name: string;
+  type: CompanyType;
+  basis: string;
+  count: number;
+}
+
+/** The key a company is filtered by: its display name, case-folded. */
+export function companyKeyOf(job: Pick<WorkdayJob, 'company'>): string {
+  return (job.company || '').trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+/** A card the board folds under an earlier card as a likely repost. */
+export function isFoldedRepost(job: Pick<WorkdayJob, 'possible_duplicate_of'>): boolean {
+  return !!job.possible_duplicate_of;
 }
 
 /** However weak the user's best scores are, this many always stay visible. */
@@ -73,14 +96,17 @@ export function foldedWeakerMatches(rows: readonly WorkdayJob[]): Set<WorkdayJob
  * under the current toggle are not counted. */
 export function selectForYouJobs(jobs: WorkdayJob[], filters: ForYouFilters) {
   const { recency, search, seniorityLevels, minScore, sponsorFilter, showApplied, sortBy,
-    hiddenJobIds, getJobStatus, showWeaker = false, seenThrough = null, isPassedOver } = filters;
+    hiddenJobIds, getJobStatus, showWeaker = false, seenThrough = null, isPassedOver,
+    companies, collapseReposts = false } = filters;
   const newOnly = !!filters.newOnly && !!seenThrough;
   const recencyWindow = RECENCY_OPTIONS.find((option) => option.key === recency) ?? RECENCY_OPTIONS[0];
   const query = search.trim().toLowerCase();
   const isApplied = (job: WorkdayJob) =>
     isAppliedPipelineStatus(getJobStatus(job.job_id, job.apply_link));
   const isNew = (job: WorkdayJob) => isNewSince(job, seenThrough);
-  const eligible = jobs.filter((job) =>
+  // Every filter but the company one, so the company checklist can count
+  // what choosing a company would show.
+  const beforeCompany = jobs.filter((job) =>
     (!query || `${job.title} ${job.company}`.toLowerCase().includes(query)) &&
     (!minScore || (job.match_score ?? 0) >= minScore) &&
     (sponsorFilter !== 'friendly' || job.sponsorship !== 'refused') &&
@@ -88,6 +114,17 @@ export function selectForYouJobs(jobs: WorkdayJob[], filters: ForYouFilters) {
     !isHiddenJob(hiddenJobIds, job) &&
     (showApplied || !isApplied(job)),
   );
+  // A repost folds only under a card the board still shows: if the earlier
+  // copy was hidden or applied to, this one is the only copy left.
+  const present = new Set(beforeCompany.map((job) => job.job_id));
+  const folds = (job: WorkdayJob) =>
+    isFoldedRepost(job) && present.has(job.possible_duplicate_of as string);
+  const unfoldedReposts = collapseReposts ? beforeCompany.filter((job) => !folds(job)) : beforeCompany;
+  const repostsFolded = beforeCompany.length - unfoldedReposts.length;
+  const companyFilterOn = !!companies && companies.size > 0;
+  const eligible = companyFilterOn
+    ? unfoldedReposts.filter((job) => companies!.has(companyKeyOf(job)))
+    : unfoldedReposts;
 
   /** What the board shows of `rows`, which already pass every other filter. */
   const show = (rows: WorkdayJob[]) => {
@@ -122,8 +159,42 @@ export function selectForYouJobs(jobs: WorkdayJob[], filters: ForYouFilters) {
     levelCounts[level] = shown.filter((job) => seniorityViewOf(job) === level).length;
   }
 
+  // The company checklist: every company in this window at these levels,
+  // counted as the board would show it, whatever companies are ticked.
+  const facetRows = companyFilterOn
+    ? show(unfoldedReposts.filter((job) =>
+      matchesSeniorityLevels(job, seniorityLevels)
+      && inRecencyWindow(job, recencyWindow.maxDays, recencyWindow.minDays))).shown
+    : current.shown;
+  const byCompany = new Map<string, CompanyFacet>();
+  for (const job of facetRows) {
+    const key = companyKeyOf(job);
+    if (!key) continue;
+    const prev = byCompany.get(key);
+    if (prev) prev.count += 1;
+    else {
+      byCompany.set(key, {
+        key,
+        name: (job.company || '').trim(),
+        type: job.company_type?.type ?? 'unknown',
+        basis: job.company_type?.basis ?? '',
+        count: 1,
+      });
+    }
+  }
+  // A ticked company the window no longer holds stays listed (at 0), so it
+  // can always be unticked.
+  for (const key of companies ?? []) {
+    if (!byCompany.has(key)) byCompany.set(key, { key, name: key, type: 'unknown', basis: '', count: 0 });
+  }
+  const companyFacets = [...byCompany.values()].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+
   return {
     visibleJobs: sortJobsByMode(current.shown, sortBy, { isApplied, isPassedOver }),
+    /** Every company in the window with its type and card count. */
+    companyFacets,
+    /** Likely reposts folded under their first card (0 when not folding). */
+    repostsFolded,
     recencyCounts,
     levelCounts,
     /** Weaker matches in this window: folded away now, or shown because the

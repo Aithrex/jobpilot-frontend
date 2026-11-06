@@ -86,15 +86,39 @@ export default function DiscoverPage() {
   const isPortals = section === "portals";
   const showListingRefine = section === "for-you" || section === "jobs";
   const showCombinedFeed = !isPortals;
-  const { saved, applied } = useSavedJobTabCounts();
+  const { toApply, followUps, interviewing } = useSavedJobTabCounts();
+  // Each tab shows only the number that asks for action. A total ("99+")
+  // grew forever and said nothing about what to do next.
   const jobsSections = useMemo(
     () =>
       JOBS_SECTIONS.map((item) => {
-        if (item.to === "saved") return { ...item, badge: saved };
-        if (item.to === "applied") return { ...item, badge: applied };
+        if (item.to === "saved") {
+          return {
+            ...item,
+            badge: toApply,
+            badgeText: "to apply",
+            badgeTitle: `${toApply} saved ${toApply === 1 ? "role is" : "roles are"} still open and not applied to`,
+          };
+        }
+        if (item.to === "applied") {
+          if (followUps > 0) {
+            return {
+              ...item,
+              badge: followUps,
+              badgeText: followUps === 1 ? "follow-up" : "follow-ups",
+              badgeTitle: `${followUps} ${followUps === 1 ? "application has" : "applications have"} had no update for a week or more`,
+            };
+          }
+          return {
+            ...item,
+            badge: interviewing,
+            badgeText: "interviewing",
+            badgeTitle: `${interviewing} at the interview or offer stage`,
+          };
+        }
         return item;
       }),
-    [saved, applied],
+    [toApply, followUps, interviewing],
   );
 
   return (

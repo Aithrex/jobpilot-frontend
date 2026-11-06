@@ -5,6 +5,7 @@ import { timeZoneName, useViewerTimeZone } from '@/lib/viewerTimezone';
 import { PillSwitch } from '@/components/ui/pill-switch';
 import { cn } from '@/lib/utils';
 import { ExperienceCountBreakdown, ExperienceLevelPicker } from '@/components/job-search/ExperienceLevelPicker';
+import { CompanyFilter } from '@/components/job-search/CompanyFilter';
 
 /**
  * For-you listing chrome: experience level, employer types, recency windows + Newest / Best match + open vs
@@ -38,6 +39,7 @@ export function JobsRefineBar() {
         aria-label="Listing recency and sort"
       >
         <ExperienceLevelPicker />
+        <CompanyFilter className="h-9" />
         <PillSwitch
           aria-label="Posting recency"
           value={recency}

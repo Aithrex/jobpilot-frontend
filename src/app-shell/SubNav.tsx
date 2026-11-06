@@ -15,8 +15,13 @@ export interface SubNavItem {
   to: string;
   label: string;
   icon: LucideIcon;
-  /** Small count at the top of the label (Saved / Applied). */
+  /** Small count beside the label. Shown only when above zero: it counts
+   *  what needs action (Saved: still to apply; Applied: follow-ups due). */
   badge?: number;
+  /** What the count is of, shown beside it from `sm` up ("to apply"). */
+  badgeText?: string;
+  /** Hover / screen-reader sentence for the count. */
+  badgeTitle?: string;
 }
 
 interface SubNavProps {
@@ -75,12 +80,13 @@ export function SubNav({ ariaLabel, items, className }: SubNavProps) {
         onKeyDown={onKeyDown}
         className="w-full max-w-full"
       >
-        {items.map(({ to, label, icon: Icon, badge }) => (
+        {items.map(({ to, label, icon: Icon, badge, badgeText, badgeTitle }) => (
           <NavLink
             key={to}
             to={to}
             data-subnav-link
-            aria-label={badge != null ? `${label} ${badge}` : undefined}
+            title={badge ? badgeTitle : undefined}
+            aria-label={badge ? (badgeTitle ? `${label}. ${badgeTitle}` : `${label} ${badge}`) : undefined}
             className={({ isActive }) => pillItemClass(isActive, "md")}
           >
             {({ isActive }) => (
@@ -92,10 +98,14 @@ export function SubNav({ ariaLabel, items, className }: SubNavProps) {
                 />
                 <span className="relative z-10">
                   {label}
-                  {badge != null && (
-                    <sup className="ml-0.5 text-[9px] font-bold tabular-nums leading-none text-primary">
-                      {badge > 99 ? "99+" : badge}
-                    </sup>
+                  {!!badge && badge > 0 && (
+                    <span
+                      className="ml-1.5 inline-flex items-center gap-0.5 rounded-full bg-primary/10 px-1.5 py-px align-middle text-[10px] font-semibold tabular-nums leading-4 text-primary"
+                      data-testid={`subnav-badge-${to}`}
+                    >
+                      {badge}
+                      {badgeText && <span className="hidden font-medium sm:inline">{badgeText}</span>}
+                    </span>
                   )}
                 </span>
               </>

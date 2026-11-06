@@ -308,6 +308,9 @@ export interface Job extends EmployerPolicyRowFields {
   // at runtime; declaring them keeps the score-explanation UI type-safe.
   /** Title-derived seniority band. */
   seniority?: CareerPortalSeniority;
+  company_type?: CompanyTypeBlock;
+  level_estimate?: LevelEstimate | null;
+  possible_duplicate_of?: string;
   /** Frank "can the base resume be honestly tailored into this JD?" verdict. */
   tailor_feasibility?: CareerPortalFeasibility;
   feasibility_reason?: string;
@@ -335,6 +338,8 @@ export interface SavedJob {
   status: 'interested' | 'applied' | 'interview' | 'offer' | 'rejected' | 'withdrawn';
   notes: string;
   saved_at: string;
+  /** Additive (backend 2026-11-05): posting open/closed, applied date, tailored. */
+  next_step?: SavedJobNextStep;
 }
 
 export interface ParsedResume {
@@ -587,6 +592,38 @@ export interface WorkdayJob extends EmployerPolicyRowFields {
   sponsorship?: CareerPortalSponsorship;
   /** Evidence behind the sponsorship band - JD snippet or filings summary. */
   sponsor_note?: string;
+  /** What kind of employer this is (`company-type-1.0.0`), with the evidence. */
+  company_type?: CompanyTypeBlock;
+  /** A band READ from softer JD wording when the posting states no level.
+   *  Display only: the level filter still treats the card as "no level". */
+  level_estimate?: LevelEstimate | null;
+  /** Same company + title + city as an earlier card: likely a repost. */
+  possible_duplicate_of?: string;
+}
+
+export type CompanyType = 'big_tech_mnc' | 'enterprise' | 'startup_midsize' | 'staffing' | 'unknown';
+
+export interface CompanyTypeBlock {
+  type: CompanyType;
+  /** Why the company sits in this group, in plain words. */
+  basis?: string;
+  version?: string;
+}
+
+export interface LevelEstimate {
+  level: 'intern' | 'entry' | 'mid' | 'senior' | 'staff';
+  /** The posting's own words the estimate was read from. */
+  basis?: string;
+  version?: string;
+}
+
+/** What the Saved and Applied pages need to say what to do next. */
+export interface SavedJobNextStep {
+  posting_state: 'open' | 'closed' | 'unknown';
+  posted_at?: string | null;
+  applied_at?: string | null;
+  tracker_status?: string | null;
+  tailored?: boolean;
 }
 
 export interface WorkdayJobsParams {

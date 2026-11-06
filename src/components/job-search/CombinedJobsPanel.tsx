@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import {
   AlertCircle,
@@ -19,6 +20,9 @@ import { timeZoneName, useViewerTimeZone } from '@/lib/viewerTimezone';
 import { JOB_FEED_PAGE_SIZE, RECENCY_OPTIONS, toJob } from '@/lib/careerJobs';
 import { isHiddenJob } from '@/lib/hiddenJobs';
 import { clearImpression, recordFirstPageImpressions } from '@/lib/boardImpressions';
+import { JobQuickLook } from '@/components/job-search/JobQuickLook';
+import { COMPARE_MAX, CompareTray } from '@/components/job-search/CompareTray';
+import { ShortcutsButton, SwipeableCard, useCoarsePointer } from '@/components/job-search/BoardTriage';
 import { cn } from '@/lib/utils';
 import type { Job, WorkdayJob } from '@/types/jobs';
 
@@ -60,6 +64,12 @@ interface CombinedJobsPanelProps {
 }
 
 const SOURCE_LABEL = { workday: 'Workday', careers: 'company career pages', mncs: 'large employers' } as const;
+
+/** The card element for a job id (`data-job-card`). */
+function cardEl(id: string): HTMLElement | null {
+  const safe = typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(id) : id.replace(/["\\]/g, '\\$&');
+  return document.querySelector<HTMLElement>(`[data-job-card="${safe}"]`);
+}
 
 export function CombinedJobsPanel({
   isJobSaved,
@@ -113,7 +123,20 @@ export function CombinedJobsPanel({
     weakerMatchCount,
     isNewJob,
     newOnly,
+    unhideJob,
+    companies,
+    collapseReposts,
+    setCollapseReposts,
+    repostsFolded,
   } = useCombinedJobsCtx();
+  const coarse = useCoarsePointer();
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [quickId, setQuickId] = useState<string | null>(null);
+  const [cursorId, setCursorId] = useState<string | null>(null);
+  const [compareIds, setCompareIds] = useState<string[]>([]);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  /** Marked applied from the keyboard and waiting out its Undo window. */
+  const [pendingApplied, setPendingApplied] = useState<Set<string>>(new Set());
   // The store, read without starting hydration - the provider owns that.
   const { reviewTitles, resolveReview } = useJobTitles(false);
   const viewerZone = useViewerTimeZone();
@@ -148,12 +171,28 @@ export function CombinedJobsPanel({
     }
     setPage(1);
   }, [recency, search, seniorityKey, minScore, sponsorFilter, showApplied, sortBy, showWeaker,
-    newOnly, setPage]);
+    newOnly, companies, collapseReposts, setPage]);
 
-  const pagedJobs = useMemo(
-    () => visibleJobs.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
-    [visibleJobs, page],
+  // Cards marked applied from the keyboard leave the list at once; the write
+  // happens when their Undo window closes.
+  const listJobs = useMemo(
+    () => (pendingApplied.size ? visibleJobs.filter((j) => !pendingApplied.has(j.job_id)) : visibleJobs),
+    [visibleJobs, pendingApplied],
   );
+  const pagedJobs = useMemo(
+    () => listJobs.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [listJobs, page],
+  );
+  const byId = useMemo(() => new Map(jobs.map((j) => [j.job_id, j])), [jobs]);
+  // How many reposts fold under each card, so the card can say so.
+  const repostCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    if (!collapseReposts) return counts;
+    for (const j of jobs) {
+      if (j.possible_duplicate_of) counts.set(j.possible_duplicate_of, (counts.get(j.possible_duplicate_of) ?? 0) + 1);
+    }
+    return counts;
+  }, [jobs, collapseReposts]);
 
   // Once per visit, count the cards on the first page the user is shown.
   // A card seen on several visits with no action moves down its band next
@@ -172,23 +211,186 @@ export function CombinedJobsPanel({
     return fn();
   };
 
+  // One entrance per board: the first time results appear, the first cards
+  // rise in with a short stagger. After that (filters, pages, a re-sync) cards
+  // only cross-fade - a filter change is not an event worth choreographing.
+  const revealed = useRef(false);
+  const firstReveal = !revealed.current && pagedJobs.length > 0;
+  useEffect(() => {
+    if (pagedJobs.length > 0) revealed.current = true;
+  }, [pagedJobs.length]);
   const cardMotion = (index: number) =>
     reduceMotion
-      ? {}
+      ? { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 }, transition: { duration: 0.15 } }
       : {
-          initial: { opacity: 0, y: 16, scale: 0.96 },
+          initial: firstReveal ? { opacity: 0, y: 12, scale: 0.98 } : { opacity: 0 },
           animate: { opacity: 1, y: 0, scale: 1 },
+          exit: { opacity: 0, scale: 0.97, transition: { duration: 0.14, ease: 'easeOut' as const } },
           transition: {
-            duration: 0.34,
-            ease: [0.22, 1, 0.36, 1] as const,
-            delay: Math.min(index * 0.03, 0.3),
+            duration: firstReveal ? 0.3 : 0.16,
+            ease: [0.23, 1, 0.32, 1] as const,
+            delay: firstReveal ? Math.min(index, 6) * 0.045 : 0,
           },
         };
+
+  // -- Triage: quick look, keyboard, swipe, compare --
+  const listIndexOf = useCallback((id: string | null) =>
+    (id ? listJobs.findIndex((j) => j.job_id === id) : -1), [listJobs]);
+  const quickIndex = listIndexOf(quickId);
+  const quickJob = quickIndex >= 0 ? listJobs[quickIndex] : null;
+
+  /** Move the cursor (and an open quick look) to list position `i`. */
+  const moveTo = useCallback((i: number) => {
+    const next = listJobs[Math.max(0, Math.min(listJobs.length - 1, i))];
+    if (!next) return;
+    const nextPage = Math.floor(listJobs.indexOf(next) / PAGE_SIZE) + 1;
+    if (nextPage !== page) setPage(nextPage);
+    setCursorId(next.job_id);
+    if (quickId) setQuickId(next.job_id);
+    window.requestAnimationFrame(() => {
+      const el = cardEl(next.job_id);
+      el?.scrollIntoView({ block: 'nearest' });
+      if (!quickId) el?.focus({ preventScroll: true });
+    });
+  }, [listJobs, page, setPage, quickId]);
+
+  const saveWithUndo = useCallback((job: WorkdayJob) => {
+    clearImpression(job.job_id);
+    if (isJobSaved(job.job_id)) {
+      void unsaveJob(job.job_id);
+      toast('Removed from saved', {
+        action: { label: 'Undo', onClick: () => void saveJob(toJob(job, 'career portal')) },
+      });
+      return;
+    }
+    void saveJob(toJob(job, 'career portal'));
+    toast.success('Saved', {
+      description: `${job.title} at ${job.company}`,
+      action: { label: 'Undo', onClick: () => void unsaveJob(job.job_id) },
+    });
+  }, [isJobSaved, saveJob, unsaveJob]);
+
+  const hideWithUndo = useCallback((job: WorkdayJob) => {
+    if (!onHideJob) return;
+    clearImpression(job.job_id);
+    const i = listIndexOf(job.job_id);
+    const after = listJobs[i + 1] ?? listJobs[i - 1];
+    onHideJob(job.job_id, job.apply_link);
+    if (quickId === job.job_id) setQuickId(after?.job_id ?? null);
+    if (cursorId === job.job_id) setCursorId(after?.job_id ?? null);
+    toast('Hidden from For you', {
+      description: `${job.title} at ${job.company}`,
+      action: { label: 'Undo', onClick: () => unhideJob(job.job_id, job.apply_link) },
+    });
+  }, [onHideJob, listIndexOf, listJobs, quickId, cursorId, unhideJob]);
+
+  const appliedWithUndo = useCallback((job: WorkdayJob) => {
+    if (!markAlreadyApplied) return;
+    clearImpression(job.job_id);
+    const i = listIndexOf(job.job_id);
+    const after = listJobs[i + 1] ?? listJobs[i - 1];
+    let undone = false;
+    let committed = false;
+    const release = () => setPendingApplied((prev) => {
+      const next = new Set(prev);
+      next.delete(job.job_id);
+      return next;
+    });
+    const commit = () => {
+      if (undone || committed) return;
+      committed = true;
+      void Promise.resolve(markAlreadyApplied(toJob(job, 'career portal'))).finally(release);
+    };
+    setPendingApplied((prev) => new Set(prev).add(job.job_id));
+    if (quickId === job.job_id) setQuickId(after?.job_id ?? null);
+    if (cursorId === job.job_id) setCursorId(after?.job_id ?? null);
+    toast('Marking as applied', {
+      description: `${job.title} at ${job.company}. It moves to Applied in 5 seconds.`,
+      duration: 5000,
+      action: {
+        label: 'Undo',
+        onClick: () => {
+          undone = true;
+          release();
+        },
+      },
+      onAutoClose: commit,
+      onDismiss: commit,
+    });
+  }, [markAlreadyApplied, listIndexOf, listJobs, quickId, cursorId]);
+
+  const toggleCompare = useCallback((job: WorkdayJob) => {
+    setCompareIds((prev) => {
+      if (prev.includes(job.job_id)) return prev.filter((id) => id !== job.job_id);
+      if (prev.length >= COMPARE_MAX) {
+        toast(`Compare holds ${COMPARE_MAX} jobs`, { description: 'Remove one from the tray first.' });
+        return prev;
+      }
+      return [...prev, job.job_id];
+    });
+  }, []);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey) return;
+      // Only while For you is on screen (the panel stays mounted under Saved/Applied).
+      if (!rootRef.current || rootRef.current.offsetParent === null) return;
+      const t = e.target as HTMLElement | null;
+      if (t?.closest('input, textarea, select, [contenteditable="true"], [role="combobox"], [role="listbox"], [role="menu"]')) return;
+      // Another dialog (apply choice, compare, AI tools) owns the keyboard.
+      if (document.querySelector('[role="alertdialog"], [role="dialog"]:not([data-testid="job-quick-look"])')) return;
+      const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+      const target = quickJob ?? (cursorId ? listJobs[listIndexOf(cursorId)] : undefined);
+      const at = quickId ? quickIndex : listIndexOf(cursorId);
+      switch (key) {
+        case 'j':
+          e.preventDefault();
+          moveTo(at < 0 ? (page - 1) * PAGE_SIZE : at + 1);
+          break;
+        case 'k':
+          e.preventDefault();
+          moveTo(at < 0 ? (page - 1) * PAGE_SIZE : at - 1);
+          break;
+        case 'o':
+          if (target) {
+            e.preventDefault();
+            setQuickId(target.job_id);
+          }
+          break;
+        case 's':
+          if (target) { e.preventDefault(); saveWithUndo(target); }
+          break;
+        case 'x':
+          if (target) { e.preventDefault(); hideWithUndo(target); }
+          break;
+        case 'a':
+          if (target) { e.preventDefault(); appliedWithUndo(target); }
+          break;
+        case 'c':
+          if (target) { e.preventDefault(); toggleCompare(target); }
+          break;
+        case '?':
+          e.preventDefault();
+          setShortcutsOpen((v) => !v);
+          break;
+        default:
+          break;
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [quickJob, quickId, quickIndex, cursorId, listJobs, listIndexOf, moveTo, page, saveWithUndo,
+    hideWithUndo, appliedWithUndo, toggleCompare]);
+
+  const compareJobs = useMemo(
+    () => compareIds.map((id) => byId.get(id)).filter(Boolean).map((j) => toJob(j as WorkdayJob, 'career portal')),
+    [compareIds, byId],
+  );
 
   const renderJob = (job: WorkdayJob, index: number) => (
     <motion.div
       key={job.job_id}
-      layout={!reduceMotion}
+      layout={reduceMotion ? false : 'position'}
       {...cardMotion(index)}
       className="flex h-full flex-col gap-1.5"
     >
@@ -201,11 +403,24 @@ export function CombinedJobsPanel({
           </span>
         </p>
       )}
+      <SwipeableCard
+        enabled={coarse}
+        onSwipeRight={() => saveWithUndo(job)}
+        onSwipeLeft={() => hideWithUndo(job)}
+      >
       <JobCard
         job={toJob(job, 'career portal')}
         saved={isJobSaved(job.job_id)}
         jobStatus={getJobStatus(job.job_id, job.apply_link)}
         isNew={isNewJob(job)}
+        onOpen={() => {
+          setCursorId(job.job_id);
+          setQuickId(job.job_id);
+        }}
+        isCursor={cursorId === job.job_id}
+        compareSelected={compareIds.includes(job.job_id)}
+        onToggleCompare={() => toggleCompare(job)}
+        repostCount={repostCounts.get(job.job_id) ?? 0}
         onSave={() => acted(job, () => saveJob(toJob(job, 'career portal')))}
         onUnsave={() => unsaveJob(job.job_id)}
         onQuickApply={(opts) => acted(job, () => quickApply(toJob(job, 'career portal'), opts))}
@@ -221,15 +436,16 @@ export function CombinedJobsPanel({
           : undefined}
         onAutoApply={autoApply ? () => acted(job, () => autoApply(toJob(job, 'career portal'))) : undefined}
         autoApplying={autoApplyingId === job.job_id}
-        onHide={onHideJob ? () => acted(job, () => onHideJob(job.job_id, job.apply_link)) : undefined}
+        onHide={onHideJob ? () => hideWithUndo(job) : undefined}
       />
+      </SwipeableCard>
     </motion.div>
   );
 
-  const roleCount = visibleJobs.length;
+  const roleCount = listJobs.length;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5" ref={rootRef}>
       <div className="flex flex-wrap items-center gap-2">
         <p className="min-w-0 flex-1 text-xs text-muted-foreground" aria-live="polite">
           {loading ? (
@@ -258,6 +474,7 @@ export function CombinedJobsPanel({
         {loading && (
           <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary" aria-hidden />
         )}
+        {hasResult && <ShortcutsButton open={shortcutsOpen} onOpenChange={setShortcutsOpen} />}
       </div>
       {pageCount > 1 && (
         <p className="text-xs tabular-nums text-muted-foreground">
@@ -276,6 +493,21 @@ export function CombinedJobsPanel({
             onClick={() => setShowWeaker(!showWeaker)}
           >
             {showWeaker ? 'Hide them' : 'Show them'}
+          </button>
+        </p>
+      )}
+      {(repostsFolded > 0 || !collapseReposts) && hasResult && (
+        <p className="text-xs text-muted-foreground" data-testid="jobs-reposts-folded">
+          {collapseReposts
+            ? `${repostsFolded} likely ${repostsFolded === 1 ? 'repost' : 'reposts'} (same company, title and city) folded under the first copy.`
+            : 'Showing every copy of reposted roles.'}{' '}
+          <button
+            type="button"
+            className="font-medium text-foreground/80 underline-offset-2 hover:text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            aria-pressed={!collapseReposts}
+            onClick={() => setCollapseReposts(!collapseReposts)}
+          >
+            {collapseReposts ? 'Show them' : 'Fold them'}
           </button>
         </p>
       )}
@@ -355,13 +587,13 @@ export function CombinedJobsPanel({
       )}
 
       {/* ── Results ── */}
-      {visibleJobs.length > 0 && (
+      {listJobs.length > 0 && (
         <>
-          <motion.div layout={!reduceMotion} className={JOB_FEED_GRID_CLASS}>
-            <AnimatePresence initial={false}>
+          <div className={JOB_FEED_GRID_CLASS}>
+            <AnimatePresence initial={false} mode="popLayout">
               {pagedJobs.map((j, i) => renderJob(j, i))}
             </AnimatePresence>
-          </motion.div>
+          </div>
 
           {pageCount > 1 && (
             <JobFeedPager page={page} pageCount={pageCount} onPageChange={setPage} />
@@ -370,7 +602,7 @@ export function CombinedJobsPanel({
       )}
 
       {/* ── Empty state ── */}
-      {!loading && hasResult && visibleJobs.length === 0 && (
+      {!loading && hasResult && listJobs.length === 0 && (
         <div className="rounded-2xl border border-dashed border-border bg-card/50 p-10 text-center text-sm text-muted-foreground">
           <Radar className="mx-auto mb-3 h-8 w-8 opacity-40" aria-hidden />
           <p>No roles match these filters in this window.</p>
@@ -418,6 +650,35 @@ export function CombinedJobsPanel({
           )}
         </div>
       )}
+      <JobQuickLook
+        job={quickJob ? toJob(quickJob, 'career portal') : null}
+        onClose={() => {
+          const id = quickId;
+          setQuickId(null);
+          // Back to the card the panel was showing, so the list keeps its place.
+          window.requestAnimationFrame(() => {
+            if (id) cardEl(id)?.focus({ preventScroll: true });
+          });
+        }}
+        index={Math.max(0, quickIndex)}
+        total={listJobs.length}
+        onPrev={quickIndex > 0 ? () => moveTo(quickIndex - 1) : undefined}
+        onNext={quickIndex >= 0 && quickIndex < listJobs.length - 1 ? () => moveTo(quickIndex + 1) : undefined}
+        saved={quickJob ? isJobSaved(quickJob.job_id) : false}
+        onSave={() => { if (quickJob) saveWithUndo(quickJob); }}
+        onUnsave={() => { if (quickJob) saveWithUndo(quickJob); }}
+        onApply={() => {
+          if (!quickJob) return;
+          clearImpression(quickJob.job_id);
+          void quickApply(toJob(quickJob, 'career portal'));
+        }}
+        onHide={onHideJob ? () => { if (quickJob) hideWithUndo(quickJob); } : undefined}
+      />
+      <CompareTray
+        jobs={compareJobs}
+        onRemove={(id) => setCompareIds((prev) => prev.filter((x) => x !== id))}
+        onClear={() => setCompareIds([])}
+      />
       {showApplyOverlay && (
         <ApplyConfirmDialog
           job={applyConfirmJob ?? null}

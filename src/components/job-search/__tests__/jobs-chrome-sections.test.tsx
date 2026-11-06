@@ -123,20 +123,36 @@ describe('DiscoverPage section-aware Jobs chrome', () => {
     expect(screen.queryByText(/scan one catalog at a time/i)).not.toBeInTheDocument();
   });
 
-  test('Saved and Applied pills show counts as superscripts', async () => {
+  test('Saved and Applied pills count only what needs action', async () => {
+    const tenDaysAgo = new Date(Date.now() - 10 * 86400000).toISOString();
     api.getSavedJobs.mockResolvedValue({
       data: {
         jobs: [
-          { job_id: 'a', status: 'interested' },
-          { job_id: 'b', status: 'interested' },
-          { job_id: 'c', status: 'applied' },
+          { job_id: 'a', status: 'interested', next_step: { posting_state: 'open' } },
+          { job_id: 'b', status: 'interested', next_step: { posting_state: 'closed' } },
+          { job_id: 'c', status: 'applied', next_step: { posting_state: 'open', applied_at: tenDaysAgo } },
+          { job_id: 'd', status: 'applied', next_step: { posting_state: 'open', applied_at: new Date().toISOString() } },
         ],
       },
       status: 200,
     });
     renderDiscover('/app/jobs/for-you');
-    expect(await screen.findByRole('link', { name: 'Saved 2' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Applied 1' })).toBeInTheDocument();
+    // Saved: the open one only - a closed posting is not something to apply to.
+    expect(await screen.findByTestId('subnav-badge-saved')).toHaveTextContent('1to apply');
+    // Applied: the application with no update for 10 days is a follow-up.
+    expect(screen.getByTestId('subnav-badge-applied')).toHaveTextContent('1follow-up');
+    expect(screen.queryByText('99+')).not.toBeInTheDocument();
+  });
+
+  test('a tab with nothing to act on shows no number', async () => {
+    api.getSavedJobs.mockResolvedValue({
+      data: { jobs: [{ job_id: 'c', status: 'applied', next_step: { posting_state: 'open' } }] },
+      status: 200,
+    });
+    renderDiscover('/app/jobs/for-you');
+    await screen.findByRole('link', { name: /Applied/ });
+    expect(screen.queryByTestId('subnav-badge-applied')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('subnav-badge-saved')).not.toBeInTheDocument();
   });
 });
 

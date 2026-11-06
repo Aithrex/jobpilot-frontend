@@ -86,3 +86,20 @@ export function isHiddenJob(
   const urlKey = applyUrlKey(job.apply_link);
   return !!urlKey && hidden.has(`${URL_PREFIX}${urlKey}`);
 }
+
+/** Undo a hide: drop the posting's id and its apply-URL key. */
+export function unhideJobId(jobId: string, applyLink?: string | null): Set<string> {
+  const urlKey = applyUrlKey(applyLink);
+  const drop = new Set([jobId, urlKey ? `${URL_PREFIX}${urlKey}` : '']);
+  const keys = readKeys().filter((key) => !drop.has(key));
+  writeKeys(keys);
+  try {
+    // The legacy session list is folded into every read, so it must lose the key too.
+    const legacy = parseList(window.sessionStorage.getItem(LEGACY_SESSION_KEY)).filter((key) => !drop.has(key));
+    window.sessionStorage.setItem(LEGACY_SESSION_KEY, JSON.stringify(legacy));
+  } catch {
+    /* storage unavailable */
+  }
+  window.dispatchEvent(new CustomEvent(HIDDEN_JOBS_CHANGED, { detail: keys }));
+  return new Set(keys);
+}

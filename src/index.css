@@ -1769,6 +1769,160 @@
   }
 }
 
+/* ===== Job board feel (2026-11-05) =====================================
+   Numbers from the motion guidance we follow (emilkowalski/skills,
+   jakubkrehel/skills): hover is a border/shadow step, never a lift, because a
+   feed is hovered constantly; press is a 0.985 scale on the card and 0.97 on
+   buttons; nothing animates layout properties; one entrance per container.
+   The reduced-motion net at the bottom of this file neutralises all of it. */
+:root {
+  --ease-out-ui: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.job-card {
+  border: 1px solid hsl(var(--border));
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease,
+    transform 160ms var(--ease-out-ui),
+    opacity 200ms ease;
+}
+.job-card[data-openable='true'] {
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .job-card:hover {
+    border-color: hsl(var(--primary) / 0.45);
+    box-shadow:
+      0 0 0 1px hsl(var(--primary) / 0.08),
+      0 10px 28px -14px hsl(var(--primary) / 0.35);
+  }
+  .job-card:hover .job-card-title {
+    color: hsl(var(--primary));
+  }
+  .job-card:hover .job-card-accent {
+    opacity: 1;
+  }
+}
+/* Press acknowledgement - only when the press lands on the card itself, not
+   on one of its buttons (they have their own). */
+.job-card[data-openable='true']:active:not(:has(button:active, a:active, input:active)) {
+  transform: scale(0.985);
+}
+.job-card:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+/* The keyboard cursor (J/K). A ring, not a colour change, so it reads in both
+   themes and never competes with the hover state. */
+.job-card[data-cursor='true'] {
+  border-color: hsl(var(--primary) / 0.6);
+  box-shadow: 0 0 0 3px hsl(var(--primary) / 0.18);
+}
+.job-card-title {
+  transition: color 150ms ease;
+}
+.job-card-accent {
+  transition: opacity 200ms ease;
+}
+/* Posted 30+ days ago: still listed, visibly older. */
+.job-card[data-stale='true'] {
+  opacity: 0.72;
+}
+.job-card[data-stale='true']:hover,
+.job-card[data-stale='true']:focus-within {
+  opacity: 1;
+}
+
+/* New since the last visit: a gradient ring that arrives once with a soft
+   halo, then settles to a quiet resting glow. pointer-events: none so the
+   glow can never steal a click. */
+.job-new-glow {
+  position: relative;
+  border-radius: 0.75rem;
+}
+.job-new-glow::before,
+.job-new-glow::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 3;
+}
+.job-new-glow::before {
+  padding: 1.5px;
+  background: linear-gradient(
+    135deg,
+    hsl(var(--info) / 0.95),
+    hsl(var(--primary) / 0.85) 55%,
+    hsl(var(--info) / 0.35)
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+.job-new-glow::after {
+  box-shadow: 0 0 22px -6px hsl(var(--info) / 0.55);
+  opacity: 0.6;
+  animation: job-new-arrive 1600ms var(--ease-out-ui) 1 both;
+}
+@keyframes job-new-arrive {
+  0% {
+    opacity: 0;
+    box-shadow: 0 0 0 0 hsl(var(--info) / 0);
+  }
+  35% {
+    opacity: 1;
+    box-shadow: 0 0 34px -2px hsl(var(--info) / 0.6);
+  }
+  100% {
+    opacity: 0.6;
+    box-shadow: 0 0 22px -6px hsl(var(--info) / 0.55);
+  }
+}
+/* The "New" chip: one light sweep as it appears, then still. */
+.job-new-chip {
+  position: relative;
+  overflow: hidden;
+}
+.job-new-chip::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 30%, hsl(0 0% 100% / 0.55) 50%, transparent 70%);
+  transform: translateX(-160%);
+  animation: job-new-sweep 1100ms var(--ease-out-ui) 300ms 1 both;
+  pointer-events: none;
+}
+@keyframes job-new-sweep {
+  to {
+    transform: translateX(160%);
+  }
+}
+
+/* Buttons acknowledge a press everywhere on the board. Disabled controls
+   never move (they take no pointer events). */
+.press {
+  transition-property: color, background-color, border-color, box-shadow, transform;
+  transition-duration: 150ms;
+  transition-timing-function: var(--ease-out-ui);
+}
+.press:active {
+  transform: scale(0.97);
+}
+
+/* Swipe triage hints (touch): the colour that shows behind a dragged card. */
+.swipe-hint-save {
+  background: hsl(var(--success) / 0.14);
+  color: hsl(var(--success));
+}
+.swipe-hint-hide {
+  background: hsl(var(--muted-foreground) / 0.12);
+  color: hsl(var(--muted-foreground));
+}
+
 /* Ambient aurora drift - a slow, symmetric breathe (never a bounce). */
 @keyframes aurora-drift {
   0% {
