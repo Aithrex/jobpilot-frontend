@@ -1,0 +1,1 @@
+import{j as e,P as r,Q as a,R as s}from"./index-tLXSqQEJ.js";import{P as i}from"./PublicPageShell-Xjc1-JZT.js";function n(){return e.jsxs(i,{children:[e.jsx(r,{variant:"full",headingLevel:"h1"}),e.jsx(a,{}),e.jsx(s,{fallbackHref:"/register",fallbackLabel:"Create free account"})]})}export{n as default};

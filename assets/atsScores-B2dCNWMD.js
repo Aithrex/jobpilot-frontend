@@ -1,0 +1,1 @@
+function r(e){return!!e&&(e.schema_version===4||e.assessment_version==="assessment-v2")}function n(e){return typeof(e==null?void 0:e.overall)=="number"?e.overall:void 0}function a(e){return typeof(e==null?void 0:e.overall)=="number"}export{n as a,a as h,r as i};
