@@ -34,6 +34,8 @@ export interface ResumeProject {
   dates: string;
   bullets: string[];
   tech: string;
+  /** Repo or demo link. Set by the backend only from links the uploaded resume shows, or typed by the user. */
+  url?: string;
 }
 
 export interface ResumeAdditionalEntry {

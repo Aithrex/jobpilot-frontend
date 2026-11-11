@@ -3,6 +3,7 @@ import type { TailoredFullResume, ResumeExperience, ResumeEducation, ResumeProje
 import { apiService } from '@/lib/api';
 import { isTrimmedOutcome, resumeTrimDescription } from '@/lib/resumeLayoutSpec';
 import { titleCaseName } from '@/lib/filename';
+import { isProjectLink, projectLinkDisplay, projectLinkHref } from '@/lib/projectLink';
 import { toast } from 'sonner';
 
 // ─── Icons ─────────────────────────────────────────────────────────────────
@@ -124,7 +125,22 @@ function LivePreview({ resume }: { resume: TailoredFullResume }) {
               {resume.projects.map((p, i) => (
                 <div key={i}>
                   <div className="flex justify-between items-start gap-2">
-                    <span className="font-semibold text-foreground">{p.name}</span>
+                    <span className="font-semibold text-foreground">
+                      {p.name}
+                      {projectLinkHref(p.url) && (
+                        <>
+                          <span className="font-normal text-muted-foreground"> | </span>
+                          <a
+                            href={projectLinkHref(p.url) as string}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-normal text-primary underline-offset-2 hover:underline break-all"
+                          >
+                            {projectLinkDisplay(p.url)}
+                          </a>
+                        </>
+                      )}
+                    </span>
                     {p.dates && <span className="text-[11px] text-muted-foreground whitespace-nowrap shrink-0">{p.dates}</span>}
                   </div>
                   {p.tech && <p className="text-[11px] text-muted-foreground italic">{p.tech}</p>}
@@ -286,7 +302,7 @@ export default function ResumeEditor({ resume: initialResume, jdAnalysis, record
   const addProject = useCallback(() => {
     setResume(prev => ({
       ...prev,
-      projects: [...prev.projects, { name: '', dates: '', bullets: [''], tech: '' }],
+      projects: [...prev.projects, { name: '', dates: '', bullets: [''], tech: '', url: '' }],
     }));
   }, []);
 
@@ -507,6 +523,25 @@ export default function ResumeEditor({ resume: initialResume, jdAnalysis, record
               <div><label className={labelCls}>Name</label><input className={inputCls} value={proj.name} onChange={e => updateProject(i, 'name', e.target.value)} /></div>
               <div><label className={labelCls}>Dates</label><input className={inputCls} value={proj.dates} onChange={e => updateProject(i, 'dates', e.target.value)} /></div>
               <div className="col-span-2"><label className={labelCls}>Technologies</label><input className={inputCls} value={proj.tech} onChange={e => updateProject(i, 'tech', e.target.value)} /></div>
+              <div className="col-span-2">
+                <label className={labelCls} htmlFor={`project-url-${i}`}>Link (repo or demo)</label>
+                <input
+                  id={`project-url-${i}`}
+                  className={inputCls}
+                  type="url"
+                  inputMode="url"
+                  placeholder="github.com/you/project"
+                  value={proj.url ?? ''}
+                  onChange={e => updateProject(i, 'url', e.target.value.trim())}
+                  aria-invalid={!!proj.url && !isProjectLink(proj.url)}
+                  aria-describedby={`project-url-hint-${i}`}
+                />
+                <p id={`project-url-hint-${i}`} className={`mt-1 text-[11px] ${proj.url && !isProjectLink(proj.url) ? 'text-destructive' : 'text-muted-foreground'}`}>
+                  {proj.url && !isProjectLink(proj.url)
+                    ? 'Enter a web link, like github.com/you/project. It will not print until it is one.'
+                    : 'Screeners open project links. Add the real repo or live demo.'}
+                </p>
+              </div>
             </div>
             <div>
               <div className="flex items-center justify-between mb-1.5">
