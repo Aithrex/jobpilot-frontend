@@ -7,7 +7,7 @@
  */
 import { useCallback, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ClipboardList, Download, MousePointerClick } from 'lucide-react';
+import { ClipboardList, X } from 'lucide-react';
 
 import type { ApplicationStatus } from '@/types/resume';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,7 @@ import { PanelError } from '@/app-shell/pages/today/primitives';
 import GmailSuggestions, { GmailReviewLoadError, useGmailSuggestions } from '@/components/resume/GmailSuggestions';
 import GmailIntegration from '@/components/resume/GmailIntegration';
 import { appliedDayOf } from '@/lib/applicationDates';
+import { cn } from '@/lib/utils';
 
 import ApplicationDetail from './ApplicationDetail';
 import FocusView from './FocusView';
@@ -179,66 +180,68 @@ export default function TrackerPage() {
     void reloadSuggestions();
   }, [refetchSilent, reloadSuggestions]);
 
+  /**
+   * One box above the list: where the pipeline stands, then the inbox
+   * connection. They used to be two cards of their own plus four equal stat
+   * tiles, which pushed the first application below the fold.
+   */
   const header = (
     <div className="space-y-4">
-      <GmailIntegration onSyncComplete={handleSyncComplete} showReviewQueue={false} />
-      {!loading && !loadError && (
-        <section
-          aria-label="Application summary"
-          className="rounded-xl border border-border bg-card p-4 shadow-soft"
-        >
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h2 className="text-body font-semibold text-foreground">Your application tracker</h2>
-              <p className="text-label text-muted-foreground">
-                Tracked roles: {records.length}. Open roles: {metrics.active}. Across your whole
-                tracker, including saved jobs and drafts.
-              </p>
+      <div className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card shadow-soft">
+        {!loading && !loadError && records.length > 0 && (
+          <section
+            aria-label="Application summary"
+            className="flex flex-wrap items-center gap-x-6 gap-y-3 px-4 py-3"
+          >
+            <p className="w-full text-label text-muted-foreground sm:w-auto">
+              <span className="font-semibold tabular-nums text-foreground">{records.length}</span>{' '}
+              tracked,{' '}
+              <span className="font-semibold tabular-nums text-foreground">{metrics.active}</span>{' '}
+              still open
+            </p>
+            <div className="grid flex-1 grid-cols-2 gap-1 sm:flex sm:flex-none sm:items-center">
+              {(
+                [
+                  ['applied', 'Awaiting response'],
+                  ['interviewing', 'Interviewing'],
+                  ['offer', 'Offers'],
+                  ['rejected', 'Rejected'],
+                ] as const
+              ).map(([stage, label]) => {
+                const count = records.filter(
+                  (r) => statusKeyOf(r.application?.status) === stage,
+                ).length;
+                const on = statusFilter.size === 1 && statusFilter.has(stage);
+                return (
+                  <button
+                    key={stage}
+                    type="button"
+                    aria-label={`${label} ${count}`}
+                    aria-pressed={on}
+                    title={`Show only ${label.toLowerCase()}`}
+                    onClick={() => {
+                      clearFilters();
+                      setScope('all');
+                      if (!on) setStatusFilter(new Set([stage]));
+                    }}
+                    className={cn(
+                      'flex items-baseline gap-1.5 rounded-lg px-2.5 py-1.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                      on ? 'bg-primary/10 text-primary' : 'hover:bg-muted',
+                      count === 0 && !on && 'opacity-60',
+                    )}
+                  >
+                    <span className="font-display text-lg font-semibold tabular-nums text-foreground">
+                      {count}
+                    </span>
+                    <span className="text-label text-muted-foreground">{label}</span>
+                  </button>
+                );
+              })}
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={!scoped.length}
-              onClick={() => downloadApplicationsCsv(scoped)}
-            >
-              <Download className="mr-1.5 h-4 w-4" aria-hidden />
-              Export current view
-            </Button>
-          </div>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            {(
-              [
-                ['applied', 'Awaiting response'],
-                ['interviewing', 'Interviewing'],
-                ['offer', 'Offers'],
-                ['rejected', 'Rejected'],
-              ] as const
-            ).map(([stage, label]) => {
-              const count = records.filter(
-                (r) => statusKeyOf(r.application?.status) === stage,
-              ).length;
-              return (
-                <button
-                  key={stage}
-                  type="button"
-                  aria-label={`${label} ${count}`}
-                  onClick={() => {
-                    clearFilters();
-                    setScope('all');
-                    setStatusFilter(new Set([stage]));
-                  }}
-                  className="rounded-lg border border-border bg-background p-3 text-left transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  <span className="block text-label text-muted-foreground">{label}</span>
-                  <span className="mt-1 block font-display text-2xl font-semibold tabular-nums text-foreground">
-                    {count}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </section>
-      )}
+          </section>
+        )}
+        <GmailIntegration onSyncComplete={handleSyncComplete} showReviewQueue={false} inline />
+      </div>
       <GmailReviewLoadError error={suggestionsError} onRetry={() => void reloadSuggestions()} />
       {suggestions.length > 0 && (scope !== 'focus' || loading || filtered.length === 0) && (
         <div className="overflow-hidden rounded-xl border border-border bg-card">
@@ -356,6 +359,8 @@ export default function TrackerPage() {
         resultCount={scoped.length}
         attentionCount={staleApps.length}
         onOpenInsights={() => setInsightsOpen(true)}
+        onExport={() => downloadApplicationsCsv(scoped)}
+        exportDisabled={!scoped.length}
       />
 
       <div className="flex items-start gap-6">
@@ -393,19 +398,23 @@ export default function TrackerPage() {
           )}
         </div>
 
-        {wide && (
-          <aside className="sticky top-16 w-[26rem] shrink-0 rounded-xl border border-border bg-card p-5 shadow-soft">
-            {detail || (
-              <div className="py-16 text-center">
-                <MousePointerClick
-                  className="mx-auto mb-2 h-5 w-5 text-muted-foreground/60"
-                  aria-hidden
-                />
-                <p className="text-body text-muted-foreground">
-                  Select an application to see everything about it.
-                </p>
-              </div>
-            )}
+        {/* The pane opens with a selection; with nothing selected the list
+            has the full width instead of sitting beside an empty box. */}
+        {wide && detail && (
+          <aside
+            aria-label="Application details"
+            className="sticky top-16 w-[26rem] shrink-0 rounded-xl border border-border bg-card p-5 shadow-soft"
+          >
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-label="Close details"
+              onClick={() => setSelectedId(null)}
+              className="float-right -mr-2 -mt-2 h-8 w-8 px-0 text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-4 w-4" aria-hidden />
+            </Button>
+            {detail}
           </aside>
         )}
       </div>

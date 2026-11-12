@@ -6,7 +6,7 @@
  * always-open chip wall, so the default state of the page is the list itself,
  * and each trigger reports its own active count.
  */
-import { Check, Filter, CalendarRange, Search, Sparkles, X } from 'lucide-react';
+import { Check, Download, Filter, CalendarRange, Search, Sparkles, X } from 'lucide-react';
 
 import type { ApplicationStatus } from '@/types/resume';
 import { Button } from '@/components/ui/button';
@@ -39,6 +39,9 @@ interface TrackerToolbarProps {
   resultCount: number;
   attentionCount: number;
   onOpenInsights: () => void;
+  /** Download the rows in the current view as CSV. */
+  onExport?: () => void;
+  exportDisabled?: boolean;
 }
 
 export default function TrackerToolbar({
@@ -61,6 +64,8 @@ export default function TrackerToolbar({
   resultCount,
   attentionCount,
   onOpenInsights,
+  onExport,
+  exportDisabled,
 }: TrackerToolbarProps) {
   const dateLabel =
     datePreset === 'all'
@@ -108,7 +113,7 @@ export default function TrackerToolbar({
         })}
       </div>
 
-      <div className="relative min-w-[12rem] flex-1">
+      <div className="relative min-w-[12rem] flex-1 basis-full sm:basis-auto">
         <Search
           aria-hidden
           className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
@@ -128,7 +133,7 @@ export default function TrackerToolbar({
             variant="outline"
             size="sm"
             aria-label="Filter by stage"
-            className={cn('h-9 gap-1.5', statusFilter.size > 0 && 'border-primary/40 text-primary')}
+            className={cn('h-9 gap-1.5 text-foreground', statusFilter.size > 0 && 'border-primary/40 text-primary')}
           >
             <Filter className="h-3.5 w-3.5" aria-hidden />
             Stage
@@ -164,7 +169,7 @@ export default function TrackerToolbar({
             variant="outline"
             size="sm"
             aria-label="Filter by applied date"
-            className={cn('h-9 gap-1.5', datePreset !== 'all' && 'border-primary/40 text-primary')}
+            className={cn('h-9 gap-1.5 text-foreground', datePreset !== 'all' && 'border-primary/40 text-primary')}
           >
             <CalendarRange className="h-3.5 w-3.5" aria-hidden />
             {dateLabel}
@@ -211,7 +216,7 @@ export default function TrackerToolbar({
         </PopoverContent>
       </Popover>
 
-      <Button variant="outline" size="sm" className="h-9 gap-1.5" onClick={onOpenInsights}>
+      <Button variant="outline" size="sm" className="h-9 gap-1.5 text-foreground" onClick={onOpenInsights}>
         <Sparkles className="h-3.5 w-3.5" aria-hidden />
         Insights
         {attentionCount > 0 && (
@@ -220,6 +225,20 @@ export default function TrackerToolbar({
           </span>
         )}
       </Button>
+
+      {onExport && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-9 gap-1.5 text-muted-foreground hover:text-foreground"
+          disabled={exportDisabled}
+          onClick={onExport}
+          title="Download the applications in this view as a CSV file"
+        >
+          <Download className="h-3.5 w-3.5" aria-hidden />
+          Export
+        </Button>
+      )}
 
       {filtersActive && (
         <>

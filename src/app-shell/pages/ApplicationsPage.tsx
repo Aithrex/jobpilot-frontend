@@ -7,7 +7,6 @@ export default function ApplicationsPage() {
   return (
     <div className="page-full flex flex-col gap-6">
       <header>
-        <p className="overline mb-1">Tracker</p>
         <h1 className="text-title font-display text-foreground">Application tracker</h1>
         <p className="mt-1 text-caption text-muted-foreground">
           Keep roles, replies, interviews, and next steps together. Connect Gmail to match application updates.
