@@ -118,7 +118,7 @@ export function ActivitySpine({ nodes }: { nodes: SpineNode[] }) {
           <div className="flex">
             {nodes.map((n) => (
               <div key={n.key} className="flex-1 px-1 text-center">
-                <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                <span className="text-caption-sm font-medium uppercase tracking-wide text-muted-foreground">
                   {n.label}
                 </span>
               </div>

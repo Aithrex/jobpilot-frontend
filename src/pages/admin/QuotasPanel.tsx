@@ -97,7 +97,7 @@ export function QuotasPanel() {
     const base = !query.trim()
       ? rows
       : rows.filter((r) => {
-          const q = query.toLowerCase();
+          const q = query.trim().toLowerCase();
           return r.email.toLowerCase().includes(q) || (r.name || '').toLowerCase().includes(q);
         });
     // Float users with a pending request to the top so they're impossible to miss.
@@ -153,20 +153,20 @@ export function QuotasPanel() {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
+      <div className="rounded-xl border border-border bg-card p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-sm font-semibold text-gray-200">
+            <p className="text-sm font-semibold text-foreground">
               Daily tailor quotas
               {pendingCount > 0 && (
-                <span className="ml-2 inline-flex items-center rounded-full border border-amber-400/40 bg-amber-400/10 px-2 py-0.5 text-[11px] font-medium text-amber-300">
+                <span className="ml-2 inline-flex items-center rounded-full border border-warning/40 bg-warning/10 px-2 py-0.5 text-caption-sm font-medium text-warning">
                   {pendingCount} request{pendingCount === 1 ? '' : 's'} for more
                 </span>
               )}
             </p>
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-muted-foreground">
               Default limit is{' '}
-              <span className="font-medium text-gray-300">{defaultLimit}</span> tailors per UTC day.
+              <span className="font-medium text-ink-muted">{defaultLimit}</span> tailors per UTC day.
               Override per user as needed. Set to <span className="font-mono">0</span> to disable.
               {pendingCount > 0 && ' Users who asked for more are pinned to the top.'}
             </p>
@@ -175,14 +175,16 @@ export function QuotasPanel() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search email or name..."
-            className="rounded-md border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-sm text-gray-200 placeholder:text-gray-600 focus:border-purple-400/60 focus:outline-none"
+            aria-label="Search email or name"
+            type="search"
+            className="h-10 rounded-md border border-input bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/60 focus:outline-none focus:ring-2 focus:ring-ring/40"
           />
         </div>
       </div>
 
-      <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
+      <div className="rounded-xl border border-border bg-card overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-white/[0.03] text-left text-xs uppercase tracking-wide text-gray-500">
+          <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
             <tr>
               <th className="px-4 py-2">User</th>
               <th className="px-4 py-2">Today</th>
@@ -191,17 +193,17 @@ export function QuotasPanel() {
               <th className="px-4 py-2 text-right">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/[0.04]">
+          <tbody className="divide-y divide-border">
             {loading && (
               <tr>
-                <td colSpan={5} className="px-4 py-6 text-center text-xs text-gray-500">
+                <td colSpan={5} className="px-4 py-6 text-center text-xs text-muted-foreground">
                   Loading users...
                 </td>
               </tr>
             )}
             {!loading && filtered.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-6 text-center text-xs text-gray-500">
+                <td colSpan={5} className="px-4 py-6 text-center text-xs text-muted-foreground">
                   No users match.
                 </td>
               </tr>
@@ -262,28 +264,28 @@ function QuotaRow({
 
   return (
     <>
-    <tr className={`hover:bg-white/[0.02] ${pending ? 'bg-amber-400/[0.04]' : ''}`}>
+    <tr className={`hover:bg-muted ${pending ? 'bg-warning/5' : ''}`}>
       <td className="px-4 py-3 align-middle">
         <div className="flex items-center gap-2">
-          <span className="text-gray-200">{row.name || row.email.split('@')[0]}</span>
+          <span className="text-foreground">{row.name || row.email.split('@')[0]}</span>
           {pending && (
-            <span className="inline-flex items-center rounded-full border border-amber-400/40 bg-amber-400/10 px-2 py-0.5 text-[10px] font-medium text-amber-300">
+            <span className="inline-flex items-center rounded-full border border-warning/40 bg-warning/10 px-2 py-0.5 text-caption-sm font-medium text-warning">
               Requested more
             </span>
           )}
         </div>
-        <div className="font-mono text-xs text-gray-500">{row.email}</div>
+        <div className="font-mono text-xs text-muted-foreground">{row.email}</div>
       </td>
       <td className="px-4 py-3 align-middle">
-        <span className={`text-sm font-medium ${overflowing ? 'text-rose-300' : 'text-gray-200'}`}>{ratio}</span>
+        <span className={`text-sm font-medium ${overflowing ? 'text-destructive' : 'text-foreground'}`}>{ratio}</span>
       </td>
       <td className="px-4 py-3 align-middle text-sm">
         {row.daily_tailor_limit_custom !== null ? (
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-indigo-400/40 bg-indigo-400/10 px-2 py-0.5 text-xs text-indigo-300">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-2 py-0.5 text-xs text-primary">
             Custom · {row.daily_tailor_limit_effective}
           </span>
         ) : (
-          <span className="text-xs text-gray-500">Default ({defaultLimit})</span>
+          <span className="text-xs text-muted-foreground">Default ({defaultLimit})</span>
         )}
       </td>
       <td className="px-4 py-3 align-middle">
@@ -293,7 +295,7 @@ function QuotaRow({
           onKeyDown={(e) => e.key === 'Enter' && apply()}
           inputMode="numeric"
           placeholder={`default (${defaultLimit})`}
-          className="w-32 rounded-md border border-white/[0.08] bg-white/[0.03] px-2 py-1 text-sm text-gray-200 placeholder:text-gray-600 focus:border-purple-400/60 focus:outline-none"
+          className="w-32 rounded-md border border-border bg-muted/40 px-2 py-1 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/60 focus:outline-none"
         />
       </td>
       <td className="px-4 py-3 align-middle text-right">
@@ -301,7 +303,7 @@ function QuotaRow({
           type="button"
           onClick={apply}
           disabled={saving}
-          className="rounded-md border border-purple-400/50 bg-purple-500/10 px-3 py-1 text-xs font-medium text-purple-200 hover:bg-purple-500/20 disabled:opacity-50"
+          className="hit-target inline-flex min-h-8 items-center rounded-md border border-primary/50 bg-primary/10 px-3 py-1 text-xs font-medium text-primary hover:bg-primary/20 disabled:opacity-50"
         >
           {saving ? 'Saving...' : 'Save'}
         </button>
@@ -310,7 +312,7 @@ function QuotaRow({
             type="button"
             onClick={() => onSave(null)}
             disabled={saving}
-            className="ml-2 rounded-md border border-white/10 px-3 py-1 text-xs text-gray-400 hover:text-gray-200 disabled:opacity-50"
+            className="hit-target ml-2 inline-flex min-h-8 items-center rounded-md border border-border px-3 py-1 text-xs text-muted-foreground hover:text-foreground disabled:opacity-50"
           >
             Reset
           </button>
@@ -318,15 +320,15 @@ function QuotaRow({
       </td>
     </tr>
     {pending && (
-      <tr className="bg-amber-400/[0.03]">
+      <tr className="bg-warning/5">
         <td colSpan={5} className="px-4 pb-3 pt-0">
-          <div className="rounded-lg border border-amber-400/20 bg-amber-400/[0.05] p-3">
-            <div className="mb-1 flex items-center gap-2 text-[10px] uppercase tracking-wide text-amber-300/80">
+          <div className="rounded-lg border border-warning/20 bg-warning/5 p-3">
+            <div className="mb-1 flex items-center gap-2 text-caption-sm uppercase tracking-wide text-warning">
               <span>Request for more tailors</span>
-              {pending.created_at && <span className="text-amber-300/50">· {formatTs(pending.created_at)}</span>}
+              {pending.created_at && <span className="text-warning">· {formatTs(pending.created_at)}</span>}
             </div>
-            <p className="whitespace-pre-wrap text-sm text-gray-300">{pending.message}</p>
-            <p className="mt-1.5 text-[11px] text-gray-500">
+            <p className="whitespace-pre-wrap text-sm text-ink-muted">{pending.message}</p>
+            <p className="mt-1.5 text-caption-sm text-muted-foreground">
               Set a higher limit above and hit Save. This request resolves automatically.
             </p>
           </div>

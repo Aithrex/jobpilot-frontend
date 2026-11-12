@@ -169,7 +169,11 @@ export function TopBarSearch() {
           aria-expanded={showList}
           aria-controls="topbar-search-listbox"
           aria-autocomplete="list"
-          aria-activedescendant={showList ? `topbar-search-opt-${active}` : undefined}
+          aria-activedescendant={
+            showList && active >= 0 && active < options.length
+              ? `topbar-search-opt-${active}`
+              : undefined
+          }
           aria-label="Search"
           placeholder="Jump to any screen..."
           value={query}
@@ -180,7 +184,7 @@ export function TopBarSearch() {
           onFocus={() => setOpen(true)}
           onKeyDown={onKeyDown}
           className={cn(
-            'h-10 w-64 rounded-full border border-border/70 bg-muted/40 pl-9 pr-8 text-sm text-foreground',
+            'h-10 w-64 rounded-full border border-border/70 bg-muted/40 pl-9 pr-10 text-sm text-foreground',
             'placeholder:text-muted-foreground transition-colors',
             'hover:border-border focus:border-primary/50 focus:bg-background focus:outline-none focus:ring-2 focus:ring-ring/40',
             'lg:w-80 xl:w-96',
@@ -194,7 +198,7 @@ export function TopBarSearch() {
               inputRef.current?.focus();
             }}
             aria-label="Clear search"
-            className="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground hover:bg-accent hover:text-foreground"
+            className="absolute right-1 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <X className="h-3.5 w-3.5" aria-hidden="true" />
           </button>

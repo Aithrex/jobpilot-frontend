@@ -25,7 +25,7 @@ function DiffRow({ item }: { item: LinkedInDiffItem }) {
         <p className="text-xs font-semibold">{item.label || item.field}</p>
         <span
           className={cn(
-            "shrink-0 rounded-full border px-1.5 py-0 text-[9px] font-bold uppercase tracking-wide",
+            "shrink-0 rounded-full border px-1.5 py-0 text-caption-sm font-bold uppercase tracking-wide",
             SEVERITY_STYLES[sev],
           )}
         >
@@ -34,16 +34,16 @@ function DiffRow({ item }: { item: LinkedInDiffItem }) {
       </div>
       <div className="mt-2 grid gap-1.5 sm:grid-cols-2">
         <div className="rounded-md bg-muted/50 px-2 py-1.5">
-          <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Resume</p>
-          <p className="text-xs text-foreground/85">{item.resume_value || "Not listed"}</p>
+          <p className="text-caption-sm font-medium uppercase tracking-wide text-muted-foreground">Resume</p>
+          <p className="text-xs text-foreground">{item.resume_value || "Not listed"}</p>
         </div>
         <div className="rounded-md bg-muted/50 px-2 py-1.5">
-          <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">LinkedIn</p>
-          <p className="text-xs text-foreground/85">{item.linkedin_value || "Not listed"}</p>
+          <p className="text-caption-sm font-medium uppercase tracking-wide text-muted-foreground">LinkedIn</p>
+          <p className="text-xs text-foreground">{item.linkedin_value || "Not listed"}</p>
         </div>
       </div>
       {item.suggestion && (
-        <p className="mt-2 text-[11px] leading-snug text-primary/90">{item.suggestion}</p>
+        <p className="mt-2 text-caption-sm leading-snug text-primary">{item.suggestion}</p>
       )}
     </li>
   );
@@ -151,7 +151,7 @@ export function LinkedInArchiveCard() {
             href="https://www.linkedin.com/mypreferences/d/download-my-data"
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-1 inline-block text-[11px] font-medium text-primary hover:underline"
+            className="mt-1 inline-block text-caption-sm font-medium text-primary hover:underline"
           >
             How to get your archive
           </a>
@@ -164,7 +164,7 @@ export function LinkedInArchiveCard() {
       ) : (
         <>
           {diff?.summary && (
-            <p className="mb-2 flex items-start gap-1.5 text-[11px] text-muted-foreground">
+            <p className="mb-2 flex items-start gap-1.5 text-caption-sm text-muted-foreground">
               <AlertCircle className="mt-0.5 h-3 w-3 shrink-0" />
               {diff.summary}
             </p>

@@ -166,7 +166,7 @@ export function TechFeedHealthBanner({
             <Badge
               variant="outline"
               className={cn(
-                'ml-1 text-[10px]',
+                'ml-1 text-caption-sm',
                 measurementStale && 'border-warning/40 text-warning',
               )}
               data-testid="tech-feed-coverage-age"
@@ -203,7 +203,7 @@ export function TechFeedHealthBanner({
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="h-6 gap-1 px-2 text-xs focus-visible:ring-2 focus-visible:ring-ring"
+                className="hit-target h-6 gap-1 px-2 text-xs focus-visible:ring-2 focus-visible:ring-ring"
               >
                 {open ? 'Hide details' : 'Why'}
                 <ChevronDown
@@ -295,7 +295,7 @@ export function TechFeedHealthBanner({
                           .slice(0, 6)
                           .map(([name, facet]) => (
                             <li key={name}>
-                              <Badge variant="outline" className="text-[10px]">
+                              <Badge variant="outline" className="text-caption-sm">
                                 {name.replace(/_/g, ' ')} {pct(facet.covered_pct)}
                               </Badge>
                             </li>
@@ -313,7 +313,7 @@ export function TechFeedHealthBanner({
                           .slice(0, 8)
                           .map(([name, facet]) => (
                             <li key={name}>
-                              <Badge variant="outline" className="text-[10px]">
+                              <Badge variant="outline" className="text-caption-sm">
                                 {name.replace(/_/g, ' ')} {pct(facet.covered_pct)}
                               </Badge>
                             </li>
@@ -360,7 +360,7 @@ export function TechFeedHealthBanner({
                   <ul className="space-y-1">
                     {staleSources.map((source) => (
                       <li key={source.source} className="flex flex-wrap items-center gap-2">
-                        <Badge variant="outline" className="text-[10px]">
+                        <Badge variant="outline" className="text-caption-sm">
                           {source.source}
                         </Badge>
                         <span className="text-muted-foreground">

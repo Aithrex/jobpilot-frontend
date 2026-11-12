@@ -57,7 +57,7 @@ import {
 } from '@/types/workAuthorization';
 
 const CHIP =
-  'inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10.5px] font-medium';
+  'inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-caption-sm font-medium';
 
 export function ClearanceRequiredBadge({
   detail,
@@ -155,12 +155,12 @@ export function EmployerSponsorshipBadge({
       <HoverCardContent align="start" className="w-80 space-y-2">
         <p className="text-xs font-semibold text-foreground">{sentence}</p>
         {signal.similar_role_label && (
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-caption-sm text-muted-foreground">
             &quot;Similar roles&quot; here means {signal.similar_role_label}.
           </p>
         )}
         {typeof signal.total_approvals === 'number' && signal.total_approvals > 0 && (
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-caption-sm text-muted-foreground">
             {formatCount(signal.total_approvals)} across all roles over the same period.
           </p>
         )}
@@ -170,7 +170,7 @@ export function EmployerSponsorshipBadge({
             on screen came from. */}
         {windowMismatch && (
           <p
-            className="text-[11px] leading-snug text-warning"
+            className="text-caption-sm leading-snug text-warning"
             data-testid="signal-sponsorship-window-mismatch"
           >
             This count covers {period}. Our sponsorship service still describes
@@ -179,7 +179,7 @@ export function EmployerSponsorshipBadge({
           </p>
         )}
         {provenance && (
-          <p className="text-[10px] text-muted-foreground" data-testid="signal-sponsorship-source">
+          <p className="text-caption-sm text-muted-foreground" data-testid="signal-sponsorship-source">
             Source: {provenance}
           </p>
         )}
@@ -188,7 +188,7 @@ export function EmployerSponsorshipBadge({
             href={signal.source_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="interactive inline-block text-[10px] font-medium text-primary underline"
+            className="interactive inline-block text-caption-sm font-medium text-primary underline"
           >
             Check the filing data yourself
           </a>
@@ -197,7 +197,7 @@ export function EmployerSponsorshipBadge({
             to publish, so it is never paraphrased and never dropped. */}
         {signal.disclaimer && (
           <p
-            className="border-t border-border/70 pt-2 text-[10px] leading-snug text-muted-foreground"
+            className="border-t border-border/70 pt-2 text-caption-sm leading-snug text-muted-foreground"
             data-testid="signal-sponsorship-disclaimer"
           >
             {signal.disclaimer}
@@ -252,14 +252,14 @@ function CensusAbsentBadge({
       </HoverCardTrigger>
       <HoverCardContent align="start" className="w-80 space-y-2">
         <p className="text-xs font-semibold text-foreground">{sentence}</p>
-        <p className="text-[11px] leading-snug text-muted-foreground">
+        <p className="text-caption-sm leading-snug text-muted-foreground">
           This employer appears in the filing data for {period} with no H-1B
           petitions recorded. That is what the public record shows for that
           period. It is not a statement about whether they would sponsor
           anyone, and it does not mean you cannot apply.
         </p>
         {provenance && (
-          <p className="text-[10px] text-muted-foreground" data-testid="signal-sponsorship-source">
+          <p className="text-caption-sm text-muted-foreground" data-testid="signal-sponsorship-source">
             Source: {provenance}
           </p>
         )}
@@ -268,14 +268,14 @@ function CensusAbsentBadge({
             href={signal.source_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="interactive inline-block text-[10px] font-medium text-primary underline"
+            className="interactive inline-block text-caption-sm font-medium text-primary underline"
           >
             Check the filing data yourself
           </a>
         )}
         {signal.disclaimer && (
           <p
-            className="border-t border-border/70 pt-2 text-[10px] leading-snug text-muted-foreground"
+            className="border-t border-border/70 pt-2 text-caption-sm leading-snug text-muted-foreground"
             data-testid="signal-sponsorship-disclaimer"
           >
             {signal.disclaimer}

@@ -63,7 +63,7 @@ export function isUntailoredStub(record: TailoringRecord): boolean {
 }
 
 export function atsTone(score: number): string {
-  if (score >= 80) return 'text-success';
+  if (score >= 80) return 'text-signal';
   if (score >= 60) return 'text-warning';
   return 'text-destructive';
 }

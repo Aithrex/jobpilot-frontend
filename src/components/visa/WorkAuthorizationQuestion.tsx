@@ -98,9 +98,9 @@ export function WorkAuthorizationQuestion({
               )}
             >
               <RadioGroupItem id={id} value={option.value} className="mt-0.5" />
-              <Label htmlFor={id} className="cursor-pointer space-y-0.5 font-normal">
-                <span className="block text-xs font-medium text-foreground">{option.label}</span>
-                <span className="block text-[11px] font-normal leading-snug text-muted-foreground">
+              <Label htmlFor={id} className="flex-1 cursor-pointer space-y-0.5 font-normal">
+                <span className="block text-sm font-medium text-foreground">{option.label}</span>
+                <span className="block text-caption-sm font-normal leading-snug text-muted-foreground">
                   {option.detail}
                 </span>
               </Label>
@@ -111,7 +111,7 @@ export function WorkAuthorizationQuestion({
 
       {/* Status line. Three distinct truths, never conflated: in flight, on the
           server, or only in this browser. */}
-      <p className="flex min-h-4 items-center gap-1.5 text-[11px] text-muted-foreground" aria-live="polite">
+      <p className="flex min-h-4 items-center gap-1.5 text-caption-sm text-muted-foreground" aria-live="polite">
         {saving ? (
           <>
             <Loader2 className="h-3 w-3 animate-spin" aria-hidden />

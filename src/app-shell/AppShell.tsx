@@ -18,6 +18,7 @@ function FullScreenLoader() {
   return (
     <div
       className="flex min-h-screen items-center justify-center text-muted-foreground"
+      role="status"
       aria-live="polite"
     >
       <div className="flex items-center gap-2">
@@ -84,7 +85,13 @@ export default function AppShell() {
             element: `.page-measure` for the standard centred column (what
             every page had before), or `.page-full` for a full-bleed workspace
             that supplies its own padding. */}
-        <main id="main-content" className="flex-1 overflow-x-hidden pb-24 lg:pb-0">
+        <main
+          id="main-content"
+          // Focusable (not tabbable) so the skip link moves keyboard focus
+          // into the page in every browser, not just the scroll position.
+          tabIndex={-1}
+          className="flex-1 overflow-x-hidden pb-24 outline-none lg:pb-0"
+        >
           <AnimatedOutlet scope="destination" />
         </main>
       </div>

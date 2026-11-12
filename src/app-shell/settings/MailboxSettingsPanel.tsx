@@ -5,6 +5,7 @@ import { Check, Copy, Loader2, MailCheck, MailX, RefreshCw } from 'lucide-react'
 import { apiService } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -34,9 +35,9 @@ function CopyButton({ value }: { value: string }) {
           toast.error("Couldn't copy");
         }
       }}
-      aria-label="Copy address"
+      aria-label={copied ? 'Address copied' : 'Copy address'}
     >
-      {copied ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
+      {copied ? <Check className="h-3.5 w-3.5 text-success" aria-hidden="true" /> : <Copy className="h-3.5 w-3.5" aria-hidden="true" />}
       {copied ? 'Copied' : 'Copy'}
     </Button>
   );
@@ -84,6 +85,7 @@ export default function MailboxSettingsPanel() {
       return;
     }
     applyMailbox(res.data);
+    toast.success(next ? 'Mailbox paused' : 'Mailbox resumed');
   };
 
   const rotate = async () => {
@@ -109,10 +111,17 @@ export default function MailboxSettingsPanel() {
       return;
     }
     applyMailbox(res.data);
+    toast.success(enabled ? 'Heads-up emails on' : 'Heads-up emails off');
   };
 
   if (mailboxQuery.isLoading) {
-    return <div className="h-40 animate-pulse rounded-container bg-muted" />;
+    return (
+      <div className="space-y-4" aria-busy="true">
+        <p className="sr-only" role="status">Loading your mailbox...</p>
+        <Skeleton aria-hidden className="h-56 w-full rounded-container" />
+        <Skeleton aria-hidden className="h-24 w-full rounded-container" />
+      </div>
+    );
   }
   if (mailboxQuery.isError) {
     return <PanelError title="Couldn't load your mailbox" onRetry={() => mailboxQuery.refetch()} />;
@@ -140,6 +149,16 @@ export default function MailboxSettingsPanel() {
         <p className="mx-auto mt-1 max-w-sm text-xs text-muted-foreground">
           We create it for you automatically. Refresh in a moment.
         </p>
+        <Button
+          variant="outline"
+          size="sm"
+          className="mt-4"
+          onClick={() => void mailboxQuery.refetch()}
+          disabled={mailboxQuery.isFetching}
+        >
+          {mailboxQuery.isFetching && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+          Check again
+        </Button>
       </div>
     );
   }
@@ -148,7 +167,7 @@ export default function MailboxSettingsPanel() {
     <div className="space-y-4">
       {/* Address + rotate */}
       <section className="rounded-container border border-border bg-card p-5 shadow-soft">
-        <h2 className="mb-1 text-sm font-semibold text-foreground">Your managed address</h2>
+        <h2 className="mb-1 font-display text-title-sm text-foreground">Your managed address</h2>
         <p className="mb-3 text-xs text-muted-foreground">
           Applications sent for you use this address; recruiter replies appear in your Inbox.
         </p>
@@ -182,7 +201,7 @@ export default function MailboxSettingsPanel() {
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="outline" size="sm" className="shrink-0 gap-1.5" disabled={busy === 'rotate'}>
-                {busy === 'rotate' ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                {busy === 'rotate' ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <RefreshCw className="h-4 w-4" aria-hidden="true" />}
                 Rotate
               </Button>
             </AlertDialogTrigger>
@@ -197,7 +216,12 @@ export default function MailboxSettingsPanel() {
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Keep current</AlertDialogCancel>
-                <AlertDialogAction onClick={rotate}>Rotate address</AlertDialogAction>
+                <AlertDialogAction
+                  onClick={rotate}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Rotate address
+                </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
@@ -208,8 +232,8 @@ export default function MailboxSettingsPanel() {
       <section className="rounded-container border border-border bg-card p-5 shadow-soft">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-sm font-semibold text-foreground">Heads-up in my inbox</h2>
-            <p className="text-xs text-muted-foreground">
+            <h2 className="font-display text-title-sm text-foreground">Heads-up in my inbox</h2>
+            <p className="mt-0.5 max-w-prose text-xs text-muted-foreground">
               When an employer gets back to you with an interview invite, an assessment,
               an offer or a rejection, we email you a short heads-up with a link. The full
               message stays here in your Inbox, so your personal inbox stays clean.
@@ -228,7 +252,7 @@ export default function MailboxSettingsPanel() {
             {busy === 'forwarding' ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
             ) : (
-              <MailCheck className="h-3.5 w-3.5 text-success" aria-hidden="true" />
+              <MailCheck className="h-3.5 w-3.5 text-signal" aria-hidden="true" />
             )}
             Forwarding to{' '}
             <span className="font-medium text-foreground">{mailbox.forward_to}</span>

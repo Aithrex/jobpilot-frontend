@@ -9,7 +9,7 @@ import { GpcStatus } from './GpcStatus';
 import { PrivacyControls } from './PrivacyControls';
 import { usePrivacy } from './usePrivacy';
 
-const LINK_CLASS = 'font-medium text-primary underline-offset-4 hover:underline';
+const LINK_CLASS = 'font-medium text-primary underline underline-offset-4 hover:text-primary-hover';
 
 /**
  * Settings: "Privacy and data". Mounted once on the Profile settings page.
@@ -36,19 +36,19 @@ export function PrivacySettingsSection({ className }: { className?: string }) {
       tabIndex={-1}
       aria-labelledby="privacy-settings-heading"
       className={cn(
-        'space-y-6 rounded-2xl border border-border bg-card p-6 text-card-foreground outline-none',
+        'space-y-6 rounded-xl border border-border bg-card p-5 text-card-foreground outline-none sm:p-6',
         className,
       )}
     >
       <header className="space-y-1">
         <h2
           id="privacy-settings-heading"
-          className="flex items-center gap-2 text-base font-semibold text-foreground"
+          className="flex items-center gap-2 font-display text-title-sm text-foreground"
         >
-          <ShieldCheck aria-hidden className="h-4 w-4 text-primary" />
+          <ShieldCheck aria-hidden className="h-4 w-4 shrink-0 text-muted-foreground" />
           Privacy and data
         </h2>
-        <p className="text-sm leading-relaxed text-muted-foreground">
+        <p className="max-w-prose text-sm leading-relaxed text-muted-foreground">
           Aspirely does not sell or share your personal information. Read the{' '}
           <Link to={LEGAL_ROUTES.privacy} className={LINK_CLASS}>
             Privacy Policy

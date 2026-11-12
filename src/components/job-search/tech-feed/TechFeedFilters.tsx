@@ -118,7 +118,7 @@ function FilterGroup({
         <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           {title}
         </h3>
-        {description && <p className="text-[11px] text-muted-foreground">{description}</p>}
+        {description && <p className="text-caption-sm text-muted-foreground">{description}</p>}
       </div>
       {children}
     </section>
@@ -217,7 +217,7 @@ function SwitchRow({
         <Label htmlFor={id} className="text-xs font-normal">
           {label}
         </Label>
-        {description && <p className="text-[11px] text-muted-foreground">{description}</p>}
+        {description && <p className="text-caption-sm text-muted-foreground">{description}</p>}
       </div>
       <Switch id={id} checked={checked} onCheckedChange={onCheckedChange} />
     </div>
@@ -553,7 +553,7 @@ export function TechFeedFilters({
           variant="ghost"
           size="sm"
           onClick={onReset}
-          className="h-7 px-2 text-xs focus-visible:ring-2 focus-visible:ring-ring"
+          className="hit-target h-7 px-2 text-xs focus-visible:ring-2 focus-visible:ring-ring"
         >
           Reset
         </Button>
@@ -832,7 +832,7 @@ export function TechFeedFilters({
               nobody can find to turn off. */}
           {sponsorshipNudge && (
             <div className="rounded-lg border border-primary/30 bg-primary/5 p-2.5">
-              <p className="text-[11px] leading-snug text-foreground">
+              <p className="text-caption-sm leading-snug text-foreground">
                 Your profile says you will need visa sponsorship. Want this search to
                 use that?
               </p>
@@ -840,7 +840,7 @@ export function TechFeedFilters({
                 type="button"
                 size="sm"
                 variant="outline"
-                className="mt-1.5 h-7 text-xs focus-visible:ring-2 focus-visible:ring-ring"
+                className="hit-target mt-1.5 h-7 text-xs focus-visible:ring-2 focus-visible:ring-ring"
                 onClick={() => onPatch({ sponsorshipPreference: 'needs_sponsorship' })}
               >
                 Apply my saved answer
@@ -869,7 +869,7 @@ export function TechFeedFilters({
           />
 
           {(filters.clearanceRoles === 'hide' || filters.noSponsorshipRoles === 'hide') && (
-            <p className="text-[11px] leading-snug text-muted-foreground">
+            <p className="text-caption-sm leading-snug text-muted-foreground">
               Hiding removes reachable jobs from your results. The count of what it
               removed is shown above the list, and one click puts them back.
             </p>
@@ -917,7 +917,7 @@ export function TechFeedFilters({
                   ones we hold none about. Saying so is the difference between
                   a narrowing the user chose and one that just happened. */}
               {filters.employerScope === 'tech_only' && (
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-caption-sm text-muted-foreground">
                   Shows MNCs, public technology companies, growth companies and
                   niche startups we hold documentary evidence for. Employers we
                   have not yet classified are hidden, and the result count says

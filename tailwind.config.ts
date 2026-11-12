@@ -2,6 +2,100 @@ import type { Config } from "tailwindcss";
 import tailwindcssAnimate from "tailwindcss-animate";
 import tailwindcssAspectRatio from "@tailwindcss/aspect-ratio";
 
+// The brand moved from plum to cobalt (2026-11-12). About 300 older class
+// names (`text-purple-600`, `bg-violet-50`, `from-fuchsia-500` ...) were the
+// brand colour hard-coded. Pointing those three scales at one cobalt ramp
+// re-brands them in place; new code uses `primary` / `signal`, never these.
+const cobaltRamp = {
+  50: "#EEF2FF",
+  100: "#E0E8FF",
+  200: "#C7D4FE",
+  300: "#A3B8FD",
+  400: "#7C97F8",
+  500: "#5573EE",
+  600: "#2648D6",
+  700: "#1E3AB4",
+  800: "#1C318F",
+  900: "#1B2C70",
+  950: "#121B45",
+};
+
+// Status scales, re-tuned for contrast. Tailwind's stock 600s fail small text
+// on white (emerald 3.77, amber 3.19, teal 3.74, sky 4.10, orange 3.56) and the
+// app pairs `text-*-600` with `dark:text-*-300` in hundreds of places. These
+// ramps keep each step's role but measure, on #FFFFFF / the muted fill / the
+// dark card #121A31:
+//   600: 5.2 to 5.9 / 4.5 to 5.1 / -   (light text, AA)
+//   500: 3.2 to 3.9 on white            (icons and fills, 3:1)
+//   300 and 400: 6.4 to 10.6 on the dark card (dark text, AA)
+// Greens join the mint signal family and yellows join amber, so a stray
+// raw class still lands inside the system.
+const mintRamp = {
+  50: "#ECFBF4",
+  100: "#D2F5E4",
+  200: "#A6EBCB",
+  300: "#6EDDAE",
+  400: "#3CCB91",
+  500: "#15A472",
+  600: "#0A7A50",
+  700: "#0B6B47",
+  800: "#0C553A",
+  900: "#0B4531",
+  950: "#04271B",
+};
+const amberRamp = {
+  50: "#FFF8EB",
+  100: "#FEEDC7",
+  200: "#FDD98A",
+  300: "#FCC24D",
+  400: "#F5A524",
+  500: "#C77A06",
+  600: "#A15C00",
+  700: "#8A4D00",
+  800: "#6F3F05",
+  900: "#5C3408",
+  950: "#341B02",
+};
+const tealRamp = {
+  50: "#EDFBF8",
+  100: "#D0F4EE",
+  200: "#A3E8DD",
+  300: "#68D5C6",
+  400: "#33BCAB",
+  500: "#14998A",
+  600: "#0C7A6E",
+  700: "#0B675D",
+  800: "#0D524B",
+  900: "#0E443F",
+  950: "#042825",
+};
+const skyRamp = {
+  50: "#EEF8FD",
+  100: "#D8EFFA",
+  200: "#B1DEF4",
+  300: "#7CC6EC",
+  400: "#3FA7DD",
+  500: "#1688C4",
+  600: "#0B6A9C",
+  700: "#0A5A85",
+  800: "#0D4A6B",
+  900: "#103E59",
+  950: "#0A2639",
+};
+const orangeRamp = {
+  50: "#FFF4ED",
+  100: "#FFE5D3",
+  200: "#FEC7A5",
+  300: "#FDA26D",
+  400: "#F97B38",
+  500: "#E25F14",
+  600: "#B8470A",
+  700: "#9A3A0B",
+  800: "#7C3010",
+  900: "#652A10",
+  950: "#381305",
+};
+
 export default {
   // Hover styles only on devices that can hover: on touch screens Tailwind 3's
   // `hover:` otherwise sticks after a tap.
@@ -41,6 +135,25 @@ export default {
           DEFAULT: "hsl(var(--destructive))",
           foreground: "hsl(var(--destructive-foreground))",
         },
+        // The second colour: matches, scores, progress. Fill (`bg-signal`),
+        // text (`text-signal`, readable on card and canvas in both themes)
+        // and a quiet chip background (`bg-signal-tint`).
+        signal: {
+          DEFAULT: "hsl(var(--signal))",
+          foreground: "hsl(var(--signal-foreground))",
+          tint: "hsl(var(--signal-tint))",
+        },
+        purple: cobaltRamp,
+        violet: cobaltRamp,
+        fuchsia: cobaltRamp,
+        indigo: cobaltRamp,
+        emerald: mintRamp,
+        green: mintRamp,
+        teal: tealRamp,
+        amber: amberRamp,
+        yellow: amberRamp,
+        sky: skyRamp,
+        orange: orangeRamp,
         success: {
           DEFAULT: "hsl(var(--success))",
           foreground: "hsl(var(--success-foreground))",
@@ -155,6 +268,13 @@ export default {
         "body-lg": ["1.125rem", { lineHeight: "1.75rem" }],
         "body-md": ["1rem", { lineHeight: "1.5rem" }],
         "body-sm": ["0.875rem", { lineHeight: "1.25rem", letterSpacing: "0.005em" }],
+        // `text-label` was used about 60 times with no definition, so those
+        // labels silently inherited 16px body text. It maps onto the existing
+        // --text-label-* tokens (14px / 20px / 600).
+        label: [
+          "var(--text-label-size)",
+          { lineHeight: "var(--text-label-lh)", fontWeight: "var(--text-label-w)" },
+        ],
         "label-lg": ["0.875rem", { lineHeight: "1.25rem", letterSpacing: "0.005em", fontWeight: "600" }],
         "label-md": ["0.8125rem", { lineHeight: "1rem", letterSpacing: "0.01em", fontWeight: "600" }],
         "caption-sm": ["0.75rem", { lineHeight: "1rem", letterSpacing: "0.01em", fontWeight: "500" }],
@@ -219,8 +339,8 @@ export default {
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
-        "fade-up": "fade-up 0.4s var(--ease-out-expo) both",
-        "fade-in": "fade-in 0.3s var(--ease-out-expo) both",
+        "fade-up": "fade-up 0.28s var(--ease-out-expo) both",
+        "fade-in": "fade-in 0.24s var(--ease-out-expo) both",
       },
     },
   },

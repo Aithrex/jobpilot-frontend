@@ -35,7 +35,8 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowRight, ClipboardList, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { rise as riseIn } from '@/lib/motion';
+import { fade } from '@/lib/motion';
+import { Button } from '@/components/ui/button';
 import { toTitleCase } from '@/lib/format';
 import { requestOnboardingOpen } from '@/components/onboarding/onboarding';
 import { apiService } from '@/lib/api';
@@ -190,12 +191,13 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
     firstLoad && loading ? 'loading' : isErr ? 'error' : 'ready';
 
   /**
-   * Staggered entrance, top to bottom - opacity + a small rise only, so
-   * nothing reflows. Skeletons occupy the same slots, so there is zero layout
-   * shift when data lands. Disabled entirely under prefers-reduced-motion.
-   * Values come from the shared motion system (`@/lib/motion`).
+   * Home is opened every day, so it gets the daily-surface budget only: one
+   * 200ms opacity fade per zone, no rise and no stagger (a staggered rise
+   * took over half a second to settle the last zone). Skeletons occupy the
+   * same slots, so there is zero layout shift when data lands. Instant under
+   * prefers-reduced-motion. Values come from `@/lib/motion`.
    */
-  const rise = (order: number) => riseIn({ reduce: reduceMotion, index: order });
+  const zoneFade = fade({ reduce: reduceMotion });
 
   // First-run empty workspace: one next action, not seven blank panels.
   // The setup overlay sits on top of this (dimmed). This is also what they
@@ -203,19 +205,19 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
   if (firstRunHome) {
     return (
       <div className="page-full space-y-8">
-        <motion.header {...rise(0)} className="space-y-2">
+        <motion.header {...zoneFade} className="space-y-2">
           <p className="overline leading-none">Home</p>
           <h1 className="text-title font-display text-foreground">
             {greeting()}, {name}
           </h1>
-          <p className="max-w-xl text-body text-muted-foreground">
+          <p className="max-w-prose text-body text-muted-foreground">
             Add your resume and this home fills in with matches, today's work, and your pipeline.
           </p>
         </motion.header>
-        <motion.div {...rise(1)} className="space-y-4">
+        <motion.div {...zoneFade} className="space-y-4">
           <ResumeEntryPanel onUploaded={() => void load()} />
-          <p className="text-center text-sm text-muted-foreground">
-            <ContinueWorkspaceSetup />
+          <p className="text-center text-body-sm text-muted-foreground">
+            <ContinueWorkspaceSetup className="hit-target" />
           </p>
         </motion.div>
       </div>
@@ -225,7 +227,7 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
   return (
     <div className="page-full space-y-8">
       {/* Page header */}
-      <motion.header {...rise(0)} className="flex flex-wrap items-end justify-between gap-3">
+      <motion.header {...zoneFade} className="flex flex-wrap items-end justify-between gap-3">
         <div className="space-y-1">
           <p className="overline leading-none">Home</p>
           <h1 className="text-title font-display text-foreground">
@@ -255,31 +257,35 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
       </motion.header>
 
       {setupOpen && (
-        <div className="flex flex-col gap-2 rounded-xl border border-primary/25 bg-primary/5 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-          <p className="text-sm text-muted-foreground">
+        <div className="flex flex-col gap-2 rounded-container border border-primary/25 bg-primary/5 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+          <p className="max-w-prose text-body-sm text-muted-foreground">
             Workspace setup is still open. Finish titles, location, and how you apply so this home stays on-target.
           </p>
-          <ContinueWorkspaceSetup className="shrink-0 text-sm" />
+          <ContinueWorkspaceSetup className="hit-target shrink-0 text-body-sm" />
         </div>
       )}
 
-      <section aria-label="Application tracker" className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
+      <section aria-label="Application tracker" className="flex flex-col gap-3 rounded-container border border-border bg-card p-4 shadow-soft sm:flex-row sm:items-center sm:justify-between sm:p-5">
         <div className="flex items-start gap-3">
-          <ClipboardList className="mt-1 h-5 w-5 shrink-0 text-primary" aria-hidden />
-          <div>
-            <h2 className="font-display font-semibold">Keep every application in view</h2>
-            <p className="text-sm text-muted-foreground">Connect Gmail, review replies, and follow up from your application tracker.</p>
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <ClipboardList className="h-5 w-5" aria-hidden />
+          </span>
+          <div className="min-w-0 space-y-0.5">
+            <h2 className="font-display text-title-sm text-foreground">Keep every application in view</h2>
+            <p className="max-w-prose text-body-sm text-muted-foreground">Connect Gmail, review replies, and follow up from your application tracker.</p>
           </div>
         </div>
-        <Link to="/app/apply/tracker" className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
-          Open tracker <ArrowRight className="h-4 w-4" aria-hidden />
-        </Link>
+        <Button asChild className="min-h-11 shrink-0 gap-2 px-4 font-semibold">
+          <Link to="/app/apply/tracker">
+            Open tracker <ArrowRight className="h-4 w-4" aria-hidden />
+          </Link>
+        </Button>
       </section>
 
       {/* Zone 1 - Where do I stand? With the hero gone this is the first thing
           the user reads: a confident, scannable horizontal KPI strip across the
           full width (4-up on lg, 2-up on md, stacked below). */}
-      <motion.section {...rise(1)} aria-label="Where you stand">
+      <motion.section {...zoneFade} aria-label="Where you stand">
         <KpiRow
           orientation="grid"
           loading={firstLoad && loading}
@@ -295,18 +301,18 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
           states off the shared job feed, so it never blocks (or is blocked by)
           the dashboard fetches above. Full width so the matches read as the
           primary surface of the page. */}
-      <motion.section {...rise(2)} aria-label="Top matches">
+      <motion.section {...zoneFade} aria-label="Top matches">
         <TopMatchesPanel />
       </motion.section>
 
       {/* Resume upload entry point - the primary onboarding action when the
           user has no base resume; a quiet, discoverable affordance once they do. */}
-      <motion.div {...rise(3)}>
+      <motion.div {...zoneFade}>
         <ResumeEntryPanel onUploaded={() => void load()} />
       </motion.div>
 
       {/* Zone 3 - What's changing? */}
-      <motion.section {...rise(4)} aria-label="Trends" className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <motion.section {...zoneFade} aria-label="Trends" className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <ApplicationTrend
             state={panelState(err.records)}
@@ -325,7 +331,7 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
       </motion.section>
 
       {/* Zone 4 - Why? */}
-      <motion.section {...rise(5)} aria-label="Recent applications">
+      <motion.section {...zoneFade} aria-label="Recent applications">
         <RecentActivityPanel
           state={panelState(err.records)}
           applications={activity?.datedRecords ?? null}

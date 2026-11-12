@@ -1,0 +1,502 @@
+/*
+ * The hero product story. One 10s loop on a 560x440 design box that the
+ * component scales to fit. Every moving part shares the loop length, so a
+ * chapter jump is one negative delay (`--hs-offset`) on the whole stage.
+ *
+ * Motion vocabulary (the principles this is built to show):
+ *  - anticipation: the resume rises before it drops, the lead card winds
+ *    back before it lifts;
+ *  - squash and stretch: the resume lands squashed and springs back, the
+ *    tracker chip lands the same way;
+ *  - arcs: chips and cards travel on curved offset paths, never straight;
+ *  - follow through: cards arrive staggered and overshoot a hair;
+ *  - staging: when the lead card lifts, the others and the resume dim;
+ *  - slow in and slow out: every curve eases, nothing moves linearly except
+ *    the scan line, which is a machine reading;
+ *  - secondary action: the match rings fill after the cards land.
+ *
+ * Lighting borrows a three point studio setup: a key light (top left
+ * highlight on every object), a rim light in the accent on the shadow edge,
+ * and soft contact shadows on an implied floor. Colours come ONLY from the
+ * semantic tokens, so both themes and every public surface just work.
+ */
+
+.hs-root {
+  --hs-loop: 10s;
+  --hs-offset: 0s;
+  --hs-paper: var(--card);
+  --hs-paper-line: var(--surface-strong);
+  --hs-paper-ink: var(--foreground);
+  --hs-key: 0 0% 100%;
+  --hs-key-alpha: 0.85;
+  --hs-shadow: 224 50% 12%;
+  --hs-shadow-alpha: 0.22;
+  position: relative;
+  width: 100%;
+  aspect-ratio: 560 / 440;
+  overflow: hidden;
+  border-radius: 16px;
+  isolation: isolate;
+  background:
+    radial-gradient(70% 60% at 30% 12%, hsl(var(--card)) 0%, transparent 70%),
+    radial-gradient(90% 80% at 75% 100%, hsl(var(--primary) / 0.12) 0%, transparent 60%),
+    hsl(var(--muted));
+  box-shadow: inset 0 0 0 1px hsl(var(--border));
+}
+
+/* On a dark surface the resume stays PAPER (light), the way a real document
+   would under studio light, and shadows deepen. */
+.dark .hs-root,
+.surface-nocturne .hs-root,
+.surface-obsidian .hs-root {
+  --hs-paper: var(--foreground);
+  --hs-paper-line: var(--muted-foreground);
+  --hs-paper-ink: var(--background);
+  --hs-key-alpha: 0.18;
+  --hs-shadow: 225 60% 3%;
+  --hs-shadow-alpha: 0.6;
+  background:
+    radial-gradient(70% 60% at 30% 10%, hsl(var(--surface-strong)) 0%, transparent 70%),
+    radial-gradient(90% 80% at 75% 100%, hsl(var(--primary) / 0.18) 0%, transparent 60%),
+    hsl(var(--background));
+}
+.surface-lumen .hs-root {
+  --hs-paper: var(--card);
+  --hs-paper-line: var(--surface-strong);
+  --hs-paper-ink: var(--foreground);
+  --hs-key-alpha: 0.85;
+  --hs-shadow: 224 50% 12%;
+  --hs-shadow-alpha: 0.22;
+  background:
+    radial-gradient(70% 60% at 30% 12%, hsl(var(--card)) 0%, transparent 70%),
+    radial-gradient(90% 80% at 75% 100%, hsl(var(--primary) / 0.12) 0%, transparent 60%),
+    hsl(var(--muted));
+}
+
+.hs-box {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 560px;
+  height: 440px;
+  transform-origin: 0 0;
+  perspective: 1100px;
+}
+
+/* Pointer parallax: layers drift by depth. Set by the component on fine
+   pointers only; zero otherwise. */
+.hs-layer {
+  position: absolute;
+  inset: 0;
+  transition: transform 280ms cubic-bezier(0.2, 0, 0, 1);
+}
+.hs-l-back { transform: translate(calc(var(--hs-px, 0) * -4px), calc(var(--hs-py, 0) * -3px)); }
+.hs-l-mid { transform: translate(calc(var(--hs-px, 0) * 6px), calc(var(--hs-py, 0) * 4px)); }
+.hs-l-front { transform: translate(calc(var(--hs-px, 0) * 11px), calc(var(--hs-py, 0) * 8px)); }
+
+.hs-floor {
+  position: absolute;
+  left: 40px;
+  right: 40px;
+  bottom: -30px;
+  height: 160px;
+  background: radial-gradient(50% 50% at 50% 40%, hsl(var(--primary) / 0.22), transparent 70%);
+  filter: blur(6px);
+}
+
+/* ── The resume sheet ───────────────────────────────────────────────── */
+.hs-sheet-wrap {
+  position: absolute;
+  left: 52px;
+  top: 64px;
+  width: 172px;
+  height: 222px;
+  transform-style: preserve-3d;
+}
+.hs-sheet {
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  padding: 18px 16px;
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  overflow: hidden;
+  background:
+    linear-gradient(150deg, hsl(var(--hs-key) / var(--hs-key-alpha)) 0%, transparent 42%),
+    hsl(var(--hs-paper));
+  box-shadow:
+    inset 0 0 0 1px hsl(var(--hs-paper-line) / 0.7),
+    -2px 0 0 0 hsl(var(--primary) / 0.85),
+    0 34px 40px -20px hsl(var(--hs-shadow) / calc(var(--hs-shadow-alpha) * 2)),
+    0 10px 14px -8px hsl(var(--hs-shadow) / var(--hs-shadow-alpha));
+  transform: rotateY(17deg) rotateX(7deg);
+  transform-origin: 50% 100%;
+}
+.hs-ln {
+  height: 6px;
+  border-radius: 3px;
+  background: hsl(var(--hs-paper-line));
+}
+.hs-ln-h {
+  height: 9px;
+  width: 58%;
+  background: hsl(var(--hs-paper-ink) / 0.85);
+}
+.hs-ln-k {
+  /* the lines the tailoring step rewrites */
+  position: relative;
+  overflow: hidden;
+}
+.hs-ln-k::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: hsl(var(--signal));
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+}
+.hs-scan {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -26px;
+  height: 26px;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    hsl(var(--primary) / 0.16) 70%,
+    hsl(var(--primary)) 72%,
+    transparent 75%
+  );
+  opacity: 0;
+}
+.hs-contact {
+  position: absolute;
+  left: 58px;
+  top: 282px;
+  width: 168px;
+  height: 18px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, hsl(var(--hs-shadow) / calc(var(--hs-shadow-alpha) * 2.4)), transparent);
+  filter: blur(2px);
+}
+
+/* ── Skill chips (the read step's output) ───────────────────────────── */
+.hs-chip {
+  position: absolute;
+  left: 0;
+  top: 0;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font: 600 11px/1 var(--font-sans);
+  white-space: nowrap;
+  color: hsl(var(--primary-ink));
+  background: hsl(var(--card));
+  box-shadow:
+    0 0 0 1px hsl(var(--primary) / 0.35),
+    0 8px 16px -10px hsl(var(--hs-shadow) / calc(var(--hs-shadow-alpha) * 2));
+  offset-rotate: 0deg;
+  opacity: 0;
+}
+.hs-chip-1 { offset-path: path('M 205 120 C 235 82, 262 84, 272 104'); }
+.hs-chip-2 { offset-path: path('M 205 168 C 245 150, 268 172, 280 168'); }
+.hs-chip-3 { offset-path: path('M 205 216 C 238 248, 262 238, 270 228'); }
+
+/* ── Job cards (the match step's output) ────────────────────────────── */
+.hs-card {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 236px;
+  height: 72px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 14px;
+  background:
+    linear-gradient(160deg, hsl(var(--hs-key) / calc(var(--hs-key-alpha) * 0.6)) 0%, transparent 50%),
+    hsl(var(--card));
+  box-shadow:
+    inset 0 1px 0 hsl(0 0% 100% / 0.14),
+    0 0 0 1px hsl(var(--border)),
+    0 20px 30px -18px hsl(var(--hs-shadow) / calc(var(--hs-shadow-alpha) * 2.2));
+  offset-rotate: 0deg;
+  opacity: 0;
+}
+.hs-card-1 { offset-path: path('M 600 500 C 560 380, 470 150, 414 104'); }
+.hs-card-2 { offset-path: path('M 620 520 C 590 420, 490 220, 414 190'); }
+.hs-card-3 { offset-path: path('M 640 540 C 610 470, 500 300, 414 276'); }
+
+.hs-logo {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  font: 800 13px/1 var(--font-display);
+  color: hsl(var(--primary-foreground));
+  background: linear-gradient(150deg, hsl(var(--primary)), hsl(var(--brand-to)));
+}
+.hs-card-2 .hs-logo { background: hsl(var(--muted-foreground)); color: hsl(var(--card)); }
+.hs-card-3 .hs-logo { background: hsl(var(--surface-strong)); color: hsl(var(--foreground)); }
+.hs-info { display: grid; gap: 3px; min-width: 0; }
+.hs-info b { font: 700 12.5px/1.15 var(--font-sans); color: hsl(var(--foreground)); }
+.hs-info span { font: 500 10.5px/1.15 var(--font-sans); color: hsl(var(--muted-foreground)); }
+
+.hs-ring { margin-left: auto; width: 38px; height: 38px; flex: none; position: relative; }
+.hs-ring svg { display: block; transform: rotate(-90deg); }
+.hs-ring .hs-track { stroke: hsl(var(--surface-strong)); }
+.hs-ring .hs-val { stroke: hsl(var(--signal)); stroke-dasharray: 0 100; }
+.hs-ring em {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font: 700 11px/1 var(--font-sans);
+  font-style: normal;
+  color: hsl(var(--foreground));
+  font-variant-numeric: tabular-nums;
+}
+
+.hs-stamp {
+  position: absolute;
+  left: 452px;
+  top: 52px;
+  padding: 5px 10px;
+  border-radius: 8px;
+  font: 800 10.5px/1 var(--font-display);
+  letter-spacing: 0.06em;
+  color: hsl(var(--signal-foreground));
+  background: hsl(var(--signal));
+  box-shadow: 0 10px 20px -10px hsl(var(--signal));
+  opacity: 0;
+}
+
+/* ── Tracker strip (the track step) ─────────────────────────────────── */
+.hs-tracker {
+  position: absolute;
+  left: 52px;
+  right: 30px;
+  top: 344px;
+  height: 62px;
+  border-radius: 14px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 8px;
+  background: hsl(var(--card) / 0.7);
+  box-shadow: 0 0 0 1px hsl(var(--border));
+}
+.hs-col {
+  border-radius: 9px;
+  background: hsl(var(--muted));
+  padding: 7px 9px;
+  display: grid;
+  align-content: space-between;
+  font: 600 10px/1 var(--font-sans);
+  color: hsl(var(--muted-foreground));
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.hs-col-on { background: hsl(var(--nav-active)); color: hsl(var(--primary-ink)); }
+.hs-count {
+  font: 800 16px/1 var(--font-display);
+  color: hsl(var(--foreground));
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+  text-transform: none;
+}
+.hs-count { position: relative; }
+.hs-count i { font-style: normal; display: inline-block; }
+.hs-count .hs-n1 { opacity: 0; position: absolute; }
+.hs-mini {
+  position: absolute;
+  left: 0;
+  top: 0;
+  padding: 5px 9px 5px 6px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font: 700 10.5px/1 var(--font-sans);
+  color: hsl(var(--foreground));
+  background: hsl(var(--card));
+  box-shadow: 0 0 0 1.5px hsl(var(--primary)), 0 10px 18px -10px hsl(var(--primary));
+  offset-path: path('M 414 104 C 470 170, 400 320, 328 388');
+  offset-rotate: 0deg;
+  opacity: 0;
+}
+.hs-mini b {
+  width: 16px;
+  height: 16px;
+  border-radius: 5px;
+  display: grid;
+  place-items: center;
+  font: 800 9px/1 var(--font-display);
+  color: hsl(var(--primary-foreground));
+  background: hsl(var(--primary));
+}
+
+/* ── The loop ────────────────────────────────────────────────────────
+   Every animated element: same duration, delay = stage offset + its own
+   stagger. `ease` per keyframe block gives slow in and slow out. */
+.hs-play .hs-sheet,
+.hs-play .hs-contact,
+.hs-play .hs-scan,
+.hs-play .hs-chip,
+.hs-play .hs-card,
+.hs-play .hs-val,
+.hs-play .hs-stamp,
+.hs-play .hs-ln-k::after,
+.hs-play .hs-mini,
+.hs-play .hs-col-on,
+.hs-play .hs-n0,
+.hs-play .hs-n1 {
+  animation-duration: var(--hs-loop);
+  animation-iteration-count: infinite;
+  animation-delay: calc(var(--hs-offset) + var(--hs-own, 0s));
+  animation-fill-mode: both;
+}
+.hs-root.hs-paused *,
+.hs-root.hs-paused *::after { animation-play-state: paused !important; }
+
+.hs-play .hs-sheet { animation-name: hs-sheet; animation-timing-function: cubic-bezier(0.3, 0.7, 0.2, 1); }
+@keyframes hs-sheet {
+  0% { transform: translateY(-36px) rotateY(17deg) rotateX(7deg); opacity: 0; filter: none; }
+  4% { transform: translateY(-50px) rotateY(17deg) rotateX(7deg); opacity: 1; }
+  8% { transform: translateY(5px) rotateY(17deg) rotateX(7deg) scale(1.05, 0.94); }
+  11% { transform: translateY(-2px) rotateY(17deg) rotateX(7deg) scale(0.99, 1.02); }
+  14%, 52% { transform: translateY(0) rotateY(17deg) rotateX(7deg) scale(1); opacity: 1; filter: none; }
+  56%, 70% { filter: brightness(0.86) saturate(0.8); }
+  74%, 94% { transform: translateY(0) rotateY(17deg) rotateX(7deg); filter: none; opacity: 1; }
+  100% { transform: translateY(0) rotateY(17deg) rotateX(7deg); opacity: 0; }
+}
+.hs-play .hs-contact { animation-name: hs-contact; animation-timing-function: cubic-bezier(0.3, 0.7, 0.2, 1); }
+@keyframes hs-contact {
+  0%, 4% { opacity: 0; transform: scaleX(0.55); }
+  8% { opacity: 1; transform: scaleX(1.1); }
+  14%, 94% { opacity: 1; transform: scaleX(1); }
+  100% { opacity: 0; }
+}
+.hs-play .hs-scan { animation-name: hs-scan; animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1); }
+@keyframes hs-scan {
+  0%, 13% { top: -26px; opacity: 0; }
+  15% { opacity: 1; }
+  27% { top: 222px; opacity: 1; }
+  29%, 100% { top: 222px; opacity: 0; }
+}
+.hs-play .hs-chip { animation-name: hs-chip; animation-timing-function: cubic-bezier(0.34, 1.4, 0.5, 1); }
+.hs-chip-2 { --hs-own: 0.14s; }
+.hs-chip-3 { --hs-own: 0.28s; }
+@keyframes hs-chip {
+  0%, 17% { offset-distance: 0%; opacity: 0; transform: scale(0.5); }
+  21% { opacity: 1; }
+  26% { offset-distance: 100%; transform: scale(1.08); }
+  29%, 40% { offset-distance: 100%; transform: scale(1); opacity: 1; }
+  46%, 100% { offset-distance: 100%; opacity: 0; transform: scale(0.9); }
+}
+.hs-play .hs-card { animation-name: hs-card; animation-timing-function: cubic-bezier(0.22, 1.18, 0.36, 1); }
+.hs-card-2 { --hs-own: 0.16s; }
+.hs-card-3 { --hs-own: 0.32s; }
+@keyframes hs-card {
+  0%, 30% { offset-distance: 0%; opacity: 0; filter: none; }
+  33% { opacity: 1; }
+  40% { offset-distance: 100%; }
+  52% { filter: none; }
+  58%, 70% { filter: saturate(0.6) brightness(0.86); }
+  76%, 94% { offset-distance: 100%; opacity: 1; filter: none; }
+  100% { offset-distance: 100%; opacity: 0; }
+}
+.hs-play .hs-card-1 { animation-name: hs-card-lead, hs-lead; }
+@keyframes hs-card-lead {
+  0%, 30% { offset-distance: 0%; opacity: 0; }
+  33% { opacity: 1; }
+  40%, 94% { offset-distance: 100%; opacity: 1; }
+  100% { offset-distance: 100%; opacity: 0; }
+}
+@keyframes hs-lead {
+  0%, 52% {
+    transform: none;
+    box-shadow:
+      inset 0 1px 0 hsl(0 0% 100% / 0.14),
+      0 0 0 1px hsl(var(--border)),
+      0 20px 30px -18px hsl(var(--hs-shadow) / calc(var(--hs-shadow-alpha) * 2.2));
+  }
+  55% { transform: translate(3px, 3px) scale(0.97); }
+  59%, 72% {
+    transform: translate(-6px, -9px) scale(1.05);
+    box-shadow:
+      inset 0 1px 0 hsl(0 0% 100% / 0.14),
+      0 0 0 1.5px hsl(var(--primary)),
+      0 30px 44px -16px hsl(var(--primary) / 0.55);
+  }
+  78%, 100% {
+    transform: none;
+    box-shadow:
+      inset 0 1px 0 hsl(0 0% 100% / 0.14),
+      0 0 0 1px hsl(var(--border)),
+      0 20px 30px -18px hsl(var(--hs-shadow) / calc(var(--hs-shadow-alpha) * 2.2));
+  }
+}
+
+.hs-play .hs-val { animation-name: hs-ring; animation-timing-function: cubic-bezier(0.3, 0.7, 0.2, 1); }
+.hs-card-2 .hs-val { --hs-own: 0.16s; }
+.hs-card-3 .hs-val { --hs-own: 0.32s; }
+@keyframes hs-ring {
+  0%, 40% { stroke-dasharray: 0 100; }
+  50%, 94% { stroke-dasharray: var(--hs-v) 100; }
+  100% { stroke-dasharray: var(--hs-v) 100; }
+}
+.hs-play .hs-ln-k::after { animation-name: hs-rewrite; animation-timing-function: cubic-bezier(0.2, 0, 0, 1); }
+.hs-ln-k2 { --hs-own: 0.12s; }
+@keyframes hs-rewrite {
+  0%, 60% { transform: scaleX(0); opacity: 0.9; }
+  66%, 90% { transform: scaleX(1); opacity: 0.9; }
+  96%, 100% { transform: scaleX(1); opacity: 0; }
+}
+.hs-play .hs-stamp { animation-name: hs-stamp; animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes hs-stamp {
+  0%, 61% { opacity: 0; transform: translateY(-8px) scale(1.7) rotate(-9deg); }
+  64% { opacity: 1; transform: scale(0.9) rotate(-3deg); }
+  67% { transform: scale(1.05) rotate(-4deg); }
+  70%, 94% { opacity: 1; transform: scale(1) rotate(-4deg); }
+  100% { opacity: 0; transform: scale(1) rotate(-4deg); }
+}
+.hs-play .hs-mini { animation-name: hs-mini; animation-timing-function: cubic-bezier(0.45, 0, 0.2, 1); }
+@keyframes hs-mini {
+  0%, 73% { offset-distance: 0%; opacity: 0; transform: scale(0.7); }
+  75% { opacity: 1; }
+  82% { offset-distance: 100%; transform: scale(1.08, 0.9); }
+  85% { transform: scale(0.97, 1.03); }
+  88%, 94% { offset-distance: 100%; opacity: 1; transform: scale(1); }
+  100% { offset-distance: 100%; opacity: 0; }
+}
+.hs-play .hs-col-on { animation-name: hs-col; animation-timing-function: cubic-bezier(0.2, 0, 0, 1); }
+@keyframes hs-col {
+  0%, 81% { background: hsl(var(--muted)); color: hsl(var(--muted-foreground)); }
+  84%, 96% { background: hsl(var(--nav-active)); color: hsl(var(--primary-ink)); }
+  100% { background: hsl(var(--muted)); color: hsl(var(--muted-foreground)); }
+}
+.hs-play .hs-n0 { animation-name: hs-n0; }
+.hs-play .hs-n1 { animation-name: hs-n1; }
+@keyframes hs-n0 { 0%, 82% { opacity: 1; } 83%, 97% { opacity: 0; } 100% { opacity: 1; } }
+@keyframes hs-n1 { 0%, 82% { opacity: 0; transform: translateY(6px); } 85%, 97% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+
+/* ── At rest: the composed final frame (reduced motion, auth stage) ──── */
+.hs-still .hs-chip { opacity: 0; }
+.hs-still .hs-card { opacity: 1; offset-distance: 100%; }
+.hs-still .hs-val { stroke-dasharray: var(--hs-v) 100; }
+.hs-still .hs-stamp { opacity: 1; transform: rotate(-4deg); }
+.hs-still .hs-ln-k::after { transform: scaleX(1); opacity: 0.9; }
+.hs-still .hs-mini { opacity: 1; offset-distance: 100%; }
+.hs-still .hs-col-on { background: hsl(var(--nav-active)); color: hsl(var(--primary-ink)); }
+.hs-still .hs-n0 { opacity: 0; }
+.hs-still .hs-n1 { opacity: 1; position: static; }
+
+@media (prefers-reduced-motion: reduce) {
+  .hs-layer { transition: none; transform: none; }
+}

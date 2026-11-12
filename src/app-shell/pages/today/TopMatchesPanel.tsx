@@ -36,7 +36,7 @@ import { WhyThisScoreButton } from '@/components/job-search/JobFitDetails';
 import { fitBandOf } from '@/components/job-search/fitBands';
 import { postedAgeLabel, RECENCY_OPTIONS, toJob, type SeniorityLevel } from '@/lib/careerJobs';
 import { toTitleCase } from '@/lib/format';
-import { listContainer, listItem } from '@/lib/motion';
+import { fade } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import type { Job } from '@/types/jobs';
 import { PanelCard, PanelEmpty, PanelError, Stat, ZoneHeading } from './primitives';
@@ -83,8 +83,7 @@ function MatchRow({ job }: { job: Job }) {
   const scored = band.key !== 'unscored';
 
   return (
-    <motion.li
-      variants={listItem}
+    <li
       className="group flex flex-col gap-2 rounded-control border border-border/60 bg-background/40 p-3 transition-[border-color,background-color] duration-base ease-expo hover:border-primary/40 hover:bg-accent/40 sm:flex-row sm:items-center sm:gap-3"
     >
       <CompanyLogo
@@ -101,7 +100,7 @@ function MatchRow({ job }: { job: Job }) {
           href={job.apply_link || undefined}
           target="_blank"
           rel="noopener noreferrer"
-          className="interactive block truncate rounded-sm text-body font-semibold text-foreground hover:text-primary"
+          className="interactive -my-2 block truncate rounded-sm py-2 text-body font-semibold text-foreground hover:text-primary"
           title={title}
         >
           {title}
@@ -112,7 +111,7 @@ function MatchRow({ job }: { job: Job }) {
           <span className="sr-only"> (opens the posting in a new tab)</span>
         </a>
         <p className="mt-0.5 flex min-w-0 items-center gap-1 truncate text-caption text-muted-foreground">
-          <span className="truncate font-medium text-foreground/80">{company}</span>
+          <span className="truncate font-medium text-ink-muted">{company}</span>
           {location && (
             <>
               <span aria-hidden>·</span>
@@ -132,7 +131,7 @@ function MatchRow({ job }: { job: Job }) {
       <div className="flex shrink-0 items-center gap-2 sm:flex-col sm:items-end sm:gap-1">
         <span
           className={cn(
-            'inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-semibold',
+            'inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-caption-sm font-semibold',
             band.chip,
           )}
         >
@@ -141,7 +140,7 @@ function MatchRow({ job }: { job: Job }) {
         </span>
         <WhyThisScoreButton job={job} />
       </div>
-    </motion.li>
+    </li>
   );
 }
 
@@ -247,12 +246,9 @@ export function TopMatchesPanel() {
     );
   } else {
     body = (
-      <motion.ul
-        initial={reduce ? false : 'hidden'}
-        animate="visible"
-        variants={listContainer}
-        className="space-y-2"
-      >
+      // Home is a daily surface: the list fades in once (200ms), rows do not
+      // rise or stagger.
+      <motion.ul {...fade({ reduce })} className="space-y-2">
         {rows.map((job) => (
           <MatchRow key={job.job_id} job={job} />
         ))}
@@ -275,7 +271,7 @@ export function TopMatchesPanel() {
 
       {showExperienceChip && (
         <p className="mb-3 flex flex-wrap items-center gap-2 text-caption text-muted-foreground">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/5 px-2.5 py-1 text-[0.75rem] font-medium text-primary">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/5 px-2.5 py-1 text-caption-sm font-medium text-primary">
             <BriefcaseBusiness className="h-3.5 w-3.5" aria-hidden />
             {levelSummary(activeLevels)}
           </span>
@@ -338,7 +334,7 @@ export function TopMatchesPanel() {
           <button
             type="button"
             onClick={() => feed.sync(true)}
-            className="interactive rounded-sm font-semibold text-primary underline underline-offset-2"
+            className="interactive hit-target rounded-sm font-semibold text-primary underline underline-offset-2"
           >
             Rescan
           </button>

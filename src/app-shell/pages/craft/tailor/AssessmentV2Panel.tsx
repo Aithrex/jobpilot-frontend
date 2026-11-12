@@ -3,6 +3,9 @@
  * No fabricated employer/vendor overall score.
  */
 import { useState } from 'react';
+import { ChevronDown, Loader2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 import type { AssessmentV2Result, ATSScores } from '@/types/resume';
 import { isAssessmentV2 } from '@/lib/atsScores';
 
@@ -174,7 +177,7 @@ export function AssessmentV2Panel({
   return (
     <div className="space-y-5 p-5 sm:p-6">
       <section className="rounded-container border border-border bg-card p-5 space-y-3">
-        <h2 className="font-semibold">ATS Score</h2>
+        <h2 className="text-title-sm text-foreground">ATS score</h2>
         <p className="text-sm text-foreground">{formatRequiredLine(reqCov)}</p>
         {prefCov &&
           typeof prefCov.denominator === 'number' &&
@@ -188,7 +191,7 @@ export function AssessmentV2Panel({
           )}
         <p className="text-sm text-muted-foreground">{fileLine(v2.stages)}</p>
         <p className="text-sm text-muted-foreground">{humanLine(scores, v2)}</p>
-        <p className="text-xs text-muted-foreground">{DISCLAIMER}</p>
+        <p className="max-w-prose text-xs text-muted-foreground">{DISCLAIMER}</p>
         <p className="text-sm font-medium">{statusLabel(v2.stages)}</p>
         {checkedAt && (
           <p className="text-xs text-muted-foreground">Checked {checkedAt}</p>
@@ -199,19 +202,23 @@ export function AssessmentV2Panel({
           </p>
         )}
         {onRecheck && (
-          <button
+          <Button
             type="button"
+            variant="outline"
+            size="sm"
             disabled={checking}
+            aria-busy={checking}
             onClick={onRecheck}
-            className="text-sm underline"
+            className="min-h-11 gap-1.5"
           >
-            {checking ? 'Checking…' : 'Review current resume'}
-          </button>
+            {checking && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+            {checking ? 'Checking...' : 'Review current resume'}
+          </Button>
         )}
       </section>
 
       <section className="rounded-container border border-border bg-card p-5 space-y-3">
-        <h3 className="font-semibold">Bucket counts (reconcile with coverage)</h3>
+        <h3 className="text-label-lg text-foreground">Bucket counts (reconcile with coverage)</h3>
         <ul className="space-y-1 text-sm">
           {Object.entries(BUCKET_LABEL).map(([key, label]) => {
             const n = required[key as keyof typeof required] ?? 0;
@@ -246,7 +253,7 @@ export function AssessmentV2Panel({
 
       {detailRows.length > 0 && (
         <section className="rounded-container border border-border bg-card p-5 space-y-3">
-          <h3 className="font-semibold">Requirement evaluations</h3>
+          <h3 className="text-label-lg text-foreground">Requirement evaluations</h3>
           <ul className="space-y-2">
             {detailRows.map((ev) => {
               const open = openId === ev.id;
@@ -254,15 +261,21 @@ export function AssessmentV2Panel({
                 <li key={ev.id} className="text-sm border-b border-border/60 pb-2">
                   <button
                     type="button"
-                    className="w-full text-left font-medium"
+                    className="flex min-h-11 w-full items-center gap-2 rounded-control text-left font-medium text-foreground hover:bg-muted/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     onClick={() => setOpenId(open ? null : ev.id)}
                     aria-expanded={open}
                   >
-                    {ev.label}
-                    <span className="text-muted-foreground font-normal">
-                      {' '}
-                      · {ev.document_state} / {ev.source_state}
+                    <span className="min-w-0 flex-1">
+                      {ev.label}
+                      <span className="text-muted-foreground font-normal">
+                        {' '}
+                        · {ev.document_state} / {ev.source_state}
+                      </span>
                     </span>
+                    <ChevronDown
+                      className={cn('h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200', open && 'rotate-180')}
+                      aria-hidden="true"
+                    />
                   </button>
                   {open && (
                     <div className="mt-2 space-y-1 text-muted-foreground pl-1">
@@ -302,7 +315,7 @@ export function AssessmentV2Panel({
 
       {(v2.top_actions?.length ?? 0) > 0 && (
         <section className="rounded-container border border-border bg-card p-5 space-y-3">
-          <h3 className="font-semibold">Next actions</h3>
+          <h3 className="text-label-lg text-foreground">Next actions</h3>
           <ol className="list-decimal pl-5 space-y-2 text-sm">
             {v2.top_actions!.slice(0, 3).map((a, i) => (
               <li key={i}>{a}</li>
@@ -312,7 +325,7 @@ export function AssessmentV2Panel({
       )}
 
       <section className="rounded-container border border-border bg-card p-5 space-y-2">
-        <h3 className="font-semibold">Document checks</h3>
+        <h3 className="text-label-lg text-foreground">Document checks</h3>
         <p className="text-sm">Artifact: {v2.stages.artifact}</p>
         <p className="text-xs text-muted-foreground">
           PDF and Word each carry their own file status. Layout issues do not

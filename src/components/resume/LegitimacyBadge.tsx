@@ -24,7 +24,7 @@ export function LegitimacyBadge({
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <span className={cn('inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold', cfg.cls, className)}>
+        <span className={cn('inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-caption-sm font-semibold', cfg.cls, className)}>
           <Icon className="h-3 w-3" />
           {cfg.label}{typeof score === 'number' ? ` · ${score}` : ''}
         </span>

@@ -29,7 +29,7 @@ export function TrustChip({ trust, className }: { trust: MailTrust; className?: 
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px] font-semibold',
+        'inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-caption-sm font-semibold',
         verified
           ? 'border-success/30 bg-success/10 text-success'
           : 'border-warning/30 bg-warning/10 text-warning',
@@ -117,10 +117,10 @@ export function ThreadList({ threads, selectedId, onSelect }: ThreadListProps) {
             >
               <span className="mt-1.5 flex h-2 w-2 shrink-0 items-center justify-center">
                 {unread && (
-                  <span
-                    className="h-2 w-2 rounded-full bg-primary"
-                    aria-label="Unread"
-                  />
+                  <>
+                    <span aria-hidden="true" className="h-2 w-2 rounded-full bg-primary" />
+                    <span className="sr-only">Unread</span>
+                  </>
                 )}
               </span>
 
@@ -129,12 +129,12 @@ export function ThreadList({ threads, selectedId, onSelect }: ThreadListProps) {
                   <span
                     className={cn(
                       'truncate text-sm',
-                      unread ? 'font-semibold text-foreground' : 'font-medium text-foreground/90',
+                      unread ? 'font-semibold text-foreground' : 'font-medium text-foreground',
                     )}
                   >
                     {threadSender(t)}
                   </span>
-                  <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
+                  <span className="shrink-0 text-caption-sm tabular-nums text-muted-foreground">
                     {relativeTime(t.last_message_at)}
                   </span>
                 </span>
@@ -142,7 +142,7 @@ export function ThreadList({ threads, selectedId, onSelect }: ThreadListProps) {
                 <span className="mt-0.5 flex items-center gap-1.5">
                   <span
                     className={cn(
-                      'truncate text-[13px]',
+                      'truncate text-caption',
                       unread ? 'text-foreground' : 'text-muted-foreground',
                     )}
                   >
@@ -151,6 +151,7 @@ export function ThreadList({ threads, selectedId, onSelect }: ThreadListProps) {
                   {t.has_attachments && (
                     <Paperclip
                       className="h-3 w-3 shrink-0 text-muted-foreground"
+                      role="img"
                       aria-label="Has attachments"
                     />
                   )}
@@ -165,7 +166,7 @@ export function ThreadList({ threads, selectedId, onSelect }: ThreadListProps) {
                 <span className="mt-1.5 flex items-center gap-2">
                   <TrustChip trust={t.trust} />
                   {t.message_count > 1 && (
-                    <span className="text-[10px] text-muted-foreground">
+                    <span className="text-caption-sm text-muted-foreground">
                       {t.message_count} messages
                     </span>
                   )}

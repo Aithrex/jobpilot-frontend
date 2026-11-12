@@ -78,7 +78,13 @@ export default function Register() {
     if (isAuthenticated) navigate(destination, { replace: true });
   }, [isAuthenticated, navigate, destination]);
 
+  // Autofocus on pointer devices only, like sign-in: on touch it would raise
+  // the keyboard before the page has been read and push the form off screen.
   useEffect(() => {
+    const finePointer =
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(pointer: fine)').matches;
+    if (!finePointer) return;
     const id = window.setTimeout(() => emailRef.current?.focus(), 120);
     return () => window.clearTimeout(id);
   }, []);
@@ -94,6 +100,10 @@ export default function Register() {
     return () => window.clearTimeout(id);
   }, [beat, reduce]);
 
+  // Postel: a pasted address with stray spaces is still a valid address. Only
+  // the surrounding whitespace is dropped; nothing else about it changes.
+  const cleanEmail = email.trim();
+
   const passwordsMatch = confirmPassword.length > 0 && password === confirmPassword;
   // Live mismatch feedback merges with the on-submit field error so the same
   // message never renders twice.
@@ -104,7 +114,7 @@ export default function Register() {
   // Advance from the identity beat - same email rule and message the final
   // submit uses, so the gate never disagrees with the real validation.
   const handleContinue = () => {
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
       setFieldErrors((f) => ({ ...f, email: 'Please enter a valid email address.' }));
       return;
     }
@@ -124,7 +134,7 @@ export default function Register() {
     // Inline, per-field validation (the checklist mirrors the backend's
     // password policy); the notice banner stays reserved for server responses.
     const fe: { email?: string; password?: string; confirm?: string; consent?: string } = {};
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
       fe.email = 'Please enter a valid email address.';
     }
     if (!isPasswordValid(password)) {
@@ -145,7 +155,7 @@ export default function Register() {
       // consent travels with the request and the structured 400 reason is
       // readable. Same semantics: the token register returns is discarded.
       const result = await apiService.register(
-        email,
+        cleanEmail,
         password,
         role || undefined,
         undefined,
@@ -163,7 +173,7 @@ export default function Register() {
         return;
       }
       // register() intentionally does not keep a token - sign in to enter.
-      const loginResult = await login(email, password);
+      const loginResult = await login(cleanEmail, password);
       if (loginResult.error) {
         toast.success('Account created! Please sign in.');
         navigate('/login', { state: from ? { from } : undefined });
@@ -324,7 +334,7 @@ export default function Register() {
               <input
                 type="email"
                 autoComplete="email"
-                value={email}
+                value={cleanEmail}
                 readOnly
                 aria-hidden
                 tabIndex={-1}
@@ -343,7 +353,7 @@ export default function Register() {
                 </button>
                 <div className="flex h-11 min-w-0 flex-1 items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 text-sm">
                   <Mail className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
-                  <span className="truncate text-foreground">{email}</span>
+                  <span className="truncate text-foreground">{cleanEmail}</span>
                 </div>
               </div>
 

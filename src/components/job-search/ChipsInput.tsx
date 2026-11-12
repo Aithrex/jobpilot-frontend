@@ -75,8 +75,8 @@ export function ChipsInput({
     }
   };
 
-  const filtered = filter
-    ? values.filter((v) => v.toLowerCase().includes(filter.toLowerCase()))
+  const filtered = filter.trim()
+    ? values.filter((v) => v.toLowerCase().includes(filter.trim().toLowerCase()))
     : values;
 
   const newSuggestions = (suggestionValues || []).filter(
@@ -94,16 +94,16 @@ export function ChipsInput({
             onKeyDown={handleKey}
             onPaste={handlePaste}
             placeholder={placeholder}
-            className="pr-10 border-gray-200 bg-white/80 dark:border-white/10 dark:bg-gray-950/60 focus-visible:border-purple-500/40 focus-visible:ring-purple-500/40"
+            className="h-10 pr-10"
           />
           {draft.trim() && (
             <button
               type="button"
               onClick={() => addItems(draft)}
-              className="absolute right-1 top-1/2 -translate-y-1/2 rounded-md bg-purple-500/15 p-1 text-purple-600 transition hover:bg-purple-500/25 dark:text-purple-300"
+              className="hit-target absolute right-1 top-1/2 -translate-y-1/2 rounded-md bg-primary/10 p-1.5 text-primary transition-colors hover:bg-primary/20"
               aria-label="Add"
             >
-              <Plus className="h-3.5 w-3.5" />
+              <Plus className="h-3.5 w-3.5" aria-hidden />
             </button>
           )}
         </div>
@@ -113,9 +113,9 @@ export function ChipsInput({
             variant="outline"
             size="sm"
             onClick={() => onChange(defaultValues)}
-            className="gap-1 text-[11px] border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300 hover:bg-purple-500/10 hover:text-purple-600 dark:hover:text-purple-300 hover:border-purple-500/30"
+            className="hit-target gap-1 text-caption-sm text-muted-foreground hover:border-primary/30 hover:bg-primary/10 hover:text-primary"
           >
-            <RotateCcw className="h-3 w-3" />
+            <RotateCcw className="h-3 w-3" aria-hidden />
             Reset
           </Button>
         )}
@@ -125,19 +125,19 @@ export function ChipsInput({
             variant="ghost"
             size="sm"
             onClick={() => addItems(newSuggestions.join(','))}
-            className="gap-1 text-[11px] text-purple-600 dark:text-purple-300"
+            className="hit-target gap-1 text-caption-sm text-primary"
           >
-            <Sparkles className="h-3 w-3" />
+            <Sparkles className="h-3 w-3" aria-hidden />
             Add {newSuggestions.length} suggested
           </Button>
         )}
-        <Badge variant="outline" className="ml-auto text-[10px]">
+        <Badge variant="outline" className="ml-auto text-caption-sm">
           {values.length}{maxItems ? ` / ${maxItems}` : ''}
         </Badge>
       </div>
 
       {helperText && (
-        <p className="text-[10px] text-muted-foreground">{helperText}</p>
+        <p className="text-caption-sm text-muted-foreground">{helperText}</p>
       )}
 
       {searchable && values.length > 8 && (
@@ -145,11 +145,11 @@ export function ChipsInput({
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
           placeholder={`Filter ${values.length} items...`}
-          className="h-8 text-xs border-gray-200 bg-white/80 dark:border-white/10 dark:bg-gray-950/60 focus-visible:border-purple-500/40 focus-visible:ring-purple-500/40"
+          className="h-8 text-xs"
         />
       )}
 
-      <div className="flex flex-wrap gap-1.5 rounded-lg border border-gray-200/80 dark:border-white/[0.08] bg-gray-50/50 dark:bg-gray-900/40 p-2 min-h-[3.5rem]">
+      <div className="flex flex-wrap gap-1.5 rounded-lg border border-border bg-muted/40 p-2 min-h-[3.5rem]">
         {filtered.length === 0 ? (
           <p className="m-auto text-xs italic text-muted-foreground">{emptyState}</p>
         ) : (
@@ -157,7 +157,7 @@ export function ChipsInput({
             <span
               key={v}
               className={cn(
-                'group inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium transition',
+                'group inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-caption-sm font-medium transition',
                 accentClass,
               )}
             >
@@ -165,10 +165,10 @@ export function ChipsInput({
               <button
                 type="button"
                 onClick={() => removeItem(v)}
-                className="rounded-full p-0.5 opacity-50 transition hover:bg-black/10 hover:opacity-100 dark:hover:bg-white/10"
+                className="hit-target rounded-full p-0.5 text-muted-foreground transition-colors hover:bg-foreground/10 hover:text-foreground"
                 aria-label={`Remove ${v}`}
               >
-                <X className="h-2.5 w-2.5" />
+                <X className="h-3 w-3" aria-hidden />
               </button>
             </span>
           ))

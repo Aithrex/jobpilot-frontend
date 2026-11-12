@@ -84,13 +84,15 @@ export function TopBar() {
           onClick={() => openCommandPalette()}
           aria-label="Open command palette"
           title="Search & jump"
-          className="flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground interactive interactive-press hover:bg-accent hover:text-foreground sm:hidden"
+          className="hit-target flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground interactive interactive-press hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:hidden"
         >
           <Search className="h-5 w-5" aria-hidden="true" />
         </button>
 
         {/* Theme toggle - shared with the landing nav and the auth stage. */}
-        <ThemeToggle />
+        {/* One 40px control height across the bar (search field, nav pills,
+            icon buttons), with `hit-target` restoring 44px on touch. */}
+        <ThemeToggle className="hit-target h-10 w-10" />
 
         {/* No standalone settings gear: the account menu below already offers
             Settings, and two controls one click apart leading to the same route
@@ -101,7 +103,7 @@ export function TopBar() {
             <button
               type="button"
               aria-label="Open account menu"
-              className="flex h-11 w-11 items-center justify-center rounded-full interactive interactive-press hover:bg-accent active:bg-accent/80"
+              className="hit-target flex h-10 w-10 items-center justify-center rounded-full interactive interactive-press hover:bg-accent active:bg-accent/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
               <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
                 {initials(name, email)}

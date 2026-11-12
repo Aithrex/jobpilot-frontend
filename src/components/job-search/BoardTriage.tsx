@@ -105,7 +105,7 @@ export function ShortcutsButton({ open, onOpenChange, className }: {
         <button
           type="button"
           className={cn(
-            'press hidden h-7 items-center gap-1 rounded-md px-2 text-[11px] font-medium text-muted-foreground hover:bg-primary/10 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:inline-flex',
+            'press hit-target hidden h-8 items-center gap-1 rounded-md px-2 text-caption-sm font-medium text-muted-foreground hover:bg-primary/10 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:inline-flex',
             className,
           )}
           aria-label="Keyboard shortcuts"
@@ -118,10 +118,10 @@ export function ShortcutsButton({ open, onOpenChange, className }: {
         <p className="mb-2 text-xs font-semibold text-foreground">Keyboard shortcuts</p>
         <dl className="space-y-1.5">
           {SHORTCUTS.map(([key, what]) => (
-            <div key={key} className="flex items-center justify-between gap-3 text-[12px]">
+            <div key={key} className="flex items-center justify-between gap-3 text-caption-sm">
               <dt className="text-muted-foreground">{what}</dt>
               <dd>
-                <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 font-sans text-[11px] font-semibold text-foreground">
+                <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 font-sans text-caption-sm font-semibold text-foreground">
                   {key}
                 </kbd>
               </dd>

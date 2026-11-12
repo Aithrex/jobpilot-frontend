@@ -64,15 +64,22 @@ export function ResumeEntryPanel({ onUploaded }: { onUploaded?: () => void }) {
         return;
       }
       setUploading(true);
-      const resp = await apiService.uploadResumeForParser(file);
-      setUploading(false);
-      if (resp.error) {
-        toast.error('Upload failed', { description: resp.error });
-        return;
+      try {
+        const resp = await apiService.uploadResumeForParser(file);
+        if (resp.error) {
+          toast.error('Upload failed', { description: resp.error });
+          return;
+        }
+        toast.success('Resume uploaded');
+        setHasResume(true);
+        onUploaded?.();
+      } catch {
+        // A thrown request (offline, aborted) must not leave the card stuck
+        // on "Uploading..." with no way out.
+        toast.error('Upload failed', { description: 'Check your connection and try again.' });
+      } finally {
+        setUploading(false);
       }
-      toast.success('Resume uploaded');
-      setHasResume(true);
-      onUploaded?.();
     },
     [onUploaded],
   );
@@ -114,8 +121,8 @@ export function ResumeEntryPanel({ onUploaded }: { onUploaded?: () => void }) {
             <UploadCloud className="h-5 w-5" aria-hidden="true" />
           </span>
           <div className="min-w-0 space-y-1">
-            <h2 className="font-semibold text-foreground">Upload your resume</h2>
-            <p className="text-sm text-muted-foreground">
+            <h2 className="font-display text-title-sm text-foreground">Upload your resume</h2>
+            <p className="max-w-prose text-body-sm text-muted-foreground">
               Add your resume to tailor applications and find matching roles.
             </p>
           </div>
@@ -123,7 +130,7 @@ export function ResumeEntryPanel({ onUploaded }: { onUploaded?: () => void }) {
         <Button type="button" onClick={openPicker} disabled={uploading} className="min-h-11 shrink-0">
           {uploading ? (
             <>
-              <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden="true" />
               Uploading...
             </>
           ) : (
@@ -159,16 +166,16 @@ export function ResumeEntryPanel({ onUploaded }: { onUploaded?: () => void }) {
       {hiddenInput}
       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
         {uploading ? (
-          <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+          <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden="true" />
         ) : (
           <FileUp className="h-5 w-5" aria-hidden="true" />
         )}
       </span>
       <div className="min-w-0 flex-1">
-        <h3 className="truncate font-semibold text-foreground">
+        <h3 className="truncate text-title-sm text-foreground">
           {uploading ? 'Uploading...' : 'Add or replace your resume'}
         </h3>
-        <p className="truncate text-sm text-muted-foreground">
+        <p className="truncate text-body-sm text-muted-foreground">
           Upload a new PDF or DOCX to keep your tailoring current
         </p>
       </div>

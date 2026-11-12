@@ -23,7 +23,7 @@ function pageWindow(page: number, count: number): number[] {
 }
 
 const CHIP =
-  'inline-flex h-8 items-center justify-center rounded-md text-xs font-semibold tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-40';
+  'inline-flex h-10 items-center justify-center rounded-md text-xs font-semibold tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-40';
 
 const CHIP_IDLE =
   'border border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-primary';
@@ -60,7 +60,7 @@ export function JobFeedPager({
         </button>
 
         {showLeading && (
-          <span className="grid h-8 w-6 place-items-center text-xs text-muted-foreground" aria-hidden>
+          <span className="grid h-10 w-6 place-items-center text-xs text-muted-foreground" aria-hidden>
             ...
           </span>
         )}
@@ -74,7 +74,7 @@ export function JobFeedPager({
             aria-current={n === page ? 'page' : undefined}
             className={cn(
               CHIP,
-              'min-w-8 px-2',
+              'min-w-10 px-2',
               n === page
                 ? 'bg-primary text-primary-foreground shadow-soft'
                 : CHIP_IDLE,
@@ -85,7 +85,7 @@ export function JobFeedPager({
         ))}
 
         {showTrailing && (
-          <span className="grid h-8 w-6 place-items-center text-xs text-muted-foreground" aria-hidden>
+          <span className="grid h-10 w-6 place-items-center text-xs text-muted-foreground" aria-hidden>
             ...
           </span>
         )}
@@ -102,7 +102,7 @@ export function JobFeedPager({
         </button>
       </div>
 
-      <p className="text-[11px] tabular-nums text-muted-foreground" aria-live="polite">
+      <p className="text-caption-sm tabular-nums text-muted-foreground" aria-live="polite">
         Page {page} of {pageCount}
       </p>
     </nav>

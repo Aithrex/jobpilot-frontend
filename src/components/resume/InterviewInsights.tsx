@@ -148,7 +148,7 @@ export default function InterviewInsights({ onStartMock }: InterviewInsightsProp
                 {coach.data.stats.top_weak_spots!.map((w) => (
                   <Badge key={w.tag} variant="outline" className="gap-1.5">
                     {w.tag}
-                    <span className="rounded-full bg-warning/15 px-1.5 text-[10px] font-bold text-warning">×{w.count}</span>
+                    <span className="rounded-full bg-warning/15 px-1.5 text-caption-sm font-bold text-warning">x{w.count}</span>
                   </Badge>
                 ))}
               </div>
@@ -266,7 +266,7 @@ function SalaryWidget() {
               ))}
             </div>
           )}
-          <p className="mt-2 text-[11px] text-muted-foreground">{est.notes} · AI estimate ({data?.confidence} confidence)</p>
+          <p className="mt-2 text-caption-sm text-muted-foreground">{est.notes} · AI estimate ({data?.confidence} confidence)</p>
         </div>
       )}
     </Card>

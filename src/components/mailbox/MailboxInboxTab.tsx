@@ -1,7 +1,8 @@
 import { useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Inbox, Loader2, MailX } from 'lucide-react';
+import { Inbox, MailX } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { apiService } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { PanelEmpty, PanelError } from '@/app-shell/pages/today/primitives';
@@ -126,7 +127,7 @@ export default function MailboxInboxTab() {
       <div className={cn('min-w-0 rounded-container border border-border bg-card', selectedId && 'hidden lg:block')}>
         <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-2.5">
           <h2 className="text-sm font-semibold text-foreground">Inbox</h2>
-          <label className="flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground">
+          <label className="hit-target flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground">
             <input
               type="checkbox"
               checked={unreadOnly}
@@ -173,8 +174,20 @@ export default function MailboxInboxTab() {
             <p className="text-sm">Select a conversation to read it.</p>
           </div>
         ) : detailQuery.isLoading ? (
-          <div className="flex min-h-[50vh] items-center justify-center" aria-live="polite">
-            <Loader2 className="h-5 w-5 animate-spin text-primary" aria-hidden="true" />
+          // Shaped like the open conversation: header, controls, one message.
+          <div aria-busy="true">
+            <p className="sr-only" role="status">Loading conversation...</p>
+            <div aria-hidden className="space-y-2 border-b border-border px-4 py-3">
+              <Skeleton className="h-4 w-1/2" />
+              <Skeleton className="h-3 w-1/3" />
+            </div>
+            <div aria-hidden className="flex gap-1.5 border-b border-border px-4 py-2">
+              <Skeleton className="h-8 w-24" />
+              <Skeleton className="h-8 w-36" />
+            </div>
+            <div aria-hidden className="space-y-3 px-4 py-4">
+              <Skeleton className="h-48 w-full rounded-container" />
+            </div>
           </div>
         ) : detailQuery.isError || !detailQuery.data ? (
           <PanelError

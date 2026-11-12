@@ -18,18 +18,17 @@ const GuestFlowShell = lazy(() =>
 );
 import type { ResumePicker } from '@/components/guest/useResumePicker';
 import type { GuestFlow } from '@/hooks/useGuestFlow';
-import { useResolvedTheme } from '@/components/theme-provider';
 import { Container } from './_shared';
-import { HeroStage } from './three/HeroStage';
+import { HeroStory } from './story/HeroStory';
 import { MacWindow, type WindowStatus } from './workspace/MacWindow';
 
 /**
- * The hero: the promise and the two actions, with the 3D stage beside them.
+ * The hero: the promise and the two actions, with the product story beside
+ * them.
  *
- * On a wide canvas the idle state is two columns: copy on the left, the stage
- * on the right (a resume sheet splitting into fictional job cards, poster
- * first and a lazy real-time scene second, see `three/HeroStage`). On a phone
- * the stage follows the actions, so the first screen is still the promise and
+ * On a wide canvas the idle state is two columns: copy on the left, the story
+ * on the right (a resume is read, matched, tailored and tracked, all
+ * fictional, see `story/HeroStory`). On a phone the story follows the actions, so the first screen is still the promise and
  * the two buttons. Once an upload starts, the real guest flow takes over the
  * hero inside the product window, whose status pill is driven only by
  * `liveStatus(flow)`.
@@ -87,7 +86,6 @@ export function WorkspaceHero({
   // Drag state for the whole hero, which is where a dragged file lands.
   const [dragActive, setDragActive] = useState(false);
   const droppable = guestEnabled && !authed;
-  const theme = useResolvedTheme();
 
   // The window frames REAL work only, so its status is always the flow's.
   // There used to be a second, invented status ladder driving the illustrative
@@ -154,7 +152,7 @@ export function WorkspaceHero({
       // and the next section's `pt-28` stacked on top of that. A viewport
       // fraction is a guess about content height, and it is wrong on every
       // window it was not measured in; the content is the honest source.
-      className="relative flex scroll-mt-4 items-center overflow-hidden pb-16 pt-24 sm:pb-20 sm:pt-28 lg:pb-24 lg:pt-28"
+      className="relative flex scroll-mt-4 items-center overflow-hidden pb-12 pt-24 sm:pb-14 sm:pt-28 lg:pb-16 lg:pt-28"
     >
       {dragActive && (
         <div
@@ -181,16 +179,16 @@ export function WorkspaceHero({
                   headline still has room to breathe, and the remaining
                   columns are the product window that used to sit empty. */}
               <div className="mx-auto flex w-full max-w-2xl flex-col text-center lg:col-span-6 lg:mx-0 lg:max-w-none lg:text-left">
-                {/* Two-tone, not gradient: hierarchy by weight and ink step,
-                    so the plum stays reserved for the action below. */}
+                {/* The headline says what happens, in the order the story
+                    beside it shows it. Two colours with two jobs: the input in
+                    ink, the outcome in cobalt. */}
                 <h1 className="text-balance font-display text-display-lg text-foreground">
-                  Run your job search with{' '}
-                  <span className="text-ink-muted">clarity, consistency, and control.</span>
+                  Your resume in. <span className="text-primary">Matched jobs out.</span>
                 </h1>
 
-                <p className="mx-auto mt-6 max-w-[44ch] text-pretty text-body-lg text-ink-muted lg:mx-0">
-                  Aspirely finds relevant opportunities, prepares stronger applications, and keeps
-                  every next step organized.
+                <p className="mx-auto mt-6 max-w-[46ch] text-pretty text-body-lg text-ink-muted lg:mx-0">
+                  Aspirely reads your resume, finds roles posted this week that fit it, tailors it
+                  for the best one without inventing a thing, and tracks every application.
                 </p>
 
                 {authed ? (
@@ -307,12 +305,8 @@ export function WorkspaceHero({
                 )}
               </div>
 
-              {/* The stage: poster first (the LCP candidate), real-time scene
-                  after load + idle. Below the actions on a phone. */}
-              <HeroStage
-                theme={theme}
-                className="mx-auto w-full max-w-xl lg:col-span-6 lg:max-w-none"
-              />
+              {/* The product story. Below the actions on a phone. */}
+              <HeroStory className="mx-auto w-full max-w-xl lg:col-span-6 lg:max-w-none" />
             </motion.div>
           ) : (
             /* Real work owns the window */

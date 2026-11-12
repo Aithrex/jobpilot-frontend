@@ -68,7 +68,7 @@ function ReferralRow({ referral, job }: { referral: Referral; job: ReferralModal
           <div className="flex items-center gap-1.5">
             <p className="truncate text-sm font-semibold">{referral.name}</p>
             {referral.is_alumni && (
-              <span className="inline-flex shrink-0 items-center gap-0.5 rounded-full border border-primary/30 bg-primary/10 px-1.5 py-0 text-[10px] font-semibold text-primary">
+              <span className="inline-flex shrink-0 items-center gap-0.5 rounded-full border border-primary/30 bg-primary/10 px-1.5 py-0 text-caption-sm font-semibold text-primary">
                 <GraduationCap className="h-2.5 w-2.5" /> Alumni
               </span>
             )}
@@ -76,7 +76,7 @@ function ReferralRow({ referral, job }: { referral: Referral; job: ReferralModal
           {(referral.headline || referral.title) && (
             <p className="truncate text-xs text-muted-foreground">{referral.headline || referral.title}</p>
           )}
-          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
+          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-caption-sm text-muted-foreground">
             {referral.alumni_of && <span>{referral.alumni_of}</span>}
             {referral.mutuals != null && referral.mutuals > 0 && <span>{referral.mutuals} mutual</span>}
             {referral.location && <span>{referral.location}</span>}
@@ -88,13 +88,13 @@ function ReferralRow({ referral, job }: { referral: Referral; job: ReferralModal
               href={referral.profile_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline"
+              className="inline-flex items-center gap-1 text-caption-sm font-medium text-primary hover:underline"
             >
               Profile <ExternalLink className="h-3 w-3" />
             </a>
           )}
           {!message && (
-            <Button size="sm" variant="outline" className="h-8 gap-1 text-xs" disabled={drafting} onClick={draft}>
+            <Button size="sm" variant="outline" className="hit-target h-8 gap-1 text-xs" disabled={drafting} onClick={draft}>
               {drafting ? <Loader2 className="h-3 w-3 animate-spin" /> : <MessageSquarePlus className="h-3 w-3" />}
               Draft the ask
             </Button>
@@ -105,9 +105,9 @@ function ReferralRow({ referral, job }: { referral: Referral; job: ReferralModal
       {message != null && (
         <div className="mt-3 rounded-lg border border-primary/20 bg-primary/[0.04] p-3">
           <AiDisclosure kind="draft" className="mb-1.5" />
-          <p className="whitespace-pre-line text-xs leading-relaxed text-foreground/90">{message}</p>
+          <p className="whitespace-pre-line text-xs leading-relaxed text-foreground">{message}</p>
           <div className="mt-2 flex justify-end">
-            <Button size="sm" variant="ghost" className="h-7 gap-1 text-[11px]" onClick={copy}>
+            <Button size="sm" variant="ghost" className="hit-target h-8 gap-1 text-caption-sm" onClick={copy}>
               {copied ? <Check className="h-3 w-3 text-success" /> : <Copy className="h-3 w-3" />}
               {copied ? "Copied" : "Copy"}
             </Button>

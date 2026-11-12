@@ -10,6 +10,7 @@ import { PasswordInput } from '@/components/auth/PasswordInput';
 import { PasswordChecklist, isPasswordValid } from '@/components/auth/PasswordChecklist';
 import { AuthShield } from '@/components/auth/AuthShield';
 import { AuthNotice, errorVariant } from '@/components/auth/AuthNotice';
+import { ForgotPasswordDialog } from '@/components/auth/ForgotPasswordDialog';
 
 /**
  * Consumes a `?token=` query param from the reset email and posts the new
@@ -27,6 +28,7 @@ export default function ResetPassword() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
+  const [requestOpen, setRequestOpen] = useState(false);
 
   useEffect(() => {
     if (!token) setError('This reset link is missing its token. Request a fresh link to continue.');
@@ -135,13 +137,23 @@ export default function ResetPassword() {
 
             {error && <AuthNotice variant={errorVariant(error)}>{error}</AuthNotice>}
 
-            <Button type="submit" size="lg" className="w-full" disabled={!canSubmit}>
-              {submitting && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
-              {submitting ? 'Saving...' : 'Save new password'}
-            </Button>
+            {/* A dead or tokenless link is recoverable from right here: the
+                way forward is a fresh link, not a disabled button. */}
+            {!token ? (
+              <Button type="button" size="lg" className="w-full" onClick={() => setRequestOpen(true)}>
+                Request a new link
+              </Button>
+            ) : (
+              <Button type="submit" size="lg" className="w-full" disabled={!canSubmit}>
+                {submitting && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
+                {submitting ? 'Saving...' : 'Save new password'}
+              </Button>
+            )}
           </div>
         </form>
       )}
+
+      <ForgotPasswordDialog open={requestOpen} onClose={() => setRequestOpen(false)} />
     </AuthShell>
   );
 }

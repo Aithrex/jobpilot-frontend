@@ -114,7 +114,7 @@ export function ApifyKeyCard({ onChange, forceOpenSignal }: ApifyKeyCardProps) {
           </span>
           <span className="font-mono text-muted-foreground">{status.masked}</span>
           {status.updated_at && (
-            <span className="text-[10px] text-muted-foreground">
+            <span className="text-caption-sm text-muted-foreground">
               · updated {new Date(status.updated_at).toLocaleDateString()}
             </span>
           )}
@@ -125,7 +125,7 @@ export function ApifyKeyCard({ onChange, forceOpenSignal }: ApifyKeyCardProps) {
             variant="ghost"
             onClick={() => { setEditing(true); setDraft(''); setError(null); }}
             disabled={saving}
-            className="h-7 gap-1 text-[11px]"
+            className="h-7 gap-1 text-caption-sm"
           >
             <Pencil className="h-3 w-3" />
             Update
@@ -135,7 +135,7 @@ export function ApifyKeyCard({ onChange, forceOpenSignal }: ApifyKeyCardProps) {
             variant="ghost"
             onClick={handleDelete}
             disabled={saving}
-            className="h-7 gap-1 text-[11px] text-red-600 hover:bg-red-500/10 hover:text-red-700 dark:text-red-300"
+            className="h-7 gap-1 text-caption-sm text-red-600 hover:bg-red-500/10 hover:text-red-700 dark:text-red-300"
           >
             <Trash2 className="h-3 w-3" />
             Remove
@@ -152,15 +152,15 @@ export function ApifyKeyCard({ onChange, forceOpenSignal }: ApifyKeyCardProps) {
           <div className="space-y-1 min-w-0">
             <div className="flex items-center gap-2">
               <Key className="h-3.5 w-3.5 text-purple-500" />
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <p className="text-caption-sm font-semibold uppercase tracking-wider text-muted-foreground">
                 Apify API key
               </p>
               {!loading && status && (
                 <Badge
                   variant="outline"
                   className={status.has_key
-                    ? 'border-emerald-500/30 bg-emerald-500/10 text-[10px] text-emerald-700 dark:text-emerald-300'
-                    : 'border-amber-500/30 bg-amber-500/10 text-[10px] text-amber-700 dark:text-amber-300'
+                    ? 'border-emerald-500/30 bg-emerald-500/10 text-caption-sm text-emerald-700 dark:text-emerald-300'
+                    : 'border-amber-500/30 bg-amber-500/10 text-caption-sm text-amber-700 dark:text-amber-300'
                   }
                 >
                   {status.has_key ? 'Your key' : 'Shared key fallback'}
@@ -173,7 +173,7 @@ export function ApifyKeyCard({ onChange, forceOpenSignal }: ApifyKeyCardProps) {
               <p className="text-xs text-muted-foreground">
                 Using <span className="font-mono">{status.masked}</span>
                 {status.updated_at && (
-                  <span className="opacity-60">
+                  <span>
                     {' · '}updated {new Date(status.updated_at).toLocaleDateString()}
                   </span>
                 )}
@@ -226,7 +226,7 @@ export function ApifyKeyCard({ onChange, forceOpenSignal }: ApifyKeyCardProps) {
         {/* Edit / add form */}
         {editing && (
           <div className="space-y-2 rounded-lg border border-border/60 bg-muted/20 p-3">
-            <label className="text-[10px] uppercase tracking-wider text-muted-foreground">
+            <label className="text-caption-sm uppercase tracking-wider text-muted-foreground">
               Paste your Apify API token
             </label>
             <div className="flex flex-wrap items-stretch gap-2">
@@ -270,12 +270,12 @@ export function ApifyKeyCard({ onChange, forceOpenSignal }: ApifyKeyCardProps) {
               </Button>
             </div>
             {error && (
-              <p className="flex items-center gap-1 text-[11px] text-red-600 dark:text-red-400">
+              <p className="flex items-center gap-1 text-caption-sm text-red-600 dark:text-red-400">
                 <AlertCircle className="h-3 w-3" />
                 {error}
               </p>
             )}
-            <p className="text-[10px] text-muted-foreground">
+            <p className="text-caption-sm text-muted-foreground">
               Your key is stored in your account only and never shown to other users.
               Pipeline runs charge it directly to your Apify account.
             </p>
@@ -289,13 +289,13 @@ export function ApifyKeyCard({ onChange, forceOpenSignal }: ApifyKeyCardProps) {
             variant="ghost"
             size="sm"
             onClick={() => setHelpOpen((v) => !v)}
-            className="gap-1 text-[11px] text-muted-foreground hover:text-foreground"
+            className="gap-1 text-caption-sm text-muted-foreground hover:text-foreground"
           >
             {helpOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
             How do I get an Apify key?
           </Button>
           {helpOpen && (
-            <ol className="mt-2 space-y-1.5 rounded-lg border border-border/40 bg-muted/20 p-3 text-[12px] leading-snug text-muted-foreground">
+            <ol className="mt-2 space-y-1.5 rounded-lg border border-border/40 bg-muted/20 p-3 text-caption-sm leading-snug text-muted-foreground">
               <li>
                 <span className="font-semibold text-foreground">1.</span> Sign up free at{' '}
                 <a
@@ -332,7 +332,7 @@ export function ApifyKeyCard({ onChange, forceOpenSignal }: ApifyKeyCardProps) {
                 <span className="font-semibold text-foreground">Save</span>. Your next pipeline run will charge
                 your account instead of the shared one.
               </li>
-              <li className="pt-1 text-[10px] italic">
+              <li className="pt-1 text-caption-sm italic">
                 Note: this site only uses two free Apify actors (LinkedIn + Workday scrapers).
                 Each daily run typically costs a few cents.
               </li>

@@ -210,7 +210,7 @@ function GraphCanvas({
               y={c.y - Math.min(H, W) * 0.14}
               textAnchor="middle"
               className={cn(
-                "fill-current text-[11px] font-medium uppercase tracking-wide text-muted-foreground transition-opacity",
+                "fill-current text-caption-sm font-medium uppercase tracking-wide text-muted-foreground transition-opacity",
                 activeType && activeType !== c.type && "opacity-30",
               )}
             >

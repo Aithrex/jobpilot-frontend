@@ -28,8 +28,8 @@ function TrendChip({ dir, label }: { dir: TrendDir; label: string }) {
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[0.75rem] font-medium leading-none',
-        dir === 'up' && 'bg-success/10 text-success',
+        'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-caption-sm font-medium leading-none',
+        dir === 'up' && 'bg-signal-tint text-signal',
         dir === 'down' && 'bg-warning/10 text-warning',
         dir === 'flat' && 'bg-muted text-muted-foreground',
       )}

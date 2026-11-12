@@ -120,7 +120,7 @@ describe('OAuth-only account', () => {
     await openRevealDialog();
 
     expect(await screen.findByRole('button', { name: /send me a code/i })).toBeInTheDocument();
-    expect(screen.queryByLabelText(/jobpilot password/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/aspirely password/i)).not.toBeInTheDocument();
     expect(screen.getByText(/s\*\*\*\*\*p@gnanalytica\.com/)).toBeInTheDocument();
   });
 
@@ -243,7 +243,7 @@ describe('password account', () => {
     renderPanel();
     const user = await openRevealDialog();
 
-    await user.type(await screen.findByLabelText(/jobpilot password/i), 'Correct-Horse-9!');
+    await user.type(await screen.findByLabelText(/aspirely password/i), 'Correct-Horse-9!');
     await user.click(screen.getByRole('button', { name: /reveal password/i }));
 
     await waitFor(() => expect(api.revealAtsCredential).toHaveBeenCalledTimes(1));
@@ -266,7 +266,7 @@ describe('password account', () => {
     renderPanel();
     const user = await openRevealDialog();
 
-    await user.type(await screen.findByLabelText(/jobpilot password/i), 'Correct-Horse-9!');
+    await user.type(await screen.findByLabelText(/aspirely password/i), 'Correct-Horse-9!');
     await user.click(screen.getByRole('button', { name: /email me a code instead/i }));
     await user.click(await screen.findByRole('button', { name: /send me a code/i }));
     await user.type(await screen.findByLabelText(/verification code/i), '481920');
@@ -288,11 +288,11 @@ describe('password account', () => {
     renderPanel();
     const user = await openRevealDialog();
 
-    await user.type(await screen.findByLabelText(/jobpilot password/i), 'nope');
+    await user.type(await screen.findByLabelText(/aspirely password/i), 'nope');
     await user.click(screen.getByRole('button', { name: /reveal password/i }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/isn't right/i);
-    expect(screen.getByLabelText(/jobpilot password/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/aspirely password/i)).toBeInTheDocument();
   });
 });
 

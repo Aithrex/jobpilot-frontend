@@ -137,7 +137,7 @@ export default function Timeline({ days, onOpenDay, onExpire }: TimelineProps) {
       <div className="relative lg:hidden">
         <div className="pointer-events-none absolute bottom-6 left-[21px] top-6 w-0.5 bg-border">
           <motion.div
-            className="w-full bg-gradient-to-b from-[hsl(var(--brand-from))] to-[hsl(var(--brand-to))]"
+            className="w-full bg-signal"
             initial={reduce ? false : { height: 0 }}
             animate={{ height: days.length ? `${((reachedIdx + 1) / days.length) * 100}%` : "0%" }}
             transition={{ type: "spring", stiffness: 60, damping: 20 }}

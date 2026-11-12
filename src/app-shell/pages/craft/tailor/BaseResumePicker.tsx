@@ -41,7 +41,7 @@ export function BaseResumePicker({
   return (
     <div className="rounded-container border border-border bg-card px-4 py-3 shadow-soft">
       <label htmlFor="base-resume-pick" className="block">
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <span className="text-caption-sm font-semibold uppercase tracking-wider text-muted-foreground">
           Base resume for this job
         </span>
         <select
@@ -64,7 +64,7 @@ export function BaseResumePicker({
           ))}
         </select>
       </label>
-      <p className="mt-1.5 text-[11px] text-muted-foreground leading-relaxed">
+      <p className="mt-1.5 text-caption-sm text-muted-foreground leading-relaxed">
         We will pick the resume that fits this role best. Your active resume for
         job matching stays the same unless you pin a file here.
       </p>

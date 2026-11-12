@@ -116,15 +116,15 @@ export function SavedNextSteps({ mode, rows, renderCard, updateJobStatus, aside 
             >
               <span className="min-w-0 flex-1">
                 <span className="flex items-center gap-2">
-                  <span className="text-[15px] font-semibold tracking-[-0.01em] text-foreground">{group.label}</span>
-                  <span className="rounded-full bg-secondary px-2 py-px text-[11px] font-semibold tabular-nums text-secondary-foreground">
+                  <span className="font-display text-title-sm tracking-tight text-foreground">{group.label}</span>
+                  <span className="rounded-full bg-secondary px-2 py-px text-caption-sm font-semibold tabular-nums text-secondary-foreground">
                     {items.length}
                   </span>
                 </span>
                 <span className="mt-0.5 block text-xs text-muted-foreground">{group.hint}</span>
               </span>
               <ChevronDown
-                className={cn('mt-1 h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200', isOpen && 'rotate-180')}
+                className={cn('mt-1 h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-base ease-standard motion-reduce:transition-none', isOpen && 'rotate-180')}
                 aria-hidden
               />
             </button>

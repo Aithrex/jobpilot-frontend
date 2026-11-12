@@ -21,12 +21,12 @@ function InlineWordDiff({ a, b }: { a: string; b: string }) {
         seg.type === "same" ? (
           <span key={i}> {seg.text}</span>
         ) : seg.type === "removed" ? (
-          <span key={i} className="text-red-500 dark:text-red-300 line-through opacity-75">
+          <span key={i} className="text-destructive line-through">
             {" "}
             {seg.text}
           </span>
         ) : (
-          <span key={i} className="text-emerald-600 dark:text-emerald-300 font-medium">
+          <span key={i} className="text-success font-medium">
             {" "}
             {seg.text}
           </span>
@@ -47,15 +47,15 @@ export function ResumeDiffView({
 }) {
   const ST = ({ title, n }: { title: string; n?: number }) => (
     <div className="flex items-center gap-3 mb-3">
-      <h3 className="text-xs font-bold uppercase tracking-widest text-purple-500 dark:text-purple-400/80">
+      <h3 className="text-xs font-bold uppercase tracking-widest text-ink-muted">
         {title}
       </h3>
       {n !== undefined && n > 0 && (
-        <span className="text-[10px] font-medium text-gray-500 dark:text-gray-500">
+        <span className="text-caption-sm font-medium text-muted-foreground">
           {n} change{n === 1 ? "" : "s"}
         </span>
       )}
-      <div className="flex-1 h-px bg-gray-200 dark:bg-gray-800" />
+      <div className="flex-1 h-px bg-border" />
     </div>
   );
 
@@ -86,17 +86,17 @@ export function ResumeDiffView({
   }) => {
     const cls =
       type === "added"
-        ? "border-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+        ? "border-success bg-success/10 text-success"
         : type === "removed"
-          ? "border-red-500 bg-red-500/10 text-red-500 dark:text-red-300 line-through opacity-75"
+          ? "border-destructive bg-destructive/10 text-destructive line-through"
           : "border-transparent";
     const marker = type === "added" ? "+" : type === "removed" ? "−" : "·";
     const markerCls =
       type === "added"
-        ? "text-emerald-500"
+        ? "text-success"
         : type === "removed"
-          ? "text-red-500"
-          : "text-gray-400";
+          ? "text-destructive"
+          : "text-muted-foreground";
     return (
       <li
         className={`text-[12.5px] flex gap-2 leading-[1.65] pl-2 border-l-2 rounded-r ${cls}`}
@@ -109,9 +109,9 @@ export function ResumeDiffView({
 
   // Lightly-edited bullet: one row, inline word-level highlights.
   const EditedBullet = ({ from, to }: { from: string; to: string }) => (
-    <li className="text-[12.5px] flex gap-2 leading-[1.65] pl-2 border-l-2 rounded-r border-amber-500 bg-amber-500/10">
-      <span className="font-bold shrink-0 text-amber-500">~</span>
-      <span className="text-gray-700 dark:text-gray-300">
+    <li className="text-[12.5px] flex gap-2 leading-[1.65] pl-2 border-l-2 rounded-r border-warning bg-warning/10">
+      <span className="font-bold shrink-0 text-warning">~</span>
+      <span className="text-ink-muted">
         <InlineWordDiff a={from} b={to} />
       </span>
     </li>
@@ -135,25 +135,25 @@ export function ResumeDiffView({
   });
 
   return (
-    <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden shadow-sm">
-      <div className="bg-gradient-to-r from-amber-50 via-white to-purple-50 dark:from-amber-500/10 dark:via-gray-900 dark:to-purple-500/10 px-6 py-4 border-b border-gray-200 dark:border-gray-800">
-        <h2 className="text-sm font-bold text-gray-900 dark:text-white">
+    <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
+      <div className="bg-muted px-6 py-4 border-b border-border">
+        <h2 className="text-sm font-bold text-foreground">
           Diff view
         </h2>
-        <p className="text-[11px] text-gray-600 dark:text-gray-400 mt-0.5">
+        <p className="text-caption-sm text-muted-foreground mt-0.5">
           Changes vs {prevLabel}
         </p>
-        <div className="flex items-center gap-4 mt-2 text-[10px]">
-          <span className="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
-            <span className="w-2 h-2 rounded-sm bg-emerald-500" />
+        <div className="flex items-center gap-4 mt-2 text-caption-sm">
+          <span className="inline-flex items-center gap-1.5 text-success">
+            <span className="w-2 h-2 rounded-sm bg-success" />
             Added
           </span>
-          <span className="inline-flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
-            <span className="w-2 h-2 rounded-sm bg-amber-500" />
+          <span className="inline-flex items-center gap-1.5 text-warning">
+            <span className="w-2 h-2 rounded-sm bg-warning" />
             Edited
           </span>
-          <span className="inline-flex items-center gap-1.5 text-red-500 dark:text-red-400">
-            <span className="w-2 h-2 rounded-sm bg-red-500" />
+          <span className="inline-flex items-center gap-1.5 text-destructive">
+            <span className="w-2 h-2 rounded-sm bg-destructive" />
             Removed
           </span>
         </div>
@@ -164,7 +164,7 @@ export function ResumeDiffView({
         {summaryChanged && (
           <div>
             <ST title="Summary" n={1} />
-            <p className="text-[13px] leading-[1.7] text-gray-700 dark:text-gray-300 bg-amber-500/5 border-l-2 border-amber-500 pl-2 rounded-r">
+            <p className="text-caption leading-[1.7] text-ink-muted bg-warning/5 border-l-2 border-warning pl-2 rounded-r">
               <InlineWordDiff a={prev.summary || ""} b={curr.summary || ""} />
             </p>
           </div>
@@ -240,7 +240,7 @@ export function ResumeDiffView({
               {[...removedSkills].map((s) => (
                 <span
                   key={`r-${s}`}
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-red-500/10 text-red-500 dark:text-red-300 border border-red-500/25 line-through opacity-75"
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-caption-sm font-medium bg-destructive/10 text-destructive border border-destructive/25 line-through"
                 >
                   <span className="font-bold">−</span>
                   {s}
@@ -249,7 +249,7 @@ export function ResumeDiffView({
               {[...addedSkills].map((s) => (
                 <span
                   key={`a-${s}`}
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 border border-emerald-500/25"
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-caption-sm font-medium bg-success/10 text-success border border-success/25"
                 >
                   <span className="font-bold">+</span>
                   {s}
@@ -268,7 +268,7 @@ export function ResumeDiffView({
           addedSkills.size === 0 &&
           removedSkills.size === 0 && (
             <div className="text-center py-8">
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+              <p className="text-sm text-muted-foreground">
                 No detectable changes between versions.
               </p>
             </div>

@@ -118,7 +118,7 @@ export function NotInterestedMenu({
           variant="ghost"
           size="sm"
           disabled={sending}
-          className="h-8 gap-1.5 px-2 text-xs text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+          className="hit-target h-8 gap-1.5 px-2 text-xs text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
           aria-label={`Hide or report ${jobTitle} at ${employerName}`}
         >
           <ThumbsDown className="h-3.5 w-3.5" aria-hidden />
@@ -132,7 +132,7 @@ export function NotInterestedMenu({
             <DropdownMenuLabel className="pb-0 text-xs font-semibold text-foreground">
               {group.heading}
             </DropdownMenuLabel>
-            <p className="px-2 pb-1 text-[11px] leading-snug text-muted-foreground">
+            <p className="px-2 pb-1 text-caption-sm leading-snug text-muted-foreground">
               {group.hint}
             </p>
             {group.reasons.map((reason) => (

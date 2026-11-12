@@ -38,7 +38,7 @@ export function SponsorshipBadge({ sponsorship }: { sponsorship: SponsorshipSign
           type="button"
           aria-label={`Visa sponsorship: ${sponsorship.headline}`}
           className={cn(
-            'inline-flex items-center gap-1 rounded-full border px-1.5 py-0 text-[10.5px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
+            'inline-flex items-center gap-1 rounded-full border px-1.5 py-0 text-caption-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
             BAND_STYLES[sponsorship.band] ?? BAND_STYLES.none,
           )}
         >
@@ -55,7 +55,7 @@ export function SponsorshipBadge({ sponsorship }: { sponsorship: SponsorshipSign
           {sponsorship.summary && (
             <p className="text-xs leading-snug text-muted-foreground">{sponsorship.summary}</p>
           )}
-          <dl className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-[11px]">
+          <dl className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-caption-sm">
             <div>
               <dt className="text-muted-foreground">Approvals (5y)</dt>
               <dd className="font-semibold tabular-nums">{fmtCount(sponsorship.approvals_5y)}</dd>
@@ -78,10 +78,10 @@ export function SponsorshipBadge({ sponsorship }: { sponsorship: SponsorshipSign
             )}
           </dl>
           {sponsorship.source && (
-            <p className="text-[10px] text-muted-foreground">Source: {sponsorship.source}</p>
+            <p className="text-caption-sm text-muted-foreground">Source: {sponsorship.source}</p>
           )}
           {sponsorship.disclaimer && (
-            <p className="border-t border-border/70 pt-2 text-[10px] leading-snug text-muted-foreground">
+            <p className="border-t border-border/70 pt-2 text-caption-sm leading-snug text-muted-foreground">
               {sponsorship.disclaimer}
             </p>
           )}
@@ -146,8 +146,8 @@ export function VisaFlagChips({ flags }: { flags: VisaFlags }) {
           title={flags[k]?.evidence || undefined}
           className={
             h1b?.low
-              ? 'inline-flex items-center gap-0.5 rounded-md border border-warning/30 bg-warning/10 px-1.5 py-0.5 text-[10px] font-medium text-warning'
-              : 'inline-flex items-center gap-0.5 rounded-md border border-success/25 bg-success/10 px-1.5 py-0.5 text-[10px] font-medium text-success'
+              ? 'inline-flex items-center gap-0.5 rounded-md border border-warning/30 bg-warning/10 px-1.5 py-0.5 text-caption-sm font-medium text-warning'
+              : 'inline-flex items-center gap-0.5 rounded-md border border-success/25 bg-success/10 px-1.5 py-0.5 text-caption-sm font-medium text-success'
           }
         >
           <BadgeCheck className="h-2.5 w-2.5" />
@@ -158,7 +158,7 @@ export function VisaFlagChips({ flags }: { flags: VisaFlags }) {
       {clearance && (
         <span
           title={flags.clearance_required?.evidence || 'This role requires a security clearance.'}
-          className="inline-flex items-center gap-0.5 rounded-md border border-destructive/40 bg-destructive/10 px-1.5 py-0.5 text-[10px] font-semibold text-destructive"
+          className="inline-flex items-center gap-0.5 rounded-md border border-destructive/40 bg-destructive/10 px-1.5 py-0.5 text-caption-sm font-semibold text-destructive"
         >
           <ShieldAlert className="h-2.5 w-2.5" />
           {FLAG_LABELS.clearance_required}

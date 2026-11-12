@@ -96,7 +96,7 @@ export default function ApplyOutcomeDialog({
                 max={localDayISO()}
                 onChange={(e) => setAppliedDay(e.target.value)}
               />
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-caption-sm text-muted-foreground">
                 Back-date it if you applied earlier. This is the date your tracker filters on.
               </p>
             </div>
@@ -113,7 +113,7 @@ export default function ApplyOutcomeDialog({
                 value={jobUrl}
                 onChange={(e) => setJobUrl(e.target.value)}
               />
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-caption-sm text-muted-foreground">
                 Handy when the role came from another job board.
               </p>
             </div>
@@ -195,7 +195,7 @@ function OutcomeButton({
       </span>
       <span className="min-w-0">
         <span className="block text-sm font-semibold text-foreground">{title}</span>
-        <span className="block text-[11px] text-muted-foreground">{detail}</span>
+        <span className="block text-caption-sm text-muted-foreground">{detail}</span>
       </span>
     </button>
   );

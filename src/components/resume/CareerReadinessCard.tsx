@@ -24,7 +24,7 @@ function Ring({ score, color }: { score: number; color: string }) {
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <span className="font-display text-2xl font-extrabold leading-none tabular-nums tracking-tight">{score}</span>
-        <span className="text-[9px] font-medium uppercase tracking-wider text-muted-foreground">/ 100</span>
+        <span className="text-caption-sm font-medium uppercase tracking-wider text-muted-foreground">/ 100</span>
       </div>
     </div>
   );
@@ -106,7 +106,7 @@ export function CareerReadinessCard({
         {/* The one next step */}
         <div className="lg:w-64 lg:shrink-0">
           <div className="rounded-xl border border-border bg-background/60 p-3">
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Your next step</div>
+            <div className="text-caption-sm font-semibold uppercase tracking-wider text-muted-foreground">Your next step</div>
             <div className="mt-1 text-sm font-semibold">{step.label}</div>
             <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{step.description}</p>
             <button
@@ -122,11 +122,11 @@ export function CareerReadinessCard({
       {/* Recognize the building */}
       {data.highlights.length > 0 && (
         <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-border/60 pt-3">
-          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary">
+          <span className="inline-flex items-center gap-1 text-caption-sm font-semibold text-primary">
             <Sparkles className="h-3.5 w-3.5" /> You've built
           </span>
           {data.highlights.map((h, i) => (
-            <span key={i} className="rounded-full bg-secondary px-2 py-0.5 text-[11px] text-foreground/80">
+            <span key={i} className="rounded-full bg-secondary px-2 py-0.5 text-caption-sm text-foreground">
               {h}
             </span>
           ))}

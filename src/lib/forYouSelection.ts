@@ -100,14 +100,15 @@ export function selectForYouJobs(jobs: WorkdayJob[], filters: ForYouFilters) {
     companies, collapseReposts = false } = filters;
   const newOnly = !!filters.newOnly && !!seenThrough;
   const recencyWindow = RECENCY_OPTIONS.find((option) => option.key === recency) ?? RECENCY_OPTIONS[0];
-  const query = search.trim().toLowerCase();
+  // Postel: a pasted 'data   analyst' or a stray double space still matches.
+  const query = search.trim().replace(/\s+/g, ' ').toLowerCase();
   const isApplied = (job: WorkdayJob) =>
     isAppliedPipelineStatus(getJobStatus(job.job_id, job.apply_link));
   const isNew = (job: WorkdayJob) => isNewSince(job, seenThrough);
   // Every filter but the company one, so the company checklist can count
   // what choosing a company would show.
   const beforeCompany = jobs.filter((job) =>
-    (!query || `${job.title} ${job.company}`.toLowerCase().includes(query)) &&
+    (!query || `${job.title} ${job.company}`.replace(/\s+/g, ' ').toLowerCase().includes(query)) &&
     (!minScore || (job.match_score ?? 0) >= minScore) &&
     (sponsorFilter !== 'friendly' || job.sponsorship !== 'refused') &&
     (sponsorFilter !== 'proven' || job.sponsorship === 'likely') &&

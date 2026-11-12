@@ -7,7 +7,8 @@
  * handlers arrive via props; the only local behavior is clipboard read.
  */
 import type React from 'react';
-import { Clipboard, RotateCw, ExternalLink, Sparkles } from 'lucide-react';
+import { Clipboard, RotateCw, ExternalLink, Sparkles, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
@@ -48,10 +49,14 @@ export function JdInputPanel({
 
   const handlePaste = async () => {
     try {
-      const t = await navigator.clipboard.readText();
+      // Trim what a messy copy drags along (leading blank lines, trailing
+      // whitespace) before it counts against the 10,000 character cap.
+      const t = (await navigator.clipboard.readText()).trim();
       if (t) onJdTextChange(t.slice(0, 10000));
+      else toast.info('Your clipboard is empty. Copy the job posting first.');
     } catch {
-      // Clipboard access denied - orchestrator surfaces toasts; stay silent here.
+      // Access denied or unsupported: say so, or the button reads as broken.
+      toast.error('Paste was blocked. Click in the box and press Ctrl+V instead.');
     }
   };
 
@@ -67,9 +72,9 @@ export function JdInputPanel({
     <div className="p-5 sm:p-6 space-y-4">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h2 className="text-base font-semibold text-foreground">Job Description</h2>
+          <h2 className="text-title-sm text-foreground">Job description</h2>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Paste the complete job posting. We'll extract requirements automatically
+            Paste the complete job posting. We'll extract requirements automatically.
           </p>
         </div>
         <div className="flex items-center gap-1 shrink-0">
@@ -80,11 +85,11 @@ export function JdInputPanel({
               size="sm"
               onClick={onRetryFetch}
               disabled={disabled || retryingJdFetch}
-              className="h-auto gap-1 px-2.5 py-1.5 text-[11px] text-primary border-primary/30 bg-primary/10 hover:bg-primary/20 hover:text-primary"
+              className="hit-target h-auto gap-1 px-2.5 py-1.5 text-caption-sm text-primary border-primary/30 bg-primary/10 hover:bg-primary/20 hover:text-primary"
               title={`Re-attempt auto-fetch from ${hostname}`}
             >
               {retryingJdFetch ? (
-                <span className="inline-block h-3 w-3 rounded-full border-2 border-primary/60 border-t-transparent animate-spin" />
+                <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
               ) : (
                 <RotateCw className="w-3.5 h-3.5" aria-hidden="true" />
               )}
@@ -96,7 +101,7 @@ export function JdInputPanel({
               asChild
               variant="ghost"
               size="sm"
-              className="h-auto gap-1 px-2.5 py-1.5 text-[11px] text-muted-foreground hover:text-success hover:bg-success/10"
+              className="hit-target h-auto gap-1 px-2.5 py-1.5 text-caption-sm text-muted-foreground hover:text-primary hover:bg-primary/10"
             >
               <a
                 href={pendingJobUrl}
@@ -115,7 +120,7 @@ export function JdInputPanel({
             size="sm"
             onClick={handlePaste}
             disabled={disabled}
-            className="h-auto gap-1 px-2.5 py-1.5 text-[11px] text-muted-foreground hover:text-primary hover:bg-primary/10"
+            className="hit-target h-auto gap-1 px-2.5 py-1.5 text-caption-sm text-muted-foreground hover:text-primary hover:bg-primary/10"
           >
             <Clipboard className="w-3.5 h-3.5" aria-hidden="true" />
             Paste
@@ -127,7 +132,7 @@ export function JdInputPanel({
               size="sm"
               onClick={() => onJdTextChange('')}
               disabled={disabled}
-              className="h-auto px-2 py-1.5 text-[11px] text-muted-foreground hover:text-destructive"
+              className="hit-target h-auto px-2 py-1.5 text-caption-sm text-muted-foreground hover:text-destructive"
             >
               Clear
             </Button>
@@ -140,12 +145,23 @@ export function JdInputPanel({
           placeholder="Paste the job description here. We'll extract key requirements and tailor your resume automatically..."
           value={jdText}
           onChange={(e) => onJdTextChange(e.target.value)}
+          onKeyDown={(e) => {
+            // Enter adds a line in a long paste; Ctrl/Cmd+Enter submits,
+            // the convention for multi-line inputs.
+            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && jdText.trim() && !disabled) {
+              e.preventDefault();
+              if (quotaBlocked) onQuotaBlocked();
+              else onSubmit();
+            }
+          }}
+          aria-label="Job description"
+          aria-describedby="jd-char-count"
           rows={10}
           maxLength={10000}
           disabled={disabled}
           className="min-h-[280px] rounded-container leading-relaxed resize-none focus-visible:ring-primary"
         />
-        <span className="absolute bottom-3 right-3 text-[10px] text-muted-foreground tabular-nums pointer-events-none">
+        <span id="jd-char-count" className="absolute bottom-3 right-3 text-caption-sm text-muted-foreground tabular-nums pointer-events-none">
           {jdText.length.toLocaleString()} / 10,000
         </span>
       </div>
@@ -181,9 +197,9 @@ export function JdInputPanel({
               <button
                 type="button"
                 onClick={onQuotaBlocked}
-                className="mt-2 text-xs font-semibold text-warning underline underline-offset-2 hover:text-warning/80"
+                className="hit-target mt-2 rounded text-xs font-semibold text-warning underline underline-offset-2"
               >
-                See options →
+                See options
               </button>
             </div>
           </div>
@@ -201,12 +217,12 @@ export function JdInputPanel({
         }}
         disabled={!jdText.trim() || disabled}
         className={cn(
-          'w-full h-auto py-3.5 rounded-container text-sm font-semibold shadow-soft active:scale-[0.98] transition-all duration-200',
+          'w-full h-auto min-h-12 py-3.5 rounded-container text-sm font-semibold shadow-soft transition-colors duration-200',
         )}
       >
         {disabled ? (
           <>
-            <span className="animate-spin rounded-full h-4 w-4 border-2 border-current border-t-transparent" />
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
             Tailoring...
           </>
         ) : quotaBlocked ? (
@@ -217,13 +233,13 @@ export function JdInputPanel({
         ) : (
           <>
             <Sparkles className="w-4 h-4" aria-hidden="true" />
-            {result ? 'Re-tailor with new JD' : 'Tailor My Resume'}
+            {result ? 'Re-tailor with new JD' : 'Tailor my resume'}
           </>
         )}
       </Button>
 
       {!usageLoading && dailyRemaining !== null && dailyRemaining > 0 && (
-        <p className="text-center text-[11px] text-muted-foreground tabular-nums">
+        <p className="text-center text-caption-sm text-muted-foreground tabular-nums">
           {dailyRemaining} tailor{dailyRemaining === 1 ? '' : 's'} left today
         </p>
       )}

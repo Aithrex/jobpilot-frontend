@@ -45,9 +45,11 @@ const STRONG: FitBand = {
   key: 'strong',
   label: 'Strong match',
   meaning: 'Your evidence covers most of what this posting asks for.',
-  text: 'text-success',
-  chip: 'border-success/30 bg-success/10 text-success',
-  stroke: 'hsl(var(--success))',
+  // Match quality is the SIGNAL colour (mint), never the action colour:
+  // strong is the solid chip, good the tint, so the eye ranks them by weight.
+  text: 'text-signal',
+  chip: 'border-signal bg-signal text-signal-foreground',
+  stroke: 'hsl(var(--signal))',
   min: 80,
 };
 
@@ -55,9 +57,9 @@ const GOOD: FitBand = {
   key: 'good',
   label: 'Good match',
   meaning: 'Worth reviewing: your experience aligns with many of the published requirements.',
-  text: 'text-primary',
-  chip: 'border-primary/30 bg-primary/10 text-primary',
-  stroke: 'hsl(var(--primary))',
+  text: 'text-signal',
+  chip: 'border-signal/30 bg-signal-tint text-signal',
+  stroke: 'hsl(var(--signal) / 0.7)',
   min: 65,
 };
 
@@ -216,8 +218,8 @@ export const SENIORITY_LABEL: Record<string, string> = {
  * "do you match", feasibility is "can we write it without inventing facts".
  */
 export const FEASIBILITY_META: Record<string, { label: string; chip: string }> = {
-  strong: { label: 'Tailors cleanly', chip: 'border-success/30 bg-success/10 text-success' },
-  possible: { label: 'Tailors with work', chip: 'border-primary/30 bg-primary/10 text-primary' },
+  strong: { label: 'Tailors cleanly', chip: 'border-signal bg-signal text-signal-foreground' },
+  possible: { label: 'Tailors with work', chip: 'border-signal/30 bg-signal-tint text-signal' },
   stretch: { label: 'A stretch to tailor', chip: 'border-warning/30 bg-warning/10 text-warning' },
   skip: { label: 'Hard to tailor honestly', chip: 'border-border bg-muted text-muted-foreground' },
 };

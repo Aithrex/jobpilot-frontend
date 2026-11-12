@@ -458,7 +458,7 @@ export function GuestResultsDashboard({
                     {/* Server-authoritative freshness on every card. */}
                     <FreshnessTag match={match} className="mt-1" />
                     {isTailored && (
-                      <span className="mt-1 inline-flex items-center gap-1 rounded-full border border-success/30 bg-success/10 px-2 py-0.5 text-[10px] font-semibold text-success">
+                      <span className="mt-1 inline-flex items-center gap-1 rounded-full border border-success/30 bg-success/10 px-2 py-0.5 text-caption-sm font-semibold text-success">
                         <Check className="h-2.5 w-2.5" aria-hidden />
                         Tailored
                       </span>
@@ -521,7 +521,7 @@ export function GuestResultsDashboard({
                   {/* Server-authoritative freshness on every card. */}
                   <FreshnessTag match={match} className="mt-1" />
                   {isTailored && (
-                    <span className="mt-1 inline-flex items-center gap-1 rounded-full border border-success/30 bg-success/10 px-2 py-0.5 text-[10px] font-semibold text-success">
+                    <span className="mt-1 inline-flex items-center gap-1 rounded-full border border-success/30 bg-success/10 px-2 py-0.5 text-caption-sm font-semibold text-success">
                       <Check className="h-2.5 w-2.5" aria-hidden />
                       Tailored
                     </span>

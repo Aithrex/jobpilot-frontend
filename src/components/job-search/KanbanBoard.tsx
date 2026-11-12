@@ -48,9 +48,9 @@ function Tile({ saved, updateJobStatus, unsaveJob }: {
         <CompanyLogo company={job.company || job.title || ''} logoUrl={job.logo_url} size={32} />
         <div className="min-w-0 flex-1">
           <p className="line-clamp-2 text-xs font-semibold leading-snug text-foreground" title={title}>{title}</p>
-          <p className="truncate text-[11px] text-muted-foreground">{company}</p>
+          <p className="truncate text-caption-sm text-muted-foreground">{company}</p>
         </div>
-        <GripVertical className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-muted-foreground/40" aria-hidden />
+        <GripVertical className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-muted-foreground" aria-hidden />
       </div>
 
       <div className="mt-2 flex items-center gap-1">
@@ -59,7 +59,7 @@ function Tile({ saved, updateJobStatus, unsaveJob }: {
           value={saved.status}
           onChange={(e) => void updateJobStatus(saved.job_id, e.target.value)}
           aria-label={`Move ${title} to another stage`}
-          className="h-7 flex-1 rounded-md border border-border bg-background px-1.5 text-[11px] font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="h-7 flex-1 rounded-md border border-border bg-background px-1.5 text-caption-sm font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           {STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
@@ -127,14 +127,14 @@ export function KanbanBoard({ savedJobs, updateJobStatus, unsaveJob }: KanbanBoa
           >
             <header className={cn('mb-2 flex items-center justify-between rounded-lg border-b-2 bg-transparent px-1 pb-1.5 text-xs font-semibold', col.head)}>
               <span>{col.label}</span>
-              <span className="font-mono tabular-nums text-[11px] opacity-70">{items.length}</span>
+              <span className="font-mono tabular-nums text-caption-sm font-normal">{items.length}</span>
             </header>
             <div className="flex flex-1 flex-col gap-2">
               {items.map((saved) => (
                 <Tile key={saved.job_id} saved={saved} updateJobStatus={updateJobStatus} unsaveJob={unsaveJob} />
               ))}
               {items.length === 0 && (
-                <p className="mt-2 px-1 text-center text-[11px] text-muted-foreground/60">
+                <p className="mt-2 px-1 text-center text-caption-sm text-muted-foreground">
                   {isOver ? 'Drop here' : 'No roles here'}
                 </p>
               )}

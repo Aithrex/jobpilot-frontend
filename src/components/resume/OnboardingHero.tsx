@@ -70,7 +70,7 @@ export default function OnboardingHero({
         </p>
       </div>
       <div className="rounded-2xl border border-border bg-card/60 backdrop-blur-sm shadow-panel p-5 sm:p-6">
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground text-center mb-4 sm:mb-5">
+        <p className="text-caption-sm font-semibold uppercase tracking-wider text-muted-foreground text-center mb-4 sm:mb-5">
           How it works
         </p>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-start justify-center gap-4 sm:gap-6">
@@ -129,7 +129,7 @@ export default function OnboardingHero({
                   >
                     Step {s.n}: {s.l}
                   </p>
-                  <p className="text-[11px] text-muted-foreground leading-snug sm:max-w-[160px]">
+                  <p className="text-caption-sm text-muted-foreground leading-snug sm:max-w-[160px]">
                     {s.d}
                   </p>
                 </div>
@@ -192,7 +192,7 @@ export default function OnboardingHero({
               />
             </label>
           )}
-          <p className="text-[10px] text-muted-foreground mt-3">
+          <p className="text-caption-sm text-muted-foreground mt-3">
             PDF or DOCX, max 5 MB
           </p>
           {uploadError && (
@@ -228,7 +228,7 @@ export default function OnboardingHero({
             <p className="text-xs font-semibold text-foreground mb-0.5">
               {f.l}
             </p>
-            <p className="text-[10px] text-muted-foreground">
+            <p className="text-caption-sm text-muted-foreground">
               {f.d}
             </p>
           </div>

@@ -35,7 +35,7 @@ export default function XpLevelBar({ xp, level, nextLevelXp, xpGained, leveledUp
       </div>
       <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
         <motion.div
-          className="h-full rounded-full bg-gradient-to-r from-[hsl(var(--brand-from))] to-[hsl(var(--brand-to))]"
+          className="h-full rounded-full bg-signal"
           initial={reduce ? false : { width: 0 }}
           animate={{ width: `${pct}%` }}
           transition={{ type: "spring", stiffness: 90, damping: 20 }}

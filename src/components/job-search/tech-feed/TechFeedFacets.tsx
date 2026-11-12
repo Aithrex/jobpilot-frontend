@@ -207,14 +207,14 @@ export function TechFeedFacets({
                       <span>
                         {key === 'employer' && selected ? `${label} (excluded)` : label}
                       </span>
-                      <span className="tabular-nums opacity-70">{option.count}</span>
+                      <span className="tabular-nums font-semibold">{option.count}</span>
                     </button>
                   </li>
                 );
               })}
             </ul>
             {key === 'employer' && (
-              <p className="mt-1 text-[11px] text-muted-foreground">
+              <p className="mt-1 text-caption-sm text-muted-foreground">
                 Selecting an employer here excludes it from the results.
               </p>
             )}

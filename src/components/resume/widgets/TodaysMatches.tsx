@@ -59,7 +59,7 @@ export const todaysMatchesWidget: Widget = {
                       <span className="block truncate text-xs text-muted-foreground">{j.company}</span>
                     </span>
                     <span className="flex shrink-0 flex-col items-end gap-1">
-                      {score > 0 && <MetaChip tone="primary">{score}%</MetaChip>}
+                      {score > 0 && <MetaChip tone="success">{score}%</MetaChip>}
                       {onVisa && sp && (sp.band === 'strong' || sp.band === 'moderate') && (
                         <MetaChip tone={bandTone(sp.band)}>
                           <ShieldCheck className="h-3 w-3" /> Sponsor

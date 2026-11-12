@@ -58,10 +58,10 @@ export function ForgotPasswordDialog({ open, onClose, initialEmail = '' }: Forgo
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Mail className="h-4 w-4" />
+            <Mail className="h-4 w-4 text-primary" aria-hidden />
             Reset your password
           </DialogTitle>
-          <DialogDescription className="text-xs">
+          <DialogDescription className="text-sm">
             Enter the email you registered with. We'll send a reset link if it
             matches an account. For privacy we don't disclose whether an
             address is registered.
@@ -74,25 +74,28 @@ export function ForgotPasswordDialog({ open, onClose, initialEmail = '' }: Forgo
               <CheckCircle2 className="h-5 w-5" aria-hidden />
               <p className="text-sm font-medium">Request received</p>
             </div>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              If <span className="font-mono">{email}</span> is registered, a
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              If <span className="font-mono">{email.trim()}</span> is registered, a
               reset link is on its way. The link is valid for 30 minutes. Check
               spam too. If you don't receive anything within 5 minutes, contact
               support.
             </p>
             <div className="flex justify-end">
-              <Button onClick={onClose} size="sm">Close</Button>
+              <Button onClick={onClose}>Close</Button>
             </div>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} noValidate className="space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="forgot-email">Email</Label>
               <Input
                 id="forgot-email"
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (error) setError(null);
+                }}
                 placeholder="you@example.com"
                 autoComplete="email"
                 autoCapitalize="off"
@@ -101,10 +104,13 @@ export function ForgotPasswordDialog({ open, onClose, initialEmail = '' }: Forgo
                 inputMode="email"
                 required
                 disabled={submitting}
+                className="h-11"
+                aria-invalid={error ? true : undefined}
+                aria-describedby={error ? 'forgot-email-error' : undefined}
               />
             </div>
             {error && (
-              <p className="text-xs text-destructive" role="alert">{error}</p>
+              <p id="forgot-email-error" className="text-sm text-destructive" role="alert">{error}</p>
             )}
             <div className="flex justify-end gap-2">
               <Button
@@ -112,14 +118,13 @@ export function ForgotPasswordDialog({ open, onClose, initialEmail = '' }: Forgo
                 variant="ghost"
                 onClick={onClose}
                 disabled={submitting}
-                size="sm"
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={submitting} size="sm">
+              <Button type="submit" disabled={submitting}>
                 {submitting ? (
                   <>
-                    <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
                     Sending...
                   </>
                 ) : (

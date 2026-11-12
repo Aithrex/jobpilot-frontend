@@ -44,6 +44,7 @@ import { applicationStateLabel } from '@/lib/applicationState';
 import { trustOf } from '@/lib/employerPolicy';
 import { postedAgeLabel } from '@/lib/careerJobs';
 import { cn } from '@/lib/utils';
+import { disclosure, EASE_DECELERATE } from '@/lib/motion';
 import { toTitleCase } from '@/lib/format';
 import { useCountUp } from '@/hooks/useCountUp';
 import type { Job } from '@/types/jobs';
@@ -141,15 +142,15 @@ function MatchScoreRing({ job }: { job: Job }) {
             strokeDasharray={circumference} strokeLinecap="round"
             initial={reduce ? false : { strokeDashoffset: circumference }}
             animate={{ strokeDashoffset: offset }}
-            transition={{ duration: reduce ? 0 : 0.5, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: reduce ? 0 : 0.5, ease: EASE_DECELERATE }}
           />
         )}
       </svg>
       <span className="absolute inset-0 flex flex-col items-center justify-center leading-none" aria-hidden>
-        <span className={cn('font-mono text-[12px] font-bold tabular-nums', band.text)}>
+        <span className={cn('font-mono text-sm font-bold tabular-nums', band.text)}>
           {scored ? shown : 'N/A'}
         </span>
-        <span className="text-[7px] font-medium uppercase tracking-wide text-muted-foreground">
+        <span className="text-caption-sm leading-none uppercase tracking-wide text-muted-foreground">
           {scored ? 'fit' : 'n/a'}
         </span>
       </span>
@@ -205,7 +206,7 @@ function SignalPill({ icon: Icon, label, tone }: {
     contract: 'border-border bg-secondary text-secondary-foreground',
   }[tone];
   return (
-    <span className={cn('inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10.5px] font-semibold', cls)}>
+    <span className={cn('inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-caption-sm font-semibold', cls)}>
       <Icon className="h-3 w-3" aria-hidden />
       {label}
     </span>
@@ -435,13 +436,13 @@ export function JobCard({
             <CompanyMark job={job} />
             <div className="min-w-0 flex-1">
               <h3
-                className="job-card-title line-clamp-2 text-[15px] font-semibold leading-snug tracking-[-0.01em] text-foreground"
+                className="job-card-title line-clamp-2 text-title-sm leading-snug tracking-tight text-foreground"
                 title={title}
               >
                 {title}
               </h3>
-              <p className="mt-1 truncate text-[13px] text-muted-foreground" title={[company, location].filter(Boolean).join(', ')}>
-                <span className="font-medium text-foreground/85">{company}</span>
+              <p className="mt-1 truncate text-caption text-muted-foreground" title={[company, location].filter(Boolean).join(', ')}>
+                <span className="font-medium text-ink-muted">{company}</span>
                 <span aria-hidden> · </span>
                 {location || 'Location undisclosed'}
               </p>
@@ -450,7 +451,7 @@ export function JobCard({
               <MatchScoreRing job={job} />
               <span
                 className={cn(
-                  'inline-flex items-center justify-center whitespace-nowrap rounded-full border px-1.5 py-px text-center text-[10.5px] font-semibold leading-tight',
+                  'inline-flex items-center justify-center whitespace-nowrap rounded-full border px-1.5 py-px text-center text-caption-sm font-semibold leading-tight',
                   band.chip,
                 )}
               >
@@ -463,7 +464,7 @@ export function JobCard({
           <div className="flex flex-wrap items-center gap-1.5">
             {isNew && (
               <span
-                className="job-new-chip inline-flex items-center gap-1 rounded-full border border-info/40 bg-info/10 px-2 py-0.5 text-[11px] font-semibold text-info"
+                className="job-new-chip inline-flex items-center gap-1 rounded-full border border-info/40 bg-info/10 px-2 py-0.5 text-caption-sm font-semibold text-info"
                 title="New since your last visit"
                 data-testid="job-new-badge"
               >
@@ -473,7 +474,7 @@ export function JobCard({
             )}
             <span
               className={cn(
-                'inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold',
+                'inline-flex items-center rounded-full border px-2 py-0.5 text-caption-sm font-semibold',
                 level.kind === 'stated' && 'border-border bg-secondary text-secondary-foreground',
                 level.kind === 'estimated' && 'border-dashed border-border text-muted-foreground',
                 level.kind === 'unstated' && 'border-transparent px-0 text-muted-foreground',
@@ -497,7 +498,7 @@ export function JobCard({
             </span>
           </div>
           {job.score_basis === 'title_only' && (
-            <p className="-mt-1 text-[11px] leading-snug text-muted-foreground" data-testid="job-score-provisional">
+            <p className="-mt-1 text-caption-sm leading-snug text-muted-foreground" data-testid="job-score-provisional">
               Score updates when the description arrives.
             </p>
           )}
@@ -512,7 +513,7 @@ export function JobCard({
                 type="button"
                 onClick={() => void runDeepScan()}
                 disabled={scanning}
-                className="inline-flex items-center gap-0.5 text-[11px] font-medium text-muted-foreground underline-offset-2 hover:text-primary hover:underline disabled:opacity-50"
+                className="hit-target inline-flex items-center gap-1 rounded-sm text-caption-sm font-medium text-muted-foreground underline-offset-2 hover:text-primary hover:underline disabled:opacity-50"
               >
                 <ShieldCheck className="h-3 w-3" aria-hidden />
                 {scanning ? 'Scanning...' : 'Deep-scan'}
@@ -521,8 +522,8 @@ export function JobCard({
           )}
 
           {(skills.length > 0 || job.missing_skills?.length > 0) && (
-            <p className="flex items-start gap-1.5 text-[12px] leading-snug text-muted-foreground" data-testid="job-skill-match">
-              <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-success" aria-hidden />
+            <p className="flex items-start gap-1.5 text-caption-sm leading-snug text-muted-foreground" data-testid="job-skill-match">
+              <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-signal" aria-hidden />
               <span className="min-w-0">
                 {skills.length > 0 ? (
                   <>
@@ -540,17 +541,17 @@ export function JobCard({
           )}
 
           {note && (
-            <p className="truncate text-[12px] font-medium text-foreground/80" data-testid="job-note">
+            <p className="truncate text-caption-sm font-medium text-ink-muted" data-testid="job-note">
               {note}
             </p>
           )}
           {meta.length > 0 && (
-            <p className="truncate text-[12px] tabular-nums text-muted-foreground" title={meta.join(' · ')}>
+            <p className="truncate text-caption-sm tabular-nums text-muted-foreground" title={meta.join(' · ')}>
               {meta.join(' · ')}
             </p>
           )}
           {(stale || repostCount > 0) && (
-            <p className="flex flex-wrap items-center gap-x-2 text-[10.5px] text-muted-foreground" data-testid="job-age-note">
+            <p className="flex flex-wrap items-center gap-x-2 text-caption-sm text-muted-foreground" data-testid="job-age-note">
               {stale && (
                 <span className="inline-flex items-center gap-1">
                   <Clock3 className="h-3 w-3" aria-hidden />
@@ -567,10 +568,7 @@ export function JobCard({
             {expanded && (
               <motion.div
                 key="jd"
-                initial={reduceMotion ? undefined : { height: 0, opacity: 0 }}
-                animate={reduceMotion ? undefined : { height: 'auto', opacity: 1 }}
-                exit={reduceMotion ? undefined : { height: 0, opacity: 0 }}
-                transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+                {...disclosure(reduceMotion)}
                 className="overflow-hidden"
               >
                 <div className="max-h-48 overflow-y-auto rounded-xl border border-border/40 bg-muted/20 p-3 text-xs leading-relaxed text-muted-foreground">
@@ -590,7 +588,7 @@ export function JobCard({
             {showAppState && appState && (
               <p
                 className={cn(
-                  'text-[11px] font-medium',
+                  'text-caption-sm font-medium',
                   appState.tone === 'positive' && 'text-success',
                   appState.tone === 'caution' && 'text-warning',
                   appState.tone === 'danger' && 'text-destructive',
@@ -605,23 +603,23 @@ export function JobCard({
               <div
                 role="group"
                 aria-label={`Did you apply for ${job.title}?`}
-                className="rounded-lg border border-primary/30 bg-primary/[0.06] px-2.5 py-2"
+                className="rounded-lg border border-primary/30 bg-primary/5 px-2.5 py-2"
               >
                 <p className="text-xs font-medium text-foreground">
                   Did you apply for <span className="font-semibold">{job.title}</span>?
                 </p>
-                <p className="mt-0.5 text-[11px] text-muted-foreground">
+                <p className="mt-0.5 text-caption-sm text-muted-foreground">
                   Opening the posting is not applying. Yes moves it to Applied; Not yet leaves it in Draft.
                 </p>
                 <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                  <Button size="sm" onClick={onConfirmApplied} className="h-9 min-w-[7.5rem] gap-1.5 text-xs font-semibold">
+                  <Button size="sm" onClick={onConfirmApplied} className="h-10 min-w-[7.5rem] gap-1.5 text-xs font-semibold">
                     Yes, I applied
                   </Button>
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={onConfirmNotYet}
-                    className="h-9 min-w-[5.5rem] text-xs font-semibold hover:border-primary hover:bg-primary/10 hover:text-primary"
+                    className="hit-target h-9 min-w-[5.5rem] text-xs font-semibold hover:border-primary hover:bg-primary/10 hover:text-primary"
                   >
                     Not yet
                   </Button>
@@ -630,9 +628,9 @@ export function JobCard({
                     variant="ghost"
                     onClick={onQuickApply}
                     title="Open the posting again"
-                    className="h-9 gap-1.5 px-2.5 text-xs text-muted-foreground hover:bg-transparent hover:text-primary"
+                    className="hit-target h-9 gap-1.5 px-2.5 text-xs text-muted-foreground hover:bg-transparent hover:text-primary"
                   >
-                    <ExternalLink className="h-3.5 w-3.5" />
+                    <ExternalLink className="h-3.5 w-3.5" aria-hidden />
                     Reopen
                   </Button>
                 </div>
@@ -647,7 +645,7 @@ export function JobCard({
                       else setApplyChoiceOpen(true);
                     }}
                     title={apply.fallback ? 'Apply link missing. Opens Google search, then asks how you want to apply' : 'Choose tailor, apply with your base resume, or mark already applied'}
-                    className="btn-premium h-9 min-w-0 gap-1.5 text-xs font-semibold"
+                    className="btn-premium h-10 min-w-0 gap-1.5 text-xs font-semibold"
                   >
                     <ExternalLink className="h-3.5 w-3.5" />
                     {inAppliedPipeline ? 'Reopen' : 'Apply'}
@@ -659,14 +657,14 @@ export function JobCard({
                     disabled={tailoring}
                     aria-busy={tailoring}
                     title="Open Tailor with this job's description"
-                    className="h-9 min-w-0 gap-1.5 border-border bg-card text-xs font-semibold text-foreground hover:border-primary hover:bg-primary/10 hover:text-primary disabled:opacity-70"
+                    className="h-10 min-w-0 gap-1.5 border-border bg-card text-xs font-semibold text-foreground hover:border-primary hover:bg-primary/10 hover:text-primary disabled:opacity-70"
                   >
                     {tailoring ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
                     ) : (
                       <Wand2 className="h-3.5 w-3.5" />
                     )}
-                    {tailoring ? 'Opening…' : 'Tailor resume'}
+                    {tailoring ? 'Opening...' : 'Tailor resume'}
                   </Button>
                 </div>
                 <div className="flex flex-wrap items-center gap-1.5">
@@ -678,7 +676,7 @@ export function JobCard({
                       disabled={saving}
                       aria-busy={saving}
                       title={saved ? 'Remove from saved' : 'Save this job'}
-                      className={cn('h-9 min-w-[5.5rem] gap-1.5 px-2.5 text-xs',
+                      className={cn('hit-target h-9 min-w-[5.5rem] gap-1.5 px-2.5 text-xs',
                         saved
                           ? 'border-success/40 bg-success/10 text-success hover:border-success hover:bg-success/20 hover:text-success'
                           : 'border-border/60 text-muted-foreground hover:text-primary')}
@@ -690,7 +688,7 @@ export function JobCard({
                       ) : (
                         <BookmarkPlus className="h-3.5 w-3.5" />
                       )}
-                      {saving ? (saved ? 'Removing…' : 'Saving…') : saved ? 'Saved' : 'Save'}
+                      {saving ? (saved ? 'Removing...' : 'Saving...') : saved ? 'Saved' : 'Save'}
                     </Button>
                   )}
                   {onHide && (
@@ -700,7 +698,7 @@ export function JobCard({
                       onClick={onHide}
                       title="Hide this job from For you"
                       aria-label="Hide this job"
-                      className="h-9 w-9 px-0 text-muted-foreground hover:bg-transparent hover:text-primary"
+                      className="hit-target h-9 w-9 px-0 text-muted-foreground hover:bg-transparent hover:text-primary"
                     >
                       <CircleOff className="h-3.5 w-3.5" aria-hidden />
                     </Button>
@@ -710,14 +708,14 @@ export function JobCard({
                     variant="ghost"
                     onClick={() => setExpanded((v) => !v)}
                     aria-expanded={expanded}
-                    className="h-9 gap-1 px-2.5 text-xs text-muted-foreground hover:bg-transparent hover:text-primary"
+                    className="hit-target h-9 gap-1 px-2.5 text-xs text-muted-foreground hover:bg-transparent hover:text-primary"
                   >
                     Details
-                    <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', expanded && 'rotate-180')} aria-hidden />
+                    <ChevronDown className={cn('h-3.5 w-3.5 transition-transform duration-base ease-standard motion-reduce:transition-none', expanded && 'rotate-180')} aria-hidden />
                   </Button>
                   <span className="ml-auto flex items-center gap-1">
                     {compareSelected && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-caption-sm font-medium text-primary">
                         <Scale className="h-3 w-3" aria-hidden /> Comparing
                       </span>
                     )}
@@ -727,7 +725,7 @@ export function JobCard({
                           size="sm"
                           variant="ghost"
                           aria-label={`More for ${title}`}
-                          className="h-9 gap-1 px-2.5 text-xs text-muted-foreground hover:bg-transparent hover:text-primary"
+                          className="hit-target h-9 gap-1 px-2.5 text-xs text-muted-foreground hover:bg-transparent hover:text-primary"
                         >
                           More
                           <MoreHorizontal className="h-3.5 w-3.5" aria-hidden />

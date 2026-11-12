@@ -11,6 +11,7 @@ import { ClipboardList, X } from 'lucide-react';
 
 import type { ApplicationStatus } from '@/types/resume';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { PanelError } from '@/app-shell/pages/today/primitives';
 import GmailSuggestions, { GmailReviewLoadError, useGmailSuggestions } from '@/components/resume/GmailSuggestions';
@@ -193,7 +194,7 @@ export default function TrackerPage() {
             aria-label="Application summary"
             className="flex flex-wrap items-center gap-x-6 gap-y-3 px-4 py-3"
           >
-            <p className="w-full text-label text-muted-foreground sm:w-auto">
+            <p className="w-full text-body-sm text-muted-foreground sm:w-auto">
               <span className="font-semibold tabular-nums text-foreground">{records.length}</span>{' '}
               tracked,{' '}
               <span className="font-semibold tabular-nums text-foreground">{metrics.active}</span>{' '}
@@ -227,13 +228,20 @@ export default function TrackerPage() {
                     className={cn(
                       'flex items-baseline gap-1.5 rounded-lg px-2.5 py-1.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                       on ? 'bg-primary/10 text-primary' : 'hover:bg-muted',
-                      count === 0 && !on && 'opacity-60',
                     )}
                   >
-                    <span className="font-display text-lg font-semibold tabular-nums text-foreground">
+                    {/* An empty stage is quieted by its NUMBER, not by fading the
+                        whole button: opacity-60 took the label to 3.1:1 on the
+                        dark card while the button stayed clickable. */}
+                    <span
+                      className={cn(
+                        'font-display text-lg font-semibold tabular-nums',
+                        count === 0 && !on ? 'text-muted-foreground' : 'text-foreground',
+                      )}
+                    >
                       {count}
                     </span>
-                    <span className="text-label text-muted-foreground">{label}</span>
+                    <span className="text-body-sm text-muted-foreground">{label}</span>
                   </button>
                 );
               })}
@@ -273,9 +281,24 @@ export default function TrackerPage() {
             aria-label="Loading"
             className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent"
           />
-          <p className="text-label text-muted-foreground">Loading your applications...</p>
+          <p className="text-body-sm text-muted-foreground">Loading your applications...</p>
         </div>
-        <div className="h-[28rem] animate-pulse rounded-xl bg-muted/50" />
+        {/* Shaped like the populated view: the toolbar, then a stage of rows. */}
+        <div aria-hidden className="space-y-4">
+          <Skeleton className="h-12 w-full rounded-xl" />
+          <div className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card">
+            {[0, 1, 2, 3, 4].map((i) => (
+              <div key={i} className="flex items-center gap-3 px-3 py-3">
+                <Skeleton className="h-8 w-8 shrink-0 rounded-lg" />
+                <div className="min-w-0 flex-1 space-y-1.5">
+                  <Skeleton className="h-3.5 w-2/5" />
+                  <Skeleton className="h-3 w-1/4" />
+                </div>
+                <Skeleton className="h-3 w-16" />
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
@@ -298,19 +321,24 @@ export default function TrackerPage() {
       <div className="space-y-4">
         {header}
         <div className="rounded-2xl border border-dashed border-border p-12 text-center">
-          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
             <ClipboardList className="h-6 w-6" aria-hidden />
           </div>
           <p className="font-display text-body font-semibold text-foreground">
             No applications yet
           </p>
-          <p className="mx-auto mt-1 max-w-sm text-label text-muted-foreground">
+          <p className="mx-auto mt-1 max-w-sm text-body-sm text-muted-foreground">
             Save a job from For you or confirm an application to start tracking it here. Gmail can
             then match replies to those roles.
           </p>
-          <Button asChild className="mt-4">
-            <Link to="/app/resume/tailor">Tailor a resume</Link>
-          </Button>
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+            <Button asChild>
+              <Link to="/app/jobs/for-you">Find jobs</Link>
+            </Button>
+            <Button asChild variant="ghost">
+              <Link to="/app/resume/tailor">Tailor a resume</Link>
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -332,9 +360,13 @@ export default function TrackerPage() {
     <div className="flex flex-col gap-4">
       {header}
       {loadError && (
-        <p role="alert" className="text-label text-destructive">
+        <p role="alert" className="text-body-sm text-destructive">
           Your last refresh failed. Showing previously loaded applications.{' '}
-          <button className="underline" onClick={() => void refetchSilent()}>
+          <button
+            type="button"
+            className="hit-target font-medium underline underline-offset-2"
+            onClick={() => void refetchSilent()}
+          >
             Retry
           </button>
         </p>
@@ -410,7 +442,7 @@ export default function TrackerPage() {
               size="sm"
               aria-label="Close details"
               onClick={() => setSelectedId(null)}
-              className="float-right -mr-2 -mt-2 h-8 w-8 px-0 text-muted-foreground hover:text-foreground"
+              className="hit-target float-right -mr-2 -mt-2 h-8 w-8 px-0 text-muted-foreground hover:text-foreground"
             >
               <X className="h-4 w-4" aria-hidden />
             </Button>

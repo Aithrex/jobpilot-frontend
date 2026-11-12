@@ -23,16 +23,16 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 const TYPE_TONE: Record<string, string> = {
-  general: 'border-gray-400/30 bg-gray-400/10 text-gray-300',
-  idea: 'border-sky-400/30 bg-sky-400/10 text-sky-300',
-  bug: 'border-rose-400/30 bg-rose-400/10 text-rose-300',
-  quota_bump: 'border-amber-400/30 bg-amber-400/10 text-amber-300',
+  general: 'border-border bg-muted text-ink-muted',
+  idea: 'border-info/30 bg-info/10 text-info',
+  bug: 'border-destructive/30 bg-destructive/10 text-destructive',
+  quota_bump: 'border-warning/30 bg-warning/10 text-warning',
 };
 
 const STATUS_TONE: Record<string, string> = {
-  open: 'border-amber-400/40 bg-amber-400/10 text-amber-300',
-  responded: 'border-sky-400/40 bg-sky-400/10 text-sky-300',
-  resolved: 'border-emerald-400/40 bg-emerald-400/10 text-emerald-300',
+  open: 'border-warning/40 bg-warning/10 text-warning',
+  responded: 'border-info/40 bg-info/10 text-info',
+  resolved: 'border-success/40 bg-success/10 text-success',
 };
 
 function formatTs(iso: string | null) {
@@ -132,33 +132,35 @@ export function FeedbackPanel() {
         {(['all', 'open', 'responded', 'resolved'] as StatusFilter[]).map((f) => (
           <button
             key={f}
+            type="button"
             onClick={() => setFilter(f)}
-            className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+            aria-pressed={filter === f}
+            className={`hit-target inline-flex min-h-8 items-center rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
               filter === f
-                ? 'border-purple-400/60 bg-purple-500/15 text-purple-200'
-                : 'border-white/[0.08] bg-white/[0.02] text-gray-400 hover:text-gray-200'
+                ? 'border-primary/60 bg-primary/15 text-primary'
+                : 'border-border bg-muted/40 text-muted-foreground hover:text-foreground'
             }`}
           >
             {f.charAt(0).toUpperCase() + f.slice(1)}
-            {f === 'open' && counts.open ? <span className="ml-1.5 text-amber-300">·{counts.open}</span> : null}
+            {f === 'open' && counts.open ? <span className="ml-1.5 text-warning">·{counts.open}</span> : null}
             {f === 'responded' && counts.responded ? (
-              <span className="ml-1.5 text-sky-300">·{counts.responded}</span>
+              <span className="ml-1.5 text-info">·{counts.responded}</span>
             ) : null}
             {f === 'resolved' && counts.resolved ? (
-              <span className="ml-1.5 text-emerald-300">·{counts.resolved}</span>
+              <span className="ml-1.5 text-success">·{counts.resolved}</span>
             ) : null}
           </button>
         ))}
       </div>
 
       {loading && (
-        <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-6 text-center text-sm text-gray-500">
+        <div className="rounded-xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">
           Loading feedback...
         </div>
       )}
 
       {!loading && items.length === 0 && (
-        <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-6 text-center text-sm text-gray-500">
+        <div className="rounded-xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">
           No feedback in this view.
         </div>
       )}
@@ -167,26 +169,26 @@ export function FeedbackPanel() {
         {items.map((it) => {
           const isReplying = respondingId === it.id;
           return (
-            <div key={it.id} className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
+            <div key={it.id} className="rounded-xl border border-border bg-card p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium ${TYPE_TONE[it.type] || TYPE_TONE.general}`}>
+                  <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-caption-sm font-medium ${TYPE_TONE[it.type] || TYPE_TONE.general}`}>
                     {TYPE_LABELS[it.type] || it.type}
                   </span>
-                  <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium ${STATUS_TONE[it.status] || STATUS_TONE.open}`}>
+                  <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-caption-sm font-medium ${STATUS_TONE[it.status] || STATUS_TONE.open}`}>
                     {it.status}
                   </span>
-                  <span className="font-mono text-xs text-gray-400">{it.email}</span>
+                  <span className="font-mono text-xs text-muted-foreground">{it.email}</span>
                 </div>
-                <span className="text-[11px] text-gray-500">{formatTs(it.created_at)}</span>
+                <span className="text-caption-sm text-muted-foreground">{formatTs(it.created_at)}</span>
               </div>
 
-              <p className="mt-3 whitespace-pre-wrap text-sm text-gray-200">{it.message}</p>
+              <p className="mt-3 whitespace-pre-wrap text-sm text-foreground">{it.message}</p>
 
               {it.admin_response && !isReplying && (
-                <div className="mt-3 rounded-lg border border-indigo-400/20 bg-indigo-500/[0.06] p-3">
-                  <div className="mb-1 text-[10px] uppercase tracking-wide text-indigo-300/80">Your response · {formatTs(it.responded_at)}</div>
-                  <p className="whitespace-pre-wrap text-sm text-gray-200">{it.admin_response}</p>
+                <div className="mt-3 rounded-lg border border-primary/20 bg-primary/5 p-3">
+                  <div className="mb-1 text-caption-sm uppercase tracking-wide text-primary">Your response · {formatTs(it.responded_at)}</div>
+                  <p className="whitespace-pre-wrap text-sm text-foreground">{it.admin_response}</p>
                 </div>
               )}
 
@@ -198,19 +200,19 @@ export function FeedbackPanel() {
                     rows={4}
                     maxLength={4000}
                     placeholder="Write a response. The user can read this in their feedback history."
-                    className="w-full resize-none rounded-md border border-white/[0.08] bg-white/[0.03] p-2 text-sm text-gray-200 placeholder:text-gray-600 focus:border-purple-400/60 focus:outline-none"
+                    className="w-full resize-none rounded-md border border-border bg-muted/40 p-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/60 focus:outline-none"
                   />
                   <div className="flex justify-end gap-2">
                     <button
                       onClick={cancelReply}
-                      className="rounded-md border border-white/10 px-3 py-1 text-xs text-gray-400 hover:text-gray-200"
+                      className="hit-target inline-flex min-h-8 items-center rounded-md border border-border px-3 py-1 text-xs text-muted-foreground hover:text-foreground"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={() => saveReply(it.id)}
                       disabled={savingId === it.id}
-                      className="rounded-md border border-purple-400/50 bg-purple-500/10 px-3 py-1 text-xs font-medium text-purple-200 hover:bg-purple-500/20 disabled:opacity-50"
+                      className="hit-target inline-flex min-h-8 items-center rounded-md border border-primary/50 bg-primary/10 px-3 py-1 text-xs font-medium text-primary hover:bg-primary/20 disabled:opacity-50"
                     >
                       {savingId === it.id ? 'Saving...' : 'Send response'}
                     </button>
@@ -220,7 +222,7 @@ export function FeedbackPanel() {
                 <div className="mt-3 flex flex-wrap items-center justify-end gap-2">
                   <button
                     onClick={() => startReply(it.id, it.admin_response)}
-                    className="rounded-md border border-white/[0.08] px-3 py-1 text-xs text-gray-300 hover:bg-white/[0.04]"
+                    className="hit-target inline-flex min-h-8 items-center rounded-md border border-border px-3 py-1 text-xs text-ink-muted hover:bg-muted"
                   >
                     {it.admin_response ? 'Edit response' : 'Reply'}
                   </button>
@@ -228,7 +230,7 @@ export function FeedbackPanel() {
                     <button
                       onClick={() => setStatus(it.id, 'resolved')}
                       disabled={savingId === it.id}
-                      className="rounded-md border border-emerald-400/40 bg-emerald-400/10 px-3 py-1 text-xs text-emerald-200 hover:bg-emerald-400/20 disabled:opacity-50"
+                      className="hit-target inline-flex min-h-8 items-center rounded-md border border-success/40 bg-success/10 px-3 py-1 text-xs text-success hover:bg-success/20 disabled:opacity-50"
                     >
                       Mark resolved
                     </button>
@@ -237,7 +239,7 @@ export function FeedbackPanel() {
                     <button
                       onClick={() => setStatus(it.id, 'open')}
                       disabled={savingId === it.id}
-                      className="rounded-md border border-white/[0.08] px-3 py-1 text-xs text-gray-400 hover:bg-white/[0.04] disabled:opacity-50"
+                      className="hit-target inline-flex min-h-8 items-center rounded-md border border-border px-3 py-1 text-xs text-muted-foreground hover:bg-muted disabled:opacity-50"
                     >
                       Reopen
                     </button>

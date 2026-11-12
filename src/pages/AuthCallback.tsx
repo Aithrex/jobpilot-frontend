@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { consumeAuthReturnTo } from '@/components/auth/AuthShell';
 import { Loader2, AlertCircle } from 'lucide-react';
@@ -69,21 +69,33 @@ export default function AuthCallback() {
   }, [hydrateFromToken, navigate]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="flex flex-col items-center gap-3 text-center">
+    <main className="flex min-h-screen items-center justify-center bg-background px-4 text-foreground">
+      <div
+        className="flex max-w-sm flex-col items-center gap-3 text-center"
+        role={error ? 'alert' : 'status'}
+        aria-live={error ? 'assertive' : 'polite'}
+      >
         {error ? (
           <>
-            <AlertCircle className="h-8 w-8 text-destructive" />
-            <p className="text-sm text-muted-foreground">{error}</p>
-            <p className="text-xs text-muted-foreground">Taking you back to sign in...</p>
+            <AlertCircle className="h-8 w-8 text-destructive" aria-hidden />
+            <h1 className="font-display text-title-md text-foreground">{error}</h1>
+            <p className="text-body-sm text-muted-foreground">Taking you back to sign in...</p>
+            {/* No need to wait out the redirect. */}
+            <Link
+              to="/login"
+              replace
+              className="inline-flex min-h-11 items-center rounded px-2 text-sm font-semibold text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            >
+              Back to sign in
+            </Link>
           </>
         ) : (
           <>
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-sm text-muted-foreground">Completing sign-in...</p>
+            <Loader2 className="h-8 w-8 animate-spin text-primary" aria-hidden />
+            <h1 className="text-body-sm font-normal text-muted-foreground">Completing sign-in...</h1>
           </>
         )}
       </div>
-    </div>
+    </main>
   );
 }

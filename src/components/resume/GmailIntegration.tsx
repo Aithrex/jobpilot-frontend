@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { Mail } from 'lucide-react';
 import { apiService } from '@/lib/api';
 import GmailSuggestions, { GmailReviewLoadError, useGmailSuggestions } from '@/components/resume/GmailSuggestions';
 import type { GmailStatus, GmailSyncSummary } from '@/types/gmail';
@@ -293,8 +294,9 @@ export default function GmailIntegration({
         <div className="flex items-center gap-3 flex-wrap">
           <div
             className={`${inline ? 'h-7 w-7 rounded-lg text-xs' : 'h-9 w-9 rounded-xl text-sm'} ${GMAIL_MARK} flex shrink-0 items-center justify-center text-white font-bold shadow-soft`}
+            aria-hidden="true"
           >
-            ✉
+            <Mail className={inline ? 'h-3.5 w-3.5' : 'h-4 w-4'} />
           </div>
           <div className="min-w-0 flex-1 basis-[calc(100%-3rem)] sm:basis-auto">
             <p className={inline ? 'text-label font-semibold text-foreground' : 'text-body font-semibold text-foreground'}>
@@ -399,7 +401,7 @@ export default function GmailIntegration({
             <p className="overline text-primary">Suggested updates · {pendingCount}</p>
             <button
               onClick={() => setShowSuggestions((s) => !s)}
-              className="text-[10px] font-medium text-primary hover:underline"
+              className="text-caption-sm font-medium text-primary hover:underline"
             >
               {showSuggestions ? 'Hide' : 'Show'}
             </button>

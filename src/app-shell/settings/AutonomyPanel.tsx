@@ -84,10 +84,10 @@ export default function AutonomyPanel() {
           <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" aria-hidden="true" />
           <div>
             <p className="text-sm font-medium text-foreground">
-              Auto-apply isn&rsquo;t available yet
+              Auto-apply isn't available yet
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
-              We&rsquo;re rolling out autonomous applications gradually. You&rsquo;ll
+              We're rolling out autonomous applications gradually. You'll
               see the controls here as soon as they reach your account.
             </p>
           </div>
@@ -103,12 +103,12 @@ export default function AutonomyPanel() {
           <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" aria-hidden="true" />
           <div className="space-y-3">
             <p className="text-sm text-foreground">
-              Couldn&rsquo;t load your autonomy settings.
+              Couldn't load your autonomy settings.
             </p>
             <Button
               variant="outline"
               size="sm"
-              className="min-h-[44px]"
+              className="min-h-11"
               onClick={() =>
                 // Re-runs the useAutoSubmit settings query (its key prefix).
                 void qc.invalidateQueries({ queryKey: ["auto-submit", "settings"] })
@@ -133,7 +133,7 @@ export default function AutonomyPanel() {
             Auto-submit confident applications
           </Label>
           <p className="mt-1 text-xs text-muted-foreground">
-            Auto-submit applications I&rsquo;m this confident about; hold the rest
+            Auto-submit applications I'm this confident about; hold the rest
             for a one-tap review.
           </p>
         </div>
@@ -179,7 +179,7 @@ export default function AutonomyPanel() {
           aria-label="Confidence threshold percent"
           aria-valuetext={`${pct} percent`}
         />
-        <div className="mt-2 flex justify-between text-[11px] text-muted-foreground">
+        <div className="mt-2 flex justify-between text-caption-sm text-muted-foreground">
           <span>More applications</span>
           <span>Higher confidence</span>
         </div>
@@ -189,14 +189,14 @@ export default function AutonomyPanel() {
       <div className="flex items-start gap-2 rounded-xl border border-border bg-muted/30 px-4 py-3 text-xs text-muted-foreground">
         <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
         <span>
-          We&rsquo;ll always ask you before answering work-authorization or EEO
+          We'll always ask you before answering work-authorization or EEO
           questions.
         </span>
       </div>
 
       <div className="flex items-center gap-3">
-        <Button onClick={onSave} disabled={!dirty || savingSettings} className="min-h-[44px]">
-          {savingSettings && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
+        <Button onClick={onSave} disabled={!dirty || savingSettings} className="min-h-11">
+          {savingSettings && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
           {savingSettings ? "Saving..." : "Save changes"}
         </Button>
         {dirty && !savingSettings && (

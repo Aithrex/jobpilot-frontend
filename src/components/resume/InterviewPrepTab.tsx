@@ -12,6 +12,13 @@ import {
   Spinner, CopyButton, DifficultyBadge, EmptyState,
   QuestionCard, BulletCard, CodingCard, CaseCard, SystemDesignCard, DataChallengeCard,
 } from "./InterviewPrep/PracticeCards";
+import { Link } from "react-router-dom";
+import {
+  AlertTriangle, BarChart3, Brain, Building2, Code2, Cog, Database, Flame, FlaskConical, GraduationCap,
+  HelpCircle, Lightbulb, Mic, Network, Sparkles, Target, TrendingUp, type LucideIcon,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { appPath } from "@/app-shell/nav.config";
 import CoachChat from "./InterviewPrep/CoachChat";
 import MockInterview from "./InterviewPrep/MockInterview";
 import InterviewInsights from "./InterviewInsights";
@@ -20,18 +27,20 @@ type TopTab = "overview" | "questions" | "practical" | "edge" | "mock" | "coach"
 type QSubTab = "behavioral" | "technical" | "company" | "tough";
 type PracticalSubTab = "coding" | "system_design" | "case_study" | "data_challenge";
 
-const Q_SUBTABS: { key: QSubTab; label: string; icon: string }[] = [
-  { key: "behavioral", label: "Behavioral", icon: "🧠" },
-  { key: "technical",  label: "Technical",  icon: "⚙" },
-  { key: "company",    label: "Company",    icon: "🏢" },
-  { key: "tough",      label: "Tough Qs",   icon: "🔥" },
+// Lucide icons, not emoji: one icon system across the app, and a screen
+// reader no longer announces "brain" or "fire" before every label.
+const Q_SUBTABS: { key: QSubTab; label: string; icon: LucideIcon }[] = [
+  { key: "behavioral", label: "Behavioral", icon: Brain },
+  { key: "technical",  label: "Technical",  icon: Cog },
+  { key: "company",    label: "Company",    icon: Building2 },
+  { key: "tough",      label: "Tough Qs",   icon: Flame },
 ];
 
-const PRACTICAL_SUBTABS: { key: PracticalSubTab; label: string; icon: string }[] = [
-  { key: "coding",         label: "Coding",        icon: "💻" },
-  { key: "system_design",  label: "System design", icon: "🏗" },
-  { key: "case_study",     label: "Case studies",  icon: "📊" },
-  { key: "data_challenge", label: "Data",          icon: "🔢" },
+const PRACTICAL_SUBTABS: { key: PracticalSubTab; label: string; icon: LucideIcon }[] = [
+  { key: "coding",         label: "Coding",        icon: Code2 },
+  { key: "system_design",  label: "System design", icon: Network },
+  { key: "case_study",     label: "Case studies",  icon: BarChart3 },
+  { key: "data_challenge", label: "Data",          icon: Database },
 ];
 
 const ROLE_LABELS: Record<string, string> = {
@@ -241,22 +250,28 @@ export default function InterviewPrepTab({ embedded }: InterviewPrepTabProps) {
   if (records.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-border bg-gradient-to-b from-primary/5 to-transparent p-10 text-center">
-        <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-xl">💡</div>
+        <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+          <Lightbulb className="h-6 w-6" aria-hidden="true" />
+        </div>
         <p className="text-sm font-semibold text-foreground">No tailored resumes yet</p>
-        <p className="text-xs text-muted-foreground mt-1">Tailor a resume to a job first. Your prep pack is built from that resume and job description.</p>
+        <p className="mx-auto mt-1 max-w-prose text-xs text-muted-foreground">Tailor a resume to a job first. Your prep pack is built from that resume and job description.</p>
+        <Button asChild className="mt-4 min-h-11">
+          <Link to={appPath("resume", "tailor")}>Tailor a resume</Link>
+        </Button>
       </div>
     );
   }
 
-  const TOP_TABS: { key: TopTab; label: string; icon: string; show?: boolean }[] = [
-    { key: "overview",  label: "Overview",    icon: "✨" },
-    { key: "questions", label: "Questions",   icon: "❓" },
-    { key: "practical", label: "Practical",   icon: "🧪", show: !!hasAnyPractical },
-    { key: "edge",      label: "Your edge",   icon: "🎯" },
-    { key: "mock",      label: "Mock interview", icon: "🎤" },
-    { key: "coach",     label: "AI coach",    icon: "🧑‍🏫" },
-    { key: "insights",  label: "Insights",    icon: "📈" },
-  ].filter(t => t.show === undefined || t.show);
+  type TopTabDef = { key: TopTab; label: string; icon: LucideIcon; show?: boolean };
+  const TOP_TABS: TopTabDef[] = ([
+    { key: "overview",  label: "Overview",    icon: Sparkles },
+    { key: "questions", label: "Questions",   icon: HelpCircle },
+    { key: "practical", label: "Practical",   icon: FlaskConical, show: !!hasAnyPractical },
+    { key: "edge",      label: "Your edge",   icon: Target },
+    { key: "mock",      label: "Mock interview", icon: Mic },
+    { key: "coach",     label: "AI coach",    icon: GraduationCap },
+    { key: "insights",  label: "Insights",    icon: TrendingUp },
+  ] as TopTabDef[]).filter(t => t.show === undefined || t.show);
 
   return (
     <div className="space-y-4">
@@ -265,7 +280,7 @@ export default function InterviewPrepTab({ embedded }: InterviewPrepTabProps) {
             title - keep only the functional stat grid. */}
         {!isEmbedded && (
           <>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">Career · Interview</p><h2 className="mt-1 font-display text-2xl font-extrabold tracking-tight text-foreground">Interview Prep</h2>
+            <p className="overline">Grow · Interview</p><h2 className="mt-1 font-display text-h2 text-foreground">Interview Prep</h2>
             <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
               Question banks, timed mock answers with AI grading, and a coach that knows your resume and the job description.
             </p>
@@ -340,19 +355,19 @@ export default function InterviewPrepTab({ embedded }: InterviewPrepTabProps) {
               <div className="rounded-2xl border border-border bg-gradient-to-br from-primary/5 via-card to-card p-5 shadow-soft">
                 <div className="flex items-start justify-between gap-3 flex-wrap">
                   <div className="min-w-0">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">Prep for</p>
+                    <p className="overline">Prep for</p>
                     <p className="font-display text-xl font-bold text-foreground mt-1 leading-snug">
                       {selected.jd_analysis?.job_title || "Untitled role"}
                       {selected.jd_analysis?.company && selected.jd_analysis.company !== "Not specified" && (
                         <span className="text-muted-foreground font-normal"> at {selected.jd_analysis.company}</span>
                       )}
                     </p>
-                    <p className="text-[13px] text-muted-foreground mt-1.5 flex items-center gap-2 flex-wrap">
+                    <p className="text-caption text-muted-foreground mt-1.5 flex items-center gap-2 flex-wrap">
                       <span>{generatedAt ? `Generated ${formatDate(generatedAt)}` : "No prep generated yet"}</span>
                       {norm?.role_type && (
                         <>
                           <span>·</span>
-                          <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/25 text-[11px] font-semibold">{ROLE_LABELS[norm.role_type] || norm.role_type}</span>
+                          <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/25 text-caption-sm font-semibold">{ROLE_LABELS[norm.role_type] || norm.role_type}</span>
                         </>
                       )}
                       {totalItems > 0 && (
@@ -412,14 +427,16 @@ export default function InterviewPrepTab({ embedded }: InterviewPrepTabProps) {
                       return (
                         <button
                           key={t.key}
+                          type="button"
                           onClick={() => setTopTab(t.key)}
-                          className={`shrink-0 inline-flex items-center gap-2 px-4 py-2.5 rounded-t-lg text-sm font-medium transition-all border-b-2 ${
+                          aria-pressed={isActive}
+                          className={`shrink-0 inline-flex min-h-11 items-center gap-2 px-4 py-2.5 rounded-t-lg text-sm font-medium transition-colors border-b-2 ${
                             isActive
                               ? "border-primary text-foreground bg-primary/10"
                               : "border-transparent text-muted-foreground hover:text-foreground"
                           }`}
                         >
-                          <span>{t.icon}</span>{t.label}
+                          <t.icon className="h-4 w-4 shrink-0" aria-hidden="true" />{t.label}
                         </button>
                       );
                     })}
@@ -432,19 +449,19 @@ export default function InterviewPrepTab({ embedded }: InterviewPrepTabProps) {
                         {norm.pitch && (
                           <div className="rounded-xl border border-primary/25 bg-primary/5 p-5">
                             <div className="flex items-center gap-2 mb-2.5">
-                              <span className="text-base">🎤</span>
+                              <Mic className="h-4 w-4 text-primary" aria-hidden="true" />
                               <p className="text-xs font-bold uppercase tracking-wider text-primary">Elevator pitch</p>
                               <span className="text-xs text-muted-foreground">· open with this</span>
                               <div className="flex-1" />
                               <CopyButton text={norm.pitch} />
                             </div>
-                            <p className="text-[15px] text-foreground leading-relaxed">{norm.pitch}</p>
+                            <p className="text-body-md text-foreground leading-relaxed">{norm.pitch}</p>
                           </div>
                         )}
 
                         {norm.talking.length > 0 && (
                           <div>
-                            <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">💪 Talking points</p>
+                            <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Talking points</p>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                               {norm.talking.map((t, i) => (
                                 <BulletCard key={i} index={i} text={t} accent="purple"
@@ -458,22 +475,23 @@ export default function InterviewPrepTab({ embedded }: InterviewPrepTabProps) {
                         {/* Section counts as jump-links */}
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                           {[
-                            { label: "Behavioral",   count: norm.behavioral.length,   tab: "questions", sub: "behavioral", icon: "🧠" },
-                            { label: "Technical",    count: norm.technical.length,    tab: "questions", sub: "technical",  icon: "⚙" },
-                            { label: "Company",      count: norm.company.length,      tab: "questions", sub: "company",    icon: "🏢" },
-                            { label: "Tough Qs",     count: norm.tough.length,        tab: "questions", sub: "tough",      icon: "🔥" },
-                            { label: "Coding",       count: norm.coding.length,       tab: "practical", sub: "coding",     icon: "💻" },
-                            { label: "System design",count: norm.systemDesign.length, tab: "practical", sub: "system_design", icon: "🏗" },
-                            { label: "Case studies", count: norm.cases.length,        tab: "practical", sub: "case_study", icon: "📊" },
-                            { label: "Data",         count: norm.data.length,         tab: "practical", sub: "data_challenge", icon: "🔢" },
+                            { label: "Behavioral",   count: norm.behavioral.length,   tab: "questions", sub: "behavioral", icon: Brain },
+                            { label: "Technical",    count: norm.technical.length,    tab: "questions", sub: "technical",  icon: Cog },
+                            { label: "Company",      count: norm.company.length,      tab: "questions", sub: "company",    icon: Building2 },
+                            { label: "Tough Qs",     count: norm.tough.length,        tab: "questions", sub: "tough",      icon: Flame },
+                            { label: "Coding",       count: norm.coding.length,       tab: "practical", sub: "coding",     icon: Code2 },
+                            { label: "System design",count: norm.systemDesign.length, tab: "practical", sub: "system_design", icon: Network },
+                            { label: "Case studies", count: norm.cases.length,        tab: "practical", sub: "case_study", icon: BarChart3 },
+                            { label: "Data",         count: norm.data.length,         tab: "practical", sub: "data_challenge", icon: Database },
                           ].filter(x => x.count > 0).map(x => (
                             <button
                               key={x.label}
+                              type="button"
                               onClick={() => { setTopTab(x.tab as TopTab); if (x.tab === "questions") setQSub(x.sub as QSubTab); if (x.tab === "practical") setPracticalSub(x.sub as PracticalSubTab); }}
                               className="rounded-lg border border-border bg-card px-4 py-3 text-left hover:border-primary/40 hover:bg-primary/5 transition-colors"
                             >
                               <div className="flex items-center gap-1.5">
-                                <span className="text-sm">{x.icon}</span>
+                                <x.icon className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
                                 <p className="text-sm font-semibold text-foreground">{x.label}</p>
                               </div>
                               <p className="text-2xl font-bold text-foreground tabular-nums mt-1">{x.count}</p>
@@ -491,10 +509,12 @@ export default function InterviewPrepTab({ embedded }: InterviewPrepTabProps) {
                             {Q_SUBTABS.map(s => (
                               <button
                                 key={s.key}
+                                type="button"
                                 onClick={() => setQSub(s.key)}
-                                className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 text-[13px] font-medium rounded capitalize ${qSub === s.key ? "bg-background text-foreground shadow-soft" : "text-muted-foreground"}`}
+                                aria-pressed={qSub === s.key}
+                                className={`hit-target inline-flex items-center gap-1.5 px-3.5 py-1.5 text-caption font-medium rounded capitalize ${qSub === s.key ? "bg-background text-foreground shadow-soft" : "text-muted-foreground"}`}
                               >
-                                <span>{s.icon}</span>{s.label}
+                                <s.icon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />{s.label}
                               </button>
                             ))}
                           </div>
@@ -544,10 +564,12 @@ export default function InterviewPrepTab({ embedded }: InterviewPrepTabProps) {
                             {PRACTICAL_SUBTABS.filter(s => practicalAvailable[s.key]).map(s => (
                               <button
                                 key={s.key}
+                                type="button"
                                 onClick={() => setPracticalSub(s.key)}
-                                className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 text-[13px] font-medium rounded ${practicalSub === s.key ? "bg-background text-foreground shadow-soft" : "text-muted-foreground"}`}
+                                aria-pressed={practicalSub === s.key}
+                                className={`hit-target inline-flex items-center gap-1.5 px-3.5 py-1.5 text-caption font-medium rounded ${practicalSub === s.key ? "bg-background text-foreground shadow-soft" : "text-muted-foreground"}`}
                               >
-                                <span>{s.icon}</span>{s.label}
+                                <s.icon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />{s.label}
                               </button>
                             ))}
                           </div>
@@ -608,7 +630,7 @@ export default function InterviewPrepTab({ embedded }: InterviewPrepTabProps) {
                       <div className="space-y-4">
                         {norm.gaps.length > 0 && (
                           <div>
-                            <p className="text-xs font-bold uppercase tracking-wider text-warning mb-2">⚠ Gaps to close</p>
+                            <p className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-warning"><AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />Gaps to close</p>
                             <div className="space-y-1.5">
                               {norm.gaps.map((g, i) => (
                                 <BulletCard key={i} index={i} text={g} accent="amber"
@@ -619,7 +641,7 @@ export default function InterviewPrepTab({ embedded }: InterviewPrepTabProps) {
                         )}
                         {norm.asks.length > 0 && (
                           <div>
-                            <p className="text-xs font-bold uppercase tracking-wider text-primary mb-2">❓ Questions to ask them</p>
+                            <p className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-ink-muted"><HelpCircle className="h-3.5 w-3.5" aria-hidden="true" />Questions to ask them</p>
                             <div className="space-y-1.5">
                               {norm.asks.map((a, i) => (
                                 <BulletCard key={i} index={i} text={a} accent="blue"

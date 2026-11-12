@@ -56,7 +56,7 @@ export function JobsRefineBar() {
               label: (
                 <>
                   {opt.label}
-                  <span className="tabular-nums opacity-60">{recencyCounts[opt.key]}</span>
+                  <span className="tabular-nums font-normal">{recencyCounts[opt.key]}</span>
                 </>
               ),
             }))}
@@ -69,7 +69,7 @@ export function JobsRefineBar() {
             onClick={() => setNewOnly(!newOnly)}
             title="Roles first seen since your last visit"
             className={cn(
-              'inline-flex h-9 shrink-0 items-center gap-1 rounded-full border px-3 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+              'hit-target inline-flex h-9 shrink-0 items-center gap-1 rounded-full border px-3 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
               newOnly
                 ? 'border-info bg-info text-info-foreground'
                 : 'border-info/30 bg-info/10 text-info hover:bg-info/15',

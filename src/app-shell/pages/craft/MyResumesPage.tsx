@@ -7,7 +7,7 @@
  * tailoring: upload (PDF/DOCX ≤5MB), set-active, delete.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { UploadCloud, FileText } from 'lucide-react';
+import { UploadCloud, FileText, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { apiService } from '@/lib/api';
@@ -86,22 +86,13 @@ export default function MyResumesPage() {
     [load],
   );
 
-  if (loading) {
-    return (
-      <div className="space-y-3">
-        <Skeleton className="h-16 rounded-container" />
-        <Skeleton className="h-16 rounded-container" />
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-5">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div className="space-y-1">
-          <p className="overline">Craft · Base resumes</p>
-          <h2 className="font-display text-h2 text-foreground">My Resumes</h2>
-          <p className="text-caption text-muted-foreground">
+          <p className="overline">Manage</p>
+          <h2 className="font-display text-h2 text-foreground">Resume library</h2>
+          <p className="max-w-prose text-caption text-muted-foreground">
             Active is used for job matching. Tailor picks the best resume for
             each job unless you choose one.
           </p>
@@ -130,12 +121,12 @@ export default function MyResumesPage() {
         >
           {uploading ? (
             <>
-              <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
               Uploading...
             </>
           ) : (
             <>
-              <UploadCloud className="h-4 w-4" aria-hidden="true" /> Upload Resume
+              <UploadCloud className="h-4 w-4" aria-hidden="true" /> Upload resume
             </>
           )}
         </Button>
@@ -150,7 +141,13 @@ export default function MyResumesPage() {
         </div>
       )}
 
-      {loadError ? (
+      {loading ? (
+        // Same footprint as the populated list, so nothing jumps on load.
+        <div className="space-y-2" role="status" aria-label="Loading your resumes">
+          <Skeleton className="h-16 rounded-container" />
+          <Skeleton className="h-16 rounded-container" />
+        </div>
+      ) : loadError ? (
         <PanelError
           title="Couldn't load your resumes"
           body={loadError}
@@ -173,7 +170,7 @@ export default function MyResumesPage() {
                 <span
                   className={cn(
                     'h-2.5 w-2.5 shrink-0 rounded-full',
-                    r.is_active ? 'bg-success' : 'bg-muted-foreground/50',
+                    r.is_active ? 'bg-success' : 'bg-border',
                   )}
                   aria-hidden="true"
                 />
@@ -181,17 +178,17 @@ export default function MyResumesPage() {
                   <div className="flex items-center gap-2">
                     <p className="truncate text-sm text-foreground">{r.filename}</p>
                     {r.is_active && (
-                      <span className="shrink-0 rounded-full border border-success/25 bg-success/10 px-2 py-0.5 text-[10px] font-medium text-success">
+                      <span className="shrink-0 rounded-full border border-success/25 bg-success/10 px-2 py-0.5 text-caption-sm font-medium text-success">
                         Active
                       </span>
                     )}
                     {r.parse_status === 'pending' && (
-                      <span className="shrink-0 rounded-full border border-border bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                      <span className="shrink-0 rounded-full border border-border bg-muted px-2 py-0.5 text-caption-sm font-medium text-muted-foreground">
                         Parsing
                       </span>
                     )}
                     {r.parse_status === 'failed' && (
-                      <span className="shrink-0 rounded-full border border-destructive/25 bg-destructive/10 px-2 py-0.5 text-[10px] font-medium text-destructive">
+                      <span className="shrink-0 rounded-full border border-destructive/25 bg-destructive/10 px-2 py-0.5 text-caption-sm font-medium text-destructive">
                         Parse failed
                       </span>
                     )}
@@ -228,7 +225,7 @@ export default function MyResumesPage() {
                       }
                       await load();
                     }}
-                    className="text-primary hover:text-primary"
+                    className="min-h-11 text-primary hover:text-primary"
                   >
                     {settingActive === r.resume_id ? 'Setting...' : 'Set as active'}
                   </Button>
@@ -242,7 +239,11 @@ export default function MyResumesPage() {
                   onClick={() => setPendingDelete(r)}
                   className="h-11 w-11 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                 >
-                  <TrashIcon className="h-4 w-4" aria-hidden="true" />
+                  {deleting === r.resume_id ? (
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                  ) : (
+                    <TrashIcon className="h-4 w-4" aria-hidden="true" />
+                  )}
                 </Button>
               </div>
             </div>

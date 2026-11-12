@@ -87,15 +87,18 @@ export default function Login() {
     setError('');
     // Inline, per-field validation - the notice banner stays reserved for
     // server responses (400/409/429 - never a 401 here).
+    // Postel: a pasted address with stray spaces still signs in. Only the
+    // surrounding whitespace is dropped; the password is sent exactly as typed.
+    const cleanEmail = email.trim();
     const fe: { email?: string; password?: string } = {};
-    if (!email.trim()) fe.email = 'Enter your email to sign in.';
+    if (!cleanEmail) fe.email = 'Enter your email to sign in.';
     if (!password.trim()) fe.password = 'Enter your password.';
     setFieldErrors(fe);
     if (fe.email || fe.password) return;
     setIsLoading(true);
     setScenePhase('pending'); // the atlas pulses along the path while the REAL request runs
     try {
-      const result = await login(email, password);
+      const result = await login(cleanEmail, password);
       if (result.error) {
         setScenePhase('error');
         setError(result.error);
@@ -129,13 +132,6 @@ export default function Login() {
       }
       footer={
         <div className="flex flex-col items-center">
-          <button
-            type="button"
-            onClick={() => setForgotOpen(true)}
-            className="inline-flex min-h-11 items-center rounded px-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-          >
-            Forgot password?
-          </button>
           <span className="inline-flex min-h-11 items-center gap-1.5">
             New here?{' '}
             <Link
@@ -182,7 +178,18 @@ export default function Login() {
         </div>
 
         <div className="mt-5 space-y-2">
-          <Label htmlFor="password">Password</Label>
+          {/* Jakob: "Forgot password?" sits on the password row, where people
+              look for it, rather than below the submit button. */}
+          <div className="flex items-center justify-between gap-3">
+            <Label htmlFor="password">Password</Label>
+            <button
+              type="button"
+              onClick={() => setForgotOpen(true)}
+              className="hit-target rounded text-sm font-medium text-primary underline-offset-4 transition-colors hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            >
+              Forgot password?
+            </button>
+          </div>
           <PasswordInput
             id="password"
             value={password}
@@ -227,7 +234,7 @@ export default function Login() {
       <ForgotPasswordDialog
         open={forgotOpen}
         onClose={() => setForgotOpen(false)}
-        initialEmail={email}
+        initialEmail={email.trim()}
       />
     </AuthShell>
   );

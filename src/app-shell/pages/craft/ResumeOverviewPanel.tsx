@@ -22,11 +22,18 @@ function count(n: number, singular: string, plural = `${singular}s`): string {
   return `${n} ${n === 1 ? singular : plural}`;
 }
 
-function CountRow({ label, value }: { label: string; value: string }) {
+function CountRow({ label, value, muted = false }: { label: string; value: string; muted?: boolean }) {
   return (
     <div className="flex items-baseline justify-between gap-3">
       <span className="text-caption text-muted-foreground">{label}</span>
-      <span className="font-mono text-sm font-semibold tabular-nums text-foreground">{value}</span>
+      <span
+        className={cn(
+          'tabular-nums',
+          muted ? 'text-caption text-muted-foreground' : 'font-mono text-sm font-semibold text-foreground',
+        )}
+      >
+        {value}
+      </span>
     </div>
   );
 }
@@ -53,12 +60,17 @@ export function ResumeOverviewPanel({ className }: { className?: string }) {
           <Skeleton className="h-4 w-full" />
         ) : resumesState === 'ready' ? (
           <CountRow label="Base resumes" value={count(resumeCount, 'file')} />
-        ) : null}
+        ) : (
+          // A failed read is "unknown", never zero.
+          <CountRow label="Base resumes" value="Not available" muted />
+        )}
         {tailoredState === 'loading' ? (
           <Skeleton className="h-4 w-full" />
         ) : tailoredState === 'ready' ? (
           <CountRow label="Tailored versions" value={count(tailoredCount, 'version')} />
-        ) : null}
+        ) : (
+          <CountRow label="Tailored versions" value="Not available" muted />
+        )}
       </div>
 
       {/* Daily tailor quota. QuotaMeter already handles the unlimited,

@@ -50,7 +50,7 @@ export const learningTodayWidget: Widget = {
                 className="block w-full text-left focus-visible:outline-none"
               >
                 <div className="mb-1 flex items-center justify-between gap-2 text-xs">
-                  <span className="truncate font-medium text-foreground/90">{p.title}</span>
+                  <span className="truncate font-medium text-foreground">{p.title}</span>
                   <span className="shrink-0 tabular-nums text-muted-foreground">{p.percent}%</span>
                 </div>
                 <Bar pct={p.percent} tone="primary" />

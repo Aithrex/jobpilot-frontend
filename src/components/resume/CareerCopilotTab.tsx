@@ -123,15 +123,15 @@ type QuizQuestion = {
 // Eight agents need eight distinguishable hues - more than the semantic token
 // set offers. Chips always pair the color with the agent's name, so meaning
 // never rides on color alone.
-const AGENT_COLORS: Record<string, { grad: string; text: string }> = {
-  memory:     { grad: "from-violet-500/20 to-fuchsia-500/10", text: "text-violet-700 dark:text-violet-300" },
-  strategist: { grad: "from-sky-500/20 to-cyan-500/10",       text: "text-sky-700 dark:text-sky-300" },
-  tailor:     { grad: "from-amber-500/20 to-orange-500/10",    text: "text-amber-700 dark:text-amber-300" },
-  interview:  { grad: "from-emerald-500/20 to-teal-500/10",    text: "text-emerald-700 dark:text-emerald-300" },
-  outreach:   { grad: "from-rose-500/20 to-pink-500/10",       text: "text-rose-700 dark:text-rose-300" },
-  project:    { grad: "from-indigo-500/20 to-blue-500/10",     text: "text-indigo-700 dark:text-indigo-300" },
-  deliverable:{ grad: "from-teal-500/20 to-emerald-500/10",    text: "text-teal-700 dark:text-teal-300" },
-  router:     { grad: "from-slate-500/20 to-gray-500/10",      text: "text-slate-600 dark:text-slate-400" },
+const AGENT_COLORS: Record<string, { grad: string }> = {
+  memory:     { grad: "from-violet-500/20 to-fuchsia-500/10" },
+  strategist: { grad: "from-sky-500/20 to-cyan-500/10" },
+  tailor:     { grad: "from-amber-500/20 to-orange-500/10" },
+  interview:  { grad: "from-emerald-500/20 to-teal-500/10" },
+  outreach:   { grad: "from-rose-500/20 to-pink-500/10" },
+  project:    { grad: "from-indigo-500/20 to-blue-500/10" },
+  deliverable:{ grad: "from-teal-500/20 to-emerald-500/10" },
+  router:     { grad: "from-slate-500/20 to-gray-500/10" },
 };
 
 const CHANNEL_ICON: Record<string, typeof Mail> = {
@@ -152,9 +152,9 @@ function PipelineChips({ steps }: { steps: PipelineStep[] }) {
           <span
             key={`${s.agent}-${i}`}
             title={s.summary}
-            className={`inline-flex max-w-full items-center gap-1 rounded-lg border border-border/60 bg-gradient-to-r ${c.grad} px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-foreground`}
+            className={`inline-flex max-w-full items-center gap-1 rounded-lg border border-border/60 bg-gradient-to-r ${c.grad} px-2 py-0.5 text-caption-sm font-semibold uppercase tracking-wide text-foreground`}
           >
-            <span className="shrink-0 text-[9px] opacity-80">{s.agent}</span>
+            <span className="shrink-0 text-caption-sm opacity-80">{s.agent}</span>
             <span className="truncate font-normal normal-case">{s.label}</span>
           </span>
         );
@@ -166,7 +166,7 @@ function PipelineChips({ steps }: { steps: PipelineStep[] }) {
 function ToolCallLog({ calls }: { calls: ToolCall[] }) {
   if (!calls?.length) return null;
   return (
-    <details className="mt-2 text-[11px] text-muted-foreground">
+    <details className="mt-2 text-caption-sm text-muted-foreground">
       <summary className="cursor-pointer font-semibold hover:text-primary">
         {calls.length} tool call{calls.length !== 1 ? "s" : ""} executed
       </summary>
@@ -193,7 +193,7 @@ function DeliverableCard({ d }: { d: Deliverable }) {
         <p className="font-bold text-primary flex items-center gap-1.5">
           <Layers className="h-3.5 w-3.5" /> PPT Outline: {String(data.title || "")}
         </p>
-        {(data.subtitle as string) && <p className="text-muted-foreground text-[11px] mt-0.5">{String(data.subtitle)}</p>}
+        {(data.subtitle as string) && <p className="text-muted-foreground text-caption-sm mt-0.5">{String(data.subtitle)}</p>}
         <ol className="mt-2 ml-4 list-decimal space-y-1.5">
           {slides.map((s, i) => (
             <li key={i}>
@@ -203,7 +203,7 @@ function DeliverableCard({ d }: { d: Deliverable }) {
                   {s.bullets.map((b, j) => <li key={j}>{b}</li>)}
                 </ul>
               )}
-              {s.speaker_notes && <p className="italic text-muted-foreground/70 mt-0.5">{s.speaker_notes}</p>}
+              {s.speaker_notes && <p className="italic text-muted-foreground mt-0.5">{s.speaker_notes}</p>}
             </li>
           ))}
         </ol>
@@ -239,13 +239,13 @@ function DeliverableCard({ d }: { d: Deliverable }) {
           {milestones.map((m, i) => (
             <li key={i}>
               <span className="font-semibold">{m.title}</span>
-              <span className="text-muted-foreground/70 ml-1">({m.duration})</span>
+              <span className="text-muted-foreground ml-1">({m.duration})</span>
               <span className="block text-muted-foreground">{m.deliverable}</span>
             </li>
           ))}
         </ol>
         {(data.folder_structure as string) && (
-          <pre className="mt-2 rounded bg-muted p-2 text-[10px] text-foreground/90 overflow-auto whitespace-pre-wrap">
+          <pre className="mt-2 rounded bg-muted p-2 text-caption-sm text-foreground overflow-auto whitespace-pre-wrap">
             {String(data.folder_structure)}
           </pre>
         )}
@@ -277,10 +277,10 @@ function KpiRow({ cards }: { cards: KpiCard[] }) {
               <Ic className="h-4 w-4 text-primary" />
               <span className="font-display text-lg font-extrabold text-foreground tabular-nums">{k.value}</span>
               {k.trend && (
-                <span className="text-[10px] font-semibold text-success">{k.trend}</span>
+                <span className="text-caption-sm font-semibold text-success">{k.trend}</span>
               )}
             </div>
-            <p className="text-[10px] text-muted-foreground font-medium mt-0.5">{k.label}</p>
+            <p className="text-caption-sm text-muted-foreground font-medium mt-0.5">{k.label}</p>
           </div>
         );
       })}
@@ -303,10 +303,10 @@ function TimelineList({ events }: { events: TimelineEvent[] }) {
         const Ic = iconFor(e.type);
         return (
           <div key={i} className="flex gap-2 text-xs">
-            <Ic className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70 mt-0.5" />
+            <Ic className="h-3.5 w-3.5 shrink-0 text-muted-foreground mt-0.5" />
             <div className="min-w-0">
-              <p className="text-foreground/90">{e.description}</p>
-              <p className="text-[10px] text-muted-foreground/70">{new Date(e.timestamp).toLocaleString()}</p>
+              <p className="text-foreground">{e.description}</p>
+              <p className="text-caption-sm text-muted-foreground">{new Date(e.timestamp).toLocaleString()}</p>
             </div>
           </div>
         );
@@ -664,8 +664,16 @@ export default function CareerCopilotTab() {
     toast.success("Memory saved");
   };
 
+  // Permanent deletes confirm first (Jakob: destructive actions never fire on
+  // the first tap) and report the outcome either way.
   const delMemory = async (key: string) => {
-    await apiService.deleteMemoryNote(key);
+    if (!window.confirm(`Forget "${key}"? The copilot will no longer use this note.`)) return;
+    const r = await apiService.deleteMemoryNote(key);
+    if (r?.error) {
+      toast.error(r.error);
+      return;
+    }
+    toast.success("Memory removed");
     void loadMemory();
   };
 
@@ -693,11 +701,13 @@ export default function CareerCopilotTab() {
   };
 
   const removeContact = async (contactId: string) => {
+    if (!window.confirm("Delete this contact? This cannot be undone.")) return;
     const r = await apiService.deleteNetworkContact(contactId);
     if (r.error) {
       toast.error(r.error);
       return;
     }
+    toast.success("Contact deleted");
     void loadNetworkData();
   };
 
@@ -746,11 +756,13 @@ export default function CareerCopilotTab() {
   };
 
   const removeOffer = async (offerId: string) => {
+    if (!window.confirm("Delete this offer? This cannot be undone.")) return;
     const r = await apiService.deleteOffer(offerId);
     if (r.error) {
       toast.error(r.error);
       return;
     }
+    toast.success("Offer deleted");
     void loadOffersData();
   };
 
@@ -823,20 +835,20 @@ export default function CareerCopilotTab() {
       <header className="mesh-accent rounded-2xl border border-primary/20 p-5 sm:p-6 shadow-soft">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="space-y-1">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
-              Career · Copilot
+            <p className="overline">
+              Grow · Copilot
             </p>
-            <h2 className="font-display text-xl sm:text-2xl font-extrabold tracking-tight text-foreground">
+            <h2 className="font-display text-h2 text-foreground">
               Career Copilot
             </h2>
-            <p className="max-w-2xl text-sm text-muted-foreground leading-relaxed">
+            <p className="max-w-prose text-sm text-muted-foreground leading-relaxed">
               Ask naturally and get grounded responses from your resume context. Use this workspace for outreach, interview drills,
               application strategy, networking, and offer decisions. All in one guided flow.
             </p>
             <div className="mt-2 flex flex-wrap gap-1.5">
-              <span className="rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">Resume-grounded answers</span>
-              <span className="rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">Multi-agent tools</span>
-              <span className="rounded-full border border-success/20 bg-success/10 px-2 py-0.5 text-[10px] font-semibold text-success">Actionable next steps</span>
+              <span className="rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-caption-sm font-semibold text-primary">Resume-grounded answers</span>
+              <span className="rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-caption-sm font-semibold text-primary">Multi-agent tools</span>
+              <span className="rounded-full border border-success/20 bg-success/10 px-2 py-0.5 text-caption-sm font-semibold text-success">Actionable next steps</span>
             </div>
             {!hasResume && (
               <p className="mt-1 text-sm text-warning">
@@ -919,7 +931,7 @@ export default function CareerCopilotTab() {
                     <div className="mb-2 flex items-center gap-2 font-semibold text-primary">
                       <Sparkles className="h-4 w-4" /> Start with a play or ask anything
                     </div>
-                    <ul className="ml-1 list-inside list-disc space-y-1.5 text-[13px]">
+                    <ul className="ml-1 list-inside list-disc space-y-1.5 text-caption">
                       <li>Tailor bullets to a JD (paste one below).</li>
                       <li>Generate a cold email + LinkedIn connect sequence for a target company.</li>
                       <li>Scaffold a portfolio project with milestones.</li>
@@ -964,11 +976,11 @@ export default function CareerCopilotTab() {
               </div>
               {citations.length > 0 && (
                 <div className="border-t border-border px-4 py-3 text-xs text-muted-foreground">
-                  <p className="mb-1 font-semibold text-foreground/90">RAG sources</p>
+                  <p className="mb-1 font-semibold text-foreground">RAG sources</p>
                   <ul className="space-y-1">
                     {citations.slice(0, 4).map((c) => (
                       <li key={c.id}>
-                        <span className="font-mono text-[10px] text-primary">{c.id}</span> {c.snippet}
+                        <span className="font-mono text-caption-sm text-primary">{c.id}</span> {c.snippet}
                       </li>
                     ))}
                   </ul>
@@ -986,12 +998,12 @@ export default function CareerCopilotTab() {
                     className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
                   />
                 )}
-                {compliance && <p className="text-[11px] text-warning">{compliance}</p>}
+                {compliance && <p className="text-caption-sm text-warning">{compliance}</p>}
                 {suggested.length > 0 && (
                   <div className="flex flex-wrap gap-1.5">
                     {suggested.map((s) => (
                       <button key={s} type="button" onClick={() => void send(s)}
-                        className="rounded-full border border-primary/20 bg-primary/5 px-2.5 py-1 text-[11px] font-medium text-primary hover:bg-primary/10 transition"
+                        className="rounded-full border border-primary/20 bg-primary/5 px-2.5 py-1 text-caption-sm font-medium text-primary hover:bg-primary/10 transition"
                       >{s}</button>
                     ))}
                   </div>
@@ -1004,7 +1016,7 @@ export default function CareerCopilotTab() {
                     className="min-h-[44px] flex-1 rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
                   />
                   <button type="button" disabled={sending || !input.trim()} onClick={() => void send()} aria-label="Send message"
-                    className="brand-gradient inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-sm font-semibold text-white shadow-soft transition-all duration-200 hover:scale-105 hover:shadow-panel active:scale-95 disabled:opacity-50 disabled:hover:scale-100 disabled:hover:shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                    className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary text-sm font-semibold text-primary-foreground shadow-soft transition-colors duration-200 hover:bg-primary-hover disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                   >
                     {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                   </button>
@@ -1070,11 +1082,11 @@ export default function CareerCopilotTab() {
                     <div className="flex items-start justify-between">
                       <div>
                         <p className="text-sm font-bold text-foreground">{c.target_role} @ {c.target_company}</p>
-                        <p className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                        <p className="text-caption-sm text-muted-foreground flex items-center gap-1 mt-0.5">
                           <ChIcon className="h-3 w-3" /> {c.channel} · {c.status}
                         </p>
                       </div>
-                      <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
+                      <span className={`text-caption-sm font-bold uppercase px-2 py-0.5 rounded-full ${
                         c.status === "active" ? "bg-success/10 text-success"
                         : c.status === "completed" ? "bg-primary/10 text-primary"
                         : "bg-muted text-muted-foreground"
@@ -1084,10 +1096,10 @@ export default function CareerCopilotTab() {
                       <div className="mt-3 space-y-2">
                         {c.sequence.map((s, si) => (
                           <div key={si} className="flex items-start gap-2 text-xs">
-                            <div className={`mt-1 h-4 w-4 shrink-0 rounded-full flex items-center justify-center text-[9px] font-bold ${
-                              s.status === "sent" ? "bg-success text-white"
+                            <div className={`mt-1 h-4 w-4 shrink-0 rounded-full flex items-center justify-center text-caption-sm font-bold ${
+                              s.status === "sent" ? "bg-success text-success-foreground"
                               : s.status === "replied" ? "bg-primary text-primary-foreground"
-                              : s.status === "skipped" ? "bg-muted-foreground/70 text-white"
+                              : s.status === "skipped" ? "bg-muted-foreground text-background"
                               : "border-2 border-border text-muted-foreground"
                             }`}>
                               {s.status === "sent" || s.status === "replied" ? <Check className="h-2.5 w-2.5" /> : s.step}
@@ -1165,9 +1177,9 @@ export default function CareerCopilotTab() {
                     <button key={t.id} type="button" onClick={() => void startTrack(t.id)} disabled={pgBusy}
                       className="text-left rounded-xl border border-border p-3 text-xs transition hover:border-primary/30 hover:shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
-                      <span className="block font-bold text-foreground text-[13px] leading-snug">{t.title}</span>
-                      <span className="text-[11px] text-muted-foreground line-clamp-2 mt-0.5">{t.description}</span>
-                      <span className="mt-1.5 inline-block text-[10px] font-semibold text-primary">
+                      <span className="block font-bold text-foreground text-caption leading-snug">{t.title}</span>
+                      <span className="text-caption-sm text-muted-foreground line-clamp-2 mt-0.5">{t.description}</span>
+                      <span className="mt-1.5 inline-block text-caption-sm font-semibold text-primary">
                         {t.steps.length} steps
                       </span>
                     </button>
@@ -1190,13 +1202,13 @@ export default function CareerCopilotTab() {
                         {playground.custom_title || tracks.find((x) => x.id === playground.active_track)?.title || "Track"}
                         {playground.finished_at && " · complete"}
                       </p>
-                      <span className="text-[10px] text-muted-foreground">
+                      <span className="text-caption-sm text-muted-foreground">
                         {playground.current_step ?? 0}/{playground.steps.length} steps
                       </span>
                     </div>
                     {playground.finished_at && !currentStep && (
                       <div className="space-y-2">
-                        <p className="text-sm text-foreground/90 flex items-center gap-1.5">
+                        <p className="text-sm text-foreground flex items-center gap-1.5">
                           <CheckCircle2 className="h-4 w-4 text-success" />
                           Track complete. Take the assessment or send results to the copilot.
                         </p>
@@ -1209,7 +1221,7 @@ export default function CareerCopilotTab() {
                     )}
                     {currentStep && !playground.finished_at && (
                       <>
-                        <p className={`text-[10px] uppercase font-bold mt-1 ${
+                        <p className={`text-caption-sm uppercase font-bold mt-1 ${
                           currentStep.type === "practice" ? "text-success" : "text-primary"
                         }`}>
                           {currentStep.type === "practice" ? "Practice" : "Theory"} · Step {(playground.current_step ?? 0) + 1}
@@ -1252,13 +1264,13 @@ export default function CareerCopilotTab() {
                                   isCorrect ? "border-success bg-success/10 text-success"
                                   : isWrong ? "border-destructive bg-destructive/10 text-destructive"
                                   : selected ? "border-primary bg-primary/10 text-primary"
-                                  : "border-border text-foreground/90 hover:border-primary/30"
+                                  : "border-border text-foreground hover:border-primary/30"
                                 }`}
                               >{opt}</button>
                             );
                           })}
                         </div>
-                        {quizSubmitted && <p className="text-[11px] text-muted-foreground italic">{q.explanation}</p>}
+                        {quizSubmitted && <p className="text-caption-sm text-muted-foreground italic">{q.explanation}</p>}
                       </div>
                     ))}
                     {!quizSubmitted && (
@@ -1304,11 +1316,11 @@ export default function CareerCopilotTab() {
                   <div className="space-y-2">
                     {focusItems.map((f) => (
                       <div key={f.topic} className="flex items-center gap-3">
-                        <span className="w-20 text-xs font-medium text-foreground/90 capitalize truncate">{f.topic}</span>
+                        <span className="w-20 text-xs font-medium text-foreground capitalize truncate">{f.topic}</span>
                         <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
                           <div className="h-full rounded-full brand-gradient" style={{ width: `${f.pct}%` }} />
                         </div>
-                        <span className="text-[10px] font-semibold text-muted-foreground tabular-nums w-8 text-right">{f.pct}%</span>
+                        <span className="text-caption-sm font-semibold text-muted-foreground tabular-nums w-8 text-right">{f.pct}%</span>
                       </div>
                     ))}
                   </div>
@@ -1322,15 +1334,15 @@ export default function CareerCopilotTab() {
                   </h3>
                   <div className="grid gap-3 sm:grid-cols-3">
                     <div className="rounded-lg border border-warning/20 bg-warning/5 p-3">
-                      <p className="text-[11px] text-muted-foreground">Current streak</p>
+                      <p className="text-caption-sm text-muted-foreground">Current streak</p>
                       <p className="text-xl font-bold text-warning">{momentum.streak} days</p>
                     </div>
                     <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
-                      <p className="text-[11px] text-muted-foreground">Momentum score</p>
+                      <p className="text-caption-sm text-muted-foreground">Momentum score</p>
                       <p className="text-xl font-bold text-primary">{momentum.momentum_score}/100</p>
                     </div>
                     <div className="rounded-lg border border-success/20 bg-success/5 p-3">
-                      <p className="text-[11px] text-muted-foreground">Week-over-week</p>
+                      <p className="text-caption-sm text-muted-foreground">Week-over-week</p>
                       <p className="text-xl font-bold text-success">{momentum.this_week} vs {momentum.last_week}</p>
                     </div>
                   </div>
@@ -1354,7 +1366,7 @@ export default function CareerCopilotTab() {
                 <h3 className="text-sm font-bold text-foreground flex items-center gap-2 mb-1">
                   <Brain className="h-4 w-4 text-primary" /> Pinned memory
                 </h3>
-                <p className="text-[11px] text-muted-foreground mb-3">
+                <p className="text-caption-sm text-muted-foreground mb-3">
                   Pin preferences so agents always know them: "Remote only," "Target PM roles," "No FAANG."
                 </p>
                 <div className="space-y-2">
@@ -1363,11 +1375,16 @@ export default function CareerCopilotTab() {
                       <Pin className="h-3 w-3 text-primary mt-0.5 shrink-0" />
                       <div className="min-w-0 flex-1">
                         <span className="font-bold text-foreground">{k}</span>
-                        <span className="mx-1 text-muted-foreground/70">→</span>
+                        <span className="mx-1 text-muted-foreground" aria-hidden="true">:</span>
                         <span className="text-muted-foreground">{v}</span>
                       </div>
-                      <button type="button" onClick={() => void delMemory(k)} className="text-muted-foreground/70 hover:text-destructive">
-                        <X className="h-3 w-3" />
+                      <button
+                        type="button"
+                        onClick={() => void delMemory(k)}
+                        aria-label={`Forget memory note ${k}`}
+                        className="hit-target inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-control text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                      >
+                        <X className="h-3.5 w-3.5" aria-hidden="true" />
                       </button>
                     </div>
                   ))}
@@ -1420,13 +1437,13 @@ export default function CareerCopilotTab() {
                   <div key={c.contact_id} className="rounded-lg border border-border p-3">
                     <div className="flex items-start justify-between gap-2">
                       <p className="text-sm font-semibold text-foreground">{c.name} {c.company ? `· ${c.company}` : ""}</p>
-                      <button type="button" onClick={() => void removeContact(c.contact_id)} className="text-xs text-destructive">Delete</button>
+                      <button type="button" onClick={() => void removeContact(c.contact_id)} aria-label={`Delete contact ${c.name}`} className="hit-target rounded px-1.5 py-0.5 text-xs text-destructive hover:bg-destructive/10">Delete</button>
                     </div>
                     {c.role && <p className="text-xs text-muted-foreground mt-0.5">{c.role}</p>}
                     <div className="mt-2 flex flex-wrap gap-2">
-                      <button type="button" onClick={() => void makeIntro(c.contact_id)} className="rounded bg-primary/10 px-2 py-1 text-[11px] font-semibold text-primary">Generate intro</button>
+                      <button type="button" onClick={() => void makeIntro(c.contact_id)} className="rounded bg-primary/10 px-2 py-1 text-caption-sm font-semibold text-primary">Generate intro</button>
                       {introByContact[c.contact_id] && (
-                        <button type="button" onClick={() => navigator.clipboard?.writeText(introByContact[c.contact_id])} className="rounded bg-muted px-2 py-1 text-[11px]">Copy</button>
+                        <button type="button" onClick={() => navigator.clipboard?.writeText(introByContact[c.contact_id])} className="rounded bg-muted px-2 py-1 text-caption-sm">Copy</button>
                       )}
                     </div>
                     {introByContact[c.contact_id] && <p className="mt-2 whitespace-pre-wrap text-xs text-muted-foreground">{introByContact[c.contact_id]}</p>}
@@ -1475,11 +1492,11 @@ export default function CareerCopilotTab() {
                   <div key={o.offer_id} className="rounded-lg border border-border p-3">
                     <div className="flex items-start justify-between gap-2">
                       <p className="text-sm font-semibold text-foreground">{o.role} @ {o.company}</p>
-                      <button type="button" onClick={() => void removeOffer(o.offer_id)} className="text-xs text-destructive">Delete</button>
+                      <button type="button" onClick={() => void removeOffer(o.offer_id)} aria-label={`Delete offer from ${o.company}`} className="hit-target rounded px-1.5 py-0.5 text-xs text-destructive hover:bg-destructive/10">Delete</button>
                     </div>
                     <p className="mt-1 text-xs text-muted-foreground">Base ${o.base || 0} · Bonus ${o.bonus || 0} · Equity ${o.equity || 0}</p>
                     <button type="button" onClick={() => void generateNegotiation(o.offer_id)}
-                      className="mt-2 rounded bg-primary/10 px-2 py-1 text-[11px] font-semibold text-primary">
+                      className="mt-2 rounded bg-primary/10 px-2 py-1 text-caption-sm font-semibold text-primary">
                       Generate negotiation script
                     </button>
                     {negotiationByOffer[o.offer_id] && <p className="mt-2 whitespace-pre-wrap text-xs text-muted-foreground">{negotiationByOffer[o.offer_id]}</p>}
@@ -1504,7 +1521,7 @@ export default function CareerCopilotTab() {
             <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
               <Lightbulb className="h-4 w-4 text-warning" /> Next best actions
             </h3>
-            <p className="text-[11px] text-muted-foreground mt-1">
+            <p className="text-caption-sm text-muted-foreground mt-1">
               Adaptive picks from your latest context + behavior patterns.
             </p>
             <ul className="mt-3 space-y-2">

@@ -53,16 +53,16 @@ export function RequirementsChips({
       <div className="surface-muted rounded-container p-4 space-y-4">
         <div className="flex items-center gap-2 flex-wrap">
           <Sparkles className="w-4 h-4 text-primary" aria-hidden="true" />
-          <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+          <span className="text-caption-sm uppercase tracking-wider font-semibold text-muted-foreground">
             Extracted Requirements
           </span>
-          <span className="text-[10px] text-muted-foreground">
+          <span className="text-caption-sm text-muted-foreground">
             · auto-detected from job posting
           </span>
         </div>
 
         <div>
-          <p className="text-[11px] font-medium text-muted-foreground mb-1">Role</p>
+          <p className="text-caption-sm font-medium text-muted-foreground mb-1">Role</p>
           <p className="text-sm font-medium text-foreground">
             {jdAnalysis.job_title}
             {jdAnalysis.company && jdAnalysis.company !== 'Not specified' && (
@@ -78,10 +78,10 @@ export function RequirementsChips({
         {requiredShown.length > 0 && (
           <div>
             <div className="flex items-center justify-between mb-2">
-              <p className="text-[11px] font-medium text-muted-foreground">
+              <p className="text-caption-sm font-medium text-muted-foreground">
                 Required skills
               </p>
-              <span className="text-[10px] font-semibold tabular-nums text-muted-foreground">
+              <span className="text-caption-sm font-semibold tabular-nums text-muted-foreground">
                 {matchedCount}/{requiredShown.length} matched
               </span>
             </div>
@@ -92,7 +92,7 @@ export function RequirementsChips({
                   <span
                     key={s}
                     className={cn(
-                      'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium border transition-all',
+                      'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-caption-sm font-medium border transition-all',
                       matched
                         ? 'bg-success/10 text-success border-success/25'
                         : 'bg-warning/10 text-warning border-warning/25',
@@ -101,14 +101,14 @@ export function RequirementsChips({
                     {matched ? (
                       <Check className="w-3 h-3" aria-hidden="true" />
                     ) : (
-                      <span className="text-[11px] leading-none">+</span>
+                      <span className="text-caption-sm leading-none">+</span>
                     )}
                     {s}
                   </span>
                 );
               })}
               {required.length > 14 && (
-                <span className="text-[10px] text-muted-foreground self-center">
+                <span className="text-caption-sm text-muted-foreground self-center">
                   +{required.length - 14} more
                 </span>
               )}
@@ -126,14 +126,14 @@ export function RequirementsChips({
           if (!bits.length) return null;
           return (
             <div>
-              <p className="text-[11px] font-medium text-muted-foreground mb-2">
+              <p className="text-caption-sm font-medium text-muted-foreground mb-2">
                 Role context (not skills)
               </p>
               <div className="flex flex-wrap gap-1.5">
                 {bits.slice(0, 8).map((s) => (
                   <span
                     key={s}
-                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium border border-border bg-muted text-muted-foreground"
+                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-caption-sm font-medium border border-border bg-muted text-muted-foreground"
                   >
                     {s}
                   </span>
@@ -145,7 +145,7 @@ export function RequirementsChips({
 
         {preferred.length > 0 && (
           <div>
-            <p className="text-[11px] font-medium text-muted-foreground mb-2">
+            <p className="text-caption-sm font-medium text-muted-foreground mb-2">
               Preferred skills
             </p>
             <div className="flex flex-wrap gap-1.5">
@@ -155,7 +155,7 @@ export function RequirementsChips({
                   <span
                     key={s}
                     className={cn(
-                      'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium border',
+                      'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-caption-sm font-medium border',
                       matched
                         ? 'bg-success/10 text-success border-success/25'
                         : 'bg-muted text-muted-foreground border-border',
@@ -171,7 +171,7 @@ export function RequirementsChips({
         )}
 
         {/* Legend */}
-        <div className="flex gap-4 text-[10px] text-muted-foreground pt-2 border-t border-border">
+        <div className="flex gap-4 text-caption-sm text-muted-foreground pt-2 border-t border-border">
           <span className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-success" />
             Found in your resume

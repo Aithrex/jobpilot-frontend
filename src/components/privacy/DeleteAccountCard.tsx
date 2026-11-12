@@ -35,7 +35,8 @@ export function DeleteAccountCard({ className }: { className?: string }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const ready = typed.trim() === CONFIRM_WORD;
+  // Tolerate a pasted space or lower case: the intent is unmistakable either way.
+  const ready = typed.trim().toUpperCase() === CONFIRM_WORD;
 
   const onDelete = async () => {
     if (!ready) return;
@@ -60,7 +61,7 @@ export function DeleteAccountCard({ className }: { className?: string }) {
     <div className={cn('space-y-3', className)}>
       <div className="space-y-1">
         <h3 className="text-sm font-semibold text-foreground">Delete your account</h3>
-        <p className="text-xs leading-relaxed text-muted-foreground">
+        <p className="max-w-prose text-xs leading-relaxed text-muted-foreground">
           Erases your resumes and generated files, tailoring history, tracked applications, saved jobs, visa and
           work authorization details, saved employer logins and the tokens for anything you connected. This cannot
           be undone. Copies in encrypted backups expire within 30 days.
@@ -99,9 +100,16 @@ export function DeleteAccountCard({ className }: { className?: string }) {
               autoCapitalize="characters"
               spellCheck={false}
               disabled={busy}
+              aria-describedby={error ? 'delete-account-error' : undefined}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && ready && !busy) {
+                  e.preventDefault();
+                  void onDelete();
+                }
+              }}
             />
             {error && (
-              <p className="text-xs text-destructive" role="alert">
+              <p id="delete-account-error" className="text-xs text-destructive" role="alert">
                 {error}
               </p>
             )}

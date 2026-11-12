@@ -70,7 +70,7 @@ export function FeatureLaunchpad() {
                   <span className="flex items-center gap-2">
                     <span className="text-sm font-semibold text-foreground">{title}</span>
                     {badge && (
-                      <span className="rounded-md bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
+                      <span className="rounded-md bg-primary/15 px-1.5 py-0.5 text-caption-sm font-semibold uppercase tracking-wide text-primary">
                         {badge}
                       </span>
                     )}

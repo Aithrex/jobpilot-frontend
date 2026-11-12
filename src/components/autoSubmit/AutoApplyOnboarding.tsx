@@ -250,7 +250,7 @@ function FieldControl({
       </Label>
       {control()}
       {voluntary && (
-        <p id={describedBy} className="text-[11px] text-muted-foreground">
+        <p id={describedBy} className="text-caption-sm text-muted-foreground">
           Voluntary. You can decline.
         </p>
       )}
@@ -304,7 +304,7 @@ function ModePicker({
                 {opt.detail}
               </span>
               {opt.note && (
-                <span className="mt-2 inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
+                <span className="mt-2 inline-flex items-center gap-1 text-caption-sm font-medium text-muted-foreground">
                   <Lock className="h-3 w-3" />
                   {opt.note}
                 </span>
@@ -456,7 +456,7 @@ export default function AutoApplyOnboarding({
           {available === false ? (
             <div className="flex items-start gap-3 py-6 text-sm text-muted-foreground">
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-              <p>Auto-apply setup isn&rsquo;t available on your account yet.</p>
+              <p>Auto-apply setup isn't available on your account yet.</p>
             </div>
           ) : loading || !questions ? (
             <div className="space-y-3 py-2" aria-busy="true">
@@ -467,7 +467,7 @@ export default function AutoApplyOnboarding({
           ) : error ? (
             <div className="flex items-start gap-3 py-6 text-sm text-destructive">
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-              <p>Couldn&rsquo;t load your setup questions. Please try again.</p>
+              <p>Couldn't load your setup questions. Please try again.</p>
             </div>
           ) : (
             <motion.div
@@ -495,7 +495,7 @@ export default function AutoApplyOnboarding({
                   </div>
                   <ModePicker value={mode} onChange={setMode} />
                   {missingRequired.length > 0 && (
-                    <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                    <p className="flex items-center gap-1.5 text-caption-sm text-muted-foreground">
                       <AlertCircle className="h-3 w-3" />
                       Some required contact or work-authorization details are still
                       missing. Go back to finish them before saving.
@@ -519,7 +519,7 @@ export default function AutoApplyOnboarding({
                     </div>
 
                     {meta.voluntary && (
-                      <div className="flex items-start gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-[11px] text-muted-foreground">
+                      <div className="flex items-start gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-caption-sm text-muted-foreground">
                         <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
                         <span>
                           These are voluntary and never inferred. We only ever use

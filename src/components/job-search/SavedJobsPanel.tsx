@@ -60,7 +60,7 @@ function SavedJobCard({ saved, updateJobStatus, unsaveJob }: {
           </div>
           <Badge
             variant="outline"
-            className={`flex-shrink-0 text-[10px] capitalize ${STATUS_STYLES[saved.status] || ''}`}
+            className={`flex-shrink-0 text-caption-sm capitalize ${STATUS_STYLES[saved.status] || ''}`}
           >
             {saved.status}
           </Badge>
@@ -134,7 +134,7 @@ function SavedJobCard({ saved, updateJobStatus, unsaveJob }: {
           </div>
         )}
 
-        <p className="text-[10px] text-muted-foreground">
+        <p className="text-caption-sm text-muted-foreground">
           Saved {new Date(saved.saved_at).toLocaleDateString()}
         </p>
       </CardContent>

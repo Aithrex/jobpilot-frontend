@@ -92,16 +92,16 @@ export function ExperienceLevelList({ className }: { className?: string }) {
               <Sparkles className="h-3.5 w-3.5 text-primary" aria-hidden />
               Matched to you: {summary(mine)}
             </p>
-            <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+            <p className="mt-0.5 truncate text-caption-sm text-muted-foreground">
               {basisLine(experienceView)}
             </p>
           </div>
           {isMine ? (
-            <span className="inline-flex shrink-0 items-center gap-1 text-[11px] font-medium text-primary">
+            <span className="inline-flex shrink-0 items-center gap-1 text-caption-sm font-medium text-primary">
               <Check className="h-3.5 w-3.5" aria-hidden /> Active
             </span>
           ) : (
-            <Button size="sm" className="h-8 shrink-0" onClick={resetSeniorityLevels}>
+            <Button size="sm" className="hit-target h-8 shrink-0" onClick={resetSeniorityLevels}>
               Use my level
             </Button>
           )}
@@ -111,7 +111,7 @@ export function ExperienceLevelList({ className }: { className?: string }) {
       <fieldset>
         <legend className="sr-only">Experience levels to show</legend>
         <ExperienceCountBreakdown className="mb-1 font-medium text-foreground" />
-        <p className="mb-2 text-[11px] text-muted-foreground">Counts use your selected date window and other filters.</p>
+        <p className="mb-2 text-caption-sm text-muted-foreground">Counts use your selected date window and other filters.</p>
         <ul className="space-y-1">
           {SENIORITY_LEVELS.map((level) => {
             const checked = seniorityLevels.includes(level);
@@ -134,11 +134,11 @@ export function ExperienceLevelList({ className }: { className?: string }) {
                     <span className="block text-sm font-medium leading-tight">
                       {LEVEL_META[level].label}
                     </span>
-                    <span className="block text-[11px] text-muted-foreground">
+                    <span className="block text-caption-sm text-muted-foreground">
                       {LEVEL_META[level].hint}
                     </span>
                   </span>
-                  <span className="shrink-0 font-mono text-[11px] tabular-nums text-muted-foreground">
+                  <span className="shrink-0 font-mono text-caption-sm tabular-nums text-muted-foreground">
                     {counts[level]}
                   </span>
                 </label>
@@ -149,15 +149,15 @@ export function ExperienceLevelList({ className }: { className?: string }) {
             <Check className="h-4 w-4 shrink-0 text-primary" aria-hidden />
             <span className="min-w-0 flex-1">
               <span className="block text-sm font-medium leading-tight">No level stated</span>
-              <span className="block text-[11px] text-muted-foreground">Always included so you don't miss a role</span>
+              <span className="block text-caption-sm text-muted-foreground">Always included so you don't miss a role</span>
             </span>
-            <span className="shrink-0 font-mono text-[11px] tabular-nums text-muted-foreground">{counts.unknown}</span>
+            <span className="shrink-0 font-mono text-caption-sm tabular-nums text-muted-foreground">{counts.unknown}</span>
           </li>
         </ul>
       </fieldset>
 
       <div className="flex items-center justify-between gap-2 border-t pt-3">
-        <p className="text-[11px] leading-snug text-muted-foreground" data-testid="seniority-basis">
+        <p className="text-caption-sm leading-snug text-muted-foreground" data-testid="seniority-basis">
           {seniorityLevels.length
             ? 'Selected levels and roles with no level stated are shown.'
             : 'Showing every level.'}
@@ -166,7 +166,7 @@ export function ExperienceLevelList({ className }: { className?: string }) {
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 shrink-0 px-2 text-xs"
+            className="hit-target h-8 shrink-0 px-2 text-xs"
             onClick={() => setSeniorityLevels([])}
           >
             Show all levels
@@ -198,7 +198,7 @@ export function ExperienceLevelPicker() {
           <span className="hidden text-muted-foreground sm:inline">Experience:</span>
           <span>{summary(seniorityLevels)}</span>
           {isMine && (
-            <span className="rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+            <span className="rounded-full bg-primary/15 px-1.5 py-0.5 text-caption-sm font-semibold text-primary">
               Your level
             </span>
           )}

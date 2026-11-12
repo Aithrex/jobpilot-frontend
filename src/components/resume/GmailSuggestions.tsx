@@ -20,7 +20,7 @@ const STATUS_TONE: Record<string, string> = {
   draft: 'text-muted-foreground',
   saved: 'text-info',
   applied: 'text-primary',
-  interviewing: 'text-[hsl(var(--brand-to))]',
+  interviewing: 'text-info',
   offer: 'text-success',
   rejected: 'text-destructive',
   ghosted: 'text-warning',
@@ -95,7 +95,7 @@ export function GmailReviewLoadError({ error, onRetry }: { error: string | null;
   return (
     <p role="alert" className="rounded-lg border border-destructive/30 p-3 text-label text-destructive">
       {error}{' '}
-      <button type="button" className="font-medium underline" onClick={onRetry}>Retry email reviews</button>
+      <button type="button" className="hit-target font-medium underline" onClick={onRetry}>Retry email reviews</button>
     </p>
   );
 }

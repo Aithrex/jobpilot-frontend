@@ -24,11 +24,11 @@ export function LockBadge({ feature, label, className, interactive = true }: Pro
   const content = (
     <span
       className={cn(
-        'inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary',
+        'inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-caption-sm font-semibold text-primary',
         className,
       )}
     >
-      <Lock className="h-3 w-3" />
+      <Lock className="h-3 w-3" aria-hidden="true" />
       {text}
     </span>
   );
@@ -41,7 +41,7 @@ export function LockBadge({ feature, label, className, interactive = true }: Pro
         e.stopPropagation();
         open({ feature, highlight: plan });
       }}
-      className="cursor-pointer rounded-full transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+      className="hit-target cursor-pointer rounded-full transition-transform duration-150 hover:scale-105 motion-reduce:transition-none motion-reduce:hover:scale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       aria-label={`Upgrade to ${text}`}
     >
       {content}

@@ -70,7 +70,7 @@ function CriterionRow({ c, gapQuestion }: { c: ScreenerCriterion; gapQuestion?: 
           </p>
         )}
         {c.screener?.quote_rejected && (
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-caption-sm text-muted-foreground">
             The AI reader quoted text that is not on the page, so its answer was ignored.
           </p>
         )}
@@ -209,13 +209,13 @@ export function ScreenerPanel({ report }: ScreenerPanelProps) {
           <ul className="mt-2 list-disc space-y-1.5 pl-5 text-xs leading-relaxed text-muted-foreground">
             {lens.notes.map((n) => <li key={n}>{n}</li>)}
           </ul>
-          <p className="mt-2 text-[11px] text-muted-foreground">
+          <p className="mt-2 text-caption-sm text-muted-foreground">
             Based on the intern rubric HackerRank published as open source.
           </p>
         </section>
       )}
 
-      <p className="border-t border-border pt-4 text-[11px] leading-relaxed text-muted-foreground">
+      <p className="border-t border-border pt-4 text-caption-sm leading-relaxed text-muted-foreground">
         A simulation of how screening software reads your PDF. Each employer sets its own
         requirements and weights, so treat this as a checklist, not a prediction.
       </p>

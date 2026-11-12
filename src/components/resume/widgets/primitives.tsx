@@ -72,7 +72,7 @@ export function WidgetCard({
           </span>
           <div className="min-w-0">
             {eyebrow && (
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <div className="text-caption-sm font-semibold uppercase tracking-wider text-muted-foreground">
                 {eyebrow}
               </div>
             )}
@@ -109,7 +109,7 @@ export function WidgetEmpty({
 }) {
   return (
     <div className="flex flex-1 flex-col items-start justify-center gap-2 py-1">
-      <p className="text-sm font-medium text-foreground/90">{title}</p>
+      <p className="text-sm font-medium text-foreground">{title}</p>
       {body && <p className="text-xs leading-relaxed text-muted-foreground">{body}</p>}
       {ctaLabel && onCta && (
         <button
@@ -176,7 +176,7 @@ export function MetaChip({ children, tone = 'default' }: { children: ReactNode; 
     success: 'bg-success/10 text-success',
   };
   return (
-    <span className={cn('inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold', styles[tone])}>
+    <span className={cn('inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-caption-sm font-semibold', styles[tone])}>
       {children}
     </span>
   );

@@ -194,7 +194,7 @@ export function HeroAction({ ctx }: { ctx: DashboardCtx }) {
       aria-label="Recommended next action"
       initial={reduce ? false : { opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: EASE }}
+      transition={{ duration: 0.28, ease: EASE }}
       className={cn(
         'relative overflow-hidden rounded-2xl border p-6 shadow-soft sm:p-7',
         warning ? 'mesh-warning border-warning/40 border-l-2 border-l-warning' : 'mesh-accent border-primary/20',
@@ -204,7 +204,7 @@ export function HeroAction({ ctx }: { ctx: DashboardCtx }) {
         <div className="min-w-0 lg:max-w-2xl">
           <div
             className={cn(
-              'inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider',
+              'inline-flex items-center gap-1.5 text-caption-sm font-semibold uppercase tracking-wider',
               warning ? 'text-warning' : 'text-primary',
             )}
           >

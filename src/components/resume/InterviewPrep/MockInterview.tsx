@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import {
+  AlertTriangle, BarChart3, Brain, Building2, Check, ChevronRight, Code2, Cog, Database, Network, Play,
+  Shuffle, Target, ThumbsUp, Timer, Trophy, type LucideIcon,
+} from "lucide-react";
 import { AiDisclosure } from "@/components/ai/AiDisclosure";
 import { apiService } from "@/lib/api";
 import type { QDifficulty, MockEvaluation } from "@/types/resume";
@@ -31,15 +35,15 @@ type Category =
   | "behavioral" | "technical" | "company"
   | "coding" | "system_design" | "case_study" | "data_challenge" | "mixed";
 
-const CATEGORIES: { key: Category; label: string; icon: string }[] = [
-  { key: "mixed",          label: "Mixed",        icon: "🎲" },
-  { key: "behavioral",     label: "Behavioral",   icon: "🧠" },
-  { key: "technical",      label: "Technical",    icon: "⚙" },
-  { key: "coding",         label: "Coding",       icon: "💻" },
-  { key: "system_design",  label: "System design", icon: "🏗" },
-  { key: "case_study",     label: "Case study",   icon: "📊" },
-  { key: "data_challenge", label: "Data",         icon: "🔢" },
-  { key: "company",        label: "Company",      icon: "🏢" },
+const CATEGORIES: { key: Category; label: string; icon: LucideIcon }[] = [
+  { key: "mixed",          label: "Mixed",        icon: Shuffle },
+  { key: "behavioral",     label: "Behavioral",   icon: Brain },
+  { key: "technical",      label: "Technical",    icon: Cog },
+  { key: "coding",         label: "Coding",       icon: Code2 },
+  { key: "system_design",  label: "System design", icon: Network },
+  { key: "case_study",     label: "Case study",   icon: BarChart3 },
+  { key: "data_challenge", label: "Data",         icon: Database },
+  { key: "company",        label: "Company",      icon: Building2 },
 ];
 
 const DIFFICULTIES: { key: QDifficulty | "mixed"; label: string }[] = [
@@ -218,14 +222,16 @@ export default function MockInterview({
             {CATEGORIES.map(c => (
               <button
                 key={c.key}
+                type="button"
                 onClick={() => setCat(c.key)}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] font-medium border transition-all ${
+                aria-pressed={cat === c.key}
+                className={`hit-target inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-caption font-medium border transition-colors ${
                   cat === c.key
                     ? "bg-primary text-primary-foreground border-transparent shadow-soft"
                     : "bg-card/80 text-muted-foreground border-border hover:border-primary/50"
                 }`}
               >
-                <span>{c.icon}</span>{c.label}
+                <c.icon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />{c.label}
               </button>
             ))}
           </div>
@@ -237,7 +243,7 @@ export default function MockInterview({
               <button
                 key={d.key}
                 onClick={() => setDiff(d.key)}
-                className={`px-3 py-1.5 text-[13px] font-medium rounded capitalize ${
+                className={`px-3 py-1.5 text-caption font-medium rounded capitalize ${
                   diff === d.key ? "bg-background text-foreground shadow-soft" : "text-muted-foreground"
                 }`}
               >{d.label}</button>
@@ -251,11 +257,13 @@ export default function MockInterview({
             </span>
           )}
           <button
+            type="button"
             onClick={nextQuestion}
             disabled={generating || evaluating}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 disabled:opacity-50 shadow-soft"
+            aria-busy={generating}
+            className="inline-flex min-h-11 items-center gap-1.5 px-4 py-2 rounded-md text-sm font-medium text-primary-foreground bg-primary hover:bg-primary-hover disabled:opacity-50 shadow-soft"
           >
-            {generating ? <Spinner /> : <span>▶</span>} {current ? "Next question" : "Start mock"}
+            {generating ? <Spinner /> : <Play className="h-4 w-4" aria-hidden="true" />} {current ? "Next question" : "Start mock"}
           </button>
         </div>
       </div>
@@ -268,19 +276,23 @@ export default function MockInterview({
             <DifficultyBadge d={current.difficulty} />
             <span className="text-xs uppercase tracking-wider text-muted-foreground">{current.kind.replace("_", " ")}</span>
             <div className="flex-1" />
-            <span className="text-sm text-muted-foreground tabular-nums">
-              ⏱ <b className={timerSeconds > 120 ? "text-warning" : ""}>{mmss(timerSeconds)}</b>
+            <span className="inline-flex items-center gap-1 text-sm text-muted-foreground tabular-nums">
+              <Timer className="h-4 w-4" aria-hidden="true" />
+              <span className="sr-only">Time on this answer:</span>
+              <b className={timerSeconds > 120 ? "text-warning" : ""}>{mmss(timerSeconds)}</b>
             </span>
             <button
+              type="button"
               onClick={() => setTimerActive(t => !t)}
-              className="text-xs px-2 py-0.5 rounded text-muted-foreground hover:text-foreground"
+              className="hit-target text-xs px-2 py-1 rounded text-muted-foreground hover:bg-muted hover:text-foreground"
             >{timerActive ? "Pause" : "Resume"}</button>
           </div>
-          <p className="text-[15px] text-foreground leading-relaxed whitespace-pre-wrap">{current.text}</p>
+          <p className="text-body-md text-foreground leading-relaxed whitespace-pre-wrap">{current.text}</p>
 
           <textarea
             value={answer}
             onChange={e => setAnswer(e.target.value)}
+            aria-label="Your answer"
             placeholder="Type your answer here. Aim for structured, specific, grounded in your real experience. The coach scores it on relevance, clarity, specificity, and structure."
             rows={8}
             disabled={evaluating || !!evaluation}
@@ -291,18 +303,21 @@ export default function MockInterview({
             <div className="flex-1" />
             {!evaluation && (
               <button
+                type="button"
                 onClick={submit}
                 disabled={!answer.trim() || evaluating}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-medium text-white bg-success hover:bg-success/90 disabled:opacity-50 shadow-soft"
+                aria-busy={evaluating}
+                className="inline-flex min-h-11 items-center gap-1.5 px-4 py-2 rounded-md text-sm font-medium text-primary-foreground bg-primary hover:bg-primary-hover disabled:opacity-50 shadow-soft"
               >
-                {evaluating ? <Spinner /> : <span>✓</span>} {evaluating ? "Grading..." : "Grade my answer"}
+                {evaluating ? <Spinner /> : <Check className="h-4 w-4" aria-hidden="true" />} {evaluating ? "Grading..." : "Grade my answer"}
               </button>
             )}
             {evaluation && (
               <button
+                type="button"
                 onClick={nextQuestion}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90"
-              >Next question →</button>
+                className="inline-flex min-h-11 items-center gap-1.5 px-4 py-2 rounded-md text-sm font-medium text-primary-foreground bg-primary hover:bg-primary-hover"
+              >Next question<ChevronRight className="h-4 w-4" aria-hidden="true" /></button>
             )}
           </div>
 
@@ -315,24 +330,24 @@ export default function MockInterview({
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Verdict</p>
-                  <p className="text-[15px] text-foreground mt-0.5">{evaluation.verdict}</p>
+                  <p className="text-body-md text-foreground mt-0.5">{evaluation.verdict}</p>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {evaluation.strengths?.length > 0 && (
                   <div className="rounded-lg bg-success/5 border border-success/20 p-3">
-                    <p className="text-xs font-bold uppercase tracking-wider text-success mb-1.5">💚 Strengths</p>
-                    <ul className="space-y-1">
-                      {evaluation.strengths.map((s, i) => <li key={i} className="text-[13.5px] text-foreground/90 leading-relaxed">• {s}</li>)}
+                    <p className="mb-1.5 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-success"><ThumbsUp className="h-3.5 w-3.5" aria-hidden="true" />Strengths</p>
+                    <ul className="list-disc space-y-1 pl-4 marker:text-muted-foreground">
+                      {evaluation.strengths.map((s, i) => <li key={i} className="text-body-sm text-foreground leading-relaxed">{s}</li>)}
                     </ul>
                   </div>
                 )}
                 {evaluation.improvements?.length > 0 && (
                   <div className="rounded-lg bg-warning/5 border border-warning/20 p-3">
-                    <p className="text-xs font-bold uppercase tracking-wider text-warning mb-1.5">🎯 Improve</p>
-                    <ul className="space-y-1">
-                      {evaluation.improvements.map((s, i) => <li key={i} className="text-[13.5px] text-foreground/90 leading-relaxed">• {s}</li>)}
+                    <p className="mb-1.5 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-warning"><Target className="h-3.5 w-3.5" aria-hidden="true" />Improve</p>
+                    <ul className="list-disc space-y-1 pl-4 marker:text-muted-foreground">
+                      {evaluation.improvements.map((s, i) => <li key={i} className="text-body-sm text-foreground leading-relaxed">{s}</li>)}
                     </ul>
                   </div>
                 )}
@@ -340,17 +355,17 @@ export default function MockInterview({
 
               {evaluation.missing_points?.length > 0 && (
                 <div className="rounded-lg bg-destructive/5 border border-destructive/20 p-3">
-                  <p className="text-xs font-bold uppercase tracking-wider text-destructive mb-1.5">⚠ Missing points</p>
-                  <ul className="space-y-1">
-                    {evaluation.missing_points.map((s, i) => <li key={i} className="text-[13.5px] text-foreground/90 leading-relaxed">• {s}</li>)}
+                  <p className="mb-1.5 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-destructive"><AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />Missing points</p>
+                  <ul className="list-disc space-y-1 pl-4 marker:text-muted-foreground">
+                    {evaluation.missing_points.map((s, i) => <li key={i} className="text-body-sm text-foreground leading-relaxed">{s}</li>)}
                   </ul>
                 </div>
               )}
 
               {evaluation.model_answer && (
                 <div className="rounded-lg bg-primary/5 border border-primary/20 p-3">
-                  <p className="text-xs font-bold uppercase tracking-wider text-primary mb-1.5">🏆 Model answer</p>
-                  <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap">{evaluation.model_answer}</p>
+                  <p className="mb-1.5 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-ink-muted"><Trophy className="h-3.5 w-3.5" aria-hidden="true" />Model answer</p>
+                  <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">{evaluation.model_answer}</p>
                 </div>
               )}
             </div>
@@ -361,7 +376,7 @@ export default function MockInterview({
       {!current && !generating && (
         <div className="rounded-xl border border-dashed border-border p-10 text-center">
           <p className="text-base font-semibold text-foreground">Ready to practice?</p>
-          <p className="text-sm text-muted-foreground mt-1.5 leading-relaxed">Pick a category + difficulty, click <b>Start mock</b>, answer in your own words. Your coach grades on relevance, clarity, specificity, and structure.</p>
+          <p className="mx-auto mt-1.5 max-w-prose text-sm text-muted-foreground leading-relaxed">Pick a category and difficulty, choose <b>Start mock</b>, and answer in your own words. Your coach grades on relevance, clarity, specificity, and structure.</p>
         </div>
       )}
 
@@ -371,10 +386,10 @@ export default function MockInterview({
           <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">This session · {history.length} graded</p>
           <div className="space-y-1.5">
             {history.map((h, i) => (
-              <div key={i} className="flex items-center gap-2 text-[13px]">
+              <div key={i} className="flex items-center gap-2 text-caption">
                 <span className={`tabular-nums font-bold ${scoreColor(h.score)} w-9`}>{h.score}</span>
-                <span className="text-muted-foreground/80 uppercase text-[10px] tracking-wider w-28 shrink-0">{h.cat.replace("_", " ")}</span>
-                <span className="text-foreground/80 truncate flex-1">{h.q}</span>
+                <span className="text-muted-foreground uppercase text-caption-sm tracking-wider w-28 shrink-0">{h.cat.replace("_", " ")}</span>
+                <span className="text-foreground truncate flex-1">{h.q}</span>
               </div>
             ))}
           </div>

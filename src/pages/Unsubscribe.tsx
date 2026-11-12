@@ -177,7 +177,7 @@ export default function Unsubscribe() {
 
   return (
     <LegalDocument eyebrow="Email" title="Unsubscribe">
-      <div className="mt-8 space-y-6" aria-live="polite">
+      <div className="mt-8 max-w-prose space-y-6" aria-live="polite">
         {body}
       </div>
     </LegalDocument>

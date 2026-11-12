@@ -92,7 +92,7 @@ export default function TrackerToolbar({
               title={s.hint}
               onClick={() => onScopeChange(s.key)}
               className={cn(
-                'flex h-8 items-center gap-1.5 rounded-md px-2.5 text-label font-medium transition-colors',
+                'hit-target flex h-8 items-center gap-1.5 rounded-md px-2.5 text-body-sm font-medium transition-colors',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                 on
                   ? 'bg-card text-foreground shadow-soft'
@@ -100,12 +100,7 @@ export default function TrackerToolbar({
               )}
             >
               {s.label}
-              <span
-                className={cn(
-                  'tabular-nums',
-                  on ? 'text-muted-foreground' : 'text-muted-foreground/70',
-                )}
-              >
+              <span className="tabular-nums text-muted-foreground">
                 {scopeCounts[s.key]}
               </span>
             </button>
@@ -113,7 +108,7 @@ export default function TrackerToolbar({
         })}
       </div>
 
-      <div className="relative min-w-[12rem] flex-1 basis-full sm:basis-auto">
+      <div className="relative min-w-48 flex-1 basis-full sm:basis-auto">
         <Search
           aria-hidden
           className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
@@ -152,7 +147,7 @@ export default function TrackerToolbar({
                 role="checkbox"
                 aria-checked={on}
                 onClick={() => onToggleStatus(s.key)}
-                className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-body transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="flex min-h-10 w-full items-center gap-2 rounded-md px-2 py-2 text-left text-body-sm transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <span aria-hidden className={cn('h-1.5 w-1.5 shrink-0 rounded-full', s.dot)} />
                 <span className="flex-1">{s.label}</span>
@@ -184,7 +179,7 @@ export default function TrackerToolbar({
                 role="radio"
                 aria-checked={datePreset === p.key}
                 onClick={() => onDatePresetChange(p.key)}
-                className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-body transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="flex min-h-10 w-full items-center gap-2 rounded-md px-2 py-2 text-left text-body-sm transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <span className="flex-1">{p.label}</span>
                 {datePreset === p.key && (
@@ -201,7 +196,7 @@ export default function TrackerToolbar({
                 max={customTo || undefined}
                 onChange={(e) => onCustomFromChange(e.target.value)}
                 aria-label="Applied from"
-                className="h-8"
+                className="h-9"
               />
               <Input
                 type="date"
@@ -209,7 +204,7 @@ export default function TrackerToolbar({
                 min={customFrom || undefined}
                 onChange={(e) => onCustomToChange(e.target.value)}
                 aria-label="Applied to"
-                className="h-8"
+                className="h-9"
               />
             </div>
           )}
@@ -220,7 +215,7 @@ export default function TrackerToolbar({
         <Sparkles className="h-3.5 w-3.5" aria-hidden />
         Insights
         {attentionCount > 0 && (
-          <span className="ml-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[0.625rem] font-semibold tabular-nums text-primary-foreground">
+          <span className="ml-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-caption-sm font-semibold tabular-nums text-primary-foreground">
             {attentionCount}
           </span>
         )}
@@ -242,7 +237,7 @@ export default function TrackerToolbar({
 
       {filtersActive && (
         <>
-          <p role="status" className="text-label text-muted-foreground">
+          <p role="status" className="text-body-sm text-muted-foreground">
             <span className="font-semibold tabular-nums text-foreground">{resultCount}</span>
             {resultCount === 1 ? ' application' : ' applications'}
             {dateRange &&

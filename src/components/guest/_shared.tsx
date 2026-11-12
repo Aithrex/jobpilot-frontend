@@ -28,10 +28,11 @@ export function humanizeBand(raw: string): string {
  * optional `band` is the SERVER's qualitative label (FitScore v2); absent, the
  * chip is exactly what it has always been. */
 export function ScoreBadge({ score, band }: { score: number; band?: string | null }) {
+  // Match quality is the signal colour (mint): solid when strong, tint below.
   const tone =
     score >= 85
-      ? 'border-success/30 bg-success/10 text-success'
-      : 'border-primary/30 bg-primary/10 text-primary';
+      ? 'border-signal bg-signal text-signal-foreground'
+      : 'border-signal/30 bg-signal-tint text-signal';
   return (
     <span
       title="Estimated match score based on skill and role overlap"
@@ -85,7 +86,7 @@ export function FreshnessTag({
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground',
+        'inline-flex items-center gap-1 text-caption-sm font-medium text-muted-foreground',
         className,
       )}
     >
@@ -113,7 +114,7 @@ export function TailorQuota({
   const pct = Math.round((remaining / Math.max(1, limit)) * 100);
   return (
     <div className={cn('w-36 space-y-1', className)}>
-      <div className="flex items-center justify-between gap-2 text-[11px]">
+      <div className="flex items-center justify-between gap-2 text-caption-sm">
         <span className="text-muted-foreground">Free {limit === 1 ? 'tailor' : 'tailors'}</span>
         <span className={cn('font-medium tabular-nums', exhausted && 'text-warning')}>
           {remaining} of {limit} left
@@ -233,7 +234,7 @@ export function PhaseStepper({
             <span
               aria-current={isActive ? 'step' : undefined}
               className={cn(
-                'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium transition-colors',
+                'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-caption-sm font-medium transition-colors',
                 isActive
                   ? 'border-primary/40 bg-primary/10 text-primary'
                   : isDone

@@ -26,7 +26,7 @@ const PARTICLES = Array.from({ length: 28 }, (_, i) => {
 export default function AchievementReveal({ achievement, onDismiss }: AchievementRevealProps) {
   const reduce = useReducedMotion();
   const glow = useMemo(() => TIER_GLOW[achievement?.tier || "gold"] || TIER_GLOW.gold, [achievement?.tier]);
-  const hueClass = ["bg-[hsl(var(--brand-from))]", "bg-[hsl(var(--brand-to))]", "bg-[hsl(var(--warning))]"];
+  const hueClass = ["bg-[hsl(var(--brand-from))]", "bg-[hsl(var(--brand-to))]", "bg-warning"];
 
   return (
     <AnimatePresence>
@@ -77,7 +77,7 @@ export default function AchievementReveal({ achievement, onDismiss }: Achievemen
             <h3 className="mt-1 text-xl font-extrabold gradient-text">{achievement.title}</h3>
             <p className="mt-1.5 text-sm text-muted-foreground">{achievement.description}</p>
             {achievement.xp_bonus ? (
-              <p className="mt-3 inline-flex items-center rounded-full bg-primary/12 px-3 py-1 text-sm font-bold text-primary">
+              <p className="mt-3 inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-sm font-bold text-primary">
                 +{achievement.xp_bonus} XP
               </p>
             ) : null}

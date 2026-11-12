@@ -9,6 +9,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Link } from 'react-router-dom';
+import { appPath } from '@/app-shell/nav.config';
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader,
   DialogTitle,
@@ -231,7 +234,7 @@ export default function EmployerLoginsPanel() {
         setMethod('email_code');
         setAccountPassword('');
         setRevealError(
-          'This account signs in with a connected provider, so there is no JobPilot password to check. Use an emailed code instead.',
+          'This account signs in with a connected provider, so there is no Aspirely password to check. Use an emailed code instead.',
         );
       } else if (code === 'reauth_failed') {
         setRevealError("That password isn't right.");
@@ -253,7 +256,13 @@ export default function EmployerLoginsPanel() {
   };
 
   if (query.isLoading) {
-    return <div className="h-40 animate-pulse rounded-container bg-muted" />;
+    return (
+      <div className="space-y-4" aria-busy="true">
+        <p className="sr-only" role="status">Loading your employer logins...</p>
+        <Skeleton aria-hidden className="h-28 w-full rounded-container" />
+        <Skeleton aria-hidden className="h-36 w-full rounded-container" />
+      </div>
+    );
   }
   if (query.isError) {
     return (
@@ -274,6 +283,9 @@ export default function EmployerLoginsPanel() {
           address, and the login shows up here so you can check your status on
           their site yourself.
         </p>
+        <Button asChild variant="outline" className="mt-4">
+          <Link to={appPath('jobs', 'for-you')}>Browse jobs</Link>
+        </Button>
       </div>
     );
   }
@@ -282,12 +294,12 @@ export default function EmployerLoginsPanel() {
     <div className="space-y-4">
       <section className="rounded-container border border-border bg-card p-5 shadow-soft">
         <div className="flex items-start gap-3">
-          <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+          <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" aria-hidden="true" />
           <div>
-            <h2 className="text-sm font-semibold text-foreground">
+            <h2 className="font-display text-title-sm text-foreground">
               Logins we created for you
             </h2>
-            <p className="mt-1 text-xs text-muted-foreground">
+            <p className="mt-1 max-w-prose text-xs text-muted-foreground">
               We generate a strong password, store it encrypted, and never show it
               until you ask. Revealing one needs a fresh check that it's you (your
               Aspirely password or a one-time code we email you), and every reveal
@@ -321,16 +333,16 @@ export default function EmployerLoginsPanel() {
                     <p className="truncate text-sm font-semibold text-foreground">
                       {employerLabel(c)}
                     </p>
-                    <Badge variant="secondary" className="text-[10px] uppercase tracking-wide">
+                    <Badge variant="secondary" className="text-caption-sm uppercase tracking-wide">
                       {vendorLabel(c.ats_family)}
                     </Badge>
                     {c.scope === 'shared' && (
-                      <Badge variant="outline" className="text-[10px]">
+                      <Badge variant="outline" className="text-caption-sm">
                         Shared {vendorLabel(c.ats_family)} password
                       </Badge>
                     )}
                     {c.legacy_per_tenant && (
-                      <Badge variant="outline" className="text-[10px]">
+                      <Badge variant="outline" className="text-caption-sm">
                         This employer only
                       </Badge>
                     )}
@@ -356,7 +368,7 @@ export default function EmployerLoginsPanel() {
               {/* Username - the managed private alias, safe to show. */}
               <div className="mt-3 space-y-2">
                 <div>
-                  <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                  <p className="mb-1 overline">
                     Email / username
                   </p>
                   <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-background/60 px-3 py-2">
@@ -368,7 +380,7 @@ export default function EmployerLoginsPanel() {
                 </div>
 
                 <div>
-                  <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                  <p className="mb-1 overline">
                     Password
                   </p>
                   <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-background/60 px-3 py-2">
@@ -470,7 +482,7 @@ export default function EmployerLoginsPanel() {
             >
               {method === 'password' ? (
                 <div className="space-y-1.5">
-                  <Label htmlFor="ats-reauth-password">JobPilot password</Label>
+                  <Label htmlFor="ats-reauth-password">Aspirely password</Label>
                   <Input
                     id="ats-reauth-password"
                     type="password"
@@ -482,7 +494,7 @@ export default function EmployerLoginsPanel() {
                   {canUseEmailCode && (
                     <button
                       type="button"
-                      className="text-xs font-medium text-primary underline-offset-2 hover:underline"
+                      className="hit-target text-xs font-medium text-primary underline underline-offset-2 hover:text-primary-hover"
                       onClick={() => switchMethod('email_code')}
                     >
                       Email me a code instead
@@ -530,7 +542,7 @@ export default function EmployerLoginsPanel() {
                       />
                       <button
                         type="button"
-                        className="text-xs font-medium text-primary underline-offset-2 hover:underline disabled:opacity-60"
+                        className="hit-target text-xs font-medium text-primary underline underline-offset-2 hover:text-primary-hover disabled:opacity-60"
                         onClick={() => void sendCode()}
                         disabled={sendingCode}
                       >
@@ -541,10 +553,10 @@ export default function EmployerLoginsPanel() {
                   {canUsePassword && (
                     <button
                       type="button"
-                      className="block text-xs font-medium text-primary underline-offset-2 hover:underline"
+                      className="block hit-target text-xs font-medium text-primary underline underline-offset-2 hover:text-primary-hover"
                       onClick={() => switchMethod('password')}
                     >
-                      Use my JobPilot password instead
+                      Use my Aspirely password instead
                     </button>
                   )}
                 </div>

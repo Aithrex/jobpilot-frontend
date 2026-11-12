@@ -241,7 +241,7 @@ export function CompanyAutocomplete({
                     <Building2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate font-medium">{company.display_name}</span>
-                      <span className="block truncate text-[11px] text-muted-foreground">
+                      <span className="block truncate text-caption-sm text-muted-foreground">
                         {[
                           company.domain,
                           company.core_tech_postings
@@ -275,7 +275,7 @@ export function CompanyAutocomplete({
               type="button"
               size="sm"
               variant="outline"
-              className="mt-2 h-8 text-xs"
+              className="hit-target mt-2 h-8 text-xs"
               onClick={() => setRequestOpen(true)}
             >
               Request this company
@@ -301,7 +301,7 @@ export function CompanyAutocomplete({
                   .finally(() => setRequestBusy(false));
               }}
             >
-              <label className="block text-[11px] text-muted-foreground" htmlFor="company-request-url">
+              <label className="block text-caption-sm text-muted-foreground" htmlFor="company-request-url">
                 Official careers URL (optional)
               </label>
               <Input
@@ -315,13 +315,13 @@ export function CompanyAutocomplete({
               <Button
                 type="submit"
                 size="sm"
-                className="h-8 text-xs"
+                className="hit-target h-8 text-xs"
                 disabled={requestBusy}
               >
                 {requestBusy ? 'Submitting...' : 'Submit request'}
               </Button>
               {requestState && (
-                <p role="status" className="text-[11px] text-muted-foreground">
+                <p role="status" className="text-caption-sm text-muted-foreground">
                   {requestState === 'submitted' && 'Request submitted for review.'}
                   {requestState === 'already_requested' && 'This company was already requested.'}
                   {requestState === 'accepted' && 'This company is already in the feed.'}
@@ -337,7 +337,7 @@ export function CompanyAutocomplete({
       )}
 
       {chips.length === 0 ? (
-        <p className="text-[11px] text-muted-foreground">
+        <p className="text-caption-sm text-muted-foreground">
           No company filter. Every employer is in scope.
         </p>
       ) : (
@@ -360,7 +360,7 @@ export function CompanyAutocomplete({
               >
                 <span className="max-w-[14rem] truncate">{chip.label}</span>
                 {chip.verified && (
-                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400" aria-label="verified career source">
+                  <span className="text-caption-sm text-success" aria-label="verified career source">
                     &#10003;
                   </span>
                 )}
@@ -378,7 +378,7 @@ export function CompanyAutocomplete({
         </ul>
       )}
       {chips.some((c) => c.legacy) && (
-        <p className="text-[11px] text-muted-foreground">
+        <p className="text-caption-sm text-muted-foreground">
           Some filters use an older company identifier. They still match. Pick the
           company again from the list to upgrade them.
         </p>

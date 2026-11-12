@@ -26,7 +26,7 @@
  * handler, so that holds.
  */
 
-import { useCallback, useMemo, useRef } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 export const MAX_RESUME_BYTES = 5 * 1024 * 1024;
@@ -38,6 +38,12 @@ export interface ResumePicker {
   open: () => void;
   /** Validate + hand off a file that arrived by drag-and-drop. */
   acceptFile: (file: File) => void;
+  /**
+   * The last client-side rejection ("not a PDF or DOCX", "over 5 MB"), or
+   * null. A toast vanishes in seconds; the drop zone renders this inline next
+   * to the control so the reason stays put until the next attempt.
+   */
+  error: string | null;
   /** Spread onto the single hidden `<input type="file">`. */
   inputProps: {
     ref: React.RefObject<HTMLInputElement>;
@@ -67,17 +73,23 @@ export function useResumePicker({
   onFileRef.current = onFile;
   const disabledRef = useRef(disabled);
   disabledRef.current = disabled;
+  const [error, setError] = useState<string | null>(null);
 
   const acceptFile = useCallback((file: File) => {
     if (disabledRef.current) return;
     if (!/\.(pdf|docx)$/i.test(file.name)) {
-      toast.error('Please upload a PDF or DOCX resume.');
+      const msg = 'Please upload a PDF or DOCX resume.';
+      setError(msg);
+      toast.error(msg);
       return;
     }
     if (file.size > MAX_RESUME_BYTES) {
-      toast.error('That file is over 5 MB. Please upload a smaller resume.');
+      const msg = 'That file is over 5 MB. Please upload a smaller resume.';
+      setError(msg);
+      toast.error(msg);
       return;
     }
+    setError(null);
     onFileRef.current(file);
   }, []);
 
@@ -105,5 +117,5 @@ export function useResumePicker({
     [acceptFile],
   );
 
-  return { open, acceptFile, inputProps };
+  return { open, acceptFile, inputProps, error };
 }

@@ -67,9 +67,9 @@ function ProviderRow({
             <p className="text-sm font-semibold text-foreground">{label}</p>
             <span
               className={cn(
-                "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium",
+                "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-caption-sm font-medium",
                 connected
-                  ? "bg-success/10 text-success"
+                  ? "bg-signal-tint text-signal"
                   : "bg-muted text-muted-foreground",
               )}
             >
@@ -83,13 +83,16 @@ function ProviderRow({
         </div>
       </div>
       <Button
-        variant={connected ? "outline" : "default"}
+        // Several providers can sit side by side, so none is the region's
+        // single primary action: connect is outlined, disconnect is quiet.
+        variant={connected ? "ghost" : "outline"}
+        aria-busy={busy}
         size="sm"
         onClick={connected ? disconnect : connect}
         disabled={busy}
-        className="min-h-[44px] shrink-0"
+        className="min-h-11 shrink-0"
       >
-        {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
+        {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
         {connected ? "Disconnect" : "Connect"}
       </Button>
     </div>
@@ -99,8 +102,8 @@ function ProviderRow({
 function SectionHeading({ title, description }: { title: string; description: string }) {
   return (
     <div>
-      <h2 className="text-sm font-semibold text-foreground">{title}</h2>
-      <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
+      <h2 className="font-display text-title-sm text-foreground">{title}</h2>
+      <p className="mt-0.5 max-w-prose text-caption text-muted-foreground">{description}</p>
     </div>
   );
 }
@@ -151,15 +154,15 @@ export default function IntegrationsPanel() {
         />
         {loading ? (
           <div className="space-y-3">
-            <Skeleton className="h-[76px] w-full rounded-xl" />
-            <Skeleton className="h-[76px] w-full rounded-xl" />
+            <Skeleton className="h-20 w-full rounded-xl" />
+            <Skeleton className="h-20 w-full rounded-xl" />
           </div>
         ) : error ? (
           <div className="flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-4">
             <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" aria-hidden="true" />
             <div className="space-y-3">
               <p className="text-sm text-foreground">{error}</p>
-              <Button variant="outline" size="sm" onClick={() => void loadStatus()} className="min-h-[44px]">
+              <Button variant="outline" size="sm" onClick={() => void loadStatus()} className="min-h-11">
                 Try again
               </Button>
             </div>
@@ -170,7 +173,7 @@ export default function IntegrationsPanel() {
               provider="github"
               icon={Github}
               label="GitHub"
-              connected={!!status?.github.connected}
+              connected={!!status?.github?.connected}
               detail={status?.github.login ? `Connected as ${status.github.login}` : undefined}
               description="Surface real projects as proof-of-work on your resume."
               onChanged={loadStatus}
@@ -179,7 +182,7 @@ export default function IntegrationsPanel() {
               provider="linkedin"
               icon={Linkedin}
               label="LinkedIn"
-              connected={!!status?.linkedin.connected}
+              connected={!!status?.linkedin?.connected}
               detail={status?.linkedin.name ? `Connected as ${status.linkedin.name}` : undefined}
               description="Audit and polish your public profile against target roles."
               onChanged={loadStatus}

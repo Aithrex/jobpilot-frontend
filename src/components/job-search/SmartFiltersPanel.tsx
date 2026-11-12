@@ -178,12 +178,12 @@ export function SmartFiltersPanel({ onApply, compact = false }: SmartFiltersPane
     return (
       <Card className="border-red-500/40 bg-red-500/5">
         <CardContent className="flex items-start gap-3 p-5">
-          <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-red-500" />
+          <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-destructive" />
           <div className="space-y-2">
-            <p className="text-sm font-medium text-red-700 dark:text-red-300">
+            <p className="text-sm font-medium text-destructive">
               Couldn't generate filters
             </p>
-            <p className="text-xs text-red-700/80 dark:text-red-300/80">{error}</p>
+            <p className="text-xs text-destructive">{error}</p>
             <div className="flex gap-2">
               <Button onClick={load} size="sm" variant="outline" className="gap-1.5">
                 <RefreshCw className="h-3 w-3" />
@@ -212,7 +212,7 @@ export function SmartFiltersPanel({ onApply, compact = false }: SmartFiltersPane
             <div className="space-y-1.5 min-w-0">
               <div className="flex items-center gap-2">
                 <Wand2 className="h-4 w-4 text-purple-500" />
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-purple-600 dark:text-purple-300">
+                <p className="text-caption-sm font-semibold uppercase tracking-wider text-purple-600 dark:text-purple-300">
                   Resume-aware suggestions
                 </p>
               </div>
@@ -253,7 +253,7 @@ export function SmartFiltersPanel({ onApply, compact = false }: SmartFiltersPane
                 return (
                   <span
                     key={tag}
-                    className={`inline-flex items-center gap-1 rounded-full bg-gradient-to-r ${grad} px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white shadow-sm`}
+                    className={`inline-flex items-center gap-1 rounded-full bg-gradient-to-r ${grad} px-2.5 py-0.5 text-caption-sm font-semibold uppercase tracking-wider text-white shadow-sm`}
                   >
                     {tag}
                   </span>
@@ -278,7 +278,7 @@ export function SmartFiltersPanel({ onApply, compact = false }: SmartFiltersPane
                   Per-domain breakdown
                 </p>
               </div>
-              <p className="text-[10px] text-muted-foreground">
+              <p className="text-caption-sm text-muted-foreground">
                 "+ Add" stacks a domain on top of your current pipeline form
               </p>
             </div>
@@ -310,7 +310,7 @@ export function SmartFiltersPanel({ onApply, compact = false }: SmartFiltersPane
             title="Workday job titles"
             subtitle="Used as titleSearch[] for the Workday actor"
             items={suggestions.workday_titles}
-            accent="border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+            accent="border-emerald-500/30 bg-emerald-500/10 text-success"
             collapsible
           />
           <SuggestionGroup
@@ -332,7 +332,7 @@ export function SmartFiltersPanel({ onApply, compact = false }: SmartFiltersPane
                   day{suggestions.past_days === 1 ? '' : 's'}
                 </span>
               </div>
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-caption-sm text-muted-foreground">
                 {suggestions.past_days === 1
                   ? 'Daily flow. Surface the freshest postings only.'
                   : 'Slightly wider window. Niche roles have lower daily volume.'}
@@ -374,14 +374,14 @@ function GroupCard({
         <div className="min-w-0 space-y-0.5">
           <div className="flex flex-wrap items-center gap-1.5">
             <span
-              className={`inline-flex items-center gap-1 rounded-full bg-gradient-to-r ${grad} px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-white shadow-sm`}
+              className={`inline-flex items-center gap-1 rounded-full bg-gradient-to-r ${grad} px-2 py-0.5 text-caption-sm font-semibold uppercase tracking-wider text-white shadow-sm`}
             >
               {kindIcon}
               {kindLabel}
             </span>
             <p className="truncate text-sm font-semibold leading-tight">{group.label}</p>
           </div>
-          <p className="text-[10px] text-muted-foreground">
+          <p className="text-caption-sm text-muted-foreground">
             {group.workday_titles.length} titles · {group.linkedin_phrases.length} phrases · score {group.score}
           </p>
         </div>
@@ -389,7 +389,7 @@ function GroupCard({
           <Button
             size="sm"
             disabled
-            className="h-7 gap-1 bg-emerald-600 text-[11px] text-white opacity-90"
+            className="h-7 gap-1 bg-emerald-600 text-caption-sm text-white opacity-90"
             title="Group already added. Switch to Daily Pipeline tab to run."
           >
             <Check className="h-3 w-3" />
@@ -399,7 +399,7 @@ function GroupCard({
           <Button
             size="sm"
             onClick={() => onAdd(group)}
-            className="h-7 gap-1 bg-gradient-to-r from-purple-600 to-indigo-600 text-[11px] text-white hover:opacity-90"
+            className="h-7 gap-1 bg-gradient-to-r from-purple-600 to-indigo-600 text-caption-sm text-white hover:opacity-90"
           >
             <Plus className="h-3 w-3" />
             Add to pipeline
@@ -410,13 +410,13 @@ function GroupCard({
         {group.workday_titles.slice(0, 6).map((t) => (
           <span
             key={t}
-            className="inline-flex items-center rounded-full border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 text-[10px] text-emerald-700 dark:text-emerald-300"
+            className="inline-flex items-center rounded-full border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 text-caption-sm text-success"
           >
             {t}
           </span>
         ))}
         {group.workday_titles.length > 6 && (
-          <span className="text-[10px] italic text-muted-foreground">
+          <span className="text-caption-sm italic text-muted-foreground">
             +{group.workday_titles.length - 6} more
           </span>
         )}
@@ -452,18 +452,18 @@ function SuggestionGroup({
               {icon}
               {title}
             </div>
-            {subtitle && <p className="text-[10px] text-muted-foreground mt-0.5">{subtitle}</p>}
+            {subtitle && <p className="text-caption-sm text-muted-foreground mt-0.5">{subtitle}</p>}
           </div>
           <Badge variant="outline">{items.length}</Badge>
         </div>
         <div className="flex flex-wrap gap-1.5 pt-1">
           {visible.length === 0 ? (
-            <p className="text-[11px] italic text-muted-foreground">No suggestions</p>
+            <p className="text-caption-sm italic text-muted-foreground">No suggestions</p>
           ) : (
             visible.map((s) => (
               <span
                 key={s}
-                className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium ${accent}`}
+                className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-caption-sm font-medium ${accent}`}
               >
                 {s}
               </span>
@@ -475,7 +475,7 @@ function SuggestionGroup({
             variant="ghost"
             size="sm"
             onClick={() => setExpanded((v) => !v)}
-            className="h-6 text-[11px] text-muted-foreground"
+            className="h-6 text-caption-sm text-muted-foreground"
           >
             {expanded ? 'Show less' : `Show all ${items.length}`}
           </Button>

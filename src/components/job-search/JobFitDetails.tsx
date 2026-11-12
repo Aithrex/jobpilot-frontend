@@ -69,7 +69,7 @@ function SkillChips({
         <span
           key={skill}
           className={cn(
-            'inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[11px] font-medium',
+            'inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-caption-sm font-medium',
             tone === 'matched'
               ? 'border-success/30 bg-success/10 text-success'
               : 'border-warning/30 bg-warning/10 text-warning',
@@ -87,7 +87,7 @@ function SkillChips({
         <button
           type="button"
           onClick={() => setExpanded(true)}
-          className="interactive rounded-md px-1 text-[11px] font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+          className="interactive rounded-md px-1 text-caption-sm font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
         >
           +{hidden} more
         </button>
@@ -107,7 +107,7 @@ function Section({
 }) {
   return (
     <section className="space-y-1.5">
-      <h4 className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
+      <h4 className="flex items-center gap-1.5 text-caption-sm font-semibold uppercase tracking-[0.06em] text-muted-foreground">
         <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden />
         {title}
       </h4>
@@ -152,7 +152,7 @@ export function JobFitDetails({ job, className }: JobFitDetailsProps) {
         <div className="flex flex-wrap items-center gap-2">
           <span
             className={cn(
-              'inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-semibold',
+              'inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-caption-sm font-semibold',
               band.chip,
             )}
           >
@@ -196,13 +196,13 @@ export function JobFitDetails({ job, className }: JobFitDetailsProps) {
             <Section icon={Crosshair} title="Role read">
               <div className="flex flex-wrap gap-1.5">
                 {job.title_matched && (
-                  <span className="inline-flex items-center gap-1 rounded-full border border-success/30 bg-success/10 px-2 py-0.5 text-[11px] font-medium text-success">
+                  <span className="inline-flex items-center gap-1 rounded-full border border-success/30 bg-success/10 px-2 py-0.5 text-caption-sm font-medium text-success">
                     <Check className="h-3 w-3" aria-hidden />
                     Title matches your target roles
                   </span>
                 )}
                 {seniorityLabel && (
-                  <span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                  <span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted px-2 py-0.5 text-caption-sm font-medium text-muted-foreground">
                     <Layers3 className="h-3 w-3" aria-hidden />
                     {seniorityLabel}
                   </span>
@@ -210,7 +210,7 @@ export function JobFitDetails({ job, className }: JobFitDetailsProps) {
                 {feasibility && (
                   <span
                     className={cn(
-                      'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium',
+                      'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-caption-sm font-medium',
                       feasibility.chip,
                     )}
                     title={job.feasibility_reason || undefined}
@@ -253,7 +253,7 @@ export function JobFitDetails({ job, className }: JobFitDetailsProps) {
       {/* 5. The full server breakdown, when the v2 block travelled with the row. */}
       {fit && <GuestFitBreakdown fit={fit} />}
 
-      <p className="flex items-start gap-1.5 border-t border-border/60 pt-3 text-[11px] leading-relaxed text-muted-foreground">
+      <p className="flex items-start gap-1.5 border-t border-border/60 pt-3 text-caption-sm leading-relaxed text-muted-foreground">
         <Info className="mt-0.5 h-3 w-3 shrink-0" aria-hidden />
         <span>
           Scored 0-100 against the requirements this posting actually published.{' '}
@@ -280,7 +280,7 @@ export function WhyThisScoreButton({ job, className }: { job: Job; className?: s
           type="button"
           aria-label={`Why this score: ${band.label}`}
           className={cn(
-            'interactive inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10.5px] font-semibold text-muted-foreground hover:bg-accent hover:text-foreground',
+            'interactive hit-target inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-caption-sm font-semibold text-muted-foreground hover:bg-accent hover:text-foreground',
             className,
           )}
         >

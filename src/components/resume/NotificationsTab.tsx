@@ -113,12 +113,12 @@ export default function NotificationsTab() {
   return (
     <div className="space-y-6">
       <div className="space-y-1">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">Account · Notifications</p>
+        <p className="overline">Settings · Notifications</p>
         <div className="flex items-center gap-2">
           <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary/10 text-primary">
-            <Bell className="h-5 w-5" />
+            <Bell className="h-5 w-5" aria-hidden="true" />
           </span>
-          <h2 className="font-display text-2xl font-extrabold tracking-tight">Notifications</h2>
+          <h2 className="font-display text-h2 text-foreground">Notifications</h2>
           {saving && <RefreshCw className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
         </div>
         <p className="max-w-xl text-sm text-muted-foreground">
@@ -139,7 +139,15 @@ export default function NotificationsTab() {
         />
       </div>
 
-      <div className={cn("space-y-6 transition-opacity", disabled && "opacity-60")}>
+      {/* Off is SAID, not faded. Dimming the whole block to 60% put its
+          explanatory text at about 3:1, and the controls inside are already
+          disabled (and look it), so the fade only cost readability. */}
+      {disabled && (
+        <p role="status" className="rounded-xl border border-border bg-muted px-4 py-3 text-sm text-ink-muted">
+          Notifications are off. Turn on the switch above to change these settings.
+        </p>
+      )}
+      <div className="space-y-6">
         {/* Channels */}
         <SectionCard title="Channels" icon={Mail}>
           <ul className="space-y-1">
@@ -164,7 +172,7 @@ export default function NotificationsTab() {
                       aria-label={`Toggle ${label} notifications`}
                     />
                   ) : (
-                    <span className="shrink-0 rounded-full border border-border bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    <span className="shrink-0 rounded-full border border-border bg-muted px-2 py-0.5 text-caption-sm font-semibold uppercase tracking-wide text-muted-foreground">
                       Coming soon
                     </span>
                   )}
@@ -217,7 +225,7 @@ export default function NotificationsTab() {
           {p.quiet_hours?.enabled && (
             <div className="mt-4 flex flex-wrap items-end gap-4">
               <div className="space-y-1.5">
-                <Label htmlFor="qh-start" className="text-[11px] uppercase tracking-wide text-muted-foreground">From</Label>
+                <Label htmlFor="qh-start" className="text-caption-sm uppercase tracking-wide text-muted-foreground">From</Label>
                 <Input
                   id="qh-start"
                   type="time"
@@ -229,7 +237,7 @@ export default function NotificationsTab() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="qh-end" className="text-[11px] uppercase tracking-wide text-muted-foreground">To</Label>
+                <Label htmlFor="qh-end" className="text-caption-sm uppercase tracking-wide text-muted-foreground">To</Label>
                 <Input
                   id="qh-end"
                   type="time"

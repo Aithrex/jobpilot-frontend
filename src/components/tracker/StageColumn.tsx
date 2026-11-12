@@ -60,7 +60,7 @@ export default function StageColumn({
 
   if (records.length === 0) {
     return (
-      <p className="px-3 py-10 text-center text-label text-muted-foreground/70">
+      <p className="px-3 py-10 text-center text-body-sm text-muted-foreground">
         Nothing in {section.label.toLowerCase()} right now.
       </p>
     );

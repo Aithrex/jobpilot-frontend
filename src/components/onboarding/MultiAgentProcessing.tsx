@@ -68,7 +68,7 @@ export function MultiAgentProcessing({ active, done }: { active: boolean; done?:
             }`}
           >
             <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg ${
-              state === 'done' ? 'bg-emerald-500/15 text-emerald-500' : state === 'active' ? 'bg-primary/15 text-primary' : 'bg-muted text-muted-foreground'
+              state === 'done' ? 'bg-signal-tint text-signal' : state === 'active' ? 'bg-primary/15 text-primary' : 'bg-muted text-muted-foreground'
             }`}>
               <Icon className="h-4 w-4" />
             </span>
@@ -78,7 +78,7 @@ export function MultiAgentProcessing({ active, done }: { active: boolean; done?:
             </div>
             <span className="shrink-0">
               {state === 'done' ? (
-                <Check className="h-5 w-5 text-emerald-500" />
+                <Check className="h-5 w-5 text-signal" aria-hidden="true" />
               ) : state === 'active' ? (
                 <Loader2 className="h-5 w-5 animate-spin text-primary" />
               ) : (

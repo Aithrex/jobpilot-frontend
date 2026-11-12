@@ -21,6 +21,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Download, FileText, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { apiService } from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -46,6 +47,7 @@ export function ResumeFilePreview({ resume }: { resume: ResumeAssetRow }) {
   const [state, setState] = useState<State>('idle');
   const [url, setUrl] = useState<string | null>(null);
   const [mobile] = useState(isMobileDevice);
+  const [opening, setOpening] = useState(false);
   const urlRef = useRef<string | null>(null);
 
   const previewable = isPdf(resume.filename) && !mobile;
@@ -93,6 +95,7 @@ export function ResumeFilePreview({ resume }: { resume: ResumeAssetRow }) {
   );
 
   const openFile = useCallback(async () => {
+    setOpening(true);
     try {
       const blob = await apiService.downloadResumeFile(resume.resume_id);
       const href = URL.createObjectURL(blob);
@@ -100,7 +103,10 @@ export function ResumeFilePreview({ resume }: { resume: ResumeAssetRow }) {
       // Give the new tab time to claim the URL before releasing it.
       setTimeout(() => URL.revokeObjectURL(href), 60_000);
     } catch {
-      /* No-op: the Open button simply does nothing rather than erroring. */
+      // Say so: a button that silently does nothing reads as broken.
+      toast.error('Could not open the file. Try again in a moment.');
+    } finally {
+      setOpening(false);
     }
   }, [resume.resume_id]);
 
@@ -147,9 +153,20 @@ export function ResumeFilePreview({ resume }: { resume: ResumeAssetRow }) {
           ? 'Inline preview needs a larger screen. Open the file to read it.'
           : 'Inline preview works for PDF files. Open the file to read it.'}
       </p>
-      <Button variant="outline" size="sm" className="mt-1 min-h-11" onClick={openFile}>
-        <Download className="mr-2 h-4 w-4" aria-hidden="true" />
-        Open resume
+      <Button
+        variant="outline"
+        size="sm"
+        className="mt-1 min-h-11"
+        onClick={openFile}
+        disabled={opening}
+        aria-busy={opening}
+      >
+        {opening ? (
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+        ) : (
+          <Download className="mr-2 h-4 w-4" aria-hidden="true" />
+        )}
+        {opening ? 'Opening' : 'Open resume'}
       </Button>
     </div>
   );

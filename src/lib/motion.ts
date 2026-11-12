@@ -9,7 +9,11 @@
  *
  * Rules this encodes:
  *   1. Motion is FAST. Micro-interactions 120ms, reveals 200ms, the longest
- *      orchestrated entrance 320ms. Nothing waits on an animation.
+ *      UI entrance 280ms, so every response lands inside 300ms and well
+ *      inside the 400ms Doherty threshold. Nothing waits on an animation.
+ *      The one exception is the landing's product story
+ *      (`components/landing/story`), a looped illustration with a Pause
+ *      control, not a UI response.
  *   2. Motion is CHEAP. `opacity` and `transform` only - never height, width,
  *      top or left, so nothing reflows mid-animation.
  *   3. Motion is OPTIONAL. Every helper takes `reduce` (from framer's
@@ -18,6 +22,13 @@
  *      simply appears - it never looks broken.
  *   4. Enter decelerates, exit accelerates. Things arriving settle; things
  *      leaving get out of the way.
+ *   5. The more often a surface is used, the less it moves. Jobs, Tracker
+ *      and Resume screens get state feedback only (press, hover, a 200ms
+ *      reveal); entrances and flourishes belong to first-run and marketing
+ *      surfaces people see once.
+ *   6. Feedback is felt, not watched. Every pressable thing squashes to 0.97
+ *      on press (`PRESS_SCALE`, already in the shadcn Button) and returns on
+ *      release; that is the whole "exaggerated feedback" budget in the app.
  *
  * Deliberately NOT here: springs for anything other than a shared `layoutId`
  * indicator (the nav pill). Springs on content read as bouncy on dense,
@@ -32,8 +43,8 @@ export const DURATION = {
   fast: 0.12,
   /** 200ms - the default. Panel reveals, expand/collapse, popovers. */
   base: 0.2,
-  /** 320ms - the longest allowed: a full-page orchestrated entrance. */
-  slow: 0.32,
+  /** 280ms - the longest allowed: a full-page orchestrated entrance. */
+  slow: 0.28,
 } as const;
 
 /* ── Easings (mirror --ease-* in index.css) ─────────────────────────────── */
@@ -44,6 +55,15 @@ export const EASE_STANDARD: [number, number, number, number] = [0.2, 0, 0, 1];
 export const EASE_DECELERATE: [number, number, number, number] = [0.16, 1, 0.3, 1];
 /** Exits: leave immediately, no lingering. */
 export const EASE_ACCELERATE: [number, number, number, number] = [0.3, 0, 1, 1];
+/**
+ * Follow-through: overshoots a few percent, then settles. Only for a moment
+ * worth celebrating (a match lands, an application is logged), never for
+ * routine content, where it reads as bouncy.
+ */
+export const EASE_OVERSHOOT: [number, number, number, number] = [0.34, 1.56, 0.64, 1];
+
+/** The pressed state of anything clickable. */
+export const PRESS_SCALE = 0.97;
 
 /* ── Building blocks ────────────────────────────────────────────────────── */
 

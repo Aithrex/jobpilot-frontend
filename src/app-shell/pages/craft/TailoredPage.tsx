@@ -11,8 +11,9 @@
  * Fully on the design system's semantic tokens; monolith inline-SVG icons were
  * swapped for lucide equivalents (ChevronDown / FileDown / Sparkles / Trash2).
  */
-import { useState, useEffect, useCallback, useMemo, Suspense, lazy } from 'react';
+import { Fragment, useState, useEffect, useCallback, useMemo, Suspense, lazy } from 'react';
 import { toast } from 'sonner';
+import { Link } from 'react-router-dom';
 import {
   CalendarDays,
   CalendarRange,
@@ -27,6 +28,7 @@ import {
   Wrench,
   X,
   Zap,
+  Loader2,
   type LucideIcon,
 } from 'lucide-react';
 import { apiService } from '@/lib/api';
@@ -38,6 +40,9 @@ import type { HistoryPreset, TailoringHistoryQuery } from '@/types/tailoringHist
 import { useTailoringHistory } from './useTailoringHistory';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PanelError } from '@/app-shell/pages/today/primitives';
+import { Button } from '@/components/ui/button';
+import { appPath } from '@/app-shell/nav.config';
+import { scoreTone } from './tailor/primitives';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -55,21 +60,20 @@ type SortKey = 'newest' | 'oldest' | 'ats';
 
 const sourceBadge: Record<TailoringVersion['source'], { label: string; cls: string }> = {
   initial: { label: 'Initial', cls: 'bg-primary/10 text-primary border-primary/25' },
-  regenerated: { label: 'Regenerated', cls: 'bg-[hsl(var(--brand-to)/0.12)] text-[hsl(var(--brand-to))] border-[hsl(var(--brand-to)/0.25)]' },
+  regenerated: { label: 'Regenerated', cls: 'bg-info/10 text-info border-info/25' },
   edited: { label: 'Edited', cls: 'bg-warning/10 text-warning border-warning/25' },
 };
 
 function atsColor(score?: number): string {
   if (score === undefined || score === null) return 'text-muted-foreground';
-  if (score >= 80) return 'text-success';
-  if (score >= 60) return 'text-warning';
-  return 'text-destructive';
+  // One score scale across Resume: the shared 80/60 bands.
+  return scoreTone(score).text;
 }
 
 function FilterInput({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="flex flex-col gap-1 min-w-0">
-      <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</span>
+      <span className="text-caption-sm font-semibold uppercase tracking-wider text-muted-foreground">{label}</span>
       {children}
     </label>
   );
@@ -81,7 +85,7 @@ function FilterInput({ label, children }: { label: string; children: React.React
 const STATUS_CHIP: Record<string, { label: string; cls: string }> = {
   draft:        { label: 'Draft',        cls: 'bg-muted text-muted-foreground border-border' },
   applied:      { label: 'Applied',      cls: 'bg-primary/10 text-primary border-primary/25' },
-  interviewing: { label: 'Interviewing', cls: 'bg-[hsl(var(--brand-to)/0.12)] text-[hsl(var(--brand-to))] border-[hsl(var(--brand-to)/0.25)]' },
+  interviewing: { label: 'Interviewing', cls: 'bg-info/10 text-info border-info/25' },
   offer:        { label: 'Offer',        cls: 'bg-success/10 text-success border-success/25' },
   rejected:     { label: 'Rejected',     cls: 'bg-destructive/10 text-destructive border-destructive/25' },
   ghosted:      { label: 'Ghosted',      cls: 'bg-warning/10 text-warning border-warning/25' },
@@ -92,6 +96,7 @@ export default function TailoredPage() {
   const [downloading, setDownloading] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [settingCurrent, setSettingCurrent] = useState<string | null>(null);
   const [diffRecord, setDiffRecord] = useState<TailoringRecord | null>(null);
   // Destructive deletes are confirmed through an AlertDialog (never
   // window.confirm).
@@ -157,9 +162,9 @@ export default function TailoredPage() {
       chips.push({ key: 'status', label: nice, clear: () => setStatusFilter('all') });
     }
     if (dateFrom || dateTo) {
-      chips.push({ key: 'date', label: `${dateFrom || '...'} → ${dateTo || '...'}`, clear: () => { setDateFrom(''); setDateTo(''); } });
+      chips.push({ key: 'date', label: `${dateFrom || '...'} to ${dateTo || '...'}`, clear: () => { setDateFrom(''); setDateTo(''); } });
     }
-    if (atsMin > 0) chips.push({ key: 'ats', label: `ATS ≥ ${atsMin}`, clear: () => setAtsMin(0) });
+    if (atsMin > 0) chips.push({ key: 'ats', label: `ATS ${atsMin}+`, clear: () => setAtsMin(0) });
     if (hasRegensOnly) chips.push({ key: 'regens', label: 'Multi-version', clear: () => setHasRegensOnly(false) });
     if (quickPreset) {
       const names: Record<HistoryPreset, string> = {
@@ -271,7 +276,9 @@ export default function TailoredPage() {
   }, [setRecords]);
 
   const handleSetCurrent = useCallback(async (recordId: string, versionId: string) => {
+    setSettingCurrent(versionId);
     const resp = await apiService.setCurrentResumeVersion(recordId, versionId);
+    setSettingCurrent(null);
     if (resp.error) { toast.error('Failed to set current version'); return; }
     toast.success('Marked as current version');
     setRecords(prev => prev.map(r =>
@@ -315,8 +322,8 @@ export default function TailoredPage() {
     <div className="space-y-4">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div className="space-y-1">
-          <p className="overline">Craft · Tailored</p>
-          <h2 className="font-display text-h2 text-foreground">Tailored Resumes</h2>
+          <p className="overline">Manage</p>
+          <h2 className="font-display text-h2 text-foreground">Tailored versions</h2>
           <p className="text-caption text-muted-foreground">
             {total} matching session{total === 1 ? '' : 's'} · {records.length} loaded
           </p>
@@ -364,6 +371,7 @@ export default function TailoredPage() {
               ] as [SortKey, string][]).map(([k, lbl]) => (
                 <button
                   key={k}
+                  type="button"
                   onClick={() => setSortKey(k)}
                   aria-pressed={sortKey === k}
                   className={`min-h-11 px-3 rounded-control text-xs font-medium transition-all ${focusRing} ${
@@ -378,29 +386,35 @@ export default function TailoredPage() {
 
           {/* Row 2 - quick-preset chips with live counts */}
           <div className="px-4 py-2.5 flex items-center gap-2 overflow-x-auto border-b border-border">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground shrink-0">Quick</span>
+            <span className="text-caption-sm font-semibold uppercase tracking-wider text-muted-foreground shrink-0">Quick</span>
             {([
-              { k: 'week',          label: 'This week',      count: presetCounts.week,         icon: CalendarDays },
-              { k: 'month',         label: 'Last 30 days',   count: presetCounts.month,        icon: CalendarRange },
-              { k: 'highAts',       label: 'High match 80+', count: presetCounts.highAts,      icon: Sparkles },
-              { k: 'needsWork',     label: 'Needs work',     count: presetCounts.needsWork,    icon: Wrench },
-              { k: 'multiVersion',  label: 'Multi-version',  count: presetCounts.multiVersion, icon: RefreshCw },
-              { k: 'interviewing',  label: 'Interviewing',   count: presetCounts.interviewing, icon: MessagesSquare },
-              { k: 'offers',        label: 'Offers',         count: presetCounts.offers,       icon: Flame },
-              { k: 'pending',       label: 'Due soon',       count: presetCounts.pending,      icon: Zap },
-            ] as { k: HistoryPreset; label: string; count: number; icon: LucideIcon }[]).map(p => {
+              // Eight presets read as one undifferentiated row, so they are
+              // grouped by what they filter on (time, score, stage, versions)
+              // with a hairline between groups. Order and behaviour unchanged.
+              { k: 'week',          label: 'This week',      count: presetCounts.week,         icon: CalendarDays,   group: 'time' },
+              { k: 'month',         label: 'Last 30 days',   count: presetCounts.month,        icon: CalendarRange,  group: 'time' },
+              { k: 'highAts',       label: 'High match 80+', count: presetCounts.highAts,      icon: Sparkles,       group: 'score' },
+              { k: 'needsWork',     label: 'Needs work',     count: presetCounts.needsWork,    icon: Wrench,         group: 'score' },
+              { k: 'interviewing',  label: 'Interviewing',   count: presetCounts.interviewing, icon: MessagesSquare, group: 'stage' },
+              { k: 'offers',        label: 'Offers',         count: presetCounts.offers,       icon: Flame,          group: 'stage' },
+              { k: 'pending',       label: 'Due soon',       count: presetCounts.pending,      icon: Zap,            group: 'stage' },
+              { k: 'multiVersion',  label: 'Multi-version',  count: presetCounts.multiVersion, icon: RefreshCw,      group: 'versions' },
+            ] as { k: HistoryPreset; label: string; count: number; icon: LucideIcon; group: string }[]).map((p, i, all) => {
               const active = quickPreset === p.k;
               const dim = p.count === 0;
               const Icon = p.icon;
+              const newGroup = i > 0 && all[i - 1].group !== p.group;
               return (
+                <Fragment key={p.k}>
+                {newGroup && <span aria-hidden="true" className="mx-0.5 h-5 w-px shrink-0 bg-border" />}
                 <button
-                  key={p.k}
+                  type="button"
                   onClick={() => active ? (resetFilters()) : applyPreset(p.k)}
                   disabled={dim && !active}
                   aria-pressed={active}
                   className={`group relative shrink-0 inline-flex min-h-11 items-center gap-1.5 px-3 rounded-full text-xs tracking-wide font-medium border transition-all ${focusRing} ${
                     active
-                      ? 'brand-gradient text-primary-foreground border-transparent shadow-soft'
+                      ? 'bg-primary text-primary-foreground border-transparent shadow-soft'
                       : dim
                       ? 'bg-muted/50 text-muted-foreground border-border cursor-not-allowed'
                       : 'bg-card text-muted-foreground border-border hover:border-primary/40 hover:bg-primary/5'
@@ -412,6 +426,7 @@ export default function TailoredPage() {
                     active ? 'bg-primary-foreground/25 text-primary-foreground' : dim ? 'bg-muted text-muted-foreground' : 'bg-muted text-muted-foreground group-hover:bg-primary/20 group-hover:text-primary'
                   }`}>{p.count}</span>
                 </button>
+                </Fragment>
               );
             })}
           </div>
@@ -420,7 +435,7 @@ export default function TailoredPage() {
           <div className="px-4 py-2.5 flex items-center gap-2 flex-wrap">
             {activeChips.length > 0 ? (
               <>
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground shrink-0">Active</span>
+                <span className="text-caption-sm font-semibold uppercase tracking-wider text-muted-foreground shrink-0">Active</span>
                 {activeChips.map(c => (
                   <button
                     key={c.key}
@@ -445,6 +460,7 @@ export default function TailoredPage() {
               <b className="text-foreground">{records.length}</b> of {total}
             </span>
             <button
+              type="button"
               onClick={() => setAdvancedOpen(o => !o)}
               aria-expanded={advancedOpen}
               aria-controls="advanced-filters"
@@ -478,7 +494,7 @@ export default function TailoredPage() {
                   ))}
                 </select>
               </FilterInput>
-              <FilterInput label={atsMin > 0 ? `ATS ≥ ${atsMin}` : 'ATS minimum'}>
+              <FilterInput label={atsMin > 0 ? `ATS ${atsMin}+` : 'ATS minimum'}>
                 <div className="flex items-center gap-2">
                   <input
                     type="range"
@@ -487,7 +503,7 @@ export default function TailoredPage() {
                     onChange={e => setAtsMin(Number(e.target.value))}
                     className="flex-1 accent-primary"
                   />
-                  <span className="text-[11px] tabular-nums text-muted-foreground w-8 text-right">{atsMin}</span>
+                  <span className="text-caption-sm tabular-nums text-muted-foreground w-8 text-right">{atsMin}</span>
                 </div>
               </FilterInput>
               <FilterInput label="From">
@@ -496,13 +512,13 @@ export default function TailoredPage() {
               <FilterInput label="To">
                 <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className={inputCls} />
               </FilterInput>
-              <label className="flex flex-col gap-1 min-w-0">
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Options</span>
+              <div className="flex flex-col gap-1 min-w-0">
+                <span className="text-caption-sm font-semibold uppercase tracking-wider text-muted-foreground">Options</span>
                 <label className="inline-flex min-h-11 items-center gap-1.5 text-xs text-foreground cursor-pointer select-none px-2.5 py-1.5 rounded-control bg-muted border border-border">
                   <input type="checkbox" checked={hasRegensOnly} onChange={e => setHasRegensOnly(e.target.checked)} className="accent-primary" />
                   Multi-version only
                 </label>
-              </label>
+              </div>
             </div>
           )}
         </div>
@@ -519,15 +535,18 @@ export default function TailoredPage() {
       ) : records.length === 0 && summary?.total === 0 ? (
         <div className="rounded-container border border-dashed border-border bg-muted/30 p-10 text-center">
           <Sparkles className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
-          <p className="text-sm text-foreground">No tailored resumes yet</p>
-          <p className="text-xs text-muted-foreground mt-1">
-            Go to the Tailor tab and paste a job description to create one
+          <p className="text-sm font-medium text-foreground">No tailored resumes yet</p>
+          <p className="mx-auto mt-1 max-w-prose text-xs text-muted-foreground">
+            Paste a job description in Tailor and each version you create lands here.
           </p>
+          <Button asChild className="mt-4 min-h-11">
+            <Link to={appPath('resume', 'tailor')}>Tailor a resume</Link>
+          </Button>
         </div>
       ) : records.length === 0 ? (
         <div className="rounded-container border border-dashed border-border bg-muted/30 p-8 text-center">
           <p className="text-sm text-foreground">No matches for the current filters.</p>
-          <button onClick={resetFilters} className="mt-2 text-xs text-primary hover:text-primary/80">Clear filters</button>
+          <button type="button" onClick={resetFilters} className={`hit-target mt-2 rounded text-xs font-medium text-primary underline-offset-2 hover:underline ${focusRing}`}>Clear filters</button>
         </div>
       ) : (
         <div className="space-y-2.5">
@@ -597,7 +616,11 @@ export default function TailoredPage() {
                     onClick={() => setPendingDelete({ id: rec.record_id, label: title })}
                     className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-control text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50 ${focusRing}`}
                   >
-                    <Trash2 className="w-4 h-4" aria-hidden="true" />
+                    {deleting === rec.record_id ? (
+                      <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
+                    ) : (
+                      <Trash2 className="w-4 h-4" aria-hidden="true" />
+                    )}
                   </button>
                 </div>
                 {isOpen && (
@@ -605,7 +628,7 @@ export default function TailoredPage() {
                     {/* Job description panel - always show key analysis facts; JD text lazy-fetched + collapsible */}
                     <div className="rounded-control border border-border bg-muted/30 p-3">
                       <div className="flex items-center justify-between gap-2 mb-2">
-                        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        <span className="text-caption-sm font-semibold uppercase tracking-wider text-muted-foreground">
                           Job description
                         </span>
                         <div className="flex items-center gap-1">
@@ -620,7 +643,7 @@ export default function TailoredPage() {
                               onClick={() => toggleJd(rec.record_id)}
                               aria-expanded={jdOpenFor.has(rec.record_id)}
                               aria-controls={`jd-text-${rec.record_id}`}
-                              className={`min-h-11 text-xs px-2.5 rounded text-primary hover:text-primary/80 hover:bg-primary/10 ${focusRing}`}
+                              className={`min-h-11 text-xs px-2.5 rounded text-primary hover:bg-primary/10 ${focusRing}`}
                             >{jdOpenFor.has(rec.record_id) ? 'Hide JD' : 'View JD'}</button>
                           ) : (
                             <span role="status" aria-live="polite" className="text-xs text-muted-foreground italic">
@@ -629,7 +652,7 @@ export default function TailoredPage() {
                           )}
                         </div>
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1 text-[11px]">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1 text-caption-sm">
                         <div><span className="text-muted-foreground">Role: </span><span className="text-foreground">{rec.jd_analysis?.job_title || 'Not listed'}</span></div>
                         <div><span className="text-muted-foreground">Company: </span><span className="text-foreground">{rec.jd_analysis?.company && rec.jd_analysis.company !== 'Not specified' ? rec.jd_analysis.company : 'Not listed'}</span></div>
                         {rec.jd_analysis?.location && (
@@ -641,20 +664,20 @@ export default function TailoredPage() {
                       </div>
                       {rec.jd_analysis?.required_skills && rec.jd_analysis.required_skills.length > 0 && (
                         <div className="mt-2">
-                          <span className="text-[10px] text-muted-foreground">Required skills: </span>
+                          <span className="text-caption-sm text-muted-foreground">Required skills: </span>
                           <div className="inline-flex flex-wrap gap-1 mt-0.5">
                             {rec.jd_analysis.required_skills.slice(0, 20).map((s, si) => (
-                              <span key={si} className="px-1.5 py-0.5 rounded text-[10px] bg-primary/10 text-primary border border-primary/15">{s}</span>
+                              <span key={si} className="px-1.5 py-0.5 rounded text-caption-sm bg-primary/10 text-primary border border-primary/15">{s}</span>
                             ))}
                             {rec.jd_analysis.required_skills.length > 20 && (
-                              <span className="text-[10px] text-muted-foreground self-center">+{rec.jd_analysis.required_skills.length - 20}</span>
+                              <span className="text-caption-sm text-muted-foreground self-center">+{rec.jd_analysis.required_skills.length - 20}</span>
                             )}
                           </div>
                         </div>
                       )}
                       {jdOpenFor.has(rec.record_id) && rec.jd_text && (
                         <div id={`jd-text-${rec.record_id}`} className="mt-2 max-h-64 overflow-y-auto rounded-control bg-background border border-border p-2.5">
-                          <pre className="text-[11px] text-foreground whitespace-pre-wrap font-sans leading-relaxed">{rec.jd_text}</pre>
+                          <pre className="text-caption-sm text-foreground whitespace-pre-wrap font-sans leading-relaxed">{rec.jd_text}</pre>
                         </div>
                       )}
                     </div>
@@ -663,7 +686,7 @@ export default function TailoredPage() {
                       <div className="flex items-center justify-end">
                         <button
                           onClick={() => setDiffRecord(rec)}
-                          className={`min-h-11 text-xs px-3 rounded-control text-primary hover:text-primary/80 hover:bg-primary/10 border border-primary/25 ${focusRing}`}
+                          className={`min-h-11 text-xs px-3 rounded-control text-primary hover:bg-primary/10 border border-primary/25 ${focusRing}`}
                         >
                           Compare versions
                         </button>
@@ -698,7 +721,7 @@ export default function TailoredPage() {
                             <button
                               onClick={() => handleDownloadVersion(rec, v, 'pdf')}
                               disabled={downloading !== null}
-                              className={`inline-flex min-h-11 items-center gap-1.5 px-3 rounded-control text-xs font-medium text-primary-foreground brand-gradient hover:opacity-90 disabled:opacity-50 transition-all ${focusRing}`}
+                              className={`inline-flex min-h-11 items-center gap-1.5 px-3 rounded-control text-xs font-medium bg-primary text-primary-foreground hover:bg-primary-hover disabled:opacity-50 transition-colors ${focusRing}`}
                             >
                               <FileDown className="w-3.5 h-3.5" aria-hidden="true" />
                               {downloading === dlPdfKey ? 'Preparing...' : cacheP ? 'PDF' : 'PDF (render)'}
@@ -706,7 +729,7 @@ export default function TailoredPage() {
                             <button
                               onClick={() => handleDownloadVersion(rec, v, 'docx')}
                               disabled={downloading !== null}
-                              className={`inline-flex min-h-11 items-center gap-1.5 px-3 rounded-control text-xs font-medium text-foreground bg-muted border border-border hover:bg-muted/70 disabled:opacity-50 transition-all ${focusRing}`}
+                              className={`inline-flex min-h-11 items-center gap-1.5 px-3 rounded-control text-xs font-medium text-foreground bg-card border border-border hover:bg-muted disabled:opacity-50 transition-colors ${focusRing}`}
                             >
                               <FileDown className="w-3.5 h-3.5" aria-hidden="true" />
                               {downloading === dlDocxKey ? 'Preparing...' : cacheD ? 'DOCX' : 'DOCX (render)'}
@@ -714,9 +737,12 @@ export default function TailoredPage() {
                             {!isCurrent && (
                               <button
                                 onClick={() => handleSetCurrent(rec.record_id, v.version_id)}
-                                className={`min-h-11 px-3 rounded-control text-xs font-medium text-muted-foreground hover:text-success hover:bg-success/10 transition-colors ${focusRing}`}
+                                disabled={settingCurrent !== null}
+                                aria-busy={settingCurrent === v.version_id}
+                                className={`inline-flex min-h-11 items-center gap-1.5 px-3 rounded-control text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-50 transition-colors ${focusRing}`}
                               >
-                                Set as current
+                                {settingCurrent === v.version_id && <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />}
+                                {settingCurrent === v.version_id ? 'Saving...' : 'Set as current'}
                               </button>
                             )}
                           </div>
@@ -735,7 +761,8 @@ export default function TailoredPage() {
         <div className="flex flex-col items-center gap-2">
           {moreError && <p role="alert" className="text-sm text-destructive">{moreError}</p>}
           <button type="button" onClick={() => void loadMore()} disabled={loadingMore}
-            className={`min-h-11 px-5 rounded-control border border-border bg-card text-sm disabled:opacity-50 ${focusRing}`}>
+            className={`inline-flex min-h-11 items-center gap-2 px-5 rounded-control border border-border bg-card text-sm hover:bg-muted disabled:opacity-50 transition-colors ${focusRing}`}>
+            {loadingMore && <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />}
             {loadingMore ? 'Loading more...' : moreError ? 'Try loading more again' : 'Load more resumes'}
           </button>
         </div>

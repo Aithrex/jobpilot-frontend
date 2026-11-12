@@ -5,7 +5,7 @@
  * "Cover Letter" tab in ResumeParser, rebuilt on semantic tokens + shadcn/ui.
  * Three states: generated letter, loading, and empty (pre-generate) preview.
  */
-import { Sparkles, FileDown, Clipboard, RotateCw } from 'lucide-react';
+import { Sparkles, FileDown, Clipboard, RotateCw, Loader2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { AiDisclosure } from '@/components/ai/AiDisclosure';
@@ -40,12 +40,12 @@ export function CoverLetterPanel({
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="brand-gradient flex h-10 w-10 shrink-0 items-center justify-center rounded-control shadow-soft">
-            <Sparkles className="h-5 w-5 text-primary-foreground" />
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-control bg-primary/10 text-primary" aria-hidden="true">
+            <Sparkles className="h-5 w-5" />
           </div>
           <div>
-            <h2 className="text-base font-semibold text-foreground">
-              Cover Letter
+            <h2 className="text-title-sm text-foreground">
+              Cover letter
             </h2>
             <p className="text-xs text-muted-foreground">
               Personalized to the role and your resume
@@ -56,16 +56,17 @@ export function CoverLetterPanel({
           <Button
             onClick={onGenerate}
             disabled={loading}
+            aria-busy={loading}
             className="rounded-control"
           >
             {loading ? (
               <>
-                <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
                 Generating...
               </>
             ) : (
               <>
-                <Sparkles className="h-4 w-4" />
+                <Sparkles className="h-4 w-4" aria-hidden="true" />
                 Generate
               </>
             )}
@@ -78,7 +79,7 @@ export function CoverLetterPanel({
           {/* Generated letter */}
           <AiDisclosure kind="draft" />
           <div className="surface max-h-[480px] overflow-y-auto rounded-container p-5 shadow-soft sm:p-6">
-            <div className="whitespace-pre-line font-serif text-[14px] leading-[1.75] text-foreground">
+            <div className="whitespace-pre-line font-serif text-body-sm leading-[1.75] text-foreground">
               {coverLetter}
             </div>
           </div>
@@ -86,9 +87,14 @@ export function CoverLetterPanel({
             <Button
               onClick={onDownload}
               disabled={downloading}
+              aria-busy={downloading}
               className="rounded-control"
             >
-              <FileDown className="h-4 w-4" />
+              {downloading ? (
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              ) : (
+                <FileDown className="h-4 w-4" aria-hidden="true" />
+              )}
               {downloading ? 'Preparing...' : 'Download PDF'}
             </Button>
             <Button
@@ -96,22 +102,24 @@ export function CoverLetterPanel({
               variant="outline"
               className="rounded-control"
             >
-              <Clipboard className="h-4 w-4" />
+              <Clipboard className="h-4 w-4" aria-hidden="true" />
               Copy text
             </Button>
-            <Button onClick={onClear} variant="ghost" className="rounded-control">
-              <RotateCw className="h-4 w-4" />
-              Regenerate
+            <Button
+              onClick={onClear}
+              variant="ghost"
+              className="rounded-control"
+              title="Discard this draft and write a new one"
+            >
+              <RotateCw className="h-4 w-4" aria-hidden="true" />
+              Start over
             </Button>
           </div>
         </>
       ) : loading ? (
         /* Loading state */
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <div className="relative mb-4 h-14 w-14">
-            <div className="absolute inset-0 rounded-full border-2 border-border" />
-            <div className="absolute inset-0 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-          </div>
+        <div role="status" aria-live="polite" className="flex flex-col items-center justify-center py-16 text-center">
+          <Loader2 className="mb-4 h-10 w-10 animate-spin text-primary" aria-hidden="true" />
           <p className="mb-1 text-sm font-semibold text-foreground">
             Writing your cover letter...
           </p>
@@ -123,9 +131,9 @@ export function CoverLetterPanel({
         /* Empty / pre-generate preview */
         <div className="space-y-3 py-4">
           <div className="flex items-start gap-3 rounded-container border border-primary/20 bg-primary/5 p-4">
-            <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
             <p className="text-xs leading-relaxed text-muted-foreground">
-              We'll generate a personalized 3-4 paragraph cover letter tailored
+              We'll write a personalized 3 to 4 paragraph cover letter tailored
               to <span className="font-semibold text-foreground">{jobTitle}</span>
               {hasCompany ? (
                 <>

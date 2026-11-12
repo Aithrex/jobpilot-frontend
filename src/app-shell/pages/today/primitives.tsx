@@ -190,7 +190,7 @@ export function StatusPill({ status }: { status: string | undefined }) {
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[0.75rem] font-medium leading-none',
+        'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-caption-sm font-medium leading-none',
         meta.tone,
       )}
     >

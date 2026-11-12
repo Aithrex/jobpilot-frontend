@@ -44,7 +44,7 @@ export const sixSecondsWidget: Widget = {
       <div className="flex flex-1 items-center gap-4">
         {gazeGlyph}
         <div className="min-w-0">
-          <p className="text-sm font-medium leading-snug text-foreground/90">
+          <p className="text-sm font-medium leading-snug text-foreground">
             Your top third decides the first 6 seconds.
           </p>
           <button

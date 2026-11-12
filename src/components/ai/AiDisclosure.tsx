@@ -24,7 +24,7 @@ interface AiDisclosureProps {
 export function AiDisclosure({ kind = 'chat', text, className }: AiDisclosureProps) {
   return (
     <p
-      className={cn('flex items-start gap-1.5 text-[11px] leading-snug text-muted-foreground', className)}
+      className={cn('flex items-start gap-1.5 text-caption-sm leading-snug text-muted-foreground', className)}
       data-testid="ai-disclosure"
     >
       <Bot className="mt-px h-3 w-3 shrink-0" aria-hidden="true" />

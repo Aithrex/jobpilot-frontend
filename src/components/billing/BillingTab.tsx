@@ -5,7 +5,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { PLAN_LABEL, PLAN_PRICE, nextPlan, type PlanId } from '@/lib/entitlements';
-import { Crown, Zap, Sparkles, Check } from 'lucide-react';
+import { AlertCircle, Crown, Zap, Sparkles, Check } from 'lucide-react';
 
 const USAGE_LABEL: Record<string, string> = {
   tailor: 'Resume tailors',
@@ -34,14 +34,36 @@ const USAGE_ORDER = [
 ];
 
 export default function BillingTab() {
-  const { data, isLoading } = useBillingPlan();
+  const { data, isLoading, isError, refetch, isFetching } = useBillingPlan();
   const { open } = useUpgrade();
 
-  if (isLoading || !data) {
+  if (isError && !data) {
     return (
-      <div className="max-w-3xl space-y-4">
-        <Skeleton className="h-28 w-full rounded-2xl" />
-        <Skeleton className="h-64 w-full rounded-2xl" />
+      <div className="max-w-3xl rounded-xl border border-destructive/30 bg-destructive/5 p-5" role="alert">
+        <div className="flex items-start gap-3">
+          <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" aria-hidden="true" />
+          <div className="space-y-3">
+            <p className="text-sm text-foreground">We could not load your plan and usage.</p>
+            <Button variant="outline" size="sm" onClick={() => void refetch()} disabled={isFetching}>
+              {isFetching ? 'Retrying...' : 'Try again'}
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading || !data) {
+    // Shaped like the loaded view: plan card, usage list, three plan cards.
+    return (
+      <div className="max-w-3xl space-y-6" aria-busy="true">
+        <Skeleton className="h-24 w-full rounded-xl" />
+        <Skeleton className="h-48 w-full rounded-xl" />
+        <div className="grid gap-3 sm:grid-cols-3">
+          <Skeleton className="h-56 w-full rounded-xl" />
+          <Skeleton className="h-56 w-full rounded-xl" />
+          <Skeleton className="h-56 w-full rounded-xl" />
+        </div>
       </div>
     );
   }
@@ -57,18 +79,18 @@ export default function BillingTab() {
     <div className="max-w-3xl space-y-6">
       {/* Current plan */}
       <Card className="overflow-hidden">
-        <div className="flex flex-col gap-4 bg-gradient-to-br from-primary/10 to-transparent p-5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
-            <span className="grid h-12 w-12 place-items-center rounded-xl bg-primary/15 text-primary">
-              <PlanIcon className="h-6 w-6" />
+            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-muted text-foreground">
+              <PlanIcon className="h-6 w-6" aria-hidden="true" />
             </span>
             <div>
               <p className="text-sm text-muted-foreground">Current plan</p>
-              <p className="text-2xl font-bold">{data.plan_label || PLAN_LABEL[plan]}</p>
+              <p className="font-display text-headline-sm text-foreground">{data.plan_label || PLAN_LABEL[plan]}</p>
             </div>
           </div>
-          <div className="text-right">
-            <p className="text-3xl font-extrabold">${PLAN_PRICE[plan]}<span className="text-base font-medium text-muted-foreground">/mo</span></p>
+          <div className="sm:text-right">
+            <p className="font-display text-headline-sm tabular-nums text-foreground">${PLAN_PRICE[plan]}<span className="text-base font-medium text-muted-foreground">/mo</span></p>
             {upgradeTo && (
               <Button className="mt-2" onClick={() => open({ highlight: upgradeTo })}>
                 Upgrade to {PLAN_LABEL[upgradeTo]}
@@ -80,33 +102,41 @@ export default function BillingTab() {
 
       {/* Usage */}
       <div>
-        <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Usage</h3>
-        <Card className="divide-y divide-border">
-          {USAGE_ORDER.filter((k) => data.usage[k]).map((k) => {
-            const u = data.usage[k];
-            return (
-              <div key={k} className="p-4">
-                <QuotaMeter label={USAGE_LABEL[k] || k} used={u.used} limit={u.limit} feature={k} />
-              </div>
-            );
-          })}
-        </Card>
+        <h2 className="overline mb-3">Usage</h2>
+        {USAGE_ORDER.some((k) => data.usage?.[k]) ? (
+          <Card className="divide-y divide-border">
+            {USAGE_ORDER.filter((k) => data.usage?.[k]).map((k) => {
+              const u = data.usage[k];
+              return (
+                <div key={k} className="p-4">
+                  <QuotaMeter label={USAGE_LABEL[k] || k} used={u.used} limit={u.limit} feature={k} />
+                </div>
+              );
+            })}
+          </Card>
+        ) : (
+          <Card className="p-4">
+            <p className="text-sm text-muted-foreground">
+              No usage yet. Your counts appear here once you use a metered feature, like tailoring a resume.
+            </p>
+          </Card>
+        )}
       </div>
 
       {/* Plans comparison */}
       <div>
-        <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Plans</h3>
+        <h2 className="overline mb-3">Plans</h2>
         <div className="grid gap-3 sm:grid-cols-3">
           {(['free', 'premium', 'premium_plus'] as PlanId[]).map((p) => {
             const isCurrent = p === plan;
             return (
               <Card key={p} className={`flex flex-col p-4 ${isCurrent ? 'ring-1 ring-primary' : ''}`}>
-                <p className="font-bold">{PLAN_LABEL[p]}</p>
-                <p className="mt-1 text-2xl font-extrabold">${PLAN_PRICE[p]}<span className="text-sm font-medium text-muted-foreground">/mo</span></p>
+                <h3 className="text-title-sm text-foreground">{PLAN_LABEL[p]}</h3>
+                <p className="mt-1 font-display text-headline-sm tabular-nums text-foreground">${PLAN_PRICE[p]}<span className="text-sm font-medium text-muted-foreground">/mo</span></p>
                 <ul className="mt-3 flex-1 space-y-1.5 text-xs text-muted-foreground">
                   {(data.plans?.[p]?.features || []).filter((f) => !['auto_apply', 'auto_submit', 'six_seconds', 'voice_graph'].includes(f)).slice(0, 6).map((f) => (
                     <li key={f} className="flex items-center gap-1.5">
-                      <Check className="h-3 w-3 shrink-0 text-primary" />
+                      <Check className="h-3 w-3 shrink-0 text-signal" aria-hidden="true" />
                       <span>{f.replace(/_/g, ' ')}</span>
                     </li>
                   ))}
@@ -115,7 +145,8 @@ export default function BillingTab() {
                   <Button variant="outline" disabled className="mt-3">Current plan</Button>
                 ) : (
                   <Button
-                    variant={p === 'free' ? 'ghost' : 'default'}
+                    // One primary per region: only the next plan up is filled.
+                    variant={p === 'free' ? 'ghost' : p === upgradeTo ? 'default' : 'outline'}
                     className="mt-3"
                     onClick={() => open({ highlight: p })}
                     disabled={p === 'free'}

@@ -94,7 +94,7 @@ export default function LearningHubTab({ embedded }: LearningHubTabProps) {
         </p>
       ) : (
         <header className="space-y-1">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">Grow · Learning</p>
+          <p className="text-caption-sm font-semibold uppercase tracking-[0.18em] text-primary">Grow · Learning</p>
           <div className="flex items-center gap-2">
             <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary/10 text-primary">
               <GraduationCap className="h-5 w-5" />

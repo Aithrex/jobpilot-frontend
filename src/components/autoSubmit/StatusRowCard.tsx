@@ -122,7 +122,7 @@ const VARIANTS: Record<StatusRowKind, Variant> = {
   },
   external: {
     label: "Applied elsewhere",
-    body: "This was submitted outside JobPilot, so we're only tracking the employer's response.",
+    body: "This was submitted outside Aspirely, so we're only tracking the employer's response.",
     tone: "border-border bg-muted/40",
     labelTone: "text-muted-foreground",
     icon: Send,

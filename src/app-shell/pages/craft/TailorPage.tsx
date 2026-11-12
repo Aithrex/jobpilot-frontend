@@ -27,9 +27,11 @@ import {
   Sparkles,
   PencilLine,
   ChevronDown,
+  Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { DURATION, EASE_DECELERATE } from '@/lib/motion';
 import { apiService, VERSION_LIMIT_MESSAGE } from '@/lib/api';
 import { isTrimmedOutcome, resumeTrimDescription } from '@/lib/resumeLayoutSpec';
 import { useDailyUsage, type DailyUsage } from '@/hooks/useDailyUsage';
@@ -1301,7 +1303,7 @@ export default function TailorPage() {
                       size="sm"
                       onClick={() => result && runAtsScoring(result)}
                       disabled={!result}
-                      className="shrink-0"
+                      className="min-h-11 shrink-0"
                     >
                       Score now
                     </Button>
@@ -1339,10 +1341,13 @@ export default function TailorPage() {
                 onGenerate={handleCoverLetter}
                 onDownload={handleDownloadCoverLetter}
                 onClear={() => setCoverLetter(null)}
-                onCopy={() => {
-                  if (coverLetter) {
-                    navigator.clipboard.writeText(coverLetter);
+                onCopy={async () => {
+                  if (!coverLetter) return;
+                  try {
+                    await navigator.clipboard.writeText(coverLetter);
                     toast.success('Copied to clipboard');
+                  } catch {
+                    toast.error('Could not copy. Select the text and copy it manually.');
                   }
                 }}
                 jobTitle={result?.jd_analysis.job_title || ''}
@@ -1359,12 +1364,14 @@ export default function TailorPage() {
           actions stay visible. ≥lg the Sidebar owns nav, so bottom-0 is safe. */}
       {result && !editing && (
         <motion.div
-          initial={reduceMotion ? false : { y: 100, opacity: 0 }}
+          // A short decelerating slide, not a spring: this bar lands on a
+          // working surface, where overshoot reads as wobble.
+          initial={reduceMotion ? false : { y: 24, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={
             reduceMotion
               ? { duration: 0 }
-              : { type: 'spring', stiffness: 300, damping: 30 }
+              : { duration: DURATION.slow, ease: EASE_DECELERATE }
           }
           className="fixed bottom-[calc(4rem+env(safe-area-inset-bottom))] left-0 right-0 z-40 border-t border-border bg-card/90 shadow-float backdrop-blur-xl lg:bottom-0"
         >
@@ -1375,9 +1382,9 @@ export default function TailorPage() {
               </span>
               <div className="hidden min-w-0 sm:block">
                 <p className="truncate text-sm font-semibold text-foreground">
-                  Your Tailored Resume
+                  Your tailored resume
                 </p>
-                <p className="truncate text-[11px] text-muted-foreground">
+                <p className="truncate text-caption-sm text-muted-foreground">
                   Tailored for{' '}
                   <span className="font-medium text-primary">
                     {result.jd_analysis.job_title}
@@ -1407,7 +1414,7 @@ export default function TailorPage() {
               >
                 <span
                   className={cn(
-                    'h-2 w-2 animate-pulse rounded-full',
+                    'h-2 w-2 rounded-full',
                     result.ats_scores.overall >= 80
                       ? 'bg-success'
                       : result.ats_scores.overall >= 60
@@ -1434,27 +1441,27 @@ export default function TailorPage() {
             )}
 
             <div className="flex shrink-0 items-center gap-1.5">
-              <Button variant="ghost" size="sm" onClick={handleStartNew} title="Start a new tailor">
+              <Button variant="ghost" size="sm" onClick={handleStartNew} title="Start a new tailor" aria-label="Start a new tailor" className="hit-target">
                 <Sparkles className="h-4 w-4" aria-hidden="true" />
-                <span className="hidden md:inline">New Tailor</span>
+                <span className="hidden md:inline">New tailor</span>
               </Button>
-              <Button variant="ghost" size="sm" onClick={() => setEditing(true)} title="Edit the tailored resume">
+              <Button variant="ghost" size="sm" onClick={() => setEditing(true)} title="Edit the tailored resume" aria-label="Edit the tailored resume" className="hit-target">
                 <PencilLine className="h-4 w-4" aria-hidden="true" />
                 <span className="hidden md:inline">Edit</span>
               </Button>
-              <div className="mx-0.5 h-6 w-px bg-border" />
+              <div className="mx-0.5 h-6 w-px bg-border" aria-hidden="true" />
               <DropdownMenu open={downloadMenuOpen} onOpenChange={setDownloadMenuOpen}>
                 <DropdownMenuTrigger asChild>
-                  <Button disabled={downloading !== null} className="gap-1.5">
+                  <Button disabled={downloading !== null} aria-busy={downloading !== null} className="min-h-11 gap-1.5">
                     {downloading !== null ? (
                       <>
-                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                        <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
                         <span className="hidden sm:inline">Preparing...</span>
                       </>
                     ) : (
                       <>
                         <FileDown className="h-4 w-4" aria-hidden="true" />
-                        <span className="hidden sm:inline">Download Resume</span>
+                        <span className="hidden sm:inline">Download resume</span>
                         <span className="sm:hidden">Download</span>
                         <ChevronDown
                           className={cn('h-3.5 w-3.5 opacity-70 transition-transform', downloadMenuOpen && 'rotate-180')}
@@ -1479,7 +1486,7 @@ export default function TailorPage() {
                         <span className="block text-sm font-semibold text-foreground">
                           Download as {fmt.toUpperCase()}
                         </span>
-                        <span className="block text-[11px] text-muted-foreground">
+                        <span className="block text-caption-sm text-muted-foreground">
                           {fmt === 'pdf' ? 'Best for job applications' : 'Best for further editing'}
                         </span>
                       </span>

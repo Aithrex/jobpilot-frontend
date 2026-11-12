@@ -62,7 +62,7 @@ export function GuestTailoringState({
           layoutId={reduceMotion ? undefined : 'guest-tailor-card'}
           className="mb-6"
         >
-          <h2 className="text-balance text-xl font-bold tracking-tight sm:text-2xl">
+          <h2 className="text-balance font-display text-title-lg text-foreground sm:text-headline-sm">
             {activeMatch.title} · {activeMatch.company}
           </h2>
           <p className="mt-0.5 text-sm text-muted-foreground" role="status">
@@ -88,7 +88,7 @@ export function GuestTailoringState({
               {PROTECTED_FACTS.map((fact) => (
                 <span
                   key={fact}
-                  className="rounded-full border border-primary/25 bg-primary/5 px-2 py-0.5 text-[11px] font-medium text-primary"
+                  className="rounded-full border border-primary/25 bg-primary/5 px-2 py-0.5 text-caption-sm font-medium text-primary"
                 >
                   {fact}
                 </span>

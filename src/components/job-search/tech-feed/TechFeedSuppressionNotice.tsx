@@ -62,7 +62,7 @@ export function TechFeedSuppressionNotice({
         type="button"
         size="sm"
         variant="outline"
-        className="h-7 text-xs focus-visible:ring-2 focus-visible:ring-ring"
+        className="hit-target h-7 text-xs focus-visible:ring-2 focus-visible:ring-ring"
         onClick={() => onPatch(restore)}
       >
         Show them again

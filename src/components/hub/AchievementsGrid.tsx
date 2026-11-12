@@ -45,7 +45,7 @@ export default function AchievementsGrid() {
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-foreground">{a.title}</p>
             <p className="line-clamp-2 text-xs text-muted-foreground">{a.description}</p>
-            <p className="mt-1 text-[11px] font-medium text-primary">+{a.xp_bonus} XP</p>
+            <p className="mt-1 text-caption-sm font-medium text-primary">+{a.xp_bonus} XP</p>
           </div>
         </motion.div>
       ))}

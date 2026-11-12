@@ -278,7 +278,7 @@ export function JobSearchPanel({
           {showFilters && (
             <div className="grid gap-3 border-t border-border/60 pt-4 md:grid-cols-2 lg:grid-cols-4">
               <div className="space-y-1.5">
-                <Label className="flex items-center gap-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                <Label className="flex items-center gap-1 text-caption-sm font-medium uppercase tracking-wide text-muted-foreground">
                   <MapPin className="h-3 w-3" /> Location
                 </Label>
                 <Input
@@ -290,7 +290,7 @@ export function JobSearchPanel({
               </div>
 
               <div className="space-y-1.5">
-                <Label className="flex items-center gap-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                <Label className="flex items-center gap-1 text-caption-sm font-medium uppercase tracking-wide text-muted-foreground">
                   <CalendarDays className="h-3 w-3" /> Date Posted
                 </Label>
                 <Select
@@ -309,7 +309,7 @@ export function JobSearchPanel({
               </div>
 
               <div className="space-y-1.5">
-                <Label className="flex items-center gap-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                <Label className="flex items-center gap-1 text-caption-sm font-medium uppercase tracking-wide text-muted-foreground">
                   <Globe className="h-3 w-3" /> Source
                 </Label>
                 <Select
@@ -333,7 +333,7 @@ export function JobSearchPanel({
               </div>
 
               <div className="space-y-1.5">
-                <Label className="flex items-center gap-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                <Label className="flex items-center gap-1 text-caption-sm font-medium uppercase tracking-wide text-muted-foreground">
                   <Briefcase className="h-3 w-3" /> Experience
                 </Label>
                 <Select
@@ -352,7 +352,7 @@ export function JobSearchPanel({
               </div>
 
               <div className="space-y-1.5">
-                <Label className="flex items-center gap-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                <Label className="flex items-center gap-1 text-caption-sm font-medium uppercase tracking-wide text-muted-foreground">
                   <Filter className="h-3 w-3" /> Type
                 </Label>
                 <Select
@@ -405,7 +405,7 @@ export function JobSearchPanel({
 
               {/* Visa & eligibility */}
               <div className="lg:col-span-4 border-t border-border/60 pt-3">
-                <Label className="mb-2 flex items-center gap-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                <Label className="mb-2 flex items-center gap-1 text-caption-sm font-medium uppercase tracking-wide text-muted-foreground">
                   <ShieldCheck className="h-3 w-3" /> Visa &amp; eligibility
                 </Label>
                 <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
@@ -428,7 +428,7 @@ export function JobSearchPanel({
       {/* Per-source breakdown */}
       {batchMeta && (sourceNames.length > 0 || skippedSourceNames.length > 0 || batchMeta.pending?.length) && (
         <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-[11px] uppercase tracking-wide text-muted-foreground mr-1">Sources</span>
+          <span className="text-caption-sm uppercase tracking-wide text-muted-foreground mr-1">Sources</span>
           {sourceNames
             .map(src => [src, batchMeta.sources?.[src] || 0] as [string, number])
             .sort((a, b) => b[1] - a[1])
@@ -436,7 +436,7 @@ export function JobSearchPanel({
               <Badge
                 key={src}
                 variant="outline"
-                className={`gap-1 text-[10px] font-normal ${count > 0 ? 'border-purple-500/30 bg-purple-500/10 text-purple-600 dark:text-purple-300' : (batchMeta.raw_sources?.[src] || 0) > 0 ? 'border-indigo-500/30 bg-indigo-500/10 text-indigo-600 dark:text-indigo-300' : 'border-border text-muted-foreground'}`}
+                className={`gap-1 text-caption-sm font-normal ${count > 0 ? 'border-purple-500/30 bg-purple-500/10 text-purple-600 dark:text-purple-300' : (batchMeta.raw_sources?.[src] || 0) > 0 ? 'border-indigo-500/30 bg-indigo-500/10 text-indigo-600 dark:text-indigo-300' : 'border-border text-muted-foreground'}`}
               >
                 <span className="font-medium">{SOURCE_LABELS[src] || src}</span>
                 <span className="opacity-70">·</span>
@@ -453,7 +453,7 @@ export function JobSearchPanel({
               key={`skipped-${src}`}
               variant="outline"
               title={batchMeta.skipped_sources?.[src]}
-              className="gap-1 border-dashed border-border text-[10px] font-normal text-muted-foreground"
+              className="gap-1 border-dashed border-border text-caption-sm font-normal text-muted-foreground"
             >
               <span className="font-medium">{SOURCE_LABELS[src] || src}</span>
               <span className="opacity-70">/ skipped</span>
@@ -463,7 +463,7 @@ export function JobSearchPanel({
             <Badge
               key={`pending-${src}`}
               variant="outline"
-              className="gap-1 border-dashed border-purple-400/40 bg-purple-500/5 text-[10px] font-normal text-purple-500 dark:text-purple-300"
+              className="gap-1 border-dashed border-purple-400/40 bg-purple-500/5 text-caption-sm font-normal text-purple-500 dark:text-purple-300"
             >
               <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-purple-500" />
               <span className="font-medium">{SOURCE_LABELS[src] || src}</span>
@@ -471,7 +471,7 @@ export function JobSearchPanel({
             </Badge>
           ))}
           {totalFromSources > jobs.length && (
-            <span className="text-[10px] text-muted-foreground">
+            <span className="text-caption-sm text-muted-foreground">
               ({totalFromSources - jobs.length} duplicates merged)
             </span>
           )}
@@ -497,7 +497,7 @@ export function JobSearchPanel({
           <AlertCircle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
           <div>
             <p className="font-medium">{batchMeta.errors.length} source{batchMeta.errors.length === 1 ? '' : 's'} had issues</p>
-            <p className="text-[11px] opacity-80">Results from other sources are still shown. Hover to see details.</p>
+            <p className="text-caption-sm opacity-80">Results from other sources are still shown. Hover to see details.</p>
           </div>
         </div>
       )}
@@ -520,7 +520,7 @@ export function JobSearchPanel({
 
       {/* Visa pre-filter notice */}
       {!loading && hiddenByVisa > 0 && (
-        <div className="rounded-lg border border-primary/25 bg-primary/[0.06] px-3 py-2 text-xs text-foreground/80">
+        <div className="rounded-lg border border-primary/25 bg-primary/[0.06] px-3 py-2 text-xs text-ink-muted">
           Hiding {hiddenByVisa} listing{hiddenByVisa === 1 ? '' : 's'} that don't match your visa &amp; eligibility toggles.
         </div>
       )}
@@ -616,7 +616,7 @@ function ToggleRow({
         onCheckedChange={onChange}
         className="data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-purple-600 data-[state=checked]:to-indigo-600"
       />
-      <Label htmlFor={id} className="cursor-pointer text-xs text-foreground/80">{label}</Label>
+      <Label htmlFor={id} className="cursor-pointer text-xs text-ink-muted">{label}</Label>
     </div>
   );
 }

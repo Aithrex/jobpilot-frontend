@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 
+import { Button } from '@/components/ui/button';
 import { apiService } from '@/lib/api';
+
+const METRIC_COUNT = 10;
 
 function Metric({ label, value }: { label: string; value: unknown }) {
   const text =
@@ -10,9 +13,9 @@ function Metric({ label, value }: { label: string; value: unknown }) {
         ? JSON.stringify(value)
         : String(value);
   return (
-    <div className="rounded border border-border bg-muted/30 p-3">
-      <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</div>
-      <div className="mt-1 break-all text-sm">{text}</div>
+    <div className="rounded-xl border border-border bg-card p-3 shadow-soft">
+      <div className="text-caption-sm uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className="mt-1 break-all text-sm text-foreground">{text}</div>
     </div>
   );
 }
@@ -20,9 +23,12 @@ function Metric({ label, value }: { label: string; value: unknown }) {
 export function TechFeedOpsPanel() {
   const [data, setData] = useState<Record<string, unknown> | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Bumped by "Try again" so the effect re-runs the same request.
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
+    setError(null);
     void apiService.getAdminTechFeedOps().then((res) => {
       if (cancelled) return;
       if (res.error) setError(res.error);
@@ -31,10 +37,32 @@ export function TechFeedOpsPanel() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [attempt]);
 
-  if (error) return <p className="text-sm text-destructive">{error}</p>;
-  if (!data) return <p className="text-sm text-muted-foreground">Loading tech-feed ops...</p>;
+  if (error) {
+    return (
+      <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-destructive/25 bg-destructive/10 px-4 py-3">
+        <p className="text-sm text-destructive">{error}</p>
+        <Button type="button" variant="outline" size="sm" onClick={() => setAttempt((n) => n + 1)}>
+          Try again
+        </Button>
+      </div>
+    );
+  }
+  if (!data) {
+    // Skeleton in the populated layout, so nothing jumps when numbers land.
+    return (
+      <div className="space-y-4" role="status" aria-live="polite">
+        <span className="sr-only">Loading tech-feed ops...</span>
+        <div className="h-5 w-72 max-w-full animate-pulse rounded bg-muted" />
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: METRIC_COUNT }).map((_, i) => (
+            <div key={i} className="h-16 animate-pulse rounded-xl border border-border bg-muted/50" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   const coverage = (data.coverage || {}) as Record<string, unknown>;
   return (

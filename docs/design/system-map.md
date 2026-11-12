@@ -10,6 +10,25 @@
 > `docs/design/token-decisions.md`, `docs/design/tokens.proposal.css`,
 > `docs/design/token-reference.html` (the proposal that BECAME this system).
 
+> **2026-11-12: the accent moved from plum to COBALT AND MINT.** The owner
+> chose it from a 13-option study (light and dark, live product story, WCAG
+> and hue contrast). Sections below that name `--plum-*` or a 289/302 hue are
+> history; read `src/index.css` for the live values. In short:
+>
+> | Role | Light | Dark | Token |
+> |---|---|---|---|
+> | Action (buttons, links, focus) | `#2648D6` | `#8FAEFF` | `--primary`, `--cobalt-*` |
+> | Signal (matches, scores, progress, success) | `#0B7048` | `#4BE3A0` | `--signal`, `--signal-tint`, `--mint-*` |
+> | Canvas / card | `#F5F7FC` / `#FFFFFF` | `#0A1022` / `#121A31` | `--background`, `--card` |
+> | Ink / muted / subtle | `#0D1426` / `#3B4560` / `#56617D` | `#F1F4FC` / `#B9C2DA` / `#8F9AB8` | `--ink*` |
+>
+> Every text pair is AA or better (worst: subtle ink on the strongest surface,
+> 4.89 light / 4.83 dark). `--plum-*` names survive only as aliases, and the
+> Tailwind `purple`, `violet` and `fuchsia` scales are remapped to one cobalt
+> ramp so older hard-coded classes follow the brand. Motion: UI responses stay
+> under 300ms (`src/lib/motion.ts`); the landing's looped product story
+> (`src/components/landing/story/`) is the one long animation and has Pause.
+
 ## 1. Thesis: "Ink and Aubergine"
 
 Aspirely is a daily job-search agent. A job search runs for months, so the

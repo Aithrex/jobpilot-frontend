@@ -69,7 +69,7 @@ export default function AdminRoleSwitcher({ override, onChange }: AdminRoleSwitc
 
       {active && (
         <>
-          <Badge variant="outline" className="border-primary/30 text-[10px] text-primary">
+          <Badge variant="outline" className="border-primary/30 text-caption-sm text-primary">
             Preview mode
           </Badge>
           <Button variant="ghost" size="sm" className="h-8 gap-1 text-xs" onClick={() => onChange(null)}>

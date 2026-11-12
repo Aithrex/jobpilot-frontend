@@ -61,7 +61,7 @@ function ResumeBody({ resume, title }: { resume: Resumeish; title?: string }) {
               <div key={group} className="flex flex-wrap items-baseline gap-1.5">
                 <span className="text-xs font-medium text-muted-foreground">{group}:</span>
                 {(items || []).map((s) => (
-                  <Badge key={s} variant="secondary" className="text-[11px] font-normal">
+                  <Badge key={s} variant="secondary" className="text-caption-sm font-normal">
                     {s}
                   </Badge>
                 ))}
@@ -143,7 +143,7 @@ export function GuestCompletedState({
           when the tailor finishes (same layoutId as the dashboard card). */}
       <motion.div layoutId={reduceMotion ? undefined : 'guest-tailor-card'}>
         {activeMatch && (
-          <h2 className="text-balance text-xl font-bold tracking-tight sm:text-2xl">
+          <h2 className="text-balance font-display text-title-lg text-foreground sm:text-headline-sm">
             {activeMatch.title} · {activeMatch.company}
           </h2>
         )}
@@ -213,7 +213,7 @@ export function GuestCompletedState({
           <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-2">
             <Card className={cn(view !== 'original' && 'hidden', 'lg:block')}>
               <CardContent className="p-5 sm:p-6">
-                <p className="mb-4 inline-flex rounded-full border border-border bg-muted/40 px-2.5 py-1 text-[11px] font-semibold text-muted-foreground">
+                <p className="mb-4 inline-flex rounded-full border border-border bg-muted/40 px-2.5 py-1 text-caption-sm font-semibold text-muted-foreground">
                   Original, as parsed
                 </p>
                 <ResumeBody resume={original!} />
@@ -221,7 +221,7 @@ export function GuestCompletedState({
             </Card>
             <Card className={cn(view !== 'tailored' && 'hidden', 'border-primary/30 lg:block')}>
               <CardContent className="p-5 sm:p-6">
-                <p className="mb-4 inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-[11px] font-semibold text-primary">
+                <p className="mb-4 inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-caption-sm font-semibold text-primary">
                   <Check className="h-3 w-3" aria-hidden />
                   Tailored for this role
                 </p>
