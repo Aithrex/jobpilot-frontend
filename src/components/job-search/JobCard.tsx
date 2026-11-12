@@ -89,6 +89,8 @@ interface JobCardProps {
   onToggleCompare?: () => void;
   /** Likely reposts of this card folded under it. */
   repostCount?: number;
+  /** Where the user stands with this role (Saved: "Saved 3 days ago, resume tailored"). */
+  note?: string;
 }
 
 /** A click that landed on one of the card's own controls, not its body. */
@@ -245,7 +247,7 @@ export function JobCard({
   job, saved, jobStatus, onSave, onUnsave, onQuickApply, isNew = false,
   applyConfirmPending, applyConfirmModalJobId, onConfirmApplied, onConfirmNotYet,
   onApplyWithTailor, onAlreadyApplied, onHide, onOpen, isCursor = false,
-  compareSelected = false, onToggleCompare, repostCount = 0,
+  compareSelected = false, onToggleCompare, repostCount = 0, note,
 }: JobCardProps) {
   const reduceMotion = useReducedMotion();
   const [expanded, setExpanded] = useState(false);
@@ -537,6 +539,11 @@ export function JobCard({
             </p>
           )}
 
+          {note && (
+            <p className="truncate text-[12px] font-medium text-foreground/80" data-testid="job-note">
+              {note}
+            </p>
+          )}
           {meta.length > 0 && (
             <p className="truncate text-[12px] tabular-nums text-muted-foreground" title={meta.join(' · ')}>
               {meta.join(' · ')}
