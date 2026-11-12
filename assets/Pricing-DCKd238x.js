@@ -1,0 +1,1 @@
+import{j as e,D as r,E as a,F as s}from"./index-PXMD46B2.js";import{P as i}from"./PublicPageShell-BeGm-C3n.js";function n(){return e.jsxs(i,{children:[e.jsx(r,{variant:"full",headingLevel:"h1"}),e.jsx(a,{}),e.jsx(s,{fallbackHref:"/register",fallbackLabel:"Create free account"})]})}export{n as default};
