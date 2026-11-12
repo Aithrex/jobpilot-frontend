@@ -541,3 +541,77 @@ describe('unanswered apply prompt', () => {
     expect(screen.queryByRole('group', { name: /did you apply/i })).not.toBeInTheDocument();
   });
 });
+
+describe('header and detail pane', () => {
+  test('the summary says how many are tracked and a stage count toggles its filter', async () => {
+    listTailoringRecords.mockResolvedValue({
+      data: {
+        records: [
+          record('r-live', 'Live Role', TODAY),
+          record('r-dead', 'Rejected Role', LONG_AGO, 'rejected'),
+        ],
+      },
+    });
+    const user = userEvent.setup();
+    renderTracker();
+    const summary = await screen.findByRole('region', { name: 'Application summary' });
+    expect(summary).toHaveTextContent('2 tracked, 1 still open');
+
+    const rejected = within(summary).getByRole('button', { name: 'Rejected 1' });
+    await user.click(rejected);
+    expect(rejected).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.queryByText('Live Role')).not.toBeInTheDocument();
+
+    // A second press clears the stage filter instead of stacking it.
+    await user.click(rejected);
+    expect(rejected).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByText('Live Role')).toBeInTheDocument();
+  });
+
+  test('Export sits in the toolbar and is off when the view is empty', async () => {
+    const user = userEvent.setup();
+    renderTracker();
+    await screen.findByText('Old Role');
+    await showAll(user);
+    expect(screen.getByRole('button', { name: 'Export' })).toBeEnabled();
+    await user.type(screen.getByRole('textbox', { name: 'Search applications' }), 'zzz-no-match');
+    expect(screen.getByRole('button', { name: 'Export' })).toBeDisabled();
+  });
+
+  test('the detail pane appears only for a selection and closes again', async () => {
+    const user = userEvent.setup();
+    renderTracker();
+    await screen.findByText('Old Role');
+    await showAll(user);
+    expect(screen.queryByRole('complementary', { name: 'Application details' })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /Old Role/ }));
+    expect(await screen.findByRole('complementary', { name: 'Application details' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Close details' }));
+    expect(screen.queryByRole('complementary', { name: 'Application details' })).not.toBeInTheDocument();
+  });
+
+  test('inbox suggestions name stages in words, not raw status values', async () => {
+    listGmailSuggestions.mockResolvedValue({
+      data: {
+        suggestions: [
+          {
+            suggestion_id: 's1',
+            record_id: 'r-today',
+            company: 'Acme',
+            title: 'Today Role',
+            current_status: 'applied',
+            suggested_status: 'interviewing',
+            confidence: 0.86,
+            applied: false,
+            dismissed: false,
+          },
+        ],
+      },
+    });
+    renderTracker();
+    const line = (await screen.findByText(/86% sure/)).parentElement;
+    expect(line).toHaveTextContent('Move from Applied to Interviewing, 86% sure');
+  });
+});

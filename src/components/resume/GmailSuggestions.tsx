@@ -13,6 +13,7 @@ import { apiService } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { appliedDayOf, formatCivilDay } from '@/lib/applicationDates';
 import type { GmailOutcome, GmailSuggestion } from '@/types/gmail';
+import { statusMeta } from '@/components/tracker/trackerConfig';
 export type { GmailSuggestion } from '@/types/gmail';
 
 const STATUS_TONE: Record<string, string> = {
@@ -176,18 +177,19 @@ export default function GmailSuggestions({
                   'Outcome needs review'
                 ) : (
                   <>
+                    {s.current_status ? 'Move from ' : 'Mark as '}
                     {s.current_status && (
                       <>
                         <span className={STATUS_TONE[s.current_status] || STATUS_TONE.draft}>
-                          {s.current_status}
+                          {statusMeta(s.current_status).label}
                         </span>
-                        {' → '}
+                        {' to '}
                       </>
                     )}
                     <span className={STATUS_TONE[s.suggested_status || ''] || STATUS_TONE.draft}>
-                      {s.suggested_status}
+                      {statusMeta(s.suggested_status).label}
                     </span>
-                    <span className="tabular-nums"> - {confidence}% status confidence</span>
+                    <span className="tabular-nums">, {confidence}% sure</span>
                   </>
                 )}
               </p>
