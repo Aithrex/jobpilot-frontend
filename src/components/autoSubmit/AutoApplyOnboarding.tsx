@@ -69,7 +69,7 @@ const CATEGORY_META: Record<
   screening: {
     title: "Experience & background",
     blurb:
-      "Job title, company, dates, and a short role description — required so we can fill Workday and similar forms.",
+      "Job title, company, dates, and a short role description. We need these to fill Workday and similar forms.",
     icon: GraduationCap,
   },
   legal: {

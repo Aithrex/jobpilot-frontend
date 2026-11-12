@@ -338,7 +338,7 @@ export function CompanyAutocomplete({
 
       {chips.length === 0 ? (
         <p className="text-[11px] text-muted-foreground">
-          No company filter - every employer is in scope.
+          No company filter. Every employer is in scope.
         </p>
       ) : (
         <ul className="flex flex-wrap gap-1.5">
@@ -352,7 +352,7 @@ export function CompanyAutocomplete({
                 )}
                 title={
                   chip.legacy
-                    ? `Legacy filter value "${chip.id}" - still matched, but it is not a canonical employer id.`
+                    ? `Legacy filter value "${chip.id}". It still matches, but it is not a canonical employer id.`
                     : chip.redirected
                       ? `This company now files under ${chip.label}.`
                       : undefined
@@ -379,7 +379,7 @@ export function CompanyAutocomplete({
       )}
       {chips.some((c) => c.legacy) && (
         <p className="text-[11px] text-muted-foreground">
-          Some filters use an older company identifier. They still match - pick the
+          Some filters use an older company identifier. They still match. Pick the
           company again from the list to upgrade them.
         </p>
       )}

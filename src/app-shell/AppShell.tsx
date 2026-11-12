@@ -8,6 +8,7 @@ import { TopBar } from "./TopBar";
 import { MobileNav } from "./MobileNav";
 import { CommandPalette } from "./CommandPalette";
 import { AnimatedOutlet } from "./AnimatedOutlet";
+import { TermsUpdateNotice } from "@/components/legal/TermsUpdateNotice";
 
 // First-run onboarding. Auth lands on /app/home; the shell hosts the wizard
 // (self-gates unless the signed-in user still lacks onboarding).
@@ -68,6 +69,7 @@ export default function AppShell() {
 
       <div className="flex min-h-screen min-w-0 flex-col">
         <TopBar />
+        <TermsUpdateNotice />
 
         {/* Pages own their own measure.
 

@@ -43,7 +43,7 @@ function summary(levels: readonly SeniorityLevel[]): string {
 function basisLine(view: ExperienceView): string {
   const years =
     view.years != null ? `${view.years} yr${view.years === 1 ? '' : 's'} on your resume` : '';
-  if (view.source === 'preference+resume') return `${view.preference} - ${years}`;
+  if (view.source === 'preference+resume') return `${view.preference} · ${years}`;
   if (view.source === 'preference') return `You told us: ${view.preference}`;
   return years;
 }

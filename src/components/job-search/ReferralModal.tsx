@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { apiService } from "@/lib/api";
+import { AiDisclosure } from "@/components/ai/AiDisclosure";
 import { useUpgrade } from "@/components/billing/UpgradeModalProvider";
 import { cn } from "@/lib/utils";
 import type { Job } from "@/types/jobs";
@@ -103,6 +104,7 @@ function ReferralRow({ referral, job }: { referral: Referral; job: ReferralModal
 
       {message != null && (
         <div className="mt-3 rounded-lg border border-primary/20 bg-primary/[0.04] p-3">
+          <AiDisclosure kind="draft" className="mb-1.5" />
           <p className="whitespace-pre-line text-xs leading-relaxed text-foreground/90">{message}</p>
           <div className="mt-2 flex justify-end">
             <Button size="sm" variant="ghost" className="h-7 gap-1 text-[11px]" onClick={copy}>

@@ -18,7 +18,7 @@ function formatTailoredText(t: TailoredResume): string {
   lines.push('PROFESSIONAL SUMMARY', t.summary, '');
   lines.push('SKILLS', t.skills.join(', '), '');
   lines.push('EXPERIENCE');
-  t.experience_bullets.forEach(b => lines.push(`- ${b}`));
+  t.experience_bullets.forEach(b => lines.push(`• ${b}`));
   lines.push('');
   if (t.keywords_to_add.length > 0) {
     lines.push('SUGGESTED KEYWORDS', t.keywords_to_add.join(', '));
@@ -134,7 +134,7 @@ export function ResumeTailorModal({ open, onOpenChange, job }: ResumeTailorModal
                   <ul className="space-y-1.5">
                     {result.experience_bullets.map((bullet, i) => (
                       <li key={i} className="text-xs text-muted-foreground flex gap-1.5">
-                        <span className="text-primary mt-0.5">-</span>
+                        <span className="text-primary mt-0.5" aria-hidden="true">•</span>
                         <span>{bullet}</span>
                       </li>
                     ))}

@@ -75,7 +75,7 @@ interface Variant {
 const VARIANTS: Record<StatusRowKind, Variant> = {
   unsupported: {
     label: "Apply manually",
-    body: "We can't auto-apply to this employer's system yet - please apply manually. Everything we prepared for you still applies.",
+    body: "We can't auto-apply to this employer's system yet, so please apply manually. Everything we prepared for you still applies.",
     tone: "border-border bg-muted/40",
     labelTone: "text-muted-foreground",
     icon: Info,

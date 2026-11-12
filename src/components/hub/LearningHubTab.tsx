@@ -27,7 +27,7 @@ function GeneratingState({ days }: { days: number }) {
         <h3 className="text-lg font-bold gradient-text">Assembling your sprint board…</h3>
         <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
           Your engineering manager is writing {days} days of realistic tickets tailored to your role.
-          This takes up to a minute the first time — then it&apos;s instant.
+          This takes up to a minute the first time. After that, it&apos;s instant.
         </p>
       </div>
       <div className="space-y-4">
@@ -116,7 +116,7 @@ function FutureUpdateBanner({ path }: { path: HubPath }) {
       <div className="min-w-0">
         {allDone ? (
           <>
-            <p className="text-sm font-semibold text-foreground">Day {path.published_through_day} complete — nicely done!</p>
+            <p className="text-sm font-semibold text-foreground">Day {path.published_through_day} complete. Nicely done.</p>
             <p className="text-sm text-muted-foreground">
               Day {nextDay} will be available in a future update. You&apos;re all caught up on what&apos;s live today.
             </p>
@@ -125,7 +125,7 @@ function FutureUpdateBanner({ path }: { path: HubPath }) {
           <>
             <p className="text-sm font-semibold text-foreground">Version 1 · Day {path.published_through_day} is live</p>
             <p className="text-sm text-muted-foreground">
-              Days {nextDay}–{path.season_length} are under development and will unlock in future updates. Complete Day{" "}
+              Days {nextDay} to {path.season_length} are under development and will open in future updates. Complete Day{" "}
               {path.published_through_day} to experience the full sprint flow.
             </p>
           </>
@@ -288,7 +288,7 @@ export default function LearningHubTab() {
               </span>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-foreground">
-                  {selectedSummary?.title} complete — outstanding work!
+                  {selectedSummary?.title} complete. Outstanding work.
                 </p>
                 <p className="text-sm text-muted-foreground">Your next chapter, {nextChapter.title}, is unlocked.</p>
               </div>

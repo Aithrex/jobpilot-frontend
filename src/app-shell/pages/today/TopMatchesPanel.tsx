@@ -269,7 +269,7 @@ export function TopMatchesPanel() {
     <PanelCard aria-label="Top matches">
       <ZoneHeading
         title="Top matches for you"
-        hint={`${RECENCY_OPTIONS.find((option) => option.key === recency)?.label ?? 'Today'} - ${visibleJobs.length} matching roles. Showing ${rows.length}${sortBy === 'score' ? ', strongest first' : ', newest first'}.`}
+        hint={`${RECENCY_OPTIONS.find((option) => option.key === recency)?.label ?? 'Today'}: ${visibleJobs.length} matching roles. Showing ${rows.length}${sortBy === 'score' ? ', strongest first' : ', newest first'}.`}
         action={exploreLink}
       />
 
@@ -295,7 +295,7 @@ export function TopMatchesPanel() {
         <p className="mb-3 flex items-start gap-2 rounded-control border border-warning/30 bg-warning/10 p-2.5 text-caption text-warning">
           <Upload className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
           <span>
-            These roles are not scored yet - we could not read skills off your resume.{' '}
+            These roles are not scored yet because we could not read skills from your resume.{' '}
             <Link to={RESUME_HREF} className="font-semibold underline underline-offset-2">
               Check your resume
             </Link>
@@ -327,7 +327,7 @@ export function TopMatchesPanel() {
               employers
             </>
           )}
-          - this list keeps improving.
+          . This list keeps improving.
         </p>
       )}
 

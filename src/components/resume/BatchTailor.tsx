@@ -749,7 +749,7 @@ export default function BatchTailor() {
                         return (
                           <span
                             className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold border text-muted-foreground bg-muted/40 border-border"
-                            title="Assessment complete — no overall percentage for this result"
+                            title="Assessment complete. This result has no overall percentage."
                           >
                             Reviewed
                           </span>

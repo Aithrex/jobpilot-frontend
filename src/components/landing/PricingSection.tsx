@@ -11,6 +11,7 @@ import {
   PUBLIC_PLANS,
   type PlanLine,
 } from '@/lib/pricing';
+import { SubscriptionTerms } from '@/components/legal/SubscriptionTerms';
 import { Container, HEAD_GAP, Reveal, Section, SectionHead } from './_shared';
 
 /**
@@ -42,7 +43,7 @@ function LineText({ line }: { line: PlanLine }) {
       <>
         <span>{line.outcome}</span>
         {cap && !isLive(cap.status) && (
-          <span className="ml-1.5 whitespace-nowrap rounded-full border border-border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+          <span className="ml-1.5 whitespace-nowrap rounded-full border border-border px-1.5 py-0.5 text-caption-sm font-semibold uppercase tracking-[0.1em] text-muted-foreground">
             {STATUS_LABEL[cap.status]}
           </span>
         )}
@@ -75,16 +76,16 @@ export function PricingSection({
       <Container>
         {isRoute ? (
           <Reveal className="max-w-2xl">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+            <p className="text-caption-sm font-semibold uppercase tracking-[0.14em] text-muted-foreground">
               Plans
             </p>
             <Heading
               id="pricing-heading"
-              className="mt-3 text-balance font-display text-3xl font-extrabold leading-[1.1] tracking-[-0.025em] text-foreground sm:text-[2.6rem]"
+              className="mt-3 text-balance font-display text-display-sm text-foreground"
             >
               What each plan includes.
             </Heading>
-            <p className="mt-4 text-pretty text-base leading-relaxed text-muted-foreground">
+            <p className="mt-4 max-w-[60ch] text-pretty text-body-lg text-ink-muted">
               {PRICING_DISCLOSURE}
             </p>
           </Reveal>
@@ -102,11 +103,11 @@ export function PricingSection({
             <Reveal key={plan.id} delay={i * 0.06}>
               <div
                 className={cn(
-                  'flex h-full flex-col rounded-container border bg-card p-6',
-                  plan.cta ? 'border-primary/35 shadow-panel' : 'border-border',
+                  'flex h-full flex-col rounded-container border bg-card p-6 sm:p-7',
+                  plan.cta ? 'border-primary shadow-panel' : 'border-border shadow-soft',
                 )}
               >
-                <h3 className="font-display text-lg font-bold tracking-[-0.015em] text-foreground">
+                <h3 className="font-display text-title-lg font-bold text-foreground">
                   {plan.label}
                 </h3>
 
@@ -114,21 +115,21 @@ export function PricingSection({
                     decimal, never "/mo" - see the price rule in pricing.ts. */}
                 <p
                   className={cn(
-                    'mt-1 text-[14px] font-medium',
+                    'mt-1 text-body-md font-semibold',
                     plan.id === 'free' ? 'text-primary' : 'text-muted-foreground',
                   )}
                 >
                   {plan.id === 'free' ? FREE_PRICE_LABEL : PRICE_TBD_LABEL}
                 </p>
 
-                <p className="mt-3 text-pretty text-[13px] leading-relaxed text-muted-foreground">
+                <p className="mt-3 text-pretty text-body-md text-ink-muted">
                   {plan.audience}
                 </p>
 
                 <ul className="mt-5 flex-1 space-y-2.5">
                   {plan.includes.map((line, li) => (
-                    <li key={li} className="flex gap-2.5 text-[13px] leading-relaxed text-foreground">
-                      <Check aria-hidden className="mt-[3px] h-4 w-4 shrink-0 text-success" />
+                    <li key={li} className="flex gap-2.5 text-body-md text-foreground">
+                      <Check aria-hidden className="mt-1 h-4 w-4 shrink-0 text-success" />
                       <span className="min-w-0">
                         <LineText line={line} />
                       </span>
@@ -139,15 +140,18 @@ export function PricingSection({
                 {plan.cta ? (
                   <Link
                     to={authed ? '/app/home' : plan.cta.to}
-                    className="mt-6 inline-flex h-11 items-center justify-center rounded-full bg-primary px-5 text-[14px] font-semibold text-primary-foreground transition-colors hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                    className="mt-6 inline-flex h-12 items-center justify-center rounded-full bg-primary px-6 text-base font-semibold text-primary-foreground shadow-soft transition-colors hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                   >
                     {authed ? 'Open my workspace' : plan.cta.label}
                   </Link>
                 ) : (
-                  <p className="mt-6 text-[13px] text-muted-foreground">
+                  <p className="mt-6 text-body-md text-muted-foreground">
                     Included when paid plans open.
                   </p>
                 )}
+                {/* Auto-renewal disclosure beside the paid CTA. Renders nothing
+                    until pricing.ts publishes a price for this plan. */}
+                <SubscriptionTerms planId={plan.id} className="mt-3" />
               </div>
             </Reveal>
           ))}
@@ -157,7 +161,7 @@ export function PricingSection({
           <Reveal className="mt-6" delay={0.12}>
             <Link
               to="/pricing"
-              className="text-[14px] font-semibold text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="rounded-sm text-base font-semibold text-primary underline underline-offset-4 hover:decoration-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
               See what each plan includes
             </Link>
@@ -166,7 +170,7 @@ export function PricingSection({
 
         {variant === 'full' && !PRICING_PUBLISHED && (
           <Reveal className="mt-10" delay={0.12}>
-            <p className="max-w-2xl text-[13px] leading-relaxed text-muted-foreground">
+            <p className="max-w-[65ch] text-body-md text-muted-foreground">
               Aspirely does not ask for a card to sign up, and there is no trial to forget about.
               When paid plans open we will say so here first.
             </p>

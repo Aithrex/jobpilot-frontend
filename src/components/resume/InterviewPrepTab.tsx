@@ -316,7 +316,7 @@ export default function InterviewPrepTab({ embedded }: InterviewPrepTabProps) {
               >
                 <p className="text-sm font-medium text-foreground truncate">{r.jd_analysis?.job_title || "Untitled"}</p>
                 <p className="text-xs text-muted-foreground truncate mt-0.5">
-                  {r.jd_analysis?.company && r.jd_analysis.company !== "Not specified" ? r.jd_analysis.company : " - "}
+                  {r.jd_analysis?.company && r.jd_analysis.company !== "Not specified" ? r.jd_analysis.company : "Company not listed"}
                   <span className="mx-1">·</span>
                   {formatDate(r.created_at || "")}
                 </p>

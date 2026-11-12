@@ -13,6 +13,7 @@ import {
   Briefcase, MapPin, GraduationCap, ArrowRight, ArrowLeft, ShieldCheck,
 } from 'lucide-react';
 import { WorkAuthorizationQuestion } from '@/components/visa/WorkAuthorizationQuestion';
+import { ImmigrationNotice } from '@/components/privacy/ImmigrationNotice';
 import { legacyNeedsSponsorshipFlag } from '@/types/workAuthorization';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -349,6 +350,11 @@ export default function OnboardingWizard() {
     // written alongside it ONLY when the answer can be expressed as one, so
     // "prefer not to say" and an unanswered question never turn into `false`.
     if (answers.workAuthorization !== 'unset') {
+      // Immigration status is sensitive: record consent when one is given.
+      // "Prefer not to say" is not a status. Best effort; never blocks saving.
+      if (answers.workAuthorization !== 'prefer_not_to_say') {
+        await apiService.recordImmigrationConsent();
+      }
       prefs.work_authorization = answers.workAuthorization;
       prefs.work_authorization_updated_at = new Date().toISOString();
       const legacy = legacyNeedsSponsorshipFlag(answers.workAuthorization);
@@ -926,6 +932,8 @@ function QuestionsStep({ answers, defaults, update, saving, onBack, onSkip, onFi
           value={answers.workAuthorization}
           onChange={(workAuthorization) => update({ workAuthorization })}
         />
+        {/* Notice at collection (sensitive data). Saving a status records consent. */}
+        <ImmigrationNotice inFlow className="-mt-2" />
 
         {/* Locations + remote */}
         <div>

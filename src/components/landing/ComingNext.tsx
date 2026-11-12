@@ -81,7 +81,7 @@ function ApprovalPreview() {
         backgroundSize: '10px 10px',
       }}
     >
-      <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+      <p className="text-caption-sm font-semibold uppercase tracking-[0.14em] text-muted-foreground">
         Waiting for you
       </p>
       <div className="mt-2 flex items-center gap-2 rounded-lg border border-border bg-muted/50 p-2">
@@ -92,11 +92,11 @@ function ApprovalPreview() {
         </span>
       </div>
       <div className="mt-2 flex gap-1.5">
-        <span className="inline-flex items-center gap-1 rounded-md border border-success/30 bg-success/10 px-2 py-[3px] text-[10px] font-semibold text-success">
+        <span className="inline-flex items-center gap-1 rounded-md border border-success/30 bg-success/10 px-2 py-[3px] text-caption-sm font-semibold text-success">
           <Check className="h-3 w-3" />
           Approve
         </span>
-        <span className="rounded-md border border-border bg-muted px-2 py-[3px] text-[10px] font-semibold text-muted-foreground">
+        <span className="rounded-md border border-border bg-muted px-2 py-[3px] text-caption-sm font-semibold text-muted-foreground">
           Not this one
         </span>
       </div>
@@ -119,7 +119,7 @@ function ThreadPreview() {
         backgroundSize: '10px 10px',
       }}
     >
-      <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+      <p className="text-caption-sm font-semibold uppercase tracking-[0.14em] text-muted-foreground">
         Only if you opt in
       </p>
       <div className="mt-2 space-y-1.5">
@@ -135,7 +135,7 @@ function ThreadPreview() {
         <span className="flex h-[14px] w-[24px] items-center rounded-full bg-success/25 p-[2px]">
           <span className="ml-auto h-[10px] w-[10px] rounded-full bg-success" />
         </span>
-        <span className="text-[10px] font-medium text-muted-foreground">Quiet hours on</span>
+        <span className="text-caption-sm font-medium text-muted-foreground">Quiet hours on</span>
       </div>
     </div>
   );
@@ -246,8 +246,8 @@ function RoadmapCard({
           <Icon className="h-4 w-4" aria-hidden />
         </span>
         <h3 className="text-[15px] font-bold tracking-[-0.01em] text-foreground">{cap.name}</h3>
-        <StatusBadge status={cap.status} className="text-[10px]" />
-        <span className="rounded-full border border-border bg-background px-1.5 py-[1px] text-[10px] font-semibold text-muted-foreground">
+        <StatusBadge status={cap.status} className="text-caption-sm" />
+        <span className="rounded-full border border-border bg-background px-1.5 py-[1px] text-caption-sm font-semibold text-muted-foreground">
           {qualifier}
         </span>
       </div>
@@ -296,7 +296,7 @@ export function ComingNext() {
             hairlines a few pixels apart while every other seam had one. */}
         <div ref={sectionRef}>
           <Reveal className="max-w-2xl">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+            <p className="text-caption-sm font-semibold uppercase tracking-[0.14em] text-muted-foreground">
               Coming next
             </p>
             <h2

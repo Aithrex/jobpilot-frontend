@@ -18,18 +18,21 @@ const GuestFlowShell = lazy(() =>
 );
 import type { ResumePicker } from '@/components/guest/useResumePicker';
 import type { GuestFlow } from '@/hooks/useGuestFlow';
+import { useResolvedTheme } from '@/components/theme-provider';
 import { Container } from './_shared';
-import { HeroPreview } from './HeroPreview';
+import { HeroStage } from './three/HeroStage';
 import { MacWindow, type WindowStatus } from './workspace/MacWindow';
 
 /**
- * The hero: the promise and the two actions, with a product window beside them.
+ * The hero: the promise and the two actions, with the 3D stage beside them.
  *
- * On a wide canvas the idle state is two columns - copy on the left, a live
- * DOM preview of the workspace on the right. That window is illustrative
- * (redacted bars, empty slots, a caption that says so) until an upload starts,
- * at which point the same frame is taken over by the real guest flow. Its
- * status pill is driven only by `liveStatus(flow)`.
+ * On a wide canvas the idle state is two columns: copy on the left, the stage
+ * on the right (a resume sheet splitting into fictional job cards, poster
+ * first and a lazy real-time scene second, see `three/HeroStage`). On a phone
+ * the stage follows the actions, so the first screen is still the promise and
+ * the two buttons. Once an upload starts, the real guest flow takes over the
+ * hero inside the product window, whose status pill is driven only by
+ * `liveStatus(flow)`.
  *
  * Upload is ONE click. This component does not own the file input:
  * LandingExperience renders the page's single `<input type="file">` and hands
@@ -84,6 +87,7 @@ export function WorkspaceHero({
   // Drag state for the whole hero, which is where a dragged file lands.
   const [dragActive, setDragActive] = useState(false);
   const droppable = guestEnabled && !authed;
+  const theme = useResolvedTheme();
 
   // The window frames REAL work only, so its status is always the flow's.
   // There used to be a second, invented status ladder driving the illustrative
@@ -170,19 +174,21 @@ export function WorkspaceHero({
               key="idle"
               initial={false}
               exit={{ opacity: 0, transition: { duration: 0.2 } }}
-              className="grid grid-cols-1 items-center gap-12 lg:grid-cols-12 lg:gap-10 xl:gap-14"
+              className="grid grid-cols-1 items-center gap-10 lg:grid-cols-12 lg:gap-10 xl:gap-14"
             >
               {/* THE COPY COLUMN.
                   Five of twelve on the widest canvas, six below that: the
                   headline still has room to breathe, and the remaining
                   columns are the product window that used to sit empty. */}
-              <div className="mx-auto flex w-full max-w-2xl flex-col text-center lg:col-span-6 lg:mx-0 lg:max-w-none lg:text-left xl:col-span-5">
-                <h1 className="text-balance font-display text-[2.15rem] font-extrabold leading-[1.07] tracking-[-0.03em] text-foreground sm:text-[2.9rem] xl:text-[3.2rem]">
+              <div className="mx-auto flex w-full max-w-2xl flex-col text-center lg:col-span-6 lg:mx-0 lg:max-w-none lg:text-left">
+                {/* Two-tone, not gradient: hierarchy by weight and ink step,
+                    so the plum stays reserved for the action below. */}
+                <h1 className="text-balance font-display text-display-lg text-foreground">
                   Run your job search with{' '}
-                  <span className="gradient-text">clarity, consistency, and control.</span>
+                  <span className="text-ink-muted">clarity, consistency, and control.</span>
                 </h1>
 
-                <p className="mx-auto mt-6 max-w-xl text-pretty text-lg leading-relaxed text-muted-foreground lg:mx-0">
+                <p className="mx-auto mt-6 max-w-[44ch] text-pretty text-body-lg text-ink-muted lg:mx-0">
                   Aspirely finds relevant opportunities, prepares stronger applications, and keeps
                   every next step organized.
                 </p>
@@ -197,12 +203,12 @@ export function WorkspaceHero({
                       <Button
                         asChild
                         size="lg"
-                        className="h-[3.25rem] w-full rounded-full px-8 text-base font-semibold shadow-panel sm:w-auto"
+                        className="h-12 w-full rounded-full px-7 text-base font-semibold shadow-soft hover:bg-primary-hover sm:w-auto"
                       >
                         <Link to="/app/home">Open my workspace</Link>
                       </Button>
                     </div>
-                    <p className="mt-4 text-[13.5px] font-medium text-muted-foreground">
+                    <p className="mt-4 text-body-md text-muted-foreground">
                       You're signed in. Continue where you left off.
                     </p>
                   </>
@@ -222,7 +228,7 @@ export function WorkspaceHero({
                       <Button
                         asChild
                         size="lg"
-                        className="h-[3.25rem] w-full rounded-full px-8 text-base font-semibold shadow-panel sm:w-auto"
+                        className="h-12 w-full rounded-full px-7 text-base font-semibold shadow-soft hover:bg-primary-hover sm:w-auto"
                       >
                         <Link to="/register">Create free account</Link>
                       </Button>
@@ -234,17 +240,18 @@ export function WorkspaceHero({
                           // page's ONE shared picker. No scroll, no focus hand-off,
                           // no second uploader.
                           onClick={picker.open}
-                          // Glass, not a second solid button. Hover is colour and
-                          // fill only — no lift or press scale, which made the
-                          // label jump.
-                          className="focus-ring-visible glass-pane inline-flex h-[3.25rem] w-full items-center justify-center rounded-full px-8 text-base font-semibold text-foreground transition-[color,border-color,background-color] duration-200 ease-out hover:border-primary/40 hover:text-primary hover:[--glass-alpha:1] sm:w-auto"
+                          // Neutral outline, not a second plum button: the accent
+                          // marks ONE primary action. Same height and shape, so
+                          // the pair still reads as a choice. Hover is colour and
+                          // fill only, no lift, so the label never jumps.
+                          className="focus-ring-visible inline-flex h-12 w-full items-center justify-center rounded-full border border-input bg-card px-7 text-base font-semibold text-foreground shadow-soft transition-[color,border-color,background-color] duration-200 ease-out hover:border-foreground/40 hover:bg-accent sm:w-auto"
                         >
                           Find my matches
                         </button>
                       ) : (
                         <Link
                           to="/register"
-                          className="focus-ring-visible glass-pane inline-flex h-[3.25rem] w-full items-center justify-center rounded-full px-8 text-base font-semibold text-foreground transition-[color,border-color,background-color] duration-200 ease-out hover:border-primary/40 hover:text-primary hover:[--glass-alpha:1] sm:w-auto"
+                          className="focus-ring-visible inline-flex h-12 w-full items-center justify-center rounded-full border border-input bg-card px-7 text-base font-semibold text-foreground shadow-soft transition-[color,border-color,background-color] duration-200 ease-out hover:border-foreground/40 hover:bg-accent sm:w-auto"
                         >
                           Find my matches
                         </Link>
@@ -254,7 +261,7 @@ export function WorkspaceHero({
                     {/* ONE trust line. There were three stacked reassurance
                         statements here, which is how a hero stops being read at
                         all - each one made the next one cheaper. */}
-                    <p className="mt-4 text-[13.5px] font-medium text-muted-foreground">
+                    <p className="mt-4 text-body-md text-muted-foreground">
                       Free to start. Nothing is submitted without your approval.
                     </p>
 
@@ -287,11 +294,11 @@ export function WorkspaceHero({
                         which made three unrelated statements out of one group. */}
                     <div className="mt-6 max-w-md lg:mx-0">{uploadSurface}</div>
 
-                    <p className="mt-5 text-sm text-muted-foreground">
+                    <p className="mt-5 text-body-md text-muted-foreground">
                       Already have an account?{' '}
                       <Link
                         to="/login"
-                        className="font-medium text-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        className="rounded-sm font-semibold text-primary underline underline-offset-4 hover:decoration-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                       >
                         Sign in
                       </Link>
@@ -300,7 +307,12 @@ export function WorkspaceHero({
                 )}
               </div>
 
-              <HeroPreview />
+              {/* The stage: poster first (the LCP candidate), real-time scene
+                  after load + idle. Below the actions on a phone. */}
+              <HeroStage
+                theme={theme}
+                className="mx-auto w-full max-w-xl lg:col-span-6 lg:max-w-none"
+              />
             </motion.div>
           ) : (
             /* Real work owns the window */

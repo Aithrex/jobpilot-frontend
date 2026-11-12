@@ -8,6 +8,7 @@
 import { Sparkles, FileDown, Clipboard, RotateCw } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { AiDisclosure } from '@/components/ai/AiDisclosure';
 
 interface CoverLetterPanelProps {
   coverLetter: string | null;
@@ -75,6 +76,7 @@ export function CoverLetterPanel({
       {coverLetter ? (
         <>
           {/* Generated letter */}
+          <AiDisclosure kind="draft" />
           <div className="surface max-h-[480px] overflow-y-auto rounded-container p-5 shadow-soft sm:p-6">
             <div className="whitespace-pre-line font-serif text-[14px] leading-[1.75] text-foreground">
               {coverLetter}

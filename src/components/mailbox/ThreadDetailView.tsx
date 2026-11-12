@@ -87,7 +87,7 @@ function AttachmentRow({ att }: { att: Attachment }) {
           title={`This attachment was flagged (${att.verdict}) and cannot be downloaded.`}
         >
           <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />
-          {att.verdict === 'blocked' ? 'Blocked' : 'Suspicious'} - download disabled
+          {att.verdict === 'blocked' ? 'Blocked' : 'Suspicious'} · download disabled
         </span>
       )}
     </li>
@@ -230,7 +230,7 @@ export function ThreadDetailView({ detail, onBack, onChanged }: ThreadDetailView
       toast.error("Couldn't report this thread", { description: res.error });
       return;
     }
-    toast.success('Reported. Thanks - we will take a look.');
+    toast.success('Reported. Thanks, we will take a look.');
     onChanged?.();
   };
 
@@ -336,7 +336,7 @@ export function ThreadDetailView({ detail, onBack, onChanged }: ThreadDetailView
             rows={2}
             disabled
             aria-label="Reply (coming soon)"
-            placeholder="Reply from your managed address - coming soon"
+            placeholder="Replying from your managed address is coming soon"
             className="flex-1 resize-none rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground placeholder:text-muted-foreground/70"
           />
           <Button size="sm" disabled className="gap-1.5" aria-disabled="true">

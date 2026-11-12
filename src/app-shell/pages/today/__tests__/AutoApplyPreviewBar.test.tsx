@@ -53,7 +53,7 @@ describe('AutoApplyPreviewBar', () => {
     expect(region).toBeInTheDocument();
 
     // Paused wording is present (desktop + mobile layouts both render it).
-    expect(screen.getAllByText(/paused - preview/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/paused · preview/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/auto-apply is paused/i).length).toBeGreaterThan(0);
 
     // The ONLY control is the navigational preview link.

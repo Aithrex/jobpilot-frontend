@@ -11,8 +11,9 @@
     "test:watch": "vitest",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\"",
-    "copy:check": "node scripts/ascii-copy-sweep.mjs --check",
-    "copy:fix": "node scripts/ascii-copy-sweep.mjs"
+    "copy:check": "node scripts/copy-lint.mjs --check",
+    "copy:fix": "node scripts/ascii-copy-sweep.mjs",
+    "licenses:generate": "node scripts/generate-licenses.mjs"
   },
   "dependencies": {
     "@datadog/browser-rum": "^5.35.1",
@@ -88,6 +89,7 @@
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react-swc": "^3.5.0",
     "autoprefixer": "^10.4.20",
+    "axe-core": "^4.10.0",
     "eslint": "^9.9.0",
     "eslint-plugin-react-hooks": "^5.1.0-rc.0",
     "eslint-plugin-react-refresh": "^0.4.9",

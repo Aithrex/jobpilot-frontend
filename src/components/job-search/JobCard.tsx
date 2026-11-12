@@ -145,7 +145,7 @@ function MatchScoreRing({ job }: { job: Job }) {
       </svg>
       <span className="absolute inset-0 flex flex-col items-center justify-center leading-none" aria-hidden>
         <span className={cn('font-mono text-[12px] font-bold tabular-nums', band.text)}>
-          {scored ? shown : '--'}
+          {scored ? shown : 'N/A'}
         </span>
         <span className="text-[7px] font-medium uppercase tracking-wide text-muted-foreground">
           {scored ? 'fit' : 'n/a'}
@@ -228,7 +228,7 @@ export function ApplyConfirmDialog({
           <AlertDialogTitle>Did you apply for this role?</AlertDialogTitle>
           <AlertDialogDescription>
             {job
-              ? `The posting for ${job.title} at ${job.company} opened in a new tab. If you submitted an application, we’ll move it to Applied in your tracker. If not, it stays where it is.`
+              ? `The posting for ${job.title} at ${job.company} opened in a new tab. If you submitted an application, we'll move it to Applied in your tracker. If not, it stays where it is.`
               : ''}
           </AlertDialogDescription>
         </AlertDialogHeader>
@@ -651,7 +651,7 @@ export function JobCard({
                     onClick={() => void startTailorHandoff()}
                     disabled={tailoring}
                     aria-busy={tailoring}
-                    title="Open Tailor with this job’s description"
+                    title="Open Tailor with this job's description"
                     className="h-9 min-w-0 gap-1.5 border-border bg-card text-xs font-semibold text-foreground hover:border-primary hover:bg-primary/10 hover:text-primary disabled:opacity-70"
                   >
                     {tailoring ? (

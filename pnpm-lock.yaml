@@ -220,6 +220,9 @@ devDependencies:
   autoprefixer:
     specifier: ^10.4.20
     version: 10.4.21(postcss@8.5.6)
+  axe-core:
+    specifier: ^4.10.0
+    version: 4.14.0
   eslint:
     specifier: ^9.9.0
     version: 9.31.0
@@ -3273,6 +3276,11 @@ packages:
       picocolors: 1.1.1
       postcss: 8.5.6
       postcss-value-parser: 4.2.0
+    dev: true
+
+  /axe-core@4.14.0:
+    resolution: {integrity: sha512-9WTZxEjsZ7b13TH8JPmbV2z8CHbl80/2hm3XPEG4JgNdQLK81IBRXmSxHfMAOkSqQeRxT/0dwNDz2GOm3zzpcQ==}
+    engines: {node: '>=4'}
     dev: true
 
   /balanced-match@1.0.2:

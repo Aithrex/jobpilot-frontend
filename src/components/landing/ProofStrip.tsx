@@ -153,7 +153,7 @@ export function ProofStrip() {
           <div className="overflow-hidden rounded-2xl border border-border bg-card/60 p-6 shadow-soft sm:p-8 lg:p-10">
             <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                <p className="text-caption-sm font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                   Why trust it
                 </p>
                 <h2

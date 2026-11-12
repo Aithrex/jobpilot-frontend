@@ -499,7 +499,7 @@ export function useJobSearch() {
     }
     notifyTrackerRefresh();
     toast.success('Moved to Applied', {
-      description: 'It’s in Apply → Tracker under Applied.',
+      description: "It's in Apply → Tracker under Applied.",
     });
     return resp;
   }, [updateJobStatus, resolvePosting, bumpSavedTabCounts, setSavedJobs]);

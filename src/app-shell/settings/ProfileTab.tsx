@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { apiService } from "@/lib/api";
 import PasswordCard from "./PasswordCard";
 import TimezoneCard from "./TimezoneCard";
+import { PrivacySettingsSection } from "@/components/privacy/PrivacySettingsSection";
 
 const ROLE_OPTIONS = [
   "Software Engineer",
@@ -643,6 +644,8 @@ export default function ProfileTab() {
           </p>
         )}
       </div>
+
+      <PrivacySettingsSection />
 
       {/* Danger zone */}
       <div className="rounded-2xl border border-gray-200 dark:border-white/[0.07] bg-white/80 dark:bg-gray-900/50 backdrop-blur-sm shadow-xl shadow-black/5 dark:shadow-black/20 p-6">

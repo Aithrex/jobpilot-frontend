@@ -202,7 +202,7 @@ export default function TicketView({ day, params, onBack, onCompleted }: TicketV
                   ))}
                 </ul>
               )}
-              <p className="mt-2 text-xs text-muted-foreground">Fix these and submit again — retries are free.</p>
+              <p className="mt-2 text-xs text-muted-foreground">Fix these and submit again. Retries are free.</p>
             </div>
           )}
 
@@ -210,7 +210,7 @@ export default function TicketView({ day, params, onBack, onCompleted }: TicketV
             htmlFor="hub-repo-url"
             className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
           >
-            <Github className="h-3.5 w-3.5" /> Proof of work — public repo URL
+            <Github className="h-3.5 w-3.5" /> Proof of work: public repo URL
           </label>
           <div className="flex items-center gap-2">
             <Input
@@ -252,7 +252,7 @@ export default function TicketView({ day, params, onBack, onCompleted }: TicketV
                   </Button>
                 </span>
               </TooltipTrigger>
-              <TooltipContent>LinkedIn sharing — coming soon</TooltipContent>
+              <TooltipContent>LinkedIn sharing is coming soon</TooltipContent>
             </Tooltip>
           </TooltipProvider>
         </div>

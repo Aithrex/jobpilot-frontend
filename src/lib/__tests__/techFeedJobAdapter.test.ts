@@ -141,9 +141,10 @@ describe('techFeedJobToJob never invents a value', () => {
 });
 
 describe('techFeedJobToJob known values still travel', () => {
-  test('a published salary becomes the display string', () => {
+  test('a published salary becomes the display string, with the range written as "to"', () => {
+    // The backend's display string is "USD 170,000 - 210,000"; only the dash changes.
     const posting = techFeedJobToJob(makeTechFeedJob());
-    expect(posting.salary).toBe('USD 170,000 - 210,000');
+    expect(posting.salary).toBe('USD 170,000 to 210,000');
   });
 
   test('a published salary with no display string is composed, not dropped', () => {
@@ -154,7 +155,7 @@ describe('techFeedJobToJob known values still travel', () => {
     );
     // Adapter uses host-locale toLocaleString(); CI is en-US, Windows may not be.
     expect(posting.salary).toBe(
-      `USD ${Number(120000).toLocaleString()} - ${Number(140000).toLocaleString()}`,
+      `USD ${Number(120000).toLocaleString()} to ${Number(140000).toLocaleString()}`,
     );
   });
 

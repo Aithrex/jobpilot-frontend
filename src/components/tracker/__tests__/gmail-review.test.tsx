@@ -313,25 +313,25 @@ describe('Gmail review', () => {
     );
     expect(
       screen.getByRole('option', {
-        name: 'Engineer - Example - Applied Oct 12, 2026 - Application 11111111',
+        name: 'Engineer · Example · Applied Oct 12, 2026 · Application 11111111',
       }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('option', {
-        name: 'Engineer - Example - Applied Oct 12, 2026 - Application 22222222',
+        name: 'Engineer · Example · Applied Oct 12, 2026 · Application 22222222',
       }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('option', { name: 'Engineer - Example - Applied Oct 15, 2026' }),
+      screen.getByRole('option', { name: 'Engineer · Example · Applied Oct 15, 2026' }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('option', { name: 'Designer - Example - Added Oct 16, 2026' }),
+      screen.getByRole('option', { name: 'Designer · Example · Added Oct 16, 2026' }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('option', { name: 'Analyst - Example - Application 55555555' }),
+      screen.getByRole('option', { name: 'Analyst · Example · Application 55555555' }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('option', { name: 'Analyst - Example - Application 66666666' }),
+      screen.getByRole('option', { name: 'Analyst · Example · Application 66666666' }),
     ).toBeInTheDocument();
     const user = userEvent.setup();
     await user.selectOptions(screen.getByRole('combobox'), 'record-22222222');

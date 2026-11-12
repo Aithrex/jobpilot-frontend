@@ -141,7 +141,7 @@ const GROUPS: Group[] = [
         q: 'Can I start for free?',
         a: 'Yes, and free is the only plan you can sign up for today. It covers matching with the reason for each match, resume tailoring with a daily limit, the tracker and the daily briefing. It does not expire and it never asks for a card.',
         evidence:
-          'pricing.ts PRICING_PUBLISHED is false and only the Free plan carries a CTA. The daily limits live in pricing.ts and render in the plans section - deliberately not repeated here, so there is one place to change them.',
+          'pricing.ts PRICING_PUBLISHED is false and only the Free plan carries a CTA. The daily limits live in pricing.ts and render in the plans section, deliberately not repeated here, so there is one place to change them.',
       },
       {
         q: 'What happens to my resume and data?',
@@ -177,7 +177,7 @@ export function BeforeYouBegin({ headingLevel = 'h2', className }: BeforeYouBegi
               is simply the first thing you read, and a sticky block on a small
               viewport eats the screen the answers need. */}
           <Reveal className="lg:sticky lg:top-28 lg:self-start">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+            <p className="text-caption-sm font-semibold uppercase tracking-[0.14em] text-muted-foreground">
               Before you begin
             </p>
             <Heading
@@ -257,7 +257,7 @@ export function BeforeYouBegin({ headingLevel = 'h2', className }: BeforeYouBegi
                     {group.title}
                   </h3>
                   {group.status && (
-                    <span className="rounded-full border border-border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                    <span className="rounded-full border border-border px-2 py-0.5 text-caption-sm font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                       {STATUS_LABEL[group.status]}
                     </span>
                   )}

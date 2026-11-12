@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { AiDisclosure } from "@/components/ai/AiDisclosure";
 import { apiService } from "@/lib/api";
 import type { QDifficulty, MockEvaluation } from "@/types/resume";
 import { DifficultyBadge, Spinner } from "./PracticeCards";
@@ -208,6 +209,7 @@ export default function MockInterview({
     <div className="space-y-4">
       {/* Header setup bar */}
       <div className="rounded-xl border border-border bg-card/60 shadow-soft p-3 space-y-3">
+        <AiDisclosure text="An AI assistant asks the questions and scores your answers, not a person. It can make mistakes." />
         <div>
           <div className="flex items-center gap-2 mb-1.5">
             <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Category</span>
@@ -245,7 +247,7 @@ export default function MockInterview({
           {history.length > 0 && (
             <span className="text-sm text-muted-foreground">
               <b>{history.length}</b> answered · avg{" "}
-              <span className={`font-bold tabular-nums ${avgScore !== null ? scoreColor(avgScore) : ""}`}>{avgScore ?? " - "}</span>
+              <span className={`font-bold tabular-nums ${avgScore !== null ? scoreColor(avgScore) : ""}`}>{avgScore ?? "pending"}</span>
             </span>
           )}
           <button

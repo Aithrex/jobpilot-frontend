@@ -17,6 +17,7 @@ import { ForgotPasswordDialog } from '@/components/auth/ForgotPasswordDialog';
 import { SocialQuietRow } from '@/components/auth/SocialQuietRow';
 import { PasswordInput } from '@/components/auth/PasswordInput';
 import { AuthNotice, errorVariant } from '@/components/auth/AuthNotice';
+import { OAuthAgreement } from '@/components/legal/OAuthAgreement';
 
 /**
  * Sign-in: a compact, familiar form (both fields visible - no wizard) on the
@@ -219,6 +220,8 @@ export default function Login() {
 
       <div className="mt-6">
         <SocialQuietRow verb="Continue with" />
+        {/* A provider sign-in can create an account, so the terms are shown here too. */}
+        <OAuthAgreement className="mt-3" />
       </div>
 
       <ForgotPasswordDialog

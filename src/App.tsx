@@ -29,6 +29,12 @@ const Privacy = lazy(() => import('./pages/Privacy'));
 const Pricing = lazy(() => import('./pages/Pricing'));
 const Trust = lazy(() => import('./pages/Trust'));
 const Terms = lazy(() => import('./pages/Terms'));
+// The rest of the legal surface (US launch compliance). Same pattern: page
+// files only, on the shared public shell.
+const PrivacyChoices = lazy(() => import('./pages/PrivacyChoices'));
+const Accessibility = lazy(() => import('./pages/Accessibility'));
+const Licenses = lazy(() => import('./pages/Licenses'));
+const Unsubscribe = lazy(() => import('./pages/Unsubscribe'));
 
 // The authenticated workspace's provider stack (upgrade modal + feedback dialog
 // + combined-jobs controller). Mounted as a pathless layout route around
@@ -37,7 +43,7 @@ const Terms = lazy(() => import('./pages/Terms'));
 // payload. Lazy so Rollup splits it (and its deps) out of the entry chunk.
 const WorkspaceProviders = lazy(() => import('./components/workspace/WorkspaceProviders'));
 
-// Canonical app shell (`/next/*`). Classic `/app` ResumeParser is retired —
+// Canonical app shell (`/next/*`). Classic `/app` ResumeParser is retired;
 // those URLs redirect into `/next` via ClassicWorkspaceRedirect.
 const AppShell = lazy(() => import('@/app-shell/AppShell'));
 const ClassicWorkspaceRedirect = lazy(() => import('@/app-shell/ClassicWorkspaceRedirect'));
@@ -56,7 +62,7 @@ const SettingsPage = lazy(() => import('@/app-shell/pages/SettingsPage'));
 
 // Grow + Discover mount existing standalone tab components as deep-linkable
 // nested sections under their destination layout.
-// Sprint Learning Hub — the 14-day Jira-ticket sprint (components/hub).
+// Sprint Learning Hub: the 14-day Jira-ticket sprint (components/hub).
 const LearningHubTab = lazy(() => import('@/components/hub/LearningHubTab'));
 const NetworkTab = lazy(() => import('@/components/resume/NetworkTab'));
 const EventsTab = lazy(() => import('@/components/resume/EventsTab'));
@@ -322,6 +328,39 @@ function AppContent() {
             element={
               <Suspense fallback={<RouteLoadingFallback />}>
                 <Terms />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/privacy/choices"
+            element={
+              <Suspense fallback={<RouteLoadingFallback />}>
+                <PrivacyChoices />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/accessibility"
+            element={
+              <Suspense fallback={<RouteLoadingFallback />}>
+                <Accessibility />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/licenses"
+            element={
+              <Suspense fallback={<RouteLoadingFallback />}>
+                <Licenses />
+              </Suspense>
+            }
+          />
+          {/* Tokenized email unsubscribe. Works signed out; GET reads, a click posts. */}
+          <Route
+            path="/unsubscribe"
+            element={
+              <Suspense fallback={<RouteLoadingFallback />}>
+                <Unsubscribe />
               </Suspense>
             }
           />

@@ -127,7 +127,7 @@ export function RequirementsChips({
           return (
             <div>
               <p className="text-[11px] font-medium text-muted-foreground mb-2">
-                Role context — not skills
+                Role context (not skills)
               </p>
               <div className="flex flex-wrap gap-1.5">
                 {bits.slice(0, 8).map((s) => (

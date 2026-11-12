@@ -582,7 +582,7 @@ export function TechFeedFilters({
           values={filters.titles}
           onChange={(titles) => onPatch({ titles })}
           placeholder="Add a title and press Enter"
-          emptyState="No titles yet - the search covers every title."
+          emptyState="No titles yet, so the search covers every title."
           accentClass="border-primary/30 bg-primary/10 text-foreground"
         />
       </FilterGroup>
@@ -920,8 +920,8 @@ export function TechFeedFilters({
                 <p className="text-[11px] text-muted-foreground">
                   Shows MNCs, public technology companies, growth companies and
                   niche startups we hold documentary evidence for. Employers we
-                  have not yet classified are hidden - the result count says how
-                  many.
+                  have not yet classified are hidden, and the result count says
+                  how many.
                 </p>
               )}
               <ChoiceGroup

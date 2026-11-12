@@ -152,7 +152,7 @@ export default function ApplicationDetail({
           ) : app.resume_used === 'base' ? (
             <span className="text-label text-muted-foreground">Base resume</span>
           ) : (
-            <span className="text-muted-foreground">—</span>
+            <span className="text-muted-foreground">Not run</span>
           )}
         </Fact>
         {app.next_action_date && (

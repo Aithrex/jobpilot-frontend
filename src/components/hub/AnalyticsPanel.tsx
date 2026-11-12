@@ -148,7 +148,7 @@ export default function AnalyticsPanel({ params }: AnalyticsPanelProps) {
             <Activity className="h-4 w-4 text-primary" /> Recent Activity
           </h4>
           {data.recent_activity.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Nothing yet — get started!</p>
+            <p className="text-sm text-muted-foreground">Nothing yet. Your activity will show up here.</p>
           ) : (
             <ul className="space-y-2">
               {data.recent_activity.map((a, i) => (

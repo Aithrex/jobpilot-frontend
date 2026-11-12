@@ -69,7 +69,7 @@ function PausedTag() {
   return (
     <span className="inline-flex shrink-0 items-center gap-1.5">
       <Pause className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
-      <span className="overline leading-none">Paused - Preview</span>
+      <span className="overline leading-none">Paused · Preview</span>
     </span>
   );
 }

@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useId, useRef, useState, type MouseEvent, type ReactNode } from 'react';
+import { useCallback, useId, type MouseEvent, type ReactNode } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { useTheme } from '@/components/theme-provider';
+import { useResolvedTheme } from '@/components/theme-provider';
 
 /**
  * The page's in-document destinations, declared ONCE. Used by the scroll-spy
@@ -54,32 +54,24 @@ export const PUBLIC_NAV: ReadonlyArray<{
 ] as const;
 
 /**
- * THE public site's surface, decided in one place for `/`, `/pricing` and
- * `/trust`.
+ * THE public site's surface, decided in one place for `/`, `/pricing`,
+ * `/trust`, the legal pages and the auth shell.
  *
- * IT DOES NOT FOLLOW THE OPERATING SYSTEM, and that is the point. The public
- * shells used to read `useResolvedTheme()`, which folds `theme: 'system'` -
- * what every first-time visitor has - into light or dark from the OS. A
- * visitor whose laptop is set to dark chrome was therefore handed a near-black
- * plum marketing page, with the hero film's readability wash painted in that
- * same near-black: the dark panel down the left of the hero, the black bar,
- * and the fade-to-black at the bottom were all one token resolving dark.
+ * IT FOLLOWS THE VISITOR (owner decision, 2026-11-11). The resolved theme is
+ * the visitor's explicit choice from the theme control, or, while that is
+ * still "system", their operating-system preference. The earlier rule (light
+ * unless the toggle was pressed) existed because the old dark landing was a
+ * near-black plum slab with a film wash painted over it; the redesigned page
+ * is one neutral token system with a 3D stage lit for both themes, so a dark
+ * preference now gets a page designed to be dark rather than a light page it
+ * did not ask for.
  *
- * Preferring dark application chrome is not a request for a dark marketing
- * page, and `/` is the one route where the first frame is the entire
- * impression. So the bright liquid-glass surface is the default, and dark is
- * reachable only by an EXPLICIT press of the theme control - `theme === 'dark'`,
- * never a resolved 'system'.
- *
- * The authenticated product is untouched: it still follows the OS, because
- * there the preference is about hours of use rather than a first impression.
+ * `dark` rides along on the root so shared primitives that ship their own
+ * `dark:` variants keep behaving.
  */
 export function usePublicSurface(): { className: string; colorScheme: 'light' | 'dark' } {
-  const { theme } = useTheme();
-  const dark = theme === 'dark';
+  const dark = useResolvedTheme() === 'dark';
   return {
-    // `dark` rides along so shared primitives that ship their own `dark:`
-    // variants keep behaving, exactly as the obsidian pairing did.
     className: dark ? 'dark surface-nocturne' : 'surface-lumen',
     colorScheme: dark ? 'dark' : 'light',
   };
@@ -321,17 +313,17 @@ export function SectionHead({
 }) {
   return (
     <Reveal className={cn('max-w-2xl', className)}>
-      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+      <p className="text-caption-sm font-semibold uppercase tracking-[0.14em] text-ink-muted">
         {eyebrow}
       </p>
       <h2
         id={titleId}
-        className="mt-3 text-balance font-display text-3xl font-extrabold leading-[1.1] tracking-[-0.025em] text-foreground sm:text-[2.6rem]"
+        className="mt-3 text-balance font-display text-display-sm text-foreground"
       >
         {title}
       </h2>
       {lede && (
-        <p className="mt-4 text-pretty text-base leading-relaxed text-muted-foreground sm:text-[1.0625rem]">
+        <p className="mt-4 max-w-[60ch] text-pretty text-body-lg text-ink-muted">
           {lede}
         </p>
       )}
@@ -358,70 +350,6 @@ export function Grain({ className }: { className?: string }) {
       </filter>
       <rect width="100%" height="100%" filter={`url(#${filterId})`} />
     </svg>
-  );
-}
-
-/**
- * Ambient brand motion: two blurred radial glows (indigo + the cyan signal
- * accent) drifting on very slow transform-only loops behind the final CTA.
- * Reuses the existing `aurora-drift` keyframes (a symmetric breathe); under
- * reduced motion the glows stay visible but stop moving.
- *
- * It PAUSES rather than burns: a blurred, composited layer is one of the more
- * expensive things a page can leave running, and this one lives at the bottom
- * of a long page where it is off-screen almost all of the time. The whole
- * layer's `animation-play-state` is driven by "on screen AND tab visible", so
- * it costs nothing in a background tab or above the fold.
- *
- * Decorative by contract: aria-hidden, pointer-transparent, and clipped by its
- * own overflow so the negative offsets can never cause horizontal scroll.
- */
-export function AmbientGlow({ className }: { className?: string }) {
-  const hostRef = useRef<HTMLDivElement | null>(null);
-  const [playing, setPlaying] = useState(false);
-
-  useEffect(() => {
-    const host = hostRef.current;
-    if (!host || typeof IntersectionObserver === 'undefined') return;
-
-    let onScreen = false;
-    const sync = () => setPlaying(onScreen && document.visibilityState !== 'hidden');
-
-    const io = new IntersectionObserver(([entry]) => {
-      onScreen = entry.isIntersecting;
-      sync();
-    });
-    io.observe(host);
-    document.addEventListener('visibilitychange', sync);
-    return () => {
-      io.disconnect();
-      document.removeEventListener('visibilitychange', sync);
-    };
-  }, []);
-
-  const playState = { animationPlayState: playing ? 'running' : ('paused' as const) };
-
-  return (
-    <div
-      ref={hostRef}
-      aria-hidden
-      className={cn('pointer-events-none absolute inset-0 overflow-hidden', className)}
-    >
-      <div
-        className="absolute -left-[12%] -top-[18%] h-[58%] w-[52%] rounded-full blur-3xl will-change-transform animate-[aurora-drift_75s_ease-in-out_infinite] motion-reduce:animate-none"
-        style={{
-          ...playState,
-          background: 'radial-gradient(closest-side, hsl(var(--primary) / 0.15), transparent 72%)',
-        }}
-      />
-      <div
-        className="absolute -right-[14%] top-[10%] h-[64%] w-[56%] rounded-full blur-3xl will-change-transform animate-[aurora-drift_90s_ease-in-out_infinite_reverse] motion-reduce:animate-none"
-        style={{
-          ...playState,
-          background: 'radial-gradient(closest-side, hsl(var(--brand-to) / 0.13), transparent 72%)',
-        }}
-      />
-    </div>
   );
 }
 

@@ -196,16 +196,22 @@ describe('primary CTA', () => {
     expect(clickSpy).toHaveBeenCalledTimes(1);
   });
 
-  test('the hero has no decorative film or poster', () => {
-    const { container } = renderLanding();
+  test('the hero has no film, and its one image is the labelled 3D stage poster', () => {
+    renderLanding();
     const hero = document.getElementById('try') as HTMLElement;
 
+    // Owner decision 2026-11-11: a 3D stage with a static poster replaced the
+    // DOM product window. Still no video, and the poster is the ONLY image.
     expect(hero.querySelector('video')).toBeNull();
-    expect(hero.querySelector('img[src*="poster"], img[src*="hero"]')).toBeNull();
+    const images = hero.querySelectorAll('img');
+    expect(images).toHaveLength(1);
+    expect(images[0].getAttribute('src')).toMatch(/^\/images\/landing\/aspirely-stage-(light|dark)\.webp$/);
+    // Explicit dimensions, so it can never shift the layout (CLS).
+    expect(images[0]).toHaveAttribute('width');
+    expect(images[0]).toHaveAttribute('height');
 
     const cta = within(hero).getByRole('link', { name: /^Create free account$/i });
     expect(cta).toBeInTheDocument();
-    void container;
   });
 
 });
@@ -227,26 +233,29 @@ describe('honesty of the pre-upload composition', () => {
     expect(text).not.toMatch(/Senior (Frontend|Backend|Software) Engineer at/i);
   });
 
-  test('the hero preview is a product window, not a film or a screenshot', () => {
+  test('the hero stage says plainly that it is fictional', () => {
     renderLanding();
     const hero = document.getElementById('try') as HTMLElement;
     expect(hero.querySelector('video')).toBeNull();
-    expect(hero.querySelector('img[src*="poster"], img[src*="hero"]')).toBeNull();
-    expect(within(hero).getByText('Career Workspace')).toBeInTheDocument();
-    expect(within(hero).getByText(/placeholders, not real results/i)).toBeInTheDocument();
+    expect(within(hero).getByText(/fictional, not real results/i)).toBeInTheDocument();
+    expect(within(hero).getByRole('img', { name: /Fictional, not real data/i })).toBeInTheDocument();
   });
 
 });
 
 describe('product demo accessibility', () => {
-  test('the idle hero preview is named and operable, not a silent decoration', () => {
+  test('the idle hero stage is one named image, and never a keyboard trap', () => {
     renderLanding();
     const hero = document.getElementById('try') as HTMLElement;
-    expect(hero.querySelector('video, img[src*="poster"]')).toBeNull();
-    expect(
-      within(hero).getByRole('tablist', { name: /Illustrative workflow steps/i }),
-    ).toBeInTheDocument();
-    expect(within(hero).getByRole('tab', { name: /^Read$/i })).toBeInTheDocument();
+    expect(hero.querySelector('video')).toBeNull();
+    // Without WebGL (jsdom) the poster is the whole stage and carries the
+    // description; there is no canvas to load and no motion to pause.
+    const stage = within(hero).getByRole('img', {
+      name: /resume sheet splitting into three example job cards/i,
+    });
+    expect(stage.tagName).toBe('IMG');
+    expect(hero.querySelector('canvas')).toBeNull();
+    expect(within(hero).queryByRole('button', { name: /pause animation/i })).toBeNull();
   });
 
 });
@@ -426,7 +435,7 @@ describe('route loading fallback', () => {
 // ── 7b. One surface per page, chosen by the theme ────────────────
 
 describe('surface language', () => {
-  test('ONE surface owns the page, and it is the bright public canvas', async () => {
+  test('ONE surface owns the page, and with a light preference it is the bright canvas', async () => {
     const { container } = renderLanding();
     await screen.findByRole('heading', { level: 1 });
 
@@ -448,18 +457,12 @@ describe('surface language', () => {
     }
   });
 
-  test('an OS preference for dark does NOT hand a stranger a dark marketing page', async () => {
-    // THE REGRESSION THIS EXISTS FOR. The public shells read
-    // `useResolvedTheme()`, which folds `theme: 'system'` - what every
-    // first-time visitor has - into light or dark from the operating system.
-    // So a visitor whose laptop is set to dark chrome was served a near-black
-    // plum landing page, with the hero film's readability wash painted in that
-    // same near-black: the dark panel down the left of the hero and the
-    // fade-to-black at its foot were one token resolving dark, not a design.
-    //
-    // Preferring dark application chrome is not a request for a dark marketing
-    // page, and `/` is the one route where the first frame is the whole
-    // impression. Only an explicit press of the theme control may darken it.
+  test('the public page follows the visitor: an OS preference for dark gets the dark surface', async () => {
+    // Owner decision 2026-11-11, superseding the earlier "light unless the
+    // toggle was pressed" rule. That rule existed because the old dark landing
+    // was a near-black slab with a film wash over it; the redesigned page is
+    // one neutral token system with a 3D stage lit for both themes, so the
+    // resolved theme (system preference, or an explicit choice) now decides.
     const real = window.matchMedia;
     Object.defineProperty(window, 'matchMedia', {
       writable: true,
@@ -476,9 +479,13 @@ describe('surface language', () => {
       await screen.findByRole('heading', { level: 1 });
       const root = container.firstElementChild as HTMLElement;
 
-      expect(root.className).toContain('surface-lumen');
-      expect(root.className).not.toContain('dark');
-      expect(root.style.colorScheme).toBe('light');
+      expect(root.className).toContain('surface-nocturne');
+      expect(root.className).toContain('dark');
+      expect(root.className).not.toContain('surface-lumen');
+      expect(root.style.colorScheme).toBe('dark');
+      // And the stage swaps to the poster rendered for the dark studio.
+      const poster = (document.getElementById('try') as HTMLElement).querySelector('img');
+      expect(poster?.getAttribute('src')).toContain('aspirely-stage-dark');
     } finally {
       Object.defineProperty(window, 'matchMedia', {
         writable: true,
@@ -496,7 +503,7 @@ describe('surface language', () => {
     // which left a light page carrying black slabs. Neither may re-declare a
     // surface, and nothing inside them may be drawn with a literal white or
     // black - those are the two ways an illustration stops inverting.
-    const frame = document.querySelector('.shadow-float') as HTMLElement;
+    const frame = document.querySelector('[data-hero-stage]') as HTMLElement;
     expect(frame.closest('.surface-obsidian')).toBeNull();
     expect(signalPanel().className).not.toContain('surface-obsidian');
 
@@ -1019,11 +1026,10 @@ describe('hero composition', () => {
     expect(account.compareDocumentPosition(signIn) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  test('the idle hero shows the workspace preview with redacted structure, not invented results', () => {
+  test('the idle hero shows the fictional 3D stage, not invented results', () => {
     renderLanding();
-    expect(screen.getByText('Career Workspace')).toBeInTheDocument();
-    expect(screen.getByRole('tablist', { name: /Illustrative workflow steps/i })).toBeInTheDocument();
-    expect(screen.getByText(/Illustrative workflow/i)).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: /Fictional, not real data/i })).toBeInTheDocument();
+    expect(screen.getByText(/Illustration only/i)).toBeInTheDocument();
     // Still no fabricated outcomes inside that window.
     expect(document.body.textContent ?? '').not.toMatch(/\d{1,3}\s*%\s*(match|fit)/i);
   });

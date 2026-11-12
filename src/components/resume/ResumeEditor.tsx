@@ -102,7 +102,7 @@ function LivePreview({ resume }: { resume: TailoredFullResume }) {
                     <div>
                       <span className="font-semibold text-foreground">{exp.company}</span>
                       {exp.location ? <span className="text-muted-foreground">, {exp.location}</span> : null}
-                      {exp.title && <span className="text-muted-foreground italic"> &mdash; {exp.title}</span>}
+                      {exp.title && <span className="text-muted-foreground italic"> · {exp.title}</span>}
                     </div>
                     <span className="text-[11px] text-muted-foreground whitespace-nowrap shrink-0">{exp.dates}</span>
                   </div>
@@ -177,7 +177,7 @@ function LivePreview({ resume }: { resume: TailoredFullResume }) {
                 <div key={i} className="flex justify-between items-start gap-2">
                   <div>
                     <span className="font-semibold text-foreground/90">{edu.institution}</span>
-                    {edu.degree && <span className="text-muted-foreground"> &mdash; {edu.degree}</span>}
+                    {edu.degree && <span className="text-muted-foreground"> · {edu.degree}</span>}
                     {edu.gpa && <span className="text-muted-foreground"> (GPA: {edu.gpa})</span>}
                   </div>
                   <span className="text-[11px] text-muted-foreground whitespace-nowrap shrink-0">{edu.dates}</span>

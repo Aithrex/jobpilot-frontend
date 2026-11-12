@@ -57,7 +57,7 @@
       const oldestInHour = events.filter((t) => t >= hourCutoff).sort((a, b) => a - b)[0];
       return {
         allowed: false,
-        reason: `Hourly limit reached (${MAX_PER_HOUR}/hr). Slow, tailored applications convert — take a break.`,
+        reason: `Hourly limit reached (${MAX_PER_HOUR}/hr). Slower, tailored applications convert better, so take a short break.`,
         retryAfterMs: Math.max(0, oldestInHour + HOUR_MS - now()),
         hour: hourCount,
         day: dayCount,

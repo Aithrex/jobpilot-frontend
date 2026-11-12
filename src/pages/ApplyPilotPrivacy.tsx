@@ -23,7 +23,7 @@ export default function ApplyPilotPrivacy() {
           </div>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">ApplyPilot Privacy Policy</h1>
-            <p className="text-sm text-gray-500">Last updated: June 5, 2026</p>
+            <p className="text-sm text-gray-500">Last updated: November 11, 2026</p>
           </div>
         </div>
 
@@ -47,7 +47,7 @@ export default function ApplyPilotPrivacy() {
           <ul className="list-disc pl-6 space-y-1">
             <li><strong>When you sign in:</strong> your email and password are sent to the backend's authentication endpoint to obtain a session token.</li>
             <li><strong>When you click "Sync profile":</strong> the extension requests your profile data (resume, projects, skills, work authorization) from the backend to seed your local vault.</li>
-            <li><strong>When you click "✨ Generate" on a question:</strong> the question text and the visible job description on the current page are sent to the backend, which uses an AI model to draft answers grounded in your resume. The drafted answers are returned to your browser.</li>
+            <li><strong>When you click "Generate" on a question:</strong> the question text and the visible job description on the current page are sent to the backend, which uses an AI model to draft answers grounded in your resume. The drafted answers are returned to your browser.</li>
           </ul>
           <p>The extension does <strong>not</strong> send page contents, keystrokes, or browsing activity anywhere except the specific question/job-description text you choose to generate an answer for.</p>
         </Section>
@@ -79,7 +79,7 @@ export default function ApplyPilotPrivacy() {
 
         <Section title="AI processing">
           <p>
-            Generated answers are produced by an AI model (Anthropic Claude via the operator's backend)
+            Generated answers are produced by an AI model (Google Vertex AI, through the Aspirely backend)
             using your resume data and the job description you choose. Review every generated answer
             before submitting it. You are responsible for the content you submit on applications.
           </p>

@@ -87,6 +87,15 @@ export default {
         // to exist only inside `.surface-studio`), so it is safe to expose as
         // a utility rather than being reached for via inline `hsl(var())`.
         "nav-active": "hsl(var(--nav-active))",
+        // The three text steps and the strong neutral fill, for new code.
+        // `text-ink-subtle` equals `text-muted-foreground`; `text-ink-muted`
+        // is the AAA secondary step between it and the foreground.
+        ink: {
+          DEFAULT: "hsl(var(--ink))",
+          muted: "hsl(var(--ink-muted))",
+          subtle: "hsl(var(--ink-subtle))",
+        },
+        "surface-strong": "hsl(var(--surface-strong))",
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
@@ -129,14 +138,33 @@ export default {
         // Data face — scores, counts, countdowns, salaries. Distinctive, tabular.
         mono: ["JetBrains Mono", "ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
       },
+      // US launch type scale (docs/design/2026-11-11-type-color-principles.md
+      // section 8.1). Body is 16px; nothing renders below 12px. Display steps
+      // keep a rem term inside clamp() so text-only zoom still scales them.
+      // The older names (display, title, h1, h2, h3, body, caption) are kept
+      // and re-pointed at the nearest new step so existing screens follow.
       fontSize: {
-        display: ["clamp(2rem, 4vw, 2.75rem)", { lineHeight: "1.08", letterSpacing: "-0.022em", fontWeight: "800" }],
-        title: ["1.75rem", { lineHeight: "1.15", letterSpacing: "-0.02em", fontWeight: "700" }],
-        h1: ["1.5rem", { lineHeight: "1.2", letterSpacing: "-0.018em", fontWeight: "700" }],
-        h2: ["1.25rem", { lineHeight: "1.3", letterSpacing: "-0.012em", fontWeight: "700" }],
-        h3: ["1.0625rem", { lineHeight: "1.4", letterSpacing: "-0.008em", fontWeight: "600" }],
-        body: ["0.9375rem", { lineHeight: "1.6", letterSpacing: "-0.002em" }],
-        caption: ["0.8125rem", { lineHeight: "1.45" }],
+        "display-lg": ["clamp(2.5rem, 1.75rem + 3.2vw, 4rem)", { lineHeight: "1.05", letterSpacing: "-0.025em", fontWeight: "800" }],
+        "display-sm": ["clamp(2rem, 1.5rem + 2vw, 2.75rem)", { lineHeight: "1.1", letterSpacing: "-0.02em", fontWeight: "700" }],
+        "headline-lg": ["2rem", { lineHeight: "2.5rem", letterSpacing: "-0.02em", fontWeight: "700" }],
+        "headline-md": ["1.75rem", { lineHeight: "2.25rem", letterSpacing: "-0.015em", fontWeight: "700" }],
+        "headline-sm": ["1.5rem", { lineHeight: "2rem", letterSpacing: "-0.01em", fontWeight: "700" }],
+        "title-lg": ["1.375rem", { lineHeight: "1.75rem", letterSpacing: "-0.005em", fontWeight: "600" }],
+        "title-md": ["1.125rem", { lineHeight: "1.625rem", fontWeight: "600" }],
+        "title-sm": ["1rem", { lineHeight: "1.5rem", fontWeight: "600" }],
+        "body-lg": ["1.125rem", { lineHeight: "1.75rem" }],
+        "body-md": ["1rem", { lineHeight: "1.5rem" }],
+        "body-sm": ["0.875rem", { lineHeight: "1.25rem", letterSpacing: "0.005em" }],
+        "label-lg": ["0.875rem", { lineHeight: "1.25rem", letterSpacing: "0.005em", fontWeight: "600" }],
+        "label-md": ["0.8125rem", { lineHeight: "1rem", letterSpacing: "0.01em", fontWeight: "600" }],
+        "caption-sm": ["0.75rem", { lineHeight: "1rem", letterSpacing: "0.01em", fontWeight: "500" }],
+        display: ["clamp(2rem, 1.5rem + 2vw, 2.75rem)", { lineHeight: "1.1", letterSpacing: "-0.02em", fontWeight: "800" }],
+        title: ["1.75rem", { lineHeight: "2.25rem", letterSpacing: "-0.015em", fontWeight: "700" }],
+        h1: ["1.5rem", { lineHeight: "2rem", letterSpacing: "-0.01em", fontWeight: "700" }],
+        h2: ["1.375rem", { lineHeight: "1.75rem", letterSpacing: "-0.005em", fontWeight: "700" }],
+        h3: ["1.125rem", { lineHeight: "1.625rem", fontWeight: "600" }],
+        body: ["1rem", { lineHeight: "1.5rem" }],
+        caption: ["0.8125rem", { lineHeight: "1.25rem" }],
       },
       // Token-driven elevation scale — resolves per-theme via CSS vars so dark
       // stays soft (no harsh black halos). Distinct names keep the default

@@ -138,7 +138,7 @@ export default function MailboxSettingsPanel() {
         <Loader2 className="mx-auto mb-2 h-5 w-5 animate-spin text-primary" aria-hidden="true" />
         <p className="text-sm font-medium text-foreground">Setting up your private address</p>
         <p className="mx-auto mt-1 max-w-sm text-xs text-muted-foreground">
-          We create it for you automatically - refresh in a moment.
+          We create it for you automatically. Refresh in a moment.
         </p>
       </div>
     );
@@ -210,8 +210,8 @@ export default function MailboxSettingsPanel() {
           <div>
             <h2 className="text-sm font-semibold text-foreground">Heads-up in my inbox</h2>
             <p className="text-xs text-muted-foreground">
-              When an employer gets back to you - an interview invite, an assessment, an
-              offer or a rejection - we email you a short heads-up with a link. The full
+              When an employer gets back to you with an interview invite, an assessment,
+              an offer or a rejection, we email you a short heads-up with a link. The full
               message stays here in your Inbox, so your personal inbox stays clean.
             </p>
           </div>

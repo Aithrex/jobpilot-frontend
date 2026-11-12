@@ -114,7 +114,7 @@ export function wallHelp(item: NeedsInputItem): string {
     if (fromBackend) return fromBackend;
   }
   if (kind === "captcha") {
-    return "This employer showed a human-verification challenge. We can't solve those for you - open the site, clear the check, and we'll pick the application back up.";
+    return "This employer showed a human-verification challenge. We can't solve those for you. Open the site, clear the check, and we'll pick the application back up.";
   }
   if (kind === "reset") {
     return "The employer's site is forcing a password reset before it will continue. Reset it there and we'll resume automatically.";
@@ -123,7 +123,7 @@ export function wallHelp(item: NeedsInputItem): string {
     return "This employer requires an account before it accepts an application. Sign in or create one on their career site and we'll resume automatically.";
   }
   if (kind === "verify") {
-    return "The employer sent a confirmation link or code. Open it (usually in your email) and we'll resume automatically - we also re-check on our own in the background.";
+    return "The employer sent a confirmation link or code. Open it (usually in your email) and we'll resume automatically. We also re-check on our own in the background.";
   }
   return "A step on the employer's site needs a person. Once it's cleared we'll resume automatically.";
 }

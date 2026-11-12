@@ -41,7 +41,7 @@ function formatAge(hours: number | null | undefined): string {
 }
 
 function pct(value: number | null | undefined): string {
-  if (value === null || value === undefined || !Number.isFinite(value)) return '-';
+  if (value === null || value === undefined || !Number.isFinite(value)) return 'Unknown';
   return `${(value * 100).toFixed(1)}%`;
 }
 
@@ -172,7 +172,7 @@ export function TechFeedHealthBanner({
               data-testid="tech-feed-coverage-age"
             >
               measured {formatAge(measured?.age_hours)}
-              {measurementStale ? ' - out of date' : ''}
+              {measurementStale ? ' · out of date' : ''}
             </Badge>
           </span>
         )}
@@ -190,7 +190,7 @@ export function TechFeedHealthBanner({
               'cover is unknown, which is not the same as zero.'
             }
           >
-            Employer coverage not measured yet - unknown, not zero
+            Employer coverage not measured yet (unknown, not zero)
           </span>
         )}
 
@@ -340,7 +340,7 @@ export function TechFeedHealthBanner({
               {coverage?.measured && !coverage.measured.available && (
                 <p data-testid="tech-feed-coverage-unmeasured" className="text-muted-foreground">
                   No coverage measurement has been stored yet, so the share of
-                  technology employers we cover is unknown - which is not the
+                  technology employers we cover is unknown, which is not the
                   same as zero.
                 </p>
               )}
@@ -367,8 +367,8 @@ export function TechFeedHealthBanner({
                           {formatLag(source.crawl_lag_minutes)}
                           {source.retry_count > 0 ? ` after ${source.retry_count} retries` : ''}
                           {source.last_success_at
-                            ? ` - last success ${formatTimestamp(source.last_success_at)}`
-                            : ' - no successful crawl recorded'}
+                            ? ` · last success ${formatTimestamp(source.last_success_at)}`
+                            : ' · no successful crawl recorded'}
                         </span>
                       </li>
                     ))}

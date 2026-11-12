@@ -33,10 +33,10 @@ const STATUS_LABEL: Record<WindowStatus, string> = {
 };
 
 const STATUS_DOT: Record<WindowStatus, string> = {
-  ready: 'bg-muted-foreground/60',
+  ready: 'bg-muted-foreground',
   working: 'bg-[hsl(var(--brand-to))]',
-  done: 'bg-emerald-400',
-  attention: 'bg-amber-400',
+  done: 'bg-success',
+  attention: 'bg-warning',
 };
 
 export interface MacWindowProps {
@@ -149,7 +149,7 @@ export const MacWindow = forwardRef<HTMLDivElement, MacWindowProps>(function Mac
           {/* Status indicator. Never colour-only: the dot is paired with text. */}
           <span className="flex shrink-0 items-center gap-1.5 rounded-full border border-border bg-foreground/[0.06] px-2 py-[3px]">
             <span aria-hidden className={cn('h-1.5 w-1.5 rounded-full', STATUS_DOT[status])} />
-            <span className="text-[11px] font-medium text-muted-foreground">
+            <span className="text-caption-sm font-medium text-muted-foreground">
               {statusLabel ?? STATUS_LABEL[status]}
             </span>
           </span>

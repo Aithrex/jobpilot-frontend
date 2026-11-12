@@ -7,7 +7,7 @@
  * never depends on mail delivery.
  */
 import { useState } from "react";
-import { CheckCircle2, KeyRound } from "lucide-react";
+import { Check, CheckCircle2, Circle, KeyRound } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiService } from "@/lib/api";
 
@@ -152,7 +152,12 @@ export default function PasswordCard() {
                     ok ? "text-emerald-600 dark:text-emerald-300" : "text-gray-500 dark:text-gray-400"
                   }`}
                 >
-                  <span aria-hidden>{ok ? "+" : "-"}</span>
+                  {ok ? (
+                    <Check className="h-3 w-3 shrink-0" aria-hidden="true" />
+                  ) : (
+                    <Circle className="h-2.5 w-2.5 shrink-0" aria-hidden="true" />
+                  )}
+                  <span className="sr-only">{ok ? "Met: " : "Not met: "}</span>
                   {r.label}
                 </li>
               );

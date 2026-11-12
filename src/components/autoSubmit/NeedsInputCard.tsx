@@ -292,7 +292,7 @@ export default function NeedsInputCard({
         );
       }
       if (out.quota) {
-        toast.info("Saved - but you're out of auto-apply submissions", {
+        toast.info("Saved, but you're out of auto-apply submissions", {
           description: out.quota.resets_at
             ? `Approve it yourself, or upgrade. Your quota resets ${new Date(
                 out.quota.resets_at,
@@ -306,7 +306,7 @@ export default function NeedsInputCard({
     if (out.notInNeedsInput) {
       // Benign race: a sweep or another tab already cleared it.
       setResumed(true);
-      setNotice("This application already moved on - nothing more is needed here.");
+      setNotice("This application already moved on. Nothing more is needed here.");
       return;
     }
     if (out.needsUpgrade) {

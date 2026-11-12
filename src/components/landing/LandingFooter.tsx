@@ -1,15 +1,16 @@
 import { Link } from 'react-router-dom';
 import { BrandMark } from '@/components/BrandMark';
 import { useAuth } from '@/contexts/AuthContext';
+import { LEGAL_LINKS } from '@/lib/legal';
 
 const LINK_CLASS =
   'focus-ring-visible rounded-control text-sm text-muted-foreground transition-colors hover:text-foreground';
 
 /**
- * The footer: the mark, Privacy, Terms, the line. Nothing else.
+ * The footer: the mark, the primary links, the legal set, the line.
  *
- * The mark opens the line and the legal links close it, with the copyright
- * centred beneath a hairline. An earlier pass added a column of section links
+ * The mark opens the line, and the legal and trust links sit above the
+ * copyright beneath a hairline. An earlier pass added a column of section links
  * to fill the width, which was furniture built to occupy space; the width is
  * better left open than padded with things nobody came for.
  *
@@ -42,12 +43,6 @@ export function LandingFooter() {
             <Link to="/pricing" className={LINK_CLASS}>
               Pricing
             </Link>
-            {/* The route keeps its `/trust` path; only the label followed the
-                merged section. Privacy and Terms stay their own entries - the
-                decision section links to them, it does not replace them. */}
-            <Link to="/trust" className={LINK_CLASS}>
-              Before you begin
-            </Link>
             {isAuthenticated ? (
               <Link to="/app/home" className={LINK_CLASS}>
                 Workspace
@@ -57,16 +52,22 @@ export function LandingFooter() {
                 Sign in
               </Link>
             )}
-            <Link to="/privacy" className={LINK_CLASS}>
-              Privacy
-            </Link>
-            <Link to="/terms" className={LINK_CLASS}>
-              Terms
-            </Link>
           </nav>
         </div>
 
         <div className="mt-6 border-t border-border pt-5">
+          {/* The legal and trust set comes from lib/legal, so every footer and
+              the Trust Center list the same pages in the same order. */}
+          <nav
+            className="mb-4 flex flex-wrap items-center justify-center gap-x-6 gap-y-2"
+            aria-label="Legal"
+          >
+            {LEGAL_LINKS.map((link) => (
+              <Link key={link.to} to={link.to} className={LINK_CLASS}>
+                {link.label}
+              </Link>
+            ))}
+          </nav>
           <p className="text-center text-xs tabular-nums text-muted-foreground">
             &copy; {new Date().getFullYear()} Aithrex. All rights reserved.
           </p>

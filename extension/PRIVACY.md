@@ -70,7 +70,7 @@ sends only a PII-redacted field label.)
 
 ## AI processing
 
-Drafted answers are produced by an AI model (Anthropic Claude, via the Aspirely backend) using
+Drafted answers are produced by an AI model (Google Gemini on Vertex AI, via the Aspirely backend) using
 your résumé data. Aspirely never fabricates facts that aren't in your résumé, and you should
 review every draft before submitting — you are responsible for the content you submit on
 applications.

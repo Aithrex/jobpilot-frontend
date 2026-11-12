@@ -630,8 +630,8 @@ export default function TailoredPage() {
                         </div>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1 text-[11px]">
-                        <div><span className="text-muted-foreground">Role: </span><span className="text-foreground">{rec.jd_analysis?.job_title || ' - '}</span></div>
-                        <div><span className="text-muted-foreground">Company: </span><span className="text-foreground">{rec.jd_analysis?.company && rec.jd_analysis.company !== 'Not specified' ? rec.jd_analysis.company : ' - '}</span></div>
+                        <div><span className="text-muted-foreground">Role: </span><span className="text-foreground">{rec.jd_analysis?.job_title || 'Not listed'}</span></div>
+                        <div><span className="text-muted-foreground">Company: </span><span className="text-foreground">{rec.jd_analysis?.company && rec.jd_analysis.company !== 'Not specified' ? rec.jd_analysis.company : 'Not listed'}</span></div>
                         {rec.jd_analysis?.location && (
                           <div><span className="text-muted-foreground">Location: </span><span className="text-foreground">{rec.jd_analysis.location}</span></div>
                         )}

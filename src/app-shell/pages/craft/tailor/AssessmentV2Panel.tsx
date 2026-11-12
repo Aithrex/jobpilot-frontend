@@ -67,12 +67,12 @@ function formatRequiredLine(cov: CoverageBlock | null | undefined): string {
   const num = cov.numerator ?? cov.satisfied;
   const den = cov.denominator ?? cov.total;
   if (cov.status === 'unavailable' || den === 0) {
-    return 'Required coverage unavailable — no assessable required requirements.';
+    return 'Required coverage unavailable. The posting has no required qualifications we could assess.';
   }
   if (cov.status === 'incomplete_extraction' || cov.percentage == null) {
-    return 'Required coverage withheld — requirement extraction is incomplete.';
+    return 'Required coverage withheld. We could not read every requirement in the posting.';
   }
-  let line = `Required coverage: ${cov.percentage}% — ${num} of ${den} requirements demonstrated.`;
+  let line = `Required coverage: ${cov.percentage}%, with ${num} of ${den} requirements demonstrated.`;
   const parts: string[] = [];
   if ((cov.partial ?? 0) > 0) parts.push(`${cov.partial} partially demonstrated`);
   if ((cov.not_demonstrated ?? 0) > 0) parts.push(`${cov.not_demonstrated} not shown`);
@@ -181,7 +181,7 @@ export function AssessmentV2Panel({
           prefCov.denominator > 0 &&
           prefCov.percentage != null && (
             <p className="text-sm text-muted-foreground">
-              Preferred coverage: {prefCov.percentage}% —{' '}
+              Preferred coverage: {prefCov.percentage}%, with{' '}
               {prefCov.numerator ?? prefCov.satisfied} of {prefCov.denominator}{' '}
               preferred requirements demonstrated.
             </p>

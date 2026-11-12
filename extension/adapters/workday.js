@@ -59,13 +59,13 @@
           aid: "phone-device-type",
           want: profile.personal && profile.personal.phone ? "Mobile" : "",
           label: "Phone device type",
-          note: "Defaulted to Mobile — change on the form if that's wrong.",
+          note: "Defaulted to Mobile. Change it on the form if that's wrong.",
         },
         {
           aid: "degree",
           want: ((edu.find((e) => e && e.degree && String(e.degree).trim()) || {}).degree || "").trim(),
           label: "Degree",
-          note: "Picked from your résumé's first degree — verify on the form.",
+          note: "Picked from your resume's first degree. Verify it on the form.",
         },
       ];
       for (const p of prompts) {
@@ -84,7 +84,7 @@
       typed.push(...(await W.typeaheadByLabel(/field of study/i, (i) => [(edu[i] && edu[i].fieldOfStudy) || ""])));
       typed.push(...(await W.typeaheadByLabel(/school|university/i, (i) => [(edu[i] && edu[i].institution) || ""])));
       for (const t of typed) {
-        rows.push({ label: t.label || "Search field", value: t.value, confidence: "medium", note: "Committed via the search list — verify the selection." });
+        rows.push({ label: t.label || "Search field", value: t.value, confidence: "medium", note: "Committed via the search list. Verify the selection." });
       }
 
       // 3. Per-row plain text (label-based, matched by DOM order): each education
@@ -130,7 +130,7 @@
             label: question.slice(0, 120),
             value: answer,
             confidence: "low",
-            note: "From the visa profile you set in Aspirely — double-check before submitting.",
+            note: "From the visa profile you set in Aspirely. Double-check before submitting.",
           });
         }
       }

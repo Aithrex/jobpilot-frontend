@@ -17,6 +17,7 @@ import { ChipsInput } from './ChipsInput';
 import { ReachOutModal } from './ReachOutModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiService } from '@/lib/api';
+import { salaryDisplay, splitFlags } from '@/lib/displayText';
 import type {
   DailyPipelineParams,
   DailyPipelineResult,
@@ -492,10 +493,8 @@ function PipelineRow({
       cardRef.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     }
   }, [focused]);
-  const flagList = (rec.flags || '')
-    .split(',')
-    .map((f) => f.trim())
-    .filter((f) => f && f !== ' - ');
+  // The backend writes "—" for "no flags" and "no salary"; never render it.
+  const flagList = splitFlags(rec.flags);
 
   // Surface "previously applied X days ago" so a row that's been in the
   // funnel for a week doesn't get re-opened by mistake. We render different
@@ -676,7 +675,7 @@ function PipelineRow({
                 {formatPostedLocal(rec.posted)}
               </span>
             )}
-            {rec.salary && rec.salary !== ' - ' && <span>{rec.salary}</span>}
+            {salaryDisplay(rec.salary) && <span>{salaryDisplay(rec.salary)}</span>}
           </div>
 
           {flagList.length > 0 && (
@@ -1485,7 +1484,7 @@ export function DailyPipelinePanel({
       location: rec.location || '',
       apply_link: rec.url || '',
       description: rec.description || '',
-      salary: rec.salary || '',
+      salary: salaryDisplay(rec.salary) ?? '',
       employment_type: 'FULLTIME',
       posted_date: rec.posted || '',
       h1b_sponsor: (rec.flags || '').toLowerCase().includes('h1b'),
@@ -1685,7 +1684,7 @@ export function DailyPipelinePanel({
     location: rec.location || '',
     apply_link: rec.url || '',
     description: rec.description || '',
-    salary: rec.salary || '',
+    salary: salaryDisplay(rec.salary) ?? '',
     employment_type: 'FULLTIME',
     posted_date: rec.posted || '',
     h1b_sponsor: (rec.flags || '').toLowerCase().includes('h1b'),

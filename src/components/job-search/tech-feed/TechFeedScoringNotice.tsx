@@ -52,7 +52,7 @@ export function TechFeedScoringNotice({
         <span>
           {all
             ? 'These postings are not scored. A fit score compares a posting to your resume, and we could not read enough from a resume on your account to do that.'
-            : `${unscoredCount} of these ${totalCount} postings are not scored - we could not compare them to your resume.`}
+            : `${unscoredCount} of these ${totalCount} postings are not scored because we could not compare them to your resume.`}
         </span>
       </p>
       <p className="ml-5 mt-1.5 text-muted-foreground">

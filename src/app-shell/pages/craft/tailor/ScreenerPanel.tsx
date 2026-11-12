@@ -50,7 +50,7 @@ function CriterionRow({ c, gapQuestion }: { c: ScreenerCriterion; gapQuestion?: 
       <div className="min-w-0 flex-1 space-y-1">
         <p className="text-sm">
           <span className="font-semibold text-foreground">{c.term}</span>
-          <span className="text-muted-foreground"> - {text}</span>
+          <span className="text-muted-foreground">: {text}</span>
         </p>
         {quote && (
           <blockquote className="line-clamp-2 border-l-2 border-border pl-2 text-xs leading-relaxed text-muted-foreground">
@@ -118,7 +118,7 @@ export function ScreenerPanel({ report }: ScreenerPanelProps) {
           )}
           aria-label={s?.grade ? `Grade ${s.grade}` : 'Not graded'}
         >
-          {s?.grade ?? '-'}
+          {s?.grade ?? '?'}
         </div>
         <div className="min-w-0 space-y-1">
           <h3 className="font-display text-lg font-semibold leading-snug text-foreground">

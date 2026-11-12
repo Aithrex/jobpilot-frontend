@@ -88,6 +88,7 @@ import { bestMatch } from '@/lib/textDiff';
 import { ProgressStepper } from './tailor/ProgressStepper';
 import { NudgeBar } from './tailor/NudgeBar';
 import { ResumePreviewFrame } from './tailor/ResumePreviewFrame';
+import { AiDisclosure } from '@/components/ai/AiDisclosure';
 import { InspectorTabs } from './tailor/InspectorTabs';
 import { JdInputPanel } from './tailor/JdInputPanel';
 import { AtsScorePanel } from './tailor/AtsScorePanel';
@@ -220,7 +221,7 @@ export default function TailorPage() {
     if (job.url) setPendingJobUrl(job.url);
     if (job.title || job.company) {
       toast.info(
-        `Tailoring for ${job.title || ''}${job.company ? ' @ ' + job.company : ''}. We’ll ask if you applied when you return to Jobs`,
+        `Tailoring for ${job.title || 'this role'}${job.company ? ' at ' + job.company : ''}. We'll ask whether you applied when you return to Jobs.`,
       );
     }
     if (job.jd_fetch_failed) {
@@ -669,7 +670,7 @@ export default function TailorPage() {
           { description: 'Find it under Applied in your tracker.' },
         );
       } else if (outcome.status === 'saved') {
-        toast.success('Saved for later', { description: 'It’s in the Saved column.' });
+        toast.success('Saved for later', { description: "It's in the Saved column." });
       }
       window.dispatchEvent(new CustomEvent('resume:application-saved'));
     },
@@ -1034,7 +1035,7 @@ export default function TailorPage() {
       });
       setScoreStale(true);
       apiService.trackCraftEvent('gap_attach_evidence', term);
-      toast.success(`Recorded ${term} against a bullet. Recheck to refresh the review — it will not rewrite the resume.`);
+      toast.success(`Recorded ${term} against a bullet. Run Recheck to refresh the review. Your resume text stays as it is.`);
     },
     [],
   );
@@ -1218,6 +1219,7 @@ export default function TailorPage() {
               </div>
             </details>
           )}
+          {result && !tailoring && <AiDisclosure kind="draft" className="px-1" />}
           <ResumePreviewFrame
             result={result}
             baseResume={baseResume}

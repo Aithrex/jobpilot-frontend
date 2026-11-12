@@ -104,7 +104,7 @@ export function NotInterestedMenu({
 
     // Data quality: the server logs it and re-checks the listing. It does not
     // disappear, and the toast says so rather than implying it did.
-    toast("Thanks - we'll re-check this listing", {
+    toast("Thanks. We'll re-check this listing.", {
       description: `${jobTitle} at ${employerName} stays in your feed.`,
       action: undo,
     });

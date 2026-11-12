@@ -42,7 +42,7 @@ export function StatusBadge({
   return (
     <span
       className={cn(
-        'inline-flex shrink-0 items-center rounded-full border px-1.5 py-[1px] text-[9px] font-semibold leading-none tracking-[0.02em]',
+        'inline-flex shrink-0 items-center rounded-full border px-1.5 py-[1px] text-caption-sm font-semibold leading-none tracking-[0.02em]',
         // Token-driven, so the same badge is legible on the obsidian product
         // dock AND on the pearl editorial surface. `success` is reserved for
         // "this genuinely works today" and used nowhere decorative.
@@ -68,7 +68,7 @@ function DockItem({ cap }: { cap: Capability }) {
       className="flex items-center gap-1.5 rounded-lg border border-border bg-foreground/[0.02] px-2 py-1.5 backdrop-blur-sm"
     >
       <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60" aria-hidden />
-      <span className="whitespace-nowrap text-[11px] font-semibold text-muted-foreground/80">
+      <span className="whitespace-nowrap text-caption-sm font-semibold text-muted-foreground/80">
         {/* The dock uses the short product noun; the full name lives in the
   roadmap section below. */}
         {cap.id === 'whatsapp' ? 'WhatsApp' : cap.name}
@@ -98,7 +98,7 @@ export function CapabilityDock({ show }: CapabilityDockProps) {
       {/* Wraps rather than scrolls: a clipped capability with its status badge
   cut off is exactly the ambiguity this dock exists to prevent. */}
       <div className="flex flex-wrap items-center gap-1.5">
-        <span className="shrink-0 pr-1 text-[9px] font-semibold uppercase tracking-[0.13em] text-muted-foreground/50">
+        <span className="shrink-0 pr-1 text-caption-sm font-semibold uppercase tracking-[0.13em] text-muted-foreground/50">
           Coming next
         </span>
         {DOCK_CAPABILITIES.map((cap) => (
