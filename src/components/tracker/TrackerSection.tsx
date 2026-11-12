@@ -51,9 +51,11 @@ export default function TrackerSection({
             )}
           />
           {dot && <span aria-hidden className={cn('h-1.5 w-1.5 shrink-0 rounded-full', dot)} />}
-          <span className="overline truncate">{label}</span>
-          <span className="text-label tabular-nums text-muted-foreground">{count}</span>
-          {meta && <span className="truncate text-label text-muted-foreground">· {meta}</span>}
+          <span className="truncate text-label font-semibold text-foreground">{label}</span>
+          <span className="rounded-full bg-secondary px-1.5 text-[11px] font-semibold tabular-nums text-secondary-foreground">
+            {count}
+          </span>
+          {meta && <span className="truncate text-label text-muted-foreground">{meta}</span>}
         </button>
       </h3>
 

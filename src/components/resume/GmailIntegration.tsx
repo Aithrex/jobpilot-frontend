@@ -23,9 +23,15 @@ function formatRelative(iso?: string | null): string {
 export default function GmailIntegration({
   onSyncComplete,
   showReviewQueue = true,
+  inline = false,
 }: {
   onSyncComplete?: () => void;
   showReviewQueue?: boolean;
+  /**
+   * One quiet row with no card of its own, for a parent that already draws
+   * the box (the tracker header). The how-it-works note stays in Settings.
+   */
+  inline?: boolean;
 }) {
   const [status, setStatus] = useState<GmailStatus | null>(null);
   const [loading, setLoading] = useState(true);
@@ -225,7 +231,7 @@ export default function GmailIntegration({
   if (loading) {
     return (
       <div
-        className="rounded-2xl border border-border bg-card p-3.5 shadow-soft"
+        className={inline ? 'px-4 py-3' : 'rounded-2xl border border-border bg-card p-3.5 shadow-soft'}
         aria-hidden="true"
       >
         <div className="flex items-center gap-3">
@@ -242,7 +248,7 @@ export default function GmailIntegration({
   // Error - quiet inline failure with a retry, in place of the banner.
   if (statusError && !status) {
     return (
-      <div className="flex flex-wrap items-center gap-1.5 rounded-2xl border border-border bg-card p-3.5 text-xs text-muted-foreground shadow-soft">
+      <div className={`flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground ${inline ? 'px-4 py-3' : 'rounded-2xl border border-border bg-card p-3.5 shadow-soft'}`}>
         <span>Couldn't check your Gmail connection.</span>
         <button
           onClick={() => {
@@ -262,7 +268,7 @@ export default function GmailIntegration({
     return (
       <section
         aria-label="Gmail connection"
-        className="flex flex-wrap items-center gap-4 rounded-2xl border border-border bg-card p-4 shadow-soft"
+        className={`flex flex-wrap items-center gap-4 ${inline ? 'px-4 py-3' : 'rounded-2xl border border-border bg-card p-4 shadow-soft'}`}
       >
         <div className="min-w-0 flex-1">
           <p className="text-body font-semibold text-foreground">Gmail connection is unavailable</p>
@@ -283,18 +289,18 @@ export default function GmailIntegration({
 
   return (
     <section aria-label="Gmail connection" className="space-y-3">
-      <div className="rounded-2xl border border-border bg-card p-4 shadow-soft">
+      <div className={inline ? 'px-4 py-3' : 'rounded-2xl border border-border bg-card p-4 shadow-soft'}>
         <div className="flex items-center gap-3 flex-wrap">
           <div
-            className={`w-9 h-9 rounded-xl ${GMAIL_MARK} flex items-center justify-center text-white text-sm font-bold shadow-soft`}
+            className={`${inline ? 'h-7 w-7 rounded-lg text-xs' : 'h-9 w-9 rounded-xl text-sm'} ${GMAIL_MARK} flex shrink-0 items-center justify-center text-white font-bold shadow-soft`}
           >
             ✉
           </div>
           <div className="min-w-0 flex-1 basis-[calc(100%-3rem)] sm:basis-auto">
-            <p className="text-body font-semibold text-foreground">
+            <p className={inline ? 'text-label font-semibold text-foreground' : 'text-body font-semibold text-foreground'}>
               {status.connected ? 'Gmail connected' : 'Track replies from Gmail'}
             </p>
-            <p className="mt-1 text-label text-muted-foreground break-words">
+            <p className={`${inline ? '' : 'mt-1 '}text-label text-muted-foreground break-words`}>
               {status.connected ? (
                 <>
                   {status.gmail_address || 'Address not shown'} ·{' '}
@@ -323,14 +329,22 @@ export default function GmailIntegration({
                 <button
                   onClick={handleSync}
                   disabled={syncing}
-                  className="text-label font-semibold px-3 py-2 rounded-lg bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60"
+                  className={
+                    inline
+                      ? 'text-label font-semibold px-3 py-1.5 rounded-lg border border-border bg-card text-foreground transition-colors hover:border-primary hover:bg-primary/10 hover:text-primary disabled:opacity-60'
+                      : 'text-label font-semibold px-3 py-2 rounded-lg bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60'
+                  }
                 >
                   {syncing ? 'Syncing...' : status.has_more ? 'Continue sync' : 'Sync now'}
                 </button>
                 <button
                   onClick={handleDisconnect}
                   disabled={syncing}
-                  className="text-label font-medium px-2.5 py-2 rounded-lg border border-border text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                  className={
+                    inline
+                      ? 'text-label font-medium px-2 py-1.5 rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground'
+                      : 'text-label font-medium px-2.5 py-2 rounded-lg border border-border text-muted-foreground transition-colors hover:bg-accent hover:text-foreground'
+                  }
                 >
                   Disconnect
                 </button>
@@ -351,7 +365,7 @@ export default function GmailIntegration({
             </button>
           </p>
         )}
-        <details className="mt-3 text-label text-muted-foreground">
+        <details className={inline ? 'hidden' : 'mt-3 text-label text-muted-foreground'}>
           <summary className="cursor-pointer rounded font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
             How email matching works
           </summary>

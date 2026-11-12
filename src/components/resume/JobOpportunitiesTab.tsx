@@ -9,7 +9,7 @@ import { useCombinedJobsCtx } from '@/components/job-search/CombinedJobsProvider
 import type { Job } from '@/types/jobs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { isAppliedSavedJob } from '@/lib/savedJobs';
-import { SavedNextSteps } from '@/components/job-search/SavedNextSteps';
+import { SavedNextSteps, savedNote } from '@/components/job-search/SavedNextSteps';
 import type { SavedJob } from '@/types/jobs';
 
 interface JobOpportunitiesTabProps {
@@ -27,10 +27,11 @@ function viewFromPath(pathname: string): View {
   return 'browse';
 }
 
-function SavedCard({ job, jobSearch, onHideJob }: {
+function SavedCard({ job, jobSearch, onHideJob, note }: {
   job: Job;
   jobSearch: ReturnType<typeof useJobSearch>;
   onHideJob?: (jobId: string, applyLink?: string) => void;
+  note?: string;
 }) {
   return (
     <JobCard
@@ -49,6 +50,7 @@ function SavedCard({ job, jobSearch, onHideJob }: {
       onAutoApply={() => void jobSearch.autoApply(job)}
       autoApplying={jobSearch.autoApplyingId === job.job_id}
       onHide={onHideJob ? () => onHideJob(job.job_id, job.apply_link) : undefined}
+      note={note}
     />
   );
 }
@@ -61,6 +63,7 @@ function JobList({
   jobSearch,
   onHideJob,
   loading,
+  aside,
 }: {
   rows: SavedJob[];
   mode: 'saved' | 'applied';
@@ -69,6 +72,7 @@ function JobList({
   jobSearch: ReturnType<typeof useJobSearch>;
   onHideJob?: (jobId: string, applyLink?: string) => void;
   loading?: boolean;
+  aside?: React.ReactNode;
 }) {
   if (loading) {
     return (
@@ -103,7 +107,10 @@ function JobList({
       mode={mode}
       rows={rows}
       updateJobStatus={mode === 'applied' ? jobSearch.updateJobStatus : undefined}
-      renderCard={(row) => <SavedCard job={row.job_data} jobSearch={jobSearch} onHideJob={onHideJob} />}
+      aside={aside}
+      renderCard={(row) => (
+        <SavedCard job={row.job_data} jobSearch={jobSearch} onHideJob={onHideJob} note={savedNote(row)} />
+      )}
     />
   );
 }
@@ -170,22 +177,19 @@ export default function JobOpportunitiesTab({ embedded }: JobOpportunitiesTabPro
       )}
 
       {view === 'applied' && (
-        <div className="space-y-3">
-          <p className="text-xs text-muted-foreground">
-            Confirmed applications.{' '}
+        <JobList
+          mode="applied"
+          rows={appliedRows.filter((row) => !!row.job_data)}
+          emptyTitle="No applications yet"
+          emptyBody="Apply from For you, then confirm you submitted. Those roles live here, not under Saved."
+          jobSearch={jobSearch}
+          loading={jobSearch.savedJobsLoading}
+          aside={(
             <Button asChild variant="link" className="h-auto p-0 text-xs">
-              <Link to={appPath('apply', 'tracker')}>Open Tracker for notes and interviews</Link>
+              <Link to={appPath('apply', 'tracker')}>Notes and interview dates are in Tracker</Link>
             </Button>
-          </p>
-          <JobList
-            mode="applied"
-            rows={appliedRows.filter((row) => !!row.job_data)}
-            emptyTitle="No applications yet"
-            emptyBody="Apply from For you, then confirm you submitted. Those roles live here, not under Saved."
-            jobSearch={jobSearch}
-            loading={jobSearch.savedJobsLoading}
-          />
-        </div>
+          )}
+        />
       )}
 
       <ApplyConfirmDialog
