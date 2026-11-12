@@ -16,11 +16,9 @@ vi.mock('@/components/tracker/TrackerPage', () => ({ default: () => <div>Applica
 vi.mock('@/components/resume/JobOpportunitiesTab', () => ({ default: () => <div>For you destination</div> }));
 vi.mock('@/app-shell/pages/craft/MyResumesPage', () => ({ default: () => <div>Resume library destination</div> }));
 vi.mock('@/app-shell/settings/IntegrationsPanel', () => ({ default: () => <div>Integrations destination</div> }));
-vi.mock('@/components/autoSubmit/AutoApplyTab', () => ({ default: () => <div>Hidden feature mounted</div> }));
-vi.mock('@/components/resume/CareerPortalsTab', () => ({ default: () => <div>Hidden feature mounted</div> }));
-vi.mock('@/components/resume/SixSecondsTab', () => ({ default: () => <div>Hidden feature mounted</div> }));
-vi.mock('@/components/resume/VoiceGraphTab', () => ({ default: () => <div>Hidden feature mounted</div> }));
-vi.mock('@/app-shell/settings/AutonomyPanel', () => ({ default: () => <div>Hidden feature mounted</div> }));
+// The hidden features' screens (AutoApplyTab, CareerPortalsTab, SixSecondsTab,
+// VoiceGraphTab, AutonomyPanel) were deleted on 2026-11-12, so there is nothing
+// left to mock: these tests now prove the old links still land somewhere real.
 
 describe('focused product navigation', () => {
   test('paused and duplicate features are absent from all navigation surfaces', () => {

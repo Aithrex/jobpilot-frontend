@@ -15,11 +15,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { beforeEach, describe, expect, test, vi, type Mock } from 'vitest';
 
 import { JobCard } from '@/components/job-search/JobCard';
-import { TechFeedJobCard } from '@/components/job-search/tech-feed/TechFeedJobCard';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { apiService } from '@/lib/api';
 import { RECOMMENDED_DEFAULT } from '@/lib/employerPolicy';
-import { makeTechFeedJob } from '@/test/techFeedFixtures';
 import type { Job } from '@/types/jobs';
 
 vi.mock('@/lib/api', () => ({
@@ -144,24 +142,5 @@ describe('JobCard', () => {
   test('a confirmed application says so', () => {
     renderCard(BASE, { jobStatus: 'applied' });
     expect(screen.getByTestId('job-application-state')).toHaveTextContent('Applied (you confirmed)');
-  });
-});
-
-describe('TechFeedJobCard', () => {
-  test('legacy row keeps the legacy employer-kind badge and verified line', () => {
-    wrap(<TechFeedJobCard job={makeTechFeedJob({ employer_kind: 'direct_employer' })} onNotInterested={() => {}} />);
-    expect(screen.getByTestId('tech-feed-provenance')).toHaveTextContent('Direct employer');
-    expect(screen.queryByTestId('job-employer-context')).not.toBeInTheDocument();
-  });
-
-  test('employer_profile unknown overrides a legacy direct_employer label', () => {
-    wrap(
-      <TechFeedJobCard
-        job={makeTechFeedJob({ employer_kind: 'direct_employer', employer_profile: { kind: 'unknown' } })}
-        onNotInterested={() => {}}
-      />,
-    );
-    expect(screen.queryByTestId('employer-category')).not.toBeInTheDocument();
-    expect(screen.queryByText('Direct employer')).not.toBeInTheDocument();
   });
 });

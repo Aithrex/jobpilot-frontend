@@ -1,12 +1,10 @@
-/** Actual retired routes are covered in product-cleanup.test.tsx. */
+/** Actual retired routes are covered in product-cleanup.test.tsx. The approval
+ *  dialog itself (autoSubmit/ApproveLinkConfirm) was deleted on 2026-11-12; this
+ *  keeps proving an old approval link opens nothing that submits. */
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
-import { expect, test, vi } from 'vitest';
+import { expect, test } from 'vitest';
 import ApplicationsPage from '@/app-shell/pages/ApplicationsPage';
-
-vi.mock('@/components/autoSubmit/ApproveLinkConfirm', () => ({
-  default: () => <div>Submission approval dialog</div>,
-}));
 
 test('an old approval URL cannot open submission controls in the tracker layout', () => {
   render(

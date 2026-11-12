@@ -27,7 +27,6 @@ import {
 } from '@/components/job-search/CombinedJobsProvider';
 import { CombinedJobsPanel } from '@/components/job-search/CombinedJobsPanel';
 import { JobFeedSheet } from '@/components/job-search/JobFeedSheet';
-import { WorkdayJobsPanel } from '@/components/job-search/WorkdayJobsPanel';
 
 vi.mock('@/lib/api', () => ({
   companyLogoSrc: (logoUrl?: string | null) => logoUrl ?? null,
@@ -117,8 +116,9 @@ function JobFeedOpener() {
   );
 }
 
-/** For you (Job feed drawer) and Careers (Live listings Customize), side by side. */
-function renderBothSurfaces() {
+/** For you with its Job feed drawer. The second surface, Careers (Live
+ *  listings), was deleted on 2026-11-12, so titles now have one editor. */
+function renderJobFeed() {
   return render(
     <QueryClientProvider client={new QueryClient()}>
     <MemoryRouter>
@@ -129,17 +129,12 @@ function renderBothSurfaces() {
           <div data-testid="opportunities">
             <CombinedJobsPanel {...JOB_PROPS} />
           </div>
-          <div data-testid="careers">
-            <WorkdayJobsPanel {...JOB_PROPS} variant="workday" />
-          </div>
         </CombinedJobsProvider>
       </TooltipProvider>
     </MemoryRouter>
     </QueryClientProvider>,
   );
 }
-
-const surface = (testId: string) => within(screen.getByTestId(testId));
 
 async function openJobFeed(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole('button', { name: /open shared job feed/i }));
@@ -153,24 +148,8 @@ async function closeJobFeed(user: ReturnType<typeof userEvent.setup>) {
   );
 }
 
-async function openCareersCustomize(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(surface('careers').getByRole('button', { name: 'Customize' }));
-  await screen.findByPlaceholderText(/e\.g\. Backend Engineer/);
-}
-
-async function closeCareersCustomize(user: ReturnType<typeof userEvent.setup>) {
-  await user.keyboard('{Escape}');
-  await waitFor(() =>
-    expect(screen.queryByPlaceholderText(/e\.g\. Backend Engineer/)).not.toBeInTheDocument(),
-  );
-}
-
 function jobFeedTitlesInput() {
   return screen.getByPlaceholderText('Backend Engineer');
-}
-
-function careersTitlesInput() {
-  return screen.getByPlaceholderText(/e\.g\. Backend Engineer/);
 }
 
 function cachedTitles(): string[] {
@@ -199,34 +178,7 @@ beforeEach(() => {
 });
 
 describe('shared job titles', () => {
-  test('1. a title added in Job feed appears in Careers with no reload', async () => {
-    const user = userEvent.setup();
-    renderBothSurfaces();
-
-    await openJobFeed(user);
-    await user.type(jobFeedTitlesInput(), 'Machine Learning Engineer{Enter}');
-    await closeJobFeed(user);
-
-    await openCareersCustomize(user);
-    expect(await screen.findByLabelText('Remove Machine Learning Engineer')).toBeInTheDocument();
-  });
-
-  test('2. a title removed in Careers disappears from Job feed with no reload', async () => {
-    const user = userEvent.setup();
-    renderBothSurfaces();
-
-    await openCareersCustomize(user);
-    await screen.findByLabelText('Remove Data Engineer');
-    await user.click(screen.getByLabelText('Remove Data Engineer'));
-    await closeCareersCustomize(user);
-
-    await openJobFeed(user);
-    await waitFor(() =>
-      expect(screen.queryByLabelText('Remove Data Engineer')).not.toBeInTheDocument(),
-    );
-  });
-
-  test('3. both surfaces mounting fires the title seed and the synth once', async () => {
+  test('3. mounting fires the title seed and the synth once', async () => {
     api.getTitleSeed.mockResolvedValue(
       okTitleSeed({ resume_titles: ['Backend Engineer'], resume_count: 1 }),
     );
@@ -235,7 +187,7 @@ describe('shared job titles', () => {
       status: 200,
     });
 
-    renderBothSurfaces();
+    renderJobFeed();
 
     await waitFor(() => expect(api.suggestPipelineFilters).toHaveBeenCalledTimes(1));
     expect(api.getTitleSeed).toHaveBeenCalledTimes(1);
@@ -244,12 +196,13 @@ describe('shared job titles', () => {
 
   test('4. a saved user-edited set is not clobbered when the fingerprint is unchanged', async () => {
     const user = userEvent.setup();
-    const first = renderBothSurfaces();
+    const first = renderJobFeed();
 
-    await openCareersCustomize(user);
+    await openJobFeed(user);
     await screen.findByLabelText('Remove Backend Engineer');
-    await user.type(careersTitlesInput(), 'Custom Role X{Enter}');
+    await user.type(jobFeedTitlesInput(), 'Custom Role X{Enter}');
     await waitFor(() => expect(cachedTitles()).toContain('Custom Role X'));
+    await closeJobFeed(user);
 
     first.unmount();
     resetJobTitlesStore();
@@ -257,7 +210,7 @@ describe('shared job titles', () => {
     api.getTitleSeed.mockResolvedValue(
       okTitleSeed({ resume_titles: ['Completely Different'] }),
     );
-    renderBothSurfaces();
+    renderJobFeed();
 
     await openJobFeed(user);
     expect(await screen.findByLabelText('Remove Custom Role X')).toBeInTheDocument();
@@ -284,7 +237,7 @@ describe('shared job titles', () => {
       }),
     );
     const user = userEvent.setup();
-    renderBothSurfaces();
+    renderJobFeed();
 
     await openJobFeed(user);
     expect(await screen.findByLabelText('Remove Electrical Engineer')).toBeInTheDocument();
@@ -318,7 +271,7 @@ describe('shared job titles', () => {
       }),
     );
 
-    renderBothSurfaces();
+    renderJobFeed();
     await openJobFeed(user);
 
     expect(await screen.findByLabelText('Remove Custom Role X')).toBeInTheDocument();
@@ -329,7 +282,7 @@ describe('shared job titles', () => {
     expect(api.suggestPipelineFilters).not.toHaveBeenCalled();
   });
 
-  test('5. the 40-title cap holds across surfaces (39 + paste 3 => exactly 40)', async () => {
+  test('5. the 40-title cap holds (39 + paste 3 => exactly 40)', async () => {
     const seed = Array.from({ length: 39 }, (_, i) => `Seed Title ${i + 1}`);
     localStorage.setItem(
       SHARED_CACHE_KEY,
@@ -337,20 +290,16 @@ describe('shared job titles', () => {
     );
 
     const user = userEvent.setup();
-    renderBothSurfaces();
+    renderJobFeed();
 
-    await openCareersCustomize(user);
+    await openJobFeed(user);
     await screen.findByLabelText('Remove Seed Title 1');
 
-    await user.click(careersTitlesInput());
+    await user.click(jobFeedTitlesInput());
     await user.paste('Extra One, Extra Two, Extra Three');
 
     expect(await screen.findByLabelText('Remove Extra One')).toBeInTheDocument();
     expect(screen.queryByLabelText('Remove Extra Two')).not.toBeInTheDocument();
-    expect(screen.getByText('40 / 40')).toBeInTheDocument();
-
-    await closeCareersCustomize(user);
-    await openJobFeed(user);
     expect((await screen.findAllByText('40 / 40')).length).toBeGreaterThanOrEqual(1);
   });
 
@@ -369,10 +318,10 @@ describe('shared job titles', () => {
     });
 
     const user = userEvent.setup();
-    renderBothSurfaces();
+    renderJobFeed();
 
     await waitFor(() => expect(api.suggestPipelineFilters).toHaveBeenCalledTimes(1));
-    await openCareersCustomize(user);
+    await openJobFeed(user);
 
     expect(await screen.findByLabelText('Remove Backend Engineer')).toBeInTheDocument();
     expect(await screen.findByLabelText('Remove Platform Engineer')).toBeInTheDocument();
@@ -381,9 +330,8 @@ describe('shared job titles', () => {
   });
 
   test('7. a resume with 4+ titles does NOT auto-suggest', async () => {
-    renderBothSurfaces();
+    renderJobFeed();
 
-    expect(await screen.findByRole('heading', { name: /live listings/i })).toBeInTheDocument();
     await waitFor(() => expect(api.getTitleSeed).toHaveBeenCalled());
     expect(api.suggestPipelineFilters).not.toHaveBeenCalled();
   });
@@ -397,8 +345,8 @@ describe('shared job titles', () => {
     );
 
     const user = userEvent.setup();
-    renderBothSurfaces();
-    await openCareersCustomize(user);
+    renderJobFeed();
+    await openJobFeed(user);
 
     expect(await screen.findByLabelText('Remove Backend Engineer')).toBeInTheDocument();
     expect(screen.getByLabelText('Remove Platform Engineer')).toBeInTheDocument();
@@ -407,7 +355,7 @@ describe('shared job titles', () => {
 
   test('8. Job feed drawer explains how titles shape For you matches', async () => {
     const user = userEvent.setup();
-    renderBothSurfaces();
+    renderJobFeed();
 
     await openJobFeed(user);
     for (const title of RESUME_TITLES) {
@@ -416,18 +364,6 @@ describe('shared job titles', () => {
     expect(screen.getByText(/these titles shape your for you matches across employer sites/i)).toBeInTheDocument();
   });
 
-  test('9. Job feed is the For-you editor; Careers Customize sees the same set', async () => {
-    const user = userEvent.setup();
-    renderBothSurfaces();
-
-    await openJobFeed(user);
-    expect(await screen.findByLabelText('Remove Backend Engineer')).toBeInTheDocument();
-    await user.type(jobFeedTitlesInput(), 'Staff Engineer{Enter}');
-    await closeJobFeed(user);
-
-    await openCareersCustomize(user);
-    expect(await screen.findByLabelText('Remove Staff Engineer')).toBeInTheDocument();
-  });
 });
 
 // ── A seeker who changes resume (reported 2026-10-26) ──────────────────────
@@ -457,7 +393,7 @@ describe('resume change re-derives the search titles', () => {
     savedWithBaseline(['Backend Engineer', 'Platform Engineer', 'Custom Role X']);
     newResume();
     const user = userEvent.setup();
-    renderBothSurfaces();
+    renderJobFeed();
     await openJobFeed(user);
 
     expect(await screen.findByLabelText('Remove Registered Nurse')).toBeInTheDocument();
@@ -484,7 +420,7 @@ describe('resume change re-derives the search titles', () => {
       fingerprint: 'fp-cloud-resume', resume_titles: ['Cloud Engineer'],
       match_titles: ['Cloud Engineer', 'Software Engineer', 'Aws Engineer', 'DevOps Engineer'],
     }));
-    renderBothSurfaces();
+    renderJobFeed();
     await waitFor(() => expect(cachedTitles()).toHaveLength(8));
     expect(cachedTitles()).toEqual([
       'Cloud Engineer', 'Software Engineer', 'Aws Engineer', 'DevOps Engineer',
@@ -495,7 +431,7 @@ describe('resume change re-derives the search titles', () => {
   test('a resume uploaded mid-session re-scans the feed with the new titles', async () => {
     savedWithBaseline(OLD_SEED);
     api.getTitleSeed.mockResolvedValue(okTitleSeed({ match_titles: OLD_SEED }));
-    renderBothSurfaces();
+    renderJobFeed();
     // Only the For-you feed scans MNC boards, so its calls count the feed's scans.
     await waitFor(() => expect(api.searchMncJobs).toHaveBeenCalledTimes(1));
     expect(api.searchMncJobs.mock.calls[0][0].titles).toEqual(OLD_SEED);
@@ -512,7 +448,7 @@ describe('resume change re-derives the search titles', () => {
     savedWithBaseline(['Backend Engineer', 'Custom Role X']);
     api.getTitleSeed.mockResolvedValue(okTitleSeed({ match_titles: OLD_SEED }));
     const user = userEvent.setup();
-    renderBothSurfaces();
+    renderJobFeed();
     await openJobFeed(user);
 
     expect(await screen.findByLabelText('Remove Custom Role X')).toBeInTheDocument();
@@ -525,7 +461,7 @@ describe('resume change re-derives the search titles', () => {
     savedWithBaseline(['Backend Engineer', 'Old Career Title'], null);
     api.getTitleSeed.mockResolvedValue(okTitleSeed({ match_titles: OLD_SEED }));
     const user = userEvent.setup();
-    const first = renderBothSurfaces();
+    const first = renderJobFeed();
 
     const notice = await screen.findByTestId('jobs-title-review');
     expect(notice).toHaveTextContent('Old Career Title');
@@ -539,7 +475,7 @@ describe('resume change re-derives the search titles', () => {
 
     first.unmount();
     resetJobTitlesStore();
-    renderBothSurfaces();
+    renderJobFeed();
     await waitFor(() => expect(api.getTitleSeed).toHaveBeenCalledTimes(2));
     expect(screen.queryByTestId('jobs-title-review')).not.toBeInTheDocument();
   });
@@ -548,7 +484,7 @@ describe('resume change re-derives the search titles', () => {
     savedWithBaseline(['Backend Engineer', 'Hand Typed Role'], null);
     api.getTitleSeed.mockResolvedValue(okTitleSeed({ match_titles: OLD_SEED }));
     const user = userEvent.setup();
-    const first = renderBothSurfaces();
+    const first = renderJobFeed();
 
     const notice = await screen.findByTestId('jobs-title-review');
     await user.click(within(notice).getByRole('button', { name: 'Keep my titles' }));
@@ -557,7 +493,7 @@ describe('resume change re-derives the search titles', () => {
 
     first.unmount();
     resetJobTitlesStore();
-    renderBothSurfaces();
+    renderJobFeed();
     await waitFor(() => expect(api.getTitleSeed).toHaveBeenCalledTimes(2));
     expect(screen.queryByTestId('jobs-title-review')).not.toBeInTheDocument();
   });
@@ -584,7 +520,7 @@ describe('saved titles belong to the account that saved them', () => {
     signIn('bhavya@example.com');
     api.getTitleSeed.mockResolvedValue(okTitleSeed({ fingerprint: 'fp-bhavya', match_titles: BHAVYA_SEED }));
     const user = userEvent.setup();
-    renderBothSurfaces();
+    renderJobFeed();
     await openJobFeed(user);
 
     expect(await screen.findByLabelText('Remove Network Engineer')).toBeInTheDocument();
@@ -625,7 +561,7 @@ describe('saved titles belong to the account that saved them', () => {
 
 describe('the feed follows the time zone', () => {
   test('a zone change (travel or Settings) re-fetches a feed that already ran', async () => {
-    renderBothSurfaces();
+    renderJobFeed();
     await waitFor(() => expect(api.searchMncJobs).toHaveBeenCalledTimes(1));
     act(() => {
       window.dispatchEvent(new CustomEvent('timezone:changed'));

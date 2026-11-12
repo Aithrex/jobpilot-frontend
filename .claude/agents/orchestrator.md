@@ -38,7 +38,7 @@ You are the **Orchestrator** for the JobPilot frontend — a staff-level tech le
 
 ## JobPilot FE invariants you must protect in every plan
 - **Auth responses are FLAT**: register→`{access_token,email}`, login→`{access_token,email,role?,sector?}`. Auth FAILURES are 400/409/403/429 — **NEVER 401**. Any 401 anywhere is treated by `lib/api.ts` as a dead session → forced logout via the `auth:session-expired` event. Password-reset field is snake_case `new_password`.
-- **Build is `vite build` ONLY** (SWC/esbuild, no `tsc` gate). The repo already has known pre-existing type errors (InterviewPrepTab, DailyPipelinePanel, `api.ts` parsed_resume) — do not chase them, but **never add new ones**.
+- **Build is `vite build` ONLY** (SWC/esbuild, no `tsc` gate). The repo already has known pre-existing type errors (InterviewPrepTab, `api.ts` parsed_resume) — do not chase them, but **never add new ones**.
 - **Long LLM work is async**: FE calls an endpoint that returns `{job_id}` and polls `apiService.pollJob` / `/resume/job/<id>`. Never block the UI on a long call.
 - **Freemium gating** flows through the backend (403 `upgrade_required`, 429 + quota payloads) and is surfaced via `useEntitlements`, `QuotaMeter`, `LockBadge`, `UpgradeModalProvider`, `QuotaLimitDialog`. Never double-count tailor quota.
 - **Adding a workspace tab to `pages/ResumeParser.tsx` is a 6-POINT edit**: NavTab union, lazy import, NAV_ITEMS, NAV_SECTIONS, VALID_NAV_TABS, render switch (+ `components/layout/MobileBottomNav.tsx` for mobile). Growth features go in the "Grow" section.

@@ -11,7 +11,6 @@ import { apiService } from '@/lib/api';
 import { resetJobTitlesStore } from '@/hooks/useJobTitles';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { CombinedJobsProvider } from '@/components/job-search/CombinedJobsProvider';
-import { WorkdayJobsPanel } from '@/components/job-search/WorkdayJobsPanel';
 import DiscoverPage from '@/app-shell/pages/DiscoverPage';
 
 vi.mock('@/lib/api', () => ({
@@ -153,50 +152,5 @@ describe('DiscoverPage section-aware Jobs chrome', () => {
     await screen.findByRole('link', { name: /Applied/ });
     expect(screen.queryByTestId('subnav-badge-applied')).not.toBeInTheDocument();
     expect(screen.queryByTestId('subnav-badge-saved')).not.toBeInTheDocument();
-  });
-});
-
-describe('WorkdayJobsPanel Live listings', () => {
-  beforeEach(() => {
-    resetJobTitlesStore();
-    window.localStorage.clear();
-    api.getTitleSeed.mockResolvedValue({
-      data: {
-        fingerprint: 'fp-chrome',
-        resume_titles: ['Backend Engineer'],
-        synth_titles: [],
-        resume_count: 1,
-        cached: true,
-      },
-      status: 200,
-    });
-    api.getResume.mockResolvedValue({ data: { target_titles: ['Backend Engineer'] }, status: 200 });
-    api.suggestPipelineFilters.mockResolvedValue({ data: { titles: [] }, status: 200 });
-    api.searchWorkdayJobs.mockResolvedValue(okScan());
-    api.getWorkdayCatalog.mockResolvedValue({ data: { total: 0, industries: [] }, status: 200 });
-  });
-
-  test('renders Live listings bar and Customize without CombinedJobsCtx', () => {
-    render(
-      <MemoryRouter>
-        <TooltipProvider>
-          <WorkdayJobsPanel
-            variant="workday"
-            isJobSaved={() => false}
-            getJobStatus={() => null}
-            saveJob={vi.fn()}
-            unsaveJob={vi.fn()}
-            quickApply={vi.fn()}
-          />
-        </TooltipProvider>
-      </MemoryRouter>,
-    );
-
-    expect(screen.getByRole('heading', { name: /live listings/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /customize/i })).toBeInTheDocument();
-    expect(
-      screen.getByText(/scanning workday career sites only/i),
-    ).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /job feed/i })).not.toBeInTheDocument();
   });
 });

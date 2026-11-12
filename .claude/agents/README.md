@@ -36,7 +36,7 @@ Codebase-aware Claude Code subagents for `jobpilot-frontend` (Vite 5 · React 18
 - **Model**: every agent is `model: inherit` (follows your session model). Override per-agent if you want, e.g. `opus` for `staff-engineer`/`orchestrator`, a cheaper tier for mechanical ones.
 - **Invariants enforced everywhere** (violating these breaks login or prod):
   1. **Flat auth payloads**; auth *failures* are 400/409/403/429, **never 401** (any 401 ⇒ forced logout via `auth:session-expired`); reset field is `new_password`.
-  2. **`vite build` only** — no `tsc` gate; don't add new TS errors (known pre-existing ones in InterviewPrepTab, DailyPipelinePanel, `api.ts` parsed_resume are off-limits to "fix").
+  2. **`vite build` only** — no `tsc` gate; don't add new TS errors (known pre-existing ones in InterviewPrepTab, `api.ts` parsed_resume are off-limits to "fix").
   3. **Long LLM work is async** — kick off → `{job_id}` → poll `apiService.pollJob`/`/resume/job/<id>`.
   4. **Freemium gating** via `useEntitlements` + quota/upgrade UI; don't double-count tailor quota.
   5. **Adding a tab to `ResumeParser.tsx` = 6 synchronized edits** (+ `MobileBottomNav.tsx`).

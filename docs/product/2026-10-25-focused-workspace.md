@@ -40,6 +40,16 @@ Gmail requires the existing server OAuth switch, credentials and user consent. D
 
 Manual application entry and a review queue for importing previously untracked applications would help migrations. They need a dedicated creation/identity contract; company-only email is insufficient evidence. Calendar-backed interviews and durable outcome history are useful next steps. This cleanup implements the immediate essentials without inventing events or statuses.
 
+## Update 2026-11-12: frontend source deleted
+
+At the owner's request the hidden screens' frontend source was deleted
+(Career Portals and the tech feed, Auto Apply, Six Seconds, Voice analysis),
+along with everything else the app could no longer reach. The "retained
+dependencies" above still hold for the BACKEND and for `src/lib/api.ts`,
+which were not changed. The redirects in the table still apply. To restore
+one of these features, recover its files from git at commit `3361db3` and
+then follow the restoration rule below.
+
 ## Restoration and verification
 
 Restore a feature only after its return criteria are met. Re-add navigation, route, cards and settings together with regression coverage. Never delete backend sourcing services based on a removed screen name.
