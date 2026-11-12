@@ -227,10 +227,17 @@ export default function TrackerPage() {
                     className={cn(
                       'flex items-baseline gap-1.5 rounded-lg px-2.5 py-1.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                       on ? 'bg-primary/10 text-primary' : 'hover:bg-muted',
-                      count === 0 && !on && 'opacity-60',
                     )}
                   >
-                    <span className="font-display text-lg font-semibold tabular-nums text-foreground">
+                    {/* An empty stage is quieted by its NUMBER, not by fading the
+                        whole button: opacity-60 took the label to 3.1:1 on the
+                        dark card while the button stayed clickable. */}
+                    <span
+                      className={cn(
+                        'font-display text-lg font-semibold tabular-nums',
+                        count === 0 && !on ? 'text-muted-foreground' : 'text-foreground',
+                      )}
+                    >
                       {count}
                     </span>
                     <span className="text-label text-muted-foreground">{label}</span>

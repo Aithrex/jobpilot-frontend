@@ -66,7 +66,7 @@ export function ProgressStepper({ currentStep }: { currentStep: 1 | 2 | 3 }) {
                   role="presentation"
                   aria-hidden="true"
                   className={cn(
-                    'h-[2px] flex-1 max-w-[80px] rounded-full transition-colors duration-500',
+                    'h-[2px] flex-1 max-w-[80px] rounded-full transition-colors duration-200',
                     currentStep > s.n ? 'bg-primary' : 'bg-muted',
                   )}
                 />

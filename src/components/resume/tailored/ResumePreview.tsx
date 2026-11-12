@@ -117,7 +117,7 @@ export function ResumePreview({ resume }: { resume: TailoredFullResume }) {
                         </p>
                       )}
                     </div>
-                    <span className="text-[11px] text-gray-500 dark:text-gray-400 whitespace-nowrap shrink-0">
+                    <span className="text-[11px] text-muted-foreground whitespace-nowrap shrink-0">
                       {exp.dates}
                     </span>
                   </div>
@@ -244,7 +244,7 @@ export function ResumePreview({ resume }: { resume: TailoredFullResume }) {
                         </span>
                         {d ? ` · ${d}` : ""}
                       </p>
-                      <span className="text-[11px] text-gray-500 dark:text-gray-400 whitespace-nowrap shrink-0">
+                      <span className="text-[11px] text-muted-foreground whitespace-nowrap shrink-0">
                         {edu.dates}
                       </span>
                     </div>
@@ -314,7 +314,7 @@ export function ResumePreview({ resume }: { resume: TailoredFullResume }) {
                       <p className="text-[13.5px] font-semibold text-gray-900 dark:text-white">
                         {[e.title, e.organization].filter(Boolean).join(" | ")}
                       </p>
-                      <span className="text-[11px] text-gray-500 dark:text-gray-400 whitespace-nowrap shrink-0">
+                      <span className="text-[11px] text-muted-foreground whitespace-nowrap shrink-0">
                         {e.dates}
                       </span>
                     </div>

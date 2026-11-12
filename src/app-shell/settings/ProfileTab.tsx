@@ -202,10 +202,10 @@ export default function ProfileTab() {
 
   const scoreTone =
     recruiterReadyScore >= 85
-      ? "text-emerald-600 dark:text-emerald-300"
+      ? "text-success"
       : recruiterReadyScore >= 70
-        ? "text-amber-600 dark:text-amber-300"
-        : "text-red-600 dark:text-red-300";
+        ? "text-warning"
+        : "text-destructive";
 
   const scoreLabel =
     recruiterReadyScore >= 85
@@ -263,24 +263,24 @@ export default function ProfileTab() {
         <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">
           Profile & Career Strategy
         </h2>
-        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+        <p className="text-xs text-muted-foreground mt-0.5">
           Industry-level profile configuration for better tailoring, outreach, and copilot guidance.
         </p>
         <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
           <div className="rounded-lg border border-indigo-500/20 bg-indigo-500/5 px-3 py-2">
-            <p className="text-[10px] uppercase tracking-wide text-gray-500 dark:text-gray-400">Completion</p>
+            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Completion</p>
             <p className="text-sm font-semibold text-indigo-700 dark:text-indigo-300">{completion}%</p>
           </div>
           <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-3 py-2">
-            <p className="text-[10px] uppercase tracking-wide text-gray-500 dark:text-gray-400">Readiness</p>
+            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Readiness</p>
             <p className={`text-sm font-semibold ${scoreTone}`}>{recruiterReadyScore}/100</p>
           </div>
           <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2">
-            <p className="text-[10px] uppercase tracking-wide text-gray-500 dark:text-gray-400">Open gaps</p>
-            <p className="text-sm font-semibold text-amber-700 dark:text-amber-300">{topGaps.length}</p>
+            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Open gaps</p>
+            <p className="text-sm font-semibold text-warning">{topGaps.length}</p>
           </div>
           <div className="rounded-lg border border-violet-500/20 bg-violet-500/5 px-3 py-2">
-            <p className="text-[10px] uppercase tracking-wide text-gray-500 dark:text-gray-400">Memory sync</p>
+            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Memory sync</p>
             <p className="text-sm font-semibold text-violet-700 dark:text-violet-300">{memoryLoading ? "..." : "Ready"}</p>
           </div>
         </div>
@@ -299,7 +299,7 @@ export default function ProfileTab() {
             style={{ width: `${completion}%` }}
           />
         </div>
-        <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-2">
+        <p className="text-[11px] text-muted-foreground mt-2">
           Higher completion improves quality of AI suggestions, outreach sequences, and interview prep.
         </p>
       </div>
@@ -314,10 +314,10 @@ export default function ProfileTab() {
           </div>
           <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
             recruiterReadyScore >= 85
-              ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+              ? "bg-emerald-500/10 text-success"
               : recruiterReadyScore >= 70
-                ? "bg-amber-500/10 text-amber-700 dark:text-amber-300"
-                : "bg-red-500/10 text-red-700 dark:text-red-300"
+                ? "bg-amber-500/10 text-warning"
+                : "bg-red-500/10 text-destructive"
           }`}>
             {scoreLabel}
           </span>
@@ -344,7 +344,7 @@ export default function ProfileTab() {
             </ul>
           </div>
         ) : (
-          <p className="mt-3 text-xs text-emerald-600 dark:text-emerald-300">
+          <p className="mt-3 text-xs text-success">
             Excellent. Your profile settings are strong and ready for high-quality personalization.
           </p>
         )}
@@ -360,7 +360,7 @@ export default function ProfileTab() {
           <div className="px-4 py-2.5 rounded-lg bg-gray-100/40 dark:bg-gray-800/40 border border-gray-300 dark:border-gray-700/40 text-sm text-gray-600 dark:text-gray-400">
             {user?.email}
           </div>
-          <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">
+          <p className="text-[10px] text-muted-foreground mt-1">
             Email cannot be changed
           </p>
         </div>
@@ -398,7 +398,7 @@ export default function ProfileTab() {
               ))}
             </select>
             <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-              <ChevronDown className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform duration-200 ${false ? "rotate-180" : ""}`} />
+              <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${false ? "rotate-180" : ""}`} />
             </span>
           </div>
         </div>
@@ -422,14 +422,14 @@ export default function ProfileTab() {
               ))}
             </select>
             <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-              <ChevronDown className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform duration-200 ${false ? "rotate-180" : ""}`} />
+              <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${false ? "rotate-180" : ""}`} />
             </span>
           </div>
         </div>
 
-        {error && <p className="text-sm text-red-400">{error}</p>}
+        {error && <p className="text-sm text-destructive">{error}</p>}
         {saved && (
-          <p className="text-sm text-emerald-400 flex items-center gap-1.5">
+          <p className="text-sm text-success flex items-center gap-1.5">
             <CheckCircle2 className="w-4 h-4" /> Profile updated
           </p>
         )}
@@ -460,7 +460,7 @@ export default function ProfileTab() {
             Career Strategy (Copilot Memory)
           </p>
           {memoryLoading && (
-            <span className="text-xs text-gray-500 dark:text-gray-400">Loading strategy...</span>
+            <span className="text-xs text-muted-foreground">Loading strategy...</span>
           )}
         </div>
 
@@ -493,7 +493,7 @@ export default function ProfileTab() {
                 ))}
               </select>
               <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                <ChevronDown className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform duration-200 ${false ? "rotate-180" : ""}`} />
+                <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${false ? "rotate-180" : ""}`} />
               </span>
             </div>
           </div>
@@ -507,7 +507,7 @@ export default function ProfileTab() {
                 ))}
               </select>
               <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                <ChevronDown className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform duration-200 ${false ? "rotate-180" : ""}`} />
+                <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${false ? "rotate-180" : ""}`} />
               </span>
             </div>
           </div>
@@ -521,7 +521,7 @@ export default function ProfileTab() {
                 ))}
               </select>
               <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                <ChevronDown className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform duration-200 ${false ? "rotate-180" : ""}`} />
+                <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${false ? "rotate-180" : ""}`} />
               </span>
             </div>
           </div>
@@ -557,7 +557,7 @@ export default function ProfileTab() {
           />
         </div>
 
-        <p className="text-[11px] text-gray-500 dark:text-gray-400">
+        <p className="text-[11px] text-muted-foreground">
           These settings are synced to Copilot memory and used to personalize JD analysis, cold outreach, and interview prep.
         </p>
 
@@ -567,7 +567,7 @@ export default function ProfileTab() {
               <p className="text-xs font-semibold text-indigo-700 dark:text-indigo-300">
                 Auto-fix suggestions
               </p>
-              <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+              <p className="text-[11px] text-muted-foreground mt-0.5">
                 Generate industry-style wording for Portfolio Focus and Constraints based on your profile.
               </p>
             </div>
@@ -604,7 +604,7 @@ export default function ProfileTab() {
                 <button
                   type="button"
                   onClick={() => setAutoFixPreview(null)}
-                  className="text-xs text-gray-500 dark:text-gray-400 underline"
+                  className="text-xs text-muted-foreground underline"
                 >
                   Dismiss
                 </button>
@@ -615,8 +615,8 @@ export default function ProfileTab() {
 
         {validationErrors.length > 0 && (
           <div className="rounded-lg border border-red-500/20 bg-red-500/5 p-3">
-            <p className="text-xs font-semibold text-red-700 dark:text-red-300 mb-1">Validation issues</p>
-            <ul className="text-xs text-red-600 dark:text-red-300 space-y-1 list-disc list-inside">
+            <p className="text-xs font-semibold text-destructive mb-1">Validation issues</p>
+            <ul className="text-xs text-destructive space-y-1 list-disc list-inside">
               {validationErrors.map((v) => (
                 <li key={v}>{v}</li>
               ))}
@@ -639,7 +639,7 @@ export default function ProfileTab() {
           )}
         </button>
         {strategySaved && (
-          <p className="text-sm text-emerald-400 flex items-center gap-1.5">
+          <p className="text-sm text-success flex items-center gap-1.5">
             <CheckCircle2 className="w-4 h-4" /> Career strategy synced to Copilot
           </p>
         )}
@@ -657,7 +657,7 @@ export default function ProfileTab() {
             logout();
             window.location.href = "/app/home";
           }}
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-red-400 border border-red-500/20 hover:bg-red-500/10 transition-all"
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-destructive border border-red-500/20 hover:bg-red-500/10 transition-all"
         >
           Sign Out
         </button>

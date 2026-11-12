@@ -50,7 +50,10 @@ export function CompanyLogo({ company, logoUrl, size = 32, className }: CompanyL
         ...box,
         fontSize: Math.round(size * 0.375),
         backgroundColor: `hsl(${hue} 68% 55% / 0.14)`,
-        color: `hsl(${hue} 60% 52%)`,
+        // Lightness comes from the theme (`--monogram-l`, index.css): 52% in
+        // both themes was 1.9:1 on a light card for yellow-greens. 27% light /
+        // 74% dark keeps every hue at 4.8:1 or better on card and canvas.
+        color: `hsl(${hue} 58% var(--monogram-l, 27%))`,
         boxShadow:
           showImage && loaded
             ? 'inset 0 0 0 1px hsl(var(--border))'

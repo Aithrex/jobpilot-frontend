@@ -125,7 +125,7 @@ export default function BetaLabTab() {
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between gap-2">
               <CardTitle className="text-base inline-flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-emerald-500" />
+                <Sparkles className="h-4 w-4 text-success" />
                 Morning Agent
               </CardTitle>
               <Badge variant="outline" className="border-emerald-500/40 bg-emerald-500/10 text-[10px] text-emerald-600 dark:text-emerald-300">
@@ -186,7 +186,7 @@ export default function BetaLabTab() {
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between gap-2">
               <CardTitle className="text-base inline-flex items-center gap-2">
-                <Compass className="h-4 w-4 text-indigo-500" />
+                <Compass className="h-4 w-4 text-primary" />
                 JD → Similar Roles
               </CardTitle>
               <Badge variant="outline" className="border-indigo-500/40 bg-indigo-500/10 text-[10px] text-indigo-600 dark:text-indigo-300">
@@ -271,7 +271,7 @@ export default function BetaLabTab() {
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between gap-2">
               <CardTitle className="text-base inline-flex items-center gap-2">
-                <BookOpen className="h-4 w-4 text-amber-500" />
+                <BookOpen className="h-4 w-4 text-warning" />
                 Resume A/B Telemetry
               </CardTitle>
               <Badge variant="outline" className="border-amber-500/40 bg-amber-500/10 text-[10px] text-amber-600 dark:text-amber-300">
@@ -346,7 +346,7 @@ export default function BetaLabTab() {
         {/* ─── #7 Recruiter scrape (stub) ────────────────────────────── */}
         {/* --- APIFY DISABLED (temporary): Apify recruiter-scrape stub card hidden. Restore to re-enable. ---
         <StubCard
-          icon={<Globe className="h-4 w-4 text-rose-500" />}
+          icon={<Globe className="h-4 w-4 text-chart-8" />}
           title="LinkedIn Recruiter Auto-Discover"
           description="Phase 2 of Reach Out. Apify-scrapes 3 recruiters / hiring managers per Tier 1 row so you don't have to find them manually."
           eta="2 weeks"
@@ -365,7 +365,7 @@ export default function BetaLabTab() {
 
         {/* ─── #10 Chrome extension (stub) ───────────────────────────── */}
         <StubCard
-          icon={<Compass className="h-4 w-4 text-sky-500" />}
+          icon={<Compass className="h-4 w-4 text-info" />}
           title="Apply Autopilot (Chrome ext.)"
           description="Watches Workday/Greenhouse/Lever forms, auto-fills your info, EEO, visa answers, and uploads the matching tailored resume."
           eta="4 weeks"
@@ -374,7 +374,7 @@ export default function BetaLabTab() {
 
         {/* ─── #11 Brand engine (stub) ───────────────────────────────── */}
         <StubCard
-          icon={<BellRing className="h-4 w-4 text-pink-500" />}
+          icon={<BellRing className="h-4 w-4 text-primary" />}
           title="Personal Brand Auto-Engine"
           description="Weekly LinkedIn post + blog draft + GitHub README updates from your commits. Flips you from applying to being recruited."
           eta="8 weeks"

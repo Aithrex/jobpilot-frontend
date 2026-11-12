@@ -1019,7 +1019,7 @@ export function WorkdayJobsPanel({
                       )}
                     >
                       {industryLabels[ind.key] ?? ind.key}
-                      <span className="ml-1 tabular-nums opacity-60">{ind.count}</span>
+                      <span className="ml-1 tabular-nums font-normal">{ind.count}</span>
                     </button>
                   );
                 })}
@@ -1136,7 +1136,7 @@ export function WorkdayJobsPanel({
                     label: (
                       <>
                         {opt.label}
-                        <span className="tabular-nums opacity-60">{recencyCounts[opt.key]}</span>
+                        <span className="tabular-nums font-normal">{recencyCounts[opt.key]}</span>
                       </>
                     ),
                   })),

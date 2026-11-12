@@ -56,7 +56,7 @@ export function JobsRefineBar() {
               label: (
                 <>
                   {opt.label}
-                  <span className="tabular-nums opacity-60">{recencyCounts[opt.key]}</span>
+                  <span className="tabular-nums font-normal">{recencyCounts[opt.key]}</span>
                 </>
               ),
             }))}

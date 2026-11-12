@@ -403,7 +403,7 @@ function VisaBadge({ status, confidence }: { status?: string; confidence?: numbe
     return (
       <Badge
         variant="outline"
-        className="gap-1 border-emerald-500/40 bg-emerald-500/10 text-[9px] font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-300"
+        className="gap-1 border-emerald-500/40 bg-emerald-500/10 text-[9px] font-semibold uppercase tracking-wider text-success"
         title="Verified H-1B sponsor. Company is on the curated sponsor list or the JD says they sponsor."
       >
         <ShieldCheck className="h-2.5 w-2.5" />
@@ -415,7 +415,7 @@ function VisaBadge({ status, confidence }: { status?: string; confidence?: numbe
     return (
       <Badge
         variant="outline"
-        className="gap-1 border-amber-500/40 bg-amber-500/10 text-[9px] font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-300"
+        className="gap-1 border-amber-500/40 bg-amber-500/10 text-[9px] font-semibold uppercase tracking-wider text-warning"
         title="Looks like a tech employer that historically sponsors, but the JD doesn't say so explicitly. Worth verifying before applying."
       >
         <ShieldCheck className="h-2.5 w-2.5" />
@@ -427,7 +427,7 @@ function VisaBadge({ status, confidence }: { status?: string; confidence?: numbe
     return (
       <Badge
         variant="outline"
-        className="gap-1 border-red-500/40 bg-red-500/10 text-[9px] font-semibold uppercase tracking-wider text-red-700 dark:text-red-300"
+        className="gap-1 border-red-500/40 bg-red-500/10 text-[9px] font-semibold uppercase tracking-wider text-destructive"
         title="JD explicitly states no visa sponsorship is offered. Skip if you're on F-1 / H-1B."
       >
         <AlertCircle className="h-2.5 w-2.5" />
@@ -532,7 +532,7 @@ function PipelineRow({
       case 'offer':
         return {
           ring: 'border-amber-500/40 bg-amber-500/5',
-          chip: 'bg-amber-500/15 text-amber-700 dark:text-amber-300',
+          chip: 'bg-amber-500/15 text-warning',
           label:
             prevStatus === 'offer' ? 'Offer'
             : prevStatus === 'interview' ? 'In interview'
@@ -541,7 +541,7 @@ function PipelineRow({
       case 'rejected':
         return {
           ring: 'border-rose-500/30 bg-rose-500/5',
-          chip: 'bg-rose-500/15 text-rose-700 dark:text-rose-300',
+          chip: 'bg-rose-500/15 text-destructive',
           label: 'Rejected previously',
         };
       case 'withdrawn':
@@ -553,7 +553,7 @@ function PipelineRow({
       default:
         return {
           ring: 'border-amber-500/40 bg-amber-500/5',
-          chip: 'bg-amber-500/15 text-amber-700 dark:text-amber-300',
+          chip: 'bg-amber-500/15 text-warning',
           label: 'Already applied',
         };
     }
@@ -573,7 +573,7 @@ function PipelineRow({
       }`}
     >
       {applied && (
-        <div className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 dark:text-emerald-300">
+        <div className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold text-success">
           <CheckCircle2 className="h-3 w-3" />
           Applied · in Saved
         </div>
@@ -635,9 +635,9 @@ function PipelineRow({
                 className={
                   'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-tight ' +
                   (matchScore.match_score >= 70
-                    ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
+                    ? 'bg-emerald-500/15 text-success'
                     : matchScore.match_score >= 40
-                      ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300'
+                      ? 'bg-amber-500/15 text-warning'
                       : 'bg-slate-500/15 text-slate-600 dark:text-slate-300')
                 }
                 title={
@@ -693,7 +693,7 @@ function PipelineRow({
           )}
 
           {rec.opt && rec.opt !== 'FTE OK' && (
-            <p className="text-[11px] text-amber-700 dark:text-amber-300">{rec.opt}</p>
+            <p className="text-[11px] text-warning">{rec.opt}</p>
           )}
         </div>
 
@@ -2265,7 +2265,7 @@ export function DailyPipelinePanel({
           <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div className="space-y-0.5">
-                <p className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-300">
+                <p className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-warning">
                   <ShieldCheck className="h-3 w-3" />
                   F-1 / H-1B mode
                 </p>
@@ -2282,7 +2282,7 @@ export function DailyPipelinePanel({
                   setH1bOnly(false);
                   toast.success('F-1 friendly mode on. Postings that say "no sponsorship" will be dropped.');
                 }}
-                className="h-7 gap-1 text-[11px] border-amber-500/40 text-amber-700 hover:bg-amber-500/10 dark:text-amber-300"
+                className="h-7 gap-1 text-[11px] border-amber-500/40 text-warning hover:bg-amber-500/10 dark:text-amber-300"
               >
                 <Sparkles className="h-3 w-3" />
                 F-1 friendly
@@ -2397,8 +2397,8 @@ export function DailyPipelinePanel({
             }`}>
               <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${
                 detectedSummary.usedSynth
-                  ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
-                  : 'bg-amber-500/15 text-amber-700 dark:text-amber-300'
+                  ? 'bg-emerald-500/15 text-success'
+                  : 'bg-amber-500/15 text-warning'
               }`}>
                 {detectedSummary.usedSynth ? 'AI synth ✓' : 'Fallback'}
               </span>
@@ -2412,7 +2412,7 @@ export function DailyPipelinePanel({
                   </p>
                 )}
                 {!detectedSummary.usedSynth && (
-                  <p className="text-amber-700/90 dark:text-amber-300/90">
+                  <p className="text-warning/90">
                     The resume classifier ran fine; the AI title generator hit
                     a transient error (rate limit / timeout) and fell back to
                     the curated default set for {detectedSummary.headline}.
@@ -2506,7 +2506,7 @@ export function DailyPipelinePanel({
                   placeholder="Add a title... or paste a comma-separated list"
                   maxItems={120}
                   defaultValues={DEFAULT_WORKDAY_TITLES}
-                  accentClass="border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                  accentClass="border-emerald-500/30 bg-emerald-500/10 text-success"
                   helperText="Anchor each title to a software domain word so 'New Grad' doesn't pull non-tech roles."
                 />
               </div>
@@ -2535,10 +2535,10 @@ export function DailyPipelinePanel({
       {error && !loading && (
         <Card className="border-red-500/40 bg-red-500/5 dark:bg-red-500/10">
           <CardContent className="flex items-start gap-2 p-4">
-            <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-red-500" />
+            <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-destructive" />
             <div className="text-sm">
-              <p className="font-semibold text-red-700 dark:text-red-300">Pipeline failed</p>
-              <p className="text-xs text-red-700/80 dark:text-red-300/80">{error}</p>
+              <p className="font-semibold text-destructive">Pipeline failed</p>
+              <p className="text-xs text-destructive/80">{error}</p>
             </div>
           </CardContent>
         </Card>
@@ -2551,12 +2551,12 @@ export function DailyPipelinePanel({
             <Card className="border-red-500/40 bg-red-500/5">
               <CardContent className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-start gap-2">
-                  <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-red-500" />
+                  <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-destructive" />
                   <div>
-                    <p className="text-sm font-semibold text-red-700 dark:text-red-300">
+                    <p className="text-sm font-semibold text-destructive">
                       Apify credits exhausted
                     </p>
-                    <p className="text-[11px] text-red-700/80 dark:text-red-300/80">
+                    <p className="text-[11px] text-destructive/80">
                       The Apify token used for this run hit its monthly limit. Add or update your own
                       Apify API key above to keep running the daily pipeline. Your free Apify account
                       includes ~$5 monthly credit.
@@ -2622,12 +2622,12 @@ export function DailyPipelinePanel({
               <SummaryBlock
                 label="Remaining to apply"
                 value={remainingApply}
-                accent="text-emerald-600 dark:text-emerald-400"
+                accent="text-success"
               />
               <SummaryBlock
                 label="Verify dates"
                 value={result.totals.verify_dates}
-                accent="text-amber-600 dark:text-amber-400"
+                accent="text-warning"
               />
               <SummaryBlock label="Excluded" value={result.excluded_total} accent="text-muted-foreground" />
             </CardContent>
@@ -2646,14 +2646,14 @@ export function DailyPipelinePanel({
             <Card className="border-amber-500/30 bg-amber-500/5">
               <CardContent className="space-y-2 p-3 text-xs">
                 <div className="flex items-center gap-1.5">
-                  <AlertCircle className="h-3.5 w-3.5 text-amber-500" />
-                  <span className="font-semibold text-amber-700 dark:text-amber-300">
+                  <AlertCircle className="h-3.5 w-3.5 text-warning" />
+                  <span className="font-semibold text-warning">
                     A source returned 0. Here's what we sent
                   </span>
                 </div>
                 {result.source_breakdown && result.source_breakdown.linkedin.raw === 0 && (
                   <div className="space-y-1">
-                    <p className="text-amber-700/80 dark:text-amber-300/80">
+                    <p className="text-warning/80">
                       <strong>LinkedIn (0/{linkedinCount}):</strong>{' '}
                       {result.actor_diagnostics?.linkedin_silent_zero
                         ? 'actor responded successfully but returned no rows. Most common cause: filters too narrow. Try widening past_days, switching experience to "any", or removing very specific keyword phrases.'
@@ -2688,7 +2688,7 @@ export function DailyPipelinePanel({
                   </div>
                 )}
                 {result.source_breakdown && result.source_breakdown.workday.raw === 0 && (
-                  <p className="text-amber-700/80 dark:text-amber-300/80">
+                  <p className="text-warning/80">
                     <strong>Workday (0/{workdayLimit}):</strong>{' '}
                     {result.actor_diagnostics?.workday_silent_zero
                       ? `actor responded but returned no rows. Sent ${result.actor_diagnostics?.workday_input_summary?.titles ?? '?'} titles. Try fewer / broader title chips, "any" experience, or check the Partial Results panel for actor errors.`
@@ -2703,7 +2703,7 @@ export function DailyPipelinePanel({
           {appliedIds.length > 0 && (
             <div className="flex items-center justify-between rounded-lg border border-border/60 bg-muted/30 p-2">
               <span className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                <CheckCircle2 className="h-3.5 w-3.5 text-success" />
                 {appliedIds.length} applied this session
               </span>
               <Button
@@ -2721,10 +2721,10 @@ export function DailyPipelinePanel({
           {result.errors.length > 0 && (
             <Card className="border-amber-500/40 bg-amber-500/5">
               <CardContent className="flex items-start gap-2 p-3 text-xs">
-                <AlertCircle className="mt-0.5 h-3.5 w-3.5 text-amber-500" />
+                <AlertCircle className="mt-0.5 h-3.5 w-3.5 text-warning" />
                 <div>
-                  <p className="font-semibold text-amber-700 dark:text-amber-300">Partial results</p>
-                  <ul className="mt-1 space-y-0.5 text-amber-700/80 dark:text-amber-300/80">
+                  <p className="font-semibold text-warning">Partial results</p>
+                  <ul className="mt-1 space-y-0.5 text-warning/80">
                     {result.errors.map((e, i) => <li key={i}>· {e}</li>)}
                   </ul>
                 </div>
@@ -2745,10 +2745,10 @@ export function DailyPipelinePanel({
                   key={c}
                   type="button"
                   onClick={() => handleUnhideCompany(c)}
-                  className="inline-flex items-center gap-1 rounded-full border border-rose-500/30 bg-rose-500/10 px-2 py-0.5 text-[10px] text-rose-700 hover:bg-rose-500/20 dark:text-rose-300 transition-colors"
+                  className="inline-flex items-center gap-1 rounded-full border border-rose-500/30 bg-rose-500/10 px-2 py-0.5 text-[10px] text-destructive hover:bg-rose-500/20 dark:text-rose-300 transition-colors"
                   title={`Click to un-mute ${c}`}
                 >
-                  {c} <span className="text-rose-500/60">×</span>
+                  {c} <span className="text-destructive/60">×</span>
                 </button>
               ))}
             </div>
@@ -2764,10 +2764,10 @@ export function DailyPipelinePanel({
                   key={p}
                   type="button"
                   onClick={() => handleUnhideTitlePattern(p)}
-                  className="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] text-amber-700 hover:bg-amber-500/20 dark:text-amber-300 transition-colors"
+                  className="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] text-warning hover:bg-amber-500/20 dark:text-amber-300 transition-colors"
                   title={`Click to un-mute titles containing "${p}"`}
                 >
-                  contains "{p}" <span className="text-amber-500/60">×</span>
+                  contains "{p}" <span className="text-warning/60">×</span>
                 </button>
               ))}
             </div>
@@ -2781,11 +2781,11 @@ export function DailyPipelinePanel({
               <div className="mb-1 flex items-center justify-between text-[11px]">
                 <span className="font-medium text-foreground/90">
                   Today's goal
-                  <span className="ml-2 tabular-nums text-emerald-700 dark:text-emerald-400">
+                  <span className="ml-2 tabular-nums text-success">
                     {dailyApplied.count}/{dailyGoal}
                   </span>
                   {dailyApplied.count >= dailyGoal && (
-                    <span className="ml-2 text-emerald-600 dark:text-emerald-400">✓ hit</span>
+                    <span className="ml-2 text-success">✓ hit</span>
                   )}
                 </span>
                 <button
@@ -2823,7 +2823,7 @@ export function DailyPipelinePanel({
                     {digest.total} fresh to triage
                   </span>
                   {digest.fresh > 0 && (
-                    <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                    <span className="inline-flex items-center gap-1 text-success">
                       <Clock className="h-3 w-3" />
                       {digest.fresh} posted today
                     </span>
@@ -2840,19 +2840,19 @@ export function DailyPipelinePanel({
                     </button>
                   )}
                   {digest.sponsors > 0 && (
-                    <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                    <span className="inline-flex items-center gap-1 text-success">
                       <ShieldCheck className="h-3 w-3" />
                       {digest.sponsors} sponsor-verified
                     </span>
                   )}
                   {digest.alreadyApplied > 0 && (
-                    <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400">
+                    <span className="inline-flex items-center gap-1 text-warning">
                       <CheckCircle2 className="h-3 w-3" />
                       {digest.alreadyApplied} you already applied to
                     </span>
                   )}
                   {digest.noSponsor > 0 && (
-                    <span className="inline-flex items-center gap-1 text-red-600 dark:text-red-400">
+                    <span className="inline-flex items-center gap-1 text-destructive">
                       <AlertCircle className="h-3 w-3" />
                       {digest.noSponsor} no-sponsor (demoted)
                     </span>
@@ -3084,7 +3084,7 @@ export function DailyPipelinePanel({
             <TierGroup
               title={`⚠️ Verify dates (interns / co-ops): ${filteredVerifyDates.length}`}
               items={filteredVerifyDates}
-              accent="border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300"
+              accent="border-amber-500/30 bg-amber-500/10 text-warning"
               appliedIds={appliedSet}
               openedIds={openedSet}
               newIds={newIds}

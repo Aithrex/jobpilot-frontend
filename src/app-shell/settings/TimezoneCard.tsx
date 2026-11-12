@@ -53,7 +53,7 @@ export default function TimezoneCard() {
           <Globe2 className="w-4 h-4" />
           Time zone
         </p>
-        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
+        <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
           Decides what counts as today and yesterday in your job feed. Automatic follows this
           device, so it changes on its own when you travel.
         </p>
@@ -89,13 +89,13 @@ export default function TimezoneCard() {
         </select>
       </label>
 
-      <p className="text-xs text-gray-500 dark:text-gray-400" data-testid="timezone-active">
+      <p className="text-xs text-muted-foreground" data-testid="timezone-active">
         {pinned
           ? `Using ${timeZoneName(active)} on this device until you choose Automatic.`
           : `Using ${timeZoneName(active)}, detected from this device.`}
       </p>
       {saved && (
-        <p className="text-sm text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+        <p className="text-sm text-success flex items-center gap-1.5">
           <CheckCircle2 className="w-4 h-4" /> Time zone saved
         </p>
       )}

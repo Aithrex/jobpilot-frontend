@@ -28,10 +28,11 @@ export function humanizeBand(raw: string): string {
  * optional `band` is the SERVER's qualitative label (FitScore v2); absent, the
  * chip is exactly what it has always been. */
 export function ScoreBadge({ score, band }: { score: number; band?: string | null }) {
+  // Match quality is the signal colour (mint): solid when strong, tint below.
   const tone =
     score >= 85
-      ? 'border-success/30 bg-success/10 text-success'
-      : 'border-primary/30 bg-primary/10 text-primary';
+      ? 'border-signal bg-signal text-signal-foreground'
+      : 'border-signal/30 bg-signal-tint text-signal';
   return (
     <span
       title="Estimated match score based on skill and role overlap"

@@ -28,10 +28,10 @@ export function DailyUsageBadge({ usage, loading, className = "" }: Props) {
   const { remaining, limit } = usage;
   const tone =
     remaining === 0
-      ? "border-rose-400/40 bg-rose-400/10 text-rose-300"
+      ? "border-destructive/40 bg-destructive/10 text-destructive"
       : remaining === 1
-      ? "border-amber-400/40 bg-amber-400/10 text-amber-300"
-      : "border-emerald-400/30 bg-emerald-400/10 text-emerald-300";
+      ? "border-warning/40 bg-warning/10 text-warning"
+      : "border-success/30 bg-success/10 text-success";
 
   return (
     <span

@@ -172,7 +172,7 @@ export function GuestParsingState({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ ...stepTransition, delay: reduceMotion ? 0 : i * 0.08 }}
                 className={cn(
-                  'rounded-xl border p-3 transition-colors duration-500',
+                  'rounded-xl border p-3 transition-colors duration-200',
                   active
                     ? 'border-primary/40 bg-primary/5'
                     : visited

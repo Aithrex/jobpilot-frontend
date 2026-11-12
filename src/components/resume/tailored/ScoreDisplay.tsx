@@ -28,56 +28,56 @@ export function ScoreBar({
     return (
       <div className="space-y-1.5">
         <div className="flex justify-between items-center gap-2">
-          <span className="text-xs text-gray-700 dark:text-gray-300 font-medium">
+          <span className="text-xs text-ink-muted font-medium">
             {label}
           </span>
           <span className="text-[11px] text-muted-foreground">{unavailable}</span>
         </div>
-        <div className="h-2 rounded-full bg-gray-200 dark:bg-white/[0.06]" />
+        <div className="h-2 rounded-full bg-muted" />
       </div>
     );
   }
   const bg =
     score >= 80
-      ? "bg-emerald-500"
+      ? "bg-success"
       : score >= 60
-        ? "bg-amber-500"
-        : "bg-red-500";
+        ? "bg-warning"
+        : "bg-destructive";
   const scoreColor =
     score >= 80
-      ? "text-emerald-500 dark:text-emerald-400"
+      ? "text-success"
       : score >= 60
-        ? "text-amber-500 dark:text-amber-400"
-        : "text-red-500 dark:text-red-400";
+        ? "text-warning"
+        : "text-destructive";
   const badge =
     score >= 90
       ? {
           text: "Excellent",
-          cls: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/25",
+          cls: "bg-success/15 text-success border-success/25",
         }
       : score >= 80
         ? {
             text: "Strong",
-            cls: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
+            cls: "bg-success/10 text-success border-success/20",
           }
         : score >= 70
           ? {
               text: "Good",
-              cls: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
+              cls: "bg-warning/10 text-warning border-warning/20",
             }
           : score >= 50
             ? {
                 text: "Needs work",
-                cls: "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/25",
+                cls: "bg-warning/15 text-warning border-warning/25",
               }
             : {
                 text: "Weak",
-                cls: "bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/25",
+                cls: "bg-destructive/15 text-destructive border-destructive/25",
               };
   return (
     <div className="space-y-1.5">
       <div className="flex justify-between items-center gap-2">
-        <span className="text-xs text-gray-700 dark:text-gray-300 font-medium">
+        <span className="text-xs text-ink-muted font-medium">
           {label}
         </span>
         <div className="flex items-center gap-1.5">
@@ -91,7 +91,7 @@ export function ScoreBar({
           </span>
         </div>
       </div>
-      <div className="h-2 rounded-full bg-gray-200 dark:bg-white/[0.06] overflow-hidden">
+      <div className="h-2 rounded-full bg-muted overflow-hidden">
         <div
           className={`h-full rounded-full transition-[width] duration-1000 ease-out ${color || bg}`}
           style={{ width: `${Math.min(score, 100)}%` }}
@@ -129,7 +129,7 @@ export function ScoreRing({
           cx={size / 2}
           cy={size / 2}
           r={r}
-          className="stroke-gray-200 dark:stroke-gray-800"
+          className="stroke-muted"
           strokeWidth="5"
           fill="none"
         />
@@ -157,8 +157,8 @@ export function ScoreRing({
           <span
             className={`mt-0.5 text-[10px] font-semibold tabular-nums ${
               delta > 0
-                ? 'text-emerald-600 dark:text-emerald-400'
-                : 'text-rose-600 dark:text-rose-400'
+                ? 'text-success'
+                : 'text-destructive'
             }`}
           >
             {delta > 0 ? `+${delta}` : delta}
@@ -181,22 +181,22 @@ export function PDFParseabilityCard({
 }) {
   const tone =
     score >= 90
-      ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-700 dark:text-emerald-300"
+      ? "border-success/40 bg-success/10 text-success"
       : score >= 75
-      ? "border-amber-400/40 bg-amber-400/10 text-amber-700 dark:text-amber-300"
-      : "border-rose-400/40 bg-rose-400/10 text-rose-700 dark:text-rose-300";
+      ? "border-warning/40 bg-warning/10 text-warning"
+      : "border-destructive/40 bg-destructive/10 text-destructive";
 
   const Row = ({ label, ok, detail }: { label: string; ok: boolean; detail?: string }) => (
     <div className="flex items-center justify-between text-xs">
-      <span className="text-gray-600 dark:text-gray-400">{label}</span>
+      <span className="text-ink-muted">{label}</span>
       <span
         className={`inline-flex items-center gap-1.5 font-medium ${
-          ok ? "text-emerald-700 dark:text-emerald-300" : "text-rose-700 dark:text-rose-300"
+          ok ? "text-success" : "text-destructive"
         }`}
       >
-        <span className={`h-1.5 w-1.5 rounded-full ${ok ? "bg-emerald-500" : "bg-rose-500"}`} />
+        <span className={`h-1.5 w-1.5 rounded-full ${ok ? "bg-success" : "bg-destructive"}`} />
         {ok ? "Pass" : "Fail"}
-        {detail ? <span className="text-gray-500 dark:text-gray-400 ml-1">({detail})</span> : null}
+        {detail ? <span className="text-muted-foreground ml-1">({detail})</span> : null}
       </span>
     </div>
   );
@@ -207,16 +207,16 @@ export function PDFParseabilityCard({
   const datesTotal = Number(checks.experience_dates_total ?? 0);
 
   return (
-    <div className="rounded-2xl border border-gray-200 dark:border-white/[0.07] bg-white/60 dark:bg-gray-900/40 backdrop-blur-sm shadow-xl shadow-black/5 dark:shadow-black/20 p-5">
+    <div className="rounded-2xl border border-border bg-card/70 backdrop-blur-sm shadow-xl shadow-black/5 dark:shadow-black/20 p-5">
       <div className="flex items-center justify-between mb-1">
-        <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+        <p className="text-sm font-semibold text-foreground">
           Real ATS Parseability
         </p>
         <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold ${tone}`}>
           {score}/100
         </span>
       </div>
-      <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+      <p className="text-xs text-muted-foreground mb-4">
         Deterministic round-trip through pypdf (same library used by Workday,
         Greenhouse, Taleo). Verifies what a real ATS will actually read.
       </p>
@@ -256,7 +256,7 @@ export function PDFParseabilityCard({
       {warnings.length > 0 && (
         <div className="mt-4 space-y-1.5">
           {warnings.slice(0, 4).map((w, i) => (
-            <p key={i} className="text-[11px] text-amber-700 dark:text-amber-300/90">
+            <p key={i} className="text-[11px] text-warning">
               ⚠ {w}
             </p>
           ))}
@@ -271,18 +271,18 @@ export function PDFParseabilityCard({
 // deterministic pass/warn/fail checklist derived from the real PDF round-trip.
 const STATUS_TONE: Record<CheckStatus, { dot: string; text: string; label: string }> = {
   pass: {
-    dot: "bg-emerald-500",
-    text: "text-emerald-700 dark:text-emerald-300",
+    dot: "bg-success",
+    text: "text-success",
     label: "Pass",
   },
   warn: {
-    dot: "bg-amber-500",
-    text: "text-amber-700 dark:text-amber-300",
+    dot: "bg-warning",
+    text: "text-warning",
     label: "Check",
   },
   fail: {
-    dot: "bg-rose-500",
-    text: "text-rose-700 dark:text-rose-300",
+    dot: "bg-destructive",
+    text: "text-destructive",
     label: "Fail",
   },
 };
@@ -296,9 +296,9 @@ export function VendorChecklistCard({
 }) {
   const tone = STATUS_TONE[entry.status] ?? STATUS_TONE.warn;
   return (
-    <div className="rounded-xl border border-gray-200 dark:border-white/[0.07] bg-white/60 dark:bg-gray-900/40 p-3.5">
+    <div className="rounded-xl border border-border bg-card/70 p-3.5">
       <div className="flex items-center justify-between mb-2">
-        <p className="text-xs font-semibold text-gray-800 dark:text-gray-200">
+        <p className="text-xs font-semibold text-foreground">
           {vendor}
         </p>
         <span className={`inline-flex items-center gap-1.5 text-[11px] font-semibold ${tone.text}`}>
@@ -312,7 +312,7 @@ export function VendorChecklistCard({
           return (
             <li key={chk.id} className="flex items-start gap-1.5 text-[11px] leading-snug">
               <span className={`mt-1 h-1 w-1 shrink-0 rounded-full ${rowTone.dot}`} />
-              <span className="text-gray-600 dark:text-gray-400">{chk.label}</span>
+              <span className="text-ink-muted">{chk.label}</span>
             </li>
           );
         })}

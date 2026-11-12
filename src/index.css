@@ -7,20 +7,22 @@
 @layer base {
   :root {
     /* ── LAYER 1 - PRIMITIVES (theme-independent) ─────────────────────────
-  US launch token set, 2026-11-11. Source of every value and every ratio:
-  docs/design/2026-11-11-type-color-principles.md (sections 8.2 and 8.3 for
-  the neutrals and states) plus the owner's accent decision: KEEP THE PLUM
-  HUE (302), tuned only in lightness and saturation. Every ratio below was
+  Cobalt and mint, 2026-11-12. The owner chose this pair from a 13-option
+  palette study (light and dark, live product story, WCAG plus hue contrast);
+  it replaces the plum set of 2026-11-11. The type scale and the rules below
+  still come from docs/design/2026-11-11-type-color-principles.md. Every ratio below was
   computed with the WCAG 2.2 relative-luminance formula on the 8-bit sRGB the
   browser rasterises from these HSL triplets, not estimated.
 
   THE RULES THIS PALETTE ENCODES
-   1. One neutral, content-first canvas. The neutrals carry no hue worth
-      naming (240 to 252 at 5 to 14% saturation), so content and the one
-      action are the only colour on screen.
-   2. ONE saturated accent, plum, reserved for the primary action, links,
-      focus and selection. It is 62 degrees from the danger hue, so "press
-      this" and "this failed" are told apart by hue AND by words and icons.
+   1. One cool, content-first canvas. The neutrals lean toward the accent
+      (hue 221 to 225) so the page reads as one considered world, not as
+      default grey, while staying quiet enough that content leads.
+   2. TWO colours with two jobs. Cobalt is the action: primary buttons,
+      links, focus and selection. Mint is the signal: matches, scores,
+      progress, success. A visitor learns "blue means press, green means
+      good for you" without being told, and the eye always has two anchors.
+      Danger (hue 4) sits far from both, and is never the only cue.
    3. Three text steps only: ink, ink-muted, ink-subtle. No opacity on text;
       the opacity utilities the app still uses are floored to these tokens
       at the bottom of this file.
@@ -32,49 +34,61 @@
   them breaks; new code reads the semantic layer (`--background`,
   `--muted-foreground`, `--primary` ...) and never a primitive. */
 
-    /* Neutrals, light. Measured: ink 17.28 canvas / 18.48 surface; ink-muted
-  8.64 / 9.25; ink-subtle 5.76 / 6.17 (4.87 on surface-strong, the worst
-  pair it can sit on); control edge 3.48 / 3.72 / 3.25 on surface-muted. */
-    --n-canvas-hsl: 240 14.3% 97.3%; /* #F7F7F9 page */
+    /* Neutrals, light. Measured: ink 17.11 canvas / 18.34 surface; ink-muted
+  8.88 / 9.52; ink-subtle 5.76 / 6.17 (4.89 on surface-strong, the worst
+  pair it can sit on); control edge 3.48 / 3.73 / 3.24 on surface-muted. */
+    --n-canvas-hsl: 222.9 53.8% 97.5%; /* #F5F7FC page */
     --n-surface-hsl: 0 0% 100%; /* #FFFFFF cards, popovers, dialogs */
-    --n-surface-muted-hsl: 240 14.3% 94.5%; /* #EFEFF3 wells, secondary fills */
-    --n-surface-strong-hsl: 240 12.5% 90.6%; /* #E4E4EA pressed, selected neutral */
-    --n-hairline-hsl: 240 11.1% 89.4%; /* #E1E1E7 decorative dividers only */
-    --n-control-hsl: 250 5.1% 53.7%; /* #85838F input, checkbox, switch edge */
-    --n-ink-hsl: 252 11.6% 8.4%; /* #141318 primary text */
-    --n-ink-muted-hsl: 250.9 7.3% 29.6%; /* #484651 secondary text (AAA) */
-    --n-ink-subtle-hsl: 250.9 5.4% 39.8%; /* #62606B captions, metadata, placeholders (AA) */
+    --n-surface-muted-hsl: 221.5 48.1% 94.7%; /* #EBEFF8 wells, secondary fills */
+    --n-surface-strong-hsl: 221.1 42.2% 91.2%; /* #DFE5F2 pressed, selected neutral */
+    --n-hairline-hsl: 221.1 37.3% 90%; /* #DCE2EF decorative dividers only */
+    --n-control-hsl: 223.6 14.3% 54.7%; /* #7B849C input, checkbox, switch edge */
+    --n-ink-hsl: 223.2 49% 10%; /* #0D1426 primary text */
+    --n-ink-muted-hsl: 223.8 23.9% 30.4%; /* #3B4560 secondary text (AAA) */
+    --n-ink-subtle-hsl: 223.1 18.5% 41.4%; /* #56617D captions, metadata, placeholders (AA) */
 
     /* Neutrals, dark. A raised surface is LIGHTER than the canvas (M3
   surface-container ladder); the old glass panes inverted that. Measured: ink
-  17.28 canvas / 15.98 surface; ink-muted 9.77 / 9.04; ink-subtle 6.91 / 6.39
-  (5.00 on surface-strong); control edge 4.29 / 3.97 / 3.55. */
-    --n-canvas-dark-hsl: 240 9.1% 6.5%; /* #0F0F12 */
-    --n-surface-dark-hsl: 240 7.7% 10.2%; /* #18181C */
-    --n-surface-muted-dark-hsl: 240 8.1% 14.5%; /* #222228 */
-    --n-surface-strong-dark-hsl: 240 7.4% 18.6%; /* #2C2C33 */
-    --n-hairline-dark-hsl: 240 7.7% 20.4%; /* #303038 */
-    --n-control-dark-hsl: 250.9 4.5% 48.4%; /* #787681 */
-    --n-ink-dark-hsl: 240 14.3% 95.9%; /* #F3F3F6 */
-    --n-ink-muted-dark-hsl: 252 7.6% 74.1%; /* #BAB8C2 */
-    --n-ink-subtle-dark-hsl: 250.9 5.8% 62.5%; /* #9C9AA5 */
+  17.19 canvas / 15.67 surface; ink-muted 10.62 / 9.68; ink-subtle 6.74 / 6.14
+  (4.83 on surface-strong); control edge 4.51 / 4.11 / 3.65. */
+    --n-canvas-dark-hsl: 225 54.5% 8.6%; /* #0A1022 */
+    --n-surface-dark-hsl: 224.5 46.3% 13.1%; /* #121A31 */
+    --n-surface-muted-dark-hsl: 224.2 42.2% 17.6%; /* #1A2440 */
+    --n-surface-strong-dark-hsl: 224.7 38.7% 21.8%; /* #222D4D */
+    --n-hairline-dark-hsl: 223.9 35% 22.9%; /* #26314F */
+    --n-control-dark-hsl: 224.4 20.8% 52.9%; /* #6E7BA0 */
+    --n-ink-dark-hsl: 223.6 64.7% 96.7%; /* #F1F4FC */
+    --n-ink-muted-dark-hsl: 223.6 30.8% 79%; /* #B9C2DA */
+    --n-ink-subtle-dark-hsl: 223.9 22.4% 64.1%; /* #8F9AB8 */
 
-    /* ── The plum accent ─────────────────────────────────────────────────
-  Hue 302, the same plum family as before; saturation raised from 24% to 38%
-  so it is the one colour that pops on a neutral page, lightness set so white
-  text has AAA headroom. On dark it lifts to a light plum that carries dark
-  text, the M3 tone-80 inversion.
+    /* ── The cobalt accent ───────────────────────────────────────────────
+  Hue 228, a confident cobalt with AAA headroom for white text. On dark it
+  lifts to a light periwinkle that carries dark text, the M3 tone-80
+  inversion. (The `--plum-*` names below are aliases for code that has not
+  moved yet.)
 
-  Light: white on fill 7.56; fill as text on canvas 7.06, surface 7.56,
-  surface-muted 6.59, its own selection tint 6.26; white on hover 9.80.
-  Dark: canvas ink on fill 9.53; fill as text on surface 8.82, on its tint
-  6.45; focus ring vs surface-strong 6.91. */
-    --plum-fill-hsl: 302 38% 36%; /* #7F397C */
-    --plum-hover-hsl: 302 42% 29%; /* #692B67 hover and pressed */
-    --plum-tint-hsl: 306.7 23.1% 92.4%; /* #F0E7EF plum 12% over white, flattened: selection */
-    --plum-fill-dark-hsl: 302 50% 76%; /* #E0A3DE */
-    --plum-hover-dark-hsl: 302 56% 83%; /* #ECBBEA hover LIFTS on dark */
-    --plum-tint-dark-hsl: 286.2 12.4% 20.6%; /* #382E3B plum 16% over the dark surface */
+  Light: white on fill 7.05; fill as text on canvas 6.57, surface 7.05,
+  surface-muted 6.12, its own selection tint 5.96; white on hover 9.72.
+  Dark: canvas ink on fill 8.71; fill as text on surface 7.94, on its tint
+  ~7.0; focus ring vs surface-strong 7.43. */
+    --cobalt-fill-hsl: 228.4 69.8% 49.4%; /* #2648D6 */
+    --cobalt-hover-hsl: 228.4 71.4% 38.4%; /* #1C37A8 hover and pressed */
+    --cobalt-tint-hsl: 223.6 78.6% 94.5%; /* #E6ECFC selection */
+    --cobalt-fill-dark-hsl: 223.4 100% 78%; /* #8FAEFF */
+    --cobalt-hover-dark-hsl: 223.3 100% 84.5%; /* #B0C6FF hover LIFTS on dark */
+    --cobalt-tint-dark-hsl: 225.8 47.8% 22.5%; /* #1E2B55 selection on the dark surface */
+
+    /* ── The mint signal ─────────────────────────────────────────────────
+  The SECOND colour: matches, scores, progress, "this is good for you".
+  Cobalt says "press this"; mint says "this worked". Never a button that
+  competes with the primary, never the only cue (a number or a word rides
+  along). Light: white on fill 6.13, as text on surface 6.13 / canvas 5.72 /
+  its tint 5.41 / surface-muted 5.32. Dark: as text on surface 10.51 / its
+  tint 7.62, canvas ink on fill 11.53. */
+    --mint-fill-hsl: 156.2 82.1% 24.1%; /* #0B7048 */
+    --mint-tint-hsl: 150 47.4% 92.5%; /* #E3F5EC */
+    --mint-fill-dark-hsl: 153.6 73.1% 59.2%; /* #4BE3A0 */
+    --mint-tint-dark-hsl: 169.5 52.6% 14.9%; /* #123A33 */
 
     /* Status (section 8.3). Never the only cue: always an icon or a word.
   Light, label on fill / as text on surface / on canvas / on surface-muted:
@@ -83,15 +97,15 @@
   Dark, canvas ink on fill / on surface / on canvas / on surface-muted:
   success 9.94 / 9.19 / 9.94 / 8.22; warning 10.58 / 9.79 / 10.58 / 8.75;
   danger 8.35 / 7.73 / 8.35 / 6.91; info 10.02 / 9.27 / 10.02 / 8.28. */
-    --success-600-hsl: 146.7 67.6% 26.7%; /* #16723F */
+    --success-600-hsl: 156.2 82.1% 24.1%; /* #0B7048, the mint family */
     --warning-600-hsl: 34.7 100% 27.5%; /* #8C5100 */
     --danger-600-hsl: 4.4 73% 43.5%; /* #C02A1E */
     --info-600-hsl: 196.3 85% 28.8%; /* #0B6688 informational only, never a button */
-    --success-300-hsl: 145.5 54.6% 59.4%; /* #5FD08F */
+    --success-300-hsl: 153.6 73.1% 59.2%; /* #4BE3A0 */
     --warning-300-hsl: 36.3 85.4% 65.1%; /* #F2B65A */
     --danger-300-hsl: 7.2 100% 73.9%; /* #FF8A7A */
     --info-300-hsl: 196.7 75% 67.1%; /* #6CC7EA */
-    --success-tint-hsl: 146 40% 93%;
+    --success-tint-hsl: 150 47.4% 92.5%;
     --warning-tint-hsl: 35 80% 93%;
     --danger-tint-hsl: 4 70% 95%;
     --info-tint-hsl: 196 50% 93%;
@@ -100,48 +114,48 @@
   Light: ink 17.73 canvas; muted text 8.87; control edge 3.72 on a card,
   3.30 on the raised fill. Dark: fg 16.14; muted 9.13; control edge 4.41 on
   a card (was 2.96:1, the audit's one 1.4.11 failure), 3.88 raised. */
-    --studio-canvas-hsl: 240 20% 98.4%; /* #FAFAFC */
+    --studio-canvas-hsl: 220 75% 98.4%; /* #F8FAFE */
     --studio-card-hsl: 0 0% 100%;
-    --studio-muted-hsl: 240 16.7% 95.3%; /* #F1F1F5 */
-    --studio-canvas-dark-hsl: 240 8% 9.8%; /* #17171B */
-    --studio-card-dark-hsl: 240 7.1% 13.7%; /* #202025 */
-    --studio-raised-dark-hsl: 240 6.7% 17.6%; /* #2A2A30 */
-    --studio-border-dark-hsl: 240 6.5% 24%; /* #393941 */
-    --studio-input-dark-hsl: 250 4.5% 54%; /* #86848F */
+    --studio-muted-hsl: 220 54.5% 95.7%; /* #EEF2FA */
+    --studio-canvas-dark-hsl: 224.4 50.9% 10.4%; /* #0D1428 */
+    --studio-card-dark-hsl: 224.1 45.9% 14.5%; /* #141D36 */
+    --studio-raised-dark-hsl: 224.6 41.9% 18.2%; /* #1B2542 */
+    --studio-border-dark-hsl: 225 36.4% 25.9%; /* #2A365A */
+    --studio-input-dark-hsl: 224.7 20.3% 54.7%; /* #7480A3 */
 
     /* Obsidian: a deeper dark, kept for a product window nested in a dark
   page. fg 17.02 on its card, muted 9.62, control edge 4.22. */
-    --obsidian-950-hsl: 240 10% 3.9%; /* #09090B */
-    --obsidian-900-hsl: 240 8.3% 7.1%; /* #111114 */
-    --obsidian-800-hsl: 240 7.1% 11%; /* #1A1A1E */
-    --obsidian-700-hsl: 240 6.3% 18.6%; /* #2C2C32 */
+    --obsidian-950-hsl: 225 57.1% 5.5%; /* #060A16 */
+    --obsidian-900-hsl: 223.6 47.8% 9%; /* #0C1222 */
+    --obsidian-800-hsl: 224 45.5% 12.9%; /* #121A30 */
+    --obsidian-700-hsl: 224.2 35.8% 20.8%; /* #222C48 */
 
-    /* The brand gradient's far end, kept inside the plum family so the
+    /* The brand gradient's far end, kept inside the cobalt family so the
   wordmark and the logo tile read as one object. As TEXT on light the end
-  stop is 10.1:1 on white; on dark 11.0:1 on the dark surface. */
-    --brand-end-on-light-hsl: 312 40% 27%; /* #602A57 */
-    --brand-end-on-dark-hsl: 300 45% 86%; /* #EBC9EB */
+  stop is 12.7:1 on white; on dark 12.0:1 on the dark surface. */
+    --brand-end-on-light-hsl: 228.2 72.8% 28.8%; /* #14297F */
+    --brand-end-on-dark-hsl: 224.4 100% 89.4%; /* #C9D7FF */
 
-    /* The logo tile: a FILL, theme-independent, white glyph 7.56:1 to 13.4:1
+    /* The logo tile: a FILL, theme-independent, white glyph 7.05:1 to 15.7:1
   across the gradient. */
-    --brand-mark-from-hsl: 302 38% 36%;
-    --brand-mark-to-hsl: 300 34% 18%; /* #3D1E3D */
+    --brand-mark-from-hsl: 228.4 69.8% 49.4%;
+    --brand-mark-to-hsl: 229.2 73.6% 20.8%; /* #0E1C5C */
     --brand-mark-fg-hsl: 0 0% 100%;
 
     /* Categorical chart palette (cap 8, always add a second cue). Steps
   lightness as well as hue so series survive greyscale. */
-    --chart-1: #7f397c; /* plum */
-    --chart-2: #16723f; /* green */
+    --chart-1: #2648d6; /* cobalt */
+    --chart-2: #0b7048; /* mint */
     --chart-3: #8c5100; /* amber */
-    --chart-4: #4b5a86; /* slate blue */
+    --chart-4: #5a4fb0; /* indigo */
     --chart-5: #0b6688; /* teal */
     --chart-6: #c02a1e; /* red */
     --chart-7: #6b6878; /* graphite */
     --chart-8: #a2457a; /* rose */
-    --chart-1-hsl: 302 38% 36%;
-    --chart-2-hsl: 146.7 67.6% 26.7%;
+    --chart-1-hsl: 228.4 69.8% 49.4%;
+    --chart-2-hsl: 156.2 82.1% 24.1%;
     --chart-3-hsl: 34.7 100% 27.5%;
-    --chart-4-hsl: 225 28% 41%;
+    --chart-4-hsl: 246 38% 50%;
     --chart-5-hsl: 196.3 85% 28.8%;
     --chart-6-hsl: 4.4 73% 43.5%;
     --chart-7-hsl: 250 6% 44%;
@@ -158,12 +172,18 @@
     --blush-600-hsl: var(--n-ink-muted-hsl);
     --blush-700-hsl: var(--n-ink-muted-hsl);
     --blush-900-hsl: var(--n-ink-hsl);
-    --cherry-fill-hsl: var(--plum-fill-hsl);
-    --cherry-hover-hsl: var(--plum-hover-hsl);
-    --cherry-ink-hsl: var(--plum-fill-hsl);
-    --cherry-ink-dark-hsl: var(--plum-fill-dark-hsl);
-    --cherry-tint-hsl: var(--plum-tint-hsl);
-    --cherry-tint-dark-hsl: var(--plum-tint-dark-hsl);
+    --plum-fill-hsl: var(--cobalt-fill-hsl);
+    --plum-hover-hsl: var(--cobalt-hover-hsl);
+    --plum-tint-hsl: var(--cobalt-tint-hsl);
+    --plum-fill-dark-hsl: var(--cobalt-fill-dark-hsl);
+    --plum-hover-dark-hsl: var(--cobalt-hover-dark-hsl);
+    --plum-tint-dark-hsl: var(--cobalt-tint-dark-hsl);
+    --cherry-fill-hsl: var(--cobalt-fill-hsl);
+    --cherry-hover-hsl: var(--cobalt-hover-hsl);
+    --cherry-ink-hsl: var(--cobalt-fill-hsl);
+    --cherry-ink-dark-hsl: var(--cobalt-fill-dark-hsl);
+    --cherry-tint-hsl: var(--cobalt-tint-hsl);
+    --cherry-tint-dark-hsl: var(--cobalt-tint-dark-hsl);
     --fog-canvas-hsl: var(--n-canvas-hsl);
     --fog-surface-hsl: var(--n-surface-hsl);
     --app-canvas-dark-hsl: var(--n-canvas-dark-hsl);
@@ -214,7 +234,7 @@
     /* Motion tokens. 150 to 250ms for state changes, one easing family. */
     --motion-fast: 120ms;
     --motion-base: 200ms;
-    --motion-slow: 320ms;
+    --motion-slow: 280ms;
     --ease-standard: cubic-bezier(0.2, 0, 0, 1);
     --ease-accelerate: cubic-bezier(0.3, 0, 1, 1);
     --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
@@ -229,12 +249,18 @@
     --card-foreground: var(--n-ink-hsl);
     --popover: var(--n-surface-hsl);
     --popover-foreground: var(--n-ink-hsl);
-    --primary: var(--plum-fill-hsl);
-    --primary-hover: var(--plum-hover-hsl);
+    --primary: var(--cobalt-fill-hsl);
+    --primary-hover: var(--cobalt-hover-hsl);
     --primary-foreground: var(--n-surface-hsl);
     /* Tailwind's `textColor.primary` reads this, so the accent as INK can
   differ from the accent as FILL. Light: identical. */
-    --primary-ink: var(--plum-fill-hsl);
+    --primary-ink: var(--cobalt-fill-hsl);
+
+    --signal: var(--mint-fill-hsl);
+
+    --signal-foreground: var(--n-surface-hsl);
+
+    --signal-tint: var(--mint-tint-hsl);
     --secondary: var(--n-surface-muted-hsl);
     --secondary-foreground: var(--n-ink-muted-hsl);
     --muted: var(--n-surface-muted-hsl);
@@ -244,10 +270,10 @@
     --ink-muted: var(--n-ink-muted-hsl);
     --ink-subtle: var(--n-ink-subtle-hsl);
     --surface-strong: var(--n-surface-strong-hsl);
-    /* shadcn's `accent` is the NEUTRAL hover surface, never the plum. */
+    /* shadcn's `accent` is the NEUTRAL hover surface, never the cobalt. */
     --accent: var(--n-surface-strong-hsl);
     --accent-foreground: var(--n-ink-hsl);
-    --nav-active: var(--plum-tint-hsl);
+    --nav-active: var(--cobalt-tint-hsl);
     --destructive: var(--danger-600-hsl);
     --destructive-foreground: var(--n-surface-hsl);
     --success: var(--success-600-hsl);
@@ -258,7 +284,8 @@
     --info-foreground: var(--n-surface-hsl);
     --border: var(--n-hairline-hsl);
     --input: var(--n-control-hsl);
-    --ring: var(--plum-fill-hsl); /* 7.06 canvas, 5.97 on surface-strong */
+    --ring: var(--cobalt-fill-hsl); /* 6.57 canvas, 5.6 on surface-strong */
+    --monogram-l: 27%; /* CompanyLogo letter lightness, see that file */
     --radius: 0.75rem;
 
     /* ── Glass, as tokens ───────────────────────────────────────────────
@@ -274,28 +301,29 @@
 
     /* Elevation, tinted with the neutral ink. On light, depth = surface step
   plus a soft shadow; on dark, lightness alone carries it. */
-    --shadow-soft: 0 1px 2px hsl(250 12% 10% / 0.05), 0 1px 3px hsl(250 12% 10% / 0.05);
-    --shadow-panel: 0 1px 2px hsl(250 12% 10% / 0.05), 0 8px 20px -6px hsl(250 12% 10% / 0.1);
-    --shadow-pop: 0 4px 12px -2px hsl(250 12% 10% / 0.08), 0 18px 36px -10px hsl(250 12% 10% / 0.12);
+    --shadow-soft: 0 1px 2px hsl(224 40% 10% / 0.05), 0 1px 3px hsl(224 40% 10% / 0.05);
+    --shadow-panel: 0 1px 2px hsl(224 40% 10% / 0.05), 0 8px 20px -6px hsl(224 40% 10% / 0.1);
+    --shadow-pop: 0 4px 12px -2px hsl(224 40% 10% / 0.08), 0 18px 36px -10px hsl(224 40% 10% / 0.12);
     --shadow-float:
-      0 10px 28px -8px hsl(250 12% 10% / 0.13), 0 32px 64px -16px hsl(250 12% 10% / 0.15);
+      0 10px 28px -8px hsl(224 40% 10% / 0.13), 0 32px 64px -16px hsl(224 40% 10% / 0.15);
 
-    --brand-from: var(--plum-fill-hsl);
+    --brand-from: var(--cobalt-fill-hsl);
     --brand-to: var(--brand-end-on-light-hsl);
 
     /* Sidebar */
     --sidebar-background: var(--n-canvas-hsl);
     --sidebar-foreground: var(--n-ink-muted-hsl);
-    --sidebar-primary: var(--plum-fill-hsl);
+    --sidebar-primary: var(--cobalt-fill-hsl);
     --sidebar-primary-foreground: var(--n-surface-hsl);
     --sidebar-accent: var(--n-surface-muted-hsl);
     --sidebar-accent-foreground: var(--n-ink-hsl);
     --sidebar-border: var(--n-hairline-hsl);
-    --sidebar-ring: var(--plum-fill-hsl);
+    --sidebar-ring: var(--cobalt-fill-hsl);
   }
 
   /* ── LAYER 2 - SEMANTIC ALIASES (dark) ────────────────────────────────── */
   .dark {
+    --monogram-l: 74%;
     --background: var(--n-canvas-dark-hsl);
     --foreground: var(--n-ink-dark-hsl);
     --card: var(--n-surface-dark-hsl);
@@ -304,10 +332,16 @@
     --popover-foreground: var(--n-ink-dark-hsl);
     /* DARK BUTTONS CARRY DARK TEXT: the accent lifts so it reads as text on
   a card, and anything that light cannot also hold white text. */
-    --primary: var(--plum-fill-dark-hsl);
-    --primary-hover: var(--plum-hover-dark-hsl);
+    --primary: var(--cobalt-fill-dark-hsl);
+    --primary-hover: var(--cobalt-hover-dark-hsl);
     --primary-foreground: var(--n-canvas-dark-hsl);
-    --primary-ink: var(--plum-fill-dark-hsl);
+    --primary-ink: var(--cobalt-fill-dark-hsl);
+
+    --signal: var(--mint-fill-dark-hsl);
+
+    --signal-foreground: var(--n-canvas-dark-hsl);
+
+    --signal-tint: var(--mint-tint-dark-hsl);
     --secondary: var(--n-surface-muted-dark-hsl);
     --secondary-foreground: var(--n-ink-muted-dark-hsl);
     --muted: var(--n-surface-muted-dark-hsl);
@@ -318,7 +352,7 @@
     --surface-strong: var(--n-surface-strong-dark-hsl);
     --accent: var(--n-surface-strong-dark-hsl);
     --accent-foreground: var(--n-ink-dark-hsl);
-    --nav-active: var(--plum-tint-dark-hsl);
+    --nav-active: var(--cobalt-tint-dark-hsl);
     --destructive: var(--danger-300-hsl);
     --destructive-foreground: var(--n-canvas-dark-hsl);
     --success: var(--success-300-hsl);
@@ -329,9 +363,9 @@
     --info-foreground: var(--n-canvas-dark-hsl);
     --border: var(--n-hairline-dark-hsl);
     --input: var(--n-control-dark-hsl);
-    --ring: var(--plum-fill-dark-hsl);
+    --ring: var(--cobalt-fill-dark-hsl);
 
-    --brand-from: var(--plum-fill-dark-hsl);
+    --brand-from: var(--cobalt-fill-dark-hsl);
     --brand-to: var(--brand-end-on-dark-hsl);
 
     --shadow-soft: 0 1px 2px hsl(0 0% 0% / 0.3), 0 1px 3px hsl(0 0% 0% / 0.22);
@@ -341,12 +375,12 @@
 
     --sidebar-background: var(--n-canvas-dark-hsl);
     --sidebar-foreground: var(--n-ink-muted-dark-hsl);
-    --sidebar-primary: var(--plum-fill-dark-hsl);
+    --sidebar-primary: var(--cobalt-fill-dark-hsl);
     --sidebar-primary-foreground: var(--n-canvas-dark-hsl);
     --sidebar-accent: var(--n-surface-muted-dark-hsl);
     --sidebar-accent-foreground: var(--n-ink-dark-hsl);
     --sidebar-border: var(--n-hairline-dark-hsl);
-    --sidebar-ring: var(--plum-fill-dark-hsl);
+    --sidebar-ring: var(--cobalt-fill-dark-hsl);
 
     --glass-fill: var(--card);
     --glass-alpha: 0.8;
@@ -367,6 +401,7 @@
   and dark tokens, so `/` and `/app` are one visual system. */
   .surface-editorial,
   .surface-lumen {
+    --monogram-l: 27%;
     color-scheme: light;
 
     --background: var(--n-canvas-hsl);
@@ -375,10 +410,16 @@
     --card-foreground: var(--n-ink-hsl);
     --popover: var(--n-surface-hsl);
     --popover-foreground: var(--n-ink-hsl);
-    --primary: var(--plum-fill-hsl);
-    --primary-hover: var(--plum-hover-hsl);
+    --primary: var(--cobalt-fill-hsl);
+    --primary-hover: var(--cobalt-hover-hsl);
     --primary-foreground: var(--n-surface-hsl);
-    --primary-ink: var(--plum-fill-hsl);
+    --primary-ink: var(--cobalt-fill-hsl);
+
+    --signal: var(--mint-fill-hsl);
+
+    --signal-foreground: var(--n-surface-hsl);
+
+    --signal-tint: var(--mint-tint-hsl);
     --secondary: var(--n-surface-muted-hsl);
     --secondary-foreground: var(--n-ink-muted-hsl);
     --muted: var(--n-surface-muted-hsl);
@@ -389,7 +430,7 @@
     --surface-strong: var(--n-surface-strong-hsl);
     --accent: var(--n-surface-strong-hsl);
     --accent-foreground: var(--n-ink-hsl);
-    --nav-active: var(--plum-tint-hsl);
+    --nav-active: var(--cobalt-tint-hsl);
     --destructive: var(--danger-600-hsl);
     --destructive-foreground: var(--n-surface-hsl);
     --success: var(--success-600-hsl);
@@ -400,16 +441,16 @@
     --info-foreground: var(--n-surface-hsl);
     --border: var(--n-hairline-hsl);
     --input: var(--n-control-hsl);
-    --ring: var(--plum-fill-hsl);
+    --ring: var(--cobalt-fill-hsl);
 
-    --brand-from: var(--plum-fill-hsl);
+    --brand-from: var(--cobalt-fill-hsl);
     --brand-to: var(--brand-end-on-light-hsl);
 
-    --shadow-soft: 0 1px 2px hsl(250 12% 10% / 0.05), 0 1px 3px hsl(250 12% 10% / 0.05);
-    --shadow-panel: 0 1px 2px hsl(250 12% 10% / 0.05), 0 8px 20px -6px hsl(250 12% 10% / 0.1);
-    --shadow-pop: 0 4px 12px -2px hsl(250 12% 10% / 0.08), 0 18px 36px -10px hsl(250 12% 10% / 0.12);
+    --shadow-soft: 0 1px 2px hsl(224 40% 10% / 0.05), 0 1px 3px hsl(224 40% 10% / 0.05);
+    --shadow-panel: 0 1px 2px hsl(224 40% 10% / 0.05), 0 8px 20px -6px hsl(224 40% 10% / 0.1);
+    --shadow-pop: 0 4px 12px -2px hsl(224 40% 10% / 0.08), 0 18px 36px -10px hsl(224 40% 10% / 0.12);
     --shadow-float:
-      0 10px 28px -8px hsl(250 12% 10% / 0.13), 0 32px 64px -16px hsl(250 12% 10% / 0.15);
+      0 10px 28px -8px hsl(224 40% 10% / 0.13), 0 32px 64px -16px hsl(224 40% 10% / 0.15);
 
     --glass-fill: var(--n-surface-hsl);
     --glass-alpha: 0.78;
@@ -424,6 +465,7 @@
   }
 
   .surface-nocturne {
+    --monogram-l: 74%;
     color-scheme: dark;
 
     --background: var(--n-canvas-dark-hsl);
@@ -432,10 +474,16 @@
     --card-foreground: var(--n-ink-dark-hsl);
     --popover: var(--n-surface-dark-hsl);
     --popover-foreground: var(--n-ink-dark-hsl);
-    --primary: var(--plum-fill-dark-hsl);
-    --primary-hover: var(--plum-hover-dark-hsl);
+    --primary: var(--cobalt-fill-dark-hsl);
+    --primary-hover: var(--cobalt-hover-dark-hsl);
     --primary-foreground: var(--n-canvas-dark-hsl);
-    --primary-ink: var(--plum-fill-dark-hsl);
+    --primary-ink: var(--cobalt-fill-dark-hsl);
+
+    --signal: var(--mint-fill-dark-hsl);
+
+    --signal-foreground: var(--n-canvas-dark-hsl);
+
+    --signal-tint: var(--mint-tint-dark-hsl);
     --secondary: var(--n-surface-muted-dark-hsl);
     --secondary-foreground: var(--n-ink-muted-dark-hsl);
     --muted: var(--n-surface-muted-dark-hsl);
@@ -446,7 +494,7 @@
     --surface-strong: var(--n-surface-strong-dark-hsl);
     --accent: var(--n-surface-strong-dark-hsl);
     --accent-foreground: var(--n-ink-dark-hsl);
-    --nav-active: var(--plum-tint-dark-hsl);
+    --nav-active: var(--cobalt-tint-dark-hsl);
     --destructive: var(--danger-300-hsl);
     --destructive-foreground: var(--n-canvas-dark-hsl);
     --success: var(--success-300-hsl);
@@ -457,9 +505,9 @@
     --info-foreground: var(--n-canvas-dark-hsl);
     --border: var(--n-hairline-dark-hsl);
     --input: var(--n-control-dark-hsl);
-    --ring: var(--plum-fill-dark-hsl);
+    --ring: var(--cobalt-fill-dark-hsl);
 
-    --brand-from: var(--plum-fill-dark-hsl);
+    --brand-from: var(--cobalt-fill-dark-hsl);
     --brand-to: var(--brand-end-on-dark-hsl);
 
     --shadow-soft: 0 1px 2px hsl(0 0% 0% / 0.3), 0 1px 3px hsl(0 0% 0% / 0.22);
@@ -480,6 +528,7 @@
   }
 
   .surface-obsidian {
+    --monogram-l: 74%;
     color-scheme: dark;
 
     --background: var(--obsidian-950-hsl);
@@ -488,10 +537,16 @@
     --card-foreground: var(--n-ink-dark-hsl);
     --popover: var(--obsidian-900-hsl);
     --popover-foreground: var(--n-ink-dark-hsl);
-    --primary: var(--plum-fill-dark-hsl);
-    --primary-hover: var(--plum-hover-dark-hsl);
+    --primary: var(--cobalt-fill-dark-hsl);
+    --primary-hover: var(--cobalt-hover-dark-hsl);
     --primary-foreground: var(--obsidian-950-hsl);
-    --primary-ink: var(--plum-fill-dark-hsl);
+    --primary-ink: var(--cobalt-fill-dark-hsl);
+
+    --signal: var(--mint-fill-dark-hsl);
+
+    --signal-foreground: var(--n-canvas-dark-hsl);
+
+    --signal-tint: var(--mint-tint-dark-hsl);
     --secondary: var(--obsidian-800-hsl);
     --secondary-foreground: var(--n-ink-muted-dark-hsl);
     --muted: var(--obsidian-800-hsl);
@@ -502,7 +557,7 @@
     --surface-strong: var(--obsidian-700-hsl);
     --accent: var(--obsidian-800-hsl);
     --accent-foreground: var(--n-ink-dark-hsl);
-    --nav-active: var(--plum-tint-dark-hsl);
+    --nav-active: var(--cobalt-tint-dark-hsl);
     --destructive: var(--danger-300-hsl);
     --destructive-foreground: var(--obsidian-950-hsl);
     --success: var(--success-300-hsl);
@@ -513,9 +568,9 @@
     --info-foreground: var(--obsidian-950-hsl);
     --border: var(--obsidian-700-hsl);
     --input: var(--n-control-dark-hsl);
-    --ring: var(--plum-fill-dark-hsl);
+    --ring: var(--cobalt-fill-dark-hsl);
 
-    --brand-from: var(--plum-fill-dark-hsl);
+    --brand-from: var(--cobalt-fill-dark-hsl);
     --brand-to: var(--brand-end-on-dark-hsl);
 
     --shadow-soft: 0 1px 2px hsl(0 0% 0% / 0.34), 0 1px 3px hsl(0 0% 0% / 0.26);
@@ -529,6 +584,7 @@
 
   /* ── Resume Studio: the /app/resume document surface ───────────────────── */
   .surface-studio {
+    --monogram-l: 27%;
     color-scheme: light;
 
     --background: var(--studio-canvas-hsl);
@@ -537,10 +593,16 @@
     --card-foreground: var(--n-ink-hsl);
     --popover: var(--studio-card-hsl);
     --popover-foreground: var(--n-ink-hsl);
-    --primary: var(--plum-fill-hsl);
-    --primary-hover: var(--plum-hover-hsl);
+    --primary: var(--cobalt-fill-hsl);
+    --primary-hover: var(--cobalt-hover-hsl);
     --primary-foreground: var(--n-surface-hsl);
-    --primary-ink: var(--plum-fill-hsl);
+    --primary-ink: var(--cobalt-fill-hsl);
+
+    --signal: var(--mint-fill-hsl);
+
+    --signal-foreground: var(--n-surface-hsl);
+
+    --signal-tint: var(--mint-tint-hsl);
     --secondary: var(--studio-muted-hsl);
     --secondary-foreground: var(--n-ink-muted-hsl);
     --muted: var(--studio-muted-hsl);
@@ -561,14 +623,15 @@
     --info-foreground: 0 0% 100%;
     --border: var(--n-hairline-hsl);
     --input: var(--n-control-hsl);
-    --ring: var(--plum-fill-hsl);
-    --nav-active: var(--plum-tint-hsl);
+    --ring: var(--cobalt-fill-hsl);
+    --nav-active: var(--cobalt-tint-hsl);
 
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
   }
 
   .dark .surface-studio {
+    --monogram-l: 74%;
     color-scheme: dark;
 
     --background: var(--studio-canvas-dark-hsl);
@@ -577,10 +640,16 @@
     --card-foreground: var(--n-ink-dark-hsl);
     --popover: var(--studio-card-dark-hsl);
     --popover-foreground: var(--n-ink-dark-hsl);
-    --primary: var(--plum-fill-dark-hsl);
-    --primary-hover: var(--plum-hover-dark-hsl);
+    --primary: var(--cobalt-fill-dark-hsl);
+    --primary-hover: var(--cobalt-hover-dark-hsl);
     --primary-foreground: var(--studio-canvas-dark-hsl);
-    --primary-ink: var(--plum-fill-dark-hsl);
+    --primary-ink: var(--cobalt-fill-dark-hsl);
+
+    --signal: var(--mint-fill-dark-hsl);
+
+    --signal-foreground: var(--n-canvas-dark-hsl);
+
+    --signal-tint: var(--mint-tint-dark-hsl);
     --secondary: var(--studio-raised-dark-hsl);
     --secondary-foreground: var(--n-ink-muted-dark-hsl);
     --muted: var(--studio-raised-dark-hsl);
@@ -601,8 +670,8 @@
     --info-foreground: var(--studio-canvas-dark-hsl);
     --border: var(--studio-border-dark-hsl);
     --input: var(--studio-input-dark-hsl);
-    --ring: var(--plum-fill-dark-hsl);
-    --nav-active: var(--plum-tint-dark-hsl);
+    --ring: var(--cobalt-fill-dark-hsl);
+    --nav-active: var(--cobalt-tint-dark-hsl);
   }
 
   * {
@@ -719,15 +788,15 @@
   body {
     background-color: hsl(var(--n-canvas-hsl));
     background-image:
-      radial-gradient(120% 90% at 0% -10%, hsl(250 30% 93% / 0.6), transparent 55%),
-      radial-gradient(90% 70% at 100% 110%, hsl(240 20% 92% / 0.5), transparent 55%);
+      radial-gradient(120% 90% at 0% -10%, hsl(224 50% 93% / 0.6), transparent 55%),
+      radial-gradient(90% 70% at 100% 110%, hsl(224 45% 92% / 0.5), transparent 55%);
   }
   html.dark,
   html.dark body {
     background-color: hsl(var(--n-canvas-dark-hsl));
     background-image:
-      radial-gradient(120% 90% at 0% -10%, hsl(250 14% 12% / 0.7), transparent 55%),
-      radial-gradient(90% 70% at 100% 110%, hsl(240 10% 9% / 0.6), transparent 55%);
+      radial-gradient(120% 90% at 0% -10%, hsl(224 45% 12% / 0.7), transparent 55%),
+      radial-gradient(90% 70% at 100% 110%, hsl(225 50% 9% / 0.6), transparent 55%);
   }
   .surface-lumen,
   .surface-nocturne,
@@ -736,15 +805,15 @@
   .surface-studio {
     background-color: hsl(var(--background));
     background-image:
-      radial-gradient(120% 90% at 0% -10%, hsl(250 30% 93% / 0.6), transparent 55%),
-      radial-gradient(90% 70% at 100% 110%, hsl(240 20% 92% / 0.5), transparent 55%);
+      radial-gradient(120% 90% at 0% -10%, hsl(224 50% 93% / 0.6), transparent 55%),
+      radial-gradient(90% 70% at 100% 110%, hsl(224 45% 92% / 0.5), transparent 55%);
   }
   .surface-nocturne,
   .surface-obsidian,
   .dark .surface-studio {
     background-image:
-      radial-gradient(120% 90% at 0% -10%, hsl(250 14% 12% / 0.7), transparent 55%),
-      radial-gradient(90% 70% at 100% 110%, hsl(240 10% 9% / 0.6), transparent 55%);
+      radial-gradient(120% 90% at 0% -10%, hsl(224 45% 12% / 0.7), transparent 55%),
+      radial-gradient(90% 70% at 100% 110%, hsl(225 50% 9% / 0.6), transparent 55%);
   }
 
   /* Glassmorphism card style. Token-driven: a literal white pane over
@@ -2189,7 +2258,7 @@ class names that bypass the component-layer `.bg-*` rules above. */
    1. NO OPACITY ON TEXT. `text-muted-foreground/40..70`, `text-primary/40..70`
       and `text-foreground/50` measured 1.86 to 4.49:1. Each is pinned to the
       solid token one step down the ink ladder, which is AA on every surface
-      (ink-subtle 4.87:1 worst case light, 5.00:1 dark; plum ink 5.97:1). */
+      (ink-subtle 4.87:1 worst case light, 5.00:1 dark; cobalt ink 5.6:1). */
 .text-muted-foreground\/40,
 .text-muted-foreground\/45,
 .text-muted-foreground\/50,
@@ -2234,7 +2303,7 @@ class names that bypass the component-layer `.bg-*` rules above. */
 }
 
 /* 3. VISIBLE FOCUS for anything hand-rolled that forgot a ring: a solid 2px
-      plum outline with a 2px offset (the 2.4.13 "simplest pass"), at least
+      cobalt outline with a 2px offset (the 2.4.13 "simplest pass"), at least
       5.97:1 against every surface. Zero specificity, so any utility that
       draws its own ring or sets `outline-none` still wins. */
 :where(a, button, input, select, textarea, summary, [tabindex]):where(:focus-visible) {

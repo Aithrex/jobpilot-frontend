@@ -23,7 +23,7 @@ export default function ApplyPilotPrivacy() {
           </div>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">ApplyPilot Privacy Policy</h1>
-            <p className="text-sm text-gray-500">Last updated: November 11, 2026</p>
+            <p className="text-sm text-muted-foreground">Last updated: November 11, 2026</p>
           </div>
         </div>
 

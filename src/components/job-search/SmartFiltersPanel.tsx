@@ -178,12 +178,12 @@ export function SmartFiltersPanel({ onApply, compact = false }: SmartFiltersPane
     return (
       <Card className="border-red-500/40 bg-red-500/5">
         <CardContent className="flex items-start gap-3 p-5">
-          <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-red-500" />
+          <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-destructive" />
           <div className="space-y-2">
-            <p className="text-sm font-medium text-red-700 dark:text-red-300">
+            <p className="text-sm font-medium text-destructive">
               Couldn't generate filters
             </p>
-            <p className="text-xs text-red-700/80 dark:text-red-300/80">{error}</p>
+            <p className="text-xs text-destructive/80">{error}</p>
             <div className="flex gap-2">
               <Button onClick={load} size="sm" variant="outline" className="gap-1.5">
                 <RefreshCw className="h-3 w-3" />
@@ -310,7 +310,7 @@ export function SmartFiltersPanel({ onApply, compact = false }: SmartFiltersPane
             title="Workday job titles"
             subtitle="Used as titleSearch[] for the Workday actor"
             items={suggestions.workday_titles}
-            accent="border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+            accent="border-emerald-500/30 bg-emerald-500/10 text-success"
             collapsible
           />
           <SuggestionGroup
@@ -410,7 +410,7 @@ function GroupCard({
         {group.workday_titles.slice(0, 6).map((t) => (
           <span
             key={t}
-            className="inline-flex items-center rounded-full border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 text-[10px] text-emerald-700 dark:text-emerald-300"
+            className="inline-flex items-center rounded-full border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 text-[10px] text-success"
           >
             {t}
           </span>

@@ -75,7 +75,7 @@ export default function PasswordCard() {
             <KeyRound className="w-4 h-4" />
             {hasPassword ? "Change password" : "Add a password"}
           </p>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
+          <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
             {hasPassword
               ? "Update the password you use to sign in with your email."
               : `You signed up with ${
@@ -84,7 +84,7 @@ export default function PasswordCard() {
           </p>
         </div>
         {providers.length > 0 && (
-          <span className="shrink-0 text-[10px] uppercase tracking-wide rounded-full border border-gray-300 dark:border-white/10 px-2 py-1 text-gray-500 dark:text-gray-400">
+          <span className="shrink-0 text-[10px] uppercase tracking-wide rounded-full border border-gray-300 dark:border-white/10 px-2 py-1 text-muted-foreground">
             {providers.join(" + ")}
           </span>
         )}
@@ -137,7 +137,7 @@ export default function PasswordCard() {
             disabled={saving}
           />
           {confirmPassword.length > 0 && !matches && (
-            <p className="text-[11px] text-red-500 mt-1">Passwords do not match.</p>
+            <p className="text-[11px] text-destructive mt-1">Passwords do not match.</p>
           )}
         </div>
 
@@ -149,7 +149,7 @@ export default function PasswordCard() {
                 <li
                   key={r.label}
                   className={`text-[11px] flex items-center gap-1.5 ${
-                    ok ? "text-emerald-600 dark:text-emerald-300" : "text-gray-500 dark:text-gray-400"
+                    ok ? "text-success" : "text-muted-foreground"
                   }`}
                 >
                   {ok ? (
@@ -166,12 +166,12 @@ export default function PasswordCard() {
         )}
 
         {error && (
-          <p className="text-sm text-red-500" role="alert">
+          <p className="text-sm text-destructive" role="alert">
             {error}
           </p>
         )}
         {done && (
-          <p className="text-sm text-emerald-500 flex items-center gap-1.5">
+          <p className="text-sm text-success flex items-center gap-1.5">
             <CheckCircle2 className="w-4 h-4" /> Password saved. You can now sign in with your email
             and password.
           </p>

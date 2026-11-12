@@ -26,6 +26,7 @@ import LandingExperience from '@/components/landing/LandingExperience';
 import { LandingNav } from '@/components/landing/LandingNav';
 import { RouteLoadingFallback } from '@/App';
 import { setReducedMotion } from '@/test/setup';
+import { STORY_LABEL } from '@/components/landing/story/HeroStory';
 import {
   AUTO_APPLY,
   CAPABILITIES,
@@ -196,19 +197,18 @@ describe('primary CTA', () => {
     expect(clickSpy).toHaveBeenCalledTimes(1);
   });
 
-  test('the hero has no film, and its one image is the labelled 3D stage poster', () => {
+  test('the hero has no film and no raster image; its picture is the labelled product story', () => {
     renderLanding();
     const hero = document.getElementById('try') as HTMLElement;
 
-    // Owner decision 2026-11-11: a 3D stage with a static poster replaced the
-    // DOM product window. Still no video, and the poster is the ONLY image.
+    // Owner decision 2026-11-12: the still 3D render (and its baked posters)
+    // was replaced by a code-native story of the product working. No video,
+    // no image to wait for, and one accessible name for the whole picture.
     expect(hero.querySelector('video')).toBeNull();
-    const images = hero.querySelectorAll('img');
-    expect(images).toHaveLength(1);
-    expect(images[0].getAttribute('src')).toMatch(/^\/images\/landing\/aspirely-stage-(light|dark)\.webp$/);
-    // Explicit dimensions, so it can never shift the layout (CLS).
-    expect(images[0]).toHaveAttribute('width');
-    expect(images[0]).toHaveAttribute('height');
+    expect(hero.querySelectorAll('img')).toHaveLength(0);
+    expect(within(hero).getByRole('img', { name: STORY_LABEL })).toBeInTheDocument();
+    // It loops longer than 5s, so a pause control must exist (WCAG 2.2.2).
+    expect(within(hero).getByRole('button', { name: /pause animation/i })).toBeInTheDocument();
 
     const cta = within(hero).getByRole('link', { name: /^Create free account$/i });
     expect(cta).toBeInTheDocument();
@@ -248,14 +248,14 @@ describe('product demo accessibility', () => {
     renderLanding();
     const hero = document.getElementById('try') as HTMLElement;
     expect(hero.querySelector('video')).toBeNull();
-    // Without WebGL (jsdom) the poster is the whole stage and carries the
-    // description; there is no canvas to load and no motion to pause.
-    const stage = within(hero).getByRole('img', {
-      name: /resume sheet splitting into three example job cards/i,
-    });
-    expect(stage.tagName).toBe('IMG');
+    // The story is ONE named picture. Its step and pause controls sit
+    // outside it, so nothing focusable hides inside an image role, and there
+    // is no WebGL canvas at all.
+    const stage = within(hero).getByRole('img', { name: STORY_LABEL });
+    expect(stage.querySelectorAll('button, a, input, [tabindex]')).toHaveLength(0);
     expect(hero.querySelector('canvas')).toBeNull();
-    expect(within(hero).queryByRole('button', { name: /pause animation/i })).toBeNull();
+    expect(within(hero).getByRole('button', { name: /pause animation/i })).toBeInTheDocument();
+    expect(within(hero).getByRole('group', { name: /story steps/i })).toBeInTheDocument();
   });
 
 });
@@ -407,13 +407,18 @@ describe('reduced motion', () => {
     const hero = document.getElementById('try') as HTMLElement;
 
     // The promise and both actions paint immediately.
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/run your job search/i);
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/your resume in/i);
     expect(within(hero).getByRole('link', { name: /^Create free account$/i })).toBeInTheDocument();
     expect(within(hero).getByRole('button', { name: /^Find my matches$/i })).toBeInTheDocument();
 
     // No <video> and no poster: the hero is copy and CTAs on the canvas.
     expect(hero.querySelector('video')).toBeNull();
     expect(hero.querySelector('img[src*="poster"], img[src*="hero"]')).toBeNull();
+
+    // The story shows its composed final frame and never moves, so there is
+    // nothing to pause and no step controls to drive.
+    expect(document.querySelector('[data-hero-story]')).toHaveAttribute('data-hero-story', 'still');
+    expect(within(hero).queryByRole('button', { name: /pause animation/i })).toBeNull();
   });
 
 });
@@ -483,9 +488,9 @@ describe('surface language', () => {
       expect(root.className).toContain('dark');
       expect(root.className).not.toContain('surface-lumen');
       expect(root.style.colorScheme).toBe('dark');
-      // And the stage swaps to the poster rendered for the dark studio.
-      const poster = (document.getElementById('try') as HTMLElement).querySelector('img');
-      expect(poster?.getAttribute('src')).toContain('aspirely-stage-dark');
+      // And the story sits inside that dark surface, so its tokens resolve dark.
+      const story = document.querySelector('[data-hero-story]') as HTMLElement;
+      expect(story.closest('.surface-nocturne')).not.toBeNull();
     } finally {
       Object.defineProperty(window, 'matchMedia', {
         writable: true,
@@ -503,7 +508,7 @@ describe('surface language', () => {
     // which left a light page carrying black slabs. Neither may re-declare a
     // surface, and nothing inside them may be drawn with a literal white or
     // black - those are the two ways an illustration stops inverting.
-    const frame = document.querySelector('[data-hero-stage]') as HTMLElement;
+    const frame = document.querySelector('[data-hero-story]') as HTMLElement;
     expect(frame.closest('.surface-obsidian')).toBeNull();
     expect(signalPanel().className).not.toContain('surface-obsidian');
 
@@ -719,7 +724,7 @@ describe('public IA', () => {
     await screen.findByRole('heading', { level: 1 });
     const h1s = screen.getAllByRole('heading', { level: 1 });
     expect(h1s).toHaveLength(1);
-    expect(h1s[0]).toHaveTextContent(/run your job search with clarity/i);
+    expect(h1s[0]).toHaveTextContent(/your resume in\. matched jobs out\./i);
   });
 
   test('every new marketing section is labelled by its own heading', async () => {
@@ -982,7 +987,7 @@ describe('hero composition', () => {
   test('the headline is the promise, and it is the only h1', async () => {
     renderLanding();
     const h1 = screen.getByRole('heading', { level: 1 });
-    expect(h1).toHaveTextContent('Run your job search with clarity, consistency, and control.');
+    expect(h1).toHaveTextContent('Your resume in. Matched jobs out.');
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
   });
 

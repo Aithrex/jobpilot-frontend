@@ -22,8 +22,8 @@ export function CopySectionButton({ getText }: { getText: () => string }) {
       }}
       className={`opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-medium ${
         copied
-          ? "text-emerald-500 bg-emerald-500/10"
-          : "text-gray-500 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-500/10"
+          ? "text-success bg-emerald-500/10"
+          : "text-muted-foreground hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-500/10"
       }`}
       aria-label="Copy section to clipboard"
     >
