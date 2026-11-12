@@ -447,21 +447,24 @@ export function JobCard({
                 {location || 'Location undisclosed'}
               </p>
             </div>
-            <div className="flex shrink-0 flex-col items-center gap-1">
+            {/* The ring alone holds the right edge, so every header is the
+                same height whatever the band label says. The label leads
+                the facts row below instead. */}
+            <div className="shrink-0">
               <MatchScoreRing job={job} />
-              <span
-                className={cn(
-                  'inline-flex items-center justify-center whitespace-nowrap rounded-full border px-1.5 py-px text-center text-caption-sm font-semibold leading-tight',
-                  band.chip,
-                )}
-              >
-                {band.label}
-              </span>
             </div>
           </div>
 
           {/* Facts a screener and the user both check first. */}
           <div className="flex flex-wrap items-center gap-1.5">
+            <span
+              className={cn(
+                'inline-flex items-center whitespace-nowrap rounded-full border px-2 py-0.5 text-caption-sm font-semibold',
+                band.chip,
+              )}
+            >
+              {band.label}
+            </span>
             {isNew && (
               <span
                 className="job-new-chip inline-flex items-center gap-1 rounded-full border border-info/40 bg-info/10 px-2 py-0.5 text-caption-sm font-semibold text-info"
@@ -477,7 +480,7 @@ export function JobCard({
                 'inline-flex items-center rounded-full border px-2 py-0.5 text-caption-sm font-semibold',
                 level.kind === 'stated' && 'border-border bg-secondary text-secondary-foreground',
                 level.kind === 'estimated' && 'border-dashed border-border text-muted-foreground',
-                level.kind === 'unstated' && 'border-transparent px-0 text-muted-foreground',
+                level.kind === 'unstated' && 'border-transparent px-1 font-medium text-muted-foreground',
               )}
               title={level.title}
               data-testid="job-level"
@@ -493,9 +496,11 @@ export function JobCard({
                 product uses for it. Renders NOTHING without data - an
                 absence of filings is not evidence about an employer. */}
             <EmployerSponsorshipBadge signal={legacySponsorshipSignal(job.sponsorship)} />
-            <span className="ml-auto">
-              <WhyThisScoreButton job={job} />
-            </span>
+            {compareSelected && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-caption-sm font-medium text-primary">
+                <Scale className="h-3 w-3" aria-hidden /> Comparing
+              </span>
+            )}
           </div>
           {job.score_basis === 'title_only' && (
             <p className="-mt-1 text-caption-sm leading-snug text-muted-foreground" data-testid="job-score-provisional">
@@ -521,8 +526,12 @@ export function JobCard({
             </div>
           )}
 
-          {(skills.length > 0 || job.missing_skills?.length > 0) && (
-            <p className="flex items-start gap-1.5 text-caption-sm leading-snug text-muted-foreground" data-testid="job-skill-match">
+          {/* "Why this score" always sits at the end of this line, so it is in
+              the same place on every card instead of wrapping wherever the
+              chips above happen to end. */}
+          <div className="flex items-start justify-between gap-2">
+          {(skills.length > 0 || job.missing_skills?.length > 0) ? (
+            <p className="flex min-w-0 items-start gap-1.5 text-caption-sm leading-snug text-muted-foreground" data-testid="job-skill-match">
               <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-signal" aria-hidden />
               <span className="min-w-0">
                 {skills.length > 0 ? (
@@ -538,7 +547,11 @@ export function JobCard({
                 )}
               </span>
             </p>
+          ) : (
+            <span />
           )}
+            <WhyThisScoreButton job={job} className="-mr-1.5 -mt-0.5 shrink-0" />
+          </div>
 
           {note && (
             <p className="truncate text-caption-sm font-medium text-ink-muted" data-testid="job-note">
@@ -645,7 +658,7 @@ export function JobCard({
                       else setApplyChoiceOpen(true);
                     }}
                     title={apply.fallback ? 'Apply link missing. Opens Google search, then asks how you want to apply' : 'Choose tailor, apply with your base resume, or mark already applied'}
-                    className="btn-premium h-10 min-w-0 gap-1.5 text-xs font-semibold"
+                    className="h-10 min-w-0 gap-1.5 text-xs font-semibold"
                   >
                     <ExternalLink className="h-3.5 w-3.5" />
                     {inAppliedPipeline ? 'Reopen' : 'Apply'}
@@ -671,15 +684,15 @@ export function JobCard({
                   {!inAppliedPipeline && (
                     <Button
                       size="sm"
-                      variant="outline"
+                      variant="ghost"
                       onClick={() => void toggleSave()}
                       disabled={saving}
                       aria-busy={saving}
                       title={saved ? 'Remove from saved' : 'Save this job'}
-                      className={cn('hit-target h-9 min-w-[5.5rem] gap-1.5 px-2.5 text-xs',
+                      className={cn('hit-target h-9 gap-1.5 px-2.5 text-xs font-medium hover:bg-accent',
                         saved
-                          ? 'border-success/40 bg-success/10 text-success hover:border-success hover:bg-success/20 hover:text-success'
-                          : 'border-border/60 text-muted-foreground hover:text-primary')}
+                          ? 'text-signal hover:text-signal'
+                          : 'text-muted-foreground hover:text-foreground')}
                     >
                       {saving ? (
                         <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
@@ -691,33 +704,28 @@ export function JobCard({
                       {saving ? (saved ? 'Removing...' : 'Saving...') : saved ? 'Saved' : 'Save'}
                     </Button>
                   )}
-                  {onHide && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={onHide}
-                      title="Hide this job from For you"
-                      aria-label="Hide this job"
-                      className="hit-target h-9 w-9 px-0 text-muted-foreground hover:bg-transparent hover:text-primary"
-                    >
-                      <CircleOff className="h-3.5 w-3.5" aria-hidden />
-                    </Button>
-                  )}
                   <Button
                     size="sm"
                     variant="ghost"
                     onClick={() => setExpanded((v) => !v)}
                     aria-expanded={expanded}
-                    className="hit-target h-9 gap-1 px-2.5 text-xs text-muted-foreground hover:bg-transparent hover:text-primary"
+                    className="hit-target h-9 gap-1 px-2.5 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
                   >
                     Details
                     <ChevronDown className={cn('h-3.5 w-3.5 transition-transform duration-base ease-standard motion-reduce:transition-none', expanded && 'rotate-180')} aria-hidden />
                   </Button>
-                  <span className="ml-auto flex items-center gap-1">
-                    {compareSelected && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-caption-sm font-medium text-primary">
-                        <Scale className="h-3 w-3" aria-hidden /> Comparing
-                      </span>
+                  <span className="ml-auto flex items-center gap-0.5">
+                    {onHide && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={onHide}
+                        title="Hide this job from For you"
+                        aria-label="Hide this job"
+                        className="hit-target h-9 w-9 px-0 text-muted-foreground hover:bg-accent hover:text-foreground"
+                      >
+                        <CircleOff className="h-4 w-4" aria-hidden />
+                      </Button>
                     )}
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -725,7 +733,7 @@ export function JobCard({
                           size="sm"
                           variant="ghost"
                           aria-label={`More for ${title}`}
-                          className="hit-target h-9 gap-1 px-2.5 text-xs text-muted-foreground hover:bg-transparent hover:text-primary"
+                          className="hit-target h-9 gap-1 px-2.5 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
                         >
                           More
                           <MoreHorizontal className="h-3.5 w-3.5" aria-hidden />
