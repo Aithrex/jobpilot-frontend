@@ -22,6 +22,7 @@ import { PanelEmpty, PanelError, StatusPill } from '@/app-shell/pages/today/prim
 import { formatBytes, formatDate, type BaseResume } from '@/components/resume/ResumeDashboard';
 import { useResumeWorkspaceContext } from './ResumeWorkspaceContext';
 import { ResumeFilePreview } from './ResumeFilePreview';
+import { scoreTone } from './tailor/primitives';
 import type { TailoringRecord } from '@/types/resume';
 
 /**
@@ -78,7 +79,7 @@ function ActiveResumeCard({ resume }: { resume: BaseResume }) {
         <div className="min-w-0 flex-1 space-y-0.5">
           <div className="flex flex-wrap items-center gap-2">
             <p className="truncate text-body font-medium text-foreground">{resume.filename}</p>
-            <span className="rounded-md bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
+            <span className="rounded-md bg-primary/10 px-1.5 py-0.5 text-caption-sm font-semibold uppercase tracking-wide text-primary">
               Active
             </span>
           </div>
@@ -118,7 +119,7 @@ function TailoredRow({ record }: { record: TailoringRecord }) {
         className={cn(
           'group flex min-h-[56px] flex-wrap items-center gap-x-3 gap-y-1 rounded-control px-3 py-2.5',
           'transition-colors duration-fast ease-standard outline-none',
-          'hover:bg-foreground/[0.04]',
+          'hover:bg-muted',
           'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card',
         )}
       >
@@ -131,7 +132,7 @@ function TailoredRow({ record }: { record: TailoringRecord }) {
         </span>
 
         {typeof score === 'number' && (
-          <span className="shrink-0 font-mono text-caption tabular-nums text-muted-foreground">
+          <span className={cn('shrink-0 font-mono text-caption tabular-nums', scoreTone(score).text)}>
             ATS {score}
           </span>
         )}

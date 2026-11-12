@@ -142,7 +142,7 @@ export function GuestFlowShell({ flow }: { flow: GuestFlow }) {
           >
             <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
               <div>
-                <h2 className="text-balance text-2xl font-bold tracking-tight sm:text-3xl">
+                <h2 className="text-balance font-display text-headline-sm text-foreground sm:text-headline-md">
                   {firstName ? `${firstName}, your` : 'Your'} top matches today
                 </h2>
                 <p className="mt-1 text-sm text-muted-foreground">

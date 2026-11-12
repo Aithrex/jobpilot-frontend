@@ -2,9 +2,21 @@
  * Full profile + career strategy (moved from classic /app ResumeParser).
  */
 import { useEffect, useState } from "react";
-import { CheckCircle2, ChevronDown } from "lucide-react";
+import { CheckCircle2, ChevronDown, Loader2, LogOut, Sparkles } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiService } from "@/lib/api";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import {
+  settingsCardCls,
+  settingsCardHintCls,
+  settingsCardTitleCls,
+  settingsHelpCls,
+  settingsInputCls as inputCls,
+  settingsLabelCls as labelCls,
+  settingsSelectCls as selectCls,
+  settingsTextareaCls as textareaCls,
+} from "./settingsStyles";
 import PasswordCard from "./PasswordCard";
 import TimezoneCard from "./TimezoneCard";
 import { PrivacySettingsSection } from "@/components/privacy/PrivacySettingsSection";
@@ -50,6 +62,7 @@ export default function ProfileTab() {
   const [saved, setSaved] = useState(false);
   const [strategySaved, setStrategySaved] = useState(false);
   const [error, setError] = useState("");
+  const [strategyError, setStrategyError] = useState("");
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [autoFixPreview, setAutoFixPreview] = useState<{
     portfolioFocus: string;
@@ -80,7 +93,8 @@ export default function ProfileTab() {
     };
   }, []);
 
-  const handleSave = async () => {
+  const handleSave = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     setSaving(true);
     setError("");
     setSaved(false);
@@ -98,9 +112,10 @@ export default function ProfileTab() {
     setTimeout(() => setSaved(false), 3000);
   };
 
-  const saveStrategy = async () => {
+  const saveStrategy = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     setSavingStrategy(true);
-    setError("");
+    setStrategyError("");
     setStrategySaved(false);
     setValidationErrors([]);
 
@@ -108,7 +123,7 @@ export default function ProfileTab() {
     if (errs.length > 0) {
       setSavingStrategy(false);
       setValidationErrors(errs);
-      setError("Please fix profile validation issues before saving.");
+      setStrategyError("Please fix profile validation issues before saving.");
       return;
     }
 
@@ -129,7 +144,7 @@ export default function ProfileTab() {
         : await apiService.deleteMemoryNote(key);
       if (resp.error) {
         setSavingStrategy(false);
-        setError(resp.error);
+        setStrategyError(resp.error);
         return;
       }
     }
@@ -202,10 +217,24 @@ export default function ProfileTab() {
 
   const scoreTone =
     recruiterReadyScore >= 85
-      ? "text-success"
+      ? "text-signal"
       : recruiterReadyScore >= 70
         ? "text-warning"
         : "text-destructive";
+
+  // Fill and chip tint follow the same three bands as the text tone.
+  const scoreBar =
+    recruiterReadyScore >= 85
+      ? "bg-signal"
+      : recruiterReadyScore >= 70
+        ? "bg-warning"
+        : "bg-destructive";
+  const scoreChip =
+    recruiterReadyScore >= 85
+      ? "bg-signal-tint text-signal"
+      : recruiterReadyScore >= 70
+        ? "bg-warning/10 text-warning"
+        : "bg-destructive/10 text-destructive";
 
   const scoreLabel =
     recruiterReadyScore >= 85
@@ -250,128 +279,155 @@ export default function ProfileTab() {
     setAutoFixPreview(null);
   };
 
-  const inputCls =
-    "w-full px-4 py-2.5 rounded-lg bg-gray-100 dark:bg-gray-800/60 border border-gray-300 dark:border-gray-700/60 text-sm text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500/30 transition-all";
-  const selectCls =
-    "w-full px-4 py-2.5 rounded-lg bg-gray-100 dark:bg-gray-800/60 border border-gray-300 dark:border-gray-700/60 text-sm text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500/30 transition-all appearance-none cursor-pointer";
-  const labelCls =
-    "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5";
+  const selectChevron = (
+    <ChevronDown
+      className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+      aria-hidden="true"
+    />
+  );
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl border border-gray-200/80 bg-white/70 p-4 dark:border-white/[0.07] dark:bg-gray-900/40">
-        <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">
-          Profile & Career Strategy
+      {/* Overview: completion, readiness, gaps and memory sync at a glance. */}
+      <section aria-labelledby="profile-overview-title" className={settingsCardCls}>
+        <h2 id="profile-overview-title" className={settingsCardTitleCls}>
+          Profile &amp; career strategy
         </h2>
-        <p className="text-xs text-muted-foreground mt-0.5">
+        <p className={settingsCardHintCls}>
           Industry-level profile configuration for better tailoring, outreach, and copilot guidance.
         </p>
-        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <div className="rounded-lg border border-indigo-500/20 bg-indigo-500/5 px-3 py-2">
-            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Completion</p>
-            <p className="text-sm font-semibold text-indigo-700 dark:text-indigo-300">{completion}%</p>
+        <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="rounded-lg bg-muted px-3 py-2">
+            <dt className="text-caption-sm uppercase tracking-wide text-muted-foreground">Completion</dt>
+            <dd className="text-label-lg tabular-nums text-foreground">{completion}%</dd>
           </div>
-          <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-3 py-2">
-            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Readiness</p>
-            <p className={`text-sm font-semibold ${scoreTone}`}>{recruiterReadyScore}/100</p>
+          <div className="rounded-lg bg-muted px-3 py-2">
+            <dt className="text-caption-sm uppercase tracking-wide text-muted-foreground">Readiness</dt>
+            <dd className={cn("text-label-lg tabular-nums", scoreTone)}>{recruiterReadyScore}/100</dd>
           </div>
-          <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2">
-            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Open gaps</p>
-            <p className="text-sm font-semibold text-warning">{topGaps.length}</p>
+          <div className="rounded-lg bg-muted px-3 py-2">
+            <dt className="text-caption-sm uppercase tracking-wide text-muted-foreground">Open gaps</dt>
+            <dd
+              className={cn(
+                "text-label-lg tabular-nums",
+                topGaps.length > 0 ? "text-warning" : "text-muted-foreground",
+              )}
+            >
+              {topGaps.length}
+            </dd>
           </div>
-          <div className="rounded-lg border border-violet-500/20 bg-violet-500/5 px-3 py-2">
-            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Memory sync</p>
-            <p className="text-sm font-semibold text-violet-700 dark:text-violet-300">{memoryLoading ? "..." : "Ready"}</p>
+          <div className="rounded-lg bg-muted px-3 py-2">
+            <dt className="text-caption-sm uppercase tracking-wide text-muted-foreground">Memory sync</dt>
+            <dd className={cn("text-label-lg", memoryLoading ? "text-muted-foreground" : "text-foreground")}>
+              {memoryLoading ? "Loading..." : "Ready"}
+            </dd>
           </div>
-        </div>
-      </div>
+        </dl>
 
-      <div className="rounded-2xl border border-indigo-500/20 bg-gradient-to-r from-indigo-500/10 via-purple-500/5 to-transparent p-4">
-        <div className="flex items-center justify-between gap-3">
-          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-            Profile Completion
+        <div className="mt-5 flex items-center justify-between gap-3">
+          <p id="profile-completion-label" className="text-label-lg text-foreground">
+            Profile completion
           </p>
-          <p className="text-xs font-bold text-indigo-600 dark:text-indigo-300">{completion}%</p>
+          <p className="text-label-md tabular-nums text-signal">{completion}%</p>
         </div>
-        <div className="mt-2 h-2 rounded-full bg-gray-200 dark:bg-white/10 overflow-hidden">
+        <div
+          role="progressbar"
+          aria-labelledby="profile-completion-label"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={completion}
+          className="mt-2 h-2 overflow-hidden rounded-full bg-muted"
+        >
           <div
-            className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all"
+            className="h-full rounded-full bg-signal transition-[width] duration-300 motion-reduce:transition-none"
             style={{ width: `${completion}%` }}
           />
         </div>
-        <p className="text-[11px] text-muted-foreground mt-2">
+        <p className={settingsHelpCls}>
           Higher completion improves quality of AI suggestions, outreach sequences, and interview prep.
         </p>
-      </div>
+      </section>
 
-      <div className="rounded-2xl border border-gray-200 dark:border-white/[0.07] bg-white/80 dark:bg-gray-900/50 backdrop-blur-sm shadow-xl shadow-black/5 dark:shadow-black/20 p-6">
+      <section aria-labelledby="profile-score-title" className={settingsCardCls}>
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">Recruiter-ready Score</p>
-            <p className={`text-xs font-bold mt-0.5 ${scoreTone}`}>
-              {recruiterReadyScore}/100 • {scoreLabel}
+            <h2 id="profile-score-title" className={settingsCardTitleCls}>
+              Recruiter-ready score
+            </h2>
+            <p className={cn("mt-0.5 text-label-md tabular-nums", scoreTone)}>
+              {recruiterReadyScore}/100 · {scoreLabel}
             </p>
           </div>
-          <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
-            recruiterReadyScore >= 85
-              ? "bg-emerald-500/10 text-success"
-              : recruiterReadyScore >= 70
-                ? "bg-amber-500/10 text-warning"
-                : "bg-red-500/10 text-destructive"
-          }`}>
+          <span className={cn("shrink-0 rounded-full px-2.5 py-1 text-label-md", scoreChip)}>
             {scoreLabel}
           </span>
         </div>
-        <div className="mt-3 h-2 rounded-full bg-gray-200 dark:bg-white/10 overflow-hidden">
+        <div
+          role="progressbar"
+          aria-labelledby="profile-score-title"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={recruiterReadyScore}
+          className="mt-3 h-2 overflow-hidden rounded-full bg-muted"
+        >
           <div
-            className={`h-full rounded-full transition-all ${
-              recruiterReadyScore >= 85
-                ? "bg-gradient-to-r from-emerald-500 to-teal-500"
-                : recruiterReadyScore >= 70
-                  ? "bg-gradient-to-r from-amber-500 to-orange-500"
-                  : "bg-gradient-to-r from-red-500 to-rose-500"
-            }`}
+            className={cn(
+              "h-full rounded-full transition-[width] duration-300 motion-reduce:transition-none",
+              scoreBar,
+            )}
             style={{ width: `${recruiterReadyScore}%` }}
           />
         </div>
         {topGaps.length > 0 ? (
-          <div className="mt-3">
-            <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Actionable gaps</p>
-            <ul className="text-xs text-gray-600 dark:text-gray-400 space-y-1 list-disc list-inside">
+          <div className="mt-4">
+            <p className="mb-1.5 text-label-md text-foreground">Actionable gaps</p>
+            <ul className="list-inside list-disc space-y-1 text-caption text-ink-muted">
               {topGaps.map((g) => (
                 <li key={g}>{g}</li>
               ))}
             </ul>
           </div>
         ) : (
-          <p className="mt-3 text-xs text-success">
+          <p className="mt-4 text-caption text-success">
             Excellent. Your profile settings are strong and ready for high-quality personalization.
           </p>
         )}
-      </div>
+      </section>
 
-      <div className="rounded-2xl border border-gray-200 dark:border-white/[0.07] bg-white/80 dark:bg-gray-900/50 backdrop-blur-sm shadow-xl shadow-black/5 dark:shadow-black/20 p-6 space-y-5">
-        <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+      <form
+        onSubmit={handleSave}
+        aria-labelledby="profile-identity-title"
+        className={cn(settingsCardCls, "space-y-5")}
+      >
+        <h2 id="profile-identity-title" className={settingsCardTitleCls}>
           Identity
-        </p>
+        </h2>
         {/* Email (read-only) */}
         <div>
-          <label className={labelCls}>Email</label>
-          <div className="px-4 py-2.5 rounded-lg bg-gray-100/40 dark:bg-gray-800/40 border border-gray-300 dark:border-gray-700/40 text-sm text-gray-600 dark:text-gray-400">
-            {user?.email}
-          </div>
-          <p className="text-[10px] text-muted-foreground mt-1">
+          <label htmlFor="profile-email" className={labelCls}>
+            Email
+          </label>
+          <input
+            id="profile-email"
+            type="email"
+            readOnly
+            value={user?.email ?? ""}
+            aria-describedby="profile-email-help"
+            className={cn(inputCls, "bg-muted text-ink-muted")}
+          />
+          <p id="profile-email-help" className={settingsHelpCls}>
             Email cannot be changed
           </p>
         </div>
 
         <div>
           <label htmlFor="profile-name" className={labelCls}>
-            Full Name
+            Full name
           </label>
           <input
             id="profile-name"
             type="text"
+            autoComplete="name"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Your full name"
@@ -379,95 +435,104 @@ export default function ProfileTab() {
           />
         </div>
 
-        <div>
-          <label htmlFor="profile-role" className={labelCls}>
-            Role
-          </label>
-          <div className="relative">
-            <select
-              id="profile-role"
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              className={selectCls}
-            >
-              <option value="">Select a role</option>
-              {ROLE_OPTIONS.map((r) => (
-                <option key={r} value={r}>
-                  {r}
-                </option>
-              ))}
-            </select>
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-              <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${false ? "rotate-180" : ""}`} />
-            </span>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <label htmlFor="profile-role" className={labelCls}>
+              Role
+            </label>
+            <div className="relative">
+              <select
+                id="profile-role"
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                className={selectCls}
+              >
+                <option value="">Select a role</option>
+                {ROLE_OPTIONS.map((r) => (
+                  <option key={r} value={r}>
+                    {r}
+                  </option>
+                ))}
+              </select>
+              {selectChevron}
+            </div>
+          </div>
+
+          <div>
+            <label htmlFor="profile-sector" className={labelCls}>
+              Industry
+            </label>
+            <div className="relative">
+              <select
+                id="profile-sector"
+                value={sector}
+                onChange={(e) => setSector(e.target.value)}
+                className={selectCls}
+              >
+                <option value="">Select an industry</option>
+                {SECTOR_OPTIONS.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+              {selectChevron}
+            </div>
           </div>
         </div>
 
-        <div>
-          <label htmlFor="profile-sector" className={labelCls}>
-            Industry
-          </label>
-          <div className="relative">
-            <select
-              id="profile-sector"
-              value={sector}
-              onChange={(e) => setSector(e.target.value)}
-              className={selectCls}
-            >
-              <option value="">Select an industry</option>
-              {SECTOR_OPTIONS.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-              <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${false ? "rotate-180" : ""}`} />
-            </span>
-          </div>
-        </div>
-
-        {error && <p className="text-sm text-destructive">{error}</p>}
+        {error && (
+          <p className="text-sm text-destructive" role="alert">
+            {error}
+          </p>
+        )}
         {saved && (
-          <p className="text-sm text-success flex items-center gap-1.5">
-            <CheckCircle2 className="w-4 h-4" /> Profile updated
+          <p className="flex items-center gap-1.5 text-sm text-success" role="status">
+            <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" /> Profile updated
           </p>
         )}
 
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 disabled:from-gray-300 disabled:to-gray-300 dark:disabled:from-gray-700 dark:disabled:to-gray-700 disabled:text-gray-500 dark:text-gray-400 disabled:cursor-not-allowed shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 disabled:shadow-none transition-all duration-200"
-        >
+        <Button type="submit" disabled={saving} aria-busy={saving}>
           {saving ? (
             <>
-              <span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />{" "}
+              <Loader2 className="animate-spin" aria-hidden="true" />
               Saving...
             </>
           ) : (
-            "Save Changes"
+            "Save changes"
           )}
-        </button>
-      </div>
+        </Button>
+      </form>
 
       <PasswordCard />
 
       <TimezoneCard />
 
-      <div className="rounded-2xl border border-gray-200 dark:border-white/[0.07] bg-white/60 dark:bg-gray-900/40 backdrop-blur-sm shadow-xl shadow-black/5 dark:shadow-black/20 p-6 space-y-5">
+      <form
+        onSubmit={saveStrategy}
+        aria-labelledby="profile-strategy-title"
+        aria-busy={memoryLoading}
+        className={cn(settingsCardCls, "space-y-5")}
+      >
         <div className="flex items-center justify-between gap-3">
-          <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-            Career Strategy (Copilot Memory)
-          </p>
+          <h2 id="profile-strategy-title" className={settingsCardTitleCls}>
+            Career strategy (Copilot memory)
+          </h2>
           {memoryLoading && (
-            <span className="text-xs text-muted-foreground">Loading strategy...</span>
+            <span className="inline-flex items-center gap-1.5 text-caption text-muted-foreground" role="status">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+              Loading strategy...
+            </span>
           )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
-            <label className={labelCls}>Target Role</label>
+            <label htmlFor="strategy-target-role" className={labelCls}>
+              Target role
+            </label>
             <input
+              id="strategy-target-role"
               value={targetRole}
               onChange={(e) => setTargetRole(e.target.value)}
               placeholder="e.g. Senior Backend Engineer"
@@ -475,8 +540,11 @@ export default function ProfileTab() {
             />
           </div>
           <div>
-            <label className={labelCls}>Preferred Locations</label>
+            <label htmlFor="strategy-locations" className={labelCls}>
+              Preferred locations
+            </label>
             <input
+              id="strategy-locations"
               value={targetLocations}
               onChange={(e) => setTargetLocations(e.target.value)}
               placeholder="e.g. SF Bay Area, Remote (US)"
@@ -484,50 +552,68 @@ export default function ProfileTab() {
             />
           </div>
           <div>
-            <label className={labelCls}>Work Mode</label>
+            <label htmlFor="strategy-work-mode" className={labelCls}>
+              Work mode
+            </label>
             <div className="relative">
-              <select value={workMode} onChange={(e) => setWorkMode(e.target.value)} className={selectCls}>
+              <select
+                id="strategy-work-mode"
+                value={workMode}
+                onChange={(e) => setWorkMode(e.target.value)}
+                className={selectCls}
+              >
                 <option value="">Select mode</option>
                 {WORK_MODE_OPTIONS.map((w) => (
                   <option key={w} value={w}>{w}</option>
                 ))}
               </select>
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${false ? "rotate-180" : ""}`} />
-              </span>
+              {selectChevron}
             </div>
           </div>
           <div>
-            <label className={labelCls}>Seniority</label>
+            <label htmlFor="strategy-seniority" className={labelCls}>
+              Seniority
+            </label>
             <div className="relative">
-              <select value={seniority} onChange={(e) => setSeniority(e.target.value)} className={selectCls}>
+              <select
+                id="strategy-seniority"
+                value={seniority}
+                onChange={(e) => setSeniority(e.target.value)}
+                className={selectCls}
+              >
                 <option value="">Select seniority</option>
                 {SENIORITY_OPTIONS.map((s) => (
                   <option key={s} value={s}>{s}</option>
                 ))}
               </select>
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${false ? "rotate-180" : ""}`} />
-              </span>
+              {selectChevron}
             </div>
           </div>
           <div>
-            <label className={labelCls}>Notice Period</label>
+            <label htmlFor="strategy-notice" className={labelCls}>
+              Notice period
+            </label>
             <div className="relative">
-              <select value={noticePeriod} onChange={(e) => setNoticePeriod(e.target.value)} className={selectCls}>
+              <select
+                id="strategy-notice"
+                value={noticePeriod}
+                onChange={(e) => setNoticePeriod(e.target.value)}
+                className={selectCls}
+              >
                 <option value="">Select notice period</option>
                 {NOTICE_PERIOD_OPTIONS.map((n) => (
                   <option key={n} value={n}>{n}</option>
                 ))}
               </select>
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${false ? "rotate-180" : ""}`} />
-              </span>
+              {selectChevron}
             </div>
           </div>
           <div>
-            <label className={labelCls}>Compensation Target</label>
+            <label htmlFor="strategy-comp" className={labelCls}>
+              Compensation target
+            </label>
             <input
+              id="strategy-comp"
               value={salaryRange}
               onChange={(e) => setSalaryRange(e.target.value)}
               placeholder="e.g. 140k-180k base"
@@ -537,86 +623,79 @@ export default function ProfileTab() {
         </div>
 
         <div>
-          <label className={labelCls}>Portfolio Focus</label>
+          <label htmlFor="strategy-portfolio" className={labelCls}>
+            Portfolio focus
+          </label>
           <textarea
+            id="strategy-portfolio"
             value={portfolioFocus}
             onChange={(e) => setPortfolioFocus(e.target.value)}
             rows={3}
             placeholder="What should your portfolio emphasize? (e.g. distributed systems, DevOps impact, AI products)"
-            className={inputCls}
+            className={textareaCls}
           />
         </div>
         <div>
-          <label className={labelCls}>Constraints / Non-negotiables</label>
+          <label htmlFor="strategy-constraints" className={labelCls}>
+            Constraints / non-negotiables
+          </label>
           <textarea
+            id="strategy-constraints"
             value={constraints}
             onChange={(e) => setConstraints(e.target.value)}
             rows={3}
             placeholder="e.g. No relocation, visa sponsorship required, no sales-heavy roles"
-            className={inputCls}
+            className={textareaCls}
           />
         </div>
 
-        <p className="text-[11px] text-muted-foreground">
+        <p className={cn(settingsHelpCls, "mt-0 max-w-prose")}>
           These settings are synced to Copilot memory and used to personalize JD analysis, cold outreach, and interview prep.
         </p>
 
-        <div className="rounded-lg border border-indigo-500/20 bg-indigo-500/5 p-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <p className="text-xs font-semibold text-indigo-700 dark:text-indigo-300">
-                Auto-fix suggestions
-              </p>
-              <p className="text-[11px] text-muted-foreground mt-0.5">
+        <div className="rounded-lg border border-border bg-muted p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-label-md text-foreground">Auto-fix suggestions</p>
+              <p className="mt-0.5 max-w-prose text-caption text-muted-foreground">
                 Generate industry-style wording for Portfolio Focus and Constraints based on your profile.
               </p>
             </div>
-            <button
-              type="button"
-              onClick={generateAutoFixSuggestions}
-              className="inline-flex items-center gap-1 rounded-md border border-indigo-500/25 bg-white/70 dark:bg-white/5 px-2.5 py-1 text-xs font-semibold text-indigo-700 dark:text-indigo-300 hover:bg-indigo-500/10 transition"
-            >
+            <Button type="button" variant="outline" size="sm" onClick={generateAutoFixSuggestions}>
+              <Sparkles aria-hidden="true" />
               Generate suggestions
-            </button>
+            </Button>
           </div>
           {autoFixPreview && (
-            <div className="mt-3 space-y-3">
+            <div className="mt-4 space-y-3" role="region" aria-label="Suggested wording">
               <div>
-                <p className="text-[11px] font-semibold text-gray-700 dark:text-gray-300">Portfolio Focus suggestion</p>
-                <p className="mt-1 text-xs text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-wrap">
+                <p className="text-label-md text-foreground">Portfolio Focus suggestion</p>
+                <p className="mt-1 max-w-prose whitespace-pre-wrap text-caption leading-relaxed text-ink-muted">
                   {autoFixPreview.portfolioFocus}
                 </p>
               </div>
               <div>
-                <p className="text-[11px] font-semibold text-gray-700 dark:text-gray-300">Constraints suggestion</p>
-                <p className="mt-1 text-xs text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-wrap">
+                <p className="text-label-md text-foreground">Constraints suggestion</p>
+                <p className="mt-1 max-w-prose whitespace-pre-wrap text-caption leading-relaxed text-ink-muted">
                   {autoFixPreview.constraints}
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={applyAutoFixSuggestions}
-                  className="inline-flex items-center gap-1 rounded-md bg-indigo-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-indigo-500 transition"
-                >
+                <Button type="button" variant="secondary" size="sm" onClick={applyAutoFixSuggestions}>
                   Apply suggestions
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setAutoFixPreview(null)}
-                  className="text-xs text-muted-foreground underline"
-                >
+                </Button>
+                <Button type="button" variant="ghost" size="sm" onClick={() => setAutoFixPreview(null)}>
                   Dismiss
-                </button>
+                </Button>
               </div>
             </div>
           )}
         </div>
 
         {validationErrors.length > 0 && (
-          <div className="rounded-lg border border-red-500/20 bg-red-500/5 p-3">
-            <p className="text-xs font-semibold text-destructive mb-1">Validation issues</p>
-            <ul className="text-xs text-destructive space-y-1 list-disc list-inside">
+          <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+            <p className="mb-1 text-label-md text-destructive">Validation issues</p>
+            <ul className="list-inside list-disc space-y-1 text-caption text-destructive">
               {validationErrors.map((v) => (
                 <li key={v}>{v}</li>
               ))}
@@ -624,44 +703,49 @@ export default function ProfileTab() {
           </div>
         )}
 
-        <button
-          onClick={saveStrategy}
-          disabled={savingStrategy || memoryLoading}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:from-gray-300 disabled:to-gray-300 dark:disabled:from-gray-700 dark:disabled:to-gray-700 disabled:text-gray-500 dark:text-gray-400 disabled:cursor-not-allowed shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/35 disabled:shadow-none transition-all duration-200"
-        >
-          {savingStrategy ? (
-            <>
-              <span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />{" "}
-              Syncing...
-            </>
-          ) : (
-            "Save Strategy"
-          )}
-        </button>
-        {strategySaved && (
-          <p className="text-sm text-success flex items-center gap-1.5">
-            <CheckCircle2 className="w-4 h-4" /> Career strategy synced to Copilot
+        {strategyError && (
+          <p className="text-sm text-destructive" role="alert">
+            {strategyError}
           </p>
         )}
-      </div>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <Button type="submit" disabled={savingStrategy || memoryLoading} aria-busy={savingStrategy}>
+            {savingStrategy ? (
+              <>
+                <Loader2 className="animate-spin" aria-hidden="true" />
+                Syncing...
+              </>
+            ) : (
+              "Save strategy"
+            )}
+          </Button>
+          {strategySaved && (
+            <p className="flex items-center gap-1.5 text-sm text-success" role="status">
+              <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" /> Career strategy synced to Copilot
+            </p>
+          )}
+        </div>
+      </form>
 
       <PrivacySettingsSection />
 
-      {/* Danger zone */}
-      <div className="rounded-2xl border border-gray-200 dark:border-white/[0.07] bg-white/80 dark:bg-gray-900/50 backdrop-blur-sm shadow-xl shadow-black/5 dark:shadow-black/20 p-6">
-        <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-3">
+      <section aria-labelledby="profile-account-title" className={settingsCardCls}>
+        <h2 id="profile-account-title" className={cn(settingsCardTitleCls, "mb-3")}>
           Account
-        </p>
-        <button
+        </h2>
+        <Button
+          type="button"
+          variant="outline"
           onClick={() => {
             logout();
             window.location.href = "/app/home";
           }}
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-destructive border border-red-500/20 hover:bg-red-500/10 transition-all"
         >
-          Sign Out
-        </button>
-      </div>
+          <LogOut aria-hidden="true" />
+          Sign out
+        </Button>
+      </section>
     </div>
   );
 }

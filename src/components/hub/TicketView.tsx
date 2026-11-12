@@ -98,26 +98,26 @@ export default function TicketView({ day, params, onBack, onCompleted }: TicketV
           <ArrowLeft className="h-4 w-4" /> Back to timeline
         </Button>
         <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="outline" className="font-mono text-[11px]">
+          <Badge variant="outline" className="font-mono text-caption-sm">
             {t.ticket_number}
           </Badge>
-          <Badge variant="outline" className={cn("text-[11px]", priorityStyle(t.priority))}>
+          <Badge variant="outline" className={cn("text-caption-sm", priorityStyle(t.priority))}>
             {t.priority}
           </Badge>
-          <Badge variant="outline" className="text-[11px]">
+          <Badge variant="outline" className="text-caption-sm">
             {t.difficulty}
           </Badge>
-          <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+          <span className="inline-flex items-center gap-1 text-caption-sm text-muted-foreground">
             <Clock className="h-3 w-3" /> {t.estimated_time}
           </span>
           {isCompleted && (
-            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[hsl(var(--success))]">
+            <span className="inline-flex items-center gap-1 text-caption-sm font-medium text-success">
               <CheckCircle2 className="h-3.5 w-3.5" /> Completed
             </span>
           )}
         </div>
         <p className="mt-1.5 text-xs font-medium text-muted-foreground">{t.sprint_label}</p>
-        <h1 className="mt-0.5 text-2xl font-extrabold gradient-text">{t.title}</h1>
+        <h2 className="mt-0.5 text-2xl font-extrabold gradient-text">{t.title}</h2>
       </div>
 
       {/* Two-column body: ticket on the left, mentor on the right. */}
@@ -239,8 +239,8 @@ export default function TicketView({ day, params, onBack, onCompleted }: TicketV
       )}
 
       {isCompleted && (
-        <div className="flex items-center gap-2 rounded-xl border border-[hsl(var(--success))]/30 bg-[hsl(var(--success))]/[0.06] px-4 py-3">
-          <span className="inline-flex items-center gap-1 text-sm font-medium text-[hsl(var(--success))]">
+        <div className="flex items-center gap-2 rounded-xl border border-success/30 bg-success/[0.06] px-4 py-3">
+          <span className="inline-flex items-center gap-1 text-sm font-medium text-success">
             <CheckCircle2 className="h-4 w-4" /> Done
           </span>
           <TooltipProvider>

@@ -98,7 +98,7 @@ export function VerifyDialog({ open, onClose, pathId, task, result, onResult }: 
             <ul className="space-y-1">
               {task.acceptance_criteria.map((c, i) => (
                 <li key={i} className="flex items-start gap-1.5 text-sm">
-                  <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary/70" />
+                  <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
                   <span>{c}</span>
                 </li>
               ))}
@@ -148,7 +148,7 @@ export function VerifyDialog({ open, onClose, pathId, task, result, onResult }: 
             <p className={cn('flex items-center gap-2 font-semibold', STATUS_UI[result.status].tint)}>
               <StatusIcon className="h-5 w-5" /> {STATUS_UI[result.status].label}
             </p>
-            {result.details && <p className="mt-1.5 text-sm text-foreground/90">{result.details}</p>}
+            {result.details && <p className="mt-1.5 text-sm text-foreground">{result.details}</p>}
             {result.specifics?.length > 0 && (
               <ul className="mt-3 space-y-1.5">
                 {result.specifics.map((s, i) => (

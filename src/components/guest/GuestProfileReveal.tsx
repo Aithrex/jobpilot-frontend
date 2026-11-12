@@ -101,7 +101,7 @@ export function GuestProfileReveal({
     <div className={cn('flex flex-col gap-5', className)}>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
-          <h2 className="text-balance text-2xl font-bold tracking-tight sm:text-3xl">
+          <h2 className="text-balance font-display text-headline-sm text-foreground sm:text-headline-md">
             {profile.first_name ? `${profile.first_name}, here is` : 'Here is'} what we understood
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -113,7 +113,7 @@ export function GuestProfileReveal({
             className="shrink-0 rounded-xl border border-primary/20 bg-primary/5 px-3.5 py-2.5"
             data-testid="extracted-counts"
           >
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-primary">
+            <p className="text-caption-sm font-semibold uppercase tracking-wide text-primary">
               Extracted from your resume
             </p>
             <p className="mt-0.5 text-sm font-semibold tabular-nums">
@@ -193,7 +193,7 @@ export function GuestProfileReveal({
               <div className="flex flex-wrap gap-1.5">
                 {skills.map((skill, i) => (
                   <motion.span key={skill} {...chipMotion(i)}>
-                    <Badge variant="secondary" className="text-[11px] font-normal">
+                    <Badge variant="secondary" className="text-caption-sm font-normal">
                       {skill}
                     </Badge>
                   </motion.span>

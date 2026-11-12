@@ -112,19 +112,19 @@ export function GitHubProofCard({ onLinked, connect, reloadConnect }: GitHubProo
               <Github className="h-3.5 w-3.5 text-muted-foreground" /> @{profile.username}
             </a>
             <p className="text-xs text-muted-foreground">
-              {profile.original_repos} projects · {profile.total_stars} ★ · {profile.followers} followers
+              {profile.original_repos} projects · {profile.total_stars} stars · {profile.followers} followers
             </p>
           </div>
           <div className="text-right">
             <div className="text-xl font-extrabold tabular-nums text-primary">{profile.proof_score}</div>
-            <div className="text-[10px] uppercase tracking-wider text-muted-foreground">proof</div>
+            <div className="text-caption-sm uppercase tracking-wider text-muted-foreground">proof</div>
           </div>
         </div>
 
         {profile.top_languages.length > 0 && (
           <div className="mb-2 flex flex-wrap gap-1.5">
             {profile.top_languages.map((l) => (
-              <span key={l} className="rounded-full bg-secondary px-2 py-0.5 text-[11px] font-medium">
+              <span key={l} className="rounded-full bg-secondary px-2 py-0.5 text-caption-sm font-medium">
                 {l}
               </span>
             ))}
@@ -154,7 +154,7 @@ export function GitHubProofCard({ onLinked, connect, reloadConnect }: GitHubProo
 
         <button
           onClick={() => setEditing(true)}
-          className="mt-3 inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground"
+          className="mt-3 inline-flex items-center gap-1 text-caption-sm font-medium text-muted-foreground hover:text-foreground"
         >
           <RefreshCw className="h-3 w-3" /> Update username
         </button>
@@ -271,7 +271,7 @@ function GitHubConnect({ connect, reloadConnect }: { connect?: ConnectStatus | n
         <button
           onClick={startConnect}
           disabled={connecting}
-          className="inline-flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground hover:text-foreground disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 text-caption-sm font-medium text-muted-foreground hover:text-foreground disabled:opacity-50"
         >
           <Github className="h-3.5 w-3.5" /> {connecting ? 'Connecting...' : 'Connect GitHub to publish projects'}
         </button>
@@ -282,13 +282,13 @@ function GitHubConnect({ connect, reloadConnect }: { connect?: ConnectStatus | n
   return (
     <div className="mt-3 border-t border-border pt-3">
       <div className="flex items-center gap-2">
-        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
+        <span className="inline-flex items-center gap-1 text-caption-sm font-medium text-muted-foreground">
           <Github className="h-3.5 w-3.5" /> Connected as @{gh.login}
         </span>
         <button
           onClick={disconnect}
           disabled={disconnecting}
-          className="ml-auto text-[11px] font-medium text-muted-foreground hover:text-destructive disabled:opacity-50"
+          className="ml-auto text-caption-sm font-medium text-muted-foreground hover:text-destructive disabled:opacity-50"
         >
           {disconnecting ? 'Disconnecting...' : 'Disconnect'}
         </button>
@@ -304,7 +304,7 @@ function GitHubConnect({ connect, reloadConnect }: { connect?: ConnectStatus | n
       ) : (
         <div className="mt-2 space-y-2 rounded-lg border border-border/60 bg-muted/20 p-2.5">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">New project</span>
+            <span className="text-caption-sm font-semibold uppercase tracking-wider text-muted-foreground">New project</span>
             <button onClick={() => setShowForm(false)} className="text-muted-foreground hover:text-foreground">
               <X className="h-3.5 w-3.5" />
             </button>

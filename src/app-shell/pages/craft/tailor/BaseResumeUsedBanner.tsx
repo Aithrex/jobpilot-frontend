@@ -41,7 +41,7 @@ export function BaseResumeUsedBanner({
           ) : null}
         </p>
         {selection.reason ? (
-          <p className="mt-0.5 text-[12px] text-muted-foreground leading-relaxed">
+          <p className="mt-0.5 text-xs text-muted-foreground leading-relaxed">
             {selection.reason}
           </p>
         ) : null}

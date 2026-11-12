@@ -34,7 +34,7 @@ export const referralsWidget: Widget = {
           />
         ) : (
           <div className="flex flex-1 flex-col justify-center gap-2">
-            <p className="text-sm font-medium leading-snug text-foreground/90">
+            <p className="text-sm font-medium leading-snug text-foreground">
               LinkedIn is connected{name ? ` as ${name}` : ''}.
             </p>
             <p className="text-xs leading-relaxed text-muted-foreground">

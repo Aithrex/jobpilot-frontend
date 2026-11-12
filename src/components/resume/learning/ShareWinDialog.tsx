@@ -137,7 +137,7 @@ export function ShareWinDialog({ open, onClose, pathId, task }: ShareWinDialogPr
             <p className="flex items-center gap-2 font-semibold text-success">
               <Clock className="h-5 w-5" /> Scheduled to post
             </p>
-            <p className="mt-1.5 text-sm text-foreground/90">
+            <p className="mt-1.5 text-sm text-foreground">
               We hold auto-posts for 30 minutes so you can change your mind. It will publish
               automatically unless you cancel.
             </p>

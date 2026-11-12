@@ -30,8 +30,12 @@ function formatResetCountdown(resetIso?: string) {
 }
 
 export function QuotaLimitDialog({ open, onOpenChange, usage, onRequestMore }: Props) {
-  const limit = usage?.limit ?? 5;
-  const used = usage?.used ?? limit;
+  // Never show a number the server did not send. This used to fall back to a
+  // made-up limit of 5 when usage was unknown, which could contradict the
+  // visitor's real plan. Without numbers, the sentences below say the same
+  // thing in words.
+  const limit = typeof usage?.limit === 'number' ? usage.limit : null;
+  const used = typeof usage?.used === 'number' ? usage.used : limit;
   const requested = usage?.requested;
   const countdown = formatResetCountdown(usage?.resets_at);
 
@@ -41,11 +45,17 @@ export function QuotaLimitDialog({ open, onOpenChange, usage, onRequestMore }: P
         <DialogHeader>
           <DialogTitle className="text-xl">Daily tailoring limit reached</DialogTitle>
           <DialogDescription className="pt-2 text-base leading-relaxed">
-            You've used{" "}
-            <span className="font-semibold text-foreground">
-              {used} of {limit}
-            </span>{" "}
-            tailored resumes for today.
+            {limit !== null ? (
+              <>
+                You've used{" "}
+                <span className="font-semibold text-foreground">
+                  {used} of {limit}
+                </span>{" "}
+                tailored resumes for today.
+              </>
+            ) : (
+              <>You've used all of today's tailored resumes.</>
+            )}
             {requested && requested > (usage?.remaining ?? 0) ? (
               <>
                 {" "}
@@ -58,8 +68,16 @@ export function QuotaLimitDialog({ open, onOpenChange, usage, onRequestMore }: P
 
         <div className="space-y-4 pt-2 text-sm text-muted-foreground">
           <p>
-            I cap this at <span className="font-medium text-foreground">{limit} per day</span> so the
-            AI tailoring (powered by Claude) stays free for everyone. Every tailor runs a few large
+            I cap this{" "}
+            {limit !== null ? (
+              <>
+                at <span className="font-medium text-foreground">{limit} per day</span>
+              </>
+            ) : (
+              "per day"
+            )}{" "}
+            so the
+            AI tailoring stays free for everyone. Every tailor runs a few large
             model calls under the hood, and unlimited use would burn the budget fast.
           </p>
           <p>

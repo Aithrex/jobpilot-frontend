@@ -269,7 +269,7 @@ export function Reveal({ children, className, delay = 0, y = 14, immediate = fal
   const reduce = useReducedMotion();
   if (reduce) return <div className={className}>{children}</div>;
 
-  const transition = { duration: 0.36, ease: EASE, delay };
+  const transition = { duration: 0.28, ease: EASE, delay };
   const from = { y };
   const to = { y: 0 };
 

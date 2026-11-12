@@ -44,7 +44,7 @@ function StatCard({
         <Icon className="h-4 w-4 text-primary" />
       </div>
       <p className="mt-1.5 text-2xl font-extrabold text-foreground">{value}</p>
-      {sub ? <p className="text-[11px] text-muted-foreground">{sub}</p> : null}
+      {sub ? <p className="text-caption-sm text-muted-foreground">{sub}</p> : null}
     </motion.div>
   );
 }
@@ -129,7 +129,7 @@ export default function AnalyticsPanel({ params }: AnalyticsPanelProps) {
               {data.challenge_history.map((h) => (
                 <li key={h.key} className="flex items-center justify-between gap-2 text-sm">
                   <span className="flex min-w-0 items-center gap-2">
-                    <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-[hsl(var(--success))]/12 text-[hsl(var(--success))]">
+                    <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-success/10 text-success">
                       <CheckCircle2 className="h-3.5 w-3.5" />
                     </span>
                     <span className="truncate text-foreground">
@@ -154,7 +154,7 @@ export default function AnalyticsPanel({ params }: AnalyticsPanelProps) {
               {data.recent_activity.map((a, i) => (
                 <li key={i} className="flex items-center justify-between gap-2 text-sm">
                   <span className="flex min-w-0 items-center gap-2">
-                    <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-primary/12 text-primary">
+                    <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-primary/10 text-primary">
                       {a.type === "achievement" ? <Award className="h-3.5 w-3.5" /> : <Activity className="h-3.5 w-3.5" />}
                     </span>
                     <span className="truncate text-foreground">{a.label}</span>

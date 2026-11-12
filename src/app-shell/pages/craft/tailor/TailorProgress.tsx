@@ -85,10 +85,10 @@ export function TailorProgress({
             <div className="absolute inset-0 rounded-full border-2 border-primary border-t-transparent animate-spin" />
           </div>
           <div>
-            <p className="text-[15px] font-semibold text-foreground">
+            <p className="text-title-sm text-foreground">
               Tailoring your resume
             </p>
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-caption-sm text-muted-foreground">
               {elapsedSeconds >= 90
                 ? 'Taking longer than expected'
                 : 'Usually takes 30 to 60 seconds'}
@@ -97,7 +97,7 @@ export function TailorProgress({
         </div>
         <div className="flex items-center gap-2">
           {elapsedSeconds > 0 && (
-            <span className="text-[11px] text-muted-foreground tabular-nums font-medium">
+            <span className="text-caption-sm text-muted-foreground tabular-nums font-medium">
               {elapsedSeconds}s
             </span>
           )}
@@ -106,7 +106,7 @@ export function TailorProgress({
               variant="outline"
               size="sm"
               onClick={onCancel}
-              className="h-auto px-2.5 py-1 text-[11px] hover:border-destructive/60 hover:text-destructive"
+              className="h-auto px-2.5 py-1 text-caption-sm hover:border-destructive/60 hover:text-destructive"
             >
               Cancel
             </Button>
@@ -121,7 +121,7 @@ export function TailorProgress({
             <li key={step.key} className="flex items-start gap-3">
               <div
                 className={cn(
-                  'shrink-0 mt-0.5 w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300',
+                  'shrink-0 mt-0.5 w-6 h-6 rounded-full flex items-center justify-center transition-colors duration-200',
                   status === 'done' && 'bg-success/15 text-success ring-1 ring-success/40',
                   status === 'active' &&
                     'bg-primary/15 text-primary ring-2 ring-primary/40 animate-pulse',
@@ -140,7 +140,7 @@ export function TailorProgress({
               <div className="min-w-0 flex-1 pt-0.5">
                 <p
                   className={cn(
-                    'text-[14px] font-medium transition-colors',
+                    'text-body-sm font-medium transition-colors',
                     status === 'done' && 'text-success',
                     status === 'active' && 'text-foreground',
                     status === 'pending' && 'text-muted-foreground',
@@ -150,7 +150,7 @@ export function TailorProgress({
                 </p>
                 {status === 'active' && (
                   <>
-                    <p className="text-[12px] text-muted-foreground mt-0.5">
+                    <p className="text-xs text-muted-foreground mt-0.5">
                       {phase === 'selecting_base'
                         ? 'Choosing the resume that fits this role best'
                         : step.hint}
@@ -158,11 +158,11 @@ export function TailorProgress({
                     <div className="mt-2 h-1 rounded-full bg-muted overflow-hidden">
                       {pct !== null ? (
                         <div
-                          className="h-full rounded-full brand-gradient transition-[width] duration-700"
+                          className="h-full rounded-full bg-signal transition-[width] duration-700 ease-standard"
                           style={{ width: `${Math.max(4, Math.min(100, pct))}%` }}
                         />
                       ) : (
-                        <div className="h-full w-1/2 rounded-full brand-gradient animate-pulse" />
+                        <div className="h-full w-1/2 rounded-full bg-signal animate-pulse" />
                       )}
                     </div>
                   </>

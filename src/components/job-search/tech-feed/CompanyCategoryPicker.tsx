@@ -65,7 +65,7 @@ export function CompanyCategoryPicker({
     // The categories could not be loaded. Say so rather than rendering an
     // empty list, which reads as "this employer has no categories".
     return (
-      <p className={cn('text-[11px] text-muted-foreground', className)}>
+      <p className={cn('text-caption-sm text-muted-foreground', className)}>
         Categories are unavailable right now. Every category is in scope.
       </p>
     );
@@ -73,7 +73,7 @@ export function CompanyCategoryPicker({
 
   if (!categories) {
     return (
-      <p className={cn('flex items-center gap-1.5 text-[11px] text-muted-foreground', className)}>
+      <p className={cn('flex items-center gap-1.5 text-caption-sm text-muted-foreground', className)}>
         <Loader2 className="h-3 w-3 animate-spin" aria-hidden /> Loading categories...
       </p>
     );
@@ -81,7 +81,7 @@ export function CompanyCategoryPicker({
 
   if (!categories.length) {
     return (
-      <p className={cn('text-[11px] text-muted-foreground', className)}>
+      <p className={cn('text-caption-sm text-muted-foreground', className)}>
         No employer categories have been recorded yet.
       </p>
     );
@@ -99,7 +99,7 @@ export function CompanyCategoryPicker({
               aria-pressed={active}
               onClick={() => toggle(category.value)}
               className={cn(
-                'rounded-full border px-2 py-0.5 text-[11px] transition-colors',
+                'rounded-full border px-2 py-0.5 text-caption-sm transition-colors',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                 active
                   ? 'border-primary bg-primary text-primary-foreground'
@@ -114,7 +114,7 @@ export function CompanyCategoryPicker({
           );
         })}
       </div>
-      <p className="text-[11px] text-muted-foreground">
+      <p className="text-caption-sm text-muted-foreground">
         {values.length === 0
           ? 'Every category.'
           : 'Employers we have not categorised are kept, not hidden.'}

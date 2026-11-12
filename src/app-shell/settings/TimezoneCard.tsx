@@ -6,7 +6,7 @@
  * Automatic is chosen again. See `lib/viewerTimezone`.
  */
 import { useMemo, useState } from "react";
-import { CheckCircle2, Globe2 } from "lucide-react";
+import { CheckCircle2, ChevronDown, Globe2 } from "lucide-react";
 import {
   detectedTimeZone,
   setTimeZoneOverride,
@@ -15,9 +15,14 @@ import {
   US_TIME_ZONES,
   useViewerTimeZone,
 } from "@/lib/viewerTimezone";
-
-const selectCls =
-  "w-full px-4 py-2.5 rounded-lg bg-gray-100 dark:bg-gray-800/60 border border-gray-300 dark:border-gray-700/60 text-sm text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500/30 transition-all";
+import { cn } from "@/lib/utils";
+import {
+  settingsCardCls,
+  settingsCardHintCls,
+  settingsCardTitleCls,
+  settingsHelpCls,
+  settingsSelectCls as selectCls,
+} from "./settingsStyles";
 
 const AUTOMATIC = "__auto__";
 
@@ -47,19 +52,19 @@ export default function TimezoneCard() {
   };
 
   return (
-    <div className="rounded-2xl border border-gray-200 dark:border-white/[0.07] bg-white/80 dark:bg-gray-900/50 backdrop-blur-sm shadow-xl shadow-black/5 dark:shadow-black/20 p-6 space-y-4">
+    <section aria-labelledby="tz-card-title" className={cn(settingsCardCls, "space-y-4")}>
       <div>
-        <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
-          <Globe2 className="w-4 h-4" />
+        <h2 id="tz-card-title" className={settingsCardTitleCls}>
+          <Globe2 className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
           Time zone
-        </p>
-        <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+        </h2>
+        <p className={settingsCardHintCls}>
           Decides what counts as today and yesterday in your job feed. Automatic follows this
           device, so it changes on its own when you travel.
         </p>
       </div>
 
-      <label className="block">
+      <label className="relative block">
         <span className="sr-only">Time zone</span>
         <select
           aria-label="Time zone"
@@ -87,18 +92,22 @@ export default function TimezoneCard() {
             </optgroup>
           )}
         </select>
+        <ChevronDown
+          className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+          aria-hidden="true"
+        />
       </label>
 
-      <p className="text-xs text-muted-foreground" data-testid="timezone-active">
+      <p className={cn(settingsHelpCls, "mt-0")} data-testid="timezone-active">
         {pinned
           ? `Using ${timeZoneName(active)} on this device until you choose Automatic.`
           : `Using ${timeZoneName(active)}, detected from this device.`}
       </p>
       {saved && (
-        <p className="text-sm text-success flex items-center gap-1.5">
-          <CheckCircle2 className="w-4 h-4" /> Time zone saved
+        <p className="flex items-center gap-1.5 text-sm text-success" role="status">
+          <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" /> Time zone saved
         </p>
       )}
-    </div>
+    </section>
   );
 }

@@ -1,5 +1,5 @@
 import { useState, type Ref } from 'react';
-import { UploadCloud } from 'lucide-react';
+import { AlertCircle, UploadCloud } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useResumePicker, type ResumePicker } from './useResumePicker';
 
@@ -66,6 +66,9 @@ export function GuestDropzone({
   const [dragActive, setDragActive] = useState(false);
   const compact = variant === 'compact';
   const panel = variant === 'panel';
+  // Inline, persistent reason for a rejected file (the toast alone vanished).
+  const pickError = active.error ?? null;
+  const errorId = 'guest-dropzone-error';
 
   return (
     <div className={cn('w-full', panel && 'flex h-full flex-col', className)}>
@@ -73,6 +76,7 @@ export function GuestDropzone({
         ref={buttonRef}
         type="button"
         disabled={disabled}
+        aria-describedby={pickError ? errorId : undefined}
         onClick={active.open}
         onDragOver={(e) => {
           e.preventDefault();
@@ -96,7 +100,9 @@ export function GuestDropzone({
               : 'flex-col justify-center gap-3 p-8 text-center sm:p-12',
           dragActive
             ? 'scale-[1.01] border-primary bg-primary/5'
-            : 'border-border hover:border-primary/50 hover:bg-muted/40',
+            : pickError
+              ? 'border-destructive/60 hover:border-destructive hover:bg-muted/40'
+              : 'border-border hover:border-primary/50 hover:bg-muted/40',
         )}
       >
         <span
@@ -116,7 +122,7 @@ export function GuestDropzone({
             className={cn(
               'block font-medium',
               compact && 'text-sm',
-              panel && 'text-sm font-semibold sm:text-[15px]',
+              panel && 'text-sm font-semibold sm:text-body-md',
             )}
           >
             {label}
@@ -138,6 +144,19 @@ export function GuestDropzone({
           aria-hidden={undefined}
           aria-label={`Resume file: ${microcopy}`}
         />
+      )}
+      {pickError && (
+        <p
+          id={errorId}
+          role="alert"
+          className={cn(
+            'mt-2 flex items-start gap-1.5 text-sm font-medium text-destructive',
+            compact ? 'justify-start text-left' : 'justify-center text-center',
+          )}
+        >
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+          {pickError}
+        </p>
       )}
       {privacyNote && (
         <p

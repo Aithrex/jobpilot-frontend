@@ -58,7 +58,7 @@ export const pipelineFunnelWidget: Widget = {
             {stages.map((s) => (
               <div key={s.key}>
                 <div className="mb-1 flex items-center justify-between text-xs">
-                  <span className="font-medium text-foreground/90">{s.label}</span>
+                  <span className="font-medium text-foreground">{s.label}</span>
                   <span className="font-semibold tabular-nums text-muted-foreground">{s.count}</span>
                 </div>
                 <Bar pct={(s.count / max) * 100} tone={s.key === 'offer' ? 'success' : 'primary'} />

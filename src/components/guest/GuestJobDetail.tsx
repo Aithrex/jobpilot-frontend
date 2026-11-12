@@ -94,7 +94,7 @@ export function GuestJobDetail({
       <div className="flex flex-wrap items-center gap-2">
         {!showHeader && <FreshnessTag match={match} />}
         {match.source && (
-          <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
+          <Badge variant="outline" className="text-caption-sm uppercase tracking-wide">
             Direct source · {match.source}
           </Badge>
         )}
@@ -137,7 +137,7 @@ export function GuestJobDetail({
                 onMouseEnter={() => onSkillHover?.(skill)}
                 onMouseLeave={() => onSkillHover?.(null)}
               >
-                <Badge variant="secondary" className="text-[11px] font-normal">
+                <Badge variant="secondary" className="text-caption-sm font-normal">
                   {skill}
                 </Badge>
               </span>
@@ -158,7 +158,7 @@ export function GuestJobDetail({
               <Badge
                 key={skill}
                 variant="outline"
-                className="border-warning/40 bg-warning/5 text-[11px] font-normal text-muted-foreground"
+                className="border-warning/40 bg-warning/5 text-caption-sm font-normal text-muted-foreground"
               >
                 {skill}
               </Badge>

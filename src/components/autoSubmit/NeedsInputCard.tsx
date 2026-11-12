@@ -384,7 +384,7 @@ export default function NeedsInputCard({
             void submit();
           }}
         >
-          <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+          <div className="flex items-center gap-1.5 overline">
             <Pencil className="h-3 w-3" />
             {controls.length === 1
               ? "Answer this and we'll continue"
@@ -406,7 +406,7 @@ export default function NeedsInputCard({
           ))}
 
           <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-caption-sm text-muted-foreground">
               We save these so you're never asked the same question twice.
             </p>
             <Button type="submit" size="sm" disabled={!canSubmit} className="shrink-0">
@@ -462,7 +462,7 @@ export default function NeedsInputCard({
 
       {/* Keep the raw status visible for the resumed case - no fabricated progress. */}
       {resumed && resumedStatus && (
-        <p className="mt-2 text-[11px] text-muted-foreground">
+        <p className="mt-2 text-caption-sm text-muted-foreground">
           Status: {resumedStatus.replace(/_/g, " ")}
         </p>
       )}

@@ -93,7 +93,7 @@ function ToggleRow({
   return (
     <label
       htmlFor={id}
-      className="flex h-10 cursor-pointer items-center justify-between rounded-lg border border-border/70 bg-background/55 px-3"
+      className="flex min-h-10 cursor-pointer items-center justify-between gap-2 rounded-lg border border-border/70 bg-background/55 px-3"
     >
       <span className="text-sm font-medium text-foreground">{label}</span>
       <Switch id={id} checked={checked} onCheckedChange={onCheckedChange} />
@@ -147,7 +147,7 @@ export function JobFeedSheet() {
     if (loading) {
       return progress.total > 0
         ? `${progress.done}/${progress.total} companies · ${roleCount} roles`
-        : 'Scanning…';
+        : 'Scanning...';
     }
     if (lastSyncedAt) {
       const next =
@@ -171,7 +171,7 @@ export function JobFeedSheet() {
             <SheetTitle className="mt-1 font-display text-xl font-semibold tracking-tight">
               Job feed
             </SheetTitle>
-            <SheetDescription className="mt-1 font-mono text-[11px] tabular-nums text-muted-foreground" aria-live="polite">
+            <SheetDescription className="mt-1 font-mono text-caption-sm tabular-nums text-muted-foreground" aria-live="polite">
               {statusLine}
             </SheetDescription>
           </div>
@@ -185,7 +185,7 @@ export function JobFeedSheet() {
                 <li
                   key={k}
                   className={cn(
-                    'flex items-center gap-1.5 rounded-md border border-border/60 bg-background/50 px-2 py-1.5 text-[10px] font-semibold',
+                    'flex items-center gap-1.5 rounded-md border border-border/60 bg-background/50 px-2 py-1.5 text-caption-sm font-semibold',
                     st.error
                       ? 'text-destructive'
                       : active
@@ -242,22 +242,22 @@ export function JobFeedSheet() {
               size="sm"
               onClick={() => void smartSuggestTitles()}
               disabled={suggestingTitles}
-              className="mt-2 h-8 px-2 text-[11px] font-medium text-muted-foreground hover:text-foreground"
+              className="hit-target mt-2 h-8 px-2 text-caption-sm font-medium text-muted-foreground hover:text-foreground"
             >
               {suggestingTitles ? (
-                <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
+                <Loader2 className="mr-1.5 h-3 w-3 animate-spin" aria-hidden />
               ) : (
                 <Wand2 className="mr-1.5 h-3 w-3" aria-hidden />
               )}
               {suggestingTitles ? 'Suggesting...' : 'Suggest from resume'}
             </Button>
             {titlesPending && lastScanTitles && (
-              <p className="mt-2 text-[11px] font-medium text-warning">
+              <p className="mt-2 text-caption-sm font-medium text-warning">
                 Titles changed. Press Search to apply them.
               </p>
             )}
             {!canSearch && (
-              <p className="mt-2 flex items-center gap-1.5 text-[11px] font-medium text-warning">
+              <p className="mt-2 flex items-center gap-1.5 text-caption-sm font-medium text-warning">
                 <AlertCircle className="h-3.5 w-3.5 shrink-0" aria-hidden />
                 Add a title
               </p>
@@ -323,12 +323,12 @@ export function JobFeedSheet() {
             <FieldLabel>Filters</FieldLabel>
             <div className="space-y-3">
               <div>
-                <p className="mb-1.5 text-[11px] font-medium text-muted-foreground">Experience level</p>
+                <p className="mb-1.5 text-caption-sm font-medium text-muted-foreground">Experience level</p>
                 <ExperienceLevelList />
               </div>
 
               <div>
-                <p className="mb-1.5 text-[11px] font-medium text-muted-foreground">Match</p>
+                <p className="mb-1.5 text-caption-sm font-medium text-muted-foreground">Match</p>
                 <PillSwitch
                   fill
                   aria-label="Minimum match score"
@@ -343,7 +343,7 @@ export function JobFeedSheet() {
               </div>
 
               <div>
-                <p className="mb-1.5 text-[11px] font-medium text-muted-foreground">Sponsorship</p>
+                <p className="mb-1.5 text-caption-sm font-medium text-muted-foreground">Sponsorship</p>
                 <PillSwitch
                   fill
                   aria-label="Sponsorship filter"
@@ -374,7 +374,7 @@ export function JobFeedSheet() {
             variant="ghost"
             size="sm"
             onClick={resetScope}
-            className="mr-auto h-9 gap-1.5 px-2 text-muted-foreground"
+            className="mr-auto h-10 gap-1.5 px-2 text-muted-foreground"
           >
             <RotateCcw className="h-3.5 w-3.5" aria-hidden />
             Reset
@@ -384,7 +384,7 @@ export function JobFeedSheet() {
             variant="outline"
             onClick={() => sync(true)}
             disabled={loading}
-            className="h-9 gap-1.5"
+            className="h-10 gap-1.5"
             title="Re-scan every source now"
           >
             <RefreshCw className={cn('h-3.5 w-3.5', loading && 'animate-spin')} aria-hidden />
@@ -394,7 +394,7 @@ export function JobFeedSheet() {
             size="sm"
             onClick={() => sync(true)}
             disabled={loading || !canSearch}
-            className="h-9 min-w-[5.5rem] gap-1.5"
+            className="h-10 min-w-[5.5rem] gap-1.5"
           >
             {loading ? (
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden />

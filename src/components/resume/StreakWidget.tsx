@@ -52,8 +52,8 @@ function variantFor(count: number): CellVariant {
 /** Heat encoded as warning-tinted washes; numerals stay foreground for contrast. */
 const CELL_BASE_STYLES: Record<CellVariant, string> = {
   empty: 'bg-muted/50 border-border/70 text-muted-foreground',
-  low: 'bg-warning/10 border-warning/20 text-foreground/80',
-  mid: 'bg-warning/20 border-warning/30 text-foreground/90',
+  low: 'bg-warning/10 border-warning/20 text-foreground',
+  mid: 'bg-warning/20 border-warning/30 text-foreground',
   high: 'bg-warning/30 border-warning/40 text-foreground',
   peak: 'bg-warning/40 border-warning/60 text-foreground',
 };
@@ -132,7 +132,7 @@ const StreakWidget = forwardRef<StreakWidgetHandle, { compact?: boolean }>(({ co
 
   const isAlive = data.current_streak > 0;
   const todayActive = data.today_count > 0;
-  const recent = [...data.heatmap].reverse().slice(0, 10);
+  const recent = [...(data.heatmap ?? [])].reverse().slice(0, 10);
 
   return (
     <div className="group relative overflow-hidden rounded-xl border border-border bg-card shadow-soft">
@@ -162,18 +162,18 @@ const StreakWidget = forwardRef<StreakWidgetHandle, { compact?: boolean }>(({ co
             {todayActive && (
               <div className="absolute inset-0 -m-1 rounded-full bg-warning/20 blur-md pointer-events-none" />
             )}
-            <FlameIcon className={cn('relative w-6 h-6', todayActive ? 'text-warning' : 'text-muted-foreground/40')} />
+            <FlameIcon className={cn('relative w-6 h-6', todayActive ? 'text-warning' : 'text-muted-foreground')} />
           </div>
           <div className="flex items-baseline gap-1.5">
             <span
               className={cn(
                 'font-display text-2xl font-extrabold tabular-nums leading-none tracking-tight',
-                todayActive ? 'text-foreground' : 'text-muted-foreground/60',
+                todayActive ? 'text-foreground' : 'text-muted-foreground',
               )}
             >
               {data.today_count}
             </span>
-            <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground leading-none">
+            <span className="text-caption-sm font-semibold uppercase tracking-[0.12em] text-muted-foreground leading-none">
               today
             </span>
           </div>
@@ -195,18 +195,18 @@ const StreakWidget = forwardRef<StreakWidgetHandle, { compact?: boolean }>(({ co
             <span
               className={cn(
                 'font-display text-xl font-extrabold tabular-nums leading-none tracking-tight',
-                isAlive ? 'text-warning' : 'text-muted-foreground/60',
+                isAlive ? 'text-warning' : 'text-muted-foreground',
               )}
             >
               {data.current_streak}
             </span>
-            <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground leading-none">
+            <span className="text-caption-sm font-semibold uppercase tracking-[0.12em] text-muted-foreground leading-none">
               day streak
             </span>
           </div>
           {data.longest_streak > 0 && data.longest_streak > data.current_streak && (
             <span
-              className="hidden md:inline-flex items-center gap-1.5 text-[10px] font-medium leading-none px-2 py-1 rounded-full border border-border bg-muted"
+              className="hidden md:inline-flex items-center gap-1.5 text-caption-sm font-medium leading-none px-2 py-1 rounded-full border border-border bg-muted"
               title={`Personal best: ${data.longest_streak} day${data.longest_streak === 1 ? '' : 's'}`}
             >
               <span className="text-muted-foreground">Best</span>
@@ -234,8 +234,8 @@ const StreakWidget = forwardRef<StreakWidgetHandle, { compact?: boolean }>(({ co
               const sizing = isHeroToday
                 ? 'w-10 h-10 text-base ring-2 ring-warning/50 ring-offset-2 ring-offset-card'
                 : isToday
-                  ? 'w-7 h-7 text-[12px] ring-1 ring-warning/40'
-                  : 'w-7 h-7 text-[12px]';
+                  ? 'w-7 h-7 text-xs ring-1 ring-warning/40'
+                  : 'w-7 h-7 text-xs';
 
               return (
                 <div
@@ -266,12 +266,12 @@ const StreakWidget = forwardRef<StreakWidgetHandle, { compact?: boolean }>(({ co
                   </div>
                   <span
                     className={cn(
-                      'text-[9px] font-semibold uppercase tracking-wider leading-none',
+                      'text-caption-sm font-semibold uppercase tracking-wider leading-none',
                       isToday
                         ? 'text-foreground'
                         : isActive
                           ? 'text-muted-foreground'
-                          : 'text-muted-foreground/60',
+                          : 'text-muted-foreground',
                     )}
                   >
                     {isToday ? 'Today' : `${shortDay(cell.date)} ${dayOfMonth(cell.date)}`}

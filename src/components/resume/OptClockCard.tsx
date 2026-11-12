@@ -70,21 +70,21 @@ function Header({ band }: { band?: OptClock['status_band'] }) {
   return (
     <div className="mb-4 flex items-center justify-between gap-3">
       <div className="flex items-center gap-2">
-        <span className="grid h-8 w-8 place-items-center rounded-lg bg-muted text-foreground/70">
+        <span className="grid h-8 w-8 place-items-center rounded-lg bg-muted text-ink-muted">
           <CalendarClock className="h-4 w-4" />
         </span>
         <div>
           <h3 className="text-sm font-semibold leading-tight text-foreground">OPT clock</h3>
-          <p className="text-[11px] text-muted-foreground">Unemployment runway</p>
+          <p className="text-caption-sm text-muted-foreground">Unemployment runway</p>
         </div>
       </div>
       {band === 'urgent' && (
-        <span className="shrink-0 rounded-full border border-warning/30 bg-warning/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-warning">
+        <span className="shrink-0 rounded-full border border-warning/30 bg-warning/10 px-2 py-0.5 text-caption-sm font-semibold uppercase tracking-wide text-warning">
           Act soon
         </span>
       )}
       {band === 'watch' && (
-        <span className="shrink-0 rounded-full border border-warning/25 bg-warning/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-warning">
+        <span className="shrink-0 rounded-full border border-warning/25 bg-warning/10 px-2 py-0.5 text-caption-sm font-semibold uppercase tracking-wide text-warning">
           Watch
         </span>
       )}
@@ -96,10 +96,10 @@ function Footer({ disclaimer }: { disclaimer: string }) {
   return (
     <div className="mt-4 space-y-1.5 border-t border-border/70 pt-3">
       <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
-        <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
+        <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
         Talk to your DSO. They are your official source of truth for every date.
       </p>
-      <p className="text-[11px] leading-relaxed text-muted-foreground/70">{disclaimer}</p>
+      <p className="text-caption-sm leading-relaxed text-muted-foreground">{disclaimer}</p>
     </div>
   );
 }
@@ -218,7 +218,7 @@ export default function OptClockCard({
       <Shell className={className}>
         <Header />
         <div className="space-y-3 py-1">
-          <p className="text-sm text-foreground/90">
+          <p className="text-sm text-foreground">
             On F-1 OPT you get a limited number of unemployment days. Add your EAD
             dates and this clock will quietly track exactly how much runway you have.
           </p>
@@ -240,7 +240,7 @@ export default function OptClockCard({
       <Shell className={className}>
         <Header />
         <div className="space-y-3 py-1">
-          <p className="text-sm text-foreground/90">
+          <p className="text-sm text-foreground">
             You have{' '}
             <span className="font-semibold">{clock.unemployment_days_limit} unemployment days</span>{' '}
             on {stemLabel}. Tell us how many you've used so far and we'll show your
@@ -321,7 +321,7 @@ function KeyDates({ dates, className }: { dates: OptClock['key_dates']; classNam
       {dates.slice(0, 3).map((d) => (
         <div key={`${d.label}-${d.date}`} className="flex items-center justify-between gap-3 text-xs">
           <dt className="text-muted-foreground">{d.label}</dt>
-          <dd className="font-medium tabular-nums text-foreground/90">{formatDate(d.date)}</dd>
+          <dd className="font-medium tabular-nums text-foreground">{formatDate(d.date)}</dd>
         </div>
       ))}
     </dl>

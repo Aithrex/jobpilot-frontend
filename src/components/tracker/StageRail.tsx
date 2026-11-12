@@ -138,7 +138,7 @@ export default function StageRail({
                 aria-checked={on}
                 onClick={() => setOpenedId(section.id)}
                 className={cn(
-                  'flex h-8 shrink-0 items-center gap-1.5 rounded-lg border px-2.5 text-label font-medium transition-colors',
+                  'hit-target flex h-8 shrink-0 items-center gap-1.5 rounded-lg border px-2.5 text-body-sm font-medium transition-colors',
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                   on
                     ? 'border-primary/40 bg-card text-foreground'
@@ -183,7 +183,7 @@ export default function StageRail({
               <span aria-hidden className={cn('h-1.5 w-1.5 shrink-0 rounded-full', section.dot)} />
               <span
                 aria-hidden
-                className="text-label font-semibold tabular-nums text-foreground"
+                className="text-body-sm font-semibold tabular-nums text-foreground"
               >
                 {stageRecords.length}
               </span>
@@ -208,8 +208,8 @@ export default function StageRail({
           >
             <h3 className="flex items-center gap-2 border-b border-border px-3 py-2">
               <span aria-hidden className={cn('h-1.5 w-1.5 shrink-0 rounded-full', section.dot)} />
-              <span className="truncate text-label font-semibold text-foreground">{section.label}</span>
-              <span className="rounded-full bg-secondary px-1.5 text-[11px] font-semibold tabular-nums text-secondary-foreground">
+              <span className="truncate text-body-sm font-semibold text-foreground">{section.label}</span>
+              <span className="rounded-full bg-secondary px-1.5 text-caption-sm font-semibold tabular-nums text-secondary-foreground">
                 {stageRecords.length}
               </span>
             </h3>

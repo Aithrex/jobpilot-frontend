@@ -67,14 +67,6 @@ function writeState(s: InlineState) {
   try { localStorage.setItem(STATE_KEY, s); } catch { /* */ }
 }
 
-const PRESET_GRADIENTS: Record<string, string> = {
-  'cloud-devops': 'from-sky-500 to-cyan-500',
-  'ai-ml': 'from-fuchsia-500 to-purple-500',
-  backend: 'from-emerald-500 to-teal-500',
-  frontend: 'from-orange-500 to-pink-500',
-  fullstack: 'from-violet-500 to-indigo-500',
-};
-
 /**
  * Compact resume-aware filter teaser shown on the Tailor view.
  * Apply → writes suggestions to sessionStorage and dispatches a navigation event;
@@ -147,9 +139,9 @@ export function SmartFiltersInline() {
 
   if (loading) {
     return (
-      <Card className="border-purple-500/20 bg-gradient-to-br from-purple-500/5 to-indigo-500/5">
+      <Card className="border-primary/20 bg-primary/5">
         <CardContent className="flex items-center gap-3 p-4">
-          <Wand2 className="h-4 w-4 animate-pulse text-purple-500" />
+          <Wand2 className="h-4 w-4 animate-pulse text-primary" aria-hidden />
           <Skeleton className="h-4 w-1/3" />
         </CardContent>
       </Card>
@@ -161,21 +153,20 @@ export function SmartFiltersInline() {
   }
 
   return (
-    <Card className="overflow-hidden border-purple-500/30 bg-gradient-to-br from-purple-500/10 via-transparent to-indigo-500/10">
+    <Card className="overflow-hidden border-primary/25 bg-primary/5">
       <CardContent className="space-y-3 p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-1 min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <Wand2 className="h-3.5 w-3.5 text-purple-500" />
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-purple-600 dark:text-purple-300">
+              <Wand2 className="h-3.5 w-3.5 text-primary" aria-hidden />
+              <p className="overline">
                 Smart Filters from your resume
               </p>
               {suggestions.preset_tags.slice(0, 2).map((tag) => {
-                const grad = PRESET_GRADIENTS[tag.toLowerCase()] || 'from-purple-500 to-indigo-500';
                 return (
                   <span
                     key={tag}
-                    className={`inline-flex items-center rounded-full bg-gradient-to-r ${grad} px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-white`}
+                    className="inline-flex items-center rounded-full border border-border bg-muted px-2 py-0.5 text-caption-sm font-semibold uppercase tracking-wider text-foreground"
                   >
                     {tag}
                   </span>
@@ -184,10 +175,10 @@ export function SmartFiltersInline() {
             </div>
             <p className="text-sm font-semibold leading-tight">{suggestions.headline}</p>
             {suggestions.rationale && !expanded && (
-              <p className="line-clamp-1 text-[11px] text-muted-foreground">{suggestions.rationale}</p>
+              <p className="line-clamp-1 text-caption-sm text-muted-foreground">{suggestions.rationale}</p>
             )}
             {expanded && suggestions.rationale && (
-              <p className="text-[11px] text-muted-foreground">{suggestions.rationale}</p>
+              <p className="text-caption-sm text-muted-foreground">{suggestions.rationale}</p>
             )}
           </div>
           <div className="flex flex-shrink-0 items-center gap-1">
@@ -196,7 +187,7 @@ export function SmartFiltersInline() {
               size="sm"
               variant="ghost"
               onClick={() => setExpanded((v) => !v)}
-              className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+              className="hit-target h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
               aria-label={expanded ? 'Collapse' : 'Expand'}
             >
               {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
@@ -206,7 +197,7 @@ export function SmartFiltersInline() {
               size="sm"
               variant="ghost"
               onClick={dismiss}
-              className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+              className="hit-target h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
               aria-label="Dismiss"
             >
               <X className="h-3.5 w-3.5" />
@@ -217,16 +208,16 @@ export function SmartFiltersInline() {
         {expanded && (
           <div className="space-y-2 pt-1">
             <div className="flex flex-wrap items-center gap-1.5">
-              <Badge variant="outline" className="border-sky-500/30 text-[10px] text-sky-700 dark:text-sky-300">
+              <Badge variant="outline" className="text-caption-sm text-foreground">
                 {suggestions.linkedin_keyword_sets.length} LinkedIn searches
               </Badge>
-              <Badge variant="outline" className="border-emerald-500/30 text-[10px] text-emerald-700 dark:text-emerald-300">
+              <Badge variant="outline" className="text-caption-sm text-foreground">
                 {suggestions.workday_titles.length} Workday titles
               </Badge>
-              <Badge variant="outline" className="border-purple-500/30 text-[10px] text-purple-700 dark:text-purple-300">
+              <Badge variant="outline" className="text-caption-sm text-foreground">
                 {suggestions.custom_role_terms.length} role keywords
               </Badge>
-              <Badge variant="outline" className="text-[10px]">
+              <Badge variant="outline" className="text-caption-sm">
                 Window: {suggestions.past_days}d
               </Badge>
             </div>
@@ -237,7 +228,7 @@ export function SmartFiltersInline() {
           <Button
             onClick={handleApply}
             size="sm"
-            className="gap-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:opacity-90"
+            className="gap-1.5"
           >
             Apply to Daily Pipeline
             <ArrowRight className="h-3 w-3" />

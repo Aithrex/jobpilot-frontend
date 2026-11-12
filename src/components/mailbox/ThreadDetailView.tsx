@@ -38,7 +38,7 @@ function AuthChip({ label, result }: { label: string; result: MailAuthResult }) 
         : 'border-border bg-muted/50 text-muted-foreground';
   return (
     <span
-      className={cn('inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[10px] font-semibold uppercase', tone)}
+      className={cn('inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-caption-sm font-semibold uppercase', tone)}
       title={`${label}: ${result}`}
     >
       {label} {result}
@@ -68,22 +68,22 @@ function AttachmentRow({ att }: { att: Attachment }) {
     <li className="flex items-center gap-2 rounded-lg border border-border bg-background/60 px-3 py-2">
       <span className="min-w-0 flex-1">
         <span className="block truncate text-xs font-medium text-foreground">{att.filename}</span>
-        <span className="text-[11px] text-muted-foreground">{formatBytes(att.size)}</span>
+        <span className="text-caption-sm text-muted-foreground">{formatBytes(att.size)}</span>
       </span>
       {clean ? (
         <Button
           size="sm"
           variant="outline"
-          className="h-8 shrink-0 gap-1.5 px-2 text-xs"
+          className="hit-target h-8 shrink-0 gap-1.5 px-2 text-xs"
           disabled={loading}
           onClick={download}
         >
-          {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+          {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <Download className="h-3.5 w-3.5" aria-hidden="true" />}
           Download
         </Button>
       ) : (
         <span
-          className="inline-flex shrink-0 items-center gap-1 rounded-md border border-warning/30 bg-warning/10 px-2 py-1 text-[11px] font-semibold text-warning"
+          className="inline-flex shrink-0 items-center gap-1 rounded-md border border-warning/30 bg-warning/10 px-2 py-1 text-caption-sm font-semibold text-warning"
           title={`This attachment was flagged (${att.verdict}) and cannot be downloaded.`}
         >
           <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />
@@ -105,7 +105,7 @@ function MessageCard({ msg }: { msg: MessageView }) {
           <p className="truncate text-sm font-semibold text-foreground">{msg.from}</p>
           <p className="truncate text-xs text-muted-foreground">{msg.subject}</p>
         </div>
-        <time className="shrink-0 text-[11px] text-muted-foreground" dateTime={msg.received_at}>
+        <time className="shrink-0 text-caption-sm text-muted-foreground" dateTime={msg.received_at}>
           {formatWhen(msg.received_at)}
         </time>
       </header>
@@ -123,11 +123,11 @@ function MessageCard({ msg }: { msg: MessageView }) {
             <Button
               size="sm"
               variant="ghost"
-              className="h-7 gap-1.5 px-2 text-[11px]"
+              className="hit-target h-8 gap-1.5 px-2 text-caption-sm"
               onClick={() => setShowImages((v) => !v)}
               aria-pressed={showImages}
             >
-              <ImageIcon className="h-3.5 w-3.5" />
+              <ImageIcon className="h-3.5 w-3.5" aria-hidden="true" />
               {showImages ? 'Hide remote images' : 'Show images'}
             </Button>
           </div>
@@ -135,11 +135,11 @@ function MessageCard({ msg }: { msg: MessageView }) {
             html={html}
             showImages={showImages}
             title={`Message from ${msg.from}`}
-            className="min-h-[220px] w-full rounded-lg border border-border bg-background"
+            className="min-h-56 w-full rounded-lg border border-border bg-background"
           />
         </>
       ) : msg.text ? (
-        <pre className="whitespace-pre-wrap break-words rounded-lg border border-border bg-background p-3 text-[13px] text-foreground">
+        <pre className="whitespace-pre-wrap break-words rounded-lg border border-border bg-background p-3 text-caption text-foreground">
           {msg.text}
         </pre>
       ) : (
@@ -219,6 +219,7 @@ export function ThreadDetailView({ detail, onBack, onChanged }: ThreadDetailView
       toast.error("Couldn't unlink this thread", { description: res.error });
       return;
     }
+    toast.success('Unlinked from application');
     onChanged?.();
   };
 
@@ -241,11 +242,11 @@ export function ThreadDetailView({ detail, onBack, onChanged }: ThreadDetailView
           <Button
             size="sm"
             variant="ghost"
-            className="h-8 gap-1 px-2 lg:hidden"
+            className="hit-target h-8 gap-1 px-2 lg:hidden"
             onClick={onBack}
             aria-label="Back to conversations"
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
           </Button>
         )}
         <div className="min-w-0 flex-1">
@@ -261,25 +262,25 @@ export function ThreadDetailView({ detail, onBack, onChanged }: ThreadDetailView
 
       {/* Thread controls */}
       <div className="flex flex-wrap items-center gap-1.5 border-b border-border px-4 py-2">
-        <Button size="sm" variant="outline" className="h-8 gap-1.5 px-2 text-xs" disabled={busy === 'read'} onClick={toggleRead}>
+        <Button size="sm" variant="outline" className="hit-target h-8 gap-1.5 px-2 text-xs" disabled={busy === 'read'} onClick={toggleRead}>
           {busy === 'read' ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
           ) : anyUnread ? (
-            <MailOpen className="h-3.5 w-3.5" />
+            <MailOpen className="h-3.5 w-3.5" aria-hidden="true" />
           ) : (
-            <Mail className="h-3.5 w-3.5" />
+            <Mail className="h-3.5 w-3.5" aria-hidden="true" />
           )}
           {anyUnread ? 'Mark read' : 'Mark unread'}
         </Button>
 
         {thread.application_id ? (
-          <Button size="sm" variant="outline" className="h-8 gap-1.5 px-2 text-xs" disabled={busy === 'detach'} onClick={detach}>
-            {busy === 'detach' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Link2Off className="h-3.5 w-3.5" />}
+          <Button size="sm" variant="outline" className="hit-target h-8 gap-1.5 px-2 text-xs" disabled={busy === 'detach'} onClick={detach}>
+            {busy === 'detach' ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <Link2Off className="h-3.5 w-3.5" aria-hidden="true" />}
             Unlink application
           </Button>
         ) : (
-          <Button size="sm" variant="outline" className="h-8 gap-1.5 px-2 text-xs" onClick={() => setAttachOpen((v) => !v)} aria-expanded={attachOpen}>
-            <Link2 className="h-3.5 w-3.5" />
+          <Button size="sm" variant="outline" className="hit-target h-8 gap-1.5 px-2 text-xs" onClick={() => setAttachOpen((v) => !v)} aria-expanded={attachOpen}>
+            <Link2 className="h-3.5 w-3.5" aria-hidden="true" />
             Link to application
           </Button>
         )}
@@ -287,11 +288,11 @@ export function ThreadDetailView({ detail, onBack, onChanged }: ThreadDetailView
         <Button
           size="sm"
           variant="ghost"
-          className="h-8 gap-1.5 px-2 text-xs text-warning hover:text-warning"
+          className="hit-target h-8 gap-1.5 px-2 text-xs text-warning hover:text-warning"
           disabled={busy === 'report'}
           onClick={report}
         >
-          {busy === 'report' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShieldAlert className="h-3.5 w-3.5" />}
+          {busy === 'report' ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <ShieldAlert className="h-3.5 w-3.5" aria-hidden="true" />}
           Report phishing
         </Button>
       </div>
@@ -314,8 +315,8 @@ export function ThreadDetailView({ detail, onBack, onChanged }: ThreadDetailView
             placeholder="Application ID"
             className="h-8 flex-1 text-xs"
           />
-          <Button type="submit" size="sm" className="h-8 gap-1.5 px-3 text-xs" disabled={busy === 'attach' || !applicationId.trim()}>
-            {busy === 'attach' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCheck className="h-3.5 w-3.5" />}
+          <Button type="submit" size="sm" className="hit-target h-8 gap-1.5 px-3 text-xs" disabled={busy === 'attach' || !applicationId.trim()}>
+            {busy === 'attach' ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <CheckCheck className="h-3.5 w-3.5" aria-hidden="true" />}
             Link
           </Button>
         </form>
@@ -337,14 +338,14 @@ export function ThreadDetailView({ detail, onBack, onChanged }: ThreadDetailView
             disabled
             aria-label="Reply (coming soon)"
             placeholder="Replying from your managed address is coming soon"
-            className="flex-1 resize-none rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground placeholder:text-muted-foreground/70"
+            className="flex-1 resize-none rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground placeholder:text-muted-foreground"
           />
           <Button size="sm" disabled className="gap-1.5" aria-disabled="true">
-            <Send className="h-4 w-4" />
+            <Send className="h-4 w-4" aria-hidden="true" />
             Send
           </Button>
         </div>
-        <p className="mt-1 text-[11px] text-muted-foreground">Replying to recruiters from your managed address is coming soon.</p>
+        <p className="mt-1 text-caption-sm text-muted-foreground">Replying to recruiters from your managed address is coming soon.</p>
       </div>
     </section>
   );

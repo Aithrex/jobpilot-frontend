@@ -51,11 +51,11 @@ export default function TrackerSection({
             )}
           />
           {dot && <span aria-hidden className={cn('h-1.5 w-1.5 shrink-0 rounded-full', dot)} />}
-          <span className="truncate text-label font-semibold text-foreground">{label}</span>
-          <span className="rounded-full bg-secondary px-1.5 text-[11px] font-semibold tabular-nums text-secondary-foreground">
+          <span className="truncate text-body-sm font-semibold text-foreground">{label}</span>
+          <span className="rounded-full bg-secondary px-1.5 text-caption-sm font-semibold tabular-nums text-secondary-foreground">
             {count}
           </span>
-          {meta && <span className="truncate text-label text-muted-foreground">{meta}</span>}
+          {meta && <span className="truncate text-body-sm text-muted-foreground">{meta}</span>}
         </button>
       </h3>
 
@@ -63,7 +63,7 @@ export default function TrackerSection({
         (count > 0 ? (
           children
         ) : (
-          <p className="px-3 pb-3 pl-8 text-label text-muted-foreground/70">{emptyText}</p>
+          <p className="px-3 pb-3 pl-8 text-body-sm text-muted-foreground">{emptyText}</p>
         ))}
     </section>
   );

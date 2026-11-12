@@ -193,7 +193,7 @@ function SettingsCard({
           />
           <span
             className={cn(
-              "text-[11px] font-medium",
+              "text-caption-sm font-medium",
               enabled ? "text-primary" : "text-muted-foreground",
             )}
           >
@@ -283,7 +283,7 @@ function ReviewCard({
 
       {questions.length > 0 ? (
         <div className="mt-4 space-y-3">
-          <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+          <div className="flex items-center gap-1.5 overline">
             <Pencil className="h-3 w-3" />
             Your answers. Edit before approving
           </div>
@@ -308,7 +308,7 @@ function ReviewCard({
       )}
 
       <div className="mt-4 flex items-center justify-between gap-3">
-        <p className="text-[11px] text-muted-foreground">
+        <p className="text-caption-sm text-muted-foreground">
           {optedIn
             ? "You'll get a short window to cancel after approving."
             : "Turn on auto-submit above to approve."}
@@ -437,7 +437,7 @@ function WaitingCard({
       {state === "submitting" && (
         <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
-          Submitting your application…
+          Submitting your application...
         </div>
       )}
     </div>
@@ -472,7 +472,7 @@ function AnswerSheetCard({ view }: { view: AutoSubmitApprovalView }) {
 
       {questions.length > 0 ? (
         <div className="mt-4 space-y-2">
-          <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+          <div className="flex items-center gap-1.5 overline">
             <ClipboardList className="h-3 w-3" />
             Your answers
           </div>
@@ -645,7 +645,7 @@ function SectionHeading({
       {icon}
       <h3 className="font-display text-sm font-semibold">{title}</h3>
       {count > 0 && (
-        <span className="rounded-full bg-muted px-1.5 py-0.5 text-[11px] font-semibold text-muted-foreground">
+        <span className="rounded-full bg-muted px-1.5 py-0.5 text-caption-sm font-semibold text-muted-foreground">
           {count}
         </span>
       )}
@@ -819,7 +819,7 @@ export default function AutoApplyTab() {
         <div>
           <div className="flex items-center gap-1.5 text-primary">
             <Sparkles className="h-4 w-4" />
-            <span className="text-[11px] font-semibold uppercase tracking-[0.18em]">
+            <span className="text-caption-sm font-semibold uppercase tracking-[0.18em]">
               Career · Auto-Apply
             </span>
           </div>

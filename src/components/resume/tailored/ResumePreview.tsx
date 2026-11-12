@@ -22,20 +22,20 @@ export function ResumePreview({ resume }: { resume: TailoredFullResume }) {
     copyText?: () => string;
   }) => (
     <div className="flex items-center gap-3 mb-3 group">
-      <h3 className="text-xs font-bold uppercase tracking-widest text-purple-500 dark:text-purple-400/80">
+      <h3 className="text-xs font-bold uppercase tracking-widest text-ink-muted">
         {title}
       </h3>
-      <div className="flex-1 h-px bg-gray-200 dark:bg-gray-800" />
+      <div className="flex-1 h-px bg-border" />
       {copyText && <CopySectionButton getText={copyText} />}
     </div>
   );
   return (
-    <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden shadow-sm">
-      <div className="bg-gradient-to-r from-purple-50 via-white to-purple-50 dark:from-purple-500/10 dark:via-gray-900 dark:to-purple-500/10 px-6 py-5 border-b border-gray-200 dark:border-gray-800 group relative">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">
+    <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
+      <div className="bg-muted px-6 py-5 border-b border-border group relative">
+        <h2 className="text-xl font-bold text-foreground tracking-tight">
           {titleCaseName(resume.contact?.name || "")}
         </h2>
-        <p className="text-[12px] text-gray-600 dark:text-gray-300 mt-1">
+        <p className="text-[12px] text-muted-foreground mt-1">
           {[
             resume.contact?.location,
             resume.contact?.phone,
@@ -73,7 +73,7 @@ export function ResumePreview({ resume }: { resume: TailoredFullResume }) {
         {resume.summary && (
           <div className="group">
             <ST title={H.summary} copyText={() => resume.summary || ""} />
-            <p className="text-[13.5px] text-gray-800 dark:text-gray-100 leading-[1.7]">
+            <p className="text-[13.5px] text-foreground leading-[1.7]">
               {resume.summary}
             </p>
           </div>
@@ -104,20 +104,20 @@ export function ResumePreview({ resume }: { resume: TailoredFullResume }) {
                   <div className="flex justify-between items-start gap-2">
                     <div>
                       {!grouped && (
-                        <p className="text-[13.5px] font-semibold text-gray-900 dark:text-white">
+                        <p className="text-[13.5px] font-semibold text-foreground">
                           {exp.company}
                           {exp.location ? `, ${exp.location}` : ""}
                         </p>
                       )}
                       {(exp.title || exp.type) && (
-                        <p className={`text-[12px] text-gray-600 dark:text-gray-300 italic ${grouped ? "" : "mt-0.5"}`}>
+                        <p className={`text-[12px] text-muted-foreground italic ${grouped ? "" : "mt-0.5"}`}>
                           {exp.title}
                           {exp.title && exp.type ? " · " : ""}
                           {exp.type || ""}
                         </p>
                       )}
                     </div>
-                    <span className="text-[11px] text-muted-foreground whitespace-nowrap shrink-0">
+                    <span className="text-caption-sm text-muted-foreground whitespace-nowrap shrink-0">
                       {exp.dates}
                     </span>
                   </div>
@@ -125,9 +125,9 @@ export function ResumePreview({ resume }: { resume: TailoredFullResume }) {
                     {exp.bullets?.map((b, j) => (
                       <li
                         key={j}
-                        className="text-[12.5px] text-gray-700 dark:text-gray-200 flex gap-2 leading-[1.65]"
+                        className="text-[12.5px] text-ink-muted flex gap-2 leading-[1.65]"
                       >
-                        <span className="text-purple-500 dark:text-purple-400 shrink-0 mt-0.5">
+                        <span className="text-muted-foreground shrink-0 mt-0.5">
                           &bull;
                         </span>
                         <span>{b}</span>
@@ -156,16 +156,16 @@ export function ResumePreview({ resume }: { resume: TailoredFullResume }) {
             <div className="space-y-3">
               {resume.projects.map((p, i) => (
                 <div key={i}>
-                  <p className="text-[13.5px] font-semibold text-gray-900 dark:text-white">
+                  <p className="text-[13.5px] font-semibold text-foreground">
                     {p.name}
                   </p>
                   <ul className="mt-1 space-y-1">
                     {p.bullets?.map((b, j) => (
                       <li
                         key={j}
-                        className="text-[12.5px] text-gray-700 dark:text-gray-200 flex gap-2 leading-[1.65]"
+                        className="text-[12.5px] text-ink-muted flex gap-2 leading-[1.65]"
                       >
-                        <span className="text-purple-500 dark:text-purple-400 shrink-0 mt-0.5">
+                        <span className="text-muted-foreground shrink-0 mt-0.5">
                           &bull;
                         </span>
                         <span>{b}</span>
@@ -193,10 +193,10 @@ export function ResumePreview({ resume }: { resume: TailoredFullResume }) {
             <div className="space-y-2">
               {Object.entries(resume.skills).map(([c, s]) => (
                 <div key={c} className="text-[12.5px] leading-[1.65]">
-                  <span className="font-semibold text-gray-900 dark:text-white">
+                  <span className="font-semibold text-foreground">
                     {c}:{" "}
                   </span>
-                  <span className="text-gray-700 dark:text-gray-200">
+                  <span className="text-ink-muted">
                     {Array.isArray(s) ? s.join(", ") : String(s)}
                   </span>
                 </div>
@@ -238,18 +238,18 @@ export function ResumePreview({ resume }: { resume: TailoredFullResume }) {
                 return (
                   <div key={i}>
                     <div className="flex justify-between items-start gap-2">
-                      <p className="text-[12.5px] text-gray-800 dark:text-gray-100">
-                        <span className="font-semibold text-gray-900 dark:text-white">
+                      <p className="text-[12.5px] text-foreground">
+                        <span className="font-semibold text-foreground">
                           {edu.institution}
                         </span>
                         {d ? ` · ${d}` : ""}
                       </p>
-                      <span className="text-[11px] text-muted-foreground whitespace-nowrap shrink-0">
+                      <span className="text-caption-sm text-muted-foreground whitespace-nowrap shrink-0">
                         {edu.dates}
                       </span>
                     </div>
                     {edu.coursework ? (
-                      <p className="text-[12px] text-gray-600 dark:text-gray-300 mt-0.5">
+                      <p className="text-[12px] text-muted-foreground mt-0.5">
                         {edu.coursework}
                       </p>
                     ) : null}
@@ -269,7 +269,7 @@ export function ResumePreview({ resume }: { resume: TailoredFullResume }) {
               {resume.certifications.map((c, i) => (
                 <span
                   key={i}
-                  className="px-2.5 py-1 rounded-md text-[11px] font-medium bg-sky-500/10 text-sky-600 dark:text-sky-300 border border-sky-500/20"
+                  className="px-2.5 py-1 rounded-md text-caption-sm font-medium bg-muted text-ink-muted border border-border"
                 >
                   {c}
                 </span>
@@ -305,21 +305,21 @@ export function ResumePreview({ resume }: { resume: TailoredFullResume }) {
                 }
               />
               {raw && !entries.length ? (
-                <p className="text-[12.5px] text-gray-700 dark:text-gray-200 leading-[1.65]">{raw}</p>
+                <p className="text-[12.5px] text-ink-muted leading-[1.65]">{raw}</p>
               ) : null}
               <div className="space-y-3">
                 {entries.map((e, ei) => (
                   <div key={e.content_id || ei}>
                     <div className="flex justify-between items-start gap-2">
-                      <p className="text-[13.5px] font-semibold text-gray-900 dark:text-white">
+                      <p className="text-[13.5px] font-semibold text-foreground">
                         {[e.title, e.organization].filter(Boolean).join(" | ")}
                       </p>
-                      <span className="text-[11px] text-muted-foreground whitespace-nowrap shrink-0">
+                      <span className="text-caption-sm text-muted-foreground whitespace-nowrap shrink-0">
                         {e.dates}
                       </span>
                     </div>
                     {e.body ? (
-                      <p className="text-[12.5px] text-gray-700 dark:text-gray-200 mt-1 leading-[1.65]">
+                      <p className="text-[12.5px] text-ink-muted mt-1 leading-[1.65]">
                         {e.body}
                       </p>
                     ) : null}
@@ -327,9 +327,9 @@ export function ResumePreview({ resume }: { resume: TailoredFullResume }) {
                       {(e.bullets || []).map((b, j) => (
                         <li
                           key={j}
-                          className="text-[12.5px] text-gray-700 dark:text-gray-200 flex gap-2 leading-[1.65]"
+                          className="text-[12.5px] text-ink-muted flex gap-2 leading-[1.65]"
                         >
-                          <span className="text-purple-500 dark:text-purple-400 shrink-0 mt-0.5">
+                          <span className="text-muted-foreground shrink-0 mt-0.5">
                             &bull;
                           </span>
                           <span>{b}</span>

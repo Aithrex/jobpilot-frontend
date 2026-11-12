@@ -120,7 +120,7 @@ export function ReachOutModal({ open, onClose, rec }: ReachOutModalProps) {
         </DialogHeader>
 
         {/* Tone selector */}
-        <div className="flex items-center gap-2 text-[11px]">
+        <div className="flex items-center gap-2 text-caption-sm">
           <span className="text-muted-foreground">Tone:</span>
           {(['warm', 'direct'] as const).map((t) => (
             <button
@@ -136,7 +136,7 @@ export function ReachOutModal({ open, onClose, rec }: ReachOutModalProps) {
               {t}
             </button>
           ))}
-          <span className="ml-auto text-[10px] text-muted-foreground">
+          <span className="ml-auto text-caption-sm text-muted-foreground">
             Edit any field below before sending.
           </span>
         </div>
@@ -149,7 +149,7 @@ export function ReachOutModal({ open, onClose, rec }: ReachOutModalProps) {
         ) : (
           <div className="space-y-3">
             <div className="space-y-1">
-              <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <label className="text-caption-sm font-semibold uppercase tracking-wider text-muted-foreground">
                 Recipient (optional)
               </label>
               <input
@@ -161,7 +161,7 @@ export function ReachOutModal({ open, onClose, rec }: ReachOutModalProps) {
               />
             </div>
             <div className="space-y-1">
-              <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <label className="text-caption-sm font-semibold uppercase tracking-wider text-muted-foreground">
                 Subject
               </label>
               <input
@@ -173,7 +173,7 @@ export function ReachOutModal({ open, onClose, rec }: ReachOutModalProps) {
               />
             </div>
             <div className="space-y-1">
-              <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <label className="text-caption-sm font-semibold uppercase tracking-wider text-muted-foreground">
                 Body
               </label>
               <textarea
@@ -183,7 +183,7 @@ export function ReachOutModal({ open, onClose, rec }: ReachOutModalProps) {
                 className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-purple-500/30"
                 maxLength={1800}
               />
-              <p className="text-[10px] text-muted-foreground text-right">
+              <p className="text-caption-sm text-muted-foreground text-right">
                 {body.length} / 1800
               </p>
             </div>

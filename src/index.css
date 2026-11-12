@@ -1767,15 +1767,6 @@
   100% { stroke-dashoffset: 0; opacity: 0; }
 }
 
-@keyframes carousel-tick {
-  from {
-    transform: scaleX(0);
-  }
-  to {
-    transform: scaleX(1);
-  }
-}
-
 /* Gentle looping shimmer: a light sweep with a long rest between passes.
   Transform-only; pair with `motion-reduce:hidden` on the sweep element. */
 @keyframes chip-shimmer {
@@ -2309,4 +2300,48 @@ class names that bypass the component-layer `.bg-*` rules above. */
 :where(a, button, input, select, textarea, summary, [tabindex]):where(:focus-visible) {
   outline: 2px solid hsl(var(--ring));
   outline-offset: 2px;
+}
+
+/* 4. THE CLICK IS FELT. Every button that is not full width squashes to 0.97
+      while pressed and springs back on release (120ms, the "fast" token).
+      It uses the independent `scale` property, not `transform`, so it
+      composes with any translate/rotate utility instead of replacing it, and
+      it has zero specificity, so a component that styles its own pressed
+      state still wins. Full-width buttons are excluded: 3% of a 1,000px row
+      is a 30px lurch, which reads as a glitch rather than a press. */
+:where(button, [role='button'], [role='tab'], summary):where(:not(:disabled):not([aria-disabled='true']):not([class*='w-full'])) {
+  transition-property: scale, color, background-color, border-color, box-shadow, opacity;
+  transition-duration: var(--motion-fast);
+  transition-timing-function: var(--ease-standard);
+}
+:where(button, [role='button'], [role='tab'], summary):where(:not(:disabled):not([aria-disabled='true']):not([class*='w-full'])):active {
+  scale: 0.97;
+}
+
+/* 5. BIGGER HIT AREAS ON TOUCH (Fitts). `.hit-target` keeps a small control's
+      LOOK but grows its tappable box to at least 44px on coarse pointers, via
+      an invisible ::after. Put it on icon buttons and compact chips that are
+      under 40px tall; it needs no layout change. Mouse users keep exact
+      targets so dense toolbars do not steal each other's clicks. */
+/* Already-positioned controls (an absolute clear button, a password toggle)
+   keep their own position: they are a containing block for ::after anyway. */
+.hit-target:not(.absolute):not(.fixed):not(.sticky) {
+  position: relative;
+}
+@media (pointer: coarse) {
+  .hit-target::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    translate: -50% -50%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :where(button, [role='button'], [role='tab'], summary):active {
+    scale: none;
+  }
 }

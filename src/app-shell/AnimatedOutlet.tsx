@@ -78,11 +78,22 @@ export function AnimatedOutlet({
           key={transitionKey}
           className="w-full"
           initial={reduceMotion ? false : { opacity: 0, y: yIn }}
-          animate={{ opacity: 1, y: 0, position: 'relative' }}
+          // The leaving page sits on top of the arriving one for up to 200ms;
+          // `pointerEvents: none` makes sure a click in that window lands on
+          // the new page instead of being swallowed by the old one.
+          animate={{ opacity: 1, y: 0, position: 'relative', pointerEvents: 'auto' }}
           exit={
             reduceMotion
               ? undefined
-              : { opacity: 0, y: yOut, position: 'absolute', left: 0, right: 0, top: 0 }
+              : {
+                  opacity: 0,
+                  y: yOut,
+                  position: 'absolute',
+                  left: 0,
+                  right: 0,
+                  top: 0,
+                  pointerEvents: 'none',
+                }
           }
           transition={{
             duration,

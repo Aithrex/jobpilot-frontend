@@ -259,7 +259,7 @@ export function HeroStory({ mode = 'live', className }: HeroStoryProps) {
                       : 'text-muted-foreground hover:bg-muted hover:text-foreground',
                   )}
                 >
-                  <span className="hidden tabular-nums opacity-70 sm:inline">{i + 1}</span>
+                  <span className="hidden font-normal tabular-nums sm:inline">{i + 1}</span>
                   {c.label}
                 </button>
               ))}

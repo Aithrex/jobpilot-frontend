@@ -16,9 +16,10 @@ export function DailyUsageBadge({ usage, loading, className = "" }: Props) {
   if (loading && !usage) {
     return (
       <span
-        className={`inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-muted/40 px-2.5 py-1 text-xs text-muted-foreground ${className}`}
+        role="status"
+        className={`inline-flex items-center gap-1.5 rounded-full border border-border bg-muted px-2.5 py-1 text-xs text-muted-foreground ${className}`}
       >
-        <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40 animate-pulse" />
+        <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40 animate-pulse motion-reduce:animate-none" />
         Checking quota...
       </span>
     );
@@ -31,14 +32,14 @@ export function DailyUsageBadge({ usage, loading, className = "" }: Props) {
       ? "border-destructive/40 bg-destructive/10 text-destructive"
       : remaining === 1
       ? "border-warning/40 bg-warning/10 text-warning"
-      : "border-success/30 bg-success/10 text-success";
+      : "border-transparent bg-signal-tint text-signal";
 
   return (
     <span
       className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium ${tone} ${className}`}
       title={`Resets at midnight UTC (${new Date(usage.resets_at).toLocaleTimeString()})`}
     >
-      <span className="h-1.5 w-1.5 rounded-full bg-current" />
+      <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-current" />
       {remaining} of {limit} daily tailors left
     </span>
   );

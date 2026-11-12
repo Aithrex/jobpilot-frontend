@@ -121,7 +121,7 @@ function ReviewCard({
       <div className="mb-2 flex items-center justify-between gap-2">
         <span
           className={cn(
-            'inline-flex items-center gap-1.5 rounded-control border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide',
+            'inline-flex items-center gap-1.5 rounded-control border px-2 py-0.5 text-caption-sm font-semibold uppercase tracking-wide',
             meta.cls,
           )}
         >
@@ -129,16 +129,16 @@ function ReviewCard({
           {meta.label}
         </span>
         {resolved && (
-          <span className="text-[10px] font-medium capitalize text-muted-foreground">
+          <span className="text-caption-sm font-medium capitalize text-muted-foreground">
             {decision}
           </span>
         )}
       </div>
 
-      <p className="text-[12.5px] leading-relaxed text-foreground">{item.text}</p>
+      <p className="text-caption leading-relaxed text-foreground">{item.text}</p>
 
       {item.unsupported_claim && (
-        <p className="mt-1.5 text-[11px] text-muted-foreground">
+        <p className="mt-1.5 text-caption-sm text-muted-foreground">
           Flagged:{' '}
           <span className="font-medium text-foreground">
             "{item.unsupported_claim}"
@@ -151,11 +151,11 @@ function ReviewCard({
 
       {item.evidence_display && item.evidence_display.length > 0 && (
         <div className="mt-2 space-y-1 rounded-control bg-muted/60 p-2">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <p className="text-caption-sm font-semibold uppercase tracking-wide text-muted-foreground">
             Backed by
           </p>
           {item.evidence_display.slice(0, 3).map((ev, i) => (
-            <p key={i} className="text-[11px] leading-snug text-muted-foreground">
+            <p key={i} className="text-caption-sm leading-snug text-muted-foreground">
               {ev}
             </p>
           ))}
@@ -167,12 +167,12 @@ function ReviewCard({
           <Textarea
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            className="min-h-[72px] text-[12.5px]"
+            className="min-h-[72px] text-caption"
           />
           <div className="flex gap-2">
             <Button
               size="sm"
-              className="h-7 px-3 text-[11px]"
+              className="hit-target h-7 px-3 text-caption-sm"
               onClick={() => {
                 onEdit(address, draft.trim());
                 setEditing(false);
@@ -184,7 +184,7 @@ function ReviewCard({
             <Button
               size="sm"
               variant="outline"
-              className="h-7 px-3 text-[11px]"
+              className="hit-target h-7 px-3 text-caption-sm"
               onClick={() => {
                 setDraft(item.text);
                 setEditing(false);
@@ -200,7 +200,7 @@ function ReviewCard({
             <Button
               size="sm"
               variant="outline"
-              className="h-7 gap-1 px-2.5 text-[11px] hover:border-success/50 hover:text-success"
+              className="hit-target h-7 gap-1 px-2.5 text-caption-sm hover:border-success/50 hover:text-success"
               onClick={() => onAccept(address)}
             >
               <Check className="h-3 w-3" /> Accept
@@ -209,7 +209,7 @@ function ReviewCard({
               <Button
                 size="sm"
                 variant="outline"
-                className="h-7 gap-1 px-2.5 text-[11px]"
+                className="hit-target h-7 gap-1 px-2.5 text-caption-sm"
                 onClick={() => onRestore(address)}
               >
                 <Undo2 className="h-3 w-3" /> Restore original
@@ -218,7 +218,7 @@ function ReviewCard({
             <Button
               size="sm"
               variant="outline"
-              className="h-7 gap-1 px-2.5 text-[11px] hover:border-destructive/50 hover:text-destructive"
+              className="hit-target h-7 gap-1 px-2.5 text-caption-sm hover:border-destructive/50 hover:text-destructive"
               onClick={() => onRemove(address)}
             >
               <Trash2 className="h-3 w-3" /> Remove
@@ -226,7 +226,7 @@ function ReviewCard({
             <Button
               size="sm"
               variant="outline"
-              className="h-7 gap-1 px-2.5 text-[11px]"
+              className="hit-target h-7 gap-1 px-2.5 text-caption-sm"
               onClick={() => setEditing(true)}
             >
               <Pencil className="h-3 w-3" /> Edit
@@ -283,7 +283,7 @@ export function ReviewPanel({
             <p className="text-sm font-semibold text-foreground">
               Claim verification
             </p>
-            <p className="mt-0.5 text-[11px] text-muted-foreground">
+            <p className="mt-0.5 text-caption-sm text-muted-foreground">
               Every line checked against your resume
               {verification.status === 'skipped'
                 ? '. Verification was skipped this run'
@@ -300,7 +300,7 @@ export function ReviewPanel({
                 type="button"
                 onClick={() => setFilter(f)}
                 className={cn(
-                  'rounded-control px-2.5 py-1 text-[11px] font-medium capitalize transition-colors',
+                  'rounded-control px-2.5 py-1 text-caption-sm font-medium capitalize transition-colors',
                   filter === f
                     ? 'bg-primary/15 text-primary'
                     : 'text-muted-foreground hover:text-foreground',
@@ -319,7 +319,7 @@ export function ReviewPanel({
           <p className="text-sm font-medium text-foreground">
             Nothing needs your review
           </p>
-          <p className="mt-0.5 text-[11px] text-muted-foreground">
+          <p className="mt-0.5 text-caption-sm text-muted-foreground">
             Every claim is backed by your resume.
           </p>
         </div>

@@ -42,7 +42,7 @@ function isoDay(d: Date): string {
 }
 
 const trendConfig: ChartConfig = {
-  count: { label: 'Applications', color: 'hsl(var(--primary))' },
+  count: { label: 'Applications', color: 'hsl(var(--signal))' },
 };
 
 export function ApplicationTrend({
@@ -112,7 +112,7 @@ export function ApplicationTrend({
                 tickLine={false}
                 axisLine={false}
                 minTickGap={40}
-                tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
               />
               <YAxis
                 allowDecimals={false}
@@ -120,7 +120,7 @@ export function ApplicationTrend({
                 width={28}
                 tickLine={false}
                 axisLine={false}
-                tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
               />
               <ChartTooltip
                 cursor={{ stroke: 'hsl(var(--border))' }}
@@ -216,7 +216,7 @@ export function ConversionFunnel({
             return (
               <li key={stage.key}>
                 {conv ? (
-                  <p className="mb-1 pl-1 text-[0.75rem] text-muted-foreground">
+                  <p className="mb-1 pl-1 text-caption-sm text-muted-foreground">
                     <Stat>{conv}</Stat> continued from {prev?.label.toLowerCase()}
                   </p>
                 ) : null}
@@ -234,7 +234,7 @@ export function ConversionFunnel({
                       aria-label={`${stage.label}: ${stage.count}`}
                     >
                       <div
-                        className="h-full rounded-full bg-primary transition-[width] duration-500 ease-out motion-reduce:transition-none"
+                        className="h-full rounded-full bg-signal transition-[width] duration-500 ease-out motion-reduce:transition-none"
                         style={{ width: `${widthPct}%` }}
                       />
                     </div>

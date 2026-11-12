@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useState, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { isGuestOnboardingEnabled, markGuestOnboardingUnavailable } from '@/lib/guest';
@@ -67,6 +67,12 @@ import { LandingFooter } from './LandingFooter';
  * variant. `dark` rides along on the root in the dark theme so shared
  * primitives that DO ship `dark:` variants keep behaving.
  */
+/** A full-width tinted band behind one section (see RHYTHM below). Pure
+ *  decoration: the section inside keeps its own id, heading and padding. */
+function Band({ children }: { children: ReactNode }) {
+  return <div className="border-y border-border/70 bg-muted/55">{children}</div>;
+}
+
 export default function LandingExperience() {
   const surface = usePublicSurface();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
@@ -144,17 +150,24 @@ export default function LandingExperience() {
                 side of it. `ProofStrip` is the one exception - it is a single
                 bordered card, so a hairline immediately above its own border
                 would be two lines saying one thing. */}
-            <WorkdayLoop />
-            <SectionRule />
+            {/* RHYTHM. Sections alternate between the page canvas and a
+                full-width tinted band, so each one reads as its own chapter
+                instead of one long scroll of identical dark cards. A band's
+                own edges are the seam, so hairline rules only appear where
+                two plain sections meet. */}
+            <Band>
+              <WorkdayLoop />
+            </Band>
             <SignalPath />
-            <SectionRule />
-            <PricingSection variant="summary" />
+            <Band>
+              <PricingSection variant="summary" />
+            </Band>
             <ProofStrip />
-            <SectionRule />
             {/* Trust and FAQ used to be two sections here, answering the same
                 questions twice in two shapes. One decision section now. */}
-            <BeforeYouBegin />
-            <SectionRule />
+            <Band>
+              <BeforeYouBegin />
+            </Band>
             {/* Roadmap sits AFTER what actually ships, so it never competes
                 with the available capabilities for the reader's attention. */}
             <ComingNext />

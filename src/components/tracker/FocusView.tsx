@@ -54,7 +54,7 @@ export default function FocusView({
         <p className="font-display text-body font-semibold text-foreground">
           Nothing needs you right now
         </p>
-        <p className="mx-auto mt-1 max-w-sm text-label text-muted-foreground">
+        <p className="mx-auto mt-1 max-w-sm text-body-sm text-muted-foreground">
           No unanswered prompts, no actions due, nothing gone quiet. Your pipeline is still there
           when you want to look at it.
         </p>

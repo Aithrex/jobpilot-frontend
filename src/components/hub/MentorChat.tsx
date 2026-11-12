@@ -39,7 +39,7 @@ export default function MentorChat({ dayKey, params }: MentorChatProps) {
         </span>
         <div className="leading-tight">
           <p className="text-sm font-semibold text-foreground">AI Mentor</p>
-          <p className="text-[11px] text-muted-foreground">Senior engineer · hints, not full solutions</p>
+          <p className="text-caption-sm text-muted-foreground">Senior engineer · hints, not full solutions</p>
         </div>
       </div>
       <AiDisclosure className="border-b border-border px-3 py-1.5" />
@@ -82,7 +82,7 @@ export default function MentorChat({ dayKey, params }: MentorChatProps) {
                     <button
                       key={f}
                       onClick={() => void send(f)}
-                      className="inline-flex items-center gap-1 rounded-full border border-border bg-background px-2 py-0.5 text-[11px] text-muted-foreground hover:text-primary"
+                      className="inline-flex items-center gap-1 rounded-full border border-border bg-background px-2 py-0.5 text-caption-sm text-muted-foreground hover:text-primary"
                     >
                       <Sparkles className="h-2.5 w-2.5" />
                       {f}

@@ -107,7 +107,7 @@ function TrustCard({ item }: { item: TrustItem }) {
   return (
     <li className="flex h-full flex-col rounded-xl border border-border bg-card p-5 text-card-foreground">
       <Icon aria-hidden className="h-5 w-5 text-primary" />
-      <h3 className="mt-3 font-display text-base font-bold text-foreground">{item.title}</h3>
+      <h3 className="mt-3 font-display text-title-sm text-foreground">{item.title}</h3>
       <p className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">{item.body}</p>
       <p className="mt-4 text-sm">
         {item.link.external ? (
@@ -128,14 +128,14 @@ export default function Trust() {
   return (
     <PublicPageShell>
       <section aria-labelledby="trust-heading" className="mx-auto w-full max-w-6xl px-4 pb-8 pt-12 sm:px-6 sm:pt-16">
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Trust Center</p>
+        <p className="text-caption-sm font-semibold uppercase tracking-widest text-muted-foreground">Trust Center</p>
         <h1
           id="trust-heading"
-          className="mt-3 max-w-3xl text-balance font-display text-3xl font-extrabold leading-tight tracking-[-0.02em] text-foreground sm:text-4xl"
+          className="mt-3 max-w-3xl text-balance font-display text-display-sm text-foreground"
         >
           What {BRAND_NAME} does with your data, and what it never does.
         </h1>
-        <p className="mt-4 max-w-3xl text-pretty text-base leading-relaxed text-foreground">
+        <p className="mt-4 max-w-prose text-pretty text-body-md leading-relaxed text-foreground">
           Each point below is how the product works today, with a link to the full detail. Last updated:{' '}
           {LAST_UPDATED}.
         </p>
@@ -148,8 +148,8 @@ export default function Trust() {
         </ul>
 
         <div className="mt-10 rounded-xl border border-border bg-muted/40 p-5">
-          <h2 className="font-display text-base font-bold text-foreground">What we do not claim</h2>
-          <p className="mt-2 text-sm leading-relaxed text-foreground">
+          <h2 className="font-display text-title-sm text-foreground">What we do not claim</h2>
+          <p className="mt-2 max-w-prose text-sm leading-relaxed text-foreground">
             {BRAND_NAME} has not completed an independent security audit or a certification such as SOC 2 or ISO
             27001, and we do not guarantee interviews, offers or any other result. If that changes, it will be stated
             here first.
@@ -160,8 +160,8 @@ export default function Trust() {
           id="vulnerability-disclosure"
           className="mt-6 scroll-mt-20 rounded-xl border border-border bg-card p-5 text-card-foreground"
         >
-          <h2 className="font-display text-base font-bold text-foreground">Reporting a vulnerability</h2>
-          <p className="mt-2 text-sm leading-relaxed text-foreground">
+          <h2 className="font-display text-title-sm text-foreground">Reporting a vulnerability</h2>
+          <p className="mt-2 max-w-prose text-sm leading-relaxed text-foreground">
             Email <a className={LEGAL_LINK_CLASS} href={`mailto:${SECURITY_EMAIL}`}>{SECURITY_EMAIL}</a> with the
             steps to reproduce what you found. Please test only against your own account, do not access or change
             other people&apos;s data, do not degrade the service, and give us a reasonable chance to fix the issue

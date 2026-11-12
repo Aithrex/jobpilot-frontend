@@ -64,7 +64,7 @@ export const interviewsUpcomingWidget: Widget = {
             {iv!.weakest && (
               <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <Target className="h-3.5 w-3.5 shrink-0 text-warning" />
-                Weakest: <span className="font-medium text-foreground/90">{iv!.weakest.replace(/_/g, ' ')}</span>
+                Weakest: <span className="font-medium text-foreground">{iv!.weakest.replace(/_/g, ' ')}</span>
                 <button
                   type="button"
                   onClick={() => ctx.navigate('interview')}

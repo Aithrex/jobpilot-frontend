@@ -50,20 +50,20 @@ export function CareerPath({
                 <span
                   className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full ${
                     s.done
-                      ? 'bg-success text-white'
+                      ? 'bg-success text-success-foreground'
                       : isCurrent
                         ? 'bg-primary text-primary-foreground'
                         : 'border border-muted-foreground/40'
                   }`}
                 >
-                  {s.done ? <Check className="h-3 w-3" /> : <span className="text-[10px] font-bold tabular-nums">{i + 1}</span>}
+                  {s.done ? <Check className="h-3 w-3" /> : <span className="text-caption-sm font-bold tabular-nums">{i + 1}</span>}
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className={`block text-sm font-medium ${s.done ? 'line-through' : ''}`}>{s.label}</span>
                   {!s.done && <span className="mt-0.5 block text-xs leading-relaxed text-muted-foreground">{s.description}</span>}
                 </span>
                 {isCurrent && (
-                  <span className="mt-0.5 inline-flex shrink-0 items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold text-primary-foreground">
+                  <span className="mt-0.5 inline-flex shrink-0 items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-caption-sm font-semibold text-primary-foreground">
                     Next <ArrowRight className="h-3 w-3" />
                   </span>
                 )}

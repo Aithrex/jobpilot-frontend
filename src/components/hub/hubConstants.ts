@@ -24,24 +24,24 @@ export const STATE_META: Record<
 > = {
   completed: {
     label: "Completed",
-    dot: "bg-[hsl(var(--success))] text-white",
-    ring: "border-[hsl(var(--success))]/40",
-    text: "text-[hsl(var(--success))]",
-    badge: "bg-[hsl(var(--success))]/12 text-[hsl(var(--success))] border-[hsl(var(--success))]/25",
+    dot: "bg-success text-success-foreground",
+    ring: "border-success/40",
+    text: "text-success",
+    badge: "bg-success/10 text-success border-success/25",
   },
   current: {
     label: "Current Challenge",
     dot: "bg-primary text-primary-foreground",
     ring: "border-primary/50",
     text: "text-primary",
-    badge: "bg-primary/12 text-primary border-primary/30",
+    badge: "bg-primary/10 text-primary border-primary/30",
   },
   unlocking_soon: {
     label: "Unlocking Soon",
-    dot: "bg-[hsl(var(--warning))] text-white",
-    ring: "border-[hsl(var(--warning))]/40",
-    text: "text-[hsl(var(--warning))]",
-    badge: "bg-[hsl(var(--warning))]/12 text-[hsl(var(--warning))] border-[hsl(var(--warning))]/25",
+    dot: "bg-warning text-warning-foreground",
+    ring: "border-warning/40",
+    text: "text-warning",
+    badge: "bg-warning/10 text-warning border-warning/25",
   },
   available_tomorrow: {
     label: "Available Soon",
@@ -67,8 +67,8 @@ export const STATE_META: Record<
 };
 
 export const PRIORITY_STYLES: Record<string, string> = {
-  Critical: "bg-[hsl(var(--destructive))]/12 text-[hsl(var(--destructive))] border-[hsl(var(--destructive))]/30",
-  High: "bg-[hsl(var(--warning))]/12 text-[hsl(var(--warning))] border-[hsl(var(--warning))]/30",
+  Critical: "bg-destructive/10 text-destructive border-destructive/30",
+  High: "bg-warning/10 text-warning border-warning/30",
   Medium: "bg-primary/10 text-primary border-primary/25",
   Low: "bg-muted text-muted-foreground border-border",
 };

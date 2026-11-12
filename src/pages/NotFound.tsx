@@ -1,24 +1,35 @@
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 
+/**
+ * 404. Token-driven so it reads in both themes (it used to pin a light
+ * gradient and raw grays, which went unreadable in dark mode). One h1 that
+ * says what happened; the large "404" is decoration and stays out of the
+ * heading outline.
+ */
 export default function NotFoundPage() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50 p-6 text-center">
-      <div className="space-y-6 max-w-md">
+    <main className="flex min-h-screen flex-col items-center justify-center bg-background p-6 text-center text-foreground">
+      <div className="max-w-md space-y-6">
         <div className="space-y-3">
-          <h1 className="text-8xl font-bold text-blue-600">404</h1>
-          <h2 className="text-2xl font-semibold text-gray-800">Page Not Found</h2>
-          <p className="text-muted-foreground">The page you're looking for doesn't exist or may have been moved.</p>
+          <p aria-hidden="true" className="font-display text-display-lg tabular-nums text-primary">
+            404
+          </p>
+          <h1 className="font-display text-h1 text-foreground">Page Not Found</h1>
+          <p className="text-body-md text-ink-muted">
+            The page you're looking for doesn't exist or may have been moved.
+          </p>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+        <div className="flex flex-col justify-center gap-3 sm:flex-row">
           <Button asChild>
-            <a href="/">Return Home</a>
+            <Link to="/">Return Home</Link>
           </Button>
           <Button variant="outline" onClick={() => window.history.back()}>
             Go Back
           </Button>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

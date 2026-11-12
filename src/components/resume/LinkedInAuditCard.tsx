@@ -63,14 +63,14 @@ export function LinkedInAuditCard({ connect, reloadConnect }: LinkedInAuditCardP
           <h3 className="text-sm font-semibold text-foreground">LinkedIn audit</h3>
           <span className="ml-auto">
             <span className="text-xl font-extrabold tabular-nums text-primary">{audit.score}</span>
-            <span className="text-[10px] uppercase tracking-wider text-muted-foreground">/100</span>
+            <span className="text-caption-sm uppercase tracking-wider text-muted-foreground">/100</span>
           </span>
         </div>
 
         {audit.headline && (
           <div className="mb-2 rounded-lg border border-border/60 bg-muted/20 p-2.5">
             <div className="mb-1 flex items-center justify-between">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <span className="text-caption-sm font-semibold uppercase tracking-wider text-muted-foreground">
                 Suggested headline
               </span>
               <button
@@ -102,7 +102,7 @@ export function LinkedInAuditCard({ connect, reloadConnect }: LinkedInAuditCardP
         {audit.about && (
           <button
             onClick={() => copy(audit.about, 'a')}
-            className="mt-3 inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline"
+            className="mt-3 inline-flex items-center gap-1 text-caption-sm font-medium text-primary hover:underline"
           >
             {copied === 'a' ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />} Copy
             suggested "About"
@@ -243,7 +243,7 @@ function LinkedInConnect({
         <button
           onClick={startConnect}
           disabled={connecting}
-          className="inline-flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground hover:text-foreground disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 text-caption-sm font-medium text-muted-foreground hover:text-foreground disabled:opacity-50"
         >
           <Linkedin className={`h-3.5 w-3.5 ${LINKEDIN_ICON}`} />{' '}
           {connecting ? 'Connecting...' : 'Connect LinkedIn to post'}
@@ -255,14 +255,14 @@ function LinkedInConnect({
   return (
     <div className="mt-3 border-t border-border pt-3">
       <div className="flex items-center gap-2">
-        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
+        <span className="inline-flex items-center gap-1 text-caption-sm font-medium text-muted-foreground">
           <Linkedin className={`h-3.5 w-3.5 ${LINKEDIN_ICON}`} /> Connected
           {li.name ? ` as ${li.name}` : ''}
         </span>
         <button
           onClick={disconnect}
           disabled={disconnecting}
-          className="ml-auto text-[11px] font-medium text-muted-foreground hover:text-destructive disabled:opacity-50"
+          className="ml-auto text-caption-sm font-medium text-muted-foreground hover:text-destructive disabled:opacity-50"
         >
           {disconnecting ? 'Disconnecting...' : 'Disconnect'}
         </button>
@@ -303,7 +303,7 @@ function LinkedInConnect({
             </button>
             <button
               onClick={() => setOpen(false)}
-              className="text-[11px] font-medium text-muted-foreground hover:text-foreground"
+              className="text-caption-sm font-medium text-muted-foreground hover:text-foreground"
             >
               Cancel
             </button>

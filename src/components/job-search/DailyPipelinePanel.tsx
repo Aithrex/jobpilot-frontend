@@ -403,7 +403,7 @@ function VisaBadge({ status, confidence }: { status?: string; confidence?: numbe
     return (
       <Badge
         variant="outline"
-        className="gap-1 border-emerald-500/40 bg-emerald-500/10 text-[9px] font-semibold uppercase tracking-wider text-success"
+        className="gap-1 border-emerald-500/40 bg-emerald-500/10 text-caption-sm font-semibold uppercase tracking-wider text-success"
         title="Verified H-1B sponsor. Company is on the curated sponsor list or the JD says they sponsor."
       >
         <ShieldCheck className="h-2.5 w-2.5" />
@@ -415,7 +415,7 @@ function VisaBadge({ status, confidence }: { status?: string; confidence?: numbe
     return (
       <Badge
         variant="outline"
-        className="gap-1 border-amber-500/40 bg-amber-500/10 text-[9px] font-semibold uppercase tracking-wider text-warning"
+        className="gap-1 border-amber-500/40 bg-amber-500/10 text-caption-sm font-semibold uppercase tracking-wider text-warning"
         title="Looks like a tech employer that historically sponsors, but the JD doesn't say so explicitly. Worth verifying before applying."
       >
         <ShieldCheck className="h-2.5 w-2.5" />
@@ -427,7 +427,7 @@ function VisaBadge({ status, confidence }: { status?: string; confidence?: numbe
     return (
       <Badge
         variant="outline"
-        className="gap-1 border-red-500/40 bg-red-500/10 text-[9px] font-semibold uppercase tracking-wider text-destructive"
+        className="gap-1 border-red-500/40 bg-red-500/10 text-caption-sm font-semibold uppercase tracking-wider text-destructive"
         title="JD explicitly states no visa sponsorship is offered. Skip if you're on F-1 / H-1B."
       >
         <AlertCircle className="h-2.5 w-2.5" />
@@ -573,14 +573,14 @@ function PipelineRow({
       }`}
     >
       {applied && (
-        <div className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold text-success">
+        <div className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-caption-sm font-semibold text-success">
           <CheckCircle2 className="h-3 w-3" />
           Applied · in Saved
         </div>
       )}
       {showPrevApplied && (
         <div
-          className={`absolute right-3 top-3 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${prevPalette.chip}`}
+          className={`absolute right-3 top-3 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-caption-sm font-semibold ${prevPalette.chip}`}
           title={`Status: ${prevStatus}${prevAt ? ` · last touched ${prevAt.slice(0, 10)}` : ''}`}
         >
           <CheckCircle2 className="h-3 w-3" />
@@ -590,7 +590,7 @@ function PipelineRow({
       )}
       {isNew && !applied && !showPrevApplied && (
         <span
-          className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white shadow-sm"
+          className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 px-2 py-0.5 text-caption-sm font-bold uppercase tracking-wider text-white shadow-sm"
           title="New since your last visit"
         >
           NEW
@@ -620,20 +620,20 @@ function PipelineRow({
             </Badge>
           )}
           <span className="text-2xl font-bold tabular-nums leading-none">{rec.score ?? 0}</span>
-          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">score</span>
+          <span className="text-caption-sm uppercase tracking-wider text-muted-foreground">score</span>
         </div>
 
         <div className="min-w-0 flex-1 space-y-2">
           <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
             <h4 className="text-sm font-semibold leading-tight">{rec.title}</h4>
-            <Badge variant="outline" className="border-border/60 text-[10px] uppercase tracking-wider">
+            <Badge variant="outline" className="border-border/60 text-caption-sm uppercase tracking-wider">
               {rec.source}
             </Badge>
             <VisaBadge status={rec.visa_status} confidence={rec.visa_confidence} />
             {matchScore && (
               <span
                 className={
-                  'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-tight ' +
+                  'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-caption-sm font-semibold tracking-tight ' +
                   (matchScore.match_score >= 70
                     ? 'bg-emerald-500/15 text-success'
                     : matchScore.match_score >= 40
@@ -684,7 +684,7 @@ function PipelineRow({
                 <Badge
                   key={f}
                   variant="secondary"
-                  className="bg-purple-500/10 text-[10px] text-purple-700 dark:text-purple-300"
+                  className="bg-purple-500/10 text-caption-sm text-purple-700 dark:text-purple-300"
                 >
                   {f}
                 </Badge>
@@ -693,7 +693,7 @@ function PipelineRow({
           )}
 
           {rec.opt && rec.opt !== 'FTE OK' && (
-            <p className="text-[11px] text-warning">{rec.opt}</p>
+            <p className="text-caption-sm text-warning">{rec.opt}</p>
           )}
         </div>
 
@@ -731,7 +731,7 @@ function PipelineRow({
                 size="sm"
                 variant="ghost"
                 onClick={onDismissOpened}
-                className="h-7 gap-1 text-[10px] text-muted-foreground hover:text-foreground"
+                className="h-7 gap-1 text-caption-sm text-muted-foreground hover:text-foreground"
                 title="Didn't apply. Dismiss this prompt and restore the Open button"
               >
                 Not yet
@@ -754,7 +754,7 @@ function PipelineRow({
               variant="outline"
               onClick={onTailor}
               disabled={tailorLoading}
-              className="gap-1 border-purple-500/30 text-[11px] text-purple-700 hover:bg-purple-500/10 dark:text-purple-300 disabled:opacity-70"
+              className="gap-1 border-purple-500/30 text-caption-sm text-purple-700 hover:bg-purple-500/10 dark:text-purple-300 disabled:opacity-70"
               title={tailorLoading ? 'Fetching JD. Opening Tailor in a moment...' : 'Open this job in Tailor. Auto-marks Applied once tailoring saves'}
             >
               {tailorLoading ? (
@@ -770,7 +770,7 @@ function PipelineRow({
               size="sm"
               variant="outline"
               onClick={onReachOut}
-              className="gap-1 border-indigo-500/30 text-[11px] text-indigo-700 hover:bg-indigo-500/10 dark:text-indigo-300"
+              className="gap-1 border-indigo-500/30 text-caption-sm text-indigo-700 hover:bg-indigo-500/10 dark:text-indigo-300"
               title="Draft a cold-outreach email to a recruiter / hiring manager at this company"
             >
               ✉ Reach out
@@ -780,7 +780,7 @@ function PipelineRow({
             <button
               type="button"
               onClick={() => onSnooze(2)}
-              className="rounded px-2 py-1 text-[11px] text-muted-foreground/80 hover:bg-purple-500/10 hover:text-purple-600 dark:hover:text-purple-300 transition-colors self-end opacity-80 sm:opacity-0 sm:group-hover:opacity-100"
+              className="rounded px-2 py-1 text-caption-sm text-muted-foreground hover:bg-purple-500/10 hover:text-purple-600 dark:hover:text-purple-300 transition-colors self-end opacity-80 sm:opacity-0 sm:group-hover:opacity-100"
               title="Hide for 2 days. Re-surfaces on its own"
             >
               💤 Snooze 2d
@@ -790,7 +790,7 @@ function PipelineRow({
             <button
               type="button"
               onClick={onHideCompany}
-              className="rounded px-2 py-1 text-[11px] text-muted-foreground/70 hover:bg-rose-500/10 hover:text-rose-600 dark:hover:text-rose-400 transition-colors self-end opacity-80 sm:opacity-0 sm:group-hover:opacity-100"
+              className="rounded px-2 py-1 text-caption-sm text-muted-foreground hover:bg-rose-500/10 hover:text-rose-600 dark:hover:text-rose-400 transition-colors self-end opacity-80 sm:opacity-0 sm:group-hover:opacity-100"
               title={`Stop showing ${rec.company} rows in future runs`}
             >
               🚫 Hide {rec.company.slice(0, 14)}{rec.company.length > 14 ? '...' : ''}
@@ -800,7 +800,7 @@ function PipelineRow({
             <button
               type="button"
               onClick={onHideTitlePattern}
-              className="rounded px-2 py-1 text-[11px] text-muted-foreground/70 hover:bg-rose-500/10 hover:text-rose-600 dark:hover:text-rose-400 transition-colors self-end opacity-80 sm:opacity-0 sm:group-hover:opacity-100"
+              className="rounded px-2 py-1 text-caption-sm text-muted-foreground hover:bg-rose-500/10 hover:text-rose-600 dark:hover:text-rose-400 transition-colors self-end opacity-80 sm:opacity-0 sm:group-hover:opacity-100"
               title="Hide future postings whose title contains a substring (e.g. Senior, Lead, Staff)"
             >
               🚫 Hide title...
@@ -2070,7 +2070,7 @@ export function DailyPipelinePanel({
           {/* Preset persona chips + Saved presets bar */}
           <div className="space-y-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+              <p className="text-caption-sm uppercase tracking-wider text-muted-foreground">
                 <Tag className="mr-1 inline h-3 w-3" />
                 Quick presets
               </p>
@@ -2079,7 +2079,7 @@ export function DailyPipelinePanel({
                   size="sm"
                   variant="outline"
                   onClick={() => setSavePresetOpen((v) => !v)}
-                  className="h-7 gap-1 text-[11px]"
+                  className="h-7 gap-1 text-caption-sm"
                   title="Save the current pipeline form as a named preset"
                 >
                   <BookmarkPlus className="h-3 w-3" />
@@ -2090,7 +2090,7 @@ export function DailyPipelinePanel({
                   variant="outline"
                   onClick={() => setPresetMenuOpen((v) => !v)}
                   disabled={presets.length === 0}
-                  className="h-7 gap-1 text-[11px]"
+                  className="h-7 gap-1 text-caption-sm"
                   title={presets.length === 0 ? 'No saved presets yet' : 'Load a saved preset'}
                 >
                   My presets {presets.length > 0 ? `(${presets.length})` : ''}
@@ -2108,7 +2108,7 @@ export function DailyPipelinePanel({
                           >
                             <div className="min-w-0">
                               <p className="truncate font-medium">{p.name}</p>
-                              <p className="truncate text-[10px] text-muted-foreground">
+                              <p className="truncate text-caption-sm text-muted-foreground">
                                 {p.filters?.experience_level || 'entry'} · {p.filters?.employment_type || 'FULLTIME'}
                                 {p.filters?.location ? ` · ${p.filters.location}` : ''}
                                 {p.filters?.domain_strict ? ' · strict' : ''}
@@ -2146,7 +2146,7 @@ export function DailyPipelinePanel({
                   <Save className="h-3 w-3" />
                   Save
                 </Button>
-                <Button size="sm" variant="ghost" onClick={() => { setSavePresetOpen(false); setPresetNameInput(''); }} className="text-[11px]">
+                <Button size="sm" variant="ghost" onClick={() => { setSavePresetOpen(false); setPresetNameInput(''); }} className="text-caption-sm">
                   Cancel
                 </Button>
               </div>
@@ -2181,7 +2181,7 @@ export function DailyPipelinePanel({
               gives the same scrape as before. */}
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-5">
             <div className="space-y-1">
-              <label className="text-[10px] uppercase tracking-wider text-muted-foreground">
+              <label className="text-caption-sm uppercase tracking-wider text-muted-foreground">
                 <MapPin className="mr-1 inline h-3 w-3" />
                 Location
               </label>
@@ -2194,7 +2194,7 @@ export function DailyPipelinePanel({
               />
             </div>
             <div className="space-y-1">
-              <label className="text-[10px] uppercase tracking-wider text-muted-foreground">
+              <label className="text-caption-sm uppercase tracking-wider text-muted-foreground">
                 Experience
               </label>
               <Select value={experienceLevel} onValueChange={(v) => setExperienceLevel(v as PipelineExperienceLevel)}>
@@ -2210,7 +2210,7 @@ export function DailyPipelinePanel({
               </Select>
             </div>
             <div className="space-y-1">
-              <label className="text-[10px] uppercase tracking-wider text-muted-foreground">
+              <label className="text-caption-sm uppercase tracking-wider text-muted-foreground">
                 Employment
               </label>
               <Select value={employmentType} onValueChange={(v) => setEmploymentType(v as PipelineEmploymentType)}>
@@ -2225,7 +2225,7 @@ export function DailyPipelinePanel({
               </Select>
             </div>
             <div className="space-y-1">
-              <label className="text-[10px] uppercase tracking-wider text-muted-foreground">
+              <label className="text-caption-sm uppercase tracking-wider text-muted-foreground">
                 Work mode
               </label>
               <Select value={workArrangement} onValueChange={(v) => setWorkArrangement(v as PipelineWorkArrangement)}>
@@ -2239,7 +2239,7 @@ export function DailyPipelinePanel({
               </Select>
             </div>
             <label className="flex flex-col justify-between gap-1 rounded-lg border border-border/60 bg-muted/20 p-2 cursor-pointer hover:border-purple-500/40 sm:col-span-2 lg:col-span-1">
-              <span className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+              <span className="flex items-center gap-1 text-caption-sm uppercase tracking-wider text-muted-foreground">
                 <ShieldCheck className="h-3 w-3" />
                 Domain strict
               </span>
@@ -2250,7 +2250,7 @@ export function DailyPipelinePanel({
                   onChange={(e) => setDomainStrict(e.target.checked)}
                   className="h-3.5 w-3.5 accent-purple-600"
                 />
-                <span className="text-[11px] leading-tight text-muted-foreground">
+                <span className="text-caption-sm leading-tight text-muted-foreground">
                   Drop off-domain titles entirely
                 </span>
               </span>
@@ -2265,11 +2265,11 @@ export function DailyPipelinePanel({
           <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div className="space-y-0.5">
-                <p className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-warning">
+                <p className="flex items-center gap-1 text-caption-sm font-semibold uppercase tracking-wider text-warning">
                   <ShieldCheck className="h-3 w-3" />
                   F-1 / H-1B mode
                 </p>
-                <p className="text-[10px] leading-snug text-muted-foreground">
+                <p className="text-caption-sm leading-snug text-muted-foreground">
                   Optional, for visa candidates. Drops postings that explicitly
                   say "no sponsorship" or restrict to US citizens.
                 </p>
@@ -2282,7 +2282,7 @@ export function DailyPipelinePanel({
                   setH1bOnly(false);
                   toast.success('F-1 friendly mode on. Postings that say "no sponsorship" will be dropped.');
                 }}
-                className="h-7 gap-1 text-[11px] border-amber-500/40 text-warning hover:bg-amber-500/10 dark:text-amber-300"
+                className="h-7 gap-1 text-caption-sm border-amber-500/40 text-warning hover:bg-amber-500/10 dark:text-amber-300"
               >
                 <Sparkles className="h-3 w-3" />
                 F-1 friendly
@@ -2297,8 +2297,8 @@ export function DailyPipelinePanel({
                   className="mt-0.5 h-3.5 w-3.5 accent-amber-600"
                 />
                 <div className="space-y-0.5">
-                  <p className="text-[11px] font-medium leading-tight">Hide "no sponsorship" postings</p>
-                  <p className="text-[10px] leading-tight text-muted-foreground">
+                  <p className="text-caption-sm font-medium leading-tight">Hide "no sponsorship" postings</p>
+                  <p className="text-caption-sm leading-tight text-muted-foreground">
                     Scans the JD for "must be authorized to work without sponsorship", "GC required", etc.
                   </p>
                 </div>
@@ -2311,8 +2311,8 @@ export function DailyPipelinePanel({
                   className="mt-0.5 h-3.5 w-3.5 accent-amber-600"
                 />
                 <div className="space-y-0.5">
-                  <p className="text-[11px] font-medium leading-tight">Verified sponsors only (strict)</p>
-                  <p className="text-[10px] leading-tight text-muted-foreground">
+                  <p className="text-caption-sm font-medium leading-tight">Verified sponsors only (strict)</p>
+                  <p className="text-caption-sm leading-tight text-muted-foreground">
                     Show only known H-1B sponsors or postings that affirmatively say "we sponsor".
                     Trims recall. Leave off for first pass.
                   </p>
@@ -2324,7 +2324,7 @@ export function DailyPipelinePanel({
           {/* Quick controls */}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div className="space-y-1.5">
-              <label className="text-[10px] uppercase tracking-wider text-muted-foreground">
+              <label className="text-caption-sm uppercase tracking-wider text-muted-foreground">
                 <Calendar className="mr-1 inline h-3 w-3" />
                 Past days
               </label>
@@ -2346,7 +2346,7 @@ export function DailyPipelinePanel({
               </Select>
             </div>
             <div className="space-y-1.5 sm:col-span-2">
-              <label className="text-[10px] uppercase tracking-wider text-muted-foreground">
+              <label className="text-caption-sm uppercase tracking-wider text-muted-foreground">
                 Custom role keywords (used to keep adjacent roles)
               </label>
               <ChipsInput
@@ -2395,7 +2395,7 @@ export function DailyPipelinePanel({
                 ? 'border-emerald-500/30 bg-emerald-500/[0.05]'
                 : 'border-amber-500/30 bg-amber-500/[0.05]'
             }`}>
-              <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${
+              <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-caption-sm font-semibold uppercase tracking-wider ${
                 detectedSummary.usedSynth
                   ? 'bg-emerald-500/15 text-success'
                   : 'bg-amber-500/15 text-warning'
@@ -2403,7 +2403,7 @@ export function DailyPipelinePanel({
                 {detectedSummary.usedSynth ? 'AI synth ✓' : 'Fallback'}
               </span>
               <div className="min-w-0 flex-1 space-y-0.5">
-                <p className="font-medium text-foreground/90">
+                <p className="font-medium text-foreground">
                   Detected: {detectedSummary.headline}
                 </p>
                 {detectedSummary.rationale && (
@@ -2412,7 +2412,7 @@ export function DailyPipelinePanel({
                   </p>
                 )}
                 {!detectedSummary.usedSynth && (
-                  <p className="text-warning/90">
+                  <p className="text-warning">
                     The resume classifier ran fine; the AI title generator hit
                     a transient error (rate limit / timeout) and fell back to
                     the curated default set for {detectedSummary.headline}.
@@ -2427,12 +2427,12 @@ export function DailyPipelinePanel({
           {showAdvanced && (
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
               <div className="space-y-1.5">
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                <p className="text-caption-sm uppercase tracking-wider text-muted-foreground">
                   Per-source recall caps (raise for slow days, lower to save Apify credits)
                 </p>
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1">
-                    <label className="text-[10px] text-muted-foreground">LinkedIn jobs / phrase</label>
+                    <label className="text-caption-sm text-muted-foreground">LinkedIn jobs / phrase</label>
                     <Select value={String(linkedinCount)} onValueChange={(v) => setLinkedinCount(Number(v))}>
                       <SelectTrigger className="focus:border-purple-500/40 focus:ring-purple-500/40">
                         <SelectValue />
@@ -2447,7 +2447,7 @@ export function DailyPipelinePanel({
                     </Select>
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] text-muted-foreground">Workday total limit</label>
+                    <label className="text-caption-sm text-muted-foreground">Workday total limit</label>
                     <Select value={String(workdayLimit)} onValueChange={(v) => setWorkdayLimit(Number(v))}>
                       <SelectTrigger className="focus:border-purple-500/40 focus:ring-purple-500/40">
                         <SelectValue />
@@ -2462,7 +2462,7 @@ export function DailyPipelinePanel({
                     </Select>
                   </div>
                 </div>
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-caption-sm text-muted-foreground">
                   Higher caps return more raw rows. Filtering accuracy stays the same. Only recall changes.
                 </p>
                 <label className="flex items-start gap-2 rounded-lg border border-border/60 bg-muted/20 p-2 cursor-pointer hover:border-purple-500/40">
@@ -2473,15 +2473,15 @@ export function DailyPipelinePanel({
                     className="mt-0.5 h-3.5 w-3.5 accent-purple-600"
                   />
                   <div className="space-y-0.5">
-                    <p className="text-[11px] font-medium leading-tight">Include Indeed (extra Apify cost)</p>
-                    <p className="text-[10px] leading-tight text-muted-foreground">
+                    <p className="text-caption-sm font-medium leading-tight">Include Indeed (extra Apify cost)</p>
+                    <p className="text-caption-sm leading-tight text-muted-foreground">
                       ~$0.75 / run. Off by default. Indeed dates are unreliable and listings are dominated by body-shop reposts. Turn on for slow days when you've exhausted LinkedIn / Workday / ATS direct.
                     </p>
                   </div>
                 </label>
               </div>
               <div className="space-y-1.5">
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                <p className="text-caption-sm uppercase tracking-wider text-muted-foreground">
                   <Globe className="mr-1 inline h-3 w-3" />
                   LinkedIn keyword phrases
                 </p>
@@ -2496,7 +2496,7 @@ export function DailyPipelinePanel({
                 />
               </div>
               <div className="space-y-1.5">
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                <p className="text-caption-sm uppercase tracking-wider text-muted-foreground">
                   <Briefcase className="mr-1 inline h-3 w-3" />
                   Workday job titles
                 </p>
@@ -2538,7 +2538,7 @@ export function DailyPipelinePanel({
             <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-destructive" />
             <div className="text-sm">
               <p className="font-semibold text-destructive">Pipeline failed</p>
-              <p className="text-xs text-destructive/80">{error}</p>
+              <p className="text-xs text-destructive">{error}</p>
             </div>
           </CardContent>
         </Card>
@@ -2556,7 +2556,7 @@ export function DailyPipelinePanel({
                     <p className="text-sm font-semibold text-destructive">
                       Apify credits exhausted
                     </p>
-                    <p className="text-[11px] text-destructive/80">
+                    <p className="text-caption-sm text-destructive">
                       The Apify token used for this run hit its monthly limit. Add or update your own
                       Apify API key above to keep running the daily pipeline. Your free Apify account
                       includes ~$5 monthly credit.
@@ -2575,7 +2575,7 @@ export function DailyPipelinePanel({
             </Card>
           )}
           {resultAt && Date.now() - resultAt > 30_000 && (
-            <p className="text-[11px] italic text-muted-foreground">
+            <p className="text-caption-sm italic text-muted-foreground">
               Showing cached result from{' '}
               {new Date(resultAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               {' '}· Run pipeline to refresh.
@@ -2653,7 +2653,7 @@ export function DailyPipelinePanel({
                 </div>
                 {result.source_breakdown && result.source_breakdown.linkedin.raw === 0 && (
                   <div className="space-y-1">
-                    <p className="text-warning/80">
+                    <p className="text-warning">
                       <strong>LinkedIn (0/{linkedinCount}):</strong>{' '}
                       {result.actor_diagnostics?.linkedin_silent_zero
                         ? 'actor responded successfully but returned no rows. Most common cause: filters too narrow. Try widening past_days, switching experience to "any", or removing very specific keyword phrases.'
@@ -2661,7 +2661,7 @@ export function DailyPipelinePanel({
                     </p>
                     {result.actor_diagnostics?.linkedin_urls && result.actor_diagnostics.linkedin_urls.length > 0 && (
                       <details className="ml-2 cursor-pointer">
-                        <summary className="select-none text-[10px] text-muted-foreground hover:text-foreground">
+                        <summary className="select-none text-caption-sm text-muted-foreground hover:text-foreground">
                           Show {result.actor_diagnostics.linkedin_urls.length} LinkedIn URL{result.actor_diagnostics.linkedin_urls.length === 1 ? '' : 's'} we sent. Click to verify in LinkedIn directly
                         </summary>
                         <ul className="mt-1 space-y-0.5">
@@ -2671,14 +2671,14 @@ export function DailyPipelinePanel({
                                 href={u}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="break-all text-[10px] text-blue-600 hover:underline dark:text-blue-300"
+                                className="break-all text-caption-sm text-blue-600 hover:underline dark:text-blue-300"
                               >
                                 {u}
                               </a>
                             </li>
                           ))}
                           {result.actor_diagnostics.linkedin_urls.length > 8 && (
-                            <li className="text-[10px] italic text-muted-foreground">
+                            <li className="text-caption-sm italic text-muted-foreground">
                               + {result.actor_diagnostics.linkedin_urls.length - 8} more
                             </li>
                           )}
@@ -2688,7 +2688,7 @@ export function DailyPipelinePanel({
                   </div>
                 )}
                 {result.source_breakdown && result.source_breakdown.workday.raw === 0 && (
-                  <p className="text-warning/80">
+                  <p className="text-warning">
                     <strong>Workday (0/{workdayLimit}):</strong>{' '}
                     {result.actor_diagnostics?.workday_silent_zero
                       ? `actor responded but returned no rows. Sent ${result.actor_diagnostics?.workday_input_summary?.titles ?? '?'} titles. Try fewer / broader title chips, "any" experience, or check the Partial Results panel for actor errors.`
@@ -2702,14 +2702,14 @@ export function DailyPipelinePanel({
           {/* Show applied toggle */}
           {appliedIds.length > 0 && (
             <div className="flex items-center justify-between rounded-lg border border-border/60 bg-muted/30 p-2">
-              <span className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
+              <span className="inline-flex items-center gap-1.5 text-caption-sm text-muted-foreground">
                 <CheckCircle2 className="h-3.5 w-3.5 text-success" />
                 {appliedIds.length} applied this session
               </span>
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-7 gap-1 text-[11px]"
+                className="h-7 gap-1 text-caption-sm"
                 onClick={() => setShowApplied((v) => !v)}
               >
                 {showApplied ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
@@ -2724,7 +2724,7 @@ export function DailyPipelinePanel({
                 <AlertCircle className="mt-0.5 h-3.5 w-3.5 text-warning" />
                 <div>
                   <p className="font-semibold text-warning">Partial results</p>
-                  <ul className="mt-1 space-y-0.5 text-warning/80">
+                  <ul className="mt-1 space-y-0.5 text-warning">
                     {result.errors.map((e, i) => <li key={i}>· {e}</li>)}
                   </ul>
                 </div>
@@ -2737,7 +2737,7 @@ export function DailyPipelinePanel({
               there's at least one hidden company. */}
           {hideCompanies.length > 0 && (
             <div className="flex flex-wrap items-center gap-1.5 rounded-md border border-border/40 bg-muted/30 px-2.5 py-1.5">
-              <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+              <span className="text-caption-sm font-medium uppercase tracking-wider text-muted-foreground">
                 Muted companies
               </span>
               {hideCompanies.map((c) => (
@@ -2745,10 +2745,10 @@ export function DailyPipelinePanel({
                   key={c}
                   type="button"
                   onClick={() => handleUnhideCompany(c)}
-                  className="inline-flex items-center gap-1 rounded-full border border-rose-500/30 bg-rose-500/10 px-2 py-0.5 text-[10px] text-destructive hover:bg-rose-500/20 dark:text-rose-300 transition-colors"
+                  className="inline-flex items-center gap-1 rounded-full border border-rose-500/30 bg-rose-500/10 px-2 py-0.5 text-caption-sm text-destructive hover:bg-rose-500/20 dark:text-rose-300 transition-colors"
                   title={`Click to un-mute ${c}`}
                 >
-                  {c} <span className="text-destructive/60">×</span>
+                  {c} <span className="text-destructive">×</span>
                 </button>
               ))}
             </div>
@@ -2756,7 +2756,7 @@ export function DailyPipelinePanel({
 
           {hideTitlePatterns.length > 0 && (
             <div className="flex flex-wrap items-center gap-1.5 rounded-md border border-border/40 bg-muted/30 px-2.5 py-1.5">
-              <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+              <span className="text-caption-sm font-medium uppercase tracking-wider text-muted-foreground">
                 Muted title patterns
               </span>
               {hideTitlePatterns.map((p) => (
@@ -2764,10 +2764,10 @@ export function DailyPipelinePanel({
                   key={p}
                   type="button"
                   onClick={() => handleUnhideTitlePattern(p)}
-                  className="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] text-warning hover:bg-amber-500/20 dark:text-amber-300 transition-colors"
+                  className="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-caption-sm text-warning hover:bg-amber-500/20 dark:text-amber-300 transition-colors"
                   title={`Click to un-mute titles containing "${p}"`}
                 >
-                  contains "{p}" <span className="text-warning/60">×</span>
+                  contains "{p}" <span className="text-warning">×</span>
                 </button>
               ))}
             </div>
@@ -2778,8 +2778,8 @@ export function DailyPipelinePanel({
               user-tunable (click to edit). Hides when there's no result yet. */}
           {result && (
             <div className="rounded-lg border border-emerald-500/25 bg-gradient-to-r from-emerald-500/[0.04] to-teal-500/[0.04] px-3 py-2">
-              <div className="mb-1 flex items-center justify-between text-[11px]">
-                <span className="font-medium text-foreground/90">
+              <div className="mb-1 flex items-center justify-between text-caption-sm">
+                <span className="font-medium text-foreground">
                   Today's goal
                   <span className="ml-2 tabular-nums text-success">
                     {dailyApplied.count}/{dailyGoal}
@@ -2796,7 +2796,7 @@ export function DailyPipelinePanel({
                     const n = Math.max(1, Math.min(50, Number(next)));
                     if (Number.isFinite(n)) setDailyGoal(n);
                   }}
-                  className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+                  className="text-caption-sm text-muted-foreground hover:text-foreground transition-colors"
                   title="Change your daily application goal"
                 >
                   edit
@@ -2875,17 +2875,17 @@ export function DailyPipelinePanel({
                     <Button
                       size="sm"
                       onClick={() => handleBulkOpen(tier1, Math.min(5, digest.tier1Open))}
-                      className="h-7 gap-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-[11px] text-white hover:opacity-90"
+                      className="h-7 gap-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-caption-sm text-white hover:opacity-90"
                       title="Open the top 5 Tier-1 postings in new tabs at once"
                     >
                       <ExternalLink className="h-3 w-3" />
                       Open top {Math.min(5, digest.tier1Open)} in tabs
                     </Button>
                     <span
-                      className="hidden text-[10px] text-muted-foreground sm:inline"
+                      className="hidden text-caption-sm text-muted-foreground sm:inline"
                       title="Press ? on this page for keyboard shortcuts"
                     >
-                      ⌨ <kbd className="rounded border border-border/60 px-1 font-mono text-[9px]">?</kbd>
+                      ⌨ <kbd className="rounded border border-border/60 px-1 font-mono text-caption-sm">?</kbd>
                     </span>
                   </div>
                 )}
@@ -2923,10 +2923,10 @@ export function DailyPipelinePanel({
                       type="button"
                       onClick={() => setDateFilter(c.id)}
                       className={
-                        'rounded-full px-2.5 py-0.5 text-[11px] transition-colors ' +
+                        'rounded-full px-2.5 py-0.5 text-caption-sm transition-colors ' +
                         (active
                           ? 'bg-indigo-600 text-white shadow-sm'
-                          : 'border border-border/60 bg-background/70 text-foreground/80 hover:border-indigo-500/40 hover:bg-indigo-500/10')
+                          : 'border border-border/60 bg-background/70 text-ink-muted hover:border-indigo-500/40 hover:bg-indigo-500/10')
                       }
                       title={`${c.label}: ${n} posting${n === 1 ? '' : 's'}`}
                     >
@@ -2939,7 +2939,7 @@ export function DailyPipelinePanel({
                   <button
                     type="button"
                     onClick={() => setDateFilter('all')}
-                    className="ml-auto text-[10px] text-muted-foreground underline-offset-2 hover:underline"
+                    className="ml-auto text-caption-sm text-muted-foreground underline-offset-2 hover:underline"
                   >
                     Clear
                   </button>
@@ -2977,7 +2977,7 @@ export function DailyPipelinePanel({
             const chips = allChips.filter((c) => c.id === 'all' || _sourceCount(c.id) > 0);
             if (chips.length <= 1) return null;
             return (
-              <div className="flex flex-wrap items-center gap-1 px-1 text-[10px] text-muted-foreground">
+              <div className="flex flex-wrap items-center gap-1 px-1 text-caption-sm text-muted-foreground">
                 <span className="mr-1">Source:</span>
                 {chips.map((c) => {
                   const active = sourceFilter === c.id;
@@ -2991,7 +2991,7 @@ export function DailyPipelinePanel({
                         'rounded-full px-2 py-0.5 transition-colors ' +
                         (active
                           ? 'bg-purple-600/90 text-white'
-                          : 'text-foreground/70 hover:bg-muted/60 hover:text-foreground')
+                          : 'text-ink-muted hover:bg-muted/60 hover:text-foreground')
                       }
                       title={`${c.label}: ${n} posting${n === 1 ? '' : 's'}`}
                     >
@@ -3143,7 +3143,7 @@ export function DailyPipelinePanel({
                   selected
                   <span className="hidden sm:inline"> for batch tailor</span>
                 </span>
-                <span className="hidden text-[10px] text-white/80 sm:inline">
+                <span className="hidden text-caption-sm text-white/80 sm:inline">
                   Pre-fetches each JD, then hands off to Batch Tailor
                 </span>
               </div>
@@ -3189,7 +3189,7 @@ export function DailyPipelinePanel({
 function SummaryBlock({ label, value, accent }: { label: string; value: number | string; accent?: string }) {
   return (
     <div className="space-y-0.5">
-      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
+      <p className="text-caption-sm uppercase tracking-wider text-muted-foreground">{label}</p>
       <p className={`text-2xl font-bold tabular-nums ${accent || ''}`}>{value}</p>
     </div>
   );

@@ -123,7 +123,7 @@ function AppliedFiltersSummary({
     <div className="flex flex-wrap items-center gap-1.5" data-testid="tech-feed-applied-filters">
       {entries.length > 0 && (
         <>
-          <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
+          <span className="text-caption-sm uppercase tracking-wide text-muted-foreground">
             Server applied
           </span>
           {entries.slice(0, 12).map(([key, value]) => {
@@ -137,7 +137,7 @@ function AppliedFiltersSummary({
               >
                 {key.replace(/_/g, ' ')}:{' '}
                 {Array.isArray(value) ? value.join(', ') : String(value)}
-                {caveat ? <span aria-hidden className="ml-1 opacity-60">*</span> : null}
+                {caveat ? <span aria-hidden className="ml-1">*</span> : null}
               </Badge>
             );
           })}
@@ -148,7 +148,7 @@ function AppliedFiltersSummary({
           className="flex flex-wrap items-center gap-1.5"
           data-testid="tech-feed-unapplied-filters"
         >
-          <span className="text-[11px] uppercase tracking-wide text-amber-600 dark:text-amber-500">
+          <span className="text-caption-sm uppercase tracking-wide text-warning">
             Not applied
           </span>
           {notApplied.map((u) => (
@@ -156,7 +156,7 @@ function AppliedFiltersSummary({
               key={u.filter}
               variant="outline"
               title={u.reason}
-              className="border-amber-500/40 font-normal text-amber-700 dark:text-amber-500"
+              className="border-warning/40 font-normal text-warning"
             >
               {u.filter.replace(/_/g, ' ')}
             </Badge>
@@ -165,7 +165,7 @@ function AppliedFiltersSummary({
       )}
       {partial.length > 0 && (
         <span
-          className="text-[11px] text-muted-foreground"
+          className="text-caption-sm text-muted-foreground"
           data-testid="tech-feed-partial-filters"
         >
           * narrows only the postings that state it
@@ -549,7 +549,7 @@ export function TechFeedPanel({
                 {countLabel}
               </p>
               {inventoryWatermark && (
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-caption-sm text-muted-foreground">
                   Index snapshot {new Date(inventoryWatermark).toLocaleString()}
                 </p>
               )}
@@ -599,7 +599,7 @@ export function TechFeedPanel({
               type="button"
               size="sm"
               variant="outline"
-              className="h-8 gap-1 text-xs focus-visible:ring-2 focus-visible:ring-ring"
+              className="hit-target h-8 gap-1 text-xs focus-visible:ring-2 focus-visible:ring-ring"
               onClick={() => {
                 // Fire and forget: the local write is synchronous inside the
                 // hook, so the chip appears whether or not the network does.
@@ -663,7 +663,7 @@ export function TechFeedPanel({
             */}
             {syncError && (
               <span
-                className="text-[11px] text-muted-foreground"
+                className="text-caption-sm text-muted-foreground"
                 data-testid="tech-feed-saved-search-sync-error"
               >
                 Saved on this device only. {syncError}

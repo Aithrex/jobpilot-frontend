@@ -40,7 +40,7 @@ export default function AutoApplyEntryCard({ onOpen }: { onOpen?: () => void }) 
         <div className="flex items-center gap-2">
           <h3 className="truncate font-semibold">Auto-Apply</h3>
           {count > 0 && (
-            <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[11px] font-semibold text-primary">
+            <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-caption-sm font-semibold text-primary">
               {count}
             </span>
           )}

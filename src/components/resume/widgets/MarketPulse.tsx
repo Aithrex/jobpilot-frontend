@@ -45,12 +45,12 @@ export const marketPulseWidget: Widget = {
                     className="block py-2.5 transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
                   >
                     <div className="mb-0.5 flex items-center gap-2">
-                      <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-primary">
+                      <span className="rounded bg-primary/10 px-1.5 py-0.5 text-caption-sm font-bold uppercase tracking-wider text-primary">
                         {item.category}
                       </span>
-                      <span className="text-[10px] text-muted-foreground">{item.timeAgo}</span>
+                      <span className="text-caption-sm text-muted-foreground">{item.timeAgo}</span>
                     </div>
-                    <p className="line-clamp-2 text-xs font-medium leading-snug text-foreground/90">{item.headline}</p>
+                    <p className="line-clamp-2 text-xs font-medium leading-snug text-foreground">{item.headline}</p>
                   </a>
                 </li>
               );

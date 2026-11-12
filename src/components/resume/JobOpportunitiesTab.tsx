@@ -136,10 +136,10 @@ export default function JobOpportunitiesTab({ embedded }: JobOpportunitiesTabPro
     <div className="space-y-4">
       {!isEmbedded && (
         <div className="space-y-1">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
-            Discover · Jobs
+          <p className="overline">
+            Jobs
           </p>
-          <h2 className="font-display text-2xl font-extrabold tracking-tight">Job Opportunities</h2>
+          <h2 className="font-display text-h2 text-foreground">Job opportunities</h2>
         </div>
       )}
 

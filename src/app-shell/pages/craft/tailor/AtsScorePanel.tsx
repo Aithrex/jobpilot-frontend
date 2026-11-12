@@ -220,7 +220,7 @@ export function AtsScorePanel({
         <div className="flex items-center justify-between gap-3 rounded-container border border-warning/40 bg-warning/10 px-4 py-3">
           <p className="text-xs text-foreground">
             <span className="font-semibold">
-              {rescoring ? 'Updating assessment…' : 'Edited since assessed'}
+              {rescoring ? 'Updating assessment...' : 'Edited since assessed'}
             </span>
             {!rescoring &&
               ' The numbers below reflect the pre-edit resume and will refresh shortly.'}
@@ -263,7 +263,7 @@ export function AtsScorePanel({
               )}
             <p className="text-xs text-muted-foreground">{fileChecksLine(scores)}</p>
             <p className="text-xs text-muted-foreground">{humanReviewLine(scores)}</p>
-            <p className="mt-2 text-[11px] text-muted-foreground">{DISCLAIMER}</p>
+            <p className="mt-2 text-caption-sm text-muted-foreground">{DISCLAIMER}</p>
           </div>
         </div>
       </div>
@@ -297,7 +297,7 @@ export function AtsScorePanel({
                   label="Term presence (advisory)"
                   score={termPresence.percentage}
                 />
-                <p className="mt-1 text-[11px] text-muted-foreground">
+                <p className="mt-1 text-caption-sm text-muted-foreground">
                   {termPresence.note ||
                     'Search-term presence only; separate from requirement satisfaction.'}
                   {typeof termPresence.denominator === 'number'
@@ -313,7 +313,7 @@ export function AtsScorePanel({
           <p className="mb-1 text-sm font-semibold text-foreground">
             Requirement evaluations
           </p>
-          <p className="mb-3 text-[11px] text-muted-foreground">
+          <p className="mb-3 text-caption-sm text-muted-foreground">
             Every count above reconciles with this ledger.
           </p>
           {diagnostics.length === 0 ? (

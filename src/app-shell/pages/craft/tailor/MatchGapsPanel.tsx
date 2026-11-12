@@ -78,15 +78,15 @@ function DemonstratedRow({ entry }: { entry: MatchGapItem }) {
         aria-expanded={open}
       >
         <div className="min-w-0">
-          <p className="text-[12.5px] font-medium text-foreground">{entry.item}</p>
-          <p className="mt-0.5 text-[11px] text-muted-foreground">
+          <p className="text-caption font-medium text-foreground">{entry.item}</p>
+          <p className="mt-0.5 text-caption-sm text-muted-foreground">
             Shown on the resume{entry.section ? ` · ${entry.section}` : ''}
           </p>
         </div>
         <ChevronDown className={cn('mt-0.5 h-3.5 w-3.5 shrink-0', open && 'rotate-180')} />
       </button>
       {open && (
-        <div className="mt-2 space-y-1 border-t border-border pt-2 text-[11px] text-muted-foreground">
+        <div className="mt-2 space-y-1 border-t border-border pt-2 text-caption-sm text-muted-foreground">
           {entry.span && (
             <p className="leading-snug text-foreground">&quot;{entry.span.trim()}&quot;</p>
           )}
@@ -118,9 +118,9 @@ function OptionalExperienceRow({
     <div className="rounded-control border border-border bg-card px-3 py-2.5">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="text-[12.5px] font-medium text-foreground">{entry.item}</p>
+          <p className="text-caption font-medium text-foreground">{entry.item}</p>
           {entry.why && (
-            <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
+            <p className="mt-0.5 text-caption-sm leading-snug text-muted-foreground">
               {entry.why}
             </p>
           )}
@@ -129,7 +129,7 @@ function OptionalExperienceRow({
           type="button"
           size="sm"
           variant="outline"
-          className="h-7 shrink-0 px-2 text-[11px]"
+          className="hit-target h-7 shrink-0 px-2 text-caption-sm"
           onClick={() => setOpen((v) => !v)}
         >
           Have relevant experience?
@@ -137,7 +137,7 @@ function OptionalExperienceRow({
       </div>
       {open && (
         <div className="mt-2.5 space-y-2 border-t border-border pt-2.5">
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-caption-sm text-muted-foreground">
             Optional. Add experience only if you actually used{' '}
             <span className="font-medium text-foreground">{entry.item}</span>
             {' '}on a specific job or project. This does not rewrite the rest of the resume.
@@ -149,7 +149,7 @@ function OptionalExperienceRow({
                 setSelected(e.target.value);
                 setAsNew(false);
               }}
-              className="w-full rounded-control border border-border bg-background px-2 py-1.5 text-[11px] text-foreground"
+              className="w-full rounded-control border border-border bg-background px-2 py-1.5 text-caption-sm text-foreground"
             >
               <option value="">Select a job or project…</option>
               {options.map((opt) => (
@@ -160,7 +160,7 @@ function OptionalExperienceRow({
               ))}
             </select>
           )}
-          <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+          <label className="flex items-center gap-1.5 text-caption-sm text-muted-foreground">
             <input
               type="checkbox"
               checked={asNew}
@@ -172,12 +172,12 @@ function OptionalExperienceRow({
             value={clause}
             onChange={(e) => setClause(e.target.value)}
             placeholder={`How you used ${entry.item} (at least a short clause)`}
-            className="min-h-[64px] text-[12px]"
+            className="min-h-[64px] text-xs"
           />
           <Button
             type="button"
             size="sm"
-            className="h-7 px-3 text-[11px]"
+            className="hit-target h-7 px-3 text-caption-sm"
             disabled={!canSubmit}
             onClick={() => {
               const opt = options.find((o) => o.id === selected);
@@ -228,7 +228,7 @@ export function MatchGapsPanel({
   return (
     <div className="space-y-4">
       {gaps.incomplete && (
-        <p className="text-[11px] text-muted-foreground">
+        <p className="text-caption-sm text-muted-foreground">
           Some requirement checks could not be completed. This is not a perfect match score.
         </p>
       )}
@@ -238,7 +238,7 @@ export function MatchGapsPanel({
           <p className="mb-1.5 text-sm font-semibold text-foreground">
             Already shown
           </p>
-          <p className="mb-2 text-[11px] text-muted-foreground">
+          <p className="mb-2 text-caption-sm text-muted-foreground">
             These requirements are on the final resume. Expand to see the matched text.
             No evidence attachment is needed.
           </p>
@@ -255,7 +255,7 @@ export function MatchGapsPanel({
           <p className="mb-1.5 text-sm font-semibold text-foreground">
             Related experience (optional)
           </p>
-          <p className="mb-2 text-[11px] text-muted-foreground">
+          <p className="mb-2 text-caption-sm text-muted-foreground">
             Adjacent to what you already do. Add only if you have used the named tool
             or responsibility. Skills-list mentions can satisfy a skills-list requirement;
             production use, ownership, and duration need the matching context.
@@ -279,7 +279,7 @@ export function MatchGapsPanel({
             <HelpCircle className="h-3.5 w-3.5 text-warning" />
             Not shown on this resume
           </p>
-          <p className="mb-2 text-[11px] text-muted-foreground">
+          <p className="mb-2 text-caption-sm text-muted-foreground">
             Not found after a complete search of the final document. Do not add them
             unless you have used them on a real job or project.
           </p>
@@ -289,9 +289,9 @@ export function MatchGapsPanel({
                 key={entry.item}
                 className="rounded-control border border-warning/25 bg-warning/5 px-3 py-2"
               >
-                <p className="text-[12.5px] font-medium text-foreground">{entry.item}</p>
+                <p className="text-caption font-medium text-foreground">{entry.item}</p>
                 {entry.why && (
-                  <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
+                  <p className="mt-0.5 text-caption-sm leading-snug text-muted-foreground">
                     {entry.why}
                   </p>
                 )}
@@ -306,7 +306,7 @@ export function MatchGapsPanel({
           <button
             type="button"
             onClick={() => setStretchOpen((v) => !v)}
-            className="flex w-full items-center justify-between text-left text-[12px] font-medium text-muted-foreground hover:text-foreground"
+            className="flex w-full items-center justify-between text-left text-xs font-medium text-muted-foreground hover:text-foreground"
           >
             <span className="inline-flex items-center gap-1.5">
               <Info className="h-3.5 w-3.5" />
@@ -323,9 +323,9 @@ export function MatchGapsPanel({
                   key={entry.item}
                   className="rounded-control border border-border bg-muted/40 px-3 py-2"
                 >
-                  <p className="text-[12.5px] font-medium text-foreground">{entry.item}</p>
+                  <p className="text-caption font-medium text-foreground">{entry.item}</p>
                   {entry.why && (
-                    <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
+                    <p className="mt-0.5 text-caption-sm leading-snug text-muted-foreground">
                       {entry.why}
                     </p>
                   )}

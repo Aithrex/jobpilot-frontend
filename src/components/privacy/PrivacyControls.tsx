@@ -134,7 +134,7 @@ export function PrivacyControls({ className }: PrivacyControlsProps) {
     body = (
       <p className="py-3 text-sm leading-relaxed text-muted-foreground" role="status">
         Consent and email controls are not available in the app yet. Email{' '}
-        <a className="font-medium text-primary underline-offset-4 hover:underline" href={`mailto:${PRIVACY_EMAIL}`}>
+        <a className="font-medium text-primary underline underline-offset-4 hover:text-primary-hover" href={`mailto:${PRIVACY_EMAIL}`}>
           {PRIVACY_EMAIL}
         </a>{' '}
         and we will handle your request.

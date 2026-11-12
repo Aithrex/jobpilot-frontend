@@ -110,7 +110,7 @@ function FutureUpdateBanner({ path }: { path: HubPath }) {
       animate={{ opacity: 1, y: 0 }}
       className="mb-5 flex items-start gap-3 rounded-xl border border-dashed border-primary/30 bg-primary/[0.04] p-4"
     >
-      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary/12 text-primary">
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
         {allDone ? <PartyPopper className="h-5 w-5" /> : <Rocket className="h-5 w-5" />}
       </span>
       <div className="min-w-0">
@@ -201,7 +201,7 @@ export default function LearningHubTab() {
                 <Briefcase className="h-5 w-5" />
               </span>
               <div>
-                <h1 className="text-xl font-extrabold tracking-tight text-foreground">Learning Hub</h1>
+                <h2 className="text-xl font-extrabold tracking-tight text-foreground">Learning Hub</h2>
                 <p className="text-xs text-muted-foreground">Your story-driven engineering journey</p>
               </div>
             </div>
@@ -240,9 +240,9 @@ export default function LearningHubTab() {
                   <ArrowLeft className="h-4 w-4" /> Journey
                 </Button>
                 <div>
-                  <h1 className="text-lg font-extrabold tracking-tight text-foreground">
+                  <h2 className="text-lg font-extrabold tracking-tight text-foreground">
                     {path?.season_title ?? selectedSummary?.title ?? "Chapter"}
-                  </h1>
+                  </h2>
                   <p className="text-xs text-muted-foreground">
                     {path?.season_length ?? selectedSummary?.length_days ?? 0} days
                   </p>
@@ -255,7 +255,7 @@ export default function LearningHubTab() {
                   </Badge>
                   <Badge variant="outline">{path.difficulty_label}</Badge>
                   {path.current_streak > 0 && (
-                    <Badge variant="outline" className="gap-1 border-[hsl(var(--warning))]/30 text-[hsl(var(--warning))]">
+                    <Badge variant="outline" className="gap-1 border-warning/30 text-warning">
                       <Flame className="h-3 w-3" /> {path.current_streak}d
                     </Badge>
                   )}
@@ -281,9 +281,9 @@ export default function LearningHubTab() {
             <motion.div
               initial={{ opacity: 0, y: -6 }}
               animate={{ opacity: 1, y: 0 }}
-              className="flex flex-wrap items-center gap-3 rounded-xl border border-[hsl(var(--success))]/30 bg-[hsl(var(--success))]/[0.06] p-4"
+              className="flex flex-wrap items-center gap-3 rounded-xl border border-success/30 bg-success/[0.06] p-4"
             >
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[hsl(var(--success))]/15 text-[hsl(var(--success))]">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-success/15 text-success">
                 <PartyPopper className="h-5 w-5" />
               </span>
               <div className="min-w-0 flex-1">

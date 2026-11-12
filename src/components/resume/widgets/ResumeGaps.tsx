@@ -51,7 +51,7 @@ export const resumeGapsWidget: Widget = {
                   className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-1 text-xs transition-colors hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
                 >
                   {g.skill}
-                  <span className="rounded-full bg-warning/15 px-1 text-[10px] font-bold text-warning">×{g.count}</span>
+                  <span className="rounded-full bg-warning/15 px-1 text-caption-sm font-bold text-warning">×{g.count}</span>
                 </button>
               ))}
             </div>

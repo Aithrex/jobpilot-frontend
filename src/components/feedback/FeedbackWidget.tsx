@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 import { apiService } from "@/lib/api";
 
 // ── Context so anywhere in the app can call openFeedback({type, prefill}) ──
@@ -107,17 +108,19 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
 
           <div className="space-y-4 pt-2">
             <div>
-              <Label className="text-xs uppercase tracking-wide text-muted-foreground">Type</Label>
-              <div className="mt-2 grid grid-cols-2 gap-2">
+              <p id="feedback-type-label" className="overline">Type</p>
+              <div role="radiogroup" aria-labelledby="feedback-type-label" className="mt-2 grid grid-cols-2 gap-2">
                 {(Object.keys(TYPE_LABELS) as FeedbackType[]).map((t) => (
                   <button
                     key={t}
                     type="button"
+                    role="radio"
+                    aria-checked={type === t}
                     onClick={() => setType(t)}
-                    className={`rounded-md border px-3 py-2 text-left text-sm transition-colors ${
+                    className={`min-h-10 rounded-md border px-3 py-2 text-left text-sm text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                       type === t
-                        ? "border-primary bg-primary/10 text-foreground"
-                        : "border-border/60 hover:border-border bg-background"
+                        ? "border-primary bg-primary/10"
+                        : "border-border bg-background hover:bg-muted"
                     }`}
                   >
                     {TYPE_LABELS[t]}
@@ -127,19 +130,29 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
             </div>
 
             <div>
-              <Label htmlFor="feedback-msg" className="text-xs uppercase tracking-wide text-muted-foreground">
+              <Label htmlFor="feedback-msg" className="overline">
                 Message
               </Label>
               <Textarea
                 id="feedback-msg"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
+                onKeyDown={(e) => {
+                  // Enter is a newline in a message; Cmd or Ctrl plus Enter sends.
+                  if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && !submitting) {
+                    e.preventDefault();
+                    void submit();
+                  }
+                }}
+                aria-describedby="feedback-msg-count"
                 placeholder={TYPE_PLACEHOLDERS[type]}
                 rows={6}
                 maxLength={4000}
                 className="mt-2 resize-none"
               />
-              <p className="mt-1 text-right text-xs text-muted-foreground">{message.length} / 4000</p>
+              <p id="feedback-msg-count" className="mt-1 text-right text-xs tabular-nums text-muted-foreground">
+                {message.length} / 4000
+              </p>
             </div>
           </div>
 
@@ -147,7 +160,8 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
             <Button variant="outline" onClick={() => setOpen(false)} disabled={submitting}>
               Cancel
             </Button>
-            <Button onClick={submit} disabled={submitting || !message.trim()}>
+            <Button onClick={submit} disabled={submitting || !message.trim()} aria-busy={submitting}>
+              {submitting && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
               {submitting ? "Sending..." : "Send"}
             </Button>
           </DialogFooter>

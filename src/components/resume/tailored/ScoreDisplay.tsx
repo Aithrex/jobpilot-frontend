@@ -31,7 +31,7 @@ export function ScoreBar({
           <span className="text-xs text-ink-muted font-medium">
             {label}
           </span>
-          <span className="text-[11px] text-muted-foreground">{unavailable}</span>
+          <span className="text-caption-sm text-muted-foreground">{unavailable}</span>
         </div>
         <div className="h-2 rounded-full bg-muted" />
       </div>
@@ -85,7 +85,7 @@ export function ScoreBar({
             {score}
           </span>
           <span
-            className={`hidden sm:inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wider border ${badge.cls}`}
+            className={`hidden sm:inline-flex items-center px-1.5 py-0.5 rounded text-caption-sm font-semibold uppercase tracking-wider border ${badge.cls}`}
           >
             {badge.text}
           </span>
@@ -155,7 +155,7 @@ export function ScoreRing({
         </span>
         {typeof delta === 'number' && delta !== 0 && (
           <span
-            className={`mt-0.5 text-[10px] font-semibold tabular-nums ${
+            className={`mt-0.5 text-caption-sm font-semibold tabular-nums ${
               delta > 0
                 ? 'text-success'
                 : 'text-destructive'
@@ -256,7 +256,7 @@ export function PDFParseabilityCard({
       {warnings.length > 0 && (
         <div className="mt-4 space-y-1.5">
           {warnings.slice(0, 4).map((w, i) => (
-            <p key={i} className="text-[11px] text-warning">
+            <p key={i} className="text-caption-sm text-warning">
               ⚠ {w}
             </p>
           ))}
@@ -301,7 +301,7 @@ export function VendorChecklistCard({
         <p className="text-xs font-semibold text-foreground">
           {vendor}
         </p>
-        <span className={`inline-flex items-center gap-1.5 text-[11px] font-semibold ${tone.text}`}>
+        <span className={`inline-flex items-center gap-1.5 text-caption-sm font-semibold ${tone.text}`}>
           <span className={`h-1.5 w-1.5 rounded-full ${tone.dot}`} />
           {tone.label}
         </span>
@@ -310,7 +310,7 @@ export function VendorChecklistCard({
         {entry.checks.map((chk) => {
           const rowTone = STATUS_TONE[chk.status] ?? STATUS_TONE.warn;
           return (
-            <li key={chk.id} className="flex items-start gap-1.5 text-[11px] leading-snug">
+            <li key={chk.id} className="flex items-start gap-1.5 text-caption-sm leading-snug">
               <span className={`mt-1 h-1 w-1 shrink-0 rounded-full ${rowTone.dot}`} />
               <span className="text-ink-muted">{chk.label}</span>
             </li>

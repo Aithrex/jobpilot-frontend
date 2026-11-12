@@ -16,8 +16,8 @@ export default function GrowPage() {
         <h1 className="text-title font-display text-foreground">
           Build skills &amp; momentum
         </h1>
-        <p className="mt-1 text-caption text-muted-foreground">
-          Learning paths, networking, and events in one place.
+        <p className="mt-1 max-w-prose text-caption text-muted-foreground">
+          Learning paths, interview prep, networking, and events in one place.
         </p>
       </header>
 

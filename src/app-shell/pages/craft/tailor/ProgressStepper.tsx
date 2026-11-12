@@ -34,9 +34,9 @@ export function ProgressStepper({ currentStep }: { currentStep: 1 | 2 | 3 }) {
                 <div
                   aria-hidden="true"
                   className={cn(
-                    'w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-all duration-300',
+                    'w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-colors duration-200',
                     status === 'done' &&
-                      'bg-primary text-primary-foreground shadow-soft',
+                      'bg-signal text-signal-foreground shadow-soft',
                     status === 'active' &&
                       'bg-primary text-primary-foreground ring-4 ring-primary/20 shadow-soft',
                     status === 'upcoming' && 'bg-muted text-muted-foreground',
@@ -53,7 +53,7 @@ export function ProgressStepper({ currentStep }: { currentStep: 1 | 2 | 3 }) {
                   className={cn(
                     'text-xs sm:text-sm font-medium sr-only sm:not-sr-only transition-colors',
                     status === 'active' && 'text-foreground',
-                    status === 'done' && 'text-primary',
+                    status === 'done' && 'text-signal',
                     status === 'upcoming' && 'text-muted-foreground',
                   )}
                 >
@@ -67,7 +67,7 @@ export function ProgressStepper({ currentStep }: { currentStep: 1 | 2 | 3 }) {
                   aria-hidden="true"
                   className={cn(
                     'h-[2px] flex-1 max-w-[80px] rounded-full transition-colors duration-200',
-                    currentStep > s.n ? 'bg-primary' : 'bg-muted',
+                    currentStep > s.n ? 'bg-signal' : 'bg-muted',
                   )}
                 />
               )}

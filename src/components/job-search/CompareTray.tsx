@@ -90,7 +90,7 @@ export function CompareTray({ jobs, onRemove, onClear }: CompareTrayProps) {
               {jobs.map((job) => (
                 <li
                   key={job.job_id}
-                  className="flex min-w-0 max-w-[11rem] shrink-0 items-center gap-1.5 rounded-lg border border-border/70 bg-background/70 py-1 pl-1.5 pr-1 text-[12px]"
+                  className="flex min-w-0 max-w-[11rem] shrink-0 items-center gap-1.5 rounded-lg border border-border/70 bg-background/70 py-1 pl-1.5 pr-1 text-caption-sm"
                 >
                   <CompanyLogo company={job.company || job.title} logoUrl={job.logo_url} size={18} />
                   <span className="truncate" title={`${job.title} at ${job.company}`}>{toTitleCase(job.company)}</span>
@@ -98,22 +98,22 @@ export function CompareTray({ jobs, onRemove, onClear }: CompareTrayProps) {
                     type="button"
                     onClick={() => onRemove(job.job_id)}
                     aria-label={`Remove ${job.title} from compare`}
-                    className="press grid h-5 w-5 shrink-0 place-items-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
+                    className="press hit-target grid h-6 w-6 shrink-0 place-items-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
                   >
                     <X className="h-3 w-3" aria-hidden />
                   </button>
                 </li>
               ))}
               {jobs.length < COMPARE_MAX && (
-                <li className="shrink-0 text-[11px] text-muted-foreground">
+                <li className="shrink-0 text-caption-sm text-muted-foreground">
                   {jobs.length === 1 ? 'Pick one more to compare' : `Up to ${COMPARE_MAX}`}
                 </li>
               )}
             </ul>
-            <Button size="sm" variant="ghost" className="h-8 shrink-0 text-xs" onClick={onClear}>
+            <Button size="sm" variant="ghost" className="hit-target h-8 shrink-0 text-xs" onClick={onClear}>
               Clear
             </Button>
-            <Button size="sm" className="h-8 shrink-0 text-xs" disabled={jobs.length < 2} onClick={() => setOpen(true)}>
+            <Button size="sm" className="hit-target h-8 shrink-0 text-xs" disabled={jobs.length < 2} onClick={() => setOpen(true)}>
               Compare {jobs.length}
             </Button>
           </motion.div>
@@ -127,7 +127,7 @@ export function CompareTray({ jobs, onRemove, onClear }: CompareTrayProps) {
             <DialogDescription>Side by side, from what each posting and your resume say.</DialogDescription>
           </DialogHeader>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[36rem] border-separate border-spacing-0 text-left text-[13px]">
+            <table className="w-full min-w-[36rem] border-separate border-spacing-0 text-left text-caption">
               <thead>
                 <tr>
                   <th className="w-32 p-2" />
@@ -136,7 +136,7 @@ export function CompareTray({ jobs, onRemove, onClear }: CompareTrayProps) {
                       <div className="flex items-start gap-2">
                         <CompanyLogo company={job.company || job.title} logoUrl={job.logo_url} size={28} />
                         <div className="min-w-0">
-                          <p className="truncate text-[12px] text-muted-foreground">{toTitleCase(job.company)}</p>
+                          <p className="truncate text-caption-sm text-muted-foreground">{toTitleCase(job.company)}</p>
                           <p className="line-clamp-2 font-semibold leading-snug text-foreground">{toTitleCase(job.title)}</p>
                         </div>
                       </div>
@@ -147,9 +147,9 @@ export function CompareTray({ jobs, onRemove, onClear }: CompareTrayProps) {
               <tbody>
                 {ROWS.map((row) => (
                   <tr key={row.label} className="[&>td]:border-t [&>td]:border-border/60">
-                    <td className="p-2 align-top text-[12px] font-medium text-muted-foreground">{row.label}</td>
+                    <td className="p-2 align-top text-caption-sm font-medium text-muted-foreground">{row.label}</td>
                     {jobs.map((job) => (
-                      <td key={job.job_id} className="p-2 align-top text-foreground/90">{row.value(job)}</td>
+                      <td key={job.job_id} className="p-2 align-top text-foreground">{row.value(job)}</td>
                     ))}
                   </tr>
                 ))}

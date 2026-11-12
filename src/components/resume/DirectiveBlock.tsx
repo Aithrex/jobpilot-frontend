@@ -65,12 +65,12 @@ export function DirectiveBlock({ ctx }: { ctx: DashboardCtx }) {
     >
       <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0 flex-1">
-          <div className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-primary">
+          <div className="inline-flex items-center gap-1.5 text-caption-sm font-semibold uppercase tracking-wider text-primary">
             <Sparkles className="h-3.5 w-3.5" /> Today's focus
           </div>
           <h1
             id="directive-heading"
-            className="mt-2 text-balance font-display text-xl font-extrabold leading-tight tracking-tight sm:text-[1.6rem]"
+            className="mt-2 text-balance font-display text-xl font-extrabold leading-tight tracking-tight sm:text-h1"
           >
             <span className="tabular-nums">{n}</span> {plural(n, 'role', 'roles')} worth applying to today
           </h1>
@@ -100,7 +100,7 @@ export function DirectiveBlock({ ctx }: { ctx: DashboardCtx }) {
                     <span className="block truncate text-xs text-muted-foreground">
                       {j.title || 'Role'}
                     </span>
-                    <span className="mt-0.5 block truncate text-xs tabular-nums text-muted-foreground/90">
+                    <span className="mt-0.5 block truncate text-xs tabular-nums text-muted-foreground">
                       {whyReason(j, onVisa)}
                     </span>
                   </div>

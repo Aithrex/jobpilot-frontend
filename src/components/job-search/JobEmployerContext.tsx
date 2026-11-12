@@ -41,7 +41,7 @@ const AVAILABILITY_ICON = {
 } as const;
 
 const AVAILABILITY_TEXT: Record<ExplanationTone, string> = {
-  positive: 'text-foreground/80',
+  positive: 'text-ink-muted',
   neutral: 'text-muted-foreground',
   caution: 'text-warning',
   danger: 'text-destructive',
@@ -92,7 +92,7 @@ export function JobEmployerContext({
             <li>
               <span
                 className={cn(
-                  'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10.5px] font-semibold',
+                  'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-caption-sm font-semibold',
                   EXPLANATION_TONE_CLASS[category.tone],
                 )}
                 title={category.basis ?? undefined}
@@ -109,7 +109,7 @@ export function JobEmployerContext({
             <li key={label}>
               <span
                 className={cn(
-                  'inline-flex items-center rounded-full border px-2 py-0.5 text-[10.5px] font-semibold',
+                  'inline-flex items-center rounded-full border px-2 py-0.5 text-caption-sm font-semibold',
                   EXPLANATION_TONE_CLASS.neutral,
                 )}
                 data-testid="posting-relationship"
@@ -123,7 +123,7 @@ export function JobEmployerContext({
 
       {availability && (
         <p
-          className={cn('flex items-center gap-1 text-[11px]', AVAILABILITY_TEXT[availability.tone])}
+          className={cn('flex items-center gap-1 text-caption-sm', AVAILABILITY_TEXT[availability.tone])}
           data-testid="job-availability"
           data-state={availability.state}
         >
@@ -133,10 +133,10 @@ export function JobEmployerContext({
       )}
 
       {host && (
-        <p className="flex items-center gap-1 truncate text-[11px] text-muted-foreground" data-testid="job-destination">
+        <p className="flex items-center gap-1 truncate text-caption-sm text-muted-foreground" data-testid="job-destination">
           <ExternalLink className="h-3 w-3 shrink-0" aria-hidden />
           <span className="truncate">
-            Applies on <span className="font-medium text-foreground/80">{host}</span>
+            Applies on <span className="font-medium text-ink-muted">{host}</span>
             {sourceLabel ? `, found via ${sourceLabel}` : ''}
           </span>
         </p>
@@ -145,7 +145,7 @@ export function JobEmployerContext({
       {trust && (
         <div
           role="note"
-          className={cn('rounded-md border px-2 py-1 text-[11px] leading-snug', EXPLANATION_TONE_CLASS[trust.tone])}
+          className={cn('rounded-md border px-2 py-1 text-caption-sm leading-snug', EXPLANATION_TONE_CLASS[trust.tone])}
           data-testid="job-trust-line"
           data-state={trust.state}
         >

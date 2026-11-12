@@ -2,6 +2,7 @@ import { useState, type FocusEvent, type PointerEvent, type ReactNode } from 're
 import { Link } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
 import { BrandMark } from '@/components/BrandMark';
+import { DURATION } from '@/lib/motion';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { HeroStory } from '@/components/landing/story/HeroStory';
 import { AuthAtlas, type AuthPhase, type AuthZone } from './AuthAtlas';
@@ -147,13 +148,17 @@ export function AuthShell({
 
   const zone = hoverZone && hoverZone !== 'idle' ? hoverZone : focusZone;
 
+  // The form is the thing people came to use, so it has to be readable and
+  // typable at once: a short 200ms settle with a tight stagger (the whole
+  // column lands inside ~350ms), never a half-second reveal that hides the
+  // fields while someone is already reaching for them.
   const stagger = {
     hidden: {},
-    show: { transition: { staggerChildren: reduce ? 0 : 0.08, delayChildren: reduce ? 0 : 0.1 } },
+    show: { transition: { staggerChildren: reduce ? 0 : 0.03, delayChildren: 0 } },
   };
   const fadeUp = {
-    hidden: { opacity: 0, y: reduce ? 0 : 10 },
-    show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: AUTH_EASE } },
+    hidden: { opacity: 0, y: reduce ? 0 : 6 },
+    show: { opacity: 1, y: 0, transition: { duration: reduce ? 0 : DURATION.base, ease: AUTH_EASE } },
   };
 
   return (

@@ -133,7 +133,7 @@ export function HeroPanel({ model, onRetry }: { model: HeroModel; onRetry: () =>
       {hasQueue ? (
         <div className="space-y-5">
           <div className="max-w-2xl space-y-2">
-            <p className="inline-flex items-center gap-2 text-[0.6875rem] font-semibold uppercase leading-none tracking-[0.06em] text-primary">
+            <p className="inline-flex items-center gap-2 text-caption-sm font-semibold uppercase leading-none tracking-[0.06em] text-primary">
               <Inbox className="h-3.5 w-3.5" aria-hidden="true" /> Needs your input
             </p>
             <h2 className="text-title font-display text-foreground">
@@ -188,7 +188,7 @@ export function HeroPanel({ model, onRetry }: { model: HeroModel; onRetry: () =>
       ) : (
         <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
           <div className="max-w-2xl space-y-3">
-            <p className="inline-flex items-center gap-2 text-[0.6875rem] font-semibold uppercase leading-none tracking-[0.06em] text-success">
+            <p className="inline-flex items-center gap-2 text-caption-sm font-semibold uppercase leading-none tracking-[0.06em] text-success">
               <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
               {model.queueAvailable ? 'All caught up' : "Today's focus"}
             </p>

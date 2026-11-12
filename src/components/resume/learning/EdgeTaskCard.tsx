@@ -92,7 +92,7 @@ export function EdgeTaskCard({ pathId, task, verifyResult, onVerify }: EdgeTaskC
               <ul className="space-y-1">
                 {task.acceptance_criteria.map((c, i) => (
                   <li key={i} className="flex items-start gap-1.5 text-sm">
-                    <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary/70" />
+                    <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
                     <span>{c}</span>
                   </li>
                 ))}

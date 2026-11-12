@@ -14,16 +14,24 @@ export function CopySectionButton({ getText }: { getText: () => string }) {
   return (
     <button
       type="button"
-      onClick={() => {
-        navigator.clipboard.writeText(getText());
-        setCopied(true);
-        toast.success("Section copied to clipboard");
-        setTimeout(() => setCopied(false), 1500);
+      onClick={async () => {
+        // The clipboard API rejects without focus or permission; say so
+        // instead of reporting a copy that did not happen.
+        try {
+          await navigator.clipboard.writeText(getText());
+          setCopied(true);
+          toast.success("Section copied to clipboard");
+          setTimeout(() => setCopied(false), 1500);
+        } catch {
+          toast.error("Could not copy. Select the text and copy it manually.");
+        }
       }}
-      className={`opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-medium ${
+      // Hidden until hover only where hover exists (md and up); on touch the
+      // control is always visible, or it could never be found.
+      className={`hit-target md:opacity-0 md:group-hover:opacity-100 focus-visible:opacity-100 transition-[opacity,color,background-color] duration-200 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-caption-sm font-medium ${
         copied
-          ? "text-success bg-emerald-500/10"
-          : "text-muted-foreground hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-500/10"
+          ? "text-success bg-success/10 md:opacity-100"
+          : "text-muted-foreground hover:text-primary hover:bg-primary/10"
       }`}
       aria-label="Copy section to clipboard"
     >

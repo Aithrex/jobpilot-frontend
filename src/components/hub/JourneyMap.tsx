@@ -20,15 +20,15 @@ type StateMeta = {
 
 const STATE_META: Record<HubSeasonSummary["state"], StateMeta> = {
   completed: {
-    dot: "bg-[hsl(var(--success))] text-white border-[hsl(var(--success))]",
-    ring: "border-[hsl(var(--success))]/35 hover:border-[hsl(var(--success))]/60",
-    badge: "border-[hsl(var(--success))]/30 text-[hsl(var(--success))]",
+    dot: "bg-success text-success-foreground border-success",
+    ring: "border-success/35 hover:border-success/60",
+    badge: "border-success/30 text-success",
     label: "Complete",
     icon: <Check className="h-4 w-4" />,
     clickable: true,
   },
   active: {
-    dot: "bg-primary text-white border-primary shadow-[0_0_0_5px_hsl(var(--primary)/0.18)]",
+    dot: "bg-primary text-primary-foreground border-primary shadow-[0_0_0_5px_hsl(var(--primary)/0.18)]",
     ring: "border-primary/50 shadow-md ring-1 ring-primary/25",
     badge: "border-primary/40 text-primary",
     label: "In progress",
@@ -36,7 +36,7 @@ const STATE_META: Record<HubSeasonSummary["state"], StateMeta> = {
     clickable: true,
   },
   available: {
-    dot: "bg-primary text-white border-primary",
+    dot: "bg-primary text-primary-foreground border-primary",
     ring: "border-primary/30 hover:border-primary/60",
     badge: "border-primary/25 text-primary",
     label: "Available",
@@ -88,7 +88,7 @@ export default function JourneyMap({ journey, selectedSeasonId, onSelect }: Jour
         {/* Spine */}
         <div className="pointer-events-none absolute bottom-6 left-[18px] top-3 w-0.5 bg-border">
           <motion.div
-            className="w-full bg-gradient-to-b from-[hsl(var(--brand-from))] to-[hsl(var(--brand-to))]"
+            className="w-full bg-signal"
             initial={reduce ? false : { height: 0 }}
             animate={{ height: `${fillPct}%` }}
             transition={{ type: "spring", stiffness: 60, damping: 20 }}
@@ -136,12 +136,12 @@ export default function JourneyMap({ journey, selectedSeasonId, onSelect }: Jour
                   )}
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    <span className="text-caption-sm font-semibold uppercase tracking-wide text-muted-foreground">
                       {ch.state === "active" ? "You are here" : `Chapter ${ch.order}`}
                     </span>
                     <span
                       className={cn(
-                        "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium",
+                        "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-caption-sm font-medium",
                         meta.badge,
                       )}
                     >
@@ -155,7 +155,7 @@ export default function JourneyMap({ journey, selectedSeasonId, onSelect }: Jour
                     {ch.state === "locked" && prev ? `Finish "${prev.title}" to unlock this chapter.` : ch.premise}
                   </p>
 
-                  <div className="mt-3 flex items-center justify-between text-[11px] text-muted-foreground">
+                  <div className="mt-3 flex items-center justify-between text-caption-sm text-muted-foreground">
                     <span>{ch.length_days} days</span>
                     {meta.clickable && (
                       <span className="inline-flex items-center gap-1 font-medium text-primary opacity-0 transition group-hover:opacity-100">

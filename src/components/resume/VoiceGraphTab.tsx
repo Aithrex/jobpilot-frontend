@@ -541,7 +541,7 @@ function WritingSurface({
             aria-label="Your writing"
             placeholder="Write about a project you're proud of, a problem you untangled, or just how your week went. However you'd say it out loud."
             spellCheck
-            className="min-h-72 w-full resize-none border-0 bg-transparent px-5 py-6 font-serif text-lg leading-relaxed text-foreground outline-none ring-0 placeholder:text-muted-foreground/60 focus:outline-none focus-visible:ring-0 sm:px-8 sm:py-8 sm:text-xl"
+            className="min-h-72 w-full resize-none border-0 bg-transparent px-5 py-6 font-serif text-lg leading-relaxed text-foreground outline-none ring-0 placeholder:text-muted-foreground focus:outline-none focus-visible:ring-0 sm:px-8 sm:py-8 sm:text-xl"
             style={{ maxWidth: "65ch", marginInline: "auto" }}
           />
 
@@ -699,7 +699,7 @@ function SaveIndicator({
       </span>
     );
   return (
-    <span className="text-xs tabular-nums text-muted-foreground/70">
+    <span className="text-xs tabular-nums text-muted-foreground">
       {wordCount} {wordCount === 1 ? "word" : "words"}
     </span>
   );

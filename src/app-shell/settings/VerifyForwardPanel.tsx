@@ -53,7 +53,7 @@ export default function VerifyForwardPanel() {
       {state === 'verifying' && (
         <>
           <Loader2 className="mx-auto mb-3 h-8 w-8 animate-spin text-primary" aria-hidden="true" />
-          <p className="text-sm font-medium text-foreground" aria-live="polite">
+          <p className="text-sm font-medium text-foreground" role="status">
             Verifying your forwarding address...
           </p>
         </>
@@ -61,10 +61,10 @@ export default function VerifyForwardPanel() {
 
       {state === 'ok' && (
         <>
-          <span className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-full bg-success/10 text-success">
+          <span className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-full bg-signal-tint text-signal">
             <BadgeCheck className="h-6 w-6" aria-hidden="true" />
           </span>
-          <h1 className="text-base font-semibold text-foreground">Forwarding verified</h1>
+          <h2 className="font-display text-title-md text-foreground">Forwarding verified</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             When an employer gets back to you, we'll email this address a short heads-up
             with a link. The full message stays in your Inbox.
@@ -80,9 +80,9 @@ export default function VerifyForwardPanel() {
           <span className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-full bg-warning/10 text-warning">
             <MailWarning className="h-6 w-6" aria-hidden="true" />
           </span>
-          <h1 className="text-base font-semibold text-foreground">
+          <h2 className="font-display text-title-md text-foreground">
             {state === 'missing' ? 'Missing verification token' : "Couldn't verify forwarding"}
-          </h1>
+          </h2>
           <p className="mt-1 text-sm text-muted-foreground">
             {state === 'missing'
               ? 'This link is incomplete. Open the most recent verification email again.'

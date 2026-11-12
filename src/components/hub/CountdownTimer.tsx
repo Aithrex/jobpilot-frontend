@@ -25,7 +25,7 @@ export default function CountdownTimer({ target, onExpire, variant = "compact", 
         <span className="rounded-lg bg-muted px-2.5 py-1.5 font-mono text-lg font-semibold tabular-nums text-foreground sm:text-xl">
           {pad(v)}
         </span>
-        <span className="mt-1 text-[10px] uppercase tracking-wide text-muted-foreground">{label}</span>
+        <span className="mt-1 text-caption-sm uppercase tracking-wide text-muted-foreground">{label}</span>
       </div>
     );
     return (

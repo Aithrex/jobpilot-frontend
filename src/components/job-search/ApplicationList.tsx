@@ -83,8 +83,8 @@ function StageTrack({ stage }: { stage: Stage }) {
             )}
             <span
               className={cn(
-                'inline-flex items-center gap-1 text-[11px] font-medium',
-                done ? 'text-foreground' : 'text-muted-foreground/70',
+                'inline-flex items-center gap-1 text-caption-sm font-medium',
+                done ? 'text-foreground' : 'text-muted-foreground',
                 closed && 'line-through decoration-muted-foreground/40',
               )}
             >
@@ -147,12 +147,12 @@ function ApplicationRow({ row, updateJobStatus }: RowProps) {
             {title}
           </p>
           <p className="truncate text-xs text-muted-foreground">
-            <span className="font-medium text-foreground/80">{company}</span>
+            <span className="font-medium text-ink-muted">{company}</span>
             {location ? ` · ${location}` : ''}
           </p>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-0.5">
             <StageTrack stage={stage} />
-            <span className="text-[11px] tabular-nums text-muted-foreground">
+            <span className="text-caption-sm tabular-nums text-muted-foreground">
               {closed ? `${STATUS_WORD[stage]}. ${appliedAgo(row)}` : appliedAgo(row)}
             </span>
           </div>
@@ -165,7 +165,7 @@ function ApplicationRow({ row, updateJobStatus }: RowProps) {
             size="sm"
             variant="outline"
             onClick={primary.run}
-            className="h-8 border-border bg-card text-xs font-semibold text-foreground hover:border-primary hover:bg-primary/10 hover:text-primary"
+            className="hit-target h-8 border-border bg-card text-xs font-semibold text-foreground hover:border-primary hover:bg-primary/10 hover:text-primary"
           >
             {primary.label}
           </Button>
@@ -175,7 +175,7 @@ function ApplicationRow({ row, updateJobStatus }: RowProps) {
             size="sm"
             variant="ghost"
             onClick={() => move('rejected', 'Marked as rejected')}
-            className="h-8 px-2.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
+            className="hit-target h-8 px-2.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
           >
             Rejected
           </Button>
@@ -185,7 +185,7 @@ function ApplicationRow({ row, updateJobStatus }: RowProps) {
             size="sm"
             variant="ghost"
             onClick={() => move('applied', 'Moved back to Applied')}
-            className="h-8 gap-1.5 px-2.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
+            className="hit-target h-8 gap-1.5 px-2.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
           >
             <RotateCcw className="h-3.5 w-3.5" aria-hidden />
             Reopen
@@ -197,7 +197,7 @@ function ApplicationRow({ row, updateJobStatus }: RowProps) {
               size="sm"
               variant="ghost"
               aria-label={`More for ${title}`}
-              className="h-8 w-8 px-0 text-muted-foreground hover:bg-muted hover:text-foreground"
+              className="hit-target h-8 w-8 px-0 text-muted-foreground hover:bg-muted hover:text-foreground"
             >
               <MoreHorizontal className="h-4 w-4" aria-hidden />
             </Button>

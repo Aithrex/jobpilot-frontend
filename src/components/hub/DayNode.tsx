@@ -51,9 +51,9 @@ export function Medallion({
       className={cn(
         "relative grid place-items-center rounded-full border-2 border-background shadow-lg transition-colors",
         clickable ? "cursor-pointer" : "cursor-default",
-        isCompleted && "bg-gradient-to-br from-[hsl(var(--brand-from))] to-[hsl(var(--brand-to))] text-white",
+        isCompleted && "bg-primary text-primary-foreground",
         isCurrent && "bg-card text-primary ring-2 ring-primary",
-        soon && "bg-card text-[hsl(var(--warning))] ring-2 ring-[hsl(var(--warning))]/60",
+        soon && "bg-card text-warning ring-2 ring-warning/60",
         (waiting || coming) && "bg-muted text-muted-foreground",
         coming && "border-dashed",
       )}
@@ -70,7 +70,7 @@ export function Medallion({
       {/* Day number chip */}
       <span
         className={cn(
-          "absolute -bottom-1.5 -right-1.5 grid h-5 min-w-5 place-items-center rounded-full border border-background px-1 text-[10px] font-bold shadow",
+          "absolute -bottom-1.5 -right-1.5 grid h-5 min-w-5 place-items-center rounded-full border border-background px-1 text-caption-sm font-bold shadow",
           isCompleted || isCurrent ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
         )}
       >
@@ -116,10 +116,10 @@ export function DayCard({
       )}
     >
       <div className={cn("flex items-center gap-2", right && "flex-row-reverse")}>
-        <Badge variant="outline" className={cn("text-[11px]", meta.badge)}>
+        <Badge variant="outline" className={cn("text-caption-sm", meta.badge)}>
           {meta.label}
         </Badge>
-        {t && <span className="font-mono text-[11px] text-muted-foreground">{t.ticket_number}</span>}
+        {t && <span className="font-mono text-caption-sm text-muted-foreground">{t.ticket_number}</span>}
       </div>
 
       <p className="mt-2.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
@@ -142,7 +142,7 @@ export function DayCard({
 
       <div className={cn("mt-3 flex flex-wrap items-center gap-2", right && "justify-end")}>
         {t && (
-          <Badge variant="outline" className={cn("text-[11px]", priorityStyle(t.priority))}>
+          <Badge variant="outline" className={cn("text-caption-sm", priorityStyle(t.priority))}>
             {t.priority}
           </Badge>
         )}
@@ -152,7 +152,7 @@ export function DayCard({
           </span>
         )}
         {waiting && day.unlock_at ? (
-          <span className="inline-flex items-center gap-1 text-xs text-[hsl(var(--warning))]">
+          <span className="inline-flex items-center gap-1 text-xs text-warning">
             <Clock className="h-3.5 w-3.5" />
             <CountdownTimer target={day.unlock_at} onExpire={onExpire} />
           </span>

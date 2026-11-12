@@ -154,7 +154,7 @@ export function GuestParsingState({
                     initial={reduceMotion ? false : { opacity: 0, scale: 0.8, x: -10 }}
                     animate={{ opacity: 1, scale: 1, x: 0 }}
                     transition={{ ...stepTransition, delay: reduceMotion ? 0 : i * 0.08 }}
-                    className="rounded-full border border-primary/25 bg-card px-2 py-0.5 text-[11px] font-medium text-foreground"
+                    className="rounded-full border border-primary/25 bg-card px-2 py-0.5 text-caption-sm font-medium text-foreground"
                   >
                     {skill}
                   </motion.span>

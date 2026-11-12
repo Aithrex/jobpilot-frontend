@@ -8,7 +8,7 @@
  */
 import type { ReactNode } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
-import { Sparkles, Lightbulb, PenLine, X, type LucideIcon } from 'lucide-react';
+import { Sparkles, Lightbulb, PenLine, X, ChevronRight, type LucideIcon } from 'lucide-react';
 import { hasNumericAtsOverall, isAssessmentV2 } from '@/lib/atsScores';
 import type { TailorPipelineResult } from './types';
 
@@ -145,16 +145,19 @@ export function NudgeBar({
       <div className="relative flex items-center gap-2 shrink-0">
         {active.actionLabel && active.onAction && (
           <button
+            type="button"
             onClick={active.onAction}
-            className="text-xs font-semibold text-primary hover:text-primary/80 px-3 py-1.5 rounded-control hover:bg-primary/10 transition-all whitespace-nowrap"
+            className="hit-target inline-flex items-center gap-1 text-xs font-semibold text-primary px-3 py-1.5 rounded-control hover:bg-primary/10 transition-colors whitespace-nowrap"
           >
-            {active.actionLabel} →
+            {active.actionLabel}
+            <ChevronRight className="w-3.5 h-3.5" aria-hidden="true" />
           </button>
         )}
         <button
+          type="button"
           onClick={() => onDismiss(active.id)}
-          className="text-muted-foreground hover:text-foreground transition-all p-1 rounded-control"
-          aria-label="Dismiss"
+          className="hit-target inline-flex h-8 w-8 items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors rounded-control"
+          aria-label="Dismiss suggestion"
         >
           <X className="w-4 h-4" aria-hidden="true" />
         </button>

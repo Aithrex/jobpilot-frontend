@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import type { TailoringRecord, TailoringVersion, TailoredFullResume } from "@/types/resume";
 import { apiService } from "@/lib/api";
+import { Dialog, DialogClose, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
 // Minimal line-level diff. We avoid pulling in a heavy diff library - simple
 // longest-common-subsequence over array elements (strings / bullets) gives a
@@ -35,14 +36,14 @@ function DiffBlock({ title, left, right }: { title: string; left: string[]; righ
     return (
       <div>
         <p className="overline mb-1">{title}</p>
-        <p className="text-[11px] italic text-muted-foreground">No changes</p>
+        <p className="text-caption-sm italic text-muted-foreground">No changes</p>
       </div>
     );
   }
   return (
     <div>
       <p className="overline mb-1">{title}</p>
-      <ul className="space-y-0.5 text-[11px] leading-relaxed">
+      <ul className="space-y-0.5 text-caption-sm leading-relaxed">
         {ops.map((o, i) => {
           const cls =
             o.kind === "add"
@@ -108,22 +109,24 @@ export default function VersionDiffViewer({ record, onClose }: Props) {
   }, [leftId, rightId]);
 
   const selectCls =
-    "px-2 py-1 rounded-md border border-input bg-background text-xs text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+    "h-9 px-2 rounded-md border border-input bg-background text-xs text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
   return (
-    <div
-      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Compare resume versions"
-    >
-      <div className="w-full max-w-5xl max-h-[92vh] rounded-2xl border border-border bg-card shadow-pop flex flex-col overflow-hidden">
+    // Radix Dialog: Escape and the overlay close it, focus is trapped while
+    // open and returns to the Compare button on close.
+    <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent
+        solid
+        aria-describedby={undefined}
+        closeClassName="hidden"
+        className="flex max-h-[92vh] w-[calc(100vw-2rem)] max-w-5xl flex-col gap-0 overflow-hidden rounded-2xl p-0 shadow-pop"
+      >
         <div className="px-5 py-3 border-b border-border flex items-center justify-between gap-3 flex-wrap">
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-foreground truncate">
+            <DialogTitle className="text-sm font-semibold text-foreground truncate">
               Compare versions · {record.jd_analysis?.job_title || "Record"}
               {record.jd_analysis?.company && record.jd_analysis.company !== "Not specified" ? ` · ${record.jd_analysis.company}` : ""}
-            </p>
+            </DialogTitle>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             <select
@@ -143,12 +146,11 @@ export default function VersionDiffViewer({ record, onClose }: Props) {
             >
               {versions.map(v => <option key={v.version_id} value={v.version_id}>v{v.version_number} · {v.source}</option>)}
             </select>
-            <button
-              onClick={onClose}
-              className="px-2 py-1 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            <DialogClose
+              className="hit-target h-9 rounded-md px-3 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               Close
-            </button>
+            </DialogClose>
           </div>
         </div>
         <div className="px-5 py-4 overflow-y-auto space-y-4">
@@ -210,7 +212,7 @@ export default function VersionDiffViewer({ record, onClose }: Props) {
             </>
           )}
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

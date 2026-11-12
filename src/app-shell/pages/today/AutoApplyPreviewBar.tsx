@@ -94,11 +94,11 @@ function QueuedChipTile({ chip }: { chip: QueuedChip }) {
       <span className="line-clamp-2 text-caption font-medium text-foreground">{chip.label}</span>
       <span className="mt-2 flex items-center justify-between gap-2">
         {chip.company ? (
-          <span className="truncate text-[0.75rem] text-muted-foreground">{chip.company}</span>
+          <span className="truncate text-caption-sm text-muted-foreground">{chip.company}</span>
         ) : (
           <span />
         )}
-        <span className="rounded-full bg-muted px-2 py-0.5 text-[0.7rem] font-medium text-muted-foreground">
+        <span className="rounded-full bg-muted px-2 py-0.5 text-caption-sm font-medium text-muted-foreground">
           queued
         </span>
       </span>
@@ -179,7 +179,7 @@ export function AutoApplyPreviewBar() {
                 <PausedTag />
               </div>
               {hasQueue ? null : (
-                <p className="mt-2 line-clamp-2 text-[0.75rem] text-muted-foreground">{pausedLine}</p>
+                <p className="mt-2 line-clamp-2 text-caption-sm text-muted-foreground">{pausedLine}</p>
               )}
               <PreviewCta className="mt-2 h-9 w-full px-3 text-caption" />
             </div>

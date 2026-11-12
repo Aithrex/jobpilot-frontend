@@ -7,13 +7,18 @@
  * never depends on mail delivery.
  */
 import { useState } from "react";
-import { Check, CheckCircle2, Circle, KeyRound } from "lucide-react";
+import { Check, CheckCircle2, Circle, KeyRound, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiService } from "@/lib/api";
-
-const inputCls =
-  "w-full px-4 py-2.5 rounded-lg bg-gray-100 dark:bg-gray-800/60 border border-gray-300 dark:border-gray-700/60 text-sm text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500/30 transition-all";
-const labelCls = "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import {
+  settingsCardCls,
+  settingsCardHintCls,
+  settingsCardTitleCls,
+  settingsInputCls as inputCls,
+  settingsLabelCls as labelCls,
+} from "./settingsStyles";
 
 /** Mirrors models/user.py: 8+ chars with upper, lower, digit and special. */
 const RULES: Array<{ label: string; test: (v: string) => boolean }> = [
@@ -68,14 +73,14 @@ export default function PasswordCard() {
   };
 
   return (
-    <div className="rounded-2xl border border-gray-200 dark:border-white/[0.07] bg-white/80 dark:bg-gray-900/50 backdrop-blur-sm shadow-xl shadow-black/5 dark:shadow-black/20 p-6 space-y-5">
+    <section aria-labelledby="pw-card-title" className={cn(settingsCardCls, "space-y-5")}>
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
-            <KeyRound className="w-4 h-4" />
+          <h2 id="pw-card-title" className={settingsCardTitleCls}>
+            <KeyRound className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
             {hasPassword ? "Change password" : "Add a password"}
-          </p>
-          <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+          </h2>
+          <p className={settingsCardHintCls}>
             {hasPassword
               ? "Update the password you use to sign in with your email."
               : `You signed up with ${
@@ -84,7 +89,7 @@ export default function PasswordCard() {
           </p>
         </div>
         {providers.length > 0 && (
-          <span className="shrink-0 text-[10px] uppercase tracking-wide rounded-full border border-gray-300 dark:border-white/10 px-2 py-1 text-muted-foreground">
+          <span className="shrink-0 rounded-full border border-border px-2 py-0.5 text-caption-sm uppercase tracking-wide text-muted-foreground">
             {providers.join(" + ")}
           </span>
         )}
@@ -137,7 +142,7 @@ export default function PasswordCard() {
             disabled={saving}
           />
           {confirmPassword.length > 0 && !matches && (
-            <p className="text-[11px] text-destructive mt-1">Passwords do not match.</p>
+            <p className="mt-1.5 text-caption-sm text-destructive">Passwords do not match.</p>
           )}
         </div>
 
@@ -148,9 +153,10 @@ export default function PasswordCard() {
               return (
                 <li
                   key={r.label}
-                  className={`text-[11px] flex items-center gap-1.5 ${
-                    ok ? "text-success" : "text-muted-foreground"
-                  }`}
+                  className={cn(
+                    "flex items-center gap-1.5 text-caption-sm",
+                    ok ? "text-success" : "text-muted-foreground",
+                  )}
                 >
                   {ok ? (
                     <Check className="h-3 w-3 shrink-0" aria-hidden="true" />
@@ -171,20 +177,16 @@ export default function PasswordCard() {
           </p>
         )}
         {done && (
-          <p className="text-sm text-success flex items-center gap-1.5">
-            <CheckCircle2 className="w-4 h-4" /> Password saved. You can now sign in with your email
+          <p className="flex items-center gap-1.5 text-sm text-success" role="status">
+            <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" /> Password saved. You can now sign in with your email
             and password.
           </p>
         )}
 
-        <button
-          type="submit"
-          disabled={saving || !canSubmit}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 disabled:from-gray-300 disabled:to-gray-300 dark:disabled:from-gray-700 dark:disabled:to-gray-700 disabled:text-gray-500 disabled:cursor-not-allowed shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 disabled:shadow-none transition-all duration-200"
-        >
+        <Button type="submit" disabled={saving || !canSubmit} aria-busy={saving}>
           {saving ? (
             <>
-              <span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />{" "}
+              <Loader2 className="animate-spin" aria-hidden="true" />
               Saving...
             </>
           ) : hasPassword ? (
@@ -192,8 +194,8 @@ export default function PasswordCard() {
           ) : (
             "Set password"
           )}
-        </button>
+        </Button>
       </form>
-    </div>
+    </section>
   );
 }

@@ -43,7 +43,7 @@ function Row({ label, hint, children }: { label: string; hint?: string; children
       <span className="pt-2 text-xs font-semibold text-foreground">{label}</span>
       <div className="min-w-0 space-y-1">
         {children}
-        {hint && <p className="text-[11px] leading-relaxed text-muted-foreground">{hint}</p>}
+        {hint && <p className="text-caption-sm leading-relaxed text-muted-foreground">{hint}</p>}
       </div>
     </div>
   );
@@ -153,7 +153,7 @@ export function ResumeFormatControls({
       </Row>
 
       {(busy || note) && (
-        <p className="flex items-center gap-2 text-[11px] text-muted-foreground" role="status">
+        <p className="flex items-center gap-2 text-caption-sm text-muted-foreground" role="status">
           {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />}
           {busy ? 'Fitting your resume to this format...' : note}
         </p>

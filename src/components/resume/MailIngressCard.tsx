@@ -23,7 +23,7 @@ function CopyButton({ value, label }: { value: string; label: string }) {
     }
   };
   return (
-    <Button variant="ghost" size="sm" className="h-7 shrink-0 gap-1 px-2 text-[11px]" onClick={copy} aria-label={`Copy ${label}`}>
+    <Button variant="ghost" size="sm" className="h-7 shrink-0 gap-1 px-2 text-caption-sm" onClick={copy} aria-label={`Copy ${label}`}>
       {copied ? <Check className="h-3 w-3 text-success" /> : <Copy className="h-3 w-3" />}
       {copied ? "Copied" : "Copy"}
     </Button>
@@ -154,13 +154,13 @@ export function MailIngressCard() {
                 <p className="overline">Gmail filter</p>
                 <CopyButton value={address.gmail_filter} label="Gmail filter" />
               </div>
-              <code className="mt-1 block break-all text-xs text-foreground/85">{address.gmail_filter}</code>
+              <code className="mt-1 block break-all text-xs text-foreground">{address.gmail_filter}</code>
               {address.gmail_deep_link && (
                 <a
                   href={address.gmail_deep_link}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-2 inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline"
+                  className="mt-2 inline-flex items-center gap-1 text-caption-sm font-medium text-primary hover:underline"
                 >
                   Create this filter in Gmail <ExternalLink className="h-3 w-3" />
                 </a>
@@ -186,7 +186,7 @@ export function MailIngressCard() {
                           {s.company ? <span className="font-normal text-muted-foreground"> · {s.company}</span> : null}
                         </p>
                         {s.snippet && <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{s.snippet}</p>}
-                        <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px]">
+                        <div className="mt-1 flex flex-wrap items-center gap-2 text-caption-sm">
                           {s.suggested_status && (
                             <span className="rounded-full border border-primary/25 bg-primary/10 px-1.5 py-0 font-medium text-primary">
                               → {s.suggested_status}

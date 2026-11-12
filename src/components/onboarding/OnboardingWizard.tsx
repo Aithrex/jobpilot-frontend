@@ -65,9 +65,19 @@ function TagInput({ value, onChange, placeholder, suggestions }: {
   value: string[]; onChange: (v: string[]) => void; placeholder: string; suggestions?: string[];
 }) {
   const [draft, setDraft] = useState('');
+  // Postel: a pasted "React, TypeScript; Node" becomes three tags, trimmed,
+  // and a tag already present (in any case) is not added twice.
   const add = (t: string) => {
-    const v = t.trim();
-    if (v && !value.includes(v)) onChange([...value, v]);
+    const seen = new Set(value.map((x) => x.toLowerCase()));
+    const next = [...value];
+    for (const raw of t.split(/[,;\n]/)) {
+      const v = raw.trim().replace(/\s+/g, ' ');
+      if (v && !seen.has(v.toLowerCase())) {
+        seen.add(v.toLowerCase());
+        next.push(v);
+      }
+    }
+    if (next.length !== value.length) onChange(next);
     setDraft('');
   };
   const onKey = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -76,7 +86,7 @@ function TagInput({ value, onChange, placeholder, suggestions }: {
   };
   return (
     <div className="space-y-2">
-      <div className="flex flex-wrap gap-1.5 rounded-xl border border-input bg-background p-2">
+      <div className="flex flex-wrap gap-1.5 rounded-xl border border-input bg-background p-2 focus-within:ring-2 focus-within:ring-ring">
         {value.map((t) => (
           <span key={t} className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-sm text-primary">
             {t}
@@ -85,9 +95,9 @@ function TagInput({ value, onChange, placeholder, suggestions }: {
               type="button"
               onClick={() => onChange(value.filter((x) => x !== t))}
               aria-label={`Remove ${t}`}
-              className="-my-1.5 -ml-1 -mr-1.5 grid h-6 w-6 shrink-0 place-items-center rounded-full transition-colors hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="hit-target -my-1.5 -ml-1 -mr-1.5 grid h-6 w-6 shrink-0 place-items-center rounded-full transition-colors hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              <X className="h-3 w-3" />
+              <X className="h-3 w-3" aria-hidden />
             </button>
           </span>
         ))}
@@ -97,14 +107,15 @@ function TagInput({ value, onChange, placeholder, suggestions }: {
           onKeyDown={onKey}
           onBlur={() => add(draft)}
           placeholder={value.length ? '' : placeholder}
-          className="min-w-[120px] flex-1 bg-transparent px-1 py-1 text-sm outline-none"
+          aria-label={placeholder}
+          className="min-w-32 flex-1 bg-transparent px-1 py-1 text-sm outline-none"
         />
       </div>
       {suggestions && suggestions.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           {suggestions.filter((s) => !value.includes(s)).slice(0, 6).map((s) => (
             <button key={s} type="button" onClick={() => add(s)}
-              className="rounded-full border border-border px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:border-primary hover:text-primary">
+              className="hit-target rounded-full border border-border px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
               + {s}
             </button>
           ))}
@@ -436,8 +447,8 @@ export default function OnboardingWizard() {
         closeClassName={cinematic ? 'text-white opacity-80 hover:text-white hover:opacity-100' : undefined}
         className={
           cinematic
-            ? 'flex w-[calc(100vw-1.5rem)] max-w-lg flex-col gap-0 overflow-hidden border-border bg-white p-0 shadow-2xl dark:bg-zinc-900 sm:rounded-2xl'
-            : 'flex max-h-[90svh] w-[calc(100vw-1.5rem)] max-w-lg flex-col gap-0 overflow-hidden border-border bg-white p-0 shadow-2xl dark:bg-zinc-900 sm:rounded-2xl'
+            ? 'flex w-[calc(100vw-1.5rem)] max-w-lg flex-col gap-0 overflow-hidden border-border bg-card p-0 shadow-2xl sm:rounded-2xl'
+            : 'flex max-h-[90svh] w-[calc(100vw-1.5rem)] max-w-lg flex-col gap-0 overflow-hidden border-border bg-card p-0 shadow-2xl sm:rounded-2xl'
         }
       >
         {/* Radix a11y: the dialog always has an accessible name + description;
@@ -477,14 +488,14 @@ export default function OnboardingWizard() {
               className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
             >
               {/* Thin timeline: stays put while the step body scrolls. */}
-              <div className="shrink-0 border-b border-border bg-white px-5 pb-4 pr-12 pt-6 dark:bg-zinc-900 sm:px-6 sm:pr-14">
+              <div className="shrink-0 border-b border-border bg-card px-5 pb-4 pr-12 pt-6 sm:px-6 sm:pr-14">
                 <div className="relative mx-0.5 flex items-center justify-between">
                   <span className="absolute inset-x-0 top-1/2 h-0.5 -translate-y-1/2 rounded-full bg-border" aria-hidden />
                   <motion.span
-                    className="absolute left-0 top-1/2 h-0.5 -translate-y-1/2 rounded-full bg-primary"
+                    className="absolute left-0 top-1/2 h-0.5 -translate-y-1/2 rounded-full bg-signal"
                     initial={false}
                     animate={{ width: `${(stepIndex / (STEPS.length - 1)) * 100}%` }}
-                    transition={{ duration: reduce ? 0 : 0.45, ease: EASE }}
+                    transition={{ duration: reduce ? 0 : 0.28, ease: EASE }}
                     aria-hidden
                   />
                   {STEPS.map((s, i) => (
@@ -492,7 +503,7 @@ export default function OnboardingWizard() {
                       key={s.label}
                       className={`relative z-10 h-2 w-2 rounded-full transition-colors duration-300 ${
                         i < stepIndex
-                          ? 'bg-primary'
+                          ? 'bg-signal'
                           : i === stepIndex
                             ? 'bg-primary ring-4 ring-primary/20'
                             : 'border border-border bg-background'
@@ -606,11 +617,11 @@ function WelcomeMoment({ onBegin }: { onBegin: () => void }) {
   const reduce = useReducedMotion();
   const container = {
     hidden: {},
-    show: { transition: { staggerChildren: reduce ? 0 : 0.4, delayChildren: reduce ? 0 : 0.2 } },
+    show: { transition: { staggerChildren: reduce ? 0 : 0.1, delayChildren: reduce ? 0 : 0.1 } },
   };
   const item = {
     hidden: { opacity: 0, y: reduce ? 0 : 14 },
-    show: { opacity: 1, y: 0, transition: { duration: reduce ? 0 : 0.55, ease: EASE } },
+    show: { opacity: 1, y: 0, transition: { duration: reduce ? 0 : 0.3, ease: EASE } },
   };
   return (
     <div className="relative flex flex-col items-center justify-center overflow-hidden px-6 py-14 text-center">
@@ -655,7 +666,7 @@ function ReadyMoment() {
         <motion.span
           initial={{ opacity: 0, scale: reduce ? 1 : 0.5 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: reduce ? 0 : 0.45, ease: EASE }}
+          transition={{ duration: reduce ? 0 : 0.28, ease: EASE }}
           className="mx-auto mb-5 grid h-14 w-14 place-items-center rounded-full bg-white/15 text-white"
         >
           <Check className="h-7 w-7" aria-hidden />
@@ -663,7 +674,7 @@ function ReadyMoment() {
         <motion.h2
           initial={{ opacity: 0, y: reduce ? 0 : 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: reduce ? 0 : 0.25, duration: reduce ? 0 : 0.5, ease: EASE }}
+          transition={{ delay: reduce ? 0 : 0.2, duration: reduce ? 0 : 0.3, ease: EASE }}
           className="font-display text-2xl font-extrabold tracking-tight text-white"
         >
           Your workspace is ready
@@ -671,7 +682,7 @@ function ReadyMoment() {
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: reduce ? 0 : 0.5, duration: reduce ? 0 : 0.4 }}
+          transition={{ delay: reduce ? 0 : 0.4, duration: reduce ? 0 : 0.28 }}
           className="mt-2 text-sm text-white/80"
         >
           Taking you to your dashboard...
@@ -856,7 +867,7 @@ function LinkedInStep({ connected, name, checking, connecting, onConnect, onBack
       </div>
       </div>
 
-      <div className="flex shrink-0 items-center justify-between gap-3 border-t border-border bg-white px-5 py-4 dark:bg-zinc-900 sm:px-6">
+      <div className="flex shrink-0 items-center justify-between gap-3 border-t border-border bg-card px-5 py-4 sm:px-6">
         <Button variant="ghost" onClick={onBack} className={QUIET_HOVER}>
           <ArrowLeft className="h-4 w-4" /> Back
         </Button>
@@ -972,7 +983,7 @@ function QuestionsStep({ answers, defaults, update, saving, onBack, onSkip, onFi
       </div>
       </div>
 
-      <div className="flex shrink-0 items-center justify-between gap-3 border-t border-border bg-white px-5 py-4 dark:bg-zinc-900 sm:px-6">
+      <div className="flex shrink-0 items-center justify-between gap-3 border-t border-border bg-card px-5 py-4 sm:px-6">
         <Button variant="ghost" onClick={onBack} disabled={saving} className={QUIET_HOVER}>
           <ArrowLeft className="h-4 w-4" /> Back
         </Button>

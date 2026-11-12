@@ -121,7 +121,7 @@ export default function InsightsSheet({
 
           <Section title="Funnel">
             {funnelLoading && !funnel ? (
-              <p className="text-label text-muted-foreground">Crunching funnel intelligence...</p>
+              <p className="text-body-sm text-muted-foreground">Crunching funnel intelligence...</p>
             ) : funnel ? (
               <div className="space-y-1">
                 {STATUSES.map((s) => (
@@ -133,13 +133,13 @@ export default function InsightsSheet({
                   </div>
                 ))}
                 {funnel.insight && (
-                  <p className="border-t border-border pt-3 text-label text-muted-foreground">
+                  <p className="border-t border-border pt-3 text-body-sm text-muted-foreground">
                     {funnel.insight.insight}
                   </p>
                 )}
               </div>
             ) : (
-              <p className="text-label text-muted-foreground">No funnel data yet.</p>
+              <p className="text-body-sm text-muted-foreground">No funnel data yet.</p>
             )}
           </Section>
 
@@ -152,14 +152,14 @@ export default function InsightsSheet({
                       {s.job_title}
                       {s.company ? ` · ${s.company}` : ''}
                     </p>
-                    <p className="text-label text-muted-foreground">
+                    <p className="text-body-sm text-muted-foreground">
                       {s.days_stale} days without a reply
                     </p>
                     <div className="mt-2 flex flex-wrap gap-1.5">
                       <Button
                         size="sm"
                         variant="outline"
-                        className="h-7"
+                        className="hit-target h-8"
                         disabled={busyId === s.record_id}
                         onClick={() => draftFollowup(s.record_id)}
                       >
@@ -168,7 +168,7 @@ export default function InsightsSheet({
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="h-7"
+                        className="hit-target h-8"
                         onClick={() => onDismissStale(s.record_id)}
                         title="Hide this nudge until the status changes again"
                       >
@@ -178,17 +178,17 @@ export default function InsightsSheet({
 
                     {followups[s.record_id] && (
                       <div className="mt-2 space-y-2 border-t border-border pt-2">
-                        <p className="text-label font-semibold text-foreground">
+                        <p className="text-body-sm font-semibold text-foreground">
                           {followups[s.record_id].subject}
                         </p>
-                        <p className="whitespace-pre-wrap text-label text-muted-foreground">
+                        <p className="whitespace-pre-wrap text-body-sm text-muted-foreground">
                           {followups[s.record_id].message}
                         </p>
                         <div className="flex justify-end gap-1.5">
                           <Button
                             size="sm"
                             variant="outline"
-                            className="h-7"
+                            className="hit-target h-8"
                             onClick={() => {
                               const f = followups[s.record_id];
                               navigator.clipboard
@@ -201,7 +201,7 @@ export default function InsightsSheet({
                           </Button>
                           <Button
                             size="sm"
-                            className="h-7"
+                            className="hit-target h-8"
                             onClick={() => {
                               const f = followups[s.record_id];
                               const params = new URLSearchParams({
@@ -232,21 +232,21 @@ export default function InsightsSheet({
             <Section title="After a rejection">
               <div className="space-y-1.5">
                 <p className="text-body font-medium text-foreground">{reframe.acknowledgement}</p>
-                <p className="text-label text-muted-foreground">{reframe.what_went_right}</p>
+                <p className="text-body-sm text-muted-foreground">{reframe.what_went_right}</p>
                 {reframe.next_actions?.length > 0 && (
-                  <ul className="ml-4 list-disc text-label text-muted-foreground">
+                  <ul className="ml-4 list-disc text-body-sm text-muted-foreground">
                     {reframe.next_actions.map((a, i) => (
                       <li key={i}>{a}</li>
                     ))}
                   </ul>
                 )}
-                <p className="text-label font-medium text-success">{reframe.silver_lining}</p>
+                <p className="text-body-sm font-medium text-success">{reframe.silver_lining}</p>
               </div>
             </Section>
           )}
 
           <Section title="Email sync">
-            <p className="text-label text-muted-foreground">
+            <p className="text-body-sm text-muted-foreground">
               <Link
                 to="/app/settings/integrations"
                 className="rounded underline-offset-2 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"

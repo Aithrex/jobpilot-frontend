@@ -237,7 +237,7 @@ function ConstraintList({
   );
   })}
   </ul>
-  <p className="mt-1.5 text-[11px] text-muted-foreground">{note}</p>
+  <p className="mt-1.5 text-caption-sm text-muted-foreground">{note}</p>
   </div>
   );
 }
@@ -262,7 +262,7 @@ export function GuestFitBreakdown({ fit, className }: GuestFitBreakdownProps) {
   <ScrollText className="h-3.5 w-3.5" aria-hidden />
   How we scored this fit
   </p>
-  <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+  <div className="flex flex-wrap items-center gap-2 text-caption-sm text-muted-foreground">
   {fit.band && (
   <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 font-semibold text-primary">
   {humanizeBand(fit.band)} fit
@@ -301,7 +301,7 @@ export function GuestFitBreakdown({ fit, className }: GuestFitBreakdownProps) {
   })}
   </ul>
   {totalMax > 0 && (
-  <p className="mt-2 text-[11px] tabular-nums text-muted-foreground">
+  <p className="mt-2 text-caption-sm tabular-nums text-muted-foreground">
   {totalScore} of {totalMax} points across the components above.
   </p>
   )}

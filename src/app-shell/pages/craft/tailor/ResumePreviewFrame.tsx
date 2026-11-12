@@ -13,6 +13,7 @@
 import { motion, useReducedMotion } from 'framer-motion';
 import { FileText, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { DURATION, EASE_STANDARD } from '@/lib/motion';
 import { PanelEmpty } from '@/app-shell/pages/today/primitives';
 import { ResumePreview } from '@/components/resume/tailored/ResumePreview';
 import { ResumeDiffView } from '@/components/resume/tailored/ResumeDiffView';
@@ -81,10 +82,10 @@ export function ResumePreviewFrame({
 }: ResumePreviewFrameProps) {
   const reduceMotion = useReducedMotion();
   const statusLabel = result
-    ? 'Tailored Resume'
+    ? 'Tailored resume'
     : phase !== null
       ? 'Tailoring...'
-      : 'Resume Preview';
+      : 'Resume preview';
 
   return (
     <div className="relative surface shadow-soft rounded-container overflow-hidden flex flex-col lg:max-h-[calc(100vh-140px)]">
@@ -100,7 +101,7 @@ export function ResumePreviewFrame({
             >
               <div
                 className={cn(
-                  'absolute left-0 right-0 bottom-0 transition-all duration-1000 ease-out',
+                  'absolute left-0 right-0 bottom-0 transition-[height] duration-500 ease-standard',
                   tone.fill,
                 )}
                 style={{ height: `${s}%` }}
@@ -113,12 +114,14 @@ export function ResumePreviewFrame({
       {/* Frame header */}
       <div className="shrink-0 px-5 py-3.5 border-b border-border flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-3 min-w-0">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          <p className="text-caption-sm font-semibold uppercase tracking-wider text-muted-foreground">
             {statusLabel}
           </p>
           {result && (baseResume || previousResume) && (
+            // A segmented toggle, not tabs: there are no tabpanels and no
+            // arrow-key model, so pressed buttons describe it honestly.
             <div
-              role="tablist"
+              role="group"
               aria-label="Resume version"
               className="inline-flex rounded-control bg-muted p-0.5 border border-border"
             >
@@ -134,11 +137,11 @@ export function ResumePreviewFrame({
                 return (
                   <button
                     key={key}
-                    role="tab"
-                    aria-selected={regenView === key}
+                    type="button"
+                    aria-pressed={regenView === key}
                     onClick={() => onRegenViewChange(key)}
                     className={cn(
-                      'relative px-3 py-1 rounded-[6px] text-[11px] font-semibold transition-all',
+                      'hit-target px-3 py-1 rounded-[6px] text-caption-sm font-semibold transition-colors duration-200',
                       regenView === key
                         ? t.active
                         : 'text-muted-foreground hover:text-foreground',
@@ -160,7 +163,7 @@ export function ResumePreviewFrame({
               variant="outline"
               size="sm"
               onClick={onRevert}
-              className="h-auto gap-1.5 px-3 py-1.5 text-xs hover:border-primary/40 hover:text-primary"
+              className="hit-target h-auto gap-1.5 px-3 py-1.5 text-xs hover:border-primary/40 hover:text-primary"
             >
               <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
               Revert
@@ -182,7 +185,7 @@ export function ResumePreviewFrame({
             {result.tailored_resume.summary_write?.source === 'base' && (
               <p
                 role="status"
-                className="rounded-container border border-border bg-card px-3 py-2 text-[12px] text-muted-foreground"
+                className="rounded-container border border-border bg-card px-3 py-2 text-xs text-muted-foreground"
               >
                 The professional summary could not be rewritten for this job,
                 so the version from your base resume is shown. The rest of the
@@ -191,9 +194,9 @@ export function ResumePreviewFrame({
             )}
             <motion.div
               key={`loaded-${regenView}`}
-              initial={reduceMotion ? false : { opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: reduceMotion ? 0 : 0.35, ease: [0.22, 1, 0.36, 1] }}
+              initial={reduceMotion ? false : { opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: reduceMotion ? 0 : DURATION.base, ease: EASE_STANDARD }}
             >
               {regenView === 'diff' && (previousResume || baseResume) ? (
                 // Previous-version diff when a regeneration exists; otherwise
@@ -225,7 +228,7 @@ export function ResumePreviewFrame({
             <PanelEmpty
               icon={FileText}
               title="Ready to tailor"
-              body="Paste a job description in the Job Description panel and click Tailor My Resume to begin."
+              body="Paste a job description in the Job description panel, then choose Tailor my resume."
             />
           </div>
         )}

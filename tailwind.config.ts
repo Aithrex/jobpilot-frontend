@@ -268,6 +268,13 @@ export default {
         "body-lg": ["1.125rem", { lineHeight: "1.75rem" }],
         "body-md": ["1rem", { lineHeight: "1.5rem" }],
         "body-sm": ["0.875rem", { lineHeight: "1.25rem", letterSpacing: "0.005em" }],
+        // `text-label` was used about 60 times with no definition, so those
+        // labels silently inherited 16px body text. It maps onto the existing
+        // --text-label-* tokens (14px / 20px / 600).
+        label: [
+          "var(--text-label-size)",
+          { lineHeight: "var(--text-label-lh)", fontWeight: "var(--text-label-w)" },
+        ],
         "label-lg": ["0.875rem", { lineHeight: "1.25rem", letterSpacing: "0.005em", fontWeight: "600" }],
         "label-md": ["0.8125rem", { lineHeight: "1rem", letterSpacing: "0.01em", fontWeight: "600" }],
         "caption-sm": ["0.75rem", { lineHeight: "1rem", letterSpacing: "0.01em", fontWeight: "500" }],

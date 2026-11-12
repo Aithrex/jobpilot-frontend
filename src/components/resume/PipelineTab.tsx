@@ -39,7 +39,7 @@ function FunnelCard({ funnel }: { funnel: PipelineFunnel }) {
               <span className="w-24 shrink-0 truncate text-xs font-medium text-muted-foreground">{s.label}</span>
               <div className="h-6 flex-1 overflow-hidden rounded-md bg-muted">
                 <div
-                  className="flex h-full items-center rounded-md bg-gradient-to-r from-primary/70 to-primary px-2 text-[11px] font-bold text-primary-foreground transition-all"
+                  className="flex h-full items-center rounded-md bg-gradient-to-r from-primary/70 to-primary px-2 text-caption-sm font-bold text-primary-foreground transition-all"
                   style={{ width: `${width}%` }}
                 >
                   {s.count}
@@ -62,13 +62,13 @@ function FunnelCard({ funnel }: { funnel: PipelineFunnel }) {
         ].map((c) => (
           <div key={c.label} className="text-center">
             <p className="font-display text-xl font-extrabold tabular-nums">{pct(c.v)}%</p>
-            <p className="mt-0.5 text-[11px] leading-tight text-muted-foreground">{c.label}</p>
+            <p className="mt-0.5 text-caption-sm leading-tight text-muted-foreground">{c.label}</p>
           </div>
         ))}
       </div>
 
       {funnel.untracked_stages?.length > 0 && (
-        <p className="mt-3 flex items-start gap-1.5 text-[11px] text-muted-foreground">
+        <p className="mt-3 flex items-start gap-1.5 text-caption-sm text-muted-foreground">
           <Info className="mt-0.5 h-3 w-3 shrink-0" />
           Some stages aren't tracked yet ({funnel.untracked_stages.join(", ")}). Keep statuses current for a sharper funnel.
         </p>
@@ -171,19 +171,19 @@ function CohortCard({ cohort }: { cohort: PipelineCohort }) {
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-xl border border-primary/20 bg-primary/[0.05] p-3 text-center">
               <p className="font-display text-2xl font-extrabold tabular-nums text-primary">{pct(cohort.your_callback_rate)}%</p>
-              <p className="mt-0.5 text-[11px] text-muted-foreground">Your callback rate</p>
+              <p className="mt-0.5 text-caption-sm text-muted-foreground">Your callback rate</p>
             </div>
             <div className="rounded-xl border border-border bg-muted/40 p-3 text-center">
               <p className="font-display text-2xl font-extrabold tabular-nums">{pct(cohort.cohort_callback_rate)}%</p>
-              <p className="mt-0.5 text-[11px] text-muted-foreground">Similar applicants</p>
+              <p className="mt-0.5 text-caption-sm text-muted-foreground">Similar applicants</p>
             </div>
           </div>
           {cohort.strongest_predictor && (
-            <p className="text-xs text-foreground/80">
+            <p className="text-xs text-foreground">
               <span className="font-semibold">Biggest lever:</span> {cohort.strongest_predictor}
             </p>
           )}
-          <p className="flex items-start gap-1.5 text-[11px] text-muted-foreground">
+          <p className="flex items-start gap-1.5 text-caption-sm text-muted-foreground">
             <Info className="mt-0.5 h-3 w-3 shrink-0" />
             {cohort.noised
               ? "Comparison numbers are slightly noised to protect everyone's privacy."
@@ -242,14 +242,14 @@ export default function PipelineTab({ onNavigate }: PipelineTabProps) {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="space-y-1">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">Career · Pipeline</p>
+          <p className="overline">Apply · Pipeline</p>
           <div className="flex items-center gap-2">
             <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary/10 text-primary">
-              <TrendingUp className="h-5 w-5" />
+              <TrendingUp className="h-5 w-5" aria-hidden="true" />
             </span>
-            <h2 className="font-display text-2xl font-extrabold tracking-tight">Pipeline Intelligence</h2>
+            <h2 className="font-display text-h2 text-foreground">Pipeline intelligence</h2>
           </div>
-          <p className="max-w-xl text-sm text-muted-foreground">
+          <p className="max-w-prose text-sm text-muted-foreground">
             Where your applications convert, which have gone quiet, and how you stack up. Honestly.
           </p>
         </div>

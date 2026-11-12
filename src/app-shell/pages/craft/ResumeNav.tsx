@@ -147,7 +147,7 @@ function ResumeHealthPanel({ data }: { data: ResumeWorkspaceData }) {
       <div className="flex items-baseline justify-between gap-2 px-3.5">
         <p className="overline">Resume health</p>
         {ratio && (
-          <span className="font-mono text-[0.6875rem] tabular-nums text-muted-foreground">
+          <span className="font-mono text-caption-sm tabular-nums text-muted-foreground">
             {ratio.done}/{ratio.total}
           </span>
         )}
@@ -162,7 +162,7 @@ function ResumeHealthPanel({ data }: { data: ResumeWorkspaceData }) {
               key={check.label}
               className={cn(
                 "h-1 flex-1 rounded-full",
-                check.done ? "bg-primary" : "bg-muted",
+                check.done ? "bg-signal" : "bg-muted",
               )}
             />
           ))}
@@ -177,7 +177,7 @@ function ResumeHealthPanel({ data }: { data: ResumeWorkspaceData }) {
               <Icon
                 className={cn(
                   "mt-0.5 h-3.5 w-3.5 shrink-0",
-                  check.done ? "text-primary" : "text-muted-foreground",
+                  check.done ? "text-signal" : "text-muted-foreground",
                 )}
                 aria-hidden="true"
               />

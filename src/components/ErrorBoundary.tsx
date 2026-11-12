@@ -48,11 +48,11 @@ export class ErrorBoundary extends Component<Props, State> {
   render(): ReactNode {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen flex items-center justify-center p-4 bg-background">
+        <main className="min-h-screen flex items-center justify-center p-4 bg-background text-foreground" role="alert">
           <Card className="max-w-md w-full">
             <CardHeader>
-              <h1 className="text-xl font-semibold">Something went wrong</h1>
-              <p className="text-muted-foreground text-sm">
+              <h1 className="font-display text-h1 text-foreground">Something went wrong</h1>
+              <p className="text-ink-muted text-sm">
                 An unexpected error occurred. You can try refreshing the page.
               </p>
             </CardHeader>
@@ -68,7 +68,7 @@ export class ErrorBoundary extends Component<Props, State> {
               </Button>
             </CardContent>
           </Card>
-        </div>
+        </main>
       );
     }
     return this.props.children;

@@ -24,6 +24,7 @@ import { JobQuickLook } from '@/components/job-search/JobQuickLook';
 import { COMPARE_MAX, CompareTray } from '@/components/job-search/CompareTray';
 import { ShortcutsButton, SwipeableCard, useCoarsePointer } from '@/components/job-search/BoardTriage';
 import { cn } from '@/lib/utils';
+import { DURATION, EASE_ACCELERATE, EASE_STANDARD } from '@/lib/motion';
 import type { Job, WorkdayJob } from '@/types/jobs';
 
 // ONE page size, shared with `diversifyByBoard`. When these two disagreed the
@@ -211,27 +212,18 @@ export function CombinedJobsPanel({
     return fn();
   };
 
-  // One entrance per board: the first time results appear, the first cards
-  // rise in with a short stagger. After that (filters, pages, a re-sync) cards
-  // only cross-fade - a filter change is not an event worth choreographing.
-  const revealed = useRef(false);
-  const firstReveal = !revealed.current && pagedJobs.length > 0;
-  useEffect(() => {
-    if (pagedJobs.length > 0) revealed.current = true;
-  }, [pagedJobs.length]);
-  const cardMotion = (index: number) =>
-    reduceMotion
-      ? { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 }, transition: { duration: 0.15 } }
-      : {
-          initial: firstReveal ? { opacity: 0, y: 12, scale: 0.98 } : { opacity: 0 },
-          animate: { opacity: 1, y: 0, scale: 1 },
-          exit: { opacity: 0, scale: 0.97, transition: { duration: 0.14, ease: 'easeOut' as const } },
-          transition: {
-            duration: firstReveal ? 0.3 : 0.16,
-            ease: [0.23, 1, 0.32, 1] as const,
-            delay: firstReveal ? Math.min(index, 6) * 0.045 : 0,
-          },
-        };
+  // Jobs is opened every day, so cards get the daily-surface budget only: a
+  // 200ms opacity fade in and a 120ms fade out. No rise, no scale and no
+  // stagger (the old first-load entrance took over half a second to settle).
+  // Instant under prefers-reduced-motion.
+  const cardMotion = reduceMotion
+    ? { initial: false as const, animate: { opacity: 1 }, exit: { opacity: 0 }, transition: { duration: 0 } }
+    : {
+        initial: { opacity: 0 },
+        animate: { opacity: 1 },
+        exit: { opacity: 0, transition: { duration: DURATION.fast, ease: EASE_ACCELERATE } },
+        transition: { duration: DURATION.base, ease: EASE_STANDARD },
+      };
 
   // -- Triage: quick look, keyboard, swipe, compare --
   const listIndexOf = useCallback((id: string | null) =>
@@ -387,15 +379,15 @@ export function CombinedJobsPanel({
     [compareIds, byId],
   );
 
-  const renderJob = (job: WorkdayJob, index: number) => (
+  const renderJob = (job: WorkdayJob) => (
     <motion.div
       key={job.job_id}
       layout={reduceMotion ? false : 'position'}
-      {...cardMotion(index)}
+      {...cardMotion}
       className="flex h-full flex-col gap-1.5"
     >
       {job.sponsorship === 'refused' && (
-        <p className="flex items-start gap-1.5 rounded-lg border border-destructive/30 bg-destructive/10 px-2.5 py-1.5 text-[11px] font-medium leading-snug text-destructive">
+        <p className="flex items-start gap-1.5 rounded-lg border border-destructive/30 bg-destructive/10 px-2.5 py-1.5 text-caption-sm font-medium leading-snug text-destructive">
           <ShieldAlert className="mt-0.5 h-3 w-3 shrink-0" aria-hidden />
           <span>
             This posting states it won't sponsor a visa
@@ -490,7 +482,7 @@ export function CombinedJobsPanel({
             : `${weakerMatchCount} weaker ${weakerMatchCount === 1 ? 'match' : 'matches'} hidden.`}{' '}
           <button
             type="button"
-            className="font-medium text-foreground/80 underline-offset-2 hover:text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="hit-target rounded-sm font-medium text-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             aria-pressed={showWeaker}
             onClick={() => setShowWeaker(!showWeaker)}
           >
@@ -505,7 +497,7 @@ export function CombinedJobsPanel({
             : 'Showing every copy of reposted roles.'}{' '}
           <button
             type="button"
-            className="font-medium text-foreground/80 underline-offset-2 hover:text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="hit-target rounded-sm font-medium text-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             aria-pressed={!collapseReposts}
             onClick={() => setCollapseReposts(!collapseReposts)}
           >
@@ -522,7 +514,7 @@ export function CombinedJobsPanel({
 
       {reviewTitles.length > 0 && (
         <div
-          className="flex flex-wrap items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-xs text-foreground/85"
+          className="flex flex-wrap items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-xs text-foreground"
           role="status"
           data-testid="jobs-title-review"
         >
@@ -532,10 +524,10 @@ export function CombinedJobsPanel({
             current resume: <span className="font-medium text-foreground">{reviewTitles.join(', ')}</span>.
             {' '}They still shape your matches.
           </span>
-          <Button type="button" size="sm" className="h-7 text-xs" onClick={() => resolveReview(true)}>
+          <Button type="button" size="sm" className="hit-target h-8 text-xs" onClick={() => resolveReview(true)}>
             Use resume titles
           </Button>
-          <Button type="button" size="sm" variant="outline" className="h-7 text-xs" onClick={() => resolveReview(false)}>
+          <Button type="button" size="sm" variant="outline" className="hit-target h-8 text-xs" onClick={() => resolveReview(false)}>
             Keep my titles
           </Button>
         </div>
@@ -543,7 +535,7 @@ export function CombinedJobsPanel({
 
       {!loading && failedSources.length > 0 && (
         <div
-          className="flex flex-wrap items-center gap-2 rounded-xl border border-warning/40 bg-warning/10 px-4 py-3 text-xs text-foreground/85"
+          className="flex flex-wrap items-center gap-2 rounded-xl border border-warning/40 bg-warning/10 px-4 py-3 text-xs text-foreground"
           role="status"
           data-testid="jobs-source-failed"
         >
@@ -552,14 +544,14 @@ export function CombinedJobsPanel({
             Some jobs could not load ({failedSources.map((k) => SOURCE_LABEL[k]).join(', ')}). Showing
             the rest.
           </span>
-          <Button type="button" size="sm" variant="outline" className="h-7 text-xs" onClick={() => sync(false)}>
+          <Button type="button" size="sm" variant="outline" className="hit-target h-8 text-xs" onClick={() => sync(false)}>
             Try again
           </Button>
         </div>
       )}
 
       {resumeSkillCount === 0 && hasResult && (
-        <div className="flex items-start gap-2 rounded-xl border border-warning/40 bg-warning/10 px-4 py-3 text-xs text-foreground/85">
+        <div className="flex items-start gap-2 rounded-xl border border-warning/40 bg-warning/10 px-4 py-3 text-xs text-foreground">
           <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-warning" aria-hidden />
           <span>
             No parsed resume on this account, so match scores are unavailable. Upload your resume in
@@ -572,7 +564,7 @@ export function CombinedJobsPanel({
       {loading && jobs.length === 0 && (
         <div className={JOB_FEED_GRID_CLASS} aria-hidden>
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className={cn('space-y-2.5 p-3.5', JOB_CARD_CLASS)}>
+            <div key={i} className={cn('space-y-3 p-4', JOB_CARD_CLASS)}>
               <div className="flex items-start gap-2.5">
                 <Skeleton className="h-9 w-9 shrink-0 rounded-lg" />
                 <div className="flex-1 space-y-2">
@@ -582,7 +574,7 @@ export function CombinedJobsPanel({
                 <Skeleton className="h-12 w-12 shrink-0 rounded-full" />
               </div>
               <Skeleton className="h-3 w-2/3" />
-              <Skeleton className="h-9 w-full rounded-md" />
+              <Skeleton className="h-10 w-full rounded-md" />
             </div>
           ))}
         </div>
@@ -593,7 +585,7 @@ export function CombinedJobsPanel({
         <>
           <div className={JOB_FEED_GRID_CLASS}>
             <AnimatePresence initial={false} mode="popLayout">
-              {pagedJobs.map((j, i) => renderJob(j, i))}
+              {pagedJobs.map((j) => renderJob(j))}
             </AnimatePresence>
           </div>
 
@@ -606,13 +598,25 @@ export function CombinedJobsPanel({
       {/* ── Empty state ── */}
       {!loading && hasResult && listJobs.length === 0 && (
         <div className="rounded-2xl border border-dashed border-border bg-card/50 p-10 text-center text-sm text-muted-foreground">
-          <Radar className="mx-auto mb-3 h-8 w-8 opacity-40" aria-hidden />
-          <p>No roles match these filters in this window.</p>
-          {maxDays < 30 && (
-            <Button variant="outline" size="sm" className="mt-3" onClick={() => setRecency('30d')}>
-              Widen to 30 days
+          <Radar className="mx-auto mb-3 h-8 w-8" aria-hidden />
+          <p className="font-medium text-foreground">No roles match these filters in this window.</p>
+          <p className="mx-auto mt-1 max-w-prose text-xs">
+            {maxDays < 30
+              ? 'Widen the date window or change titles and filters in Job feed.'
+              : 'Change titles and filters in Job feed to see more roles.'}
+          </p>
+          {/* Never a dead end: the widening move, plus the way into the
+              filters that produced the empty list. */}
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+            {maxDays < 30 && (
+              <Button size="sm" className="h-10" onClick={() => setRecency('30d')}>
+                Widen to 30 days
+              </Button>
+            )}
+            <Button variant="outline" size="sm" className="h-10 gap-1.5" onClick={() => setCustomizeOpen(true)}>
+              <Radar className="h-3.5 w-3.5" aria-hidden /> Open Job feed
             </Button>
-          )}
+          </div>
         </div>
       )}
 
@@ -630,14 +634,14 @@ export function CombinedJobsPanel({
             <Button
               size="sm"
               variant="outline"
-              className="gap-1.5 rounded-lg border-border/80 bg-background/80 font-semibold hover:border-primary/40 hover:bg-primary/10 hover:text-primary [&_svg]:h-3.5 [&_svg]:w-3.5"
+              className="h-10 gap-1.5 rounded-lg font-semibold hover:border-primary/40 hover:bg-primary/10 hover:text-primary [&_svg]:h-3.5 [&_svg]:w-3.5"
               onClick={() => setCustomizeOpen(true)}
             >
               <Radar className="h-3.5 w-3.5" aria-hidden /> Open Job feed
             </Button>
             <Button
               size="sm"
-              className="gap-1.5"
+              className="h-10 gap-1.5"
               onClick={() => sync(false)}
               disabled={!ready || !canSearch}
             >
@@ -645,7 +649,7 @@ export function CombinedJobsPanel({
             </Button>
           </div>
           {ready && !canSearch && (
-            <p className="mx-auto mt-3 flex max-w-md items-center justify-center gap-1.5 px-4 text-[11px] font-medium text-warning">
+            <p className="mx-auto mt-3 flex max-w-md items-center justify-center gap-1.5 px-4 text-caption-sm font-medium text-warning">
               <AlertCircle className="h-3.5 w-3.5 shrink-0" aria-hidden />
               Add at least one role title or upload a resume to build your job feed.
             </p>

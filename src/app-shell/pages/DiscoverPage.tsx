@@ -21,7 +21,7 @@ export function JobsTopBar() {
 
   return (
     <div className="flex min-h-11 items-center gap-3">
-      <h1 className="shrink-0 font-display text-lg font-bold tracking-tight text-foreground">
+      <h1 className="shrink-0 font-display text-h3 font-bold tracking-tight text-foreground">
         Jobs
       </h1>
       <div className="relative min-w-0 flex-1">
@@ -35,7 +35,7 @@ export function JobsTopBar() {
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Filter title or company..."
           aria-label="Filter jobs by title or company"
-          className="h-10 w-full rounded-lg border border-border/80 bg-background/80 pl-8 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-primary/40 focus-visible:ring-2 focus-visible:ring-ring"
+          className="h-10 w-full rounded-lg border border-input bg-background pl-8 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-primary/40 focus-visible:ring-2 focus-visible:ring-ring"
         />
       </div>
       <Button
@@ -61,15 +61,15 @@ export function JobsTopBar() {
 export function PortalsJobsTopBar() {
   return (
     <div className="flex min-h-11 items-center gap-3">
-      <h1 className="shrink-0 font-display text-lg font-bold tracking-tight text-foreground">
+      <h1 className="shrink-0 font-display text-h3 font-bold tracking-tight text-foreground">
         Jobs
       </h1>
-      <p className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+      <p className="min-w-0 flex-1 truncate text-caption text-muted-foreground">
         Scan one catalog at a time. Merged matches live in For you.
       </p>
       <Link
         to={appPath("jobs", "for-you")}
-        className="shrink-0 text-xs font-semibold text-primary hover:underline"
+        className="hit-target shrink-0 rounded-sm text-caption font-semibold text-primary underline-offset-4 hover:underline"
       >
         See merged feed
       </Link>

@@ -44,11 +44,11 @@ export default function NetworkTab() {
     <div className="mx-auto max-w-3xl space-y-6 p-4">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <div className="flex items-center gap-1.5 text-primary">
-            <PenLine className="h-4 w-4" />
-            <span className="text-[11px] font-semibold uppercase tracking-[0.18em]">Grow · Network & posts</span>
+          <div className="flex items-center gap-1.5 text-muted-foreground">
+            <PenLine className="h-4 w-4" aria-hidden="true" />
+            <span className="overline">Grow · Network & posts</span>
           </div>
-          <h2 className="font-display text-2xl font-extrabold tracking-tight">Turn wins into a personal brand</h2>
+          <h2 className="font-display text-h2 text-foreground">Turn wins into a personal brand</h2>
           <p className="text-sm text-muted-foreground">Draft audience-tailored posts about what you built, learned, or won.</p>
         </div>
         <Button onClick={() => setComposer({ open: true, event: null })}>

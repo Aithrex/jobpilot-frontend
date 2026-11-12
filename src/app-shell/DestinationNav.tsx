@@ -48,12 +48,18 @@ export function DestinationNav() {
                       />
                       <span className="relative z-10 whitespace-nowrap">{label}</span>
                       {badge > 0 && (
-                        <span
-                          className="relative z-10 ml-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold leading-none text-primary-foreground"
-                          aria-label={`${badge} unread`}
-                        >
-                          {badge > 9 ? "9+" : badge}
-                        </span>
+                        <>
+                          {/* aria-label on a plain span is not part of the
+                              link's name, so the count is spoken via sr-only
+                              text and the visual chip is hidden from AT. */}
+                          <span
+                            className="relative z-10 ml-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-caption-sm font-bold leading-none text-primary-foreground"
+                            aria-hidden="true"
+                          >
+                            {badge > 9 ? "9+" : badge}
+                          </span>
+                          <span className="sr-only">, {badge} unread</span>
+                        </>
                       )}
                     </>
                   )}

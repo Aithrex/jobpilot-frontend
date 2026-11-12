@@ -474,7 +474,7 @@ export function TechFeedJobCard({
               </Badge>
               <span
                 className={cn(
-                  'inline-flex items-center rounded-full border px-2 py-px text-[10px] font-semibold',
+                  'inline-flex items-center rounded-full border px-2 py-px text-caption-sm font-semibold',
                   band.chip,
                 )}
               >
@@ -734,7 +734,7 @@ export function TechFeedJobCard({
               type="button"
               variant="ghost"
               size="sm"
-              className="h-7 gap-1 px-2 text-xs text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+              className="hit-target h-7 gap-1 px-2 text-xs text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
               data-testid="tech-feed-why-score"
             >
               {fitOpen ? 'Hide the score breakdown' : 'Why this score'}
@@ -756,7 +756,7 @@ export function TechFeedJobCard({
       {requirements.length > 0 && (
         <div className="mt-3" data-testid="tech-feed-requirements">
           <h4 className="text-xs font-semibold text-foreground">Requirements to check</h4>
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-caption-sm text-muted-foreground">
             Read these before applying. They are not counted against your score.
           </p>
           <ul className="mt-1 space-y-0.5 text-xs text-muted-foreground">
@@ -797,7 +797,7 @@ export function TechFeedJobCard({
             <Button
               type="button"
               size="sm"
-              className="h-7 text-xs"
+              className="hit-target h-7 text-xs"
               onClick={() => void onConfirmApplied?.(posting)}
             >
               Yes, I applied
@@ -806,7 +806,7 @@ export function TechFeedJobCard({
               type="button"
               size="sm"
               variant="ghost"
-              className="h-7 text-xs"
+              className="hit-target h-7 text-xs"
               onClick={() => onConfirmNotYet?.(job.job_id)}
             >
               Not yet
@@ -909,7 +909,7 @@ export function TechFeedJobCard({
         />
 
         {jobStatus && (
-          <span className="ml-auto text-[11px] text-muted-foreground" data-testid="tech-feed-tracker-state">
+          <span className="ml-auto text-caption-sm text-muted-foreground" data-testid="tech-feed-tracker-state">
             In your tracker: {appState?.label ?? humanize(jobStatus)}
           </span>
         )}

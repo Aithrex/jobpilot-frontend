@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, FormEvent } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { DURATION, EASE_DECELERATE, indicatorSpring } from '@/lib/motion';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiService, type AdminUserOverride } from '@/lib/api';
@@ -139,11 +140,14 @@ function initials(nameOrEmail: string | null | undefined): string {
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return (parts[0][0] + parts[1][0]).toUpperCase();
 }
+// Categorical tints from the chart palette. The initials sit on a light wash
+// of the hue in `text-foreground`, so every seed clears AA in both themes
+// (white on a saturated gradient did not in light mode).
 const AVATAR_GRADIENTS = [
-  'from-indigo-500 to-violet-600', 'from-blue-500 to-cyan-600',
-  'from-emerald-500 to-teal-600', 'from-amber-500 to-orange-600',
-  'from-rose-500 to-pink-600', 'from-purple-500 to-fuchsia-600',
-  'from-cyan-500 to-blue-600', 'from-lime-500 to-emerald-600',
+  'bg-chart-1/20 ring-chart-1/30', 'bg-chart-5/20 ring-chart-5/30',
+  'bg-chart-2/20 ring-chart-2/30', 'bg-chart-3/20 ring-chart-3/30',
+  'bg-chart-6/20 ring-chart-6/30', 'bg-chart-4/20 ring-chart-4/30',
+  'bg-chart-8/20 ring-chart-8/30', 'bg-chart-7/20 ring-chart-7/30',
 ];
 function gradientFor(seed: string | null | undefined): string {
   if (!seed) return AVATAR_GRADIENTS[0];
@@ -153,14 +157,14 @@ function gradientFor(seed: string | null | undefined): string {
 }
 
 const STATUS_COLORS: Record<string, { chip: string; dot: string; label: string }> = {
-  saved:        { chip: 'bg-sky-500/15 text-sky-400 border-sky-500/25',             dot: 'bg-sky-400',     label: 'Saved' },
-  draft:        { chip: 'bg-gray-500/15 text-gray-400 border-gray-500/25',         dot: 'bg-gray-400',     label: 'Draft' },
-  applied:      { chip: 'bg-indigo-500/15 text-indigo-400 border-indigo-500/25',   dot: 'bg-indigo-400',   label: 'Applied' },
-  interviewing: { chip: 'bg-blue-500/15 text-blue-400 border-blue-500/25',         dot: 'bg-blue-400',     label: 'Interviewing' },
-  offer:        { chip: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/25', dot: 'bg-emerald-400', label: 'Offer' },
-  rejected:     { chip: 'bg-red-500/15 text-red-400 border-red-500/25',            dot: 'bg-red-400',     label: 'Rejected' },
-  ghosted:      { chip: 'bg-amber-500/15 text-amber-400 border-amber-500/25',      dot: 'bg-amber-400',   label: 'Ghosted' },
-  withdrawn:    { chip: 'bg-gray-400/15 text-gray-500 border-gray-400/25',         dot: 'bg-gray-500',    label: 'Withdrawn' },
+  saved:        { chip: 'bg-info/10 text-info border-info/25',                   dot: 'bg-info',              label: 'Saved' },
+  draft:        { chip: 'bg-muted text-muted-foreground border-border',          dot: 'bg-muted-foreground',  label: 'Draft' },
+  applied:      { chip: 'bg-primary/10 text-primary border-primary/25',          dot: 'bg-primary',           label: 'Applied' },
+  interviewing: { chip: 'bg-signal-tint text-signal border-signal/25',           dot: 'bg-signal',            label: 'Interviewing' },
+  offer:        { chip: 'bg-success/10 text-success border-success/25',          dot: 'bg-success',           label: 'Offer' },
+  rejected:     { chip: 'bg-destructive/10 text-destructive border-destructive/25', dot: 'bg-destructive',    label: 'Rejected' },
+  ghosted:      { chip: 'bg-warning/10 text-warning border-warning/25',          dot: 'bg-warning',           label: 'Ghosted' },
+  withdrawn:    { chip: 'bg-muted text-muted-foreground border-border',          dot: 'bg-border',            label: 'Withdrawn' },
 };
 const STATUSES: Array<keyof typeof STATUS_COLORS> = ['saved', 'draft', 'applied', 'interviewing', 'offer', 'rejected', 'ghosted', 'withdrawn'];
 
@@ -190,9 +194,9 @@ const Icon = {
 // ─── Primitives ──────────────────────────────────────────────────────────
 
 function Avatar({ seed, size = 'md' }: { seed: string | null | undefined; size?: 'sm' | 'md' | 'lg' }) {
-  const dims = size === 'sm' ? 'h-8 w-8 text-[10px]' : size === 'lg' ? 'h-12 w-12 text-sm' : 'h-9 w-9 text-xs';
+  const dims = size === 'sm' ? 'h-8 w-8 text-caption-sm' : size === 'lg' ? 'h-12 w-12 text-sm' : 'h-9 w-9 text-xs';
   return (
-    <div className={`${dims} shrink-0 rounded-xl bg-gradient-to-br ${gradientFor(seed)} text-white font-bold flex items-center justify-center shadow-sm shadow-black/30 ring-1 ring-white/10`}>
+    <div className={`${dims} shrink-0 rounded-xl ${gradientFor(seed)} text-foreground font-bold flex items-center justify-center ring-1`}>
       {initials(seed)}
     </div>
   );
@@ -200,8 +204,8 @@ function Avatar({ seed, size = 'md' }: { seed: string | null | undefined; size?:
 
 function StatusPill({ status, size = 'md' }: { status?: string; size?: 'sm' | 'md' }) {
   const meta = status ? STATUS_COLORS[status] : null;
-  if (!meta) return <span className="text-xs text-gray-600">{EMPTY_VALUE}</span>;
-  const pad = size === 'sm' ? 'px-1.5 py-0.5 text-[10px]' : 'px-2 py-0.5 text-[11px]';
+  if (!meta) return <span className="text-xs text-muted-foreground">{EMPTY_VALUE}</span>;
+  const pad = size === 'sm' ? 'px-1.5 py-0.5 text-caption-sm' : 'px-2 py-0.5 text-caption-sm';
   return (
     <span className={`inline-flex items-center gap-1 ${pad} rounded-full border font-semibold ${meta.chip}`}>
       <span className={`w-1.5 h-1.5 rounded-full ${meta.dot}`} />
@@ -215,7 +219,7 @@ function Sparkline({ data, color = 'indigo', width = 80, height = 28 }: {
   width?: number; height?: number;
 }) {
   if (!data || data.length < 2) {
-    return <div className="h-7 w-20 rounded bg-white/[0.03]" />;
+    return <div className="h-7 w-20 rounded bg-muted/40" />;
   }
   const min = Math.min(...data);
   const max = Math.max(...data);
@@ -227,40 +231,41 @@ function Sparkline({ data, color = 'indigo', width = 80, height = 28 }: {
   });
   const path = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p[0]},${p[1]}`).join(' ');
   const areaPath = `${path} L ${width},${height} L 0,${height} Z`;
-  const colorMap = {
-    indigo: { stroke: '#818cf8', fill: 'url(#spark-indigo)' },
-    emerald: { stroke: '#34d399', fill: 'url(#spark-emerald)' },
-    violet: { stroke: '#a78bfa', fill: 'url(#spark-violet)' },
-    amber: { stroke: '#fbbf24', fill: 'url(#spark-amber)' },
-    rose: { stroke: '#fb7185', fill: 'url(#spark-rose)' },
-    cyan: { stroke: '#22d3ee', fill: 'url(#spark-cyan)' },
-  }[color];
+  const SPARK_TOKEN = {
+    indigo: 'hsl(var(--primary))',
+    emerald: 'hsl(var(--signal))',
+    violet: 'hsl(var(--primary))',
+    amber: 'hsl(var(--warning))',
+    rose: 'hsl(var(--muted-foreground))',
+    cyan: 'hsl(var(--info))',
+  } as const;
+  const colorMap = { stroke: SPARK_TOKEN[color], fill: `url(#spark-${color})` };
   return (
     <svg width={width} height={height} className="overflow-visible">
       <defs>
         <linearGradient id="spark-indigo" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#818cf8" stopOpacity="0.35" />
-          <stop offset="100%" stopColor="#818cf8" stopOpacity="0" />
+          <stop offset="0%" style={{ stopColor: 'hsl(var(--primary))', stopOpacity: 0.35 }} />
+          <stop offset="100%" style={{ stopColor: 'hsl(var(--primary))', stopOpacity: 0 }} />
         </linearGradient>
         <linearGradient id="spark-emerald" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#34d399" stopOpacity="0.35" />
-          <stop offset="100%" stopColor="#34d399" stopOpacity="0" />
+          <stop offset="0%" style={{ stopColor: 'hsl(var(--signal))', stopOpacity: 0.35 }} />
+          <stop offset="100%" style={{ stopColor: 'hsl(var(--signal))', stopOpacity: 0 }} />
         </linearGradient>
         <linearGradient id="spark-violet" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#a78bfa" stopOpacity="0.35" />
-          <stop offset="100%" stopColor="#a78bfa" stopOpacity="0" />
+          <stop offset="0%" style={{ stopColor: 'hsl(var(--primary))', stopOpacity: 0.35 }} />
+          <stop offset="100%" style={{ stopColor: 'hsl(var(--primary))', stopOpacity: 0 }} />
         </linearGradient>
         <linearGradient id="spark-amber" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#fbbf24" stopOpacity="0.35" />
-          <stop offset="100%" stopColor="#fbbf24" stopOpacity="0" />
+          <stop offset="0%" style={{ stopColor: 'hsl(var(--warning))', stopOpacity: 0.35 }} />
+          <stop offset="100%" style={{ stopColor: 'hsl(var(--warning))', stopOpacity: 0 }} />
         </linearGradient>
         <linearGradient id="spark-rose" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#fb7185" stopOpacity="0.35" />
-          <stop offset="100%" stopColor="#fb7185" stopOpacity="0" />
+          <stop offset="0%" style={{ stopColor: 'hsl(var(--muted-foreground))', stopOpacity: 0.35 }} />
+          <stop offset="100%" style={{ stopColor: 'hsl(var(--muted-foreground))', stopOpacity: 0 }} />
         </linearGradient>
         <linearGradient id="spark-cyan" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#22d3ee" stopOpacity="0.35" />
-          <stop offset="100%" stopColor="#22d3ee" stopOpacity="0" />
+          <stop offset="0%" style={{ stopColor: 'hsl(var(--info))', stopOpacity: 0.35 }} />
+          <stop offset="100%" style={{ stopColor: 'hsl(var(--info))', stopOpacity: 0 }} />
         </linearGradient>
       </defs>
       <path d={areaPath} fill={colorMap.fill} />
@@ -280,42 +285,41 @@ function KPICard({
   sparklineData?: number[];
 }) {
   const iconBg: Record<string, string> = {
-    indigo:  'bg-indigo-500/10 text-indigo-400 ring-indigo-500/20',
-    emerald: 'bg-emerald-500/10 text-emerald-400 ring-emerald-500/20',
-    amber:   'bg-amber-500/10 text-amber-400 ring-amber-500/20',
-    rose:    'bg-rose-500/10 text-rose-400 ring-rose-500/20',
-    cyan:    'bg-cyan-500/10 text-cyan-400 ring-cyan-500/20',
-    violet:  'bg-violet-500/10 text-violet-400 ring-violet-500/20',
+    indigo:  'bg-primary/10 text-primary ring-primary/20',
+    emerald: 'bg-signal-tint text-signal ring-signal/20',
+    amber:   'bg-warning/10 text-warning ring-warning/20',
+    rose:    'bg-muted text-ink-muted ring-border',
+    cyan:    'bg-info/10 text-info ring-info/20',
+    violet:  'bg-primary/10 text-primary ring-primary/20',
   };
   const trendCls =
-    trend?.direction === 'up' ? 'text-emerald-400' :
-    trend?.direction === 'down' ? 'text-red-400' : 'text-gray-500';
+    trend?.direction === 'up' ? 'text-success' :
+    trend?.direction === 'down' ? 'text-destructive' : 'text-muted-foreground';
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.32, ease: 'easeOut' }}
-      className="group relative overflow-hidden rounded-2xl border border-white/[0.06] bg-gradient-to-b from-white/[0.04] to-white/[0.01] p-5 transition-all hover:border-white/[0.12]"
+      transition={{ duration: DURATION.base, ease: EASE_DECELERATE }}
+      className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-soft transition-colors hover:border-foreground/20"
     >
-      <div className="absolute inset-x-0 -top-20 h-40 bg-gradient-to-b from-white/[0.03] to-transparent blur-2xl pointer-events-none" />
       <div className="relative flex items-start justify-between gap-4">
         <div className="space-y-2 min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <span className={`inline-flex items-center justify-center rounded-xl p-2 ring-1 ${iconBg[color]}`}>
               {icon}
             </span>
-            <p className="text-[11px] text-gray-400 uppercase tracking-wider font-semibold">{label}</p>
+            <p className="text-caption-sm text-muted-foreground uppercase tracking-wider font-semibold">{label}</p>
           </div>
-          <p className="text-3xl font-bold text-white tabular-nums leading-tight">{value}</p>
+          <p className="font-display text-headline-lg text-foreground tabular-nums">{value}</p>
           <div className="flex items-center gap-2">
             {trend && (
-              <span className={`inline-flex items-center gap-0.5 text-[11px] font-semibold ${trendCls}`}>
+              <span className={`inline-flex items-center gap-0.5 text-caption-sm font-semibold ${trendCls}`}>
                 {trend.direction === 'up' && '↑'}
                 {trend.direction === 'down' && '↓'}
                 {trend.direction === 'flat' && '→'}
                 {trend.pct !== undefined && `${Math.abs(trend.pct).toFixed(0)}%`}
               </span>
             )}
-            {sub && <p className="text-xs text-gray-500 truncate">{sub}</p>}
+            {sub && <p className="text-xs text-muted-foreground truncate">{sub}</p>}
           </div>
         </div>
         {sparklineData && sparklineData.length >= 2 && (
@@ -333,7 +337,7 @@ function PipelineBar({ counts }: { counts: Record<string, number> }) {
   if (total === 0) return null;
   return (
     <div className="space-y-2.5">
-      <div className="flex h-2.5 overflow-hidden rounded-full bg-white/[0.04] ring-1 ring-white/[0.06]">
+      <div className="flex h-2.5 overflow-hidden rounded-full bg-muted/70 ring-1 ring-border">
         {STATUSES.map(status => {
           const n = counts[status] || 0;
           if (n === 0) return null;
@@ -355,11 +359,11 @@ function PipelineBar({ counts }: { counts: Record<string, number> }) {
           const meta = STATUS_COLORS[status];
           const pct = (n / total) * 100;
           return (
-            <div key={status} className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg border text-[11px] ${meta.chip}`}>
+            <div key={status} className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg border text-caption-sm ${meta.chip}`}>
               <span className={`w-1.5 h-1.5 rounded-full ${meta.dot}`} />
               <span className="font-medium">{meta.label}</span>
               <span className="font-bold tabular-nums">{n}</span>
-              <span className="opacity-60">· {pct.toFixed(0)}%</span>
+              <span className="font-normal">· {pct.toFixed(0)}%</span>
             </div>
           );
         })}
@@ -370,35 +374,35 @@ function PipelineBar({ counts }: { counts: Record<string, number> }) {
 
 function ActivityRow({ a }: { a: Activity }) {
   const meta: Record<string, { label: string; icon: string; tint: string }> = {
-    registration: { label: 'joined',            icon: '✦',  tint: 'from-emerald-500/20 to-emerald-500/5 text-emerald-400 ring-emerald-500/20' },
-    login:        { label: 'signed in',         icon: '→',  tint: 'from-blue-500/20 to-blue-500/5 text-blue-400 ring-blue-500/20' },
-    upload:       { label: 'uploaded a resume', icon: '↑',  tint: 'from-amber-500/20 to-amber-500/5 text-amber-400 ring-amber-500/20' },
-    tailoring:    { label: 'tailored resume',   icon: '⚡', tint: 'from-violet-500/20 to-violet-500/5 text-violet-400 ring-violet-500/20' },
+    registration: { label: 'joined',            icon: '✦',  tint: 'bg-success/10 text-success ring-success/20' },
+    login:        { label: 'signed in',         icon: '→',  tint: 'bg-info/10 text-info ring-info/20' },
+    upload:       { label: 'uploaded a resume', icon: '↑',  tint: 'bg-warning/10 text-warning ring-warning/20' },
+    tailoring:    { label: 'tailored resume',   icon: '⚡', tint: 'bg-primary/10 text-primary ring-primary/20' },
   };
   const m = meta[a.type] || meta.login;
   return (
-    <div className="group flex items-start gap-3 px-5 py-3 hover:bg-white/[0.02] transition-colors">
-      <div className={`shrink-0 h-8 w-8 rounded-lg bg-gradient-to-br ${m.tint} ring-1 flex items-center justify-center text-base font-bold`}>
+    <div className="group flex items-start gap-3 px-5 py-3 hover:bg-muted transition-colors">
+      <div aria-hidden="true" className={`shrink-0 h-8 w-8 rounded-lg ${m.tint} ring-1 flex items-center justify-center text-base font-bold`}>
         {m.icon}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm text-gray-200 leading-snug">
-          <span className="font-semibold text-white">{a.name || a.email.split('@')[0]}</span>
-          <span className="text-gray-500"> {m.label}</span>
-          {a.detail && <span className="text-gray-300"> · {a.detail}</span>}
-          {a.company && a.company !== 'Not specified' && <span className="text-gray-500"> @ {a.company}</span>}
+        <p className="text-sm text-foreground leading-snug">
+          <span className="font-semibold text-foreground">{a.name || a.email.split('@')[0]}</span>
+          <span className="text-muted-foreground"> {m.label}</span>
+          {a.detail && <span className="text-ink-muted"> · {a.detail}</span>}
+          {a.company && a.company !== 'Not specified' && <span className="text-muted-foreground"> @ {a.company}</span>}
         </p>
-        <p className="text-[11px] text-gray-600 font-mono mt-0.5 truncate">{a.email}</p>
+        <p className="text-caption-sm text-muted-foreground font-mono mt-0.5 truncate">{a.email}</p>
       </div>
       <div className="text-right shrink-0">
         {a.ats_score != null && (
           <span className={`block text-xs font-bold tabular-nums ${
-            a.ats_score >= 80 ? 'text-emerald-400' : a.ats_score >= 60 ? 'text-amber-400' : 'text-red-400'
+            a.ats_score >= 80 ? 'text-success' : a.ats_score >= 60 ? 'text-warning' : 'text-destructive'
           }`}>
             ATS {a.ats_score}
           </span>
         )}
-        <TimeStamp iso={a.timestamp} className="block text-[11px] text-gray-600 mt-0.5" />
+        <TimeStamp iso={a.timestamp} className="block text-caption-sm text-muted-foreground mt-0.5" />
       </div>
     </div>
   );
@@ -410,13 +414,13 @@ function ActivityRow({ a }: { a: Activity }) {
 // so a non-technical viewer can scan it without decoding tags or jargon.
 
 function presenceFor(iso?: string | null): { dot: string; ring: string; label: string } {
-  if (!iso) return { dot: 'bg-gray-600', ring: 'ring-gray-700/50', label: 'Never seen' };
+  if (!iso) return { dot: 'bg-muted-foreground', ring: 'ring-border', label: 'Never seen' };
   const mins = (Date.now() - new Date(iso).getTime()) / 60000;
-  if (mins < 5)        return { dot: 'bg-emerald-400 animate-pulse', ring: 'ring-emerald-400/40', label: 'Online now' };
-  if (mins < 60)       return { dot: 'bg-emerald-400',                ring: 'ring-emerald-400/30', label: 'Active' };
-  if (mins < 60 * 24)  return { dot: 'bg-amber-400',                  ring: 'ring-amber-400/30',   label: 'Today' };
-  if (mins < 60 * 24 * 7) return { dot: 'bg-sky-400',                 ring: 'ring-sky-400/30',     label: 'This week' };
-  return { dot: 'bg-gray-500', ring: 'ring-gray-700/50', label: 'A while ago' };
+  if (mins < 5)        return { dot: 'bg-success motion-safe:animate-pulse', ring: 'ring-success/40', label: 'Online now' };
+  if (mins < 60)       return { dot: 'bg-success',                ring: 'ring-success/30', label: 'Active' };
+  if (mins < 60 * 24)  return { dot: 'bg-warning',                ring: 'ring-warning/30', label: 'Today' };
+  if (mins < 60 * 24 * 7) return { dot: 'bg-info',                ring: 'ring-info/30',    label: 'This week' };
+  return { dot: 'bg-muted-foreground', ring: 'ring-border', label: 'A while ago' };
 }
 
 const ACTIVITY_LABEL: Record<string, string> = {
@@ -484,7 +488,7 @@ function RecentlyActiveUsers({
   }
 
   return (
-    <ul className="divide-y divide-white/[0.04]">
+    <ul className="divide-y divide-border">
       {rows.map((r, i) => {
         const presence = presenceFor(r.lastSeen);
         const display = r.name || r.email.split('@')[0];
@@ -494,40 +498,40 @@ function RecentlyActiveUsers({
             <Comp
               {...(onSelect ? { onClick: () => onSelect(r.email), type: 'button' as const } : {})}
               className={`w-full text-left flex items-center gap-3 px-4 sm:px-5 py-3 transition-colors ${
-                onSelect ? 'hover:bg-white/[0.03] focus-visible:bg-white/[0.04] focus-visible:outline-none cursor-pointer' : ''
+                onSelect ? 'hover:bg-muted focus-visible:bg-muted focus-visible:outline-none cursor-pointer' : ''
               }`}
             >
               <div className="relative shrink-0">
                 <Avatar seed={r.name || r.email} />
                 <span
-                  className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full ring-2 ring-[#0a0a0f] ${presence.dot}`}
+                  className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full ring-2 ring-background ${presence.dot}`}
                   title={presence.label}
                 />
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <p className="text-sm font-semibold text-white truncate max-w-[12rem] sm:max-w-none">
+                  <p className="text-sm font-semibold text-foreground truncate max-w-[12rem] sm:max-w-none">
                     {display}
                   </p>
-                  <span className={`inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-semibold rounded-full px-1.5 py-0.5 ring-1 ${presence.ring} text-gray-300`}>
+                  <span className={`inline-flex items-center gap-1 text-caption-sm uppercase tracking-wider font-semibold rounded-full px-1.5 py-0.5 ring-1 ${presence.ring} text-ink-muted`}>
                     <span className={`h-1.5 w-1.5 rounded-full ${presence.dot}`} />
                     {presence.label}
                   </span>
                 </div>
-                <p className="text-[12px] text-gray-400 mt-0.5 truncate">
-                  <span className="text-gray-500">Last seen </span>
-                  <TimeStamp iso={r.lastSeen} className="text-gray-200" />
+                <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                  <span className="text-muted-foreground">Last seen </span>
+                  <TimeStamp iso={r.lastSeen} className="text-foreground" />
                   {r.lastAction && (
                     <>
-                      <span className="text-gray-600"> · </span>
+                      <span className="text-muted-foreground"> · </span>
                       <span>{r.lastAction}</span>
                     </>
                   )}
                 </p>
-                <p className="text-[10px] text-gray-600 font-mono mt-0.5 truncate">{r.email}</p>
+                <p className="text-caption-sm text-muted-foreground font-mono mt-0.5 truncate">{r.email}</p>
               </div>
               {onSelect && (
-                <Icon.Chevron c="w-4 h-4 text-gray-600 shrink-0" />
+                <Icon.Chevron c="w-4 h-4 text-muted-foreground shrink-0" />
               )}
             </Comp>
           </li>
@@ -539,12 +543,12 @@ function RecentlyActiveUsers({
 
 function EmptyHero({ icon, title, subtitle, action }: { icon: React.ReactNode; title: string; subtitle?: string; action?: React.ReactNode }) {
   return (
-    <div className="rounded-2xl border border-dashed border-white/[0.08] bg-gradient-to-b from-white/[0.02] to-transparent py-16 px-6 text-center">
-      <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500/20 to-violet-500/10 text-indigo-400 ring-1 ring-indigo-500/20">
+    <div className="rounded-2xl border border-dashed border-border bg-muted/30 py-16 px-6 text-center">
+      <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary ring-1 ring-primary/20">
         {icon}
       </div>
-      <h3 className="text-sm font-semibold text-gray-200">{title}</h3>
-      {subtitle && <p className="text-xs text-gray-500 mt-1.5 max-w-sm mx-auto">{subtitle}</p>}
+      <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+      {subtitle && <p className="text-xs text-muted-foreground mt-1.5 max-w-sm mx-auto">{subtitle}</p>}
       {action && <div className="mt-4">{action}</div>}
     </div>
   );
@@ -554,8 +558,8 @@ function SectionHeading({ title, subtitle, action }: { title: string; subtitle?:
   return (
     <div className="flex items-start justify-between gap-4 mb-4">
       <div>
-        <h3 className="text-sm font-semibold text-white">{title}</h3>
-        {subtitle && <p className="text-xs text-gray-500 mt-0.5">{subtitle}</p>}
+        <h3 className="font-display text-title-sm text-foreground">{title}</h3>
+        {subtitle && <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>}
       </div>
       {action}
     </div>
@@ -566,7 +570,7 @@ function SectionHeading({ title, subtitle, action }: { title: string; subtitle?:
 // inner <time> uses the standard datetime attribute so screen readers and
 // copy/paste pick up the ISO value too.
 function TimeStamp({
-  iso, prefix, className = 'text-xs text-gray-500 whitespace-nowrap',
+  iso, prefix, className = 'text-xs text-muted-foreground whitespace-nowrap',
 }: { iso: string | null | undefined; prefix?: string; className?: string }) {
   const exact = fmtAbsolute(iso);
   const rel = fmtRel(iso);
@@ -574,7 +578,7 @@ function TimeStamp({
     <time
       dateTime={iso || undefined}
       title={exact === EMPTY_VALUE ? undefined : exact}
-      className={`${className} cursor-help underline decoration-dotted decoration-gray-700 underline-offset-2`}
+      className={`${className} cursor-help underline decoration-dotted decoration-muted-foreground/50 underline-offset-2`}
     >
       {prefix ? `${prefix} ` : ''}{rel}
     </time>
@@ -588,28 +592,28 @@ function HBar({ label, value, max, color = 'indigo', sub }: {
   sub?: string;
 }) {
   const fill: Record<string, string> = {
-    indigo:  'from-indigo-500/60 to-indigo-500/30',
-    emerald: 'from-emerald-500/60 to-emerald-500/30',
-    amber:   'from-amber-500/60 to-amber-500/30',
-    rose:    'from-rose-500/60 to-rose-500/30',
-    cyan:    'from-cyan-500/60 to-cyan-500/30',
-    violet:  'from-violet-500/60 to-violet-500/30',
-    sky:     'from-sky-500/60 to-sky-500/30',
+    indigo:  'bg-primary',
+    emerald: 'bg-signal',
+    amber:   'bg-warning',
+    rose:    'bg-muted-foreground',
+    cyan:    'bg-info',
+    violet:  'bg-primary',
+    sky:     'bg-info',
   };
   const pct = max > 0 ? Math.min(100, (value / max) * 100) : 0;
   return (
     <div className="space-y-1">
-      <div className="flex items-baseline justify-between gap-3 text-[11px]">
-        <span className="text-gray-300 truncate">{label}</span>
-        <span className="text-gray-500 tabular-nums shrink-0">
-          {sub ? `${sub} · ` : ''}<span className="text-white font-bold">{value}</span>
+      <div className="flex items-baseline justify-between gap-3 text-caption-sm">
+        <span className="text-ink-muted truncate">{label}</span>
+        <span className="text-muted-foreground tabular-nums shrink-0">
+          {sub ? `${sub} · ` : ''}<span className="text-foreground font-bold">{value}</span>
         </span>
       </div>
-      <div className="relative h-1.5 rounded-full bg-white/[0.04] overflow-hidden">
+      <div className="relative h-1.5 rounded-full bg-muted/70 overflow-hidden">
         <motion.div
           initial={{ width: 0 }} animate={{ width: `${pct}%` }}
-          transition={{ duration: 0.6, ease: 'easeOut' }}
-          className={`absolute inset-y-0 left-0 rounded-full bg-gradient-to-r ${fill[color]}`}
+          transition={{ duration: DURATION.slow, ease: EASE_DECELERATE }}
+          className={`absolute inset-y-0 left-0 rounded-full ${fill[color]}`}
         />
       </div>
     </div>
@@ -623,10 +627,10 @@ function MiniBars({ buckets, color = 'indigo' }: {
 }) {
   const max = Math.max(1, ...buckets.map(b => b.value));
   const fill: Record<string, string> = {
-    indigo:  'from-indigo-400 to-indigo-600',
-    emerald: 'from-emerald-400 to-emerald-600',
-    violet:  'from-violet-400 to-violet-600',
-    cyan:    'from-cyan-400 to-cyan-600',
+    indigo:  'bg-primary',
+    emerald: 'bg-signal',
+    violet:  'bg-primary',
+    cyan:    'bg-info',
   };
   return (
     <div className="flex items-end gap-2 h-28 px-1">
@@ -634,15 +638,15 @@ function MiniBars({ buckets, color = 'indigo' }: {
         const h = (b.value / max) * 100;
         return (
           <div key={i} className="flex-1 flex flex-col items-center gap-1.5 min-w-0">
-            <span className="text-[10px] tabular-nums text-gray-400 font-semibold">{b.value || ''}</span>
-            <div className="w-full bg-white/[0.03] rounded-md overflow-hidden flex items-end" style={{ height: '70%' }}>
+            <span className="text-caption-sm tabular-nums text-muted-foreground font-semibold">{b.value || ''}</span>
+            <div className="w-full bg-muted/40 rounded-md overflow-hidden flex items-end" style={{ height: '70%' }}>
               <motion.div
                 initial={{ height: 0 }} animate={{ height: `${h}%` }}
-                transition={{ duration: 0.55, ease: 'easeOut', delay: i * 0.04 }}
-                className={`w-full bg-gradient-to-t ${fill[color]} rounded-md`}
+                transition={{ duration: DURATION.slow, ease: EASE_DECELERATE, delay: Math.min(i, 6) * 0.03 }}
+                className={`w-full ${fill[color]} rounded-md`}
               />
             </div>
-            <span className="text-[10px] text-gray-600 truncate w-full text-center">{b.label}</span>
+            <span className="text-caption-sm text-muted-foreground truncate w-full text-center">{b.label}</span>
           </div>
         );
       })}
@@ -660,20 +664,20 @@ function Funnel({ stages }: { stages: { label: string; value: number; color?: st
         const conv = i > 0 ? (stages[i - 1].value > 0 ? (s.value / stages[i - 1].value) * 100 : 0) : 100;
         return (
           <div key={s.label}>
-            <div className="flex items-baseline justify-between gap-3 text-[11px] mb-1">
-              <span className="text-gray-300 font-medium">{s.label}</span>
-              <span className="tabular-nums text-gray-500">
-                {i > 0 && <span className="text-gray-600">{conv.toFixed(0)}% conv · </span>}
-                <span className="text-white font-bold">{s.value}</span>
+            <div className="flex items-baseline justify-between gap-3 text-caption-sm mb-1">
+              <span className="text-ink-muted font-medium">{s.label}</span>
+              <span className="tabular-nums text-muted-foreground">
+                {i > 0 && <span className="text-muted-foreground">{conv.toFixed(0)}% conv · </span>}
+                <span className="text-foreground font-bold">{s.value}</span>
               </span>
             </div>
-            <div className="relative h-7 rounded-lg bg-white/[0.03] overflow-hidden ring-1 ring-white/[0.04]">
+            <div className="relative h-7 rounded-lg bg-muted/40 overflow-hidden ring-1 ring-border">
               <motion.div
                 initial={{ width: 0 }} animate={{ width: `${pct}%` }}
-                transition={{ duration: 0.6, ease: 'easeOut', delay: i * 0.05 }}
-                className={`absolute inset-y-0 left-0 rounded-lg ${s.color || 'bg-gradient-to-r from-indigo-500/60 via-violet-500/40 to-violet-500/10'}`}
+                transition={{ duration: DURATION.slow, ease: EASE_DECELERATE, delay: Math.min(i, 6) * 0.03 }}
+                className={`absolute inset-y-0 left-0 rounded-lg ${s.color || 'bg-primary/30'}`}
               />
-              <span className="relative z-10 inline-flex h-full items-center pl-3 text-[11px] font-semibold text-white/90">
+              <span className="relative z-10 inline-flex h-full items-center pl-3 text-caption-sm font-semibold text-foreground">
                 {s.label}
               </span>
             </div>
@@ -701,7 +705,7 @@ function Card({
   children, padded = true, className = '',
 }: { children: React.ReactNode; padded?: boolean; className?: string }) {
   return (
-    <div className={`rounded-2xl border border-white/[0.06] bg-gradient-to-b from-white/[0.025] to-white/[0.01] ${padded ? 'p-5 sm:p-6' : ''} ${className}`}>
+    <div className={`rounded-2xl border border-border bg-card shadow-soft ${padded ? 'p-5 sm:p-6' : ''} ${className}`}>
       {children}
     </div>
   );
@@ -710,9 +714,9 @@ function Card({
 function SkeletonRow() {
   return (
     <div className="animate-pulse space-y-2">
-      <div className="h-12 rounded-xl bg-white/[0.03]" />
-      <div className="h-12 rounded-xl bg-white/[0.025]" />
-      <div className="h-12 rounded-xl bg-white/[0.02]" />
+      <div className="h-12 rounded-xl bg-muted/40" />
+      <div className="h-12 rounded-xl bg-muted/40" />
+      <div className="h-12 rounded-xl bg-muted/40" />
     </div>
   );
 }
@@ -720,19 +724,22 @@ function SkeletonRow() {
 function SearchBox({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder: string }) {
   return (
     <div className="relative">
-      <Icon.Search c="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
+      <Icon.Search c="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
       <input
         value={value}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
-        className="pl-9 pr-8 py-2 w-full rounded-xl bg-white/[0.03] border border-white/[0.06] text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500/40 focus:ring-1 focus:ring-indigo-500/30 transition"
+        aria-label={placeholder}
+        type="search"
+        className="h-10 pl-9 pr-10 w-full rounded-xl bg-background border border-input text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-ring/40 transition-colors [&::-webkit-search-cancel-button]:hidden"
       />
       {value && (
         <button
+          type="button"
           onClick={() => onChange('')}
-          className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full text-gray-500 hover:text-white hover:bg-white/10 flex items-center justify-center text-xs"
-          aria-label="Clear"
-        >×</button>
+          className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          aria-label="Clear search"
+        ><Icon.X c="h-3.5 w-3.5" /></button>
       )}
     </div>
   );
@@ -757,16 +764,17 @@ function Sidebar({
   onSignOut: () => void;
   onBackToApp: () => void;
 }) {
+  const reduceMotion = useReducedMotion();
   return (
-    <aside className="hidden lg:flex w-64 shrink-0 flex-col border-r border-white/[0.06] bg-[#0d0d14] sticky top-0 h-screen">
+    <aside className="hidden lg:flex w-64 shrink-0 flex-col border-r border-border bg-card sticky top-0 h-screen">
       {/* Brand */}
-      <div className="h-16 flex items-center gap-3 px-5 border-b border-white/[0.06]">
-        <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
-          <Icon.Sparkle c="w-4 h-4 text-white" />
+      <div className="h-16 flex items-center gap-3 px-5 border-b border-border">
+        <div className="h-9 w-9 rounded-xl bg-primary flex items-center justify-center shadow-soft" aria-hidden="true">
+          <Icon.Sparkle c="w-4 h-4 text-primary-foreground" />
         </div>
         <div>
-          <p className="text-sm font-bold text-white leading-tight">Admin Suite</p>
-          <p className="text-[10px] text-gray-500 leading-tight">Super-admin console</p>
+          <p className="text-sm font-bold text-foreground leading-tight">Admin Suite</p>
+          <p className="text-caption-sm text-muted-foreground leading-tight">Super-admin console</p>
         </div>
       </div>
 
@@ -784,22 +792,22 @@ function Sidebar({
               aria-current={active ? 'page' : undefined}
               className={`w-full group relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                 active
-                  ? 'text-white bg-gradient-to-r from-indigo-500/15 via-violet-500/10 to-transparent'
-                  : 'text-gray-500 hover:text-gray-200 hover:bg-white/[0.03]'
+                  ? 'text-primary bg-primary/10'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted'
               }`}
             >
               {active && (
                 <motion.span
                   layoutId="sidebar-active"
-                  className="absolute inset-y-1.5 left-0 w-0.5 bg-gradient-to-b from-indigo-400 to-violet-400 rounded-r"
-                  transition={{ type: 'spring', stiffness: 400, damping: 32 }}
+                  className="absolute inset-y-1.5 left-0 w-0.5 bg-primary rounded-r"
+                  transition={indicatorSpring(reduceMotion)}
                 />
               )}
-              <Icn c={`w-[18px] h-[18px] ${active ? 'text-indigo-300' : ''}`} />
+              <Icn c={`w-[18px] h-[18px] ${active ? 'text-primary' : ''}`} />
               <span className="flex-1 text-left">{item.label}</span>
               {count !== undefined && count > 0 && (
-                <span className={`text-[10px] tabular-nums font-bold px-1.5 py-0.5 rounded-full ${
-                  active ? 'bg-indigo-500/20 text-indigo-200' : 'bg-white/[0.06] text-gray-500'
+                <span className={`text-caption-sm tabular-nums font-bold px-1.5 py-0.5 rounded-full ${
+                  active ? 'bg-primary/15 text-primary' : 'bg-muted text-muted-foreground'
                 }`}>{fmtNum(count)}</span>
               )}
             </button>
@@ -811,7 +819,7 @@ function Sidebar({
       <div className="px-3 pb-2">
         <button
           onClick={onBackToApp}
-          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-[11px] text-gray-500 hover:text-gray-300 hover:bg-white/[0.03] transition"
+          className="w-full flex min-h-10 items-center gap-2 px-3 py-2 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
         >
           <Icon.Back c="w-3.5 h-3.5" />
           <span>Back to app</span>
@@ -819,17 +827,19 @@ function Sidebar({
       </div>
 
       {/* User */}
-      <div className="border-t border-white/[0.06] px-3 py-3">
-        <div className="flex items-center gap-2.5 px-2 py-2 rounded-xl bg-white/[0.02]">
+      <div className="border-t border-border px-3 py-3">
+        <div className="flex items-center gap-2.5 px-2 py-2 rounded-xl bg-muted/40">
           <Avatar seed={user?.email || user?.name || 'admin'} size="sm" />
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-medium text-white truncate">{user?.name || 'Admin'}</p>
-            <p className="text-[10px] text-gray-500 truncate font-mono">{user?.email}</p>
+            <p className="text-xs font-medium text-foreground truncate">{user?.name || 'Admin'}</p>
+            <p className="text-caption-sm text-muted-foreground truncate font-mono">{user?.email}</p>
           </div>
           <button
+            type="button"
             onClick={onSignOut}
             title="Sign out"
-            className="shrink-0 h-8 w-8 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 flex items-center justify-center transition"
+            aria-label="Sign out"
+            className="hit-target shrink-0 h-9 w-9 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 flex items-center justify-center transition-colors"
           >
             <Icon.Logout c="w-4 h-4" />
           </button>
@@ -843,21 +853,21 @@ function MobileTopNav({ tab, setTab, onSignOut, onBackToApp }: {
   tab: Tab; setTab: (t: Tab) => void; onSignOut: () => void; onBackToApp: () => void;
 }) {
   return (
-    <div className="lg:hidden sticky top-0 z-40 bg-[#0d0d14]/95 backdrop-blur-xl border-b border-white/[0.08] shadow-[0_4px_16px_-8px_rgba(0,0,0,0.5)]">
+    <div className="lg:hidden sticky top-0 z-40 bg-card/95 backdrop-blur-xl border-b border-border shadow-soft">
       <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center">
-            <Icon.Sparkle c="w-4 h-4 text-white" />
+          <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center" aria-hidden="true">
+            <Icon.Sparkle c="w-4 h-4 text-primary-foreground" />
           </div>
-          <span className="text-sm font-bold text-white">Admin Suite</span>
+          <span className="text-sm font-bold text-foreground">Admin Suite</span>
         </div>
         <div className="flex items-center gap-1">
-          <button onClick={onBackToApp} title="Back to app" aria-label="Back to app"
-            className="p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-white/[0.05] transition">
+          <button type="button" onClick={onBackToApp} title="Back to app" aria-label="Back to app"
+            className="hit-target flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
             <Icon.Back c="w-4 h-4" />
           </button>
-          <button onClick={onSignOut} title="Sign out" aria-label="Sign out"
-            className="p-1.5 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition">
+          <button type="button" onClick={onSignOut} title="Sign out" aria-label="Sign out"
+            className="hit-target flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors">
             <Icon.Logout c="w-4 h-4" />
           </button>
         </div>
@@ -874,10 +884,10 @@ function MobileTopNav({ tab, setTab, onSignOut, onBackToApp }: {
                 key={item.key}
                 onClick={() => setTab(item.key)}
                 aria-current={active ? 'page' : undefined}
-                className={`shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+                className={`hit-target shrink-0 inline-flex min-h-9 items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                   active
-                    ? 'bg-indigo-500/15 text-indigo-300 ring-1 ring-indigo-500/30'
-                    : 'text-gray-500 hover:text-gray-200 hover:bg-white/[0.04]'
+                    ? 'bg-primary/10 text-primary ring-1 ring-primary/30'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                 }`}
               >
                 <Icn c="w-3.5 h-3.5" /> {item.label}
@@ -885,7 +895,7 @@ function MobileTopNav({ tab, setTab, onSignOut, onBackToApp }: {
             );
           })}
         </div>
-        <span className="pointer-events-none absolute right-0 top-0 h-full w-6 bg-gradient-to-l from-[#0d0d14] to-transparent" />
+        <span aria-hidden="true" className="pointer-events-none absolute right-0 top-0 h-full w-6 bg-gradient-to-l from-card to-transparent" />
       </div>
     </div>
   );
@@ -911,25 +921,26 @@ function Topbar({ title, subtitle, onRefresh, refreshing, right }: {
     // Mobile: not sticky - the MobileTopNav already pins to top and a second
     // sticky bar would stack on top of it. Desktop: sticky as before.
     <div
-      className={`relative lg:sticky lg:top-0 z-20 lg:z-30 bg-[#0a0a0f]/90 backdrop-blur-xl border-b transition-[border-color,box-shadow] duration-200
-        ${scrolled ? 'border-white/[0.10] shadow-[0_8px_24px_-12px_rgba(0,0,0,0.6)]' : 'border-white/[0.06]'}`}
+      className={`relative lg:sticky lg:top-0 z-20 lg:z-30 bg-background/90 backdrop-blur-xl border-b border-border transition-[box-shadow] duration-200
+        ${scrolled ? 'shadow-panel' : ''}`}
     >
       <div className="px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-4">
         <div className="min-w-0">
-          <h1 className="text-base sm:text-lg font-semibold text-white leading-tight truncate">{title}</h1>
-          {subtitle && <p className="text-[11px] sm:text-xs text-gray-500 mt-0.5 leading-tight truncate">{subtitle}</p>}
+          <h1 className="font-display text-title-md sm:text-title-lg text-foreground truncate">{title}</h1>
+          {subtitle && <p className="text-xs text-muted-foreground mt-0.5 truncate">{subtitle}</p>}
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {right}
           {onRefresh && (
             <button
+              type="button"
               onClick={onRefresh}
               disabled={refreshing}
-              className="h-9 px-3 inline-flex items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.02] hover:bg-white/[0.06] text-gray-300 hover:text-white transition disabled:opacity-50 text-xs font-medium"
+              className="h-10 px-3 inline-flex items-center gap-1.5 rounded-xl border border-border bg-card hover:bg-muted text-ink-muted hover:text-foreground transition-colors disabled:opacity-50 text-xs font-medium"
               title="Refresh data"
               aria-label="Refresh"
             >
-              <Icon.Refresh c={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+              <Icon.Refresh c={`w-4 h-4 ${refreshing ? 'motion-safe:animate-spin' : ''}`} />
               <span className="hidden sm:inline">{refreshing ? 'Refreshing...' : 'Refresh'}</span>
             </button>
           )}
@@ -1010,21 +1021,22 @@ export default function AdminPortal() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
-        <div className="h-10 w-10 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-background flex items-center justify-center" role="status" aria-live="polite">
+        <div className="h-10 w-10 border-2 border-primary border-t-transparent rounded-full animate-spin" aria-hidden="true" />
+        <span className="sr-only">Loading admin console</span>
       </div>
     );
   }
   if (!isAuthenticated) return <AdminLoginForm />;
   if (!isSuperAdmin) {
     return (
-      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
+      <main className="min-h-screen bg-background text-foreground flex items-center justify-center px-6">
         <div className="text-center space-y-4">
-          <div className="text-7xl font-bold bg-gradient-to-b from-gray-400 to-gray-700 bg-clip-text text-transparent">403</div>
-          <p className="text-gray-400">You are not authorized to access this page.</p>
-          <button onClick={() => navigate('/app/home')} className="text-sm text-indigo-400 hover:text-indigo-300">← Back to homepage</button>
+          <p aria-hidden="true" className="font-display text-display-lg tabular-nums text-muted-foreground">403</p>
+          <h1 className="font-display text-h2 text-foreground">You are not authorized to access this page.</h1>
+          <button type="button" onClick={() => navigate('/app/home')} className="inline-flex min-h-11 items-center rounded px-2 text-sm font-semibold text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">← Back to homepage</button>
         </div>
-      </div>
+      </main>
     );
   }
 
@@ -1037,7 +1049,7 @@ export default function AdminPortal() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-white flex isolate">
+    <div className="min-h-screen bg-background text-foreground flex isolate">
       <Sidebar
         tab={tab} setTab={setTab} counts={counts}
         user={user}
@@ -1062,11 +1074,13 @@ export default function AdminPortal() {
         <AnimatePresence>
           {error && (
             <motion.div
-              initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}
-              className="mx-6 mt-4 flex items-start justify-between gap-3 px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-xl"
+              initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: DURATION.base, ease: EASE_DECELERATE }}
+              role="alert"
+              className="mx-4 sm:mx-6 mt-4 flex items-center justify-between gap-3 px-4 py-3 bg-destructive/10 border border-destructive/25 rounded-xl"
             >
-              <p className="text-sm text-red-300">{error}</p>
-              <button onClick={() => setError('')} className="text-red-400/60 hover:text-red-400 text-xs">Dismiss</button>
+              <p className="text-sm text-destructive">{error}</p>
+              <button type="button" onClick={() => setError('')} className="shrink-0 inline-flex min-h-10 items-center rounded-md px-2 text-xs font-medium text-destructive hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">Dismiss</button>
             </motion.div>
           )}
         </AnimatePresence>
@@ -1079,7 +1093,7 @@ export default function AdminPortal() {
             <motion.div
               key={selectedUser ? `user-detail:${selectedUser.user.email}` : tab}
               initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
-              transition={{ duration: 0.22 }}
+              transition={{ duration: DURATION.base, ease: EASE_DECELERATE }}
             >
               <PageShell>
                 {selectedUser ? (
@@ -1127,17 +1141,17 @@ function OverviewPanel({ stats, users, onSelectUser }: {
       <div className="space-y-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-32 rounded-2xl bg-white/[0.03] animate-pulse" />
+            <div key={i} className="h-32 rounded-2xl bg-muted/40 animate-pulse" />
           ))}
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-28 rounded-2xl bg-white/[0.025] animate-pulse" />
+            <div key={i} className="h-28 rounded-2xl bg-muted/40 animate-pulse" />
           ))}
         </div>
         <div className="grid grid-cols-1 xl:grid-cols-[1.2fr_1fr] gap-6">
-          <div className="h-72 rounded-2xl bg-white/[0.02] animate-pulse" />
-          <div className="h-72 rounded-2xl bg-white/[0.02] animate-pulse" />
+          <div className="h-72 rounded-2xl bg-muted/40 animate-pulse" />
+          <div className="h-72 rounded-2xl bg-muted/40 animate-pulse" />
         </div>
       </div>
     );
@@ -1151,17 +1165,6 @@ function OverviewPanel({ stats, users, onSelectUser }: {
     const pct = ((dailySeven - dailyThirty) / dailyThirty) * 100;
     if (Math.abs(pct) < 3) return { direction: 'flat', pct: 0 };
     return { direction: pct > 0 ? 'up' : 'down', pct };
-  };
-
-  // Fake sparklines derived from rollup counts - just for visual rhythm
-  const mkSpark = (seed: number) => {
-    const out: number[] = [];
-    let v = Math.max(1, Math.floor(seed / 10));
-    for (let i = 0; i < 12; i++) {
-      v = Math.max(0, v + Math.round((Math.sin(i + seed * 0.13) + Math.cos(i * 0.7)) * Math.sqrt(seed + 1)));
-      out.push(v);
-    }
-    return out;
   };
 
   const usersTrend = trendFrom(stats.users_7d, stats.users_30d);
@@ -1232,9 +1235,9 @@ function OverviewPanel({ stats, users, onSelectUser }: {
     { label: 'Registered', value: stats.total_users },
     { label: 'Parsed resume', value: stats.total_parsed_resumes },
     { label: 'Tailored a JD', value: stats.total_tailoring_sessions },
-    { label: 'Applied', value: appliedCount, color: 'bg-gradient-to-r from-indigo-500/70 via-blue-500/50 to-blue-500/10' },
-    { label: 'Interviewing', value: interviewing, color: 'bg-gradient-to-r from-blue-500/70 via-sky-500/50 to-sky-500/10' },
-    { label: 'Offer', value: offers, color: 'bg-gradient-to-r from-emerald-500/70 via-emerald-500/40 to-emerald-500/10' },
+    { label: 'Applied', value: appliedCount, color: 'bg-primary/40' },
+    { label: 'Interviewing', value: interviewing, color: 'bg-signal/35' },
+    { label: 'Offer', value: offers, color: 'bg-success/35' },
   ];
 
   // Activity-this-week per day, from the activities array.
@@ -1269,7 +1272,6 @@ function OverviewPanel({ stats, users, onSelectUser }: {
             label="Total Users" value={fmtNum(stats.total_users)}
             sub={`+${stats.users_7d} this week · +${stats.users_30d} this month`}
             icon={<Icon.Users c="w-4 h-4" />} color="indigo" trend={usersTrend}
-            sparklineData={mkSpark(stats.total_users)}
           />
           <KPICard
             label="Tailoring Sessions" value={fmtNum(stats.total_tailoring_sessions)}
@@ -1281,13 +1283,11 @@ function OverviewPanel({ stats, users, onSelectUser }: {
             label="Applications" value={fmtNum(stats.total_applications)}
             sub={stats.total_applications > 0 ? `${Math.round(((stats.applications_by_status?.offer || 0) / stats.total_applications) * 100)}% reached offer` : 'Pipeline empty'}
             icon={<Icon.Briefcase c="w-4 h-4" />} color="emerald"
-            sparklineData={mkSpark(stats.total_applications)}
           />
           <KPICard
             label="Prep Packs" value={fmtNum(stats.total_interview_prep_packs)}
             sub={`${stats.total_tailoring_sessions > 0 ? Math.round((stats.total_interview_prep_packs / stats.total_tailoring_sessions) * 100) : 0}% of sessions`}
             icon={<Icon.Brain c="w-4 h-4" />} color="rose"
-            sparklineData={mkSpark(stats.total_interview_prep_packs)}
           />
         </div>
       </div>
@@ -1302,7 +1302,7 @@ function OverviewPanel({ stats, users, onSelectUser }: {
           {days.some(d => d.value > 0) ? (
             <MiniBars buckets={days.map(d => ({ label: d.label, value: d.value }))} color="violet" />
           ) : (
-            <p className="text-xs text-gray-600 italic py-6 text-center">No tailoring activity in the last 14 days.</p>
+            <p className="text-xs text-muted-foreground italic py-6 text-center">No tailoring activity in the last 14 days.</p>
           )}
         </Card>
         <Card>
@@ -1313,7 +1313,7 @@ function OverviewPanel({ stats, users, onSelectUser }: {
           {atsScores.length > 0 ? (
             <MiniBars buckets={atsBuckets} color="emerald" />
           ) : (
-            <p className="text-xs text-gray-600 italic py-6 text-center">Run tailoring + ATS scoring to populate this.</p>
+            <p className="text-xs text-muted-foreground italic py-6 text-center">Run tailoring + ATS scoring to populate this.</p>
           )}
         </Card>
       </div>
@@ -1336,7 +1336,7 @@ function OverviewPanel({ stats, users, onSelectUser }: {
                   <HBar key={label} label={label} value={value} max={topRoles[0][1]} color="indigo" />
                 ))}
               </div>
-            ) : <p className="text-xs text-gray-600 italic">No role data yet.</p>}
+            ) : <p className="text-xs text-muted-foreground italic">No role data yet.</p>}
           </Card>
           <Card>
             <SectionHeading title="Top companies" subtitle="JDs users targeted most." />
@@ -1346,7 +1346,7 @@ function OverviewPanel({ stats, users, onSelectUser }: {
                   <HBar key={label} label={label} value={value} max={topCompanies[0][1]} color="cyan" />
                 ))}
               </div>
-            ) : <p className="text-xs text-gray-600 italic">No company data yet.</p>}
+            ) : <p className="text-xs text-muted-foreground italic">No company data yet.</p>}
           </Card>
         </div>
       </div>
@@ -1417,24 +1417,25 @@ function RecentActivityCard({
 }) {
   const [view, setView] = useState<'people' | 'events'>('people');
   return (
-    <div className="rounded-2xl border border-white/[0.06] bg-gradient-to-b from-white/[0.02] to-transparent overflow-hidden flex flex-col">
-      <div className="px-4 sm:px-5 py-4 border-b border-white/[0.06] flex items-center justify-between gap-3">
+    <div className="rounded-2xl border border-border bg-card shadow-soft overflow-hidden flex flex-col">
+      <div className="px-4 sm:px-5 py-4 border-b border-border flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="text-sm font-semibold text-white">
+          <h3 className="text-sm font-semibold text-foreground">
             {view === 'people' ? 'Who used the app most recently' : 'Recent activity'}
           </h3>
-          <p className="text-[11px] text-gray-500 mt-0.5">
+          <p className="text-caption-sm text-muted-foreground mt-0.5">
             {view === 'people' ? 'People sorted by their last visit' : 'Last 30 days · every event'}
           </p>
         </div>
         {/* Segmented toggle - clearly labelled so the viewer knows what
             switches between the two perspectives. */}
-        <div className="shrink-0 inline-flex items-center rounded-lg border border-white/[0.08] bg-white/[0.02] p-0.5 text-[11px]">
+        <div className="shrink-0 inline-flex items-center rounded-lg border border-border bg-muted/40 p-0.5 text-caption-sm">
           <button
             type="button"
             onClick={() => setView('people')}
-            className={`px-2.5 py-1 rounded-md transition ${
-              view === 'people' ? 'bg-white/[0.08] text-white' : 'text-gray-500 hover:text-gray-300'
+            aria-pressed={view === 'people'}
+            className={`hit-target min-h-8 px-2.5 py-1 rounded-md font-medium transition-colors ${
+              view === 'people' ? 'bg-card text-foreground shadow-soft' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             People
@@ -1442,8 +1443,9 @@ function RecentActivityCard({
           <button
             type="button"
             onClick={() => setView('events')}
-            className={`px-2.5 py-1 rounded-md transition ${
-              view === 'events' ? 'bg-white/[0.08] text-white' : 'text-gray-500 hover:text-gray-300'
+            aria-pressed={view === 'events'}
+            className={`hit-target min-h-8 px-2.5 py-1 rounded-md font-medium transition-colors ${
+              view === 'events' ? 'bg-card text-foreground shadow-soft' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             Events
@@ -1459,14 +1461,14 @@ function RecentActivityCard({
             <EmptyHero icon={<Icon.Sparkle c="w-5 h-5" />} title="No recent activity" />
           </div>
         ) : (
-          <div className="divide-y divide-white/[0.04]">
+          <div className="divide-y divide-border">
             {activities.map((a, i) => <ActivityRow key={i} a={a} />)}
           </div>
         )}
       </div>
 
       {/* Footer hint - gives the naive viewer a clear next action */}
-      <div className="border-t border-white/[0.06] px-4 sm:px-5 py-2.5 text-[11px] text-gray-500 flex items-center justify-between">
+      <div className="border-t border-border px-4 sm:px-5 py-2.5 text-caption-sm text-muted-foreground flex items-center justify-between">
         <span>
           {view === 'people'
             ? 'Click a person to see everything they have done'
@@ -1474,9 +1476,9 @@ function RecentActivityCard({
         </span>
         {view === 'people' && (
           <span className="hidden sm:inline-flex items-center gap-1.5">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Online
-            <span className="h-1.5 w-1.5 rounded-full bg-amber-400 ml-2" /> Today
-            <span className="h-1.5 w-1.5 rounded-full bg-sky-400 ml-2" /> This week
+            <span className="h-1.5 w-1.5 rounded-full bg-success" /> Online
+            <span className="h-1.5 w-1.5 rounded-full bg-warning ml-2" /> Today
+            <span className="h-1.5 w-1.5 rounded-full bg-info ml-2" /> This week
           </span>
         )}
       </div>
@@ -1506,17 +1508,17 @@ function UsersPanel({ users, loading, search, setSearch, onSelect }: {
     <div className="space-y-5">
       {/* Summary pills */}
       <div className="flex items-center gap-2 flex-wrap">
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.06] text-xs">
-          <span className="text-gray-500">Total</span>
-          <span className="font-bold text-white tabular-nums">{users.length}</span>
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/40 border border-border text-xs">
+          <span className="text-muted-foreground">Total</span>
+          <span className="font-bold text-foreground tabular-nums">{users.length}</span>
         </div>
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs">
-          <span className="text-emerald-300/70">Parsed</span>
-          <span className="font-bold text-emerald-300 tabular-nums">{parsedPct}%</span>
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-success/10 border border-success/20 text-xs">
+          <span className="text-success">Parsed</span>
+          <span className="font-bold text-success tabular-nums">{parsedPct}%</span>
         </div>
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-xs">
-          <span className="text-indigo-300/70">Active this week</span>
-          <span className="font-bold text-indigo-300 tabular-nums">{users.filter(u => {
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/20 text-xs">
+          <span className="text-primary">Active this week</span>
+          <span className="font-bold text-primary tabular-nums">{users.filter(u => {
             if (!u.last_login) return false;
             return Date.now() - new Date(u.last_login).getTime() < 7 * 86400000;
           }).length}</span>
@@ -1526,64 +1528,65 @@ function UsersPanel({ users, loading, search, setSearch, onSelect }: {
       {/* Search */}
       <div className="flex items-center gap-3">
         <div className="flex-1"><SearchBox value={search} onChange={setSearch} placeholder="Search by name, email, or role..." /></div>
-        <span className="text-xs text-gray-500 tabular-nums whitespace-nowrap">{filtered.length} shown</span>
+        <span className="text-xs text-muted-foreground tabular-nums whitespace-nowrap">{filtered.length} shown</span>
       </div>
 
       {loading ? <SkeletonRow /> : filtered.length === 0 ? (
         <EmptyHero icon={<Icon.Users c="w-5 h-5" />} title="No users match your search" />
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.01]">
-          <div className="hidden md:grid grid-cols-[1fr_140px_130px_140px_160px_48px] gap-4 px-5 py-3 border-b border-white/[0.06] bg-white/[0.02] text-[10px] uppercase tracking-wider text-gray-500 font-semibold">
+        <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
+          <div className="hidden md:grid grid-cols-[1fr_140px_130px_140px_160px_48px] gap-4 px-5 py-3 border-b border-border bg-muted/40 text-caption-sm uppercase tracking-wider text-muted-foreground font-semibold">
             <span>User</span><span>Role</span><span>Registered</span><span>Last active</span><span>Activity</span><span />
           </div>
-          <div className="divide-y divide-white/[0.03]">
+          <div className="divide-y divide-border">
             {filtered.map(u => {
               const lastLoginDays = u.last_login ? (Date.now() - new Date(u.last_login).getTime()) / 86400000 : null;
-              const activityDot = lastLoginDays === null ? 'bg-gray-600' :
-                lastLoginDays < 1 ? 'bg-emerald-400' :
-                lastLoginDays < 7 ? 'bg-amber-400' :
-                lastLoginDays < 30 ? 'bg-gray-500' : 'bg-gray-700';
+              const activityDot = lastLoginDays === null ? 'bg-muted-foreground' :
+                lastLoginDays < 1 ? 'bg-success' :
+                lastLoginDays < 7 ? 'bg-warning' :
+                lastLoginDays < 30 ? 'bg-muted-foreground' : 'bg-border';
               return (
                 <button
                   key={u.id}
+                  type="button"
                   onClick={() => onSelect(u.email)}
-                  className="w-full grid grid-cols-[1fr_48px] md:grid-cols-[1fr_140px_130px_140px_160px_48px] gap-4 px-5 py-4 hover:bg-white/[0.03] transition-colors text-left items-center"
+                  className="group w-full grid grid-cols-[1fr_48px] md:grid-cols-[1fr_140px_130px_140px_160px_48px] gap-4 px-5 py-4 hover:bg-muted focus-visible:bg-muted focus-visible:outline-none transition-colors text-left items-center"
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="relative">
                       <Avatar seed={u.name || u.email} />
-                      <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full ${activityDot} ring-2 ring-[#0a0a0f]`} />
+                      <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full ${activityDot} ring-2 ring-background`} />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-white truncate">{u.name || u.email.split('@')[0]}</p>
-                      <p className="text-[11px] text-gray-500 truncate font-mono">{u.email}</p>
+                      <p className="text-sm font-medium text-foreground truncate">{u.name || u.email.split('@')[0]}</p>
+                      <p className="text-caption-sm text-muted-foreground truncate font-mono">{u.email}</p>
                     </div>
                   </div>
                   <div className="hidden md:flex flex-col gap-0.5">
                     {u.role ? (
-                      <span className="text-xs text-gray-300 truncate">{u.role}</span>
-                    ) : <span className="text-xs text-gray-600">{EMPTY_VALUE}</span>}
-                    {u.sector && <span className="text-[10px] text-gray-600 truncate">{u.sector}</span>}
+                      <span className="text-xs text-ink-muted truncate">{u.role}</span>
+                    ) : <span className="text-xs text-muted-foreground">{EMPTY_VALUE}</span>}
+                    {u.sector && <span className="text-caption-sm text-muted-foreground truncate">{u.sector}</span>}
                   </div>
-                  <span className="hidden md:block text-xs text-gray-500 whitespace-nowrap" title={fmtAbsolute(u.created_at)}>{fmtDate(u.created_at)}</span>
+                  <span className="hidden md:block text-xs text-muted-foreground whitespace-nowrap" title={fmtAbsolute(u.created_at)}>{fmtDate(u.created_at)}</span>
                   <span className="hidden md:block"><TimeStamp iso={u.last_login} /></span>
                   <div className="hidden md:flex items-center gap-1.5">
                     {u.has_parsed_resume && (
-                      <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-semibold">✓ Parsed</span>
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-success/10 text-success border border-success/20 text-caption-sm font-semibold">✓ Parsed</span>
                     )}
                     {u.tailoring_sessions > 0 && (
-                      <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-violet-500/10 text-violet-300 border border-violet-500/20 text-[10px] font-semibold tabular-nums">
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-primary/10 text-primary border border-primary/20 text-caption-sm font-semibold tabular-nums">
                         {u.tailoring_sessions} tailored
                       </span>
                     )}
                     {u.base_resumes > 0 && (
-                      <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-300 border border-amber-500/20 text-[10px] font-semibold tabular-nums">
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-warning/10 text-warning border border-warning/20 text-caption-sm font-semibold tabular-nums">
                         {u.base_resumes} base
                       </span>
                     )}
                   </div>
                   <div className="justify-self-end">
-                    <Icon.Chevron c="w-4 h-4 text-gray-600 group-hover:text-gray-300" />
+                    <Icon.Chevron c="w-4 h-4 text-muted-foreground group-hover:text-foreground" />
                   </div>
                 </button>
               );
@@ -1637,35 +1640,35 @@ function UserDetailDrawer({ detail, onBack }: { detail: UserDetail; onBack: () =
     <div className="space-y-5">
       {/* Breadcrumb + back */}
       <div className="flex items-center gap-3">
-        <button onClick={onBack} className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-white transition">
+        <button type="button" onClick={onBack} className="hit-target inline-flex min-h-9 items-center gap-1.5 rounded-md px-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
           <Icon.Back c="w-3.5 h-3.5" /> Users
         </button>
-        <span className="text-gray-700">/</span>
-        <span className="text-xs text-gray-300 font-mono">{u.email}</span>
+        <span className="text-muted-foreground">/</span>
+        <span className="text-xs text-ink-muted font-mono">{u.email}</span>
       </div>
 
       {/* Hero */}
-      <div className="rounded-2xl border border-white/[0.06] bg-gradient-to-br from-indigo-500/10 via-white/[0.02] to-transparent p-6">
+      <div className="rounded-2xl border border-border bg-card shadow-soft p-6">
         <div className="flex items-center gap-5">
           <Avatar seed={u.name || u.email} size="lg" />
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-lg font-bold text-white">{u.name || u.email.split('@')[0]}</h2>
-              {u.role && <span className="text-[11px] px-2 py-0.5 rounded-full bg-white/[0.05] border border-white/[0.06] text-gray-400">{u.role}</span>}
-              {u.sector && <span className="text-[11px] px-2 py-0.5 rounded-full bg-white/[0.03] text-gray-500">{u.sector}</span>}
+              <h2 className="font-display text-title-lg text-foreground">{u.name || u.email.split('@')[0]}</h2>
+              {u.role && <span className="text-caption-sm px-2 py-0.5 rounded-full bg-muted/70 border border-border text-muted-foreground">{u.role}</span>}
+              {u.sector && <span className="text-caption-sm px-2 py-0.5 rounded-full bg-muted/40 text-muted-foreground">{u.sector}</span>}
             </div>
-            <p className="text-xs text-gray-400 font-mono mt-1">{u.email}</p>
-            <div className="flex items-center gap-4 mt-3 text-[11px] text-gray-500 flex-wrap">
+            <p className="text-xs text-muted-foreground font-mono mt-1">{u.email}</p>
+            <div className="flex items-center gap-4 mt-3 text-caption-sm text-muted-foreground flex-wrap">
               <span className="inline-flex items-center gap-1.5">
-                <span className="text-gray-600">Joined</span>
-                <span title={fmtAbsolute(u.created_at)} className="text-gray-300 cursor-help underline decoration-dotted decoration-gray-700 underline-offset-2">{fmtDate(u.created_at)}</span>
+                <span className="text-muted-foreground">Joined</span>
+                <span title={fmtAbsolute(u.created_at)} className="text-ink-muted cursor-help underline decoration-dotted decoration-muted-foreground/50 underline-offset-2">{fmtDate(u.created_at)}</span>
               </span>
-              <span className="text-gray-700">·</span>
+              <span className="text-muted-foreground">·</span>
               <span className="inline-flex items-center gap-1.5">
-                <span className="text-gray-600">Last active</span>
-                <TimeStamp iso={u.last_login} className="text-xs text-gray-300 whitespace-nowrap" />
+                <span className="text-muted-foreground">Last active</span>
+                <TimeStamp iso={u.last_login} className="text-xs text-ink-muted whitespace-nowrap" />
               </span>
-              {u.last_login_ip && (<><span className="text-gray-700">·</span><span className="font-mono text-gray-600">{u.last_login_ip}</span></>)}
+              {u.last_login_ip && (<><span className="text-muted-foreground">·</span><span className="font-mono text-muted-foreground">{u.last_login_ip}</span></>)}
             </div>
           </div>
           <div className="hidden md:grid grid-cols-3 gap-3 shrink-0">
@@ -1677,22 +1680,24 @@ function UserDetailDrawer({ detail, onBack }: { detail: UserDetail; onBack: () =
       </div>
 
       {/* Section tabs */}
-      <div className="flex items-center gap-1 border-b border-white/[0.06]">
+      <div className="flex items-center gap-1 border-b border-border">
         {sections.map(s => (
           <button
             key={s.key}
+            type="button"
             onClick={() => setSection(s.key)}
-            className={`relative px-4 py-2.5 text-sm font-medium transition ${
-              section === s.key ? 'text-white' : 'text-gray-500 hover:text-gray-300'
+            aria-current={section === s.key ? 'true' : undefined}
+            className={`relative min-h-10 px-4 py-2.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-t-md ${
+              section === s.key ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             {section === s.key && (
-              <motion.span layoutId="detail-active" className="absolute inset-x-0 -bottom-px h-0.5 bg-gradient-to-r from-indigo-400 to-violet-400" />
+              <motion.span layoutId="detail-active" className="absolute inset-x-0 -bottom-px h-0.5 bg-primary" transition={{ duration: DURATION.base, ease: EASE_DECELERATE }} />
             )}
             {s.label}
             {s.count !== undefined && s.count > 0 && (
-              <span className={`ml-1.5 text-[10px] tabular-nums font-bold px-1.5 py-0.5 rounded-full ${
-                section === s.key ? 'bg-indigo-500/20 text-indigo-200' : 'bg-white/[0.04] text-gray-500'
+              <span className={`ml-1.5 text-caption-sm tabular-nums font-bold px-1.5 py-0.5 rounded-full ${
+                section === s.key ? 'bg-primary/15 text-primary' : 'bg-muted text-muted-foreground'
               }`}>{s.count}</span>
             )}
           </button>
@@ -1704,19 +1709,19 @@ function UserDetailDrawer({ detail, onBack }: { detail: UserDetail; onBack: () =
         <motion.div
           key={section}
           initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
-          transition={{ duration: 0.18 }}
+          transition={{ duration: DURATION.fast, ease: EASE_DECELERATE }}
         >
           {section === 'overview' && (
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-5 space-y-3">
+                <div className="rounded-2xl border border-border bg-card p-5 space-y-3">
                   <SectionHeading title="Account" />
                   <Info label="Session ID" value={u.session_id || EMPTY_VALUE} mono />
                   <Info label="Fingerprint" value={u.fingerprint_hash ? u.fingerprint_hash.slice(0, 16) + '...' : EMPTY_VALUE} mono />
                   <Info label="Login attempts" value={String(u.login_attempts)} />
                   <Info label="Parsed resume" value={parsed_resume ? '✓ Yes' : EMPTY_VALUE} />
                 </div>
-                <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-5 space-y-3">
+                <div className="rounded-2xl border border-border bg-card p-5 space-y-3">
                   <SectionHeading title="Activity" />
                   <Info label="Base uploads" value={`${base_resumes.length}`} />
                   <Info label="Generated / downloads" value={`${generated_resumes.length}`} />
@@ -1758,10 +1763,11 @@ function UserDetailDrawer({ detail, onBack }: { detail: UserDetail; onBack: () =
         {viewerError && (
           <motion.div
             initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-            className="fixed bottom-6 right-6 z-50 max-w-sm flex items-start justify-between gap-3 px-4 py-3 bg-red-500/15 border border-red-500/30 rounded-xl shadow-lg shadow-red-500/10 backdrop-blur-sm"
+            role="alert"
+            className="fixed bottom-24 lg:bottom-6 right-4 sm:right-6 z-50 max-w-sm flex items-center justify-between gap-3 px-4 py-3 bg-card border border-destructive/30 rounded-xl shadow-float"
           >
-            <p className="text-sm text-red-200">{viewerError}</p>
-            <button onClick={() => setViewerError('')} className="text-red-400/60 hover:text-red-400 text-xs">Close</button>
+            <p className="text-sm text-destructive">{viewerError}</p>
+            <button type="button" onClick={() => setViewerError('')} className="shrink-0 inline-flex min-h-10 items-center rounded-md px-2 text-xs font-medium text-destructive hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">Close</button>
           </motion.div>
         )}
       </AnimatePresence>
@@ -1771,27 +1777,27 @@ function UserDetailDrawer({ detail, onBack }: { detail: UserDetail; onBack: () =
         {viewerUrl && (
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/40 backdrop-blur-sm"
             onClick={closeViewer}
           >
             <motion.div
               initial={{ scale: 0.96, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.96, y: 20 }}
               transition={{ type: 'spring', damping: 28 }}
               onClick={e => e.stopPropagation()}
-              className="relative w-[95vw] h-[92vh] max-w-5xl bg-[#12121a] rounded-2xl border border-white/10 shadow-2xl flex flex-col overflow-hidden"
+              className="relative w-[95vw] h-[92vh] max-w-5xl bg-card rounded-2xl border border-border shadow-float flex flex-col overflow-hidden"
             >
-              <div className="flex items-center justify-between px-5 py-3 border-b border-white/[0.06] shrink-0">
-                <p className="text-sm text-white font-medium truncate">{viewerFilename}</p>
+              <div className="flex items-center justify-between px-5 py-3 border-b border-border shrink-0">
+                <p className="text-sm text-foreground font-medium truncate">{viewerFilename}</p>
                 <div className="flex items-center gap-1">
                   <a
                     href={viewerUrl} download={viewerFilename}
-                    className="h-8 px-3 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-[11px] text-gray-300 border border-white/[0.06] inline-flex items-center gap-1.5"
+                    className="h-8 px-3 rounded-lg bg-muted/70 hover:bg-muted text-caption-sm text-ink-muted border border-border inline-flex items-center gap-1.5"
                     title="Download this file"
                   ><Icon.Download c="w-3.5 h-3.5" />Download</a>
-                  <button onClick={closeViewer} className="h-8 w-8 rounded-lg text-gray-500 hover:text-white hover:bg-white/[0.06] flex items-center justify-center"><Icon.X c="w-5 h-5" /></button>
+                  <button type="button" onClick={closeViewer} aria-label="Close preview" className="h-10 w-10 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted flex items-center justify-center"><Icon.X c="w-5 h-5" /></button>
                 </div>
               </div>
-              <iframe src={viewerUrl} className="flex-1 w-full border-0 bg-[#1a1a24]" title={viewerFilename} />
+              <iframe src={viewerUrl} className="flex-1 w-full border-0 bg-muted" title={viewerFilename} />
             </motion.div>
           </motion.div>
         )}
@@ -1845,34 +1851,34 @@ function AccessOverrideCard({ email, storedPlan }: { email: string; storedPlan?:
   }, [email, fetchOverride]);
 
   return (
-    <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-5 space-y-4">
+    <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
       <SectionHeading
         title="Access override"
         subtitle="Grant plan / Auto Apply limits / features for testing. Clears restore the stored plan."
         action={
-          <span className={`text-[11px] px-2 py-0.5 rounded-full border ${
+          <span className={`text-caption-sm px-2 py-0.5 rounded-full border ${
             fullAccess || Object.keys(ovLimits).length > 0
-              ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300'
-              : 'bg-white/[0.03] border-white/[0.06] text-gray-500'
+              ? 'bg-success/15 border-success/30 text-success'
+              : 'bg-muted/40 border-border text-muted-foreground'
           }`}>
             {loading ? 'Loading...' : fullAccess ? 'Full access active' : 'No plan override'}
           </span>
         }
       />
 
-      <div className="flex flex-wrap items-center gap-4 text-[11px] text-gray-500">
+      <div className="flex flex-wrap items-center gap-4 text-caption-sm text-muted-foreground">
         <span className="inline-flex items-center gap-1.5">
-          <span className="text-gray-600">Stored plan</span>
-          <span className="font-mono text-gray-300">{storedPlan || 'free'}</span>
+          <span className="text-muted-foreground">Stored plan</span>
+          <span className="font-mono text-ink-muted">{storedPlan || 'free'}</span>
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span className="text-gray-600">Effective</span>
-          <span className="font-mono text-emerald-300">{effectivePlan}</span>
+          <span className="text-muted-foreground">Effective</span>
+          <span className="font-mono text-success">{effectivePlan}</span>
         </span>
         {override?.updated_by && (
           <span className="inline-flex items-center gap-1.5">
-            <span className="text-gray-600">By</span>
-            <span className="font-mono text-gray-400">{override.updated_by}</span>
+            <span className="text-muted-foreground">By</span>
+            <span className="font-mono text-muted-foreground">{override.updated_by}</span>
           </span>
         )}
       </div>
@@ -1881,7 +1887,7 @@ function AccessOverrideCard({ email, storedPlan }: { email: string; storedPlan?:
         <button
           onClick={() => write({ plan: 'premium_plus' }, 'Full access granted (Premium+).')}
           disabled={saving || loading || overridePlan === 'premium_plus'}
-          className="h-9 px-4 rounded-lg bg-gradient-to-r from-indigo-500 to-violet-500 text-white text-xs font-medium inline-flex items-center gap-1.5 hover:from-indigo-400 hover:to-violet-400 transition disabled:opacity-40 disabled:cursor-not-allowed"
+          className="h-9 px-4 rounded-lg bg-primary text-primary-foreground hover:bg-primary-hover text-xs font-medium inline-flex items-center gap-1.5 transition disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <Icon.Bolt c="w-3.5 h-3.5" />
           Grant Premium+
@@ -1889,7 +1895,7 @@ function AccessOverrideCard({ email, storedPlan }: { email: string; storedPlan?:
         <button
           onClick={() => write({ plan: 'premium' }, 'Premium override set.')}
           disabled={saving || loading}
-          className="h-9 px-4 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-gray-300 text-xs font-medium border border-white/[0.06] transition disabled:opacity-40"
+          className="h-9 px-4 rounded-lg bg-muted/70 hover:bg-muted text-ink-muted text-xs font-medium border border-border transition disabled:opacity-40"
         >
           Grant Premium
         </button>
@@ -1902,26 +1908,26 @@ function AccessOverrideCard({ email, storedPlan }: { email: string; storedPlan?:
             limits: { ...ovLimits, auto_submit: Number(autoSubmitLimit) || 999 },
           }, 'Auto Apply testing unlock applied.')}
           disabled={saving || loading}
-          className="h-9 px-4 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 text-xs font-medium border border-emerald-500/30 transition disabled:opacity-40"
+          className="h-9 px-4 rounded-lg bg-success/20 hover:bg-success/30 text-success text-xs font-medium border border-success/30 transition disabled:opacity-40"
         >
           Unlock Auto Apply (test)
         </button>
         <button
           onClick={() => write({}, 'Override cleared. The stored plan applies again.')}
           disabled={saving || loading || !override?.overrides}
-          className="h-9 px-4 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-gray-300 text-xs font-medium border border-white/[0.06] inline-flex items-center gap-1.5 transition disabled:opacity-40 disabled:cursor-not-allowed"
+          className="h-9 px-4 rounded-lg bg-muted/70 hover:bg-muted text-ink-muted text-xs font-medium border border-border inline-flex items-center gap-1.5 transition disabled:opacity-40 disabled:cursor-not-allowed"
         >
           Reset to plan
         </button>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 text-[11px] text-gray-400">
+      <div className="flex flex-wrap items-center gap-2 text-caption-sm text-muted-foreground">
         <label className="inline-flex items-center gap-1.5">
           Monthly auto_submit limit
           <input
             value={autoSubmitLimit}
             onChange={(e) => setAutoSubmitLimit(e.target.value)}
-            className="h-8 w-20 rounded-md border border-white/[0.08] bg-black/30 px-2 font-mono text-gray-200"
+            className="h-8 w-20 rounded-md border border-border bg-background px-2 font-mono text-foreground"
           />
         </label>
       </div>
@@ -1931,17 +1937,17 @@ function AccessOverrideCard({ email, storedPlan }: { email: string; storedPlan?:
 
 function MiniStat({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="rounded-xl bg-white/[0.04] border border-white/[0.06] px-3 py-2 text-center">
-      <p className="text-[10px] text-gray-500 uppercase tracking-wider">{label}</p>
-      <p className="text-lg font-bold text-white tabular-nums leading-tight">{value}</p>
+    <div className="rounded-xl bg-muted/70 border border-border px-3 py-2 text-center">
+      <p className="text-caption-sm text-muted-foreground uppercase tracking-wider">{label}</p>
+      <p className="font-display text-title-lg text-foreground tabular-nums">{value}</p>
     </div>
   );
 }
 function Info({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) {
   return (
-    <div className="flex items-start justify-between gap-4 py-1.5 border-b border-white/[0.04] last:border-0">
-      <span className="text-[11px] text-gray-500 uppercase tracking-wider font-semibold shrink-0">{label}</span>
-      <span className={`text-xs text-gray-300 text-right ${mono ? 'font-mono' : ''} break-all`}>{value}</span>
+    <div className="flex items-start justify-between gap-4 py-1.5 border-b border-border last:border-0">
+      <span className="text-caption-sm text-muted-foreground uppercase tracking-wider font-semibold shrink-0">{label}</span>
+      <span className={`text-xs text-ink-muted text-right ${mono ? 'font-mono' : ''} break-all`}>{value}</span>
     </div>
   );
 }
@@ -1954,42 +1960,42 @@ function FileBlock({ title, items, dateKey, onView, onDownload, downloadingKey }
 }) {
   if (items.length === 0) {
     return (
-      <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-5">
+      <div className="rounded-2xl border border-border bg-card p-5">
         <SectionHeading title={title} />
-        <p className="text-xs text-gray-600 italic">No {title.toLowerCase()}.</p>
+        <p className="text-xs text-muted-foreground italic">No {title.toLowerCase()}.</p>
       </div>
     );
   }
   return (
-    <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
-      <div className="px-5 py-4 border-b border-white/[0.06] flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-white">{title}</h3>
-        <span className="text-[11px] text-gray-600">{items.length} file{items.length !== 1 ? 's' : ''}</span>
+    <div className="rounded-2xl border border-border bg-card overflow-hidden">
+      <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+        <h3 className="font-display text-title-sm text-foreground">{title}</h3>
+        <span className="text-caption-sm text-muted-foreground">{items.length} file{items.length !== 1 ? 's' : ''}</span>
       </div>
-      <div className="divide-y divide-white/[0.04]">
+      <div className="divide-y divide-border">
         {items.map((f, i) => {
           const busy = downloadingKey === f.s3_key;
           return (
-            <div key={i} className="px-5 py-3 flex items-center gap-4 hover:bg-white/[0.02] transition">
-              <div className="h-9 w-9 rounded-lg bg-white/[0.04] border border-white/[0.06] flex items-center justify-center shrink-0">
-                <Icon.Doc c="w-4 h-4 text-gray-500" />
+            <div key={i} className="px-5 py-3 flex items-center gap-4 hover:bg-muted transition">
+              <div className="h-9 w-9 rounded-lg bg-muted/70 border border-border flex items-center justify-center shrink-0">
+                <Icon.Doc c="w-4 h-4 text-muted-foreground" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm text-gray-200 truncate">{f.filename || f.job_title || '(no name)'}</p>
-                <p className="text-[11px] text-gray-500 inline-flex items-center gap-1.5">
-                  <TimeStamp iso={f[dateKey]} className="text-[11px] text-gray-500" />
+                <p className="text-sm text-foreground truncate">{f.filename || f.job_title || '(no name)'}</p>
+                <p className="text-caption-sm text-muted-foreground inline-flex items-center gap-1.5">
+                  <TimeStamp iso={f[dateKey]} className="text-caption-sm text-muted-foreground" />
                   {f.size_bytes ? <><span>·</span><span className="tabular-nums">{Math.round(f.size_bytes / 1024)} KB</span></> : null}
                 </p>
               </div>
               <button
                 onClick={() => onView(f.s3_key, f.filename)}
                 disabled={busy}
-                className="h-8 px-3 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-[11px] text-gray-300 border border-white/[0.06] inline-flex items-center gap-1.5 disabled:opacity-50"
+                className="h-8 px-3 rounded-lg bg-muted/70 hover:bg-muted text-caption-sm text-ink-muted border border-border inline-flex items-center gap-1.5 disabled:opacity-50"
               ><Icon.Eye c="w-3.5 h-3.5" />{busy ? '...' : 'View'}</button>
               <button
                 onClick={() => onDownload(f.s3_key, f.filename)}
                 disabled={busy}
-                className="h-8 px-3 rounded-lg bg-indigo-500/15 hover:bg-indigo-500/25 text-[11px] text-indigo-300 border border-indigo-500/25 inline-flex items-center gap-1.5 disabled:opacity-50"
+                className="h-8 px-3 rounded-lg bg-primary/15 hover:bg-primary/25 text-caption-sm text-primary border border-primary/25 inline-flex items-center gap-1.5 disabled:opacity-50"
               ><Icon.Download c="w-3.5 h-3.5" />Download</button>
             </div>
           );
@@ -2003,34 +2009,34 @@ function TailoringRecordCard({ r }: { r: any }) {
   const s = r._summary || {};
   const ats = r.ats_scores?.overall;
   return (
-    <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-3 hover:border-white/[0.12] transition-colors">
+    <div className="rounded-xl border border-border bg-card px-4 py-3 hover:border-foreground/20 transition-colors">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-white">{r.jd_analysis?.job_title || 'Untitled'}</p>
+          <p className="text-sm font-semibold text-foreground">{r.jd_analysis?.job_title || 'Untitled'}</p>
           {r.jd_analysis?.company && r.jd_analysis.company !== 'Not specified' && (
-            <p className="text-[11px] text-gray-500">at {r.jd_analysis.company}</p>
+            <p className="text-caption-sm text-muted-foreground">at {r.jd_analysis.company}</p>
           )}
           <div className="flex items-center gap-1.5 mt-2 flex-wrap">
             {s.version_count > 0 && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-violet-500/10 text-violet-300 text-[10px] font-semibold border border-violet-500/25">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary/10 text-primary text-caption-sm font-semibold border border-primary/25">
                 v{s.current_version_number ?? s.version_count}/{s.version_count}
-                {s.current_source && s.current_source !== 'initial' && <span className="opacity-60 text-[9px]">· {s.current_source}</span>}
+                {s.current_source && s.current_source !== 'initial' && <span className="font-normal">· {s.current_source}</span>}
               </span>
             )}
             {s.files_cached > 0 && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 text-[10px] font-semibold border border-emerald-500/25">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-success/10 text-success text-caption-sm font-semibold border border-success/25">
                 {s.files_cached} cached
               </span>
             )}
             {s.application_status && <StatusPill status={s.application_status} size="sm" />}
             {s.interview_prep_ready && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-400 text-[10px] font-semibold border border-blue-500/25">✓ Prep</span>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-info/10 text-info text-caption-sm font-semibold border border-info/25">✓ Prep</span>
             )}
           </div>
-          {r.base_resume_filename && <p className="text-[10px] text-gray-600 mt-2">Base: {r.base_resume_filename}</p>}
+          {r.base_resume_filename && <p className="text-caption-sm text-muted-foreground mt-2">Base: {r.base_resume_filename}</p>}
           {s.next_action_date && (
-            <p className="text-[10px] text-amber-400/80 mt-1">
-              Next: <TimeStamp iso={s.next_action_date} className="text-[10px] text-amber-300" />
+            <p className="text-caption-sm text-warning mt-1">
+              Next: <TimeStamp iso={s.next_action_date} className="text-caption-sm text-warning" />
               {s.next_action_note ? ` · ${s.next_action_note}` : ''}
             </p>
           )}
@@ -2038,15 +2044,15 @@ function TailoringRecordCard({ r }: { r: any }) {
         <div className="flex items-center gap-3 shrink-0">
           {ats != null && (
             <div className={`flex flex-col items-center px-3 py-1.5 rounded-xl ${
-              ats >= 80 ? 'bg-emerald-500/10' : ats >= 60 ? 'bg-amber-500/10' : 'bg-red-500/10'
+              ats >= 80 ? 'bg-success/10' : ats >= 60 ? 'bg-warning/10' : 'bg-destructive/10'
             }`}>
               <span className={`text-lg font-bold tabular-nums ${
-                ats >= 80 ? 'text-emerald-400' : ats >= 60 ? 'text-amber-400' : 'text-red-400'
+                ats >= 80 ? 'text-success' : ats >= 60 ? 'text-warning' : 'text-destructive'
               }`}>{ats}</span>
-              <span className="text-[9px] text-gray-500 uppercase">ATS</span>
+              <span className="text-caption-sm text-muted-foreground uppercase">ATS</span>
             </div>
           )}
-          <TimeStamp iso={r.created_at} className="text-[10px] text-gray-600" />
+          <TimeStamp iso={r.created_at} className="text-caption-sm text-muted-foreground" />
         </div>
       </div>
     </div>
@@ -2057,21 +2063,21 @@ function ParsedResumeView({ r }: { r: any }) {
   return (
     <div className="space-y-5">
       {r.summary && (
-        <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-5">
-          <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold mb-2">Summary</p>
-          <p className="text-sm text-gray-300 leading-relaxed">{r.summary}</p>
+        <div className="rounded-2xl border border-border bg-card p-5">
+          <p className="text-caption-sm text-muted-foreground uppercase tracking-wider font-semibold mb-2">Summary</p>
+          <p className="text-sm text-ink-muted leading-relaxed">{r.summary}</p>
         </div>
       )}
       {r.skills && Object.keys(r.skills).length > 0 && (
-        <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-5">
-          <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold mb-3">Skills</p>
+        <div className="rounded-2xl border border-border bg-card p-5">
+          <p className="text-caption-sm text-muted-foreground uppercase tracking-wider font-semibold mb-3">Skills</p>
           <div className="space-y-2.5">
             {Object.entries(r.skills).map(([cat, sk]) => (
               <div key={cat}>
-                <p className="text-[11px] text-indigo-400 font-medium mb-1">{cat}</p>
+                <p className="text-caption-sm text-primary font-medium mb-1">{cat}</p>
                 <div className="flex flex-wrap gap-1.5">
                   {(sk as string[]).map((s, i) => (
-                    <span key={i} className="px-2 py-0.5 rounded text-[10px] bg-white/[0.04] border border-white/[0.05] text-gray-400">{s}</span>
+                    <span key={i} className="px-2 py-0.5 rounded text-caption-sm bg-muted/70 border border-border text-muted-foreground">{s}</span>
                   ))}
                 </div>
               </div>
@@ -2080,23 +2086,23 @@ function ParsedResumeView({ r }: { r: any }) {
         </div>
       )}
       {r.experience?.length > 0 && (
-        <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-5">
-          <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold mb-3">Experience ({r.experience.length})</p>
+        <div className="rounded-2xl border border-border bg-card p-5">
+          <p className="text-caption-sm text-muted-foreground uppercase tracking-wider font-semibold mb-3">Experience ({r.experience.length})</p>
           <div className="space-y-3">
             {r.experience.map((e: any, i: number) => (
-              <div key={i} className="border-l-2 border-indigo-500/30 pl-4">
+              <div key={i} className="border-l-2 border-primary/30 pl-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-sm text-white font-medium">{e.title}</p>
-                    <p className="text-[11px] text-gray-400">{e.company}{e.location && ` · ${e.location}`}</p>
+                    <p className="text-sm text-foreground font-medium">{e.title}</p>
+                    <p className="text-caption-sm text-muted-foreground">{e.company}{e.location && ` · ${e.location}`}</p>
                   </div>
-                  {e.dates && <span className="text-[10px] text-gray-600 whitespace-nowrap">{e.dates}</span>}
+                  {e.dates && <span className="text-caption-sm text-muted-foreground whitespace-nowrap">{e.dates}</span>}
                 </div>
                 {e.bullets?.length > 0 && (
                   <ul className="mt-2 space-y-1">
                     {e.bullets.map((b: string, j: number) => (
-                      <li key={j} className="text-[11px] text-gray-400 leading-relaxed flex gap-2">
-                        <span className="text-gray-600 mt-0.5">•</span><span>{b}</span>
+                      <li key={j} className="text-caption-sm text-muted-foreground leading-relaxed flex gap-2">
+                        <span className="text-muted-foreground mt-0.5">•</span><span>{b}</span>
                       </li>
                     ))}
                   </ul>
@@ -2121,29 +2127,30 @@ function AdminLoginForm() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault(); setError(''); setLoading(true);
-    const r = await login(email, password);
+    // Postel: stray spaces around a pasted address are dropped; nothing else.
+    const r = await login(email.trim(), password);
     setLoading(false);
     if (r.error) setError(r.error);
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center px-4 relative overflow-hidden">
+    <div className="min-h-screen bg-background flex items-center justify-center px-4 relative overflow-hidden">
       {/* Background gradient flourish */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute -top-40 -right-40 h-96 w-96 rounded-full bg-indigo-500/10 blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 h-96 w-96 rounded-full bg-violet-500/10 blur-3xl" />
+        <div className="absolute -top-40 -right-40 h-96 w-96 rounded-full bg-primary/10 blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 h-96 w-96 rounded-full bg-primary/10 blur-3xl" />
       </div>
 
       <motion.div
-        initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, ease: 'easeOut' }}
+        initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: DURATION.base, ease: EASE_DECELERATE }}
         className="relative w-full max-w-sm space-y-7"
       >
         <div className="text-center">
-          <div className="mx-auto h-14 w-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center mb-5 shadow-lg shadow-indigo-500/30">
-            <Icon.Sparkle c="w-6 h-6 text-white" />
+          <div className="mx-auto h-14 w-14 rounded-2xl bg-primary flex items-center justify-center mb-5 shadow-panel" aria-hidden="true">
+            <Icon.Sparkle c="w-6 h-6 text-primary-foreground" />
           </div>
-          <h1 className="text-xl font-bold text-white">Admin Portal</h1>
-          <p className="text-sm text-gray-500 mt-1.5">Sign in with your admin credentials</p>
+          <h1 className="font-display text-h1 text-foreground">Admin Portal</h1>
+          <p className="text-sm text-muted-foreground mt-1.5">Sign in with your admin credentials</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -2151,27 +2158,30 @@ function AdminLoginForm() {
             {error && (
               <motion.div
                 initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-300 text-sm"
+                role="alert"
+                className="p-3 bg-destructive/10 border border-destructive/25 rounded-xl text-destructive text-sm"
               >{error}</motion.div>
             )}
           </AnimatePresence>
           <div className="space-y-1.5">
-            <label className="block text-xs text-gray-400 font-medium">Email</label>
-            <input type="email" value={email} onChange={e => setEmail(e.target.value)} required
-              className="w-full px-4 py-3 bg-white/[0.03] border border-white/[0.06] rounded-xl text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500/40 focus:ring-1 focus:ring-indigo-500/30 transition-all"
+            <label htmlFor="admin-email" className="block text-sm text-foreground font-medium">Email</label>
+            <input id="admin-email" type="email" value={email} onChange={e => setEmail(e.target.value)} required
+              autoComplete="username" autoCapitalize="off" spellCheck={false} inputMode="email"
+              className="w-full h-11 px-4 bg-background border border-input rounded-xl text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-ring/40 transition-colors"
               placeholder="admin@example.com" />
           </div>
           <div className="space-y-1.5">
-            <label className="block text-xs text-gray-400 font-medium">Password</label>
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)} required
-              className="w-full px-4 py-3 bg-white/[0.03] border border-white/[0.06] rounded-xl text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500/40 focus:ring-1 focus:ring-indigo-500/30 transition-all"
+            <label htmlFor="admin-password" className="block text-sm text-foreground font-medium">Password</label>
+            <input id="admin-password" type="password" value={password} onChange={e => setPassword(e.target.value)} required
+              autoComplete="current-password"
+              className="w-full h-11 px-4 bg-background border border-input rounded-xl text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-ring/40 transition-colors"
               placeholder="Enter your password" />
           </div>
           <button type="submit" disabled={loading}
-            className="w-full py-3 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 disabled:opacity-50 text-white rounded-xl text-sm font-semibold transition-all shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30">
+            className="w-full h-11 bg-primary hover:bg-primary-hover disabled:opacity-50 text-primary-foreground rounded-xl text-sm font-semibold transition-colors shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background">
             {loading ? (
               <span className="inline-flex items-center justify-center gap-2">
-                <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span aria-hidden="true" className="h-4 w-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
                 Signing in...
               </span>
             ) : 'Sign In'}

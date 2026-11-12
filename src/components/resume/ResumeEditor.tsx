@@ -35,11 +35,11 @@ function EyeIcon({ className = 'w-4 h-4' }: { className?: string }) {
 // ─── Shared input styling ──────────────────────────────────────────────────
 const inputCls = "w-full px-3 py-2 rounded-lg bg-muted/50 border border-input text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/30 focus:border-ring/30 transition-all";
 const textareaCls = `${inputCls} resize-none leading-relaxed`;
-const labelCls = "block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5";
+const labelCls = "block text-caption-sm font-semibold uppercase tracking-wider text-muted-foreground mb-1.5";
 const sectionHeaderCls = "flex items-center gap-3 mb-3";
-const sectionTitleCls = "text-[11px] font-semibold uppercase tracking-[0.14em] text-primary/80";
-const addBtnCls = "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-primary border border-primary/25 hover:bg-primary/10 transition-all";
-const removeBtnCls = "p-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all disabled:opacity-30 disabled:cursor-not-allowed";
+const sectionTitleCls = "text-caption-sm font-semibold uppercase tracking-[0.14em] text-primary";
+const addBtnCls = "hit-target inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-primary border border-primary/25 hover:bg-primary/10 transition-all";
+const removeBtnCls = "hit-target p-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all disabled:opacity-30 disabled:cursor-not-allowed";
 
 // ─── Section Header ────────────────────────────────────────────────────────
 function SectionHeader({ title, children }: { title: string; children?: React.ReactNode }) {
@@ -75,14 +75,14 @@ function CollapsibleSection({ title, defaultOpen = true, children, actions }: {
 // ─── Live Preview (right pane) ─────────────────────────────────────────────
 function LivePreview({ resume }: { resume: TailoredFullResume }) {
   const ST = ({ children }: { children: React.ReactNode }) => (
-    <div className="flex items-center gap-2 mb-2"><h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary/70">{children}</h3><div className="flex-1 h-px bg-border/60" /></div>
+    <div className="flex items-center gap-2 mb-2"><h3 className="text-caption-sm font-semibold uppercase tracking-[0.14em] text-primary">{children}</h3><div className="flex-1 h-px bg-border/60" /></div>
   );
   return (
     <div className="text-xs leading-relaxed">
       {/* Contact header */}
       <div className="text-center mb-3 pb-2 border-b border-border/60">
         <h2 className="text-base font-bold text-foreground tracking-wide">{titleCaseName(resume.contact?.name || '') || 'Your Name'}</h2>
-        <p className="text-[11px] text-muted-foreground mt-1">
+        <p className="text-caption-sm text-muted-foreground mt-1">
           {[resume.contact?.phone, resume.contact?.email, resume.contact?.linkedin, resume.contact?.github]
             .filter(Boolean).join('  |  ')}
         </p>
@@ -90,7 +90,7 @@ function LivePreview({ resume }: { resume: TailoredFullResume }) {
 
       <div className="space-y-2.5">
         {resume.summary && (
-          <div><ST>Summary</ST><p className="text-foreground/80">{resume.summary}</p></div>
+          <div><ST>Summary</ST><p className="text-foreground">{resume.summary}</p></div>
         )}
 
         {resume.experience?.length > 0 && (
@@ -104,12 +104,12 @@ function LivePreview({ resume }: { resume: TailoredFullResume }) {
                       {exp.location ? <span className="text-muted-foreground">, {exp.location}</span> : null}
                       {exp.title && <span className="text-muted-foreground italic"> · {exp.title}</span>}
                     </div>
-                    <span className="text-[11px] text-muted-foreground whitespace-nowrap shrink-0">{exp.dates}</span>
+                    <span className="text-caption-sm text-muted-foreground whitespace-nowrap shrink-0">{exp.dates}</span>
                   </div>
                   <ul className="mt-1 space-y-0.5 ml-3">
                     {exp.bullets?.map((b, j) => (
                       <li key={j} className="text-muted-foreground flex gap-1.5">
-                        <span className="text-primary/40 shrink-0">&bull;</span><span>{b}</span>
+                        <span className="text-primary shrink-0">&bull;</span><span>{b}</span>
                       </li>
                     ))}
                   </ul>
@@ -141,13 +141,13 @@ function LivePreview({ resume }: { resume: TailoredFullResume }) {
                         </>
                       )}
                     </span>
-                    {p.dates && <span className="text-[11px] text-muted-foreground whitespace-nowrap shrink-0">{p.dates}</span>}
+                    {p.dates && <span className="text-caption-sm text-muted-foreground whitespace-nowrap shrink-0">{p.dates}</span>}
                   </div>
-                  {p.tech && <p className="text-[11px] text-muted-foreground italic">{p.tech}</p>}
+                  {p.tech && <p className="text-caption-sm text-muted-foreground italic">{p.tech}</p>}
                   <ul className="mt-0.5 space-y-0.5 ml-3">
                     {p.bullets?.map((b, j) => (
                       <li key={j} className="text-muted-foreground flex gap-1.5">
-                        <span className="text-primary/40 shrink-0">&bull;</span><span>{b}</span>
+                        <span className="text-primary shrink-0">&bull;</span><span>{b}</span>
                       </li>
                     ))}
                   </ul>
@@ -162,7 +162,7 @@ function LivePreview({ resume }: { resume: TailoredFullResume }) {
             <div className="space-y-1">
               {Object.entries(resume.skills).map(([c, s]) => (
                 <div key={c}>
-                  <span className="font-semibold text-foreground/90">{c}: </span>
+                  <span className="font-semibold text-foreground">{c}: </span>
                   <span className="text-muted-foreground">{Array.isArray(s) ? s.join(', ') : String(s)}</span>
                 </div>
               ))}
@@ -176,11 +176,11 @@ function LivePreview({ resume }: { resume: TailoredFullResume }) {
               {resume.education.map((edu, i) => (
                 <div key={i} className="flex justify-between items-start gap-2">
                   <div>
-                    <span className="font-semibold text-foreground/90">{edu.institution}</span>
+                    <span className="font-semibold text-foreground">{edu.institution}</span>
                     {edu.degree && <span className="text-muted-foreground"> · {edu.degree}</span>}
                     {edu.gpa && <span className="text-muted-foreground"> (GPA: {edu.gpa})</span>}
                   </div>
-                  <span className="text-[11px] text-muted-foreground whitespace-nowrap shrink-0">{edu.dates}</span>
+                  <span className="text-caption-sm text-muted-foreground whitespace-nowrap shrink-0">{edu.dates}</span>
                 </div>
               ))}
             </div>
@@ -443,6 +443,8 @@ export default function ResumeEditor({ resume: initialResume, jdAnalysis, record
 
   // Reset to original
   const handleReset = useCallback(() => {
+    // Destructive: every edit in this session goes. Same confirm pattern as Back.
+    if (!window.confirm('Discard all your edits and restore the tailored version?')) return;
     setResume(JSON.parse(JSON.stringify(initialResume)));
   }, [initialResume]);
 
@@ -470,11 +472,11 @@ export default function ResumeEditor({ resume: initialResume, jdAnalysis, record
         {resume.experience?.map((exp, i) => (
           <div key={i} className="rounded-lg border border-border/70 bg-muted/30 p-3 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-foreground/90">{exp.company || exp.title || `Experience ${i + 1}`}</span>
+              <span className="text-xs font-semibold text-foreground">{exp.company || exp.title || `Experience ${i + 1}`}</span>
               <div className="flex items-center gap-0.5">
-                <button type="button" className={removeBtnCls} disabled={i === 0} onClick={() => moveItem('experience', i, i - 1)}><ChevronUpIcon className="w-3.5 h-3.5" /></button>
-                <button type="button" className={removeBtnCls} disabled={i === resume.experience.length - 1} onClick={() => moveItem('experience', i, i + 1)}><ChevronDownIcon className="w-3.5 h-3.5" /></button>
-                <button type="button" className={removeBtnCls} onClick={() => removeExperience(i)}><TrashIcon className="w-3.5 h-3.5" /></button>
+                <button type="button" aria-label="Move experience up" className={removeBtnCls} disabled={i === 0} onClick={() => moveItem('experience', i, i - 1)}><ChevronUpIcon className="w-3.5 h-3.5" /></button>
+                <button type="button" aria-label="Move experience down" className={removeBtnCls} disabled={i === resume.experience.length - 1} onClick={() => moveItem('experience', i, i + 1)}><ChevronDownIcon className="w-3.5 h-3.5" /></button>
+                <button type="button" aria-label="Remove experience" className={removeBtnCls} onClick={() => removeExperience(i)}><TrashIcon className="w-3.5 h-3.5" /></button>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-2">
@@ -486,19 +488,19 @@ export default function ResumeEditor({ resume: initialResume, jdAnalysis, record
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className={labelCls}>Bullets</label>
-                <button type="button" className="text-[11px] text-primary hover:text-primary/80" onClick={() => addBullet('experience', i)}>+ Add bullet</button>
+                <button type="button" className="hit-target rounded text-caption-sm text-primary hover:underline underline-offset-2" onClick={() => addBullet('experience', i)}>+ Add bullet</button>
               </div>
               <div className="space-y-1.5">
                 {exp.bullets?.map((bullet, j) => (
                   <div key={j} className="flex gap-1.5 items-start">
-                    <span className="text-primary/40 mt-2.5 shrink-0 text-xs">&bull;</span>
+                    <span className="text-primary mt-2.5 shrink-0 text-xs">&bull;</span>
                     <textarea className={`${textareaCls} text-xs`} rows={2} value={bullet} onChange={e => updateBullet('experience', i, j, e.target.value)} />
-                    <button type="button" title="AI Rewrite" disabled={rewritingBullet !== null}
+                    <button type="button" title="AI rewrite" aria-label="Rewrite this bullet with AI" disabled={rewritingBullet !== null}
                       className={`${removeBtnCls} mt-1.5 ${rewritingBullet === `experience-${i}-${j}` ? 'animate-spin' : ''} hover:!text-primary`}
                       onClick={() => handleRewriteBullet('experience', i, j)}>
                       {rewritingBullet === `experience-${i}-${j}` ? <span className="w-3 h-3 rounded-full border-2 border-primary border-t-transparent animate-spin" /> : <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" /></svg>}
                     </button>
-                    <button type="button" className={`${removeBtnCls} mt-1.5`} onClick={() => removeBullet('experience', i, j)}><TrashIcon className="w-3 h-3" /></button>
+                    <button type="button" aria-label="Remove bullet" className={`${removeBtnCls} mt-1.5`} onClick={() => removeBullet('experience', i, j)}><TrashIcon className="w-3 h-3" /></button>
                   </div>
                 ))}
               </div>
@@ -512,11 +514,11 @@ export default function ResumeEditor({ resume: initialResume, jdAnalysis, record
         {resume.projects?.map((proj, i) => (
           <div key={i} className="rounded-lg border border-border/70 bg-muted/30 p-3 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-foreground/90">{proj.name || `Project ${i + 1}`}</span>
+              <span className="text-xs font-semibold text-foreground">{proj.name || `Project ${i + 1}`}</span>
               <div className="flex items-center gap-0.5">
-                <button type="button" className={removeBtnCls} disabled={i === 0} onClick={() => moveItem('projects', i, i - 1)}><ChevronUpIcon className="w-3.5 h-3.5" /></button>
-                <button type="button" className={removeBtnCls} disabled={i === resume.projects.length - 1} onClick={() => moveItem('projects', i, i + 1)}><ChevronDownIcon className="w-3.5 h-3.5" /></button>
-                <button type="button" className={removeBtnCls} onClick={() => removeProject(i)}><TrashIcon className="w-3.5 h-3.5" /></button>
+                <button type="button" aria-label="Move project up" className={removeBtnCls} disabled={i === 0} onClick={() => moveItem('projects', i, i - 1)}><ChevronUpIcon className="w-3.5 h-3.5" /></button>
+                <button type="button" aria-label="Move project down" className={removeBtnCls} disabled={i === resume.projects.length - 1} onClick={() => moveItem('projects', i, i + 1)}><ChevronDownIcon className="w-3.5 h-3.5" /></button>
+                <button type="button" aria-label="Remove project" className={removeBtnCls} onClick={() => removeProject(i)}><TrashIcon className="w-3.5 h-3.5" /></button>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-2">
@@ -536,7 +538,7 @@ export default function ResumeEditor({ resume: initialResume, jdAnalysis, record
                   aria-invalid={!!proj.url && !isProjectLink(proj.url)}
                   aria-describedby={`project-url-hint-${i}`}
                 />
-                <p id={`project-url-hint-${i}`} className={`mt-1 text-[11px] ${proj.url && !isProjectLink(proj.url) ? 'text-destructive' : 'text-muted-foreground'}`}>
+                <p id={`project-url-hint-${i}`} className={`mt-1 text-caption-sm ${proj.url && !isProjectLink(proj.url) ? 'text-destructive' : 'text-muted-foreground'}`}>
                   {proj.url && !isProjectLink(proj.url)
                     ? 'Enter a web link, like github.com/you/project. It will not print until it is one.'
                     : 'Screeners open project links. Add the real repo or live demo.'}
@@ -546,19 +548,19 @@ export default function ResumeEditor({ resume: initialResume, jdAnalysis, record
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className={labelCls}>Bullets</label>
-                <button type="button" className="text-[11px] text-primary hover:text-primary/80" onClick={() => addBullet('projects', i)}>+ Add bullet</button>
+                <button type="button" className="hit-target rounded text-caption-sm text-primary hover:underline underline-offset-2" onClick={() => addBullet('projects', i)}>+ Add bullet</button>
               </div>
               <div className="space-y-1.5">
                 {proj.bullets?.map((bullet, j) => (
                   <div key={j} className="flex gap-1.5 items-start">
-                    <span className="text-primary/40 mt-2.5 shrink-0 text-xs">&bull;</span>
+                    <span className="text-primary mt-2.5 shrink-0 text-xs">&bull;</span>
                     <textarea className={`${textareaCls} text-xs`} rows={2} value={bullet} onChange={e => updateBullet('projects', i, j, e.target.value)} />
-                    <button type="button" title="AI Rewrite" disabled={rewritingBullet !== null}
+                    <button type="button" title="AI rewrite" aria-label="Rewrite this bullet with AI" disabled={rewritingBullet !== null}
                       className={`${removeBtnCls} mt-1.5 hover:!text-primary`}
                       onClick={() => handleRewriteBullet('projects', i, j)}>
                       {rewritingBullet === `projects-${i}-${j}` ? <span className="w-3 h-3 rounded-full border-2 border-primary border-t-transparent animate-spin" /> : <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" /></svg>}
                     </button>
-                    <button type="button" className={`${removeBtnCls} mt-1.5`} onClick={() => removeBullet('projects', i, j)}><TrashIcon className="w-3 h-3" /></button>
+                    <button type="button" aria-label="Remove bullet" className={`${removeBtnCls} mt-1.5`} onClick={() => removeBullet('projects', i, j)}><TrashIcon className="w-3 h-3" /></button>
                   </div>
                 ))}
               </div>
@@ -576,7 +578,7 @@ export default function ResumeEditor({ resume: initialResume, jdAnalysis, record
                 onBlur={e => { if (e.target.value && e.target.value !== category) updateSkillCategory(category, e.target.value); }}
                 onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
               />
-              <button type="button" className={removeBtnCls} onClick={() => removeSkillCategory(category)}><TrashIcon className="w-3.5 h-3.5" /></button>
+              <button type="button" aria-label="Remove skill category" className={removeBtnCls} onClick={() => removeSkillCategory(category)}><TrashIcon className="w-3.5 h-3.5" /></button>
             </div>
             <div>
               <textarea className={`${textareaCls} text-xs`} rows={2}
@@ -584,7 +586,7 @@ export default function ResumeEditor({ resume: initialResume, jdAnalysis, record
                 onChange={e => updateSkills(category, e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
                 placeholder="Skill1, Skill2, Skill3..."
               />
-              <p className="text-[11px] text-muted-foreground mt-1">Comma-separated skills</p>
+              <p className="text-caption-sm text-muted-foreground mt-1">Comma-separated skills</p>
             </div>
           </div>
         ))}
@@ -595,11 +597,11 @@ export default function ResumeEditor({ resume: initialResume, jdAnalysis, record
         {resume.education?.map((edu, i) => (
           <div key={i} className="rounded-lg border border-border/70 bg-muted/30 p-3 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-foreground/90">{edu.institution || `Education ${i + 1}`}</span>
+              <span className="text-xs font-semibold text-foreground">{edu.institution || `Education ${i + 1}`}</span>
               <div className="flex items-center gap-0.5">
-                <button type="button" className={removeBtnCls} disabled={i === 0} onClick={() => moveItem('education', i, i - 1)}><ChevronUpIcon className="w-3.5 h-3.5" /></button>
-                <button type="button" className={removeBtnCls} disabled={i === resume.education.length - 1} onClick={() => moveItem('education', i, i + 1)}><ChevronDownIcon className="w-3.5 h-3.5" /></button>
-                <button type="button" className={removeBtnCls} onClick={() => removeEducation(i)}><TrashIcon className="w-3.5 h-3.5" /></button>
+                <button type="button" aria-label="Move education up" className={removeBtnCls} disabled={i === 0} onClick={() => moveItem('education', i, i - 1)}><ChevronUpIcon className="w-3.5 h-3.5" /></button>
+                <button type="button" aria-label="Move education down" className={removeBtnCls} disabled={i === resume.education.length - 1} onClick={() => moveItem('education', i, i + 1)}><ChevronDownIcon className="w-3.5 h-3.5" /></button>
+                <button type="button" aria-label="Remove education" className={removeBtnCls} onClick={() => removeEducation(i)}><TrashIcon className="w-3.5 h-3.5" /></button>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-2">
@@ -631,27 +633,27 @@ export default function ResumeEditor({ resume: initialResume, jdAnalysis, record
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3">
             <button type="button" onClick={handleBack}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-all">
+              className="inline-flex min-h-10 items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
               <ArrowLeftIcon className="w-4 h-4" />Back
             </button>
-            <div className="h-5 w-px bg-border" />
+            <div className="h-5 w-px bg-border" aria-hidden="true" />
             <div className="flex items-center gap-2">
               <PencilIcon className="w-4 h-4 text-primary" />
-              <span className="font-display text-sm font-semibold text-foreground">Resume Editor</span>
+              <span className="font-display text-sm font-semibold text-foreground">Resume editor</span>
             </div>
-            {isModified && <span className="text-[11px] px-2 py-0.5 rounded-full bg-warning/10 text-warning border border-warning/25">Modified</span>}
+            {isModified && <span className="text-caption-sm px-2 py-0.5 rounded-full bg-warning/10 text-warning border border-warning/25">Modified</span>}
           </div>
 
           <div className="flex items-center gap-2">
             {/* View mode toggle */}
-            <div className="inline-flex rounded-lg bg-muted p-0.5 border border-border">
+            <div className="inline-flex rounded-lg bg-muted p-0.5 border border-border" role="group" aria-label="Editor layout">
               {[
                 { key: 'split' as const, label: 'Split' },
                 { key: 'edit' as const, label: 'Edit' },
                 { key: 'preview' as const, label: 'Preview' },
               ].map(v => (
-                <button key={v.key} type="button" onClick={() => setView(v.key)}
-                  className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${v.key === 'split' ? 'hidden md:inline-block' : ''} ${view === v.key ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
+                <button key={v.key} type="button" onClick={() => setView(v.key)} aria-pressed={view === v.key}
+                  className={`hit-target px-3 py-1 text-xs font-medium rounded-md transition-all ${v.key === 'split' ? 'hidden md:inline-block' : ''} ${view === v.key ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
                   {v.label}
                 </button>
               ))}
@@ -661,20 +663,22 @@ export default function ResumeEditor({ resume: initialResume, jdAnalysis, record
 
             {isModified && (
               <button type="button" onClick={handleReset}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground border border-border hover:text-foreground hover:bg-muted transition-all">
+                className="hit-target px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground border border-border hover:text-destructive hover:border-destructive/40 hover:bg-destructive/10 transition-colors">
                 Reset
               </button>
             )}
 
             <button type="button" onClick={() => handleDownload('pdf')} disabled={downloading !== null}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed shadow-soft disabled:shadow-none transition-all duration-200">
+              aria-busy={downloading === 'pdf'}
+              className="inline-flex min-h-10 items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-primary-foreground bg-primary hover:bg-primary-hover disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed shadow-soft disabled:shadow-none transition-all duration-200">
               <DocumentArrowDownIcon className="w-4 h-4" />
               {downloading === 'pdf' ? 'Generating...' : 'Download PDF'}
             </button>
             <button type="button" onClick={() => handleDownload('docx')} disabled={downloading !== null}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-foreground bg-muted border border-border hover:bg-muted/70 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200">
+              aria-busy={downloading === 'docx'}
+              className="inline-flex min-h-10 items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-foreground bg-card border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200">
               <DocumentArrowDownIcon className="w-3.5 h-3.5" />
-              {downloading === 'docx' ? '...' : 'DOCX'}
+              {downloading === 'docx' ? 'Preparing...' : 'DOCX'}
             </button>
           </div>
         </div>

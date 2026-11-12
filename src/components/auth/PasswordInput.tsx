@@ -28,7 +28,12 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
           <Input
             ref={ref}
             type={visible ? 'text' : 'password'}
-            className={cn('pr-11', className)}
+            // Revealed as plain text, a phone would otherwise capitalise and
+            // autocorrect the password. Callers can still override these.
+            autoCapitalize="off"
+            autoCorrect="off"
+            spellCheck={false}
+            className={cn('pr-12', className)}
             onKeyDown={(e) => {
               detectCaps(e);
               onKeyDown?.(e);
@@ -46,9 +51,9 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
             onClick={() => setVisible((v) => !v)}
             aria-label={visible ? 'Hide password' : 'Show password'}
             aria-pressed={visible}
-            className="absolute right-1 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="absolute right-0.5 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            {visible ? <EyeOff className="h-4 w-4" aria-hidden /> : <Eye className="h-4 w-4" aria-hidden />}
           </button>
         </div>
         {capsLockWarning && caps && (

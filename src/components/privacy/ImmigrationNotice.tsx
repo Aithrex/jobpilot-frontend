@@ -18,7 +18,7 @@ export interface ImmigrationNoticeProps {
   className?: string;
 }
 
-const LINK_CLASS = 'font-medium text-primary underline-offset-4 hover:underline';
+const LINK_CLASS = 'font-medium text-primary underline underline-offset-4 hover:text-primary-hover';
 
 /**
  * Notice at collection for immigration status, which state privacy laws

@@ -41,7 +41,7 @@ interface InspectorTabsProps {
 }
 
 const triggerCls =
-  'flex-1 gap-1.5 rounded-control px-2 sm:px-3 data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:shadow-none data-[state=active]:ring-1 data-[state=active]:ring-primary/30';
+  'hit-target flex-1 gap-1.5 rounded-control px-2 sm:px-3 data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:shadow-none data-[state=active]:ring-1 data-[state=active]:ring-primary/30';
 
 export function InspectorTabs({
   active,
@@ -85,7 +85,7 @@ export function InspectorTabs({
             {reviewPendingCount > 0 && (
               <span
                 className={cn(
-                  'ml-0.5 inline-flex min-w-[16px] items-center justify-center rounded-full px-1 text-[10px] font-bold tabular-nums',
+                  'ml-0.5 inline-flex min-w-[16px] items-center justify-center rounded-full px-1 text-caption-sm font-bold tabular-nums',
                   reviewHasUnsupported
                     ? 'bg-destructive/15 text-destructive'
                     : 'bg-warning/15 text-warning',
@@ -105,7 +105,7 @@ export function InspectorTabs({
             <span className="ml-0.5 inline-flex items-center gap-1">
               <span
                 className={cn(
-                  'text-[10px] font-bold tabular-nums',
+                  'text-caption-sm font-bold tabular-nums',
                   scoreTone(atsScore).text,
                 )}
               >
@@ -116,7 +116,7 @@ export function InspectorTabs({
                   <span
                     title="Edited since scored"
                     aria-hidden="true"
-                    className="h-1.5 w-1.5 animate-pulse rounded-full bg-warning"
+                    className="h-1.5 w-1.5 rounded-full bg-warning"
                   />
                   <span className="sr-only">Score outdated. Edited since scored</span>
                 </>
@@ -140,7 +140,7 @@ export function InspectorTabs({
             {screenerGrade && (
               <span
                 className={cn(
-                  'ml-0.5 text-[10px] font-bold',
+                  'ml-0.5 text-caption-sm font-bold',
                   screenerGrade === 'A' || screenerGrade === 'B'
                     ? 'text-success'
                     : screenerGrade === 'C'
@@ -166,13 +166,12 @@ export function InspectorTabs({
 
         <TabsTrigger value="cover" disabled={!hasResult} className={triggerCls}>
           <Sparkles className="h-4 w-4 shrink-0" aria-hidden="true" />
-          <span className="sr-only sm:not-sr-only">Cover Letter</span>
+          <span className="sr-only sm:not-sr-only">Cover letter</span>
           {coverLetterReady && !coverLetterLoading ? (
             <>
-              <span className="relative flex h-1.5 w-1.5" aria-hidden="true">
-                <span className="absolute inset-0 animate-ping rounded-full bg-success opacity-60" />
-                <span className="relative h-1.5 w-1.5 rounded-full bg-success" />
-              </span>
+              {/* Static: "ready" is a state, not activity. Only in-progress
+                  dots animate on this strip. */}
+              <span className="h-1.5 w-1.5 rounded-full bg-success" aria-hidden="true" />
               <span className="sr-only">Cover letter ready</span>
             </>
           ) : coverLetterLoading ? (

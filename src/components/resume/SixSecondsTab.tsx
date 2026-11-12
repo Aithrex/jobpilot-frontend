@@ -35,7 +35,7 @@ function GazeHeatmap({ data }: { data: SixSecondsSuccess }) {
           <h3 className="text-sm font-bold">Where the eye lands</h3>
         </div>
         {/* Intensity legend */}
-        <div className="flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground">
+        <div className="flex items-center gap-1.5 text-caption-sm font-medium text-muted-foreground">
           <span>skimmed</span>
           <span
             className="h-2.5 w-16 rounded-full bg-gradient-to-r from-primary/10 to-primary"
@@ -54,18 +54,18 @@ function GazeHeatmap({ data }: { data: SixSecondsSuccess }) {
               style={heatStyle(s.weight)}
               className="flex items-start gap-3 rounded-xl border border-primary/10 px-3.5 py-3 transition-colors"
             >
-              <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-md bg-background/60 text-[11px] font-bold tabular-nums text-foreground/80">
+              <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-md bg-background/60 text-caption-sm font-bold tabular-nums text-foreground">
                 {i + 1}
               </span>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">
                   <p className="truncate text-sm font-semibold text-foreground">{s.label}</p>
-                  <span className="shrink-0 text-[11px] font-bold tabular-nums text-foreground/70">
+                  <span className="shrink-0 text-caption-sm font-bold tabular-nums text-ink-muted">
                     {pct}%
                   </span>
                 </div>
                 {s.reason && (
-                  <p className="mt-0.5 text-xs leading-snug text-foreground/70">{s.reason}</p>
+                  <p className="mt-0.5 text-xs leading-snug text-ink-muted">{s.reason}</p>
                 )}
               </div>
             </li>
@@ -104,7 +104,7 @@ function ListCard({
       ) : (
         <ul className="space-y-2">
           {items.map((it, i) => (
-            <li key={i} className="flex items-start gap-2 text-sm text-foreground/85">
+            <li key={i} className="flex items-start gap-2 text-sm text-foreground">
               <span
                 className={cn(
                   'mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full',
@@ -125,10 +125,10 @@ function ImpressionRow({ label, value }: { label: string; value?: string }) {
   if (!value) return null;
   return (
     <div className="border-t border-border/70 py-2.5 first:border-t-0 first:pt-0">
-      <dt className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+      <dt className="text-caption-sm font-semibold uppercase tracking-wide text-muted-foreground">
         {label}
       </dt>
-      <dd className="mt-0.5 text-sm leading-snug text-foreground/90">{value}</dd>
+      <dd className="mt-0.5 text-sm leading-snug text-foreground">{value}</dd>
     </div>
   );
 }
@@ -219,7 +219,7 @@ export default function SixSecondsTab({ onNavigate }: SixSecondsTabProps) {
       {/* Header */}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="space-y-1">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
+          <p className="text-caption-sm font-semibold uppercase tracking-[0.18em] text-primary">
             Grow · Resume
           </p>
           <div className="flex items-center gap-2">

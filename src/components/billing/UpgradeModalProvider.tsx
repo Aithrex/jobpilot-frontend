@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useState, ReactNode } from 'react';
-import { motion } from 'framer-motion';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { motion, useReducedMotion } from 'framer-motion';
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Check, Sparkles, Crown, Zap, Loader2 } from 'lucide-react';
 import { apiService } from '@/lib/api';
@@ -60,6 +60,7 @@ export function UpgradeModalProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
   const [opts, setOpts] = useState<OpenOpts>({});
   const [pending, setPending] = useState<PlanId | null>(null);
+  const reduce = useReducedMotion();
 
   const open = useCallback((o?: OpenOpts) => {
     setOpts(o || {});
@@ -78,7 +79,7 @@ export function UpgradeModalProvider({ children }: { children: ReactNode }) {
       window.location.assign(res.data.checkout_url);
       return;
     }
-    toast(res.data?.message || 'Billing is coming soon.', { icon: '✨' });
+    toast(res.data?.message || 'Billing is coming soon.');
     setIsOpen(false);
     refreshProfile();
   };
@@ -88,18 +89,18 @@ export function UpgradeModalProvider({ children }: { children: ReactNode }) {
       {children}
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="max-w-3xl overflow-hidden p-0 sm:rounded-2xl">
-          <div className="bg-gradient-to-br from-primary/10 via-background to-background px-6 pt-6">
-            <div className="flex items-center gap-2 text-primary">
-              <Sparkles className="h-5 w-5" />
-              <span className="text-sm font-semibold uppercase tracking-wide">Upgrade</span>
+          <div className="px-6 pt-6">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Sparkles className="h-4 w-4 text-primary" aria-hidden="true" />
+              <span className="overline">Upgrade</span>
             </div>
-            <h2 className="mt-2 text-2xl font-bold tracking-tight">
+            <DialogTitle className="mt-2 font-display text-headline-sm text-foreground">
               {opts.title || 'Unlock your full job-hunt edge'}
-            </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
+            </DialogTitle>
+            <DialogDescription className="mt-1 max-w-prose text-sm text-muted-foreground">
               {opts.description ||
                 'Go beyond the free tier. More tailoring, deeper coaching, and the all-in-one tools that get you hired faster.'}
-            </p>
+            </DialogDescription>
           </div>
 
           <div className="grid gap-4 px-6 pb-6 pt-4 sm:grid-cols-2">
@@ -109,31 +110,31 @@ export function UpgradeModalProvider({ children }: { children: ReactNode }) {
               return (
                 <motion.div
                   key={tier.id}
-                  initial={{ opacity: 0, y: 12 }}
+                  initial={{ opacity: 0, y: reduce ? 0 : 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.06 }}
+                  transition={reduce ? { duration: 0 } : { duration: 0.2, delay: i * 0.05 }}
                   className={`relative flex flex-col rounded-xl border p-4 ${
                     highlighted ? 'border-primary ring-1 ring-primary/40 shadow-lg' : 'border-border'
                   }`}
                 >
                   {highlighted && (
-                    <span className="absolute -top-2.5 left-4 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary-foreground">
-                      Most popular
+                    <span className="absolute -top-2.5 left-4 rounded-full bg-primary px-2 py-0.5 text-caption-sm font-bold uppercase tracking-wide text-primary-foreground">
+                      Recommended
                     </span>
                   )}
                   <div className="flex items-center gap-2">
-                    <Icon className="h-5 w-5 text-primary" />
-                    <span className="text-lg font-bold">{tier.name}</span>
+                    <Icon className="h-5 w-5 text-foreground" aria-hidden="true" />
+                    <span className="text-title-md text-foreground">{tier.name}</span>
                   </div>
                   <p className="mt-0.5 text-xs text-muted-foreground">{tier.tagline}</p>
                   <div className="mt-3 flex items-baseline gap-1">
-                    <span className="text-3xl font-extrabold">${PLAN_PRICE[tier.id]}</span>
+                    <span className="font-display text-headline-md tabular-nums text-foreground">${PLAN_PRICE[tier.id]}</span>
                     <span className="text-sm text-muted-foreground">/mo</span>
                   </div>
                   <ul className="mt-4 flex-1 space-y-2">
                     {tier.bullets.map((b) => (
                       <li key={b} className="flex items-start gap-2 text-sm">
-                        <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                        <Check className="mt-0.5 h-4 w-4 shrink-0 text-signal" aria-hidden="true" />
                         <span>{b}</span>
                       </li>
                     ))}
@@ -142,9 +143,10 @@ export function UpgradeModalProvider({ children }: { children: ReactNode }) {
                     className="mt-4 w-full"
                     variant={highlighted ? 'default' : 'outline'}
                     disabled={pending !== null}
+                    aria-busy={pending === tier.id}
                     onClick={() => choose(tier.id)}
                   >
-                    {pending === tier.id && <Loader2 className="h-4 w-4 animate-spin" />}
+                    {pending === tier.id && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
                     Choose {tier.name}
                   </Button>
                 </motion.div>

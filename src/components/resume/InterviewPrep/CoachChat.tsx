@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { GraduationCap, Sparkles } from "lucide-react";
 import { AiDisclosure } from "@/components/ai/AiDisclosure";
 import { apiService } from "@/lib/api";
 import type { ChatMessage } from "@/types/resume";
@@ -83,10 +84,10 @@ export default function CoachChat({
       {/* Header */}
       <div className="shrink-0 px-4 py-3 border-b border-border flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-lg brand-gradient text-white flex items-center justify-center text-base shadow-soft">🧑‍🏫</div>
+          <div className="w-9 h-9 rounded-lg bg-primary text-primary-foreground flex items-center justify-center shadow-soft" aria-hidden="true"><GraduationCap className="h-5 w-5" /></div>
           <div>
             <p className="text-sm font-semibold text-foreground">AI interview coach</p>
-            <p className="text-[12px] text-muted-foreground">Grounded in this JD + your resume · remembers the full conversation</p>
+            <p className="text-xs text-muted-foreground">Grounded in this JD + your resume · remembers the full conversation</p>
             <AiDisclosure className="mt-0.5" />
           </div>
         </div>
@@ -110,9 +111,9 @@ export default function CoachChat({
                 <button
                   key={i}
                   onClick={() => send(s)}
-                  className="text-left px-3 py-2.5 rounded-lg text-[13px] bg-muted/40 border border-border hover:border-primary/40 hover:bg-primary/5 text-foreground/90 leading-snug"
+                  className="text-left px-3 py-2.5 rounded-lg text-caption bg-muted/40 border border-border hover:border-primary/40 hover:bg-primary/5 text-foreground leading-snug"
                 >
-                  <span className="text-primary mr-1.5">✨</span>{s}
+                  <Sparkles className="mr-1.5 inline h-3.5 w-3.5 align-[-2px] text-primary" aria-hidden="true" />{s}
                 </button>
               ))}
             </div>
@@ -121,9 +122,9 @@ export default function CoachChat({
         {messages.map((m, i) => (
           <div key={i} className={`flex gap-2.5 ${m.role === "user" ? "justify-end" : "justify-start"}`}>
             {m.role === "assistant" && (
-              <div className="shrink-0 w-8 h-8 rounded-md brand-gradient text-white text-xs flex items-center justify-center">🧑‍🏫</div>
+              <div className="shrink-0 w-8 h-8 rounded-md bg-primary text-primary-foreground flex items-center justify-center" aria-hidden="true"><GraduationCap className="h-4 w-4" /></div>
             )}
-            <div className={`max-w-[85%] rounded-xl px-3.5 py-2.5 text-[14px] leading-relaxed whitespace-pre-wrap ${
+            <div className={`max-w-[85%] rounded-xl px-3.5 py-2.5 text-body-sm leading-relaxed whitespace-pre-wrap ${
               m.role === "user"
                 ? "bg-primary text-primary-foreground rounded-br-sm"
                 : "bg-muted text-foreground rounded-bl-sm border border-border"
@@ -131,14 +132,14 @@ export default function CoachChat({
               {m.content}
             </div>
             {m.role === "user" && (
-              <div className="shrink-0 w-8 h-8 rounded-md bg-secondary text-secondary-foreground text-[11px] flex items-center justify-center font-semibold">You</div>
+              <div className="shrink-0 w-8 h-8 rounded-md bg-secondary text-secondary-foreground text-caption-sm flex items-center justify-center font-semibold">You</div>
             )}
           </div>
         ))}
         {sending && (
           <div className="flex gap-2 items-center">
-            <div className="shrink-0 w-8 h-8 rounded-md brand-gradient text-white text-xs flex items-center justify-center">🧑‍🏫</div>
-            <div className="rounded-xl bg-muted px-3.5 py-2.5 text-[13px] text-muted-foreground border border-border inline-flex items-center gap-1.5">
+            <div className="shrink-0 w-8 h-8 rounded-md bg-primary text-primary-foreground flex items-center justify-center" aria-hidden="true"><GraduationCap className="h-4 w-4" /></div>
+            <div className="rounded-xl bg-muted px-3.5 py-2.5 text-caption text-muted-foreground border border-border inline-flex items-center gap-1.5">
               <Spinner className="w-3.5 h-3.5" /> thinking...
             </div>
           </div>

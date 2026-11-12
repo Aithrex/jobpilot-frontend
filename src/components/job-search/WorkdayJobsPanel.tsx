@@ -746,17 +746,15 @@ export function WorkdayJobsPanel({
   // Motion - a card fades/rises in with a positional stagger. Because React
   // keys are stable (job_id), already-mounted cards never replay when the
   // streaming slice updates; only freshly-arrived rows animate.
-  const cardMotion = (index: number) =>
+  // A job list is a daily surface: a 200ms opacity fade only, no rise, scale
+  // or stagger. `index` is kept so call sites stay unchanged.
+  const cardMotion = (_index?: number) =>
     reduceMotion
       ? {}
       : {
-          initial: { opacity: 0, y: 16, scale: 0.96 },
-          animate: { opacity: 1, y: 0, scale: 1 },
-          transition: {
-            duration: 0.34,
-            ease: [0.22, 1, 0.36, 1] as const,
-            delay: Math.min(index * 0.035, 0.35),
-          },
+          initial: { opacity: 0 },
+          animate: { opacity: 1 },
+          transition: { duration: 0.2, ease: [0.2, 0, 0, 1] as const },
         };
 
   /** One grid cell: honest sponsorship / feasibility notes above the card. */
@@ -768,7 +766,7 @@ export function WorkdayJobsPanel({
       className="flex h-full flex-col gap-1.5"
     >
       {job.sponsorship === 'refused' && (
-        <p className="flex items-start gap-1.5 rounded-lg border border-destructive/30 bg-destructive/10 px-2.5 py-1.5 text-[11px] font-medium leading-snug text-destructive">
+        <p className="flex items-start gap-1.5 rounded-lg border border-destructive/30 bg-destructive/10 px-2.5 py-1.5 text-caption-sm font-medium leading-snug text-destructive">
           <ShieldAlert className="mt-0.5 h-3 w-3 shrink-0" aria-hidden />
           <span>
             This posting states it won't sponsor a visa
@@ -777,7 +775,7 @@ export function WorkdayJobsPanel({
         </p>
       )}
       {job.tailor_feasibility === 'skip' && (
-        <p className="flex items-start gap-1.5 rounded-lg border border-warning/40 bg-warning/10 px-2.5 py-1.5 text-[11px] font-medium leading-snug text-foreground/80">
+        <p className="flex items-start gap-1.5 rounded-lg border border-warning/40 bg-warning/10 px-2.5 py-1.5 text-caption-sm font-medium leading-snug text-ink-muted">
           <AlertCircle className="mt-0.5 h-3 w-3 shrink-0 text-warning" aria-hidden />
           <span>
             Off-target for your resume
@@ -837,7 +835,7 @@ export function WorkdayJobsPanel({
                 <h3 className="text-sm font-semibold text-foreground">Live listings</h3>
                 <Badge
                   variant="outline"
-                  className="gap-1 border-primary/30 bg-primary/10 px-1.5 py-0 text-[10px] font-semibold text-primary"
+                  className="gap-1 border-primary/30 bg-primary/10 px-1.5 py-0 text-caption-sm font-semibold text-primary"
                 >
                   <Sparkles className="h-2.5 w-2.5" aria-hidden /> Auto-sync
                 </Badge>
@@ -856,7 +854,7 @@ export function WorkdayJobsPanel({
                   <>
                     Updated {formatAgo(lastSyncedAt)} · {roleCount} roles
                     {secondsUntilNext != null && (
-                      <span className="ml-1 tabular-nums text-primary/80">
+                      <span className="ml-1 tabular-nums text-primary">
                         · next sync {formatCountdown(secondsUntilNext)}
                       </span>
                     )}
@@ -915,7 +913,7 @@ export function WorkdayJobsPanel({
                 }
                 className="h-1.5"
               />
-              <p className="mt-1.5 text-[11px] text-muted-foreground">
+              <p className="mt-1.5 text-caption-sm text-muted-foreground">
                 {progress?.phase === 'details'
                   ? 'Fetching full descriptions for top matches. Refining skill scores...'
                   : 'Querying company career APIs directly. No scraping, no credits. Matches stream in below.'}
@@ -975,7 +973,7 @@ export function WorkdayJobsPanel({
                 size="sm"
                 onClick={() => void smartSuggestTitles()}
                 disabled={suggesting}
-                className="mt-2 h-8 px-2 text-[11px] font-medium text-muted-foreground hover:text-foreground"
+                className="mt-2 h-8 px-2 text-caption-sm font-medium text-muted-foreground hover:text-foreground"
               >
                 {suggesting ? (
                   <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
@@ -985,7 +983,7 @@ export function WorkdayJobsPanel({
                 {suggesting ? 'Analyzing resume...' : 'Suggest from resume'}
               </Button>
               {titlesPending && (
-                <p className="mt-2 text-[11px] font-medium text-warning">
+                <p className="mt-2 text-caption-sm font-medium text-warning">
                   Titles changed. Press Search to apply them.
                 </p>
               )}
@@ -1012,7 +1010,7 @@ export function WorkdayJobsPanel({
                       onClick={() => toggleIndustry(ind.key)}
                       aria-pressed={isActive}
                       className={cn(
-                        'rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                        'rounded-full border px-2.5 py-1 text-caption-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                         isActive
                           ? 'border-primary/50 bg-primary/10 text-primary'
                           : 'border-border/70 bg-background/40 text-muted-foreground hover:border-primary/30 hover:text-primary',
@@ -1090,7 +1088,7 @@ export function WorkdayJobsPanel({
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
           <div className="flex-1">
             <p className="font-medium">The scan didn't complete.</p>
-            <p className="text-xs opacity-80">{error}</p>
+            <p className="text-xs">{error}</p>
           </div>
           <Button variant="outline" size="sm" onClick={() => sync(false)}>
             Retry
@@ -1144,7 +1142,7 @@ export function WorkdayJobsPanel({
                 ]}
               />
               {recency === 'custom' && (
-                <label className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
+                <label className="flex items-center gap-1 text-caption-sm font-medium text-muted-foreground">
                   <Input
                     type="number"
                     min={0}
@@ -1160,7 +1158,7 @@ export function WorkdayJobsPanel({
             </div>
 
             <div className="flex items-center gap-3">
-              <label className="flex cursor-pointer items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
+              <label className="flex cursor-pointer items-center gap-1.5 text-caption-sm font-medium text-muted-foreground">
                 <Switch checked={groupByCompany} onCheckedChange={setGroupByCompany} />
                 Group by company
               </label>
@@ -1198,7 +1196,7 @@ export function WorkdayJobsPanel({
             <select
               value={seniorityFilter}
               onChange={(e) => setSeniorityFilter(e.target.value)}
-              className="h-8 rounded-md border border-border bg-background px-2 text-[11px] font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="h-8 rounded-md border border-border bg-background px-2 text-caption-sm font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               aria-label="Seniority filter"
             >
               {SENIORITY_OPTIONS.map((o) => (
@@ -1222,7 +1220,7 @@ export function WorkdayJobsPanel({
             <select
               value={locationFilter}
               onChange={(e) => setLocationFilter(e.target.value)}
-              className="h-8 max-w-[190px] rounded-md border border-border bg-background px-2 text-[11px] font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="h-8 max-w-[190px] rounded-md border border-border bg-background px-2 text-caption-sm font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               aria-label="Location filter"
             >
               <option value="all">All locations</option>
@@ -1235,7 +1233,7 @@ export function WorkdayJobsPanel({
 
             {hasFeasibility && (
               <label
-                className="flex cursor-pointer items-center gap-1.5 text-[11px] font-medium text-muted-foreground"
+                className="flex cursor-pointer items-center gap-1.5 text-caption-sm font-medium text-muted-foreground"
                 title="Hides roles the feasibility check marks as not honestly tailorable. Off-stack JDs (e.g. .NET for a Python resume), 5+ year experience gaps, clearance requirements."
               >
                 <Switch checked={hideUnrealistic} onCheckedChange={setHideUnrealistic} />
@@ -1288,7 +1286,7 @@ export function WorkdayJobsPanel({
           </div>
 
           {result.resume_skill_count === 0 && !streaming && (
-            <div className="flex items-start gap-2 rounded-xl border border-warning/40 bg-warning/10 px-4 py-3 text-xs text-foreground/85">
+            <div className="flex items-start gap-2 rounded-xl border border-warning/40 bg-warning/10 px-4 py-3 text-xs text-foreground">
               <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-warning" aria-hidden />
               <span>
                 No parsed resume found for this account. Match scores, skill overlap and
@@ -1298,7 +1296,7 @@ export function WorkdayJobsPanel({
             </div>
           )}
 
-          <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+          <p className="flex items-center gap-1.5 text-caption-sm text-muted-foreground">
             {streaming ? (
               <>
                 <Loader2 className="h-3 w-3 animate-spin text-primary" aria-hidden />
@@ -1339,33 +1337,29 @@ export function WorkdayJobsPanel({
           ) : grouped ? (
             <div className="space-y-6">
               <AnimatePresence initial={false}>
-                {grouped.map(([company, jobs], gi) => (
+                {grouped.map(([company, jobs]) => (
                   <motion.div
                     key={company}
                     layout={!reduceMotion}
-                    initial={reduceMotion ? undefined : { opacity: 0, y: 12 }}
-                    animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
+                    initial={reduceMotion ? undefined : { opacity: 0 }}
+                    animate={reduceMotion ? undefined : { opacity: 1 }}
                     exit={reduceMotion ? undefined : { opacity: 0 }}
-                    transition={{
-                      duration: 0.3,
-                      ease: [0.22, 1, 0.36, 1],
-                      delay: Math.min(gi * 0.05, 0.3),
-                    }}
+                    transition={{ duration: 0.2, ease: [0.2, 0, 0, 1] }}
                     className="space-y-3"
                   >
                     <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
                       <Building2 className="h-4 w-4 text-primary" aria-hidden />
                       {company}
-                      <Badge variant="outline" className="text-[10px] tabular-nums">
+                      <Badge variant="outline" className="text-caption-sm tabular-nums">
                         {jobs.length}
                       </Badge>
                       {jobs[0]?.industry && (
-                        <span className="text-[10px] font-normal text-muted-foreground">
+                        <span className="text-caption-sm font-normal text-muted-foreground">
                           {industryLabels[jobs[0].industry] ?? jobs[0].industry}
                         </span>
                       )}
                       {(isCareers || isMncs) && jobs[0]?.ats && (
-                        <span className="rounded-full border border-border bg-muted/40 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide text-muted-foreground">
+                        <span className="rounded-full border border-border bg-muted/40 px-1.5 py-0.5 text-caption-sm font-medium uppercase tracking-wide text-muted-foreground">
                           {jobs[0].ats}
                         </span>
                       )}

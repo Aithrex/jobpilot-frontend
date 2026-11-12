@@ -152,7 +152,7 @@ export function WorkspaceHero({
       // and the next section's `pt-28` stacked on top of that. A viewport
       // fraction is a guess about content height, and it is wrong on every
       // window it was not measured in; the content is the honest source.
-      className="relative flex scroll-mt-4 items-center overflow-hidden pb-16 pt-24 sm:pb-20 sm:pt-28 lg:pb-24 lg:pt-28"
+      className="relative flex scroll-mt-4 items-center overflow-hidden pb-12 pt-24 sm:pb-14 sm:pt-28 lg:pb-16 lg:pt-28"
     >
       {dragActive && (
         <div

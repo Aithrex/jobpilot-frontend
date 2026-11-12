@@ -86,39 +86,24 @@ const CHAPTERS: Chapter[] = [
   },
 ];
 
-/* ── Abstract preview primitives ──────────────────────────────────────── */
+/* ── Example preview primitives ───────────────────────────────────────
+   The frames used to be grey bars and empty pills, which read as a page that
+   had not finished loading. They now carry readable EXAMPLE content: the same
+   fictional employers as the hero story, words instead of fake numbers, and
+   the section's caption says plainly that it is an example. Colour follows
+   the system: cobalt marks what the visitor chose, mint marks a good result. */
 
-/** A value placeholder. Never text, so it can never read as real user data. */
-function Bar({ w, className }: { w: string; className?: string }) {
-  return (
-    <span
-      className={cn('block h-2 rounded-full bg-foreground/[0.16]', className)}
-      style={{ width: w }}
-    />
-  );
-}
-
-function Pill({ w, tone }: { w: string; tone?: 'primary' | 'success' }) {
+function Chip({ children, tone }: { children: React.ReactNode; tone?: 'primary' | 'signal' }) {
   return (
     <span
       className={cn(
-        'inline-flex h-6 items-center rounded-full border px-2',
-        tone === 'primary' && 'border-primary/30 bg-nav-active',
-        tone === 'success' && 'border-success/30 bg-success/10',
-        !tone && 'border-border bg-muted',
+        'inline-flex h-7 items-center rounded-full border px-2.5 text-label-md',
+        tone === 'primary' && 'border-primary/25 bg-nav-active text-primary',
+        tone === 'signal' && 'border-signal/30 bg-signal-tint text-signal',
+        !tone && 'border-border bg-muted text-ink-muted',
       )}
     >
-      <span
-        className={cn(
-          'block h-1.5 rounded-full',
-          tone === 'primary'
-            ? 'bg-primary/60'
-            : tone === 'success'
-              ? 'bg-success/60'
-              : 'bg-foreground/15',
-        )}
-        style={{ width: w }}
-      />
+      {children}
     </span>
   );
 }
@@ -126,8 +111,8 @@ function Pill({ w, tone }: { w: string; tone?: 'primary' | 'success' }) {
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-4 border-b border-border/70 py-3 last:border-0">
-      <span className="text-[12px] font-medium text-muted-foreground">{label}</span>
-      <span className="flex items-center gap-1.5">{children}</span>
+      <span className="text-label-md font-medium text-muted-foreground">{label}</span>
+      <span className="flex flex-wrap items-center justify-end gap-1.5">{children}</span>
     </div>
   );
 }
@@ -137,11 +122,22 @@ function Frame({ title, children }: { title: string; children: React.ReactNode }
   return (
     <div className="overflow-hidden rounded-container border border-border bg-card shadow-float">
       <div className="flex items-center gap-2 border-b border-border px-5 py-3">
-        <span className="h-2 w-2 rounded-full bg-primary/60" aria-hidden />
-        <span className="text-[12px] font-semibold tracking-tight text-foreground">{title}</span>
+        <span className="h-2 w-2 rounded-full bg-primary" aria-hidden />
+        <span className="text-label-md font-semibold tracking-tight text-foreground">{title}</span>
       </div>
       <div className="p-5 sm:p-6">{children}</div>
     </div>
+  );
+}
+
+function Monogram({ letter }: { letter: string }) {
+  return (
+    <span
+      aria-hidden
+      className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary font-display text-sm font-bold text-primary-foreground"
+    >
+      {letter}
+    </span>
   );
 }
 
@@ -152,28 +148,29 @@ function PreviewDirection() {
     <Frame title="Your search profile">
       <div className="space-y-1">
         <Row label="Target roles">
-          <Pill w="34px" tone="primary" />
-          <Pill w="26px" tone="primary" />
-          <Pill w="30px" />
+          <Chip tone="primary">Data Analyst</Chip>
+          <Chip tone="primary">BI Analyst</Chip>
         </Row>
         <Row label="Locations">
-          <Pill w="28px" />
-          <Pill w="38px" />
+          <Chip>Remote</Chip>
+          <Chip>Austin, TX</Chip>
         </Row>
         <Row label="Work preference">
-          <Pill w="30px" tone="primary" />
+          <Chip tone="primary">Remote first</Chip>
         </Row>
         <Row label="Work authorization">
-          <Pill w="42px" />
+          <Chip>Needs sponsorship</Chip>
         </Row>
       </div>
       <div className="mt-5 flex items-center gap-3 rounded-container border border-border bg-muted/60 p-3.5">
         <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-card">
-          <Check className="h-4 w-4 text-success" aria-hidden />
+          <Check className="h-4 w-4 text-signal" aria-hidden />
         </span>
-        <div className="min-w-0 flex-1 space-y-1.5">
-          <p className="text-[12px] font-semibold text-foreground">Resume read</p>
-          <Bar w="62%" />
+        <div className="min-w-0 flex-1">
+          <p className="text-label-md font-semibold text-foreground">Resume read</p>
+          <p className="mt-0.5 text-caption-sm text-muted-foreground">
+            Skills, titles and dates, exactly as you wrote them.
+          </p>
         </div>
       </div>
     </Frame>
@@ -184,33 +181,35 @@ function PreviewPrepare() {
   return (
     <Frame title="Prepared while you were away">
       <div className="space-y-2.5">
-        <div className="rounded-container border border-primary/30 bg-nav-active/60 p-3.5">
-          <div className="flex items-center justify-between gap-3">
-            <Bar w="46%" className="bg-primary/40" />
-            <Pill w="24px" tone="primary" />
-          </div>
-          <div className="mt-2.5 space-y-1.5">
-            <Bar w="72%" />
-            <Bar w="54%" />
+        <div className="rounded-container border border-primary/25 bg-nav-active/50 p-3.5">
+          <div className="flex items-center gap-3">
+            <Monogram letter="H" />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-label-lg font-semibold text-foreground">Data Analyst</p>
+              <p className="truncate text-caption-sm text-muted-foreground">
+                Harbor Analytics · Remote · posted today
+              </p>
+            </div>
+            <Chip tone="signal">Strong fit</Chip>
           </div>
         </div>
         <div className="rounded-container border border-border p-3.5">
           <p className="text-caption-sm font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             Why it fits
           </p>
-          <div className="mt-2.5 space-y-1.5">
-            <Bar w="84%" />
-            <Bar w="66%" />
-          </div>
+          <p className="mt-2 text-label-md leading-relaxed text-ink-muted">
+            Your SQL and Tableau reporting work covers most of what this posting asks for. One
+            listed tool, dbt, is not in your resume.
+          </p>
         </div>
       </div>
 
-      <div className="mt-4 flex items-center gap-3 rounded-container border border-success/30 bg-success/8 p-3.5">
+      <div className="mt-4 flex items-center gap-3 rounded-container border border-signal/30 bg-signal-tint p-3.5">
         <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-card">
-          <Check className="h-4 w-4 text-success" aria-hidden />
+          <Check className="h-4 w-4 text-signal" aria-hidden />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-[12px] font-semibold text-foreground">Tailored resume prepared</p>
+          <p className="text-label-md font-semibold text-foreground">Tailored resume prepared</p>
           <p className="mt-0.5 text-caption-sm text-muted-foreground">Yours to review and change.</p>
         </div>
       </div>
@@ -223,32 +222,32 @@ function PreviewDecide() {
     <Frame title="Ready for your approval">
       <div className="rounded-container border border-border p-4">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <p className="text-[12px] font-semibold text-foreground">Aspirely prepared</p>
+          <p className="text-label-md font-semibold text-foreground">Aspirely prepared</p>
           <span className="rounded-full border border-border px-2 py-0.5 text-caption-sm font-semibold uppercase tracking-[0.12em] text-muted-foreground">
             {STATUS_LABEL[AUTO_APPLY.status]}
           </span>
         </div>
         <ul className="mt-3 space-y-2">
-          {['62%', '48%'].map((w) => (
-            <li key={w} className="flex items-center gap-2.5">
-              <Check className="h-3.5 w-3.5 shrink-0 text-success" aria-hidden />
-              <Bar w={w} />
+          {['A resume tailored to the posting', 'Answers drafted from your profile'].map((item) => (
+            <li key={item} className="flex items-center gap-2.5 text-label-md text-ink-muted">
+              <Check className="h-3.5 w-3.5 shrink-0 text-signal" aria-hidden />
+              {item}
             </li>
           ))}
         </ul>
       </div>
 
       <div className="mt-3 rounded-container border border-warning/35 bg-warning/8 p-4">
-        <p className="text-[12px] font-semibold text-foreground">Needs your decision</p>
-        <div className="mt-2.5">
-          <Bar w="70%" />
-        </div>
+        <p className="text-label-md font-semibold text-foreground">Needs your decision</p>
+        <p className="mt-1.5 text-label-md text-ink-muted">
+          Lumen Labs asks for a portfolio link. Add one, or skip this role.
+        </p>
         {/* Inert on purpose: a picture of a control, captioned as one. */}
         <div aria-hidden className="mt-4 flex items-center gap-2">
-          <span className="inline-flex h-9 items-center rounded-full bg-primary px-4 text-[12px] font-semibold text-primary-foreground opacity-70">
+          <span className="inline-flex h-9 items-center rounded-full bg-primary px-4 text-label-md font-semibold text-primary-foreground">
             Approve
           </span>
-          <span className="inline-flex h-9 items-center rounded-full border border-border px-4 text-[12px] font-medium text-muted-foreground opacity-70">
+          <span className="inline-flex h-9 items-center rounded-full border border-border px-4 text-label-md font-medium text-ink-muted">
             Not this one
           </span>
         </div>
@@ -518,12 +517,12 @@ export function WorkdayLoop({ className }: { className?: string }) {
           lede="Set your direction once. Aspirely finds the signal, prepares the work, and returns only when your judgment matters."
         />
         {/* The honesty caption for the whole section, in BOTH modes. The frames
-            below carry our real UI chrome over placeholder values, including a
+            below carry our real UI chrome over fictional example values, including a
             picture of an approval control - so the section has to say what it
             is once, up front, where it cannot be scrolled past. */}
         <p className="mt-4 text-caption text-muted-foreground">
-          An example of the Aspirely workflow. The layouts are ours; the values shown are
-          placeholders, not real results.
+          An example of the Aspirely workflow. The layouts are ours; the employers and details
+          shown are fictional, not real results.
         </p>
       </Container>
 

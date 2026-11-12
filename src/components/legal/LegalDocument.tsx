@@ -47,18 +47,21 @@ export function LegalDocument({
       <article className={cn('mx-auto w-full max-w-3xl px-4 pb-20 pt-12 sm:px-6 sm:pt-16', className)}>
         <header className="space-y-3">
           {eyebrow && (
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{eyebrow}</p>
+            <p className="text-caption-sm font-semibold uppercase tracking-widest text-muted-foreground">{eyebrow}</p>
           )}
-          <h1 className="text-balance font-display text-3xl font-extrabold leading-tight tracking-[-0.02em] text-foreground sm:text-4xl">
+          <h1 className="text-balance font-display text-display-sm text-foreground">
             {title}
           </h1>
-          {lastUpdated && <p className="text-sm text-muted-foreground">Last updated: {lastUpdated}</p>}
-          {lede && <div className="text-pretty text-base leading-relaxed text-foreground">{lede}</div>}
+          {lastUpdated && <p className="text-body-sm text-muted-foreground">Last updated: {lastUpdated}</p>}
+          {/* Reading measure: legal text is read line by line, so every
+              paragraph is capped near 65ch (`max-w-prose`) even though the
+              page column is wider for the index card. */}
+          {lede && <div className="max-w-prose text-pretty text-body-md leading-relaxed text-foreground">{lede}</div>}
         </header>
 
         {toc && toc.length > 0 && (
           <nav aria-label="On this page" className="mt-8 rounded-xl border border-border bg-card p-5">
-            <p className="text-sm font-semibold text-foreground">On this page</p>
+            <h2 className="text-label-lg text-foreground">On this page</h2>
             <ol className="mt-3 grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
               {toc.map((entry) => (
                 <li key={entry.id}>
@@ -92,17 +95,21 @@ export function LegalSection({
     <section id={id} aria-labelledby={`${id}-heading`} className={cn('scroll-mt-20 pt-10', className)}>
       <h2
         id={`${id}-heading`}
-        className="font-display text-xl font-bold tracking-[-0.01em] text-foreground sm:text-2xl"
+        className="max-w-prose font-display text-h2 text-foreground"
       >
         {title}
       </h2>
-      <div className="mt-4 space-y-4 text-base leading-relaxed text-foreground">{children}</div>
+      {/* Prose children are capped at ~65ch; wide blocks (the Privacy data
+          table) keep the full column and scroll inside their own frame. */}
+      <div className="mt-4 space-y-4 text-body-md leading-relaxed text-foreground [&>h3]:max-w-prose [&>ol]:max-w-prose [&>p]:max-w-prose [&>ul]:max-w-prose">
+        {children}
+      </div>
     </section>
   );
 }
 
 export function LegalSubheading({ children }: { children: ReactNode }) {
-  return <h3 className="pt-2 text-lg font-semibold text-foreground">{children}</h3>;
+  return <h3 className="pt-2 font-display text-h3 text-foreground">{children}</h3>;
 }
 
 export function LegalList({ children }: { children: ReactNode }) {
@@ -143,7 +150,7 @@ export function LegalCallout({ title, children }: { title: string; children: Rea
   return (
     <aside
       aria-label={title}
-      className="mt-8 rounded-xl border border-primary/30 bg-primary/5 p-5 text-base leading-relaxed text-foreground"
+      className="mt-8 max-w-prose rounded-xl border border-primary/30 bg-primary/5 p-5 text-body-md leading-relaxed text-foreground"
     >
       <p className="font-semibold text-foreground">{title}</p>
       <div className="mt-2 space-y-3">{children}</div>

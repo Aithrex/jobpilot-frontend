@@ -1,33 +1,38 @@
 // Privacy policy for the ApplyPilot Chrome extension. Served at
 // /applypilot/privacy and linked from the Chrome Web Store listing.
+//
+// Token-driven like every other page, so it reads correctly in both themes
+// (it used to hard-code light grays, which went unreadable in dark mode).
+
+import { Check } from 'lucide-react';
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="mt-8">
-      <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
-      <div className="mt-3 space-y-3 text-gray-700 leading-relaxed">{children}</div>
+      <h2 className="font-display text-h2 text-foreground">{title}</h2>
+      <div className="mt-3 max-w-prose space-y-3 text-body-md leading-relaxed text-foreground">{children}</div>
     </section>
   );
 }
 
 export default function ApplyPilotPrivacy() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
-      <div className="mx-auto max-w-3xl px-6 py-16">
+    <div className="min-h-screen bg-background text-foreground">
+      <main className="mx-auto max-w-3xl px-6 py-16">
         <div className="flex items-center gap-3">
           <div
-            className="grid h-10 w-10 place-items-center rounded-xl text-white font-bold"
-            style={{ background: 'linear-gradient(135deg,#6d8bff,#8a6dff)' }}
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground"
+            aria-hidden="true"
           >
-            ✓
+            <Check className="h-5 w-5" strokeWidth={2.5} />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">ApplyPilot Privacy Policy</h1>
-            <p className="text-sm text-muted-foreground">Last updated: November 11, 2026</p>
+            <h1 className="font-display text-h1 text-foreground">ApplyPilot Privacy Policy</h1>
+            <p className="text-body-sm text-muted-foreground">Last updated: November 11, 2026</p>
           </div>
         </div>
 
-        <p className="mt-6 text-gray-700 leading-relaxed">
+        <p className="mt-6 max-w-prose text-body-md leading-relaxed text-foreground">
           ApplyPilot ("the extension") helps you fill job-application forms and draft answers to
           application questions. This policy explains what data it handles and where that data goes.
         </p>
@@ -86,9 +91,9 @@ export default function ApplyPilotPrivacy() {
         </Section>
 
         <Section title="Contact">
-          <p>Questions about this policy: <a className="text-blue-600 hover:underline" href="mailto:harshith.siddardha@gmail.com">harshith.siddardha@gmail.com</a></p>
+          <p>Questions about this policy: <a className="font-medium text-primary underline underline-offset-4 decoration-primary/40 hover:decoration-primary" href="mailto:harshith.siddardha@gmail.com">harshith.siddardha@gmail.com</a></p>
         </Section>
-      </div>
+      </main>
     </div>
   );
 }

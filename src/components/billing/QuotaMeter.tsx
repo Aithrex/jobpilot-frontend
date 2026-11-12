@@ -34,14 +34,18 @@ export function QuotaMeter({ label, used, limit, feature, className }: Props) {
       {!unlimited && (
         <Progress
           value={pct}
-          className={cn('h-1.5', exhausted && '[&>div]:bg-destructive', near && '[&>div]:bg-warning')}
+          className={cn(
+            'h-1.5 [&>div]:bg-signal',
+            exhausted && '[&>div]:bg-destructive',
+            near && '[&>div]:bg-warning',
+          )}
         />
       )}
       {exhausted && (
         <button
           type="button"
           onClick={() => open({ feature })}
-          className="text-[11px] font-medium text-primary hover:underline"
+          className="hit-target text-caption-sm font-medium text-primary underline underline-offset-2 hover:text-primary-hover"
         >
           Daily limit reached. Upgrade for more
         </button>

@@ -44,9 +44,10 @@ export function WhatChangedCard({
     const keywordsAdded = [...currSkills].filter((s) => !prevSkills.has(s)).length;
     return [
       { n: added, label: 'bullets added', cls: 'text-success', sign: '+' },
-      { n: removed, label: 'bullets removed', cls: 'text-destructive', sign: '−' },
+      // copy-lint-ignore: an ASCII minus sign on a count, not a dash in prose
+      { n: removed, label: 'bullets removed', cls: 'text-destructive', sign: '-' },
       { n: edited, label: 'bullets edited', cls: 'text-warning', sign: '~' },
-      { n: keywordsAdded, label: 'keywords added', cls: 'text-primary', sign: '+' },
+      { n: keywordsAdded, label: 'keywords added', cls: 'text-signal', sign: '+' },
     ];
   }, [previous, current]);
 
@@ -56,10 +57,10 @@ export function WhatChangedCard({
         <div className="w-6 h-6 rounded-control bg-primary/15 border border-primary/25 flex items-center justify-center">
           <Sparkles className="w-3.5 h-3.5 text-primary" aria-hidden="true" />
         </div>
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-foreground">
-          What Changed
+        <p className="text-caption-sm font-semibold uppercase tracking-wider text-foreground">
+          What changed
         </p>
-        <span className="text-[10px] text-muted-foreground">· vs previous version</span>
+        <span className="text-caption-sm text-muted-foreground">· vs previous version</span>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         {stats.map((stat) => (
@@ -76,7 +77,7 @@ export function WhatChangedCard({
               {stat.sign}
               {stat.n}
             </p>
-            <p className="text-[10px] text-muted-foreground mt-1">{stat.label}</p>
+            <p className="text-caption-sm text-muted-foreground mt-1">{stat.label}</p>
           </div>
         ))}
       </div>

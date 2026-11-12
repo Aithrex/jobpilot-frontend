@@ -186,7 +186,7 @@ export default function ResumeDashboard({ onStartTailoring }: ResumeDashboardPro
 
       <div className="flex items-center gap-2 mb-1">
         <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center shrink-0">
-          <span className="text-[10px] font-bold text-primary-foreground">1</span>
+          <span className="text-caption-sm font-bold text-primary-foreground">1</span>
         </div>
         <p className="text-sm font-semibold text-foreground">Your resume</p>
       </div>
@@ -201,7 +201,7 @@ export default function ResumeDashboard({ onStartTailoring }: ResumeDashboardPro
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
                   <p className="text-sm font-semibold text-foreground truncate">{activeResume.filename}</p>
-                  <span className="shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-success/10 text-success border border-success/25">
+                  <span className="shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-caption-sm font-medium bg-success/10 text-success border border-success/25">
                     Active
                   </span>
                 </div>

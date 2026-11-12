@@ -21,7 +21,7 @@ const MOBILE_ITEMS = NAV_ITEMS.slice(0, 4);
 /** Shared per-tab shell so the More button and the NavLinks are identical
  *  targets (>=44px, same paddings, same icon puck). */
 const TAB_BASE =
-  "group relative flex min-h-[44px] min-w-[44px] w-full flex-col items-center justify-center gap-1 px-1 pb-1.5 pt-2 outline-none transition-colors duration-200 ease-expo focus-visible:ring-2 focus-visible:ring-ring";
+  "group relative flex h-full min-h-[44px] min-w-[44px] w-full flex-col items-center justify-center gap-1 rounded-full px-1 pb-1.5 pt-2 outline-none transition-colors duration-150 ease-expo focus-visible:ring-2 focus-visible:ring-ring";
 
 /**
  * Bottom tab bar for small viewports (hidden >=lg, where the horizontal top
@@ -49,7 +49,6 @@ export function MobileNav() {
               <li key={item.to} className="flex-1">
                 <NavLink
                   to={navHref(item.to)}
-                  aria-label={label}
                   className={({ isActive }) =>
                     cn(
                       TAB_BASE,
@@ -75,15 +74,17 @@ export function MobileNav() {
                         <Icon className="h-5 w-5" aria-hidden="true" />
                         {badge > 0 && (
                           <span
-                            className="absolute -right-1 -top-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-bold leading-none text-primary-foreground"
-                            aria-label={`${badge} unread`}
+                            className="absolute -right-1 -top-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-caption-sm font-bold leading-none text-primary-foreground"
+                            aria-hidden="true"
                           >
                             {badge > 9 ? "9+" : badge}
                           </span>
                         )}
                       </span>
-                      <span className="relative z-10 max-w-full truncate text-[10px] font-semibold leading-none">
+                      <span className="relative z-10 max-w-full truncate text-caption-sm font-semibold leading-none">
                         {label}
+                        {/* Spoken with the label; the chip above is visual only. */}
+                        {badge > 0 && <span className="sr-only">, {badge} unread</span>}
                       </span>
                     </>
                   )}
@@ -115,7 +116,7 @@ export function MobileNav() {
               >
                 <MoreHorizontal className="h-5 w-5" aria-hidden="true" />
               </span>
-              <span className="max-w-full truncate text-[10px] font-semibold leading-none">
+              <span className="max-w-full truncate text-caption-sm font-semibold leading-none">
                 More
               </span>
             </button>

@@ -7,7 +7,7 @@
  */
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ExternalLink, Wand2 } from 'lucide-react';
+import { ExternalLink, Loader2, Wand2 } from 'lucide-react';
 
 import type { ApplicationStatus, TailoringRecord } from '@/types/resume';
 import { Button } from '@/components/ui/button';
@@ -79,15 +79,19 @@ export default function ApplicationDetail({
   const [nextNote, setNextNote] = useState(app.next_action_note || '');
   const [notes, setNotes] = useState(app.notes || '');
 
-  const save = () =>
+  // Pasted values often carry stray spaces or a trailing newline; trim them
+  // so a recruiter email or job URL is stored exactly as it should be used.
+  const save = (e?: React.FormEvent) => {
+    e?.preventDefault();
     onPatch({
-      recruiter_name: recruiterName,
-      recruiter_email: recruiterEmail,
-      job_url: jobUrl,
+      recruiter_name: recruiterName.trim(),
+      recruiter_email: recruiterEmail.trim(),
+      job_url: jobUrl.trim(),
       next_action_date: nextDate ? new Date(nextDate).toISOString() : null,
-      next_action_note: nextNote,
-      notes,
+      next_action_note: nextNote.trim(),
+      notes: notes.trim(),
     });
+  };
 
   return (
     <div className="space-y-5">
@@ -95,13 +99,13 @@ export default function ApplicationDetail({
         <div className="flex items-start gap-3">
           <span
             aria-hidden
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-body font-semibold text-primary"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted text-body font-semibold text-ink-muted"
           >
             {initials(company || title)}
           </span>
           <div className="min-w-0 flex-1">
-            <h2 className="font-display text-subtitle leading-tight text-foreground">{title}</h2>
-            <p className="text-label text-muted-foreground">
+            <h2 className="font-display text-title-md text-foreground">{title}</h2>
+            <p className="text-body-sm text-muted-foreground">
               {company || 'Company not specified'}
             </p>
           </div>
@@ -150,14 +154,14 @@ export default function ApplicationDetail({
           {typeof ats === 'number' ? (
             <span className={`tabular-nums font-semibold ${atsTone(ats)}`}>{ats}</span>
           ) : app.resume_used === 'base' ? (
-            <span className="text-label text-muted-foreground">Base resume</span>
+            <span className="text-body-sm text-muted-foreground">Base resume</span>
           ) : (
             <span className="text-muted-foreground">Not run</span>
           )}
         </Fact>
         {app.next_action_date && (
           <Fact label="Next action">
-            <span className="text-label">
+            <span className="text-body-sm">
               {relDate(app.next_action_date)}
               {app.next_action_note ? ` · ${app.next_action_note}` : ''}
             </span>
@@ -165,7 +169,7 @@ export default function ApplicationDetail({
         )}
         {app.interview_dates && app.interview_dates.length > 0 && (
           <Fact label="Interviews">
-            <span className="text-label tabular-nums">
+            <span className="text-body-sm tabular-nums">
               {app.interview_dates
                 .map((d) => formatCivilDay(d.slice(0, 10), { month: 'short', day: 'numeric' }))
                 .join(' · ')}
@@ -194,7 +198,7 @@ export default function ApplicationDetail({
         </Button>
       )}
 
-      <div className="space-y-3">
+      <form onSubmit={save} className="space-y-3">
         <Field label="Recruiter">
           <Input
             value={recruiterName}
@@ -250,11 +254,12 @@ export default function ApplicationDetail({
             className="resize-none"
           />
         </Field>
-      </div>
 
-      <Button onClick={save} disabled={saving} className="w-full">
-        {saving ? 'Saving...' : 'Save changes'}
-      </Button>
+        <Button type="submit" disabled={saving} aria-busy={saving} className="w-full">
+          {saving && <Loader2 className="animate-spin" aria-hidden />}
+          {saving ? 'Saving...' : 'Save changes'}
+        </Button>
+      </form>
     </div>
   );
 }
