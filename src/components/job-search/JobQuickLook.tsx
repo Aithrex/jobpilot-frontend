@@ -160,7 +160,7 @@ export function JobQuickLook({
             </motion.div>
 
             <div className="flex flex-wrap items-center gap-2 border-t border-border/60 px-5 py-3">
-              <Button size="sm" className="btn-premium h-10 gap-1.5 px-4 text-xs font-semibold" onClick={onApply}>
+              <Button size="sm" className="h-10 gap-1.5 px-4 text-xs font-semibold" onClick={onApply}>
                 <ExternalLink className="h-3.5 w-3.5" aria-hidden /> Apply
               </Button>
               <Button size="sm" variant="outline" className="hit-target h-9 gap-1.5 text-xs" onClick={tailor} disabled={loading}>
