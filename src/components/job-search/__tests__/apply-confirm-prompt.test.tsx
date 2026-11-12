@@ -286,8 +286,11 @@ describe('JobCard apply confirmation', () => {
         onQuickApply={() => {}}
       />,
     );
-    expect(screen.getByText('· 8 gaps')).toBeInTheDocument();
-    expect(screen.getByText('observability')).toBeInTheDocument();
+    // One readable line: the first matched skills, a +N for the rest, and the
+    // full gap count - never truncated away.
+    const line = screen.getByTestId('job-skill-match');
+    expect(line).toHaveTextContent('Matches typescript, react, postgresql, datadog +3');
+    expect(line).toHaveTextContent('8 gaps');
   });
 
   test('Details expands the job description on the card', async () => {

@@ -1992,6 +1992,30 @@ class ApiService {
     }>(submitResp.data.job_id, 300000, signal);
   }
 
+  /**
+   * Re-fit a tailored resume to new format choices (length, spacing, accent,
+   * section order). No AI call: the backend re-selects the user's own lines,
+   * putting back ones dropped for space when moving to two pages.
+   */
+  async reformatResume(
+    tailoredResume: import('../types/resume').TailoredFullResume,
+    preferences: import('./resumeFormat').ResumeFormatPreferences,
+    jdAnalysis?: import('../types/resume').JDAnalysis,
+  ): Promise<ApiResponse<{ tailored_resume: import('../types/resume').TailoredFullResume }>> {
+    return this.request<{ tailored_resume: import('../types/resume').TailoredFullResume }>(
+      '/resume/format',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          tailored_resume: tailoredResume,
+          preferences,
+          ...(jdAnalysis ? { jd_analysis: jdAnalysis } : {}),
+        }),
+      },
+      30000,
+    );
+  }
+
   // Combined endpoint: extracts JD analysis AND tailors the resume inside a
   // single Lambda invocation, returning both. Saves ~22s (no inter-job HTTP
   // round-trip) plus ~10s from parallel project generation. The legacy
@@ -2008,6 +2032,8 @@ class ApiService {
     options?: {
       resume_id?: string;
       selection_mode?: 'auto' | 'active';
+      /** Format choices for the tailored resume (src/lib/resumeFormat.ts). */
+      preferences?: import('./resumeFormat').ResumeFormatPreferences;
     },
   ): Promise<
     ApiResponse<{
@@ -2032,6 +2058,7 @@ class ApiService {
           ...(sourceJobId ? { source_job_id: sourceJobId } : {}),
           ...(options?.resume_id ? { resume_id: options.resume_id } : {}),
           ...(options?.selection_mode ? { selection_mode: options.selection_mode } : {}),
+          ...(options?.preferences ? { preferences: options.preferences } : {}),
         }),
       },
       30000,

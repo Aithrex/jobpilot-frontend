@@ -16,7 +16,7 @@ import type {
 export type { TailoredFullResume, JDAnalysis, ATSScores, TailorPipelineResult, MatchGaps };
 
 /** Which inspector tab is active (right column). */
-export type InspectorTabKey = 'jd' | 'review' | 'ats' | 'regenerate' | 'cover';
+export type InspectorTabKey = 'jd' | 'review' | 'ats' | 'screener' | 'regenerate' | 'cover';
 
 /** Which resume version the left preview is showing. */
 export type PreviewMode = 'tailored' | 'base' | 'previous' | 'diff';

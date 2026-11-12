@@ -1724,6 +1724,14 @@
     color: hsl(var(--brand-mark-fg-hsl));
     @apply relative font-medium shadow-sm transition-shadow duration-200 hover:shadow-md hover:shadow-primary/20;
   }
+  /* The label must stay white on the cherry gradient in BOTH themes. A
+     Button's variant utility (text-primary-foreground) is emitted after this
+     components layer and won, so in dark mode - where primary-foreground is
+     the dark canvas - Apply rendered dark-on-cherry and looked disabled. The
+     doubled class outranks a single utility without !important. */
+  .btn-premium.btn-premium {
+    color: hsl(var(--brand-mark-fg-hsl));
+  }
 
   /* Surface that's clearly NOT a button - neutralizes default hover bg/scale.
   Use on Badge/Card-like elements that look stylized but are decorative. */

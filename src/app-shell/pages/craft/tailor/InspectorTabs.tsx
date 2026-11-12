@@ -2,12 +2,12 @@
  * Inspector tab chrome (Tailor right column).
  *
  * Presentational shell - owns only the active-tab selection contract (lifted to
- * props). Builds the 5-tab bar (JD / Review / ATS / Regenerate / Cover) on
+ * props). Builds the tab bar (JD / Review / ATS / Screener / Regenerate / Cover) on
  * shadcn Tabs, with score/status affordances, and renders caller-supplied
  * panels as content.
  */
 import type { ReactNode } from 'react';
-import { ClipboardList, Search, RotateCw, Sparkles, ShieldAlert } from 'lucide-react';
+import { ClipboardList, Search, RotateCw, Sparkles, ShieldAlert, ScanSearch } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -32,6 +32,10 @@ interface InspectorTabsProps {
   jdPanel: ReactNode;
   reviewPanel?: ReactNode;
   atsPanel: ReactNode;
+  /** Employer-side read of the PDF (must-haves found / missing). */
+  screenerPanel?: ReactNode;
+  /** Screener grade letter for the tab badge. */
+  screenerGrade?: string | null;
   regeneratePanel: ReactNode;
   coverPanel: ReactNode;
 }
@@ -53,6 +57,8 @@ export function InspectorTabs({
   jdPanel,
   reviewPanel,
   atsPanel,
+  screenerPanel,
+  screenerGrade = null,
   regeneratePanel,
   coverPanel,
 }: InspectorTabsProps) {
@@ -127,6 +133,28 @@ export function InspectorTabs({
           ) : null}
         </TabsTrigger>
 
+        {screenerPanel && (
+          <TabsTrigger value="screener" disabled={!hasResult} className={triggerCls}>
+            <ScanSearch className="h-4 w-4 shrink-0" aria-hidden="true" />
+            <span className="sr-only sm:not-sr-only">Screener</span>
+            {screenerGrade && (
+              <span
+                className={cn(
+                  'ml-0.5 text-[10px] font-bold',
+                  screenerGrade === 'A' || screenerGrade === 'B'
+                    ? 'text-success'
+                    : screenerGrade === 'C'
+                      ? 'text-warning'
+                      : 'text-destructive',
+                )}
+              >
+                {screenerGrade}
+                <span className="sr-only"> screener grade</span>
+              </span>
+            )}
+          </TabsTrigger>
+        )}
+
         <TabsTrigger
           value="regenerate"
           disabled={!hasResult}
@@ -180,6 +208,14 @@ export function InspectorTabs({
       >
         {atsPanel}
       </TabsContent>
+      {screenerPanel && (
+        <TabsContent
+          value="screener"
+          className="mt-0 rounded-container border border-border bg-card shadow-soft"
+        >
+          {screenerPanel}
+        </TabsContent>
+      )}
       <TabsContent
         value="regenerate"
         className="mt-0 rounded-container border border-border bg-card shadow-soft"

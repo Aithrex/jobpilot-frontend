@@ -1,10 +1,16 @@
 import { useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import {
-  MapPin, ExternalLink, BookmarkPlus, BookmarkCheck, Sparkles, Target,
+  ExternalLink, BookmarkPlus, BookmarkCheck, Sparkles, Target,
   FileText, Wand2, Users, ShieldCheck, CircleOff, Plane, Wifi,
-  FileSignature, Loader2, ChevronDown, Scale, Clock3,
+  FileSignature, Loader2, ChevronDown, Scale, Clock3, MoreHorizontal, Check,
 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -38,7 +44,7 @@ import { applicationStateLabel } from '@/lib/applicationState';
 import { trustOf } from '@/lib/employerPolicy';
 import { postedAgeLabel } from '@/lib/careerJobs';
 import { cn } from '@/lib/utils';
-import { hueFromString, toTitleCase } from '@/lib/format';
+import { toTitleCase } from '@/lib/format';
 import { useCountUp } from '@/hooks/useCountUp';
 import type { Job } from '@/types/jobs';
 
@@ -188,24 +194,6 @@ function buildApplyUrl(job: Job): { url: string; fallback: boolean } {
 }
 
 /** Compact ghost action for the card's AI cluster. */
-function ActionIcon({ label, icon: Icon, onClick, disabled }: {
-  label: string; icon: typeof Sparkles; onClick: () => void; disabled?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      title={label}
-      aria-label={label}
-      className="press grid h-8 w-8 place-items-center rounded-lg text-muted-foreground hover:bg-primary/10 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
-    >
-      <Icon className="h-3.5 w-3.5" aria-hidden />
-    </button>
-  );
-}
-
-/** Primary eligibility signal pill. */
 function SignalPill({ icon: Icon, label, tone }: {
   icon: typeof Plane; label: string; tone: 'sponsor' | 'remote' | 'contract';
 }) {
@@ -384,17 +372,17 @@ export function JobCard({
   };
 
   const apply = buildApplyUrl(job);
-  const hue = hueFromString(job.company || job.title || 'JobPilot');
   const band = fitBandOf(job);
   const title = toTitleCase(job.title);
   const company = toTitleCase(job.company);
   const location = toTitleCase(job.location);
   const sourceLabel = job.source ? toTitleCase(job.source) : '';
   const level = jobLevelLabel(job);
+  const posted = postedAgeLabel(job) || job.date_posted || '';
   const meta = [
     job.salary,
     toTitleCase(job.employment_type),
-    postedAgeLabel(job) || job.date_posted || '',
+    posted && sourceLabel ? `${posted} via ${sourceLabel}` : posted || (sourceLabel ? `Via ${sourceLabel}` : ''),
   ].filter(Boolean);
   const rawDays = (job as Job & { days_ago?: number | null }).days_ago;
   const daysOld = typeof rawDays === 'number' ? rawDays : null;
@@ -416,7 +404,6 @@ export function JobCard({
   // The legacy band yields to the evidence-backed `trust` block when the row
   // carries one: two trust readings on one card would contradict each other.
   const showLegacyTrust = !!job.trust_band && !trustOf(job);
-  const hasSignals = showLegacyTrust || job.h1b_sponsor || job.is_remote || job.contract_friendly || job.visa_flags;
   // Opening the posting is not applying. Saved/opened states are shown only
   // while we wait for the user's answer; Save already shows "Saved".
   const appState = applicationStateLabel(jobStatus, { opened: !!applyConfirmPending });
@@ -440,36 +427,28 @@ export function JobCard({
         onClick={onCardClick}
         onKeyDown={onCardKeyDown}
       >
-        <span
-          className="pointer-events-none absolute -right-16 -top-16 z-0 h-40 w-40 rounded-full opacity-40 blur-3xl"
-          style={{ backgroundColor: `hsl(${hue} 70% 55% / 0.18)` }}
-          aria-hidden
-        />
-        <span
-          className="job-card-accent pointer-events-none absolute inset-x-0 top-0 z-[1] h-1 opacity-70"
-          style={{ backgroundImage: `linear-gradient(90deg, hsl(${hue} 72% 56%), hsl(${(hue + 45) % 360} 72% 60%))` }}
-          aria-hidden
-        />
-        <CardContent className="relative z-[2] flex min-h-0 flex-1 flex-col gap-2.5 p-3.5">
-          <div className="flex items-start gap-2.5">
+        <CardContent className="relative z-[2] flex min-h-0 flex-1 flex-col gap-3 p-4">
+          {/* Who and what: the title leads; company and place sit under it. */}
+          <div className="flex items-start gap-3">
             <CompanyMark job={job} />
             <div className="min-w-0 flex-1">
-              <p className="truncate text-[12px] font-medium text-muted-foreground" title={company}>{company}</p>
-              <p className="mt-0.5 flex items-center gap-1 truncate text-[11px] text-muted-foreground">
-                <MapPin className="h-3 w-3 shrink-0" aria-hidden />
-                <span className="truncate">{location || 'Location undisclosed'}</span>
+              <h3
+                className="job-card-title line-clamp-2 text-[15px] font-semibold leading-snug tracking-[-0.01em] text-foreground"
+                title={title}
+              >
+                {title}
+              </h3>
+              <p className="mt-1 truncate text-[13px] text-muted-foreground" title={[company, location].filter(Boolean).join(', ')}>
+                <span className="font-medium text-foreground/85">{company}</span>
+                <span aria-hidden> · </span>
+                {location || 'Location undisclosed'}
               </p>
-              {sourceLabel ? (
-                <p className="mt-0.5 truncate text-[11px] font-medium text-foreground/80" title={`Posted via ${sourceLabel}`}>
-                  Via {sourceLabel}
-                </p>
-              ) : null}
             </div>
-            <div className="flex shrink-0 flex-col items-center">
+            <div className="flex shrink-0 flex-col items-center gap-1">
               <MatchScoreRing job={job} />
               <span
                 className={cn(
-                  'mt-0.5 inline-flex max-w-[4.75rem] items-center justify-center rounded-full border px-1.5 py-px text-center text-[9px] font-semibold leading-tight',
+                  'inline-flex items-center justify-center whitespace-nowrap rounded-full border px-1.5 py-px text-center text-[10.5px] font-semibold leading-tight',
                   band.chip,
                 )}
               >
@@ -478,14 +457,11 @@ export function JobCard({
             </div>
           </div>
 
-          <h3 className="job-card-title line-clamp-2 text-[14px] font-semibold leading-snug tracking-[-0.01em] text-foreground" title={title}>
-            {title}
-          </h3>
-
-          <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
+          {/* Facts a screener and the user both check first. */}
+          <div className="flex flex-wrap items-center gap-1.5">
             {isNew && (
               <span
-                className="job-new-chip inline-flex items-center gap-1 rounded-full border border-info/40 bg-info/10 px-1.5 py-px text-[10px] font-semibold text-info"
+                className="job-new-chip inline-flex items-center gap-1 rounded-full border border-info/40 bg-info/10 px-2 py-0.5 text-[11px] font-semibold text-info"
                 title="New since your last visit"
                 data-testid="job-new-badge"
               >
@@ -495,10 +471,10 @@ export function JobCard({
             )}
             <span
               className={cn(
-                'inline-flex items-center rounded-full border px-1.5 py-px text-[10px] font-semibold',
+                'inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold',
                 level.kind === 'stated' && 'border-border bg-secondary text-secondary-foreground',
                 level.kind === 'estimated' && 'border-dashed border-border text-muted-foreground',
-                level.kind === 'unstated' && 'border-transparent text-muted-foreground/80',
+                level.kind === 'unstated' && 'border-transparent px-0 text-muted-foreground',
               )}
               title={level.title}
               data-testid="job-level"
@@ -506,68 +482,63 @@ export function JobCard({
             >
               {level.text}
             </span>
-            <WhyThisScoreButton job={job} />
-            {job.score_basis === 'title_only' && (
-              <span className="text-[10.5px] leading-snug text-muted-foreground" data-testid="job-score-provisional">
-                Score updates when the description arrives.
-              </span>
-            )}
+            {job.h1b_sponsor && <SignalPill icon={Plane} label="H1B sponsor" tone="sponsor" />}
+            {job.is_remote && <SignalPill icon={Wifi} label="Remote" tone="remote" />}
+            {job.contract_friendly && <SignalPill icon={FileSignature} label="Contract" tone="contract" />}
+            {job.visa_flags && <VisaFlagChips flags={job.visa_flags} />}
+            {/* The employer's filing history, in the one framing this
+                product uses for it. Renders NOTHING without data - an
+                absence of filings is not evidence about an employer. */}
+            <EmployerSponsorshipBadge signal={legacySponsorshipSignal(job.sponsorship)} />
+            <span className="ml-auto">
+              <WhyThisScoreButton job={job} />
+            </span>
           </div>
+          {job.score_basis === 'title_only' && (
+            <p className="-mt-1 text-[11px] leading-snug text-muted-foreground" data-testid="job-score-provisional">
+              Score updates when the description arrives.
+            </p>
+          )}
 
-          <div className="min-h-[3.5rem] shrink-0 space-y-1.5">
-            {/* Employer type, availability, destination and warnings - only
-                when the server sent the employer-policy blocks. */}
-            <JobEmployerContext row={job} sourceLabel={sourceLabel || null} />
-            {hasSignals && (
-              <div className="flex flex-wrap items-center gap-1.5">
-                {showLegacyTrust && job.trust_band && (
+          {/* Employer type, availability, destination and warnings - only
+              when the server sent the employer-policy blocks. */}
+          <JobEmployerContext row={job} sourceLabel={sourceLabel || null} />
+          {showLegacyTrust && job.trust_band && (
+            <div className="flex flex-wrap items-center gap-1.5">
+              <JobTrustBadge band={job.trust_band} score={job.trust_score} reasons={job.trust_reasons} />
+              <button
+                type="button"
+                onClick={() => void runDeepScan()}
+                disabled={scanning}
+                className="inline-flex items-center gap-0.5 text-[11px] font-medium text-muted-foreground underline-offset-2 hover:text-primary hover:underline disabled:opacity-50"
+              >
+                <ShieldCheck className="h-3 w-3" aria-hidden />
+                {scanning ? 'Scanning...' : 'Deep-scan'}
+              </button>
+            </div>
+          )}
+
+          {(skills.length > 0 || job.missing_skills?.length > 0) && (
+            <p className="flex items-start gap-1.5 text-[12px] leading-snug text-muted-foreground" data-testid="job-skill-match">
+              <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-success" aria-hidden />
+              <span className="min-w-0">
+                {skills.length > 0 ? (
                   <>
-                    <JobTrustBadge band={job.trust_band} score={job.trust_score} reasons={job.trust_reasons} />
-                    <button
-                      type="button"
-                      onClick={() => void runDeepScan()}
-                      disabled={scanning}
-                      className="inline-flex items-center gap-0.5 text-[10px] font-medium text-muted-foreground underline-offset-2 hover:text-primary hover:underline disabled:opacity-50"
-                    >
-                      <ShieldCheck className="h-3 w-3" aria-hidden />
-                      {scanning ? 'Scanning...' : 'Deep-scan'}
-                    </button>
+                    Matches <span className="font-medium text-foreground">{skills.slice(0, 4).join(', ')}</span>
+                    {skills.length > 4 && <> +{skills.length - 4}</>}
                   </>
-                )}
-                {job.h1b_sponsor && <SignalPill icon={Plane} label="H1B sponsor" tone="sponsor" />}
-                {job.is_remote && <SignalPill icon={Wifi} label="Remote" tone="remote" />}
-                {job.contract_friendly && <SignalPill icon={FileSignature} label="Contract" tone="contract" />}
-                {job.visa_flags && <VisaFlagChips flags={job.visa_flags} />}
-                {/* The employer's filing history, in the one framing this
-                    product uses for it. Renders NOTHING without data - an
-                    absence of filings is not evidence about an employer. */}
-                <EmployerSponsorshipBadge signal={legacySponsorshipSignal(job.sponsorship)} />
-              </div>
-            )}
-
-            {skills.length > 0 && (
-              <div className="flex flex-wrap items-center gap-1">
-                {skills.slice(0, 7).map((skill) => (
-                  <span key={skill} className="rounded-md bg-success/10 px-1.5 py-0.5 text-[10px] font-medium text-success">
-                    {skill}
-                  </span>
-                ))}
-                {skills.length > 7 && (
-                  <span className="shrink-0 whitespace-nowrap text-[10px] text-muted-foreground">
-                    +{skills.length - 7} more
-                  </span>
+                ) : (
+                  'No listed skills matched yet'
                 )}
                 {job.missing_skills?.length > 0 && (
-                  <span className="shrink-0 whitespace-nowrap text-[10px] text-muted-foreground">
-                    · {job.missing_skills.length} gap{job.missing_skills.length === 1 ? '' : 's'}
-                  </span>
+                  <> · {job.missing_skills.length} gap{job.missing_skills.length === 1 ? '' : 's'}</>
                 )}
-              </div>
-            )}
-          </div>
+              </span>
+            </p>
+          )}
 
           {meta.length > 0 && (
-            <p className="truncate text-[11px] tabular-nums text-muted-foreground" title={meta.join(' · ')}>
+            <p className="truncate text-[12px] tabular-nums text-muted-foreground" title={meta.join(' · ')}>
               {meta.join(' · ')}
             </p>
           )}
@@ -681,7 +652,7 @@ export function JobCard({
                     disabled={tailoring}
                     aria-busy={tailoring}
                     title="Open Tailor with this job’s description"
-                    className="h-9 min-w-0 gap-1.5 border-border bg-white text-xs font-semibold text-foreground hover:border-primary hover:bg-primary/10 hover:text-primary disabled:opacity-70 dark:bg-zinc-900"
+                    className="h-9 min-w-0 gap-1.5 border-border bg-card text-xs font-semibold text-foreground hover:border-primary hover:bg-primary/10 hover:text-primary disabled:opacity-70"
                   >
                     {tailoring ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
@@ -738,37 +709,56 @@ export function JobCard({
                     Details
                     <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', expanded && 'rotate-180')} aria-hidden />
                   </Button>
+                  <span className="ml-auto flex items-center gap-1">
+                    {onToggleCompare && (
+                      <button
+                        type="button"
+                        onClick={onToggleCompare}
+                        aria-pressed={compareSelected}
+                        title={compareSelected ? 'Remove from compare' : 'Add to compare (up to 3)'}
+                        className={cn(
+                          'press inline-flex h-9 items-center gap-1 rounded-lg px-2 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                          compareSelected
+                            ? 'bg-primary/10 text-primary'
+                            : 'text-muted-foreground hover:bg-primary/10 hover:text-primary',
+                        )}
+                      >
+                        <Scale className="h-3.5 w-3.5" aria-hidden />
+                        {compareSelected ? 'Comparing' : 'Compare'}
+                      </button>
+                    )}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          aria-label={`More for ${title}`}
+                          className="h-9 gap-1 px-2.5 text-xs text-muted-foreground hover:bg-transparent hover:text-primary"
+                        >
+                          More
+                          <MoreHorizontal className="h-3.5 w-3.5" aria-hidden />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-56">
+                        <DropdownMenuItem onSelect={() => openAnalysis('summarize')}>
+                          <Sparkles className="mr-2 h-4 w-4" aria-hidden /> AI summary
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => openAnalysis('missing_skills')}>
+                          <Target className="mr-2 h-4 w-4" aria-hidden /> Skill-gap analysis
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => openAnalysis('cover_letter')}>
+                          <FileText className="mr-2 h-4 w-4" aria-hidden /> Generate cover letter
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => setReferralOpen(true)}>
+                          <Users className="mr-2 h-4 w-4" aria-hidden /> Find someone who can refer you
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </span>
                 </div>
               </div>
             )}
 
-            <div className="flex items-center gap-0.5">
-              <span className="mr-1 inline-flex items-center gap-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground/70">
-                <Sparkles className="h-3 w-3" aria-hidden /> AI
-              </span>
-              <ActionIcon label="Tailor resume to this role" icon={Wand2} onClick={() => void startTailorHandoff()} disabled={tailoring} />
-              <ActionIcon label="AI summary" icon={Sparkles} onClick={() => openAnalysis('summarize')} />
-              <ActionIcon label="Skill-gap analysis" icon={Target} onClick={() => openAnalysis('missing_skills')} />
-              <ActionIcon label="Generate cover letter" icon={FileText} onClick={() => openAnalysis('cover_letter')} />
-              <ActionIcon label="Find someone who can refer you" icon={Users} onClick={() => setReferralOpen(true)} />
-              {onToggleCompare && (
-                <button
-                  type="button"
-                  onClick={onToggleCompare}
-                  aria-pressed={compareSelected}
-                  title={compareSelected ? 'Remove from compare' : 'Add to compare (up to 3)'}
-                  className={cn(
-                    'press ml-auto inline-flex h-8 items-center gap-1 rounded-lg px-2 text-[11px] font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                    compareSelected
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-muted-foreground hover:bg-primary/10 hover:text-primary',
-                  )}
-                >
-                  <Scale className="h-3.5 w-3.5" aria-hidden />
-                  {compareSelected ? 'Comparing' : 'Compare'}
-                </button>
-              )}
-            </div>
           </div>
         </CardContent>
       </Card>
