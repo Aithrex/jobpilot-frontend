@@ -693,10 +693,9 @@ export function JobCard({
                       onClick={onHide}
                       title="Hide this job from For you"
                       aria-label="Hide this job"
-                      className="h-9 gap-1.5 px-2.5 text-xs text-muted-foreground hover:bg-transparent hover:text-primary"
+                      className="h-9 w-9 px-0 text-muted-foreground hover:bg-transparent hover:text-primary"
                     >
-                      <CircleOff className="h-3.5 w-3.5" />
-                      Hide
+                      <CircleOff className="h-3.5 w-3.5" aria-hidden />
                     </Button>
                   )}
                   <Button
@@ -710,22 +709,10 @@ export function JobCard({
                     <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', expanded && 'rotate-180')} aria-hidden />
                   </Button>
                   <span className="ml-auto flex items-center gap-1">
-                    {onToggleCompare && (
-                      <button
-                        type="button"
-                        onClick={onToggleCompare}
-                        aria-pressed={compareSelected}
-                        title={compareSelected ? 'Remove from compare' : 'Add to compare (up to 3)'}
-                        className={cn(
-                          'press inline-flex h-9 items-center gap-1 rounded-lg px-2 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                          compareSelected
-                            ? 'bg-primary/10 text-primary'
-                            : 'text-muted-foreground hover:bg-primary/10 hover:text-primary',
-                        )}
-                      >
-                        <Scale className="h-3.5 w-3.5" aria-hidden />
-                        {compareSelected ? 'Comparing' : 'Compare'}
-                      </button>
+                    {compareSelected && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
+                        <Scale className="h-3 w-3" aria-hidden /> Comparing
+                      </span>
                     )}
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -752,6 +739,12 @@ export function JobCard({
                         <DropdownMenuItem onSelect={() => setReferralOpen(true)}>
                           <Users className="mr-2 h-4 w-4" aria-hidden /> Find someone who can refer you
                         </DropdownMenuItem>
+                        {onToggleCompare && (
+                          <DropdownMenuItem onSelect={onToggleCompare}>
+                            <Scale className="mr-2 h-4 w-4" aria-hidden />
+                            {compareSelected ? 'Remove from compare' : 'Add to compare'}
+                          </DropdownMenuItem>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </span>
