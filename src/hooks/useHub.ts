@@ -156,7 +156,7 @@ export function useMentor(dayKey?: string, params?: HubPathParams) {
           ...m,
           {
             role: "mentor",
-            content: "I hit a snag reaching my brain just now — mind trying that again?",
+            content: "I could not answer just now. Please send that again.",
             ts: Date.now(),
           },
         ]);

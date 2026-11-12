@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Privacy Policy — Aspirely Apply Assistant</title>
+  <title>Privacy Policy: Aspirely Apply Assistant</title>
   <meta name="description" content="Privacy policy for the Aspirely Apply Assistant Chrome extension." />
   <style>
     :root { color-scheme: light dark; }
@@ -32,23 +32,23 @@
 </head>
 <body>
   <span class="mark">A</span>
-  <h1>Privacy Policy — Aspirely Apply Assistant</h1>
-  <p class="updated">Last updated: July 12, 2026</p>
+  <h1>Privacy Policy: Aspirely Apply Assistant</h1>
+  <p class="updated">Last updated: November 11, 2026</p>
 
   <p>Aspirely Apply Assistant ("the extension") helps you fill job-application forms and draft
-  résumé-grounded answers to application questions. This policy explains what data it handles
+  resume-grounded answers to application questions. This policy explains what data it handles
   and where that data goes.</p>
 
   <h2>What the extension stores</h2>
   <p>The extension stores the following <strong>locally in your browser</strong>
   (<code>chrome.storage.local</code>):</p>
   <ul>
-    <li><strong>Your application profile</strong> — name, contact details, links, skills, education,
+    <li><strong>Your application profile:</strong> name, contact details, links, skills, education,
       work experience, and the work-authorization answers you declared in your Aspirely account.</li>
-    <li><strong>Your sign-in token</strong> — a session token (JWT) issued by your Aspirely account,
+    <li><strong>Your sign-in token:</strong> a session token (JWT) issued by your Aspirely account,
       synced automatically from the Aspirely web app when you sign in there. It is stored only on
       your device.</li>
-    <li><strong>Settings</strong> — your Flow Mode preferences (auto-fill / auto-continue), the
+    <li><strong>Settings:</strong> your Flow Mode preferences (auto-fill / auto-continue), the
       auto-submit device switch, and client-side rate-limit counters.</li>
   </ul>
   <p>This data stays on your device. It is not sold, shared, or transmitted to any third party.</p>
@@ -57,12 +57,12 @@
   <p>The extension communicates only with <strong>the Aspirely backend</strong> (the API that powers
   your Aspirely account). It sends data only for these purposes:</p>
   <ul>
-    <li><strong>Profile sync:</strong> the extension requests your résumé-derived profile from your
+    <li><strong>Profile sync:</strong> the extension requests your resume-derived profile from your
       Aspirely account to seed the local profile.</li>
     <li><strong>Answer drafting:</strong> when you use "Draft an answer", the question text is sent
-      to the backend, which uses an AI model to draft answers grounded in your résumé. Drafts are
+      to the backend, which uses an AI model to draft answers grounded in your resume. Drafts are
       returned to your browser; you edit before using them.</li>
-    <li><strong>Opt-in auto-submit (off by default):</strong> if — and only if — you opted in inside
+    <li><strong>Opt-in auto-submit (off by default):</strong> if, and only if, you opted in inside
       the Aspirely app AND enabled the device switch, the extension checks your approved-applications
       list and reports back after submitting an application you approved.</li>
   </ul>
@@ -78,10 +78,10 @@
       (for token sync).</li>
     <li>It never solves or bypasses CAPTCHAs.</li>
     <li>It never submits an application unless you explicitly approved that specific application in
-      the Aspirely app and enabled auto-submit on the device — and even then only after a visible,
+      the Aspirely app and enabled auto-submit on the device, and even then only after a visible,
       cancellable countdown. Auto-continue only ever clicks a step's own Next/Continue button,
       never Submit.</li>
-    <li>It fills only empty fields — it never overwrites what you typed.</li>
+    <li>It fills only empty fields. It never overwrites what you typed.</li>
     <li>It never auto-answers demographic/EEO, salary, or date-of-birth questions.
       Work-authorization prompts are answered only from the visa status you explicitly declared in
       your account, and are flagged for your review.</li>
@@ -89,8 +89,8 @@
 
   <h2>Permissions</h2>
   <ul>
-    <li><strong>storage</strong> — to save your profile, token, and settings locally.</li>
-    <li><strong>host access to the Aspirely backend</strong> (aspirely.me) — to sync your profile
+    <li><strong>storage:</strong> to save your profile, token, and settings locally.</li>
+    <li><strong>host access to the Aspirely backend</strong> (aspirely.me): to sync your profile
       and draft answers.</li>
     <li>Form filling itself uses content scripts that run <strong>only</strong> on the supported
       job-application domains listed in the extension manifest (and on the Aspirely app, to sync
@@ -106,9 +106,9 @@
   </ul>
 
   <h2>AI processing</h2>
-  <p>Drafted answers are produced by an AI model (Anthropic Claude, via the Aspirely backend) using
-  your résumé data. Aspirely never fabricates facts that aren't in your résumé, and you should
-  review every draft before submitting — you are responsible for the content you submit on
+  <p>Drafted answers are produced by an AI model (Google Gemini on Vertex AI, via the Aspirely backend) using
+  your resume data. Aspirely never fabricates facts that aren't in your resume, and you should
+  review every draft before submitting. You are responsible for the content you submit on
   applications.</p>
 
   <h2>Contact</h2>

@@ -68,12 +68,12 @@ export default function TimezoneCard() {
           onChange={(e) => choose(e.target.value)}
         >
           <option value={AUTOMATIC}>
-            Automatic - {timeZoneName(detected)} ({detected})
+            Automatic: {timeZoneName(detected)} ({detected})
           </option>
           <optgroup label="United States">
             {US_TIME_ZONES.map(({ zone, label }) => (
               <option key={zone} value={zone}>
-                {label} - {timeZoneName(zone)}
+                {label} · {timeZoneName(zone)}
               </option>
             ))}
           </optgroup>

@@ -82,6 +82,7 @@ import {
 import { techFeedJobToJob } from '@/lib/techFeedJobAdapter';
 import { cn } from '@/lib/utils';
 import { isSponsorshipSignalRenderable } from '@/types/workAuthorization';
+import { rangeText } from '@/lib/displayText';
 import type { GuestFitScore } from '@/types/guest';
 import type { Job } from '@/types/jobs';
 import type { TechFeedFeedbackReason, TechFeedJob } from '@/types/techFeed';
@@ -216,12 +217,12 @@ export function verifiedLabel(job: TechFeedJob, now: number = Date.now()): strin
 export function salaryLabel(job: TechFeedJob): string {
   const salary = job.salary;
   if (!salary?.published) return 'Salary not published';
-  if (salary.display) return salary.display;
+  if (salary.display) return rangeText(salary.display);
 
   const currency = salary.currency ? `${salary.currency} ` : '';
   const interval = salary.interval && salary.interval !== 'year' ? ` / ${salary.interval}` : '';
   if (salary.min_annual !== null && salary.max_annual !== null) {
-    return `${currency}${salary.min_annual.toLocaleString()} - ${salary.max_annual.toLocaleString()}${interval}`;
+    return `${currency}${salary.min_annual.toLocaleString()} to ${salary.max_annual.toLocaleString()}${interval}`;
   }
   if (salary.min_annual !== null) {
     return `${currency}${salary.min_annual.toLocaleString()}+${interval}`;
@@ -564,8 +565,9 @@ export function TechFeedJobCard({
           <dd className="text-muted-foreground">
             <span className="font-medium text-foreground">
               {WORK_MODE_LABEL[job.work_mode] ?? humanize(job.work_mode)}
-            </span>{' '}
-            - {locationText}
+            </span>
+            {' · '}
+            {locationText}
             {job.remote_eligibility && (
               <span className="block">Eligible from: {job.remote_eligibility}</span>
             )}

@@ -253,7 +253,7 @@ export function JobFeedSheet() {
             </Button>
             {titlesPending && lastScanTitles && (
               <p className="mt-2 text-[11px] font-medium text-warning">
-                Titles changed - Search to apply
+                Titles changed. Press Search to apply them.
               </p>
             )}
             {!canSearch && (

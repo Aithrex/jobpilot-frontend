@@ -152,10 +152,10 @@ export default function GmailSuggestions({
           const added = applied
             ? ''
             : formatCivilDay(appliedDayOf({ applied_at: candidate.created_at }), dateFormat);
-          const date = applied ? ` - Applied ${applied}` : added ? ` - Added ${added}` : '';
+          const date = applied ? ` · Applied ${applied}` : added ? ` · Added ${added}` : '';
           return {
             recordId: candidate.record_id,
-            label: `${candidate.title || 'Untitled role'} - ${candidate.company || 'Unknown company'}${date}`,
+            label: `${candidate.title || 'Untitled role'} · ${candidate.company || 'Unknown company'}${date}`,
           };
         });
         return (
@@ -239,7 +239,7 @@ export default function GmailSuggestions({
                       <option key={candidate.recordId} value={candidate.recordId}>
                         {candidate.label}
                         {candidates.filter((other) => other.label === candidate.label).length > 1
-                          ? ` - Application ${candidate.recordId.slice(-8)}`
+                          ? ` · Application ${candidate.recordId.slice(-8)}`
                           : ''}
                       </option>
                     ))}

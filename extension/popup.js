@@ -17,13 +17,13 @@ let connected = false;
 
 // Turn a proxy result into a calm, human message (never a raw exception string).
 function friendlyError(r) {
-  if (!r) return "Something went wrong — try again.";
-  if (r.status === 0) return "Can't reach Aspirely — check the backend is running.";
-  if (r.status === 401) return "Session expired — open Aspirely and sign in again.";
+  if (!r) return "Something went wrong. Please try again.";
+  if (r.status === 0) return "Can't reach Aspirely. Check your connection and try again.";
+  if (r.status === 401) return "Session expired. Open Aspirely and sign in again.";
   const msg = r.data && (r.data.message || r.data.error);
-  if (r.status === 403) return msg || "Not allowed — check your plan in the app.";
-  if (r.status === 429) return msg || "Daily limit reached — try again later.";
-  return (typeof msg === "string" && msg) || r.error || "Sync failed — make sure you're signed in.";
+  if (r.status === 403) return msg || "Not allowed. Check your plan in the app.";
+  if (r.status === 429) return msg || "Daily limit reached. Please try again later.";
+  return (typeof msg === "string" && msg) || r.error || "Sync failed. Make sure you're signed in.";
 }
 
 function setPrimary(label, primary) {
@@ -41,11 +41,11 @@ async function refresh() {
     const nm = st.profile && st.profile.personal && st.profile.personal.name;
     const hasResume = st.profile && st.profile.has_resume;
     $("statustext").textContent = nm
-      ? `Connected as ${nm}${hasResume === false ? " · add a résumé in the app for best results" : ""}`
+      ? `Connected as ${nm}${hasResume === false ? " · add a resume in the app for best results" : ""}`
       : "Connected. Sync your profile to start.";
     setPrimary("Sync my profile", false);
   } else {
-    $("statustext").textContent = "Not signed in — open the app and sign in; your token auto-syncs.";
+    $("statustext").textContent = "Not signed in. Open the app and sign in, and your session syncs automatically.";
     setPrimary("Open Aspirely to sign in", true);
   }
 }
@@ -63,7 +63,7 @@ $("primary").addEventListener("click", async () => {
   btn.disabled = false;
   if (r && r.ok) {
     const nm = r.profile && r.profile.personal && r.profile.personal.name;
-    $("statustext").textContent = nm ? `Synced — ${nm}` : "Synced your profile.";
+    $("statustext").textContent = nm ? `Synced: ${nm}` : "Synced your profile.";
     $("dot").classList.add("on");
   } else {
     $("statustext").textContent = friendlyError(r);
@@ -99,8 +99,8 @@ $("clear").addEventListener("click", async () => {
  * local control that disables auto-submit regardless of the server's opt-in
  * state. The content script only ever auto-submits when this is explicitly on
  * AND the server settings endpoint reports the user opted in. */
-const KILL_ON = "On for this device. Aspirely may auto-submit only applications you approved in the app — after a countdown you can cancel. Never touches CAPTCHAs.";
-const KILL_OFF = "Off = review-only (default). When on, Aspirely may auto-submit only applications you approved in the app — after a countdown you can cancel. Never touches CAPTCHAs.";
+const KILL_ON = "On for this device. Aspirely may auto-submit only applications you approved in the app, after a countdown you can cancel. Never touches CAPTCHAs.";
+const KILL_OFF = "Off = review-only (default). When on, Aspirely may auto-submit only applications you approved in the app, after a countdown you can cancel. Never touches CAPTCHAs.";
 
 async function loadKill() {
   try {

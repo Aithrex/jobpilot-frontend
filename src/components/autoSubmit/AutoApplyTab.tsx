@@ -567,7 +567,7 @@ function AttentionCard({
           </span>
         </div>
         <p className="mt-3 text-sm text-muted-foreground">
-          Submission status unknown - we won't retry automatically. Check with the
+          Submission status unknown. We won't retry automatically. Check with the
           employer to confirm whether your application went through.
         </p>
         {url && (
@@ -874,7 +874,7 @@ export default function AutoApplyTab() {
                 Complete your application profile
               </h3>
               <p className="mt-1 text-sm text-muted-foreground">
-                Tell us the details ATS forms ask for — contact, address, work
+                Tell us the details ATS forms ask for: contact, address, work
                 authorization, and experience
                 {missingCount > 0 ? ` (${missingCount} required left)` : ""}.
                 We fill applications from these answers only.

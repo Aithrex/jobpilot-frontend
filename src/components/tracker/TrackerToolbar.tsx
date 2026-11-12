@@ -71,7 +71,7 @@ export default function TrackerToolbar({
     datePreset === 'all'
       ? 'Applied'
       : datePreset === 'custom' && dateRange
-        ? `${formatCivilDay(dateRange.from)} – ${formatCivilDay(dateRange.to)}`
+        ? `${formatCivilDay(dateRange.from)} to ${formatCivilDay(dateRange.to)}`
         : DATE_PRESETS.find((p) => p.key === datePreset)?.label || 'Applied';
 
   return (
@@ -248,7 +248,7 @@ export default function TrackerToolbar({
             {dateRange &&
               (dateRange.from === dateRange.to
                 ? ` applied ${formatCivilDay(dateRange.from)}`
-                : ` applied ${formatCivilDay(dateRange.from)} - ${formatCivilDay(dateRange.to)}`)}
+                : ` applied ${formatCivilDay(dateRange.from)} to ${formatCivilDay(dateRange.to)}`)}
           </p>
           <Button variant="ghost" size="sm" className="h-9 gap-1" onClick={onClearFilters}>
             <X className="h-3.5 w-3.5" aria-hidden />

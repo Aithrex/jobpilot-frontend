@@ -323,7 +323,7 @@
     // Last-moment CAPTCHA re-check — if one appeared, hand back to the user.
     if (hasCaptcha()) {
       submittedIds.delete(appId);
-      return { ok: false, message: "A CAPTCHA appeared — solve it and submit yourself." };
+      return { ok: false, message: "A CAPTCHA appeared. Solve it and submit yourself." };
     }
 
     // Re-verify the button (the DOM may have changed during the countdown).
@@ -333,7 +333,7 @@
     }
     if (!btn) {
       submittedIds.delete(appId);
-      return { ok: false, message: "Couldn't find the site's Submit button — submit it yourself." };
+      return { ok: false, message: "Couldn't find the site's Submit button. Submit it yourself." };
     }
 
     // Persist the done marker BEFORE clicking, so a reload can't double-submit.
@@ -342,7 +342,7 @@
     try {
       btn.click();
     } catch (_) {
-      return { ok: false, message: "Submit click failed — please submit yourself." };
+      return { ok: false, message: "The Submit click failed. Please submit yourself." };
     }
 
     // Report — best effort, idempotent on the backend.
@@ -445,11 +445,11 @@
     card.appendChild(numEl);
     card.appendChild(el("p", "jp-cd-hint", "seconds until Aspirely clicks the site's Submit"));
 
-    const cancelBtn = el("button", "jp-cd-cancel", "Cancel — let me review");
+    const cancelBtn = el("button", "jp-cd-cancel", "Cancel and let me review");
     cancelBtn.type = "button";
     card.appendChild(cancelBtn);
 
-    card.appendChild(el("p", "jp-cd-foot", "Cancel any time to return to the Review Card. Aspirely only ever clicks the site's own Submit — never a CAPTCHA."));
+    card.appendChild(el("p", "jp-cd-foot", "Cancel any time to return to the Review Card. Aspirely only ever clicks the site's own Submit button, never a CAPTCHA."));
 
     backdrop.appendChild(card);
     shadow.appendChild(backdrop);

@@ -193,7 +193,7 @@ describe('the experience control on the board', () => {
     mountPicker();
     await user.click(await screen.findByRole('button', { name: /Experience level: Entry \+ Mid/ }));
     expect(screen.getByText('Matched to you: Entry + Mid')).toBeInTheDocument();
-    expect(screen.getByText('Junior - 3 yrs on your resume')).toBeInTheDocument();
+    expect(screen.getByText('Junior · 3 yrs on your resume')).toBeInTheDocument();
     expect(screen.getByText('0-2 years')).toBeInTheDocument();
     expect(screen.getByText('8+ years, leads, managers')).toBeInTheDocument();
     expect(screen.getByRole('checkbox', { name: /Entry level/ })).toBeChecked();

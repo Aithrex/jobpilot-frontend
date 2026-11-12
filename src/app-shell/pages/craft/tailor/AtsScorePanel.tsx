@@ -68,13 +68,13 @@ function formatRequiredLine(cov: CoverageBlock): string {
   const num = cov.numerator ?? cov.satisfied;
   const den = cov.denominator ?? cov.total;
   if (cov.status === 'unavailable' || den === 0 || (num == null && den == null)) {
-    return 'Required coverage unavailable — no assessable required requirements.';
+    return 'Required coverage unavailable. The posting has no required qualifications we could assess.';
   }
   if (cov.status === 'incomplete_extraction' || cov.percentage == null) {
-    return 'Required coverage withheld — requirement extraction is incomplete.';
+    return 'Required coverage withheld. We could not read every requirement in the posting.';
   }
   const pct = cov.percentage;
-  let line = `Required coverage: ${pct}% — ${num} of ${den} requirements demonstrated.`;
+  let line = `Required coverage: ${pct}%, with ${num} of ${den} requirements demonstrated.`;
   const parts: string[] = [];
   if ((cov.partial ?? 0) > 0) {
     parts.push(
@@ -256,7 +256,7 @@ export function AtsScorePanel({
               prefCov.denominator > 0 &&
               prefCov.percentage != null && (
                 <p className="text-xs text-muted-foreground">
-                  Preferred coverage: {prefCov.percentage}% —{' '}
+                  Preferred coverage: {prefCov.percentage}%, with{' '}
                   {prefCov.numerator ?? prefCov.satisfied} of{' '}
                   {prefCov.denominator} preferred requirements demonstrated.
                 </p>
@@ -345,7 +345,7 @@ export function AtsScorePanel({
                     {open && (
                       <div className="mt-1.5 space-y-1 text-muted-foreground pl-0.5">
                         {d.matched_span && (
-                          <p>Matched: “{d.matched_span}”</p>
+                          <p>Matched: &quot;{d.matched_span}&quot;</p>
                         )}
                         {d.matched_section && <p>Section: {d.matched_section}</p>}
                         {d.match_method && <p>Method: {d.match_method}</p>}

@@ -20,6 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Loader2, AlertCircle, CalendarClock, ShieldCheck, Save, Info } from 'lucide-react';
 import { WorkAuthorizationCard } from '@/components/visa/WorkAuthorizationCard';
+import { ImmigrationNotice } from '@/components/privacy/ImmigrationNotice';
 import type { VisaProfile, VisaMilestone, VisaStatusCode } from '@/types/visa';
 
 const STATUS_LABELS: Record<VisaStatusCode, string> = {
@@ -71,7 +72,7 @@ function severityClasses(sev: VisaMilestone['severity']) {
 }
 
 function relativeLabel(days: number | null): string {
-  if (days === null || days === undefined) return ' - ';
+  if (days === null || days === undefined) return 'date not set';
   if (days === 0) return 'today';
   if (days === 1) return 'tomorrow';
   if (days === -1) return 'yesterday';
@@ -157,6 +158,8 @@ export default function VisaTimelineTab() {
           because it is the answer the job feed reads, it is optional, and it
           is useful to somebody who will never fill in an OPT date. */}
       <WorkAuthorizationCard />
+      {/* Notice at collection for both fields on this page (sensitive data). */}
+      <ImmigrationNotice purpose="timeline" />
 
       <Card>
         <CardHeader className="pb-3">

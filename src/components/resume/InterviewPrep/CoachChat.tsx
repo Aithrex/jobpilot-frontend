@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { AiDisclosure } from "@/components/ai/AiDisclosure";
 import { apiService } from "@/lib/api";
 import type { ChatMessage } from "@/types/resume";
 import { Spinner } from "./PracticeCards";
@@ -86,6 +87,7 @@ export default function CoachChat({
           <div>
             <p className="text-sm font-semibold text-foreground">AI interview coach</p>
             <p className="text-[12px] text-muted-foreground">Grounded in this JD + your resume · remembers the full conversation</p>
+            <AiDisclosure className="mt-0.5" />
           </div>
         </div>
         {messages.length > 0 && (

@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Mail, Copy, ExternalLink, RefreshCw, Loader2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiService } from '@/lib/api';
+import { AI_DRAFT_DISCLOSURE } from '@/components/ai/AiDisclosure';
 import type { DailyPipelineRecord } from '@/types/jobs';
 
 interface ReachOutModalProps {
@@ -114,7 +115,7 @@ export function ReachOutModal({ open, onClose, rec }: ReachOutModalProps) {
             Reach out: {rec.company}
           </DialogTitle>
           <DialogDescription className="text-xs">
-            {rec.title}{rec.location ? ` · ${rec.location}` : ''}. Drafted from your resume + the JD.
+            {rec.title}{rec.location ? ` · ${rec.location}` : ''}. {AI_DRAFT_DISCLOSURE}
           </DialogDescription>
         </DialogHeader>
 

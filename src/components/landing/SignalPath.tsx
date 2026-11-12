@@ -114,7 +114,7 @@ function Bar({ w, lit, className }: { w: string; lit?: boolean; className?: stri
 
 function MiniLabel({ children }: { children: string }) {
   return (
-    <span className="block text-[9px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+    <span className="block text-caption-sm font-semibold uppercase tracking-[0.14em] text-muted-foreground">
       {children}
     </span>
   );
@@ -260,7 +260,7 @@ function TailoredPanel() {
           <Bar w="64%" />
         </div>
         <div className="min-w-0 space-y-1.5">
-          <span className="block text-[9px] font-semibold uppercase tracking-[0.14em] text-[hsl(var(--brand-to))]">
+          <span className="block text-caption-sm font-semibold uppercase tracking-[0.14em] text-[hsl(var(--brand-to))]">
             Tailored
           </span>
           <Bar w="94%" lit />
@@ -270,14 +270,14 @@ function TailoredPanel() {
         </div>
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-border pt-2.5">
-        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-success">
+        <span className="inline-flex items-center gap-1 text-caption-sm font-semibold text-success">
           <ShieldCheck className="h-3 w-3" aria-hidden />
           IntegrityGuard
         </span>
         {['Dates', 'Employers', 'Titles', 'Claims'].map((f) => (
           <span
             key={f}
-            className="inline-flex items-center gap-0.5 rounded-full border border-success/30 bg-success/10 px-1.5 py-[1px] text-[9px] font-medium text-success"
+            className="inline-flex items-center gap-0.5 rounded-full border border-success/30 bg-success/10 px-1.5 py-[1px] text-caption-sm font-medium text-success"
           >
             <Lock className="h-2.5 w-2.5" aria-hidden />
             {f}
@@ -350,7 +350,7 @@ function DigestCard() {
           <Bar w="46%" lit />
           <Bar w="30%" />
         </span>
-        <span className="shrink-0 rounded-full border border-border bg-foreground/[0.04] px-2 py-[2px] text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+        <span className="shrink-0 rounded-full border border-border bg-foreground/[0.04] px-2 py-[2px] text-caption-sm font-semibold uppercase tracking-[0.12em] text-muted-foreground">
           Morning
         </span>
       </div>
@@ -484,7 +484,7 @@ export function SignalPath() {
           title={
             <>
               From resume to tracked,{' '}
-              <span className="text-[hsl(var(--brand-to))]">in one pass.</span>
+              <span className="text-ink-muted">in one pass.</span>
             </>
           }
           lede="One file goes in. Watch what happens to it."
@@ -629,7 +629,7 @@ export function SignalPath() {
                       // `transition-all` on the same curve and duration as the
                       // rail, so the marker filling and the line reaching it
                       // are one movement rather than two that nearly agree.
-                      'relative z-20 grid h-7 w-7 shrink-0 place-items-center rounded-full border text-[11px] font-bold tabular-nums transition-all duration-700 ease-[cubic-bezier(0.33,0,0.2,1)]',
+                      'relative z-20 grid h-7 w-7 shrink-0 place-items-center rounded-full border text-caption-sm font-bold tabular-nums transition-all duration-700 ease-[cubic-bezier(0.33,0,0.2,1)]',
                       i < display && 'border-primary bg-primary text-primary-foreground',
                       isActive &&
                         'border-primary bg-primary text-primary-foreground shadow-[0_0_0_4px_hsl(var(--primary)/0.16)]',
@@ -694,7 +694,7 @@ export function SignalPath() {
                 }}
               />
               <div className="relative flex shrink-0 items-center justify-between gap-3 border-b border-border px-4 py-2.5">
-                <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.13em] text-muted-foreground">
+                <span className="inline-flex items-center gap-1.5 text-caption-sm font-semibold uppercase tracking-[0.13em] text-muted-foreground">
                   Illustrative
                 </span>
                 <span className="flex items-center gap-1.5 rounded-full border border-border bg-foreground/[0.06] px-2 py-[3px]">
@@ -705,7 +705,7 @@ export function SignalPath() {
                       display === LAST ? 'bg-success' : 'bg-[hsl(var(--brand-to))]',
                     )}
                   />
-                  <span className="text-[11px] font-medium text-muted-foreground">
+                  <span className="text-caption-sm font-medium text-muted-foreground">
                     Stage {display + 1} of {STAGES.length}
                   </span>
                 </span>

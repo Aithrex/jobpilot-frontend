@@ -7,9 +7,9 @@
  *
  * Matches .github/workflows/tests.yml. Node 22 + pnpm from packageManager.
  * Does not call the backend or paid APIs.
- * copy:check and lint are recommended locally; they are not in --full
- * because the tree currently has pre-existing findings (ASCII sweep ~172
- * substitutions / ESLint). Do not add them to the required gate until green.
+ * The copy lint runs inside the test suite (src/lib/__tests__/copy-lint.test.ts),
+ * so --full enforces it. `pnpm lint` stays a recommended local check: the tree
+ * has pre-existing ESLint findings. Do not add it to the gate until green.
  */
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";

@@ -36,8 +36,7 @@ export function BaseResumeUsedBanner({
           Tailored from <span className="font-semibold">{name}</span>
           {auto && score !== null ? (
             <span className="text-muted-foreground">
-              {' '}
-              - best match for this role ({score}/100)
+              , your best match for this role ({score}/100)
             </span>
           ) : null}
         </p>

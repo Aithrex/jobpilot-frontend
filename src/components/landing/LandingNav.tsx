@@ -166,13 +166,13 @@ export function LandingNav() {
     cn(
       'focus-ring-visible rounded-full px-3 py-1.5 text-[14px] transition-colors duration-200',
       isActive
-        ? 'bg-primary/10 font-semibold text-primary'
-        : 'font-medium text-secondary-foreground hover:text-primary',
+        ? 'bg-nav-active font-semibold text-primary'
+        : 'font-medium text-ink-muted hover:bg-accent hover:text-foreground',
     );
 
   return (
     <header className="fixed inset-x-0 top-0 z-40 px-3 pt-3 sm:px-4">
-      <div className="glass-nav glass-nav-strong glass-nav-card glass-specular mx-auto flex h-[58px] max-w-[84rem] items-center justify-between gap-4 rounded-2xl border border-border/70 px-4 sm:px-5 md:h-[60px]">
+      <div className="glass-nav glass-nav-strong glass-nav-card glass-specular mx-auto flex h-[58px] max-w-[84rem] items-center justify-between gap-4 rounded-2xl border border-border px-4 sm:px-5 md:h-[60px]">
         <Link
           to="/"
           aria-label="Aspirely home"
@@ -238,7 +238,7 @@ export function LandingNav() {
             <>
               <Link
                 to="/login"
-                className="focus-ring-visible hidden items-center rounded-full px-3 py-1.5 text-[14px] font-medium text-secondary-foreground transition-colors duration-200 hover:text-primary sm:inline-flex"
+                className="focus-ring-visible hidden items-center rounded-full px-3 py-1.5 text-[14px] font-medium text-ink-muted transition-colors duration-200 hover:text-foreground sm:inline-flex"
               >
                 Sign in
               </Link>

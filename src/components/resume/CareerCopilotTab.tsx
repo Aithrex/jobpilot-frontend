@@ -41,6 +41,7 @@ import {
   Zap,
 } from "lucide-react";
 import { toast } from "sonner";
+import { AiDisclosure } from "@/components/ai/AiDisclosure";
 import { apiService } from "@/lib/api";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -883,8 +884,11 @@ export default function CareerCopilotTab() {
           {subTab === "chat" && (
             <div className="rounded-2xl border border-border bg-card shadow-soft">
               <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
-                <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                  <Bot className="h-4 w-4 text-primary" /> Agentic chat
+                <span className="flex flex-col gap-0.5">
+                  <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                    <Bot className="h-4 w-4 text-primary" /> Copilot chat
+                  </span>
+                  <AiDisclosure />
                 </span>
                 <button type="button" onClick={() => void onReset()}
                   className="text-xs text-destructive font-medium rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/40"

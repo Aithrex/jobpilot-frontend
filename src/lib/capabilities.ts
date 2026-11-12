@@ -118,7 +118,7 @@ export const AUTO_APPLY: Capability = {
   name: 'Auto Apply',
   status: 'beta',
   blurb:
-    'Prepare only, Ask me first, or Apply within my rules - queue any job, tailor or plain resume, and Aspirely prepares or submits inside the daily limit you set.',
+    'Choose Prepare only, Ask me first, or Apply within my rules. Queue any job with a tailored or plain resume, and Aspirely prepares or submits it within the daily limit you set.',
   evidence:
     'Ledger queue (/api/apply/queue), modes (copilot/approval/aggressive), tailor toggle, entitlements auto_apply on all tiers + auto_submit meter. Per-job Auto Apply CTA on job cards. Admin entitlement_overrides for plan/limits/features. Executor still tenant-dependent (Workday account/OTP walls); Greenhouse/Lever/Ashby cleaner.',
 };
@@ -129,7 +129,7 @@ export const WHATSAPP: Capability = {
   status: 'coming-soon',
   blurb: 'Opt in to receive match alerts, application updates and approval requests in WhatsApp.',
   evidence:
-    'Concept only. Meta Cloud API request is shaped (channels.py:116-185) but WHATSAPP_ENABLED / PHONE_NUMBER_ID / ACCESS_TOKEN exist in NO config surface - absent from .env.example, lambda.tf and the SSM map, so it cannot be switched on. Consent fns start/confirm/revoke (service.py:292-347) have zero callers and no route, and the FE captures no phone number, so it would deliver to nobody. Inbound approval webhook does not exist at all - no hub.challenge, no X-Hub-Signature-256, no edge prefix (variables.tf:81-96). docs/ops/manual-steps.md:30 states send+receive is NOT built.',
+    'Concept only. Meta Cloud API request is shaped (channels.py:116-185) but WHATSAPP_ENABLED / PHONE_NUMBER_ID / ACCESS_TOKEN exist in NO config surface (absent from .env.example, lambda.tf and the SSM map), so it cannot be switched on. Consent fns start/confirm/revoke (service.py:292-347) have zero callers and no route, and the FE captures no phone number, so it would deliver to nobody. Inbound approval webhook does not exist at all: no hub.challenge, no X-Hub-Signature-256, no edge prefix (variables.tf:81-96). docs/ops/manual-steps.md:30 states send+receive is NOT built.',
 };
 
 export const SMS: Capability = {
@@ -138,7 +138,7 @@ export const SMS: Capability = {
   status: 'planned',
   blurb: 'The same alerts over SMS, for people who prefer it.',
   evidence:
-    'Concept only, weaker than WhatsApp. Twilio request shaped (channels.py:191-241); TWILIO_ENABLED/SID/token/from-number absent everywhere; blocked by the same missing consent routes. Deliberately "planned", not "coming soon" - no work is in flight.',
+    'Concept only, weaker than WhatsApp. Twilio request shaped (channels.py:191-241); TWILIO_ENABLED/SID/token/from-number absent everywhere; blocked by the same missing consent routes. Deliberately "planned", not "coming soon", because no work is in flight.',
 };
 
 export const PUSH: Capability = {
@@ -147,7 +147,7 @@ export const PUSH: Capability = {
   status: 'planned',
   blurb: 'Push notifications on desktop and mobile.',
   evidence:
-    'The largest gap. Backend half is real (channels.py:247-293, pywebpush in requirements, SSRF allowlist at service.py:255-278) but the FRONTEND half is entirely unwritten - zero serviceWorker / PushManager / requestPermission / VAPID anywhere in src/, no sw.js, no manifest, and types/notifications.ts has no subscription field. Needs a whole client feature, not a credential.',
+    'The largest gap. Backend half is real (channels.py:247-293, pywebpush in requirements, SSRF allowlist at service.py:255-278) but the FRONTEND half is entirely unwritten: zero serviceWorker / PushManager / requestPermission / VAPID anywhere in src/, no sw.js, no manifest, and types/notifications.ts has no subscription field. Needs a whole client feature, not a credential.',
 };
 
 /** Everything the landing may speak about, in one list. */

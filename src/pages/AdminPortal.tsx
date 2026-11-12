@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiService, type AdminUserOverride } from '@/lib/api';
 import { useNavigate } from 'react-router-dom';
+import { FeedbackPanel } from './admin/FeedbackPanel';
 import { QuotasPanel } from './admin/QuotasPanel';
 import { TechFeedOpsPanel } from './admin/TechFeedOpsPanel';
 
@@ -83,22 +84,25 @@ function parseISO(iso: string | null | undefined): Date | null {
   const d = new Date(s);
   return isNaN(d.getTime()) ? null : d;
 }
+/** Shown where a value is missing. Never a bare dash. */
+const EMPTY_VALUE = 'None';
+
 function fmtDate(iso: string | null | undefined): string {
   const d = parseISO(iso);
-  if (!d) return ' - ';
+  if (!d) return EMPTY_VALUE;
   return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 }
 // Long, viewer-friendly absolute. Example: "May 12, 2026 · 3:42:18 PM"
 function fmtAbsolute(iso: string | null | undefined): string {
   const d = parseISO(iso);
-  if (!d) return ' - ';
+  if (!d) return EMPTY_VALUE;
   const date = d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
   const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit' });
   return `${date} · ${time}`;
 }
 function fmtRel(iso: string | null | undefined): string {
   const d = parseISO(iso);
-  if (!d) return ' - ';
+  if (!d) return EMPTY_VALUE;
   const diffMs = Date.now() - d.getTime();
   // Future-dated entries are surfaced explicitly so admins can spot clock
   // drift or seed data instead of being misled by "just now".
@@ -196,7 +200,7 @@ function Avatar({ seed, size = 'md' }: { seed: string | null | undefined; size?:
 
 function StatusPill({ status, size = 'md' }: { status?: string; size?: 'sm' | 'md' }) {
   const meta = status ? STATUS_COLORS[status] : null;
-  if (!meta) return <span className="text-xs text-gray-600"> - </span>;
+  if (!meta) return <span className="text-xs text-gray-600">{EMPTY_VALUE}</span>;
   const pad = size === 'sm' ? 'px-1.5 py-0.5 text-[10px]' : 'px-2 py-0.5 text-[11px]';
   return (
     <span className={`inline-flex items-center gap-1 ${pad} rounded-full border font-semibold ${meta.chip}`}>
@@ -569,7 +573,7 @@ function TimeStamp({
   return (
     <time
       dateTime={iso || undefined}
-      title={exact === ' - ' ? undefined : exact}
+      title={exact === EMPTY_VALUE ? undefined : exact}
       className={`${className} cursor-help underline decoration-dotted decoration-gray-700 underline-offset-2`}
     >
       {prefix ? `${prefix} ` : ''}{rel}
@@ -1269,7 +1273,7 @@ function OverviewPanel({ stats, users, onSelectUser }: {
           />
           <KPICard
             label="Tailoring Sessions" value={fmtNum(stats.total_tailoring_sessions)}
-            sub={`+${stats.tailoring_7d} this week · avg ATS ${avgAts ?? ' - '}`}
+            sub={`+${stats.tailoring_7d} this week · avg ATS ${avgAts ?? EMPTY_VALUE}`}
             icon={<Icon.Bolt c="w-4 h-4" />} color="violet" trend={tailoringTrend}
             sparklineData={days.map(d => d.value)}
           />
@@ -1558,7 +1562,7 @@ function UsersPanel({ users, loading, search, setSearch, onSelect }: {
                   <div className="hidden md:flex flex-col gap-0.5">
                     {u.role ? (
                       <span className="text-xs text-gray-300 truncate">{u.role}</span>
-                    ) : <span className="text-xs text-gray-600"> - </span>}
+                    ) : <span className="text-xs text-gray-600">{EMPTY_VALUE}</span>}
                     {u.sector && <span className="text-[10px] text-gray-600 truncate">{u.sector}</span>}
                   </div>
                   <span className="hidden md:block text-xs text-gray-500 whitespace-nowrap" title={fmtAbsolute(u.created_at)}>{fmtDate(u.created_at)}</span>
@@ -1667,7 +1671,7 @@ function UserDetailDrawer({ detail, onBack }: { detail: UserDetail; onBack: () =
           <div className="hidden md:grid grid-cols-3 gap-3 shrink-0">
             <MiniStat label="Resumes" value={base_resumes.length} />
             <MiniStat label="Tailored" value={tailoring_records.length} />
-            <MiniStat label="Parsed" value={parsed_resume ? '✓' : ' - '} />
+            <MiniStat label="Parsed" value={parsed_resume ? '✓' : EMPTY_VALUE} />
           </div>
         </div>
       </div>
@@ -1707,10 +1711,10 @@ function UserDetailDrawer({ detail, onBack }: { detail: UserDetail; onBack: () =
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-5 space-y-3">
                   <SectionHeading title="Account" />
-                  <Info label="Session ID" value={u.session_id || ' - '} mono />
-                  <Info label="Fingerprint" value={u.fingerprint_hash ? u.fingerprint_hash.slice(0, 16) + '...' : ' - '} mono />
+                  <Info label="Session ID" value={u.session_id || EMPTY_VALUE} mono />
+                  <Info label="Fingerprint" value={u.fingerprint_hash ? u.fingerprint_hash.slice(0, 16) + '...' : EMPTY_VALUE} mono />
                   <Info label="Login attempts" value={String(u.login_attempts)} />
-                  <Info label="Parsed resume" value={parsed_resume ? '✓ Yes' : ' - '} />
+                  <Info label="Parsed resume" value={parsed_resume ? '✓ Yes' : EMPTY_VALUE} />
                 </div>
                 <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-5 space-y-3">
                   <SectionHeading title="Activity" />
@@ -1903,7 +1907,7 @@ function AccessOverrideCard({ email, storedPlan }: { email: string; storedPlan?:
           Unlock Auto Apply (test)
         </button>
         <button
-          onClick={() => write({}, 'Override cleared - reset to stored plan.')}
+          onClick={() => write({}, 'Override cleared. The stored plan applies again.')}
           disabled={saving || loading || !override?.overrides}
           className="h-9 px-4 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-gray-300 text-xs font-medium border border-white/[0.06] inline-flex items-center gap-1.5 transition disabled:opacity-40 disabled:cursor-not-allowed"
         >

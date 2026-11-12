@@ -8,7 +8,7 @@ Vite 5 + React 18 + TypeScript SPA — the client for the **Aspirely** AI career
 - `pnpm build` — **production build = `vite build` ONLY (SWC/esbuild, NO `tsc` gate)**
 - `pnpm test` — Vitest (jsdom + RTL + jest-dom). `pnpm test:watch` to iterate. Single file: `pnpm test src/path/to.test.tsx`
 - `pnpm lint` — ESLint 9 (flat config) · `pnpm format` — Prettier
-- `pnpm copy:check` — ASCII copy sweep (guards smart quotes / non-ASCII in UI copy)
+- `pnpm copy:check` — AST copy lint (`scripts/copy-lint.mjs`): no em/en dashes, spaced hyphens, `--`, accents or curly quotes in user-visible strings across `src/`, `extension/**/*.{js,html}` and `public/**/*.html` (JSX text, HTML text, `title`/`aria-label`/`placeholder`, toasts, copy-named props). Also enforced in `pnpm test` (`src/lib/__tests__/copy-lint.test.ts`). Rare exception: `// copy-lint-ignore: <reason>`. `pnpm copy:fix` straightens quotes and accents only; dashes are rewritten by hand
 - `node scripts/verify.mjs --fast` — Vitest only (change-focused)
 - `node scripts/verify.mjs --full` — **CI-equivalent**: frozen install + test + production build. Same command as `.github/workflows/tests.yml` and the optional pre-push hook. `pnpm copy:check` / `pnpm lint` remain recommended local checks (the tree has pre-existing findings).
 - `node scripts/install-pre-push-hook.mjs` — repository-local pre-push hook (does not change global Git config). CI remains authoritative.
@@ -52,7 +52,7 @@ React 18.3 · Vite 5.4 (`plugin-react-swc`) · TS 5.5 (`strict`, `noImplicitAny:
 - `extension/` — the browser extension (Workday/Ashby/Greenhouse form-fill; own `manifest.json` + `package.sh`)
 
 ## Conventions
-PascalCase component files; typed props interface; `@/` imports; `cn()` for conditional classes; compose shadcn `ui/*`; `sonner` for transient feedback. **Design tokens** in `src/index.css` (semantic HSL, light + dark) — never raw hex. Verify visual changes in **both themes + mobile**. Handle loading/empty/error for every async surface. Keep UI copy ASCII (`pnpm copy:check`).
+PascalCase component files; typed props interface; `@/` imports; `cn()` for conditional classes; compose shadcn `ui/*`; `sonner` for transient feedback. **Design tokens** in `src/index.css` (semantic HSL, light + dark) — never raw hex. Verify visual changes in **both themes + mobile**. Handle loading/empty/error for every async surface. Keep UI copy ASCII and dash-free (`pnpm copy:check`): a period, comma, colon, "to" for ranges, or the middot `·` between labels. AI chat surfaces show `<AiDisclosure />` (`src/components/ai/`); AI drafts show `<AiDisclosure kind="draft" />`.
 
 ## The unified tech feed (flagged)
 

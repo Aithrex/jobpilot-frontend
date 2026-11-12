@@ -177,7 +177,7 @@ export default function GmailIntegration({
 
     if (final) {
       toast.success(
-        `Scanned ${final.messages_scanned} email${final.messages_scanned === 1 ? '' : 's'} - ${final.auto_applied} statuses updated - ${final.suggested} to review${final.has_more ? '. More mail is ready to scan.' : ''}`,
+        `Scanned ${final.messages_scanned} email${final.messages_scanned === 1 ? '' : 's'}. ${final.auto_applied} statuses updated, ${final.suggested} to review.${final.has_more ? ' More mail is ready to scan.' : ''}`,
         { id: toastId },
       );
       await Promise.all([loadStatus(), loadSuggestions()]);
@@ -303,7 +303,7 @@ export default function GmailIntegration({
             <p className={`${inline ? '' : 'mt-1 '}text-label text-muted-foreground break-words`}>
               {status.connected ? (
                 <>
-                  {status.gmail_address || ' - '} ·{' '}
+                  {status.gmail_address || 'Address not shown'} ·{' '}
                   {status.last_synced_at
                     ? `Last full scan ${formatRelative(status.last_synced_at)}`
                     : status.has_more

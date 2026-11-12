@@ -633,7 +633,7 @@ export function TechFeedPanel({
                       className="rounded-l-full border border-border bg-background px-2.5 py-0.5 text-xs hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       title={
                         entry.pendingSync
-                          ? 'Saved on this device only - it will sync when the connection returns.'
+                          ? 'Saved on this device only. It will sync when the connection returns.'
                           : undefined
                       }
                     >
@@ -666,7 +666,7 @@ export function TechFeedPanel({
                 className="text-[11px] text-muted-foreground"
                 data-testid="tech-feed-saved-search-sync-error"
               >
-                Saved on this device only - {syncError}
+                Saved on this device only. {syncError}
               </span>
             )}
           </div>
@@ -724,8 +724,8 @@ export function TechFeedPanel({
               ) : (
                 partition.demoted.length > 0 && (
                   <p className="text-xs text-muted-foreground" data-testid="tech-feed-all-demoted">
-                    Every posting on this page states a barrier - a clearance, or no
-                    sponsorship. They are listed below rather than removed.
+                    Every posting on this page states a barrier, such as a required
+                    clearance or no sponsorship. They are listed below rather than removed.
                   </p>
                 )
               )}
@@ -742,7 +742,7 @@ export function TechFeedPanel({
                   </div>
                   <p className="text-xs text-muted-foreground">
                     These require a security clearance, or state that the employer does
-                    not sponsor. They are still here, and you can still apply - they are
+                    not sponsor. They are still here, and you can still apply. They are
                     just not at the top.
                   </p>
                   <ul className="space-y-3" aria-label="Postings that state a barrier">

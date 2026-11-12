@@ -19,11 +19,21 @@ import {
   type WorkAuthorizationPreference,
   type WorkAuthorizationStatus,
 } from '../types/workAuthorization';
+import {
+  normalizePrivacyState,
+  type AccountDeletionResult,
+  type AccountExportResult,
+  type PrivacyState,
+  type PrivacyUpdate,
+  type SignupConsent,
+  type UnsubscribeInfo,
+  type UnsubscribeResult,
+} from '../types/privacy';
 
 const LLM_RETRIES_EXHAUSTED_TOAST_ID = 'llm-retries-exhausted';
 
 function notifyLLMRetriesExhausted(): void {
-  toast.error('⚡ High demand right now. Please try again in a moment.', {
+  toast.error('High demand right now. Please try again in a moment.', {
     id: LLM_RETRIES_EXHAUSTED_TOAST_ID,
     duration: 6000,
   });
@@ -244,6 +254,12 @@ class ApiService {
   // Auth endpoints (/api/auth)
   // ============================================
 
+  /**
+   * POST /api/auth/register. `consent` is the signup clickwrap: the backend
+   * stores `terms.version` / `accepted_at` / `age_confirmed`, and answers
+   * `age_confirmed: false` with `400 {error:"age_requirement"}` (never 401).
+   * Both fields are optional on the wire for older clients.
+   */
   async register(
     email: string,
     password: string,
@@ -251,6 +267,7 @@ class ApiService {
     sector?: string,
     session_id?: string,
     fingerprint_hash?: string,
+    consent?: SignupConsent,
   ) {
     const response = await this.request<{
       access_token: string;
@@ -264,6 +281,9 @@ class ApiService {
         sector,
         session_id,
         fingerprint_hash,
+        ...(consent
+          ? { age_confirmed: consent.age_confirmed, terms_version: consent.terms_version }
+          : {}),
       }),
     });
 
@@ -378,6 +398,150 @@ class ApiService {
     );
   }
 
+  // ── Privacy rights (/api/auth/privacy, /account/export, /email/unsubscribe) ──
+  //
+  // Contract: docs/plans/2026-11-11-us-launch-compliance-and-redesign.md.
+  // Failures are 400/403/429 and never 401, so nothing here can reach the
+  // force-logout path except a genuinely bad token on a JWT route. Each
+  // endpoint may 404 while the backend rolls out; callers read `status === 404`
+  // as "not available yet" and degrade.
+
+  /** GET /api/auth/privacy (JWT). */
+  async getPrivacy(): Promise<ApiResponse<PrivacyState>> {
+    const res = await this.request<unknown>('/auth/privacy', { method: 'GET' });
+    if (!res.data) return res as ApiResponse<PrivacyState>;
+    const state = normalizePrivacyState(res.data);
+    return state
+      ? { data: state, status: res.status }
+      : { error: 'Unexpected privacy settings response', status: res.status };
+  }
+
+  /** PUT /api/auth/privacy (JWT), partial. Echoes the full state. */
+  async updatePrivacy(
+    update: PrivacyUpdate,
+  ): Promise<ApiResponse<PrivacyState>> {
+    const res = await this.request<unknown>('/auth/privacy', {
+      method: 'PUT',
+      body: JSON.stringify(update),
+    });
+    if (!res.data) return res as ApiResponse<PrivacyState>;
+    const state = normalizePrivacyState(res.data);
+    return state
+      ? { data: state, status: res.status }
+      : { error: 'Unexpected privacy settings response', status: res.status };
+  }
+
+  /**
+   * Record consent to store immigration status, at the moment a person
+   * provides one (notice at collection). Best effort: a 404 (backend not yet
+   * deployed) or any other failure never blocks saving the answer itself.
+   */
+  async recordImmigrationConsent(): Promise<void> {
+    try {
+      await this.updatePrivacy({ immigration_status_consent: true });
+    } catch {
+      // Consent recording must never fail the save it accompanies.
+    }
+  }
+
+  /**
+   * GET /api/auth/account/export (JWT): a JSON attachment of every
+   * user-owned record. Returned as a Blob with the server's filename so the
+   * caller can hand it to the browser as a download. 5 per day, then
+   * `429 {error:"rate_limited", retry_after}` (seconds).
+   */
+  async exportAccountData(): Promise<AccountExportResult> {
+    const token = this.getToken();
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000);
+    try {
+      const response = await fetch(`${this.baseURL}/auth/account/export`, {
+        method: 'GET',
+        headers,
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      // Same invariant as `request`: only a 401 on an authenticated call
+      // means the session is gone.
+      if (response.status === 401 && token) {
+        this.logout();
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('auth:session-expired'));
+        }
+        return { error: 'Session expired. Please sign in again.', status: 401 };
+      }
+      if (!response.ok) {
+        const body = (await response.json().catch(() => ({}))) as Record<string, unknown>;
+        const headerRetry = Number(response.headers.get('Retry-After') || '');
+        const bodyRetry = Number(body.retry_after);
+        const retryAfter = Number.isFinite(bodyRetry) && bodyRetry > 0
+          ? bodyRetry
+          : Number.isFinite(headerRetry) && headerRetry > 0
+            ? headerRetry
+            : undefined;
+        const message =
+          (typeof body.message === 'string' && body.message) ||
+          (typeof body.error === 'string' && body.error) ||
+          `HTTP ${response.status}`;
+        return { error: message, status: response.status, retryAfter };
+      }
+      const blob = await response.blob();
+      const disposition = response.headers.get('content-disposition') || '';
+      const match = disposition.match(/filename\*?=(?:UTF-8'')?"?([^";]+)"?/i);
+      const today = new Date().toISOString().slice(0, 10);
+      const filename = match?.[1]
+        ? decodeURIComponent(match[1])
+        : `aspirely-data-export-${today}.json`;
+      return { data: blob, filename, status: response.status };
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error instanceof Error && error.name === 'AbortError') {
+        return { error: 'The export took too long. Please try again.' };
+      }
+      return { error: error instanceof Error ? error.message : 'Network error' };
+    }
+  }
+
+  /**
+   * DELETE /api/auth/account (JWT, existing endpoint). Requires
+   * `{confirm: "DELETE"}`; a missing confirmation is `400
+   * confirmation_required`. Soft-deletes at once and enqueues the purge.
+   */
+  async deleteAccount(): Promise<ApiResponse<AccountDeletionResult>> {
+    return this.request<AccountDeletionResult>('/auth/account', {
+      method: 'DELETE',
+      body: JSON.stringify({ confirm: 'DELETE' }),
+    });
+  }
+
+  /**
+   * GET /api/auth/email/unsubscribe?t= (no auth): which list a tokenized
+   * link is for. Read-only by contract, so link scanners that prefetch it
+   * change nothing. `skipAuth` keeps a stale token from ever being attached.
+   */
+  async getUnsubscribe(token: string): Promise<ApiResponse<UnsubscribeInfo>> {
+    return this.request<UnsubscribeInfo>(
+      `/auth/email/unsubscribe?t=${encodeURIComponent(token)}`,
+      { method: 'GET' },
+      undefined,
+      { skipAuth: true },
+    );
+  }
+
+  /** POST /api/auth/email/unsubscribe?t= (no auth). Only ever on an explicit click. */
+  async confirmUnsubscribe(
+    token: string,
+  ): Promise<ApiResponse<UnsubscribeResult>> {
+    return this.request<UnsubscribeResult>(
+      `/auth/email/unsubscribe?t=${encodeURIComponent(token)}`,
+      { method: 'POST', body: JSON.stringify({ token }) },
+      undefined,
+      { skipAuth: true },
+    );
+  }
+
   // ── Social sign-in ("Continue with ...") ───────────────────────
   async getOAuthProviders() {
     return this.request<{ providers: string[] }>('/auth/oauth/providers');
@@ -461,6 +625,12 @@ class ApiService {
     status: WorkAuthorizationStatus,
   ): Promise<ApiResponse<WorkAuthorizationPreference>> {
     const legacy = legacyNeedsSponsorshipFlag(status);
+    // Immigration status is sensitive personal information: consent is
+    // recorded when a person provides a status. "Prefer not to say" and an
+    // unanswered question are not a status, so they record nothing.
+    if (status !== 'unset' && status !== 'prefer_not_to_say') {
+      await this.recordImmigrationConsent();
+    }
     const res = await this.savePreferences({
       work_authorization: status,
       work_authorization_updated_at: new Date().toISOString(),
@@ -591,10 +761,10 @@ class ApiService {
 
   // ── Sprint Learning Hub (/api/resume/hub/*) ──────────────────
   // The 14-day Jira-ticket sprint. DISTINCT from the study-plan methods above
-  // (/resume/learning/*) — different backend, different data model. Types live
+  // (/resume/learning/*): different backend, different data model. Types live
   // in ../types/hub, consumed by hooks/useHub.ts.
 
-  /** The campaign map — ordered chapters with locked/active/completed state. */
+  /** The campaign map: ordered chapters with locked/active/completed state. */
   async getHubJourney(params?: import("../types/hub").HubPathParams) {
     return this.request<import("../types/hub").HubJourney>(
       `/resume/hub/journey${this.hubQuery(params)}`,
@@ -604,7 +774,7 @@ class ApiService {
   /** Resolve a chapter's sprint path, kicking off generation if none exists yet.
    *  `season_id` picks a specific (unlocked) chapter; omitted → the active one.
    *  Returns the full path when ready, or {status:"generating", job_id} while
-   *  the async job runs — useHubPath polls on the non-ready shape. */
+   *  the async job runs; useHubPath polls on the non-ready shape. */
   async getHubPath(params?: import("../types/hub").HubPathParams) {
     return this.request<
       import("../types/hub").HubPath | import("../types/hub").HubPathPending
@@ -630,11 +800,11 @@ class ApiService {
     return this.request<import("../types/hub").HubRolesResponse>("/resume/hub/roles");
   }
 
-  /** Submit a day for verification. `repoUrl` is the proof of work — a PUBLIC
+  /** Submit a day for verification. `repoUrl` is the proof of work: a PUBLIC
    *  GitHub repo the backend grades against the ticket's acceptance criteria.
    *
    *  Grading downloads the repo and runs a PRO-tier judge (40-60s), so the
-   *  backend queues an async job and we poll it — an inline request would blow
+   *  backend queues an async job and we poll it, because an inline request would blow
    *  the gateway timeout. */
   async submitHubDay(
     dayKey: string,
@@ -683,7 +853,7 @@ class ApiService {
     );
   }
 
-  /** Minutes ahead of UTC (IST=+330) — the app's tz_offset_minutes convention.
+  /** Minutes ahead of UTC (IST=+330), the app's tz_offset_minutes convention.
    *  Drives the backend's local-midnight day-unlock math. */
   private hubTz() {
     return viewerTzOffsetMinutes();
@@ -992,6 +1162,8 @@ class ApiService {
   }
 
   async saveVisaProfile(profile: import('../types/visa').VisaProfile) {
+    // Visa details are immigration status (sensitive): record consent with them.
+    await this.recordImmigrationConsent();
     return this.request<{ ok: boolean; profile: import('../types/visa').VisaProfile }>(
       '/resume/visa/profile',
       { method: 'PUT', body: JSON.stringify(profile) },
@@ -2567,7 +2739,7 @@ class ApiService {
       source: 'initial' | 'regenerated' | 'edited';
       user_feedback?: string;
       ats_scores?: import('../types/resume').ATSScores;
-      /** Server assessment id — preferred over client-authored scores when v2 is on. */
+      /** Server assessment id, preferred over client-authored scores when v2 is on. */
       assessment_id?: string;
       parent_version_id?: string;
       set_current?: boolean;
@@ -4478,7 +4650,7 @@ class ApiService {
     }>('/apply/queue', { method: 'POST', body: JSON.stringify(body) });
   }
 
-  // ── Auto-Apply onboarding (declared-profile) — /api/apply/onboarding/* ──
+  // ── Auto-Apply onboarding (declared-profile): /api/apply/onboarding/* ──
   // The ask-once question bank the executor fills from. GET returns the catalog
   // grouped by category (+ ready_for_autoapply + mode); PUT validates each
   // answer against the catalog (unknown field / bad value -> 400, never 401)

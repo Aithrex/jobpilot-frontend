@@ -54,7 +54,7 @@ function visualFor(state: ConfirmState, detail?: string): Visual {
         icon: <CheckCircle2 className="h-5 w-5" />,
         title: "Application approved",
         message:
-          "Thanks - we've approved it and it's on its way to being submitted.",
+          "Thanks. We've approved it, and it's on its way to being submitted.",
       };
     case "not_ready":
       return {
@@ -77,7 +77,7 @@ function visualFor(state: ConfirmState, detail?: string): Visual {
         icon: <Info className="h-5 w-5" />,
         title: "This link was already used",
         message:
-          "You've already used this approval link - no further action was taken.",
+          "You've already used this approval link, so no further action was taken.",
       };
     case "wrong_account":
       return {

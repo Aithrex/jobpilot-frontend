@@ -185,7 +185,7 @@ describe('a data-quality report is not a dismissal', () => {
 
     await waitFor(() => expect(toastMock).toHaveBeenCalled());
     const [message, options] = toastMock.mock.calls[toastMock.mock.calls.length - 1];
-    expect(message).toBe("Thanks - we'll re-check this listing");
+    expect(message).toBe("Thanks. We'll re-check this listing.");
     expect(String(options.description)).toContain('stays in your feed');
     expect(String(message)).not.toMatch(/hidden/i);
   });

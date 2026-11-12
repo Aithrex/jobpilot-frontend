@@ -7,308 +7,167 @@
 @layer base {
   :root {
     /* ── LAYER 1 - PRIMITIVES (theme-independent) ─────────────────────────
-  Raw palette as HSL triplets so the existing shadcn `hsl(var(--x))`
-  bridge aliases them with zero refactor. Every ratio quoted below was
-  COMPUTED against the WCAG relative-luminance formula, not estimated.
+  US launch token set, 2026-11-11. Source of every value and every ratio:
+  docs/design/2026-11-11-type-color-principles.md (sections 8.2 and 8.3 for
+  the neutrals and states) plus the owner's accent decision: KEEP THE PLUM
+  HUE (302), tuned only in lightness and saturation. Every ratio below was
+  computed with the WCAG 2.2 relative-luminance formula on the 8-bit sRGB the
+  browser rasterises from these HSL triplets, not estimated.
 
-  BLACK CHERRY. The approved identity: a bright blush-white page, near-black
-  cherry ink, and a confident cherry red for the one thing you act on.
-  Premium, executive and memorable - not brown, not pink, and not a generic
-  SaaS blue.
+  THE RULES THIS PALETTE ENCODES
+   1. One neutral, content-first canvas. The neutrals carry no hue worth
+      naming (240 to 252 at 5 to 14% saturation), so content and the one
+      action are the only colour on screen.
+   2. ONE saturated accent, plum, reserved for the primary action, links,
+      focus and selection. It is 62 degrees from the danger hue, so "press
+      this" and "this failed" are told apart by hue AND by words and icons.
+   3. Three text steps only: ink, ink-muted, ink-subtle. No opacity on text;
+      the opacity utilities the app still uses are floored to these tokens
+      at the bottom of this file.
+   4. Control edges (inputs, checkboxes, switches) owe 3:1 (SC 1.4.11);
+      hairlines are decorative and do not.
 
-  THE HUE DISCIPLINE IS TIGHT HERE, tighter than in any previous Aspirely
-  palette, and it is the thing most likely to be broken by accident. The
-  action colour sits at hue 345 and `--destructive` at hue 352 - seven degrees
-  apart. They are told apart by SATURATION and LIGHTNESS (destructive is
-  lighter and more saturated), never by hue alone, which is why the
-  no-colour-alone rule is not a nicety in this system: a destructive control
-  MUST also say what it does in words. Sage is verified evidence; amber is
-  deadlines. Neither is ever decorative.
+  The old ramp names (`--blush-*`, `--cherry-*`, `--fog-*`, `--app-*-dark`)
+  are kept as ALIASES at the end of this block so nothing that still reads
+  them breaks; new code reads the semantic layer (`--background`,
+  `--muted-foreground`, `--primary` ...) and never a primitive. */
 
-  LIGHT MODE IS BRIGHT, AND THAT IS A HARD REQUIREMENT, not a preference. The
-  canvas sits at 97% lightness and the card at 99% - a 1.05:1 step, so the
-  lift comes almost entirely from the HAIRLINE and the SHADOW. That is correct
-  for a bright theme and it is deliberate. The failure mode to avoid is the
-  obvious one: darkening the canvas to make cards "pop" turns a premium page
-  muddy. Do not darken the canvas to solve a contrast problem; strengthen the
-  border or the shadow instead. Equally, do not flood the page with the tint -
-  the canvas carries a cherry UNDERTONE, not a pink wash.
+    /* Neutrals, light. Measured: ink 17.28 canvas / 18.48 surface; ink-muted
+  8.64 / 9.25; ink-subtle 5.76 / 6.17 (4.87 on surface-strong, the worst
+  pair it can sit on); control edge 3.48 / 3.72 / 3.25 on surface-muted. */
+    --n-canvas-hsl: 240 14.3% 97.3%; /* #F7F7F9 page */
+    --n-surface-hsl: 0 0% 100%; /* #FFFFFF cards, popovers, dialogs */
+    --n-surface-muted-hsl: 240 14.3% 94.5%; /* #EFEFF3 wells, secondary fills */
+    --n-surface-strong-hsl: 240 12.5% 90.6%; /* #E4E4EA pressed, selected neutral */
+    --n-hairline-hsl: 240 11.1% 89.4%; /* #E1E1E7 decorative dividers only */
+    --n-control-hsl: 250 5.1% 53.7%; /* #85838F input, checkbox, switch edge */
+    --n-ink-hsl: 252 11.6% 8.4%; /* #141318 primary text */
+    --n-ink-muted-hsl: 250.9 7.3% 29.6%; /* #484651 secondary text (AAA) */
+    --n-ink-subtle-hsl: 250.9 5.4% 39.8%; /* #62606B captions, metadata, placeholders (AA) */
 
-  CHERRY IS FOR ACTION, IDENTITY AND ACTIVE STATE. It is not a background.
-  The tint below is for SELECTION, and `--accent` (the neutral hover surface)
-  is deliberately NOT pointed at it - see the note there.
+    /* Neutrals, dark. A raised surface is LIGHTER than the canvas (M3
+  surface-container ladder); the old glass panes inverted that. Measured: ink
+  17.28 canvas / 15.98 surface; ink-muted 9.77 / 9.04; ink-subtle 6.91 / 6.39
+  (5.00 on surface-strong); control edge 4.29 / 3.97 / 3.55. */
+    --n-canvas-dark-hsl: 240 9.1% 6.5%; /* #0F0F12 */
+    --n-surface-dark-hsl: 240 7.7% 10.2%; /* #18181C */
+    --n-surface-muted-dark-hsl: 240 8.1% 14.5%; /* #222228 */
+    --n-surface-strong-dark-hsl: 240 7.4% 18.6%; /* #2C2C33 */
+    --n-hairline-dark-hsl: 240 7.7% 20.4%; /* #303038 */
+    --n-control-dark-hsl: 250.9 4.5% 48.4%; /* #787681 */
+    --n-ink-dark-hsl: 240 14.3% 95.9%; /* #F3F3F6 */
+    --n-ink-muted-dark-hsl: 252 7.6% 74.1%; /* #BAB8C2 */
+    --n-ink-subtle-dark-hsl: 250.9 5.8% 62.5%; /* #9C9AA5 */
 
-  The neutral ramp is `--blush-*`. It has been renamed with its values seven
-  times now, which is the point: a ramp whose name contradicts its contents
-  is exactly the drift the rest of this file argues against. */
-    --blush-0-hsl: 340 100% 99.4%; /* #FFFCFD raised card - bright, never flat white */
-    --blush-50-hsl: 348 38% 97.5%; /* #FBF6F7 bright blush-white canvas, cherry undertone */
-    --blush-100-hsl: 344 41% 92.7%; /* #F4E5E9 muted + secondary fill */
-    --blush-200-hsl: 341 28% 86.9%; /* #E7D4DA hairline */
-    --blush-300-hsl: 335 10% 56%; /* #9B858E input edge - 3.35:1 on a card (SC 1.4.11) */
-    --blush-400-hsl: 337 15% 76%; /* #CBB9C0 icon-only / disabled on light; muted TEXT on dark */
-    --blush-500-hsl: 335 9% 37%; /* #67565D muted text - 6.40:1 canvas, 5.62:1 on the muted fill */
-    --blush-600-hsl: 336 10% 32%; /* #5A4A51 muted text on tinted surfaces */
-    --blush-700-hsl: 337 12% 25%; /* #483C41 strong secondary */
-    --blush-800-hsl: 338 14% 19%; /* #372C31 */
-    --blush-900-hsl: 338 15% 15%; /* #2B2024 body text - 14.70:1 canvas, 15.43:1 on a card */
+    /* ── The plum accent ─────────────────────────────────────────────────
+  Hue 302, the same plum family as before; saturation raised from 24% to 38%
+  so it is the one colour that pops on a neutral page, lightness set so white
+  text has AAA headroom. On dark it lifts to a light plum that carries dark
+  text, the M3 tone-80 inversion.
 
-    /* ── The black cherry accent ─────────────────────────────────────────
-  Cherry, hue 345 at 44% saturation. Confident and saturated enough to be an
-  identity rather than a tint - this is the accent doing brand work, not just
-  marking controls.
+  Light: white on fill 7.56; fill as text on canvas 7.06, surface 7.56,
+  surface-muted 6.59, its own selection tint 6.26; white on hover 9.80.
+  Dark: canvas ink on fill 9.53; fill as text on surface 8.82, on its tint
+  6.45; focus ring vs surface-strong 6.91. */
+    --plum-fill-hsl: 302 38% 36%; /* #7F397C */
+    --plum-hover-hsl: 302 42% 29%; /* #692B67 hover and pressed */
+    --plum-tint-hsl: 306.7 23.1% 92.4%; /* #F0E7EF plum 12% over white, flattened: selection */
+    --plum-fill-dark-hsl: 302 50% 76%; /* #E0A3DE */
+    --plum-hover-dark-hsl: 302 56% 83%; /* #ECBBEA hover LIFTS on dark */
+    --plum-tint-dark-hsl: 286.2 12.4% 20.6%; /* #382E3B plum 16% over the dark surface */
 
-  THE SEPARATION FROM `--destructive` IS THE THING TO PROTECT. That sits at
-  hue 352: seven degrees away. They are told apart by lightness and saturation
-  (destructive is lighter at 47% and more saturated at 52%), never by hue. If
-  either value drifts toward the other, "press this" and "this will delete
-  something" stop being distinguishable, and no amount of copy fixes a button
-  that looks like the wrong button. Measure before you move either. It is the ACTION colour - buttons, active
-  navigation, important links, the focus ring, selected controls - not a
-  decorative wash applied over a neutral system. Blue and indigo are not this
-  brand's action colour at any lightness, anywhere, and the dead `--indigo-*`
-  ramp was deleted rather than kept "just in case", because a dead ramp in a
-  palette file is an invitation to reintroduce the thing you just removed.
+    /* Status (section 8.3). Never the only cue: always an icon or a word.
+  Light, label on fill / as text on surface / on canvas / on surface-muted:
+  success 5.98 / 5.98 / 5.59 / 5.21; warning 6.38 / 6.38 / 5.96 / 5.56;
+  danger 5.85 / 5.85 / 5.47 / 5.10; info 6.42 / 6.42 / 6.00 / 5.60.
+  Dark, canvas ink on fill / on surface / on canvas / on surface-muted:
+  success 9.94 / 9.19 / 9.94 / 8.22; warning 10.58 / 9.79 / 10.58 / 8.75;
+  danger 8.35 / 7.73 / 8.35 / 6.91; info 10.02 / 9.27 / 10.02 / 8.28. */
+    --success-600-hsl: 146.7 67.6% 26.7%; /* #16723F */
+    --warning-600-hsl: 34.7 100% 27.5%; /* #8C5100 */
+    --danger-600-hsl: 4.4 73% 43.5%; /* #C02A1E */
+    --info-600-hsl: 196.3 85% 28.8%; /* #0B6688 informational only, never a button */
+    --success-300-hsl: 145.5 54.6% 59.4%; /* #5FD08F */
+    --warning-300-hsl: 36.3 85.4% 65.1%; /* #F2B65A */
+    --danger-300-hsl: 7.2 100% 73.9%; /* #FF8A7A */
+    --info-300-hsl: 196.7 75% 67.1%; /* #6CC7EA */
+    --success-tint-hsl: 146 40% 93%;
+    --warning-tint-hsl: 35 80% 93%;
+    --danger-tint-hsl: 4 70% 95%;
+    --info-tint-hsl: 196 50% 93%;
 
-  CHERRY IS NOT A BACKGROUND. The single way this palette goes wrong is the
-  accent creeping outward from controls into cards, panels and sections until
-  the page reads pink. The tint below is for SELECTION, and `--accent` (the
-  neutral hover surface) is deliberately NOT pointed at it.
+    /* Resume Studio: a document surface, a half-step lighter than the page.
+  Light: ink 17.73 canvas; muted text 8.87; control edge 3.72 on a card,
+  3.30 on the raised fill. Dark: fg 16.14; muted 9.13; control edge 4.41 on
+  a card (was 2.96:1, the audit's one 1.4.11 failure), 3.88 raised. */
+    --studio-canvas-hsl: 240 20% 98.4%; /* #FAFAFC */
+    --studio-card-hsl: 0 0% 100%;
+    --studio-muted-hsl: 240 16.7% 95.3%; /* #F1F1F5 */
+    --studio-canvas-dark-hsl: 240 8% 9.8%; /* #17171B */
+    --studio-card-dark-hsl: 240 7.1% 13.7%; /* #202025 */
+    --studio-raised-dark-hsl: 240 6.7% 17.6%; /* #2A2A30 */
+    --studio-border-dark-hsl: 240 6.5% 24%; /* #393941 */
+    --studio-input-dark-hsl: 250 4.5% 54%; /* #86848F */
 
-  Cherry (345) means "press this". Sage (162) means "verified". Amber (35)
-  means "there is a deadline". Red (352) means "this failed". None of them
-  ever does another's job.
+    /* Obsidian: a deeper dark, kept for a product window nested in a dark
+  page. fg 17.02 on its card, muted 9.62, control edge 4.22. */
+    --obsidian-950-hsl: 240 10% 3.9%; /* #09090B */
+    --obsidian-900-hsl: 240 8.3% 7.1%; /* #111114 */
+    --obsidian-800-hsl: 240 7.1% 11%; /* #1A1A1E */
+    --obsidian-700-hsl: 240 6.3% 18.6%; /* #2C2C32 */
 
-  Note the tint headroom: cherry as TEXT on its own active tint measures
-  4.54:1, which passes but with almost nothing spare. If the tint is ever
-  lightened or the accent lightened, re-measure that pair first - it is the
-  binding constraint in this palette, not the canvas.
+    /* The brand gradient's far end, kept inside the plum family so the
+  wordmark and the logo tile read as one object. As TEXT on light the end
+  stop is 10.1:1 on white; on dark 11.0:1 on the dark surface. */
+    --brand-end-on-light-hsl: 312 40% 27%; /* #602A57 */
+    --brand-end-on-dark-hsl: 300 45% 86%; /* #EBC9EB */
 
-  The fill and ink tokens are the same value and stay separate anyway, because
-  Tailwind's `textColor` key is wired to the ink one and ~477 `text-primary`
-  call sites depend on that indirection.
-
-  On dark the accent LIFTS and the button takes dark ink, which is the mirror
-  of light mode rather than a contradiction of it. */
-    --cherry-fill-hsl: 345 44% 46%; /* #A8425B - card colour on it 5.73:1 */
-    --cherry-hover-hsl: 344 47% 38%; /* #8D334B - hover/pressed, card colour on it 7.61:1 */
-    --cherry-ink-hsl: 345 44% 46%; /* #A8425B - 5.46:1 canvas, 4.54:1 on the active tint */
-    --cherry-ink-dark-hsl: 343 57% 75%; /* #E39AAF - 8.26:1 canvas, 7.19:1 on a card */
-    --cherry-tint-hsl: 342 51% 91.2%; /* #F4DDE4 - the ACTIVE/selected fill. Selection, not atmosphere. */
-    --cherry-tint-dark-hsl: 338 28% 23%; /* #4A2A36 - the same role on dark */
-
-    /* ── Aspirely marketing surfaces (landing only) ────────────────────────
-  `.surface-editorial` and `.surface-obsidian` are still real named
-  surfaces below, and each still re-points the whole semantic layer for its
-  subtree so they nest freely. What changed is that the editorial one no
-  longer owns a SEPARATE ramp.
-
-  It used to: a separate "pearl/ink" set existed because the marketing page
-  and the app were different temperatures, so the landing needed its own
-  ramp to look right at all. They share a temperature now, so a second
-  near-identical ramp is just two places to change one colour. The
-  editorial surface points at `--blush-*` directly; the public site and the
-  product are the same visual system, differing in composition and density
-  rather than in palette, which is what the brand actually asks for.
-
-  The obsidian primitives below DO stay separate: the landing's dark
-  product window is intentionally a shade deeper than the app's dark
-  canvas, so a window can sit inside a page and still read as a window. */
-
-    /* ── Resume Studio (the /app/resume workspace) ─────────────────────────
-  The Resume tools are the one place in the product where the user stares at
-  a DOCUMENT for a long stretch, so this surface reads as clean paper on the
-  desk rather than as the desk itself: a half-step lighter and a touch less
-  saturated than the page canvas, with the same aubergine accent. It used to
-  be an entirely separate indigo palette, which made /app/resume look like a
-  different application - a distinction worth drawing with LIGHTNESS, not
-  with a second brand colour.
-
-  Every one of the six Resume routes mounts under `/app/resume`, so this
-  palette is fully contained - nothing here reaches Home / Jobs / Apply /
-  Grow. Ratios quoted against this surface's own canvas. */
-    --studio-canvas-hsl: 345 50% 98%; /* #FDF8FA paper */
-    --studio-card-hsl: 340 100% 99%; /* #FFFDFE - never flat white */
-    --studio-muted-hsl: 345 44% 95%; /* #F9EDF0 */
-    --studio-border-hsl: 342 32% 90%; /* #EEDFE4 hairline */
-    --studio-input-hsl: 335 10% 56%; /* #9B858E field edge - 3:1 on the studio card */
-    --studio-ink-hsl: 338 16% 14%; /* #291E22 foreground */
-    --studio-muted-text-hsl: 335 9% 34%; /* #5E4E55 muted text */
-    --studio-accent-hsl: var(--cherry-fill-hsl); /* fills, active */
-    --studio-accent-text-hsl: var(--cherry-ink-hsl); /* accent AS TEXT on light */
-    --studio-accent-tint-hsl: var(--cherry-tint-hsl); /* active nav fill */
-
-    /* Dark counterparts. Same idea inverted: the studio canvas sits a step
-  ABOVE the app's graphite rather than below it, so the document surface is
-  still the lightest thing on the page. */
-    --studio-canvas-dark-hsl: 290 10% 16%; /* #2A2329 */
-    --studio-card-dark-hsl: 303 10% 21%; /* #372E36 */
-    --studio-raised-dark-hsl: 312 10% 22%; /* #3C3039 */
-    --studio-border-dark-hsl: 323 12% 30%; /* #56444F hairline */
-    --studio-input-dark-hsl: 323 8% 50%; /* #8B7683 field edge - 3:1 on the studio card */
-    --studio-fg-dark-hsl: 340 37% 97%; /* #FAF4F6 */
-    --studio-muted-text-dark-hsl: 337 15% 76%; /* #CBB9C0 */
-    --studio-accent-dark-hsl: var(--cherry-ink-dark-hsl);
-    --studio-accent-tint-dark-hsl: 279 19% 17%; /* #2E2333 active nav fill */
-
-    /* ── Dark-app surface stack ──────────────────────────────────────────
-  The dark theme used to borrow the slate ramp for its surfaces: canvas
-  slate-900, every raised surface slate-800. Measured in the browser, that
-  put cards at 1.21:1 against the canvas - a raised surface needs roughly
-  1.2:1 just to register as raised at all, so the whole app read as one flat
-  slab and you had to hunt for card edges.
-
-  These are separate primitives, NOT edits to the stone ramp: light mode uses
-  stone-900 as its body TEXT, so lifting the shared token would have wrecked
-  it. Canvas comes up a little off black, cards come up further, and the
-  hairline gets brighter, which is what actually makes edges findable.
-
-  Re-measured for graphite. A raised surface needs roughly 1.2:1 against its
-  canvas just to register as raised, so the card sits well above the sunken
-  step rather than beside it; the sunken value is deliberately close to the
-  canvas, because that is what "recessed" means.
-
-    canvas -> card   1.30:1
-    card   -> border 1.66:1
-  Body text 15.5:1 on the canvas; muted text 6.2:1 on a card. */
-    --app-canvas-dark-hsl: 276 10% 14%; /* #261F26 lifted charcoal — dark without a black hole */
-    --app-surface-dark-hsl: 300 9% 19%; /* #342A33 raised step */
-    --app-muted-dark-hsl: 312 9% 24%; /* #42353E hover / selected fills */
-    --app-hairline-dark-hsl: 323 11% 32%; /* #5A4651 */
-    --app-input-dark-hsl: 323 8% 50%; /* #8B7683 - 3.79:1 on a card. Field edges need 3:1, a hairline does not */
-
-    /* Obsidian: the landing's dark product window, deliberately a shade
-  deeper than the app canvas so a window nested in a page still reads as a
-  window rather than as a hole. Same cool hue family, lower lightness. */
-    --obsidian-950-hsl: 285 14% 7%; /* #140F15 product canvas */
-    --obsidian-900-hsl: 300 12% 12%; /* #221C22 product card */
-    --obsidian-800-hsl: 310 11% 17%; /* #302730 product raised fill */
-    --obsidian-700-hsl: 323 12% 26%; /* #4A3B44 product hairline */
-    --obsidian-600-hsl: 323 8% 50%; /* #8B7683 product field edge - 3:1 on the product card */
-    --obsidian-fg-hsl: 340 37% 97%; /* #FAF4F6 product foreground */
-    --obsidian-mut-hsl: 337 15% 76%; /* #CBB9C0 product muted text */
-
-    /* ── Lumen: the PUBLIC LANDING's bright liquid-glass neutrals ──────────
-  A neutral fog, not a blush. The public page and the product share the same
-  ACCENT (cherry) and the same status hues, and differ in their NEUTRAL ramp
-  only - which is the whole reason this is six primitives rather than a
-  second palette. The app canvas carries a cherry undertone because it is
-  read for hours and a dead-neutral grey goes clinical over a long session; a
-  landing page is looked at for ninety seconds and wants the opposite, a
-  cool-white fog that lets one saturated accent be the only colour in the
-  frame. Blush at 97.5% plus glass plus a cherry CTA read as a cosmetics
-  brand; fog plus glass plus the same CTA reads as an instrument.
-
-  MEASURED, not estimated, against this canvas:
-    ink #242126        14.86:1
-    muted #625C64       6.07:1
-    cherry #A8425B      5.46:1  (and 4.61:1 on its own active tint)
-    sage #3E7B69        4.63:1  (shared primitive, re-checked here)
-  The hairline is deliberately NOT a text colour: at 1.05:1 it is a physical
-  edge, and anything that must be READ uses `--muted-foreground` or darker.
-  `--input` stays a separate, darker token because a control boundary owes
-  3:1 (SC 1.4.11) and a hairline does not. */
-    --fog-canvas-hsl: 240 23% 97.5%; /* #F7F7FA the public canvas */
-    --fog-surface-hsl: 240 50% 99.2%; /* #FCFCFE bright card, and the glass fallback */
-    --fog-ink-hsl: 276 7% 14%; /* #242126 */
-    --fog-mut-hsl: 285 4% 38%; /* #625C64 */
-    --fog-line-hsl: 255 7% 89%; /* #E2E1E5 = ink at 12% over the canvas, flattened */
-    --fog-input-hsl: 276 6% 55%; /* #8E8892 control edge - 3.2:1 on a bright card */
-    --fog-tint-hsl: 332 26% 91%; /* #EEE1E7 = cherry at 12% over the canvas, flattened */
-
-    /* The `--signal-*` triple that used to sit here is gone. It existed to
-  give the accent a name separate from the brand ramp; with the aubergine
-  primitives above naming the fill and the ink directly, it had become three
-  aliases forwarding to three other tokens - two names for one value, which
-  is the drift this file argues against everywhere else. All six scopes now
-  point at `--cherry-*` directly.
-
-  Sage stays reserved for success ONLY and is never decorative. That rule is
-  the reason the accent could not be a green of any kind. */
-
-    /* ── The brand ramp's far end ────────────────────────────────────────
-  The gradient needs somewhere to travel, and it may not travel into another
-  brand colour. Aubergine to mauve-rose is one short arc inside the same
-  red-violet family, so the wordmark, the headline gradient and the logo tile
-  read as one object rather than as two hues stapled together. It notably
-  does NOT travel toward the success sage, the warning amber, the destructive
-  brick, or the terracotta the parent company site owns. */
-    --brand-end-on-light-hsl: 344 47% 38%; /* #8D334B deep cherry - 7.61:1 on a card, so it is safe as TEXT */
-    --brand-end-on-dark-hsl: 345 62% 84%; /* #F5BFCE - high contrast on a dark card */
-
-    /* ── The logo tile's OWN gradient ────────────────────────────────────
-  Deliberately theme-independent, and deliberately NOT `--brand-from/to`.
-  Those two serve gradient TEXT (the landing headline), so on a dark page
-  they have to go pale to stay legible - which turned the mark into a pale
-  lavender chip carrying a white glyph at 1.68:1, i.e. an invisible logo.
-  The tile is a FILL, not text, so it wants the opposite: stay saturated,
-  carry white. Fixing it inside `--brand-from/to` was not an option - one
-  token cannot be pale for text and saturated for fills at the same time.
-
-  Same values in light and dark, so there is exactly one Aspirely mark in
-  the product rather than a logo and a dark-mode variant to keep in sync. */
-    --brand-mark-from-hsl: 345 44% 46%; /* #A8425B cherry */
-    --brand-mark-to-hsl: 342 46% 25%; /* #5C2233 black cherry - glyph reads 5.73:1 -> 11.89:1 across it */
-    /* The glyph, as a TOKEN rather than a literal `text-white`. The landing
-  suite forbids literal white/black inside the product illustrations, because
-  that is how an illustration stops inverting with the theme - a good rule, and
-  the mark is the one thing that is deliberately constant. Saying so with a
-  named token states the intent instead of looking like the mistake the rule
-  guards against. */
+    /* The logo tile: a FILL, theme-independent, white glyph 7.56:1 to 13.4:1
+  across the gradient. */
+    --brand-mark-from-hsl: 302 38% 36%;
+    --brand-mark-to-hsl: 300 34% 18%; /* #3D1E3D */
     --brand-mark-fg-hsl: 0 0% 100%;
 
-    /* ── Status - light foreground + tint ────────────────────────────────
-  Sage, amber, brick. Each is desaturated so it reads as EVIDENCE rather than
-  as a second brand colour, and each was re-measured against BOTH the canvas
-  and the raised muted surface, because status text lives on cards more often
-  than on the page. They are now the only warm hues in the system, which is
-  exactly why they read as meaning rather than as decoration.
+    /* Categorical chart palette (cap 8, always add a second cue). Steps
+  lightness as well as hue so series survive greyscale. */
+    --chart-1: #7f397c; /* plum */
+    --chart-2: #16723f; /* green */
+    --chart-3: #8c5100; /* amber */
+    --chart-4: #4b5a86; /* slate blue */
+    --chart-5: #0b6688; /* teal */
+    --chart-6: #c02a1e; /* red */
+    --chart-7: #6b6878; /* graphite */
+    --chart-8: #a2457a; /* rose */
+    --chart-1-hsl: 302 38% 36%;
+    --chart-2-hsl: 146.7 67.6% 26.7%;
+    --chart-3-hsl: 34.7 100% 27.5%;
+    --chart-4-hsl: 225 28% 41%;
+    --chart-5-hsl: 196.3 85% 28.8%;
+    --chart-6-hsl: 4.4 73% 43.5%;
+    --chart-7-hsl: 250 6% 44%;
+    --chart-8-hsl: 325 39% 45%;
 
-  Two of the brief's anchors did not survive that measurement:
-    - sage #3E735D  -> 4.83:1 canvas but 4.27:1 on the fill. Darkened.
-    - amber #A96F18 -> 3.71:1 canvas, and white on it only 4.22:1. This is
-      the same trap the old saffron hit: yellow is intrinsically light, so
-      it has to go much darker than it looks like it should. #8A5A12 holds
-      5.19:1 and still reads burnished, not brown. */
-    --success-600-hsl: 162 33% 36%; /* #3E7B69 sage - 4.63:1 canvas, card on it 4.85:1 */
-    --success-tint-hsl: 160 32% 92%;
-    --warning-600-hsl: 35 68% 36%; /* #9A651D amber - 4.61:1 canvas, card on it 4.84:1 */
-    --warning-tint-hsl: 38 64% 90%;
-    --danger-600-hsl: 352 52% 47%; /* #B53949 red - 5.38:1 canvas, card on it 5.65:1 */
-    --danger-tint-hsl: 352 58% 94%;
-    --info-600-hsl: 184 42% 32%; /* #2F6E73 - the ONE cool hue, informational only, and never blue */
-    --info-tint-hsl: 184 35% 93%;
-    /* Status - dark lifted foregrounds, measured on the graphite canvas. */
-    --success-300-hsl: 145 24% 64%; /* #8EBAA0 - 7.32:1 on a dark card */
-    --warning-300-hsl: 39 61% 62%; /* #D9B062 - 7.82:1 on a dark card */
-    --danger-300-hsl: 351 57% 74%; /* #E295A1 - 6.84:1 on a dark card */
-    --info-300-hsl: 184 39% 64%; /* #7FC2C7 */
-
-    /* Categorical chart palette (colorblind-aware, cap 8; always add a 2nd cue).
-  Re-cut cool. Hue alone never separates these: the ramp deliberately steps
-  LIGHTNESS as well (44 -> 31 -> 31 -> 36 -> 32 -> 42 -> 43 -> 44), so the
-  series stay distinguishable in greyscale and under deuteranopia, which is
-  the only reason an 8-colour categorical set is defensible at all. */
-    --chart-1: #a8425b; /* cherry */
-    --chart-2: #3e7b69; /* sage */
-    --chart-3: #9a651d; /* amber */
-    --chart-4: #6b4a6e; /* plum */
-    --chart-5: #2f6e73; /* teal */
-    --chart-6: #b53949; /* red */
-    --chart-7: #7a7264; /* stone */
-    --chart-8: #9c4a74; /* rose */
-    /* HSL bridge for the chart palette (ADDITIVE - the hex tokens above stay
-  for raw consumers). Same colors as the hex values; lets Tailwind map
-  chart-* through hsl(var()) so opacity modifiers (e.g. bg-chart-1/10)
-  work like every other semantic color. */
-    --chart-1-hsl: 345 44% 46%;
-    --chart-2-hsl: 162 33% 36%;
-    --chart-3-hsl: 35 68% 36%;
-    --chart-4-hsl: 295 19% 36%;
-    --chart-5-hsl: 184 42% 32%;
-    --chart-6-hsl: 352 52% 47%;
-    --chart-7-hsl: 37 10% 43%;
-    --chart-8-hsl: 329 36% 45%;
+    /* Legacy primitive names, aliased so older rules keep resolving. */
+    --blush-0-hsl: var(--n-surface-hsl);
+    --blush-50-hsl: var(--n-canvas-hsl);
+    --blush-100-hsl: var(--n-surface-muted-hsl);
+    --blush-200-hsl: var(--n-hairline-hsl);
+    --blush-300-hsl: var(--n-control-hsl);
+    --blush-400-hsl: var(--n-ink-muted-dark-hsl);
+    --blush-500-hsl: var(--n-ink-subtle-hsl);
+    --blush-600-hsl: var(--n-ink-muted-hsl);
+    --blush-700-hsl: var(--n-ink-muted-hsl);
+    --blush-900-hsl: var(--n-ink-hsl);
+    --cherry-fill-hsl: var(--plum-fill-hsl);
+    --cherry-hover-hsl: var(--plum-hover-hsl);
+    --cherry-ink-hsl: var(--plum-fill-hsl);
+    --cherry-ink-dark-hsl: var(--plum-fill-dark-hsl);
+    --cherry-tint-hsl: var(--plum-tint-hsl);
+    --cherry-tint-dark-hsl: var(--plum-tint-dark-hsl);
+    --fog-canvas-hsl: var(--n-canvas-hsl);
+    --fog-surface-hsl: var(--n-surface-hsl);
+    --app-canvas-dark-hsl: var(--n-canvas-dark-hsl);
+    --app-surface-dark-hsl: var(--n-surface-dark-hsl);
 
     /* Radius primitives (shadcn --radius base below derives sm/md/lg near 8/10/12). */
     --radius-sm: 8px;
@@ -316,282 +175,305 @@
     --radius-lg: 16px;
     --radius-pill: 9999px;
 
-    /* Type scale (rem; base 16) - size / line-height / weight. */
+    /* ── Type scale (section 8.1) ─────────────────────────────────────────
+  Body is 16px with 24px leading; nothing renders below 12px (see the floor
+  at the bottom of this file). Display sizes keep a rem term inside clamp()
+  so text-only zoom still scales them (SC 1.4.4). Surfaced in Tailwind as
+  text-display-lg ... text-caption-sm. */
     --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
     --font-display: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
     --text-display-size: 2.25rem;
-    --text-display-lh: 2.5rem;
+    --text-display-lh: 2.75rem;
     --text-display-w: 700;
-    --text-h1-size: 1.875rem;
-    --text-h1-lh: 2.25rem;
+    --text-h1-size: 2rem;
+    --text-h1-lh: 2.5rem;
     --text-h1-w: 700;
-    --text-h2-size: 1.5rem;
-    --text-h2-lh: 2rem;
-    --text-h2-w: 600;
-    --text-h3-size: 1.25rem;
-    --text-h3-lh: 1.75rem;
-    --text-h3-w: 600;
+    --text-h2-size: 1.75rem;
+    --text-h2-lh: 2.25rem;
+    --text-h2-w: 700;
+    --text-h3-size: 1.5rem;
+    --text-h3-lh: 2rem;
+    --text-h3-w: 700;
     --text-subtitle-size: 1.125rem;
-    --text-subtitle-lh: 1.75rem;
+    --text-subtitle-lh: 1.625rem;
     --text-subtitle-w: 600;
-    --text-bodyl-size: 1rem;
-    --text-bodyl-lh: 1.5rem;
+    --text-bodyl-size: 1.125rem;
+    --text-bodyl-lh: 1.75rem;
     --text-bodyl-w: 400;
-    --text-body-size: 0.875rem;
-    --text-body-lh: 1.25rem;
+    --text-body-size: 1rem;
+    --text-body-lh: 1.5rem;
     --text-body-w: 400;
-    --text-label-size: 0.75rem;
-    --text-label-lh: 1rem;
-    --text-label-w: 500;
-    --text-overline-size: 0.6875rem;
+    --text-label-size: 0.875rem;
+    --text-label-lh: 1.25rem;
+    --text-label-w: 600;
+    --text-overline-size: 0.75rem;
     --text-overline-lh: 1rem;
     --text-overline-w: 600;
-    --text-overline-tracking: 0.06em; /* relaxed for 11px on-screen legibility */
+    --text-overline-tracking: 0.06em;
 
-    /* Motion tokens. */
+    /* Motion tokens. 150 to 250ms for state changes, one easing family. */
     --motion-fast: 120ms;
     --motion-base: 200ms;
     --motion-slow: 320ms;
     --ease-standard: cubic-bezier(0.2, 0, 0, 1);
     --ease-accelerate: cubic-bezier(0.3, 0, 1, 1);
-    /* Editorial motion easing - calm, decisive settle (Compass §7). KEPT;
-  also exposed as the reconciled `decelerate` (entrances). */
     --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
     --ease-decelerate: cubic-bezier(0.16, 1, 0.3, 1);
 
     /* ── LAYER 2 - SEMANTIC ALIASES (light) → shadcn bridge ───────────────
-  Existing shadcn token NAMES kept; re-pointed at primitives (values-only). */
-    --background: var(--blush-50-hsl);
-    --foreground: var(--blush-900-hsl);
-    --card: var(--blush-0-hsl);
-    --card-foreground: var(--blush-900-hsl);
-    --popover: var(--blush-0-hsl);
-    --popover-foreground: var(--blush-900-hsl);
-    /* Aubergine is the brand's action colour, and the SAME token the accent
-  uses, so the page speaks with one voice: the thing you click and the thing
-  the product is doing are the same colour. */
-    --primary: var(--cherry-fill-hsl); /* #7A4B78 - card colour on it 6.64:1 */
-    --primary-hover: var(--cherry-hover-hsl); /* #663B65 hover/pressed */
-    --primary-foreground: var(--blush-0-hsl);
-    /* THE ACCENT AS INK, which is not the same colour as the accent as a FILL.
-    A button wants a saturated block you read WHITE text on; the words "Auto
-    sync" want a colour you read ON the card. On a light page these are close
-    enough to look identical, but they are not equal: the ink tone is one step
-    darker so it also clears AA on the soft-mauve ACTIVE tint (6.29:1). On a
-    dark page they diverge properly:
-    see the note in `.dark`. Tailwind's `textColor` key is wired to this, so
-    `text-primary` resolves here while `bg-/border-/ring-primary` stay on
-    `--primary` - which is why 477 existing `text-primary` call sites did not
-    have to change. */
-    --primary-ink: var(--cherry-ink-hsl); /* #6B4373 - 6.91:1 canvas, 6.29:1 on the tint */
-    --secondary: var(--blush-100-hsl);
-    --secondary-foreground: var(--blush-700-hsl);
-    --muted: var(--blush-100-hsl);
-    --muted-foreground: var(--blush-500-hsl); /* on tinted surfaces step to stone-600 */
-    --accent: var(--blush-100-hsl); /* subtle neutral hover surface - NOT the accent */
-    --accent-foreground: var(--blush-700-hsl);
-    /* The ACTIVE/selected fill, the one place the accent tint belongs.
-  `--accent` above stays neutral on purpose: tinting every hover state
-  would make the whole app twitch on mouse-move, which is the opposite
-  of calm. Selection is a state worth colouring; hover is not.
-  Previously defined ONLY inside `.surface-studio`, so `.studio-nav-row`
-  resolved to an invalid colour anywhere else. Now defined in every scope. */
-    --nav-active: var(--cherry-tint-hsl);
+  Names unchanged so every primitive and the ~477 `text-primary` call sites
+  keep working; values re-pointed (section 8.7 mapping). */
+    --background: var(--n-canvas-hsl);
+    --foreground: var(--n-ink-hsl);
+    --card: var(--n-surface-hsl);
+    --card-foreground: var(--n-ink-hsl);
+    --popover: var(--n-surface-hsl);
+    --popover-foreground: var(--n-ink-hsl);
+    --primary: var(--plum-fill-hsl);
+    --primary-hover: var(--plum-hover-hsl);
+    --primary-foreground: var(--n-surface-hsl);
+    /* Tailwind's `textColor.primary` reads this, so the accent as INK can
+  differ from the accent as FILL. Light: identical. */
+    --primary-ink: var(--plum-fill-hsl);
+    --secondary: var(--n-surface-muted-hsl);
+    --secondary-foreground: var(--n-ink-muted-hsl);
+    --muted: var(--n-surface-muted-hsl);
+    --muted-foreground: var(--n-ink-subtle-hsl);
+    /* The three text steps, named for new code (`text-ink-muted` etc). */
+    --ink: var(--n-ink-hsl);
+    --ink-muted: var(--n-ink-muted-hsl);
+    --ink-subtle: var(--n-ink-subtle-hsl);
+    --surface-strong: var(--n-surface-strong-hsl);
+    /* shadcn's `accent` is the NEUTRAL hover surface, never the plum. */
+    --accent: var(--n-surface-strong-hsl);
+    --accent-foreground: var(--n-ink-hsl);
+    --nav-active: var(--plum-tint-hsl);
     --destructive: var(--danger-600-hsl);
-    --destructive-foreground: var(--blush-0-hsl);
-    --success: var(--success-600-hsl); /* 5.64:1 AA */
-    --success-foreground: var(--blush-0-hsl);
-    --warning: var(--warning-600-hsl); /* 5.19:1 AA */
-    --warning-foreground: var(--blush-0-hsl);
+    --destructive-foreground: var(--n-surface-hsl);
+    --success: var(--success-600-hsl);
+    --success-foreground: var(--n-surface-hsl);
+    --warning: var(--warning-600-hsl);
+    --warning-foreground: var(--n-surface-hsl);
     --info: var(--info-600-hsl);
-    --info-foreground: var(--blush-0-hsl);
-    --border: var(--blush-200-hsl);
-    --input: var(--blush-300-hsl); /* 3.14:1 - a field edge is a control boundary, not a hairline */
-    --ring: var(--cherry-ink-hsl); /* focus follows the action colour - 6.91:1 vs canvas */
+    --info-foreground: var(--n-surface-hsl);
+    --border: var(--n-hairline-hsl);
+    --input: var(--n-control-hsl);
+    --ring: var(--plum-fill-hsl); /* 7.06 canvas, 5.97 on surface-strong */
     --radius: 0.75rem;
 
-    /* ── Liquid glass, as tokens rather than as a recipe per component ─────
-  ONE pane definition, expressed in the semantic layer, so a frosted surface
-  inherits whatever scope it is dropped into instead of assuming a canvas.
-  `.glass-pane` (components) is the only consumer.
-
-  Defaults are deliberately conservative: the pane is the surface's own card
-  colour at 72% with a 20px blur. A scope that wants a different pane -
-  brighter, cooler, more transparent - overrides these five values and every
-  glass surface inside it follows. `--glass-solid` is the opaque answer for
-  browsers without backdrop-filter, and it is REQUIRED: a translucent bar
-  with no blur behind it smears whatever scrolls under it. */
+    /* ── Glass, as tokens ───────────────────────────────────────────────
+  A pane is the scope's own surface at 0.78 or more over the canvas, with the
+  solid surface as the fallback (and under prefers-reduced-transparency). */
     --glass-fill: var(--card);
-    --glass-alpha: 0.72;
+    --glass-alpha: 0.78;
     --glass-solid: var(--card);
-    --glass-edge: var(--foreground);
-    --glass-edge-alpha: 0.12;
-    --glass-sheen-alpha: 0.55;
-    --glass-blur: 20px;
+    --glass-edge: 0 0% 100%;
+    --glass-edge-alpha: 0.6;
+    --glass-sheen-alpha: 0.7;
+    --glass-blur: 24px;
 
-    /* ── Elevation scale (Compass §7) ──────────────────────────────────────
-  Token-driven, tinted with the page's own ink (never pure black) so shadows
-  read as shade falling on paper rather than as grime on a screen. The hue of
-  a near-invisible colour is genuinely noticeable here: a warm-tinted shadow
-  on this cool page reads as a stain, exactly as a slate-tinted one did on
-  the warm page this replaced. Surfaced via tailwind boxShadow
-  (shadow-soft / -panel / -pop / -float). */
-    --shadow-soft: 0 1px 2px hsl(338 20% 12% / 0.06), 0 1px 3px hsl(338 20% 12% / 0.06);
-    --shadow-panel: 0 1px 2px hsl(338 20% 12% / 0.05), 0 6px 16px -4px hsl(338 20% 12% / 0.11);
-    --shadow-pop: 0 4px 12px -2px hsl(338 20% 12% / 0.09), 0 16px 32px -8px hsl(338 20% 12% / 0.13);
+    /* Elevation, tinted with the neutral ink. On light, depth = surface step
+  plus a soft shadow; on dark, lightness alone carries it. */
+    --shadow-soft: 0 1px 2px hsl(250 12% 10% / 0.05), 0 1px 3px hsl(250 12% 10% / 0.05);
+    --shadow-panel: 0 1px 2px hsl(250 12% 10% / 0.05), 0 8px 20px -6px hsl(250 12% 10% / 0.1);
+    --shadow-pop: 0 4px 12px -2px hsl(250 12% 10% / 0.08), 0 18px 36px -10px hsl(250 12% 10% / 0.12);
     --shadow-float:
-      0 8px 24px -6px hsl(338 20% 12% / 0.15), 0 28px 56px -12px hsl(338 20% 12% / 0.17);
+      0 10px 28px -8px hsl(250 12% 10% / 0.13), 0 32px 64px -16px hsl(250 12% 10% / 0.15);
 
-    /* THE brand gradient: one pair, every mark. Aubergine into mauve-rose, so
-  the wordmark, the headline gradient and every avatar dot are the same
-  object. It travels mostly in LIGHTNESS, which is what keeps it from reading
-  as a second brand. */
-    --brand-from: var(--cherry-ink-hsl);
+    --brand-from: var(--plum-fill-hsl);
     --brand-to: var(--brand-end-on-light-hsl);
 
     /* Sidebar */
-    --sidebar-background: var(--blush-50-hsl);
-    --sidebar-foreground: var(--blush-700-hsl);
-    --sidebar-primary: var(--cherry-fill-hsl);
-    --sidebar-primary-foreground: var(--blush-0-hsl);
-    --sidebar-accent: var(--blush-100-hsl);
-    --sidebar-accent-foreground: var(--blush-700-hsl);
-    --sidebar-border: var(--blush-200-hsl);
-    --sidebar-ring: var(--cherry-ink-hsl);
+    --sidebar-background: var(--n-canvas-hsl);
+    --sidebar-foreground: var(--n-ink-muted-hsl);
+    --sidebar-primary: var(--plum-fill-hsl);
+    --sidebar-primary-foreground: var(--n-surface-hsl);
+    --sidebar-accent: var(--n-surface-muted-hsl);
+    --sidebar-accent-foreground: var(--n-ink-hsl);
+    --sidebar-border: var(--n-hairline-hsl);
+    --sidebar-ring: var(--plum-fill-hsl);
   }
 
+  /* ── LAYER 2 - SEMANTIC ALIASES (dark) ────────────────────────────────── */
   .dark {
-    /* ── LAYER 2 - SEMANTIC ALIASES (dark) - token SWAP only, re-checked.
-  Graphite canvas, cool off-white text; never #000/#FFF. Deep charcoal with a
-  violet cast, never crushed black - easy on the eyes for long sessions, and
-  tinted just enough that it reads as the same product as the light side
-  rather than as a generic dark mode bolted on. */
-    --background: var(--app-canvas-dark-hsl);
-    --foreground: var(--blush-100-hsl); /* #E5E3EA - 13.7:1 on the canvas */
-    --card: var(--app-surface-dark-hsl);
-    --card-foreground: var(--blush-100-hsl);
-    --popover: var(--app-surface-dark-hsl);
-    --popover-foreground: var(--blush-100-hsl);
-    /* DARK BUTTONS CARRY DARK TEXT. On a dark page the accent has to be light
-    enough to read as text on a card, and anything that light cannot also hold
-    white text - so the button inverts. That is the mirror of light mode
-    rather than a contradiction of it: on a light page the accent is dark, so
-    it carries light text AND reads as text; on a dark page it is light, so it
-    carries dark text AND reads as text.
-
-    Fill and ink therefore converge here. `--primary-ink` stays a separate
-    token anyway, because Tailwind's `textColor` key is wired to it and ~477
-    `text-primary` call sites depend on that indirection. */
-    --primary: var(--cherry-ink-dark-hsl); /* #D39ACA - canvas ink on it 7.73:1, 6.91:1 vs a card */
-    /* On dark the hover LIFTS. Darkening a light accent on a dark page reads as
-    the control switching off rather than responding. */
-    --primary-hover: 343 57% 82%; /* #EFBDCB - hover LIFTS on dark */ /* #E0AEAB - hover LIFTS on dark */
-    --primary-foreground: var(--app-canvas-dark-hsl);
-    --primary-ink: var(--cherry-ink-dark-hsl); /* 7.56:1 canvas, 6.16:1 on a card */
-    --secondary: var(--app-surface-dark-hsl);
-    --secondary-foreground: var(--blush-100-hsl);
-    --muted: var(--app-muted-dark-hsl);
-    --muted-foreground: var(--blush-400-hsl); /* #ABA7B4 - 7.58:1 canvas, 6.17:1 on a card */
-    --accent: var(--app-surface-dark-hsl);
-    --accent-foreground: var(--blush-100-hsl);
-    --nav-active: var(--cherry-tint-dark-hsl); /* #2E2333 - the active/selected fill */
+    --background: var(--n-canvas-dark-hsl);
+    --foreground: var(--n-ink-dark-hsl);
+    --card: var(--n-surface-dark-hsl);
+    --card-foreground: var(--n-ink-dark-hsl);
+    --popover: var(--n-surface-dark-hsl);
+    --popover-foreground: var(--n-ink-dark-hsl);
+    /* DARK BUTTONS CARRY DARK TEXT: the accent lifts so it reads as text on
+  a card, and anything that light cannot also hold white text. */
+    --primary: var(--plum-fill-dark-hsl);
+    --primary-hover: var(--plum-hover-dark-hsl);
+    --primary-foreground: var(--n-canvas-dark-hsl);
+    --primary-ink: var(--plum-fill-dark-hsl);
+    --secondary: var(--n-surface-muted-dark-hsl);
+    --secondary-foreground: var(--n-ink-muted-dark-hsl);
+    --muted: var(--n-surface-muted-dark-hsl);
+    --muted-foreground: var(--n-ink-subtle-dark-hsl);
+    --ink: var(--n-ink-dark-hsl);
+    --ink-muted: var(--n-ink-muted-dark-hsl);
+    --ink-subtle: var(--n-ink-subtle-dark-hsl);
+    --surface-strong: var(--n-surface-strong-dark-hsl);
+    --accent: var(--n-surface-strong-dark-hsl);
+    --accent-foreground: var(--n-ink-dark-hsl);
+    --nav-active: var(--plum-tint-dark-hsl);
     --destructive: var(--danger-300-hsl);
-    --destructive-foreground: var(--blush-900-hsl);
-    --success: var(--success-300-hsl); /* lifted, AA/AAA on espresso */
-    --success-foreground: var(--blush-900-hsl);
-    --warning: var(--warning-300-hsl); /* lifted, AA/AAA on espresso */
-    --warning-foreground: var(--blush-900-hsl);
+    --destructive-foreground: var(--n-canvas-dark-hsl);
+    --success: var(--success-300-hsl);
+    --success-foreground: var(--n-canvas-dark-hsl);
+    --warning: var(--warning-300-hsl);
+    --warning-foreground: var(--n-canvas-dark-hsl);
     --info: var(--info-300-hsl);
-    --info-foreground: var(--blush-900-hsl);
-    --border: var(--app-hairline-dark-hsl);
-    --input: var(--app-input-dark-hsl); /* 4.08:1 on a card - was the hairline, which failed SC 1.4.11 */
-    --ring: var(--cherry-ink-dark-hsl); /* 7.56:1 vs the canvas */
+    --info-foreground: var(--n-canvas-dark-hsl);
+    --border: var(--n-hairline-dark-hsl);
+    --input: var(--n-control-dark-hsl);
+    --ring: var(--plum-fill-dark-hsl);
 
-    /* Same gradient, lifted for a dark canvas. The light end has to travel
-  FURTHER on dark, not less: `--brand-to` is already a light colour here (it
-  has to be legible on near-black), so a from-stop close to it leaves the
-  gradient nowhere to go and the headline flattens into one shade. */
-    --brand-from: var(--cherry-ink-dark-hsl);
+    --brand-from: var(--plum-fill-dark-hsl);
     --brand-to: var(--brand-end-on-dark-hsl);
 
-    /* Elevation - deeper, softer halos on dark so cards lift without a black
-  ring. Tinted toward true black since the canvas is already deep. */
     --shadow-soft: 0 1px 2px hsl(0 0% 0% / 0.3), 0 1px 3px hsl(0 0% 0% / 0.22);
     --shadow-panel: 0 1px 2px hsl(0 0% 0% / 0.3), 0 8px 20px -6px hsl(0 0% 0% / 0.45);
     --shadow-pop: 0 6px 16px -4px hsl(0 0% 0% / 0.45), 0 20px 40px -10px hsl(0 0% 0% / 0.55);
     --shadow-float: 0 10px 30px -8px hsl(0 0% 0% / 0.55), 0 32px 64px -16px hsl(0 0% 0% / 0.65);
 
-    /* Sidebar */
-    --sidebar-background: var(--blush-900-hsl);
-    --sidebar-foreground: var(--blush-400-hsl);
-    --sidebar-primary: var(--cherry-ink-dark-hsl);
-    --sidebar-primary-foreground: var(--app-canvas-dark-hsl);
-    --sidebar-accent: var(--blush-800-hsl);
-    --sidebar-accent-foreground: var(--blush-100-hsl);
-    --sidebar-border: var(--blush-700-hsl);
-    --sidebar-ring: var(--cherry-ink-dark-hsl);
+    --sidebar-background: var(--n-canvas-dark-hsl);
+    --sidebar-foreground: var(--n-ink-muted-dark-hsl);
+    --sidebar-primary: var(--plum-fill-dark-hsl);
+    --sidebar-primary-foreground: var(--n-canvas-dark-hsl);
+    --sidebar-accent: var(--n-surface-muted-dark-hsl);
+    --sidebar-accent-foreground: var(--n-ink-dark-hsl);
+    --sidebar-border: var(--n-hairline-dark-hsl);
+    --sidebar-ring: var(--plum-fill-dark-hsl);
 
-    --glass-fill: 276 8% 22%;
-    --glass-alpha: 0.55;
-    --glass-solid: var(--app-surface-dark-hsl);
+    --glass-fill: var(--card);
+    --glass-alpha: 0.8;
+    --glass-solid: var(--card);
     --glass-edge: 0 0% 100%;
-    --glass-edge-alpha: 0.14;
-    --glass-sheen-alpha: 0.16;
+    --glass-edge-alpha: 0.08;
+    --glass-sheen-alpha: 0.08;
     --glass-blur: 24px;
   }
 
-  /* ── The Aspirely visual language: two named surfaces ────────────────────
-  These are NOT themes and NOT one-off classes. Each re-points the whole
-  semantic layer for its own subtree, so they nest freely in either app
-  theme and in each other: the landing can hold an obsidian product window
-  inside a pearl editorial section, and both halves stay internally
-  consistent, keyboard-focusable and AA without a single `dark:` variant.
+  /* ── Named surfaces ──────────────────────────────────────────────────────
+  Each re-points the whole semantic layer for its own subtree, so they nest
+  freely in either theme without one `dark:` variant.
 
-  They set their own background/color so a surface is always opaque - a
-  translucent editorial band over an obsidian canvas would smear text. */
-
-  .surface-editorial {
+  The public pair is `.surface-lumen` (light) and `.surface-nocturne` (dark),
+  chosen by `usePublicSurface()` from the RESOLVED theme: the visitor's
+  explicit choice, or their system preference. They are the app's own light
+  and dark tokens, so `/` and `/app` are one visual system. */
+  .surface-editorial,
+  .surface-lumen {
     color-scheme: light;
 
-    --background: var(--blush-50-hsl);
-    --foreground: var(--blush-900-hsl);
-    --card: var(--blush-0-hsl);
-    --card-foreground: var(--blush-900-hsl);
-    --popover: var(--blush-0-hsl);
-    --popover-foreground: var(--blush-900-hsl);
-    --primary: var(--cherry-fill-hsl);
-    --primary-hover: var(--cherry-hover-hsl);
-    --primary-foreground: var(--blush-0-hsl);
-    --primary-ink: var(--cherry-ink-hsl); /* light surface: ink is one step darker than the fill */
-    --secondary: var(--blush-100-hsl);
-    --secondary-foreground: var(--blush-700-hsl);
-    --muted: var(--blush-100-hsl);
-    --muted-foreground: var(--blush-500-hsl);
-    --accent: var(--blush-100-hsl);
-    --accent-foreground: var(--blush-700-hsl);
+    --background: var(--n-canvas-hsl);
+    --foreground: var(--n-ink-hsl);
+    --card: var(--n-surface-hsl);
+    --card-foreground: var(--n-ink-hsl);
+    --popover: var(--n-surface-hsl);
+    --popover-foreground: var(--n-ink-hsl);
+    --primary: var(--plum-fill-hsl);
+    --primary-hover: var(--plum-hover-hsl);
+    --primary-foreground: var(--n-surface-hsl);
+    --primary-ink: var(--plum-fill-hsl);
+    --secondary: var(--n-surface-muted-hsl);
+    --secondary-foreground: var(--n-ink-muted-hsl);
+    --muted: var(--n-surface-muted-hsl);
+    --muted-foreground: var(--n-ink-subtle-hsl);
+    --ink: var(--n-ink-hsl);
+    --ink-muted: var(--n-ink-muted-hsl);
+    --ink-subtle: var(--n-ink-subtle-hsl);
+    --surface-strong: var(--n-surface-strong-hsl);
+    --accent: var(--n-surface-strong-hsl);
+    --accent-foreground: var(--n-ink-hsl);
+    --nav-active: var(--plum-tint-hsl);
     --destructive: var(--danger-600-hsl);
-    --destructive-foreground: var(--blush-0-hsl);
+    --destructive-foreground: var(--n-surface-hsl);
     --success: var(--success-600-hsl);
-    --success-foreground: var(--blush-0-hsl);
+    --success-foreground: var(--n-surface-hsl);
     --warning: var(--warning-600-hsl);
-    --warning-foreground: var(--blush-0-hsl);
+    --warning-foreground: var(--n-surface-hsl);
     --info: var(--info-600-hsl);
-    --info-foreground: var(--blush-0-hsl);
-    --border: var(--blush-200-hsl);
-    --input: var(--blush-300-hsl);
-    --ring: var(--cherry-ink-hsl);
-    --nav-active: var(--cherry-tint-hsl);
+    --info-foreground: var(--n-surface-hsl);
+    --border: var(--n-hairline-hsl);
+    --input: var(--n-control-hsl);
+    --ring: var(--plum-fill-hsl);
 
-    --brand-from: var(--cherry-ink-hsl);
+    --brand-from: var(--plum-fill-hsl);
     --brand-to: var(--brand-end-on-light-hsl);
 
-    /* Warm-tinted elevation: shadows on ivory must read as warm shade, never
-  as grey grime. */
-    --shadow-soft: 0 1px 2px hsl(338 20% 12% / 0.06), 0 1px 3px hsl(338 20% 12% / 0.06);
-    --shadow-panel: 0 1px 2px hsl(338 20% 12% / 0.06), 0 8px 20px -6px hsl(338 20% 12% / 0.11);
-    --shadow-pop: 0 4px 12px -2px hsl(338 20% 12% / 0.09), 0 18px 36px -10px hsl(338 20% 12% / 0.13);
+    --shadow-soft: 0 1px 2px hsl(250 12% 10% / 0.05), 0 1px 3px hsl(250 12% 10% / 0.05);
+    --shadow-panel: 0 1px 2px hsl(250 12% 10% / 0.05), 0 8px 20px -6px hsl(250 12% 10% / 0.1);
+    --shadow-pop: 0 4px 12px -2px hsl(250 12% 10% / 0.08), 0 18px 36px -10px hsl(250 12% 10% / 0.12);
     --shadow-float:
-      0 10px 28px -8px hsl(338 20% 12% / 0.15), 0 32px 64px -16px hsl(338 20% 12% / 0.17);
+      0 10px 28px -8px hsl(250 12% 10% / 0.13), 0 32px 64px -16px hsl(250 12% 10% / 0.15);
+
+    --glass-fill: var(--n-surface-hsl);
+    --glass-alpha: 0.78;
+    --glass-solid: var(--n-surface-hsl);
+    --glass-edge: 0 0% 100%;
+    --glass-edge-alpha: 0.6;
+    --glass-sheen-alpha: 0.7;
+    --glass-blur: 24px;
+
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
+
+  .surface-nocturne {
+    color-scheme: dark;
+
+    --background: var(--n-canvas-dark-hsl);
+    --foreground: var(--n-ink-dark-hsl);
+    --card: var(--n-surface-dark-hsl);
+    --card-foreground: var(--n-ink-dark-hsl);
+    --popover: var(--n-surface-dark-hsl);
+    --popover-foreground: var(--n-ink-dark-hsl);
+    --primary: var(--plum-fill-dark-hsl);
+    --primary-hover: var(--plum-hover-dark-hsl);
+    --primary-foreground: var(--n-canvas-dark-hsl);
+    --primary-ink: var(--plum-fill-dark-hsl);
+    --secondary: var(--n-surface-muted-dark-hsl);
+    --secondary-foreground: var(--n-ink-muted-dark-hsl);
+    --muted: var(--n-surface-muted-dark-hsl);
+    --muted-foreground: var(--n-ink-subtle-dark-hsl);
+    --ink: var(--n-ink-dark-hsl);
+    --ink-muted: var(--n-ink-muted-dark-hsl);
+    --ink-subtle: var(--n-ink-subtle-dark-hsl);
+    --surface-strong: var(--n-surface-strong-dark-hsl);
+    --accent: var(--n-surface-strong-dark-hsl);
+    --accent-foreground: var(--n-ink-dark-hsl);
+    --nav-active: var(--plum-tint-dark-hsl);
+    --destructive: var(--danger-300-hsl);
+    --destructive-foreground: var(--n-canvas-dark-hsl);
+    --success: var(--success-300-hsl);
+    --success-foreground: var(--n-canvas-dark-hsl);
+    --warning: var(--warning-300-hsl);
+    --warning-foreground: var(--n-canvas-dark-hsl);
+    --info: var(--info-300-hsl);
+    --info-foreground: var(--n-canvas-dark-hsl);
+    --border: var(--n-hairline-dark-hsl);
+    --input: var(--n-control-dark-hsl);
+    --ring: var(--plum-fill-dark-hsl);
+
+    --brand-from: var(--plum-fill-dark-hsl);
+    --brand-to: var(--brand-end-on-dark-hsl);
+
+    --shadow-soft: 0 1px 2px hsl(0 0% 0% / 0.3), 0 1px 3px hsl(0 0% 0% / 0.22);
+    --shadow-panel: 0 1px 2px hsl(0 0% 0% / 0.3), 0 8px 20px -6px hsl(0 0% 0% / 0.45);
+    --shadow-pop: 0 6px 16px -4px hsl(0 0% 0% / 0.45), 0 20px 40px -10px hsl(0 0% 0% / 0.55);
+    --shadow-float: 0 10px 30px -8px hsl(0 0% 0% / 0.55), 0 32px 64px -16px hsl(0 0% 0% / 0.65);
+
+    --glass-fill: var(--n-surface-dark-hsl);
+    --glass-alpha: 0.8;
+    --glass-solid: var(--n-surface-dark-hsl);
+    --glass-edge: 0 0% 100%;
+    --glass-edge-alpha: 0.08;
+    --glass-sheen-alpha: 0.08;
+    --glass-blur: 24px;
 
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
@@ -601,21 +483,26 @@
     color-scheme: dark;
 
     --background: var(--obsidian-950-hsl);
-    --foreground: var(--obsidian-fg-hsl);
+    --foreground: var(--n-ink-dark-hsl);
     --card: var(--obsidian-900-hsl);
-    --card-foreground: var(--obsidian-fg-hsl);
+    --card-foreground: var(--n-ink-dark-hsl);
     --popover: var(--obsidian-900-hsl);
-    --popover-foreground: var(--obsidian-fg-hsl);
-    --primary: var(--cherry-ink-dark-hsl); /* same reversal as `.dark` - see the note there */
-    --primary-hover: 343 57% 82%; /* #EFBDCB - hover LIFTS on dark */
+    --popover-foreground: var(--n-ink-dark-hsl);
+    --primary: var(--plum-fill-dark-hsl);
+    --primary-hover: var(--plum-hover-dark-hsl);
     --primary-foreground: var(--obsidian-950-hsl);
-    --primary-ink: var(--cherry-ink-dark-hsl);
+    --primary-ink: var(--plum-fill-dark-hsl);
     --secondary: var(--obsidian-800-hsl);
-    --secondary-foreground: var(--obsidian-fg-hsl);
+    --secondary-foreground: var(--n-ink-muted-dark-hsl);
     --muted: var(--obsidian-800-hsl);
-    --muted-foreground: var(--obsidian-mut-hsl);
+    --muted-foreground: var(--n-ink-subtle-dark-hsl);
+    --ink: var(--n-ink-dark-hsl);
+    --ink-muted: var(--n-ink-muted-dark-hsl);
+    --ink-subtle: var(--n-ink-subtle-dark-hsl);
+    --surface-strong: var(--obsidian-700-hsl);
     --accent: var(--obsidian-800-hsl);
-    --accent-foreground: var(--obsidian-fg-hsl);
+    --accent-foreground: var(--n-ink-dark-hsl);
+    --nav-active: var(--plum-tint-dark-hsl);
     --destructive: var(--danger-300-hsl);
     --destructive-foreground: var(--obsidian-950-hsl);
     --success: var(--success-300-hsl);
@@ -625,15 +512,10 @@
     --info: var(--info-300-hsl);
     --info-foreground: var(--obsidian-950-hsl);
     --border: var(--obsidian-700-hsl);
-    --input: var(--obsidian-600-hsl); /* field edges clear 3:1; the hairline does not */
-    --ring: var(--cherry-ink-dark-hsl);
-    --nav-active: var(--cherry-tint-dark-hsl);
+    --input: var(--n-control-dark-hsl);
+    --ring: var(--plum-fill-dark-hsl);
 
-    /* The light end has to travel FURTHER on dark, not less: `--brand-to` is
-  already a light colour here (it has to be legible on near-black), so a
-  from-stop close to it leaves the gradient nowhere to go and the headline
-  flattens into a single shade. */
-    --brand-from: var(--cherry-ink-dark-hsl);
+    --brand-from: var(--plum-fill-dark-hsl);
     --brand-to: var(--brand-end-on-dark-hsl);
 
     --shadow-soft: 0 1px 2px hsl(0 0% 0% / 0.34), 0 1px 3px hsl(0 0% 0% / 0.26);
@@ -645,194 +527,30 @@
     color: hsl(var(--foreground));
   }
 
-  /* ── Lumen: THE public landing surface ───────────────────────────────────
-  Same contract as the two above - it re-points the whole semantic layer for
-  its subtree - and it is the DEFAULT the public site paints in, not one half
-  of a theme pair.
-
-  WHY THE PUBLIC PAGE STOPPED FOLLOWING THE OS. `/` used to render
-  `.surface-obsidian` whenever the RESOLVED theme was dark, and "resolved"
-  included `theme: 'system'`, which is what every first-time visitor has. So
-  roughly half of all first impressions were a near-black plum canvas
-  (#140F15) with the hero film's left-hand readability wash painted in that
-  same near-black - the "dark chocolate panel" the redesign brief describes.
-  Nobody chose it; an OS preference for dark application chrome is not a
-  request for a dark marketing page, and it is the one page where we do not
-  get a second chance at the first frame.
-
-  So the public shell paints lumen unless the visitor has EXPLICITLY pressed
-  the toggle to dark, in which case `.surface-nocturne` below answers - and
-  it is charcoal, not the plum-black obsidian, because the brief is explicit
-  that the dark alternative may never read as brown.
-
-  Obsidian is untouched and still correct where it is used: it is the dark
-  PRODUCT window, a thing nested inside a page, not a page.
-
-  GLASS. The five glass tokens are overridden here rather than inherited: a
-  pane on this page is bright white at 72%, not the surface's own card
-  colour, which is what makes the frost read as light passing through rather
-  than as a slightly transparent card. */
-  .surface-lumen {
-    color-scheme: light;
-
-    --background: var(--fog-canvas-hsl);
-    --foreground: var(--fog-ink-hsl);
-    --card: var(--fog-surface-hsl);
-    --card-foreground: var(--fog-ink-hsl);
-    --popover: var(--fog-surface-hsl);
-    --popover-foreground: var(--fog-ink-hsl);
-    /* The accent is UNCHANGED from the product. One brand, two neutral ramps. */
-    --primary: var(--cherry-fill-hsl);
-    --primary-hover: var(--cherry-hover-hsl);
-    --primary-foreground: var(--fog-surface-hsl);
-    --primary-ink: var(--cherry-ink-hsl);
-    --secondary: 240 20% 95%;
-    --secondary-foreground: 276 7% 24%;
-    --muted: 240 20% 95%;
-    --muted-foreground: var(--fog-mut-hsl);
-    --accent: 240 20% 95%; /* neutral hover, NEVER the cherry tint - see the palette note */
-    --accent-foreground: 276 7% 24%;
-    --nav-active: var(--fog-tint-hsl);
-    --destructive: var(--danger-600-hsl);
-    --destructive-foreground: var(--fog-surface-hsl);
-    --success: var(--success-600-hsl);
-    --success-foreground: var(--fog-surface-hsl);
-    --warning: var(--warning-600-hsl);
-    --warning-foreground: var(--fog-surface-hsl);
-    --info: var(--info-600-hsl);
-    --info-foreground: var(--fog-surface-hsl);
-    --border: var(--fog-line-hsl);
-    --input: var(--fog-input-hsl);
-    --ring: var(--cherry-ink-hsl);
-
-    --brand-from: var(--cherry-ink-hsl);
-    --brand-to: var(--brand-end-on-light-hsl);
-
-    /* Neutral-tinted elevation. The app's shadows are tinted warm because
-  they fall on a blush canvas; the same warmth on fog reads as a stain. */
-    --shadow-soft: 0 1px 2px hsl(276 12% 14% / 0.05), 0 1px 3px hsl(276 12% 14% / 0.05);
-    --shadow-panel: 0 1px 2px hsl(276 12% 14% / 0.05), 0 8px 20px -6px hsl(276 12% 14% / 0.1);
-    --shadow-pop: 0 4px 12px -2px hsl(276 12% 14% / 0.08), 0 18px 36px -10px hsl(276 12% 14% / 0.12);
-    --shadow-float:
-      0 10px 28px -8px hsl(276 12% 14% / 0.13), 0 32px 64px -16px hsl(276 12% 14% / 0.15);
-
-    --glass-fill: 0 0% 100%;
-    --glass-alpha: 0.72;
-    --glass-solid: var(--fog-surface-hsl);
-    --glass-edge: 0 0% 100%;
-    --glass-edge-alpha: 0.55;
-    --glass-sheen-alpha: 0.7;
-    --glass-blur: 28px;
-
-    background-color: hsl(var(--background));
-    color: hsl(var(--foreground));
-  }
-
-  /* ── Nocturne: the public landing's DARK alternative ─────────────────────
-  Reached only by an explicit press of the theme control, never by an OS
-  preference. Charcoal with a black-cherry cast - the app's own dark canvas -
-  rather than obsidian's deeper plum, so pressing the toggle on `/` lands the
-  visitor in the same dark world the product uses instead of in a third one. */
-  .surface-nocturne {
-    color-scheme: dark;
-
-    --background: var(--app-canvas-dark-hsl);
-    --foreground: var(--blush-100-hsl);
-    --card: var(--app-surface-dark-hsl);
-    --card-foreground: var(--blush-100-hsl);
-    --popover: var(--app-surface-dark-hsl);
-    --popover-foreground: var(--blush-100-hsl);
-    --primary: var(--cherry-ink-dark-hsl);
-    --primary-hover: 343 57% 82%;
-    --primary-foreground: var(--app-canvas-dark-hsl);
-    --primary-ink: var(--cherry-ink-dark-hsl);
-    --secondary: var(--app-surface-dark-hsl);
-    --secondary-foreground: var(--blush-100-hsl);
-    --muted: var(--app-muted-dark-hsl);
-    --muted-foreground: var(--blush-400-hsl);
-    --accent: var(--app-surface-dark-hsl);
-    --accent-foreground: var(--blush-100-hsl);
-    --nav-active: var(--cherry-tint-dark-hsl);
-    --destructive: var(--danger-300-hsl);
-    --destructive-foreground: var(--blush-900-hsl);
-    --success: var(--success-300-hsl);
-    --success-foreground: var(--blush-900-hsl);
-    --warning: var(--warning-300-hsl);
-    --warning-foreground: var(--blush-900-hsl);
-    --info: var(--info-300-hsl);
-    --info-foreground: var(--blush-900-hsl);
-    --border: var(--app-hairline-dark-hsl);
-    --input: var(--app-input-dark-hsl);
-    --ring: var(--cherry-ink-dark-hsl);
-
-    --brand-from: var(--cherry-ink-dark-hsl);
-    --brand-to: var(--brand-end-on-dark-hsl);
-
-    --shadow-soft: 0 1px 2px hsl(0 0% 0% / 0.3), 0 1px 3px hsl(0 0% 0% / 0.22);
-    --shadow-panel: 0 1px 2px hsl(0 0% 0% / 0.3), 0 8px 20px -6px hsl(0 0% 0% / 0.45);
-    --shadow-pop: 0 6px 16px -4px hsl(0 0% 0% / 0.45), 0 20px 40px -10px hsl(0 0% 0% / 0.55);
-    --shadow-float: 0 10px 30px -8px hsl(0 0% 0% / 0.55), 0 32px 64px -16px hsl(0 0% 0% / 0.65);
-
-    /* The pane darkens rather than brightening - a white pane on charcoal is
-  a lamp, not glass - and the sheen drops to a hairline. */
-    --glass-fill: 240 12% 10%;
-    --glass-alpha: 0.72;
-    --glass-solid: var(--app-surface-dark-hsl);
-    --glass-edge: 0 0% 100%;
-    --glass-edge-alpha: 0.12;
-    --glass-sheen-alpha: 0.12;
-    --glass-blur: 28px;
-
-    background-color: hsl(var(--background));
-    color: hsl(var(--foreground));
-  }
-
-  /* ── Resume Studio: the /app/resume workspace surface ────────────────────
-  Third named surface, same contract as `.surface-editorial` /
-  `.surface-obsidian`: it re-points the SEMANTIC token names for its subtree,
-  so every shadcn primitive and `bg-card` / `text-muted-foreground` utility
-  inside it follows without a single `dark:` variant or hex in a component.
-
-  Why a surface and not a handful of one-off classes: the Resume area is a
-  half-step lighter than the rest of the product, and doing that with bespoke
-  classes would leave shadcn Buttons, Skeletons, Textareas and AlertDialogs
-  still speaking the app's canvas - re-pointing the tokens is what keeps one
-  voice across the whole subtree.
-
-  It no longer carries its own ACCENT. It used to be a separate indigo
-  identity, which made /app/resume look like a different application; the
-  distinction it actually wants is paper-versus-desk, which is a difference in
-  lightness, not a second brand colour. The clay is the same clay everywhere.
-
-  `--accent-text` used to live here as a darker text tone for that accent. It
-  had no consumer even then, and with the accent shared it has no reason to
-  exist - deleted rather than left as a trap. `--nav-active` is the one extra
-  token the studio recipes still read, and it is now defined in every scope.
-
-  Contrast, measured against this surface's own canvas. Light: ink 14.6:1,
-  muted text 6.4:1, accent as ink 5.9:1, warm-white on accent 5.5:1. Dark:
-  fg 13.9:1, muted 7.2:1, accent as ink 6.0:1. */
+  /* ── Resume Studio: the /app/resume document surface ───────────────────── */
   .surface-studio {
     color-scheme: light;
 
     --background: var(--studio-canvas-hsl);
-    --foreground: var(--studio-ink-hsl);
+    --foreground: var(--n-ink-hsl);
     --card: var(--studio-card-hsl);
-    --card-foreground: var(--studio-ink-hsl);
+    --card-foreground: var(--n-ink-hsl);
     --popover: var(--studio-card-hsl);
-    --popover-foreground: var(--studio-ink-hsl);
-    --primary: var(--studio-accent-hsl);
-    --primary-hover: var(--cherry-hover-hsl);
-    --primary-foreground: var(--blush-0-hsl);
-    /* Was left undefined, so `text-primary` inside /app/resume resolved to the
-  ENCLOSING scope's accent rather than this one - a real bug, not a nuance. */
-    --primary-ink: var(--studio-accent-text-hsl);
+    --popover-foreground: var(--n-ink-hsl);
+    --primary: var(--plum-fill-hsl);
+    --primary-hover: var(--plum-hover-hsl);
+    --primary-foreground: var(--n-surface-hsl);
+    --primary-ink: var(--plum-fill-hsl);
     --secondary: var(--studio-muted-hsl);
-    --secondary-foreground: var(--studio-muted-text-hsl);
+    --secondary-foreground: var(--n-ink-muted-hsl);
     --muted: var(--studio-muted-hsl);
-    --muted-foreground: var(--studio-muted-text-hsl);
+    --muted-foreground: var(--n-ink-muted-hsl);
+    --ink: var(--n-ink-hsl);
+    --ink-muted: var(--n-ink-muted-hsl);
+    --ink-subtle: var(--n-ink-subtle-hsl);
+    --surface-strong: var(--n-surface-strong-hsl);
     --accent: var(--studio-muted-hsl);
-    --accent-foreground: var(--studio-ink-hsl);
+    --accent-foreground: var(--n-ink-hsl);
     --destructive: var(--danger-600-hsl);
     --destructive-foreground: 0 0% 100%;
     --success: var(--success-600-hsl);
@@ -841,11 +559,10 @@
     --warning-foreground: 0 0% 100%;
     --info: var(--info-600-hsl);
     --info-foreground: 0 0% 100%;
-    --border: var(--studio-border-hsl);
-    --input: var(--studio-input-hsl);
-    --ring: var(--studio-accent-hsl);
-
-    --nav-active: var(--studio-accent-tint-hsl);
+    --border: var(--n-hairline-hsl);
+    --input: var(--n-control-hsl);
+    --ring: var(--plum-fill-hsl);
+    --nav-active: var(--plum-tint-hsl);
 
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
@@ -855,21 +572,25 @@
     color-scheme: dark;
 
     --background: var(--studio-canvas-dark-hsl);
-    --foreground: var(--studio-fg-dark-hsl);
+    --foreground: var(--n-ink-dark-hsl);
     --card: var(--studio-card-dark-hsl);
-    --card-foreground: var(--studio-fg-dark-hsl);
+    --card-foreground: var(--n-ink-dark-hsl);
     --popover: var(--studio-card-dark-hsl);
-    --popover-foreground: var(--studio-fg-dark-hsl);
-    --primary: var(--studio-accent-dark-hsl);
-    --primary-hover: 343 57% 82%; /* #EFBDCB - hover LIFTS on dark */
+    --popover-foreground: var(--n-ink-dark-hsl);
+    --primary: var(--plum-fill-dark-hsl);
+    --primary-hover: var(--plum-hover-dark-hsl);
     --primary-foreground: var(--studio-canvas-dark-hsl);
-    --primary-ink: var(--studio-accent-dark-hsl); /* declared, not inherited - see the light scope */
+    --primary-ink: var(--plum-fill-dark-hsl);
     --secondary: var(--studio-raised-dark-hsl);
-    --secondary-foreground: var(--studio-fg-dark-hsl);
+    --secondary-foreground: var(--n-ink-muted-dark-hsl);
     --muted: var(--studio-raised-dark-hsl);
-    --muted-foreground: var(--studio-muted-text-dark-hsl);
+    --muted-foreground: var(--n-ink-muted-dark-hsl);
+    --ink: var(--n-ink-dark-hsl);
+    --ink-muted: var(--n-ink-muted-dark-hsl);
+    --ink-subtle: var(--n-ink-subtle-dark-hsl);
+    --surface-strong: var(--studio-border-dark-hsl);
     --accent: var(--studio-raised-dark-hsl);
-    --accent-foreground: var(--studio-fg-dark-hsl);
+    --accent-foreground: var(--n-ink-dark-hsl);
     --destructive: var(--danger-300-hsl);
     --destructive-foreground: var(--studio-canvas-dark-hsl);
     --success: var(--success-300-hsl);
@@ -880,10 +601,8 @@
     --info-foreground: var(--studio-canvas-dark-hsl);
     --border: var(--studio-border-dark-hsl);
     --input: var(--studio-input-dark-hsl);
-    --ring: var(--studio-accent-dark-hsl);
-
-    --nav-active: var(--studio-accent-tint-dark-hsl);
-    /* On dark the accent is already light enough to serve both roles. */
+    --ring: var(--plum-fill-dark-hsl);
+    --nav-active: var(--plum-tint-dark-hsl);
   }
 
   * {
@@ -992,24 +711,23 @@
 }
 
 @layer components {
-  /* Job-feed canvas: cool fog depth that frosted panes blur against. The drawer
-  the user approved is rgb(255 255 255 / 0.72) over THIS atmosphere — not warm
-  blush slabs. Named surfaces keep their own token overrides when mounted. */
+  /* The canvas: neutral, with one very faint cool bloom so frosted panes have
+  something to blur against. No rose or plum wash: the accent belongs to the
+  action, not to the page. Measured worst case, the light `.bg-accent` pane
+  over the bloom: ink-subtle still 5.0:1. */
   html,
   body {
-    background-color: hsl(var(--fog-canvas-hsl));
+    background-color: hsl(var(--n-canvas-hsl));
     background-image:
-      radial-gradient(140% 100% at -5% -15%, hsl(276 35% 88% / 0.55), transparent 52%),
-      radial-gradient(110% 85% at 105% 5%, hsl(345 28% 92% / 0.4), transparent 50%),
-      radial-gradient(90% 70% at 50% 105%, hsl(240 25% 88% / 0.45), transparent 55%);
+      radial-gradient(120% 90% at 0% -10%, hsl(250 30% 93% / 0.6), transparent 55%),
+      radial-gradient(90% 70% at 100% 110%, hsl(240 20% 92% / 0.5), transparent 55%);
   }
   html.dark,
   html.dark body {
-    background-color: hsl(var(--app-canvas-dark-hsl));
+    background-color: hsl(var(--n-canvas-dark-hsl));
     background-image:
-      radial-gradient(120% 90% at 5% -10%, hsl(345 22% 24% / 0.55), transparent 55%),
-      radial-gradient(100% 75% at 100% 10%, hsl(276 18% 20% / 0.5), transparent 52%),
-      radial-gradient(85% 65% at 45% 110%, hsl(300 12% 10% / 0.65), transparent 58%);
+      radial-gradient(120% 90% at 0% -10%, hsl(250 14% 12% / 0.7), transparent 55%),
+      radial-gradient(90% 70% at 100% 110%, hsl(240 10% 9% / 0.6), transparent 55%);
   }
   .surface-lumen,
   .surface-nocturne,
@@ -1018,16 +736,15 @@
   .surface-studio {
     background-color: hsl(var(--background));
     background-image:
-      radial-gradient(140% 100% at -5% -15%, hsl(276 35% 88% / 0.55), transparent 52%),
-      radial-gradient(110% 85% at 105% 5%, hsl(345 28% 92% / 0.4), transparent 50%),
-      radial-gradient(90% 70% at 50% 105%, hsl(240 25% 88% / 0.45), transparent 55%);
+      radial-gradient(120% 90% at 0% -10%, hsl(250 30% 93% / 0.6), transparent 55%),
+      radial-gradient(90% 70% at 100% 110%, hsl(240 20% 92% / 0.5), transparent 55%);
   }
   .surface-nocturne,
-  .surface-obsidian {
+  .surface-obsidian,
+  .dark .surface-studio {
     background-image:
-      radial-gradient(120% 90% at 5% -10%, hsl(345 22% 24% / 0.55), transparent 55%),
-      radial-gradient(100% 75% at 100% 10%, hsl(276 18% 20% / 0.5), transparent 52%),
-      radial-gradient(85% 65% at 45% 110%, hsl(300 12% 10% / 0.65), transparent 58%);
+      radial-gradient(120% 90% at 0% -10%, hsl(250 14% 12% / 0.7), transparent 55%),
+      radial-gradient(90% 70% at 100% 110%, hsl(240 10% 9% / 0.6), transparent 55%);
   }
 
   /* Glassmorphism card style. Token-driven: a literal white pane over
@@ -1047,20 +764,20 @@
   matching tint modifier. Reserved for sticky/fixed chrome: top bar,
   mobile nav, sidebar, command palette, sticky filter bars. */
   .glass-nav {
-    background-color: rgb(255 255 255 / 0.72);
+    background-color: hsl(var(--card) / 0.72);
     -webkit-backdrop-filter: blur(28px) saturate(140%);
     backdrop-filter: blur(28px) saturate(140%);
   }
   .glass-nav-soft {
-    background-color: rgb(255 255 255 / 0.55);
+    background-color: hsl(var(--card) / 0.55);
     -webkit-backdrop-filter: blur(28px) saturate(140%);
     backdrop-filter: blur(28px) saturate(140%);
   }
   .dark .glass-nav {
-    background-color: rgb(22 22 28 / 0.72);
+    background-color: hsl(var(--card) / 0.72);
   }
   .dark .glass-nav-soft {
-    background-color: rgb(22 22 28 / 0.55);
+    background-color: hsl(var(--card) / 0.55);
   }
   .glass-nav-card {
     --glass-bg: var(--card);
@@ -1077,12 +794,12 @@
   reads as a pane rather than a solid bar. Saturation is nudged so what shows
   through stays alive rather than turning grey. */
   .glass-nav-strong {
-    background-color: rgb(255 255 255 / 0.86);
+    background-color: hsl(var(--card) / 0.86);
     -webkit-backdrop-filter: blur(28px) saturate(140%);
     backdrop-filter: blur(28px) saturate(140%);
   }
   .dark .glass-nav-strong {
-    background-color: rgb(22 22 28 / 0.86);
+    background-color: hsl(var(--card) / 0.86);
   }
   @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
     .glass-nav,
@@ -1128,17 +845,17 @@
   .bg-card,
   .bg-popover,
   .glass-card {
-    background-color: rgb(255 255 255 / 0.72) !important;
+    background-color: hsl(var(--card) / 0.72) !important;
     background-image: none !important;
     -webkit-backdrop-filter: blur(28px) saturate(140%);
     backdrop-filter: blur(28px) saturate(140%);
     box-shadow:
       inset 0 1px 0 rgb(255 255 255 / 0.7),
-      0 16px 48px rgb(15 18 28 / 0.14);
+      var(--shadow-pop);
   }
   .glass-frost-control,
   .bg-background {
-    background-color: rgb(255 255 255 / 0.58) !important;
+    background-color: hsl(var(--card) / 0.58) !important;
     background-image: none !important;
     -webkit-backdrop-filter: blur(28px) saturate(140%);
     backdrop-filter: blur(28px) saturate(140%);
@@ -1147,7 +864,7 @@
   .glass-frost-subtle,
   .bg-muted,
   .bg-secondary {
-    background-color: rgb(255 255 255 / 0.43) !important;
+    background-color: hsl(var(--card) / 0.43) !important;
     background-image: none !important;
     -webkit-backdrop-filter: blur(28px) saturate(140%);
     backdrop-filter: blur(28px) saturate(140%);
@@ -1155,7 +872,7 @@
   }
   .glass-frost-wash,
   .bg-accent {
-    background-color: rgb(255 255 255 / 0.36) !important;
+    background-color: hsl(var(--card) / 0.36) !important;
     background-image: none !important;
     -webkit-backdrop-filter: blur(28px) saturate(140%);
     backdrop-filter: blur(28px) saturate(140%);
@@ -1163,7 +880,7 @@
   .liquid-glass,
   .glass-frost-surface,
   .glass-frost {
-    border-color: rgb(255 255 255 / 0.55) !important;
+    border-color: hsl(var(--glass-edge) / var(--glass-edge-alpha)) !important;
   }
   .dark .glass-frost-surface,
   .dark .glass-frost,
@@ -1171,30 +888,30 @@
   .dark .bg-card,
   .dark .bg-popover,
   .dark .glass-card {
-    background-color: rgb(22 22 28 / 0.72) !important;
+    background-color: hsl(var(--card) / 0.72) !important;
     box-shadow:
       inset 0 1px 0 rgb(255 255 255 / 0.12),
-      0 16px 48px rgb(0 0 0 / 0.45);
+      var(--shadow-pop);
   }
   .dark .glass-frost-control,
   .dark .bg-background {
-    background-color: rgb(22 22 28 / 0.58) !important;
+    background-color: hsl(var(--card) / 0.58) !important;
     box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.1);
   }
   .dark .glass-frost-subtle,
   .dark .bg-muted,
   .dark .bg-secondary {
-    background-color: rgb(22 22 28 / 0.43) !important;
+    background-color: hsl(var(--card) / 0.43) !important;
     box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08);
   }
   .dark .glass-frost-wash,
   .dark .bg-accent {
-    background-color: rgb(22 22 28 / 0.36) !important;
+    background-color: hsl(var(--card) / 0.36) !important;
   }
   .dark .liquid-glass,
   .dark .glass-frost-surface,
   .dark .glass-frost {
-    border-color: rgb(255 255 255 / 0.12) !important;
+    border-color: hsl(var(--glass-edge) / var(--glass-edge-alpha)) !important;
   }
 
   /* Sliding inner pills: same frost as liquid-glass, without the card drop
@@ -1379,7 +1096,7 @@
   `blocklist` entry would have deleted THIS rule too, since Tailwind filters
   by class name across every layer. */
   .overline.overline {
-    @apply text-[0.6875rem] font-semibold uppercase tracking-[0.06em] text-muted-foreground;
+    @apply text-[0.75rem] font-semibold uppercase tracking-[0.06em] text-muted-foreground;
     text-decoration-line: none;
   }
 
@@ -1478,7 +1195,7 @@
   read as the same material. The inset top hairline is what makes it look
   like a lit pane rather than a flat translucent box. */
   .studio-panel {
-    background-color: rgb(255 255 255 / 0.72);
+    background-color: hsl(var(--card) / 0.72);
     -webkit-backdrop-filter: blur(28px) saturate(140%);
     backdrop-filter: blur(28px) saturate(140%);
     border: 1px solid rgb(255 255 255 / 0.55);
@@ -1488,7 +1205,7 @@
       var(--shadow-soft);
   }
   .dark .studio-panel {
-    background-color: rgb(22 22 28 / 0.72);
+    background-color: hsl(var(--card) / 0.72);
     border-color: rgb(255 255 255 / 0.12);
     box-shadow:
       inset 0 1px 0 rgb(255 255 255 / 0.12),
@@ -1519,23 +1236,23 @@
     color: hsl(var(--muted-foreground));
   }
   .studio-nav-row:hover {
-    background-color: rgb(255 255 255 / 0.36);
+    background-color: hsl(var(--card) / 0.36);
     -webkit-backdrop-filter: blur(28px) saturate(140%);
     backdrop-filter: blur(28px) saturate(140%);
     color: hsl(var(--foreground));
   }
   .dark .studio-nav-row:hover {
-    background-color: rgb(22 22 28 / 0.36);
+    background-color: hsl(var(--card) / 0.36);
   }
   .studio-nav-row[aria-current='page'] {
-    background-color: rgb(255 255 255 / 0.58);
+    background-color: hsl(var(--card) / 0.58);
     -webkit-backdrop-filter: blur(28px) saturate(140%);
     backdrop-filter: blur(28px) saturate(140%);
     color: hsl(var(--foreground));
     font-weight: 600;
   }
   .dark .studio-nav-row[aria-current='page'] {
-    background-color: rgb(22 22 28 / 0.58);
+    background-color: hsl(var(--card) / 0.58);
   }
   /* The indicator: 3px, inset, only on the active row. */
   .studio-nav-row[aria-current='page']::before {
@@ -1572,7 +1289,7 @@
   noise - reserved for the dashboard hero (primary) and the OPT-priority
   hero (warning, never alarm-red). */
   .mesh-accent {
-    background-color: rgb(255 255 255 / 0.72);
+    background-color: hsl(var(--card) / 0.72);
     -webkit-backdrop-filter: blur(28px) saturate(140%);
     backdrop-filter: blur(28px) saturate(140%);
     background-image:
@@ -1594,7 +1311,7 @@
   At 0.05/0.04 the card lands at #2F3A56 and muted recovers to 4.37:1, close to
   the 4.85:1 it gets on the untinted card. */
   .dark .mesh-accent {
-    background-color: rgb(22 22 28 / 0.72);
+    background-color: hsl(var(--card) / 0.72);
     -webkit-backdrop-filter: blur(28px) saturate(140%);
     backdrop-filter: blur(28px) saturate(140%);
     background-image:
@@ -1606,7 +1323,7 @@
   }
 
   .mesh-warning {
-    background-color: rgb(255 255 255 / 0.72);
+    background-color: hsl(var(--card) / 0.72);
     -webkit-backdrop-filter: blur(28px) saturate(140%);
     backdrop-filter: blur(28px) saturate(140%);
     background-image:
@@ -1614,7 +1331,7 @@
       radial-gradient(120% 120% at 100% 8%, hsl(var(--warning) / 0.05), transparent 60%);
   }
   .dark .mesh-warning {
-    background-color: rgb(22 22 28 / 0.72);
+    background-color: hsl(var(--card) / 0.72);
     -webkit-backdrop-filter: blur(28px) saturate(140%);
     backdrop-filter: blur(28px) saturate(140%);
     background-image:
@@ -2306,86 +2023,86 @@ class names that bypass the component-layer `.bg-*` rules above. */
     backdrop-filter: blur(28px) saturate(140%);
   }
   .bg-card\/50 {
-    background-color: rgb(255 255 255 / 0.36) !important;
+    background-color: hsl(var(--card) / 0.36) !important;
   }
   .bg-card\/60 {
-    background-color: rgb(255 255 255 / 0.43) !important;
+    background-color: hsl(var(--card) / 0.43) !important;
   }
   .bg-card\/80 {
-    background-color: rgb(255 255 255 / 0.58) !important;
+    background-color: hsl(var(--card) / 0.58) !important;
   }
   .bg-background\/40 {
-    background-color: rgb(255 255 255 / 0.29) !important;
+    background-color: hsl(var(--card) / 0.29) !important;
   }
   .bg-background\/50 {
-    background-color: rgb(255 255 255 / 0.36) !important;
+    background-color: hsl(var(--card) / 0.36) !important;
   }
   .bg-background\/55 {
-    background-color: rgb(255 255 255 / 0.4) !important;
+    background-color: hsl(var(--card) / 0.4) !important;
   }
   .bg-background\/60 {
-    background-color: rgb(255 255 255 / 0.43) !important;
+    background-color: hsl(var(--card) / 0.43) !important;
   }
   .bg-background\/70 {
-    background-color: rgb(255 255 255 / 0.5) !important;
+    background-color: hsl(var(--card) / 0.5) !important;
   }
   .bg-background\/75 {
-    background-color: rgb(255 255 255 / 0.54) !important;
+    background-color: hsl(var(--card) / 0.54) !important;
   }
   .bg-background\/80 {
-    background-color: rgb(255 255 255 / 0.58) !important;
+    background-color: hsl(var(--card) / 0.58) !important;
   }
   .bg-muted\/40,
   .bg-muted\/50 {
-    background-color: rgb(255 255 255 / 0.29) !important;
+    background-color: hsl(var(--card) / 0.29) !important;
   }
   .bg-secondary\/80 {
-    background-color: rgb(255 255 255 / 0.36) !important;
+    background-color: hsl(var(--card) / 0.36) !important;
   }
   .bg-accent\/40,
   .bg-accent\/50 {
-    background-color: rgb(255 255 255 / 0.29) !important;
+    background-color: hsl(var(--card) / 0.29) !important;
   }
   .dark .bg-card\/50 {
-    background-color: rgb(22 22 28 / 0.36) !important;
+    background-color: hsl(var(--card) / 0.36) !important;
   }
   .dark .bg-card\/60 {
-    background-color: rgb(22 22 28 / 0.43) !important;
+    background-color: hsl(var(--card) / 0.43) !important;
   }
   .dark .bg-card\/80 {
-    background-color: rgb(22 22 28 / 0.58) !important;
+    background-color: hsl(var(--card) / 0.58) !important;
   }
   .dark .bg-background\/40 {
-    background-color: rgb(22 22 28 / 0.29) !important;
+    background-color: hsl(var(--card) / 0.29) !important;
   }
   .dark .bg-background\/50 {
-    background-color: rgb(22 22 28 / 0.36) !important;
+    background-color: hsl(var(--card) / 0.36) !important;
   }
   .dark .bg-background\/55 {
-    background-color: rgb(22 22 28 / 0.4) !important;
+    background-color: hsl(var(--card) / 0.4) !important;
   }
   .dark .bg-background\/60 {
-    background-color: rgb(22 22 28 / 0.43) !important;
+    background-color: hsl(var(--card) / 0.43) !important;
   }
   .dark .bg-background\/70 {
-    background-color: rgb(22 22 28 / 0.5) !important;
+    background-color: hsl(var(--card) / 0.5) !important;
   }
   .dark .bg-background\/75 {
-    background-color: rgb(22 22 28 / 0.54) !important;
+    background-color: hsl(var(--card) / 0.54) !important;
   }
   .dark .bg-background\/80 {
-    background-color: rgb(22 22 28 / 0.58) !important;
+    background-color: hsl(var(--card) / 0.58) !important;
   }
   .dark .bg-muted\/40,
   .dark .bg-muted\/50 {
-    background-color: rgb(22 22 28 / 0.29) !important;
+    background-color: hsl(var(--card) / 0.29) !important;
   }
   .dark .bg-secondary\/80 {
-    background-color: rgb(22 22 28 / 0.36) !important;
+    background-color: hsl(var(--card) / 0.36) !important;
   }
   .dark .bg-accent\/40,
   .dark .bg-accent\/50 {
-    background-color: rgb(22 22 28 / 0.29) !important;
+    background-color: hsl(var(--card) / 0.29) !important;
   }
 
   .hover\:bg-accent:hover,
@@ -2393,7 +2110,7 @@ class names that bypass the component-layer `.bg-*` rules above. */
   .hover\:bg-secondary:hover,
   .focus\:bg-accent:focus,
   .focus-visible\:bg-accent:focus-visible {
-    background-color: rgb(255 255 255 / 0.36) !important;
+    background-color: hsl(var(--card) / 0.36) !important;
     background-image: none !important;
     -webkit-backdrop-filter: blur(28px) saturate(140%);
     backdrop-filter: blur(28px) saturate(140%);
@@ -2403,7 +2120,7 @@ class names that bypass the component-layer `.bg-*` rules above. */
   .dark .hover\:bg-secondary:hover,
   .dark .focus\:bg-accent:focus,
   .dark .focus-visible\:bg-accent:focus-visible {
-    background-color: rgb(22 22 28 / 0.36) !important;
+    background-color: hsl(var(--card) / 0.36) !important;
   }
 
   .data-\[state\=active\]\:bg-background[data-state='active'],
@@ -2411,7 +2128,7 @@ class names that bypass the component-layer `.bg-*` rules above. */
   .data-\[state\=open\]\:bg-accent[data-state='open'],
   .data-\[selected\=true\]\:bg-accent[data-selected='true'],
   .data-\[selected\=\'true\'\]\:bg-accent[data-selected='true'] {
-    background-color: rgb(255 255 255 / 0.58) !important;
+    background-color: hsl(var(--card) / 0.58) !important;
     background-image: none !important;
     -webkit-backdrop-filter: blur(28px) saturate(140%);
     backdrop-filter: blur(28px) saturate(140%);
@@ -2419,7 +2136,7 @@ class names that bypass the component-layer `.bg-*` rules above. */
   }
   .data-\[state\=active\]\:bg-accent[data-state='active'],
   .data-\[active\]\:bg-accent[data-active] {
-    background-color: rgb(255 255 255 / 0.36) !important;
+    background-color: hsl(var(--card) / 0.36) !important;
     background-image: none !important;
     -webkit-backdrop-filter: blur(28px) saturate(140%);
     backdrop-filter: blur(28px) saturate(140%);
@@ -2429,36 +2146,98 @@ class names that bypass the component-layer `.bg-*` rules above. */
   .dark .data-\[state\=open\]\:bg-accent[data-state='open'],
   .dark .data-\[selected\=true\]\:bg-accent[data-selected='true'],
   .dark .data-\[selected\=\'true\'\]\:bg-accent[data-selected='true'] {
-    background-color: rgb(22 22 28 / 0.58) !important;
+    background-color: hsl(var(--card) / 0.58) !important;
     box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.1);
   }
   .dark .data-\[state\=active\]\:bg-accent[data-state='active'],
   .dark .data-\[active\]\:bg-accent[data-active] {
-    background-color: rgb(22 22 28 / 0.36) !important;
+    background-color: hsl(var(--card) / 0.36) !important;
   }
 
   .group-\[\.toaster\]\:bg-background {
-    background-color: rgb(255 255 255 / 0.72) !important;
+    background-color: hsl(var(--card) / 0.72) !important;
     background-image: none !important;
     -webkit-backdrop-filter: blur(28px) saturate(140%);
     backdrop-filter: blur(28px) saturate(140%);
     box-shadow:
       inset 0 1px 0 rgb(255 255 255 / 0.7),
-      0 16px 48px rgb(15 18 28 / 0.14);
+      var(--shadow-pop);
   }
   .dark .group-\[\.toaster\]\:bg-background {
-    background-color: rgb(22 22 28 / 0.72) !important;
+    background-color: hsl(var(--card) / 0.72) !important;
     box-shadow:
       inset 0 1px 0 rgb(255 255 255 / 0.12),
-      0 16px 48px rgb(0 0 0 / 0.45);
+      var(--shadow-pop);
   }
   .group-\[\.toast\]\:bg-muted {
-    background-color: rgb(255 255 255 / 0.43) !important;
+    background-color: hsl(var(--card) / 0.43) !important;
     background-image: none !important;
     -webkit-backdrop-filter: blur(28px) saturate(140%);
     backdrop-filter: blur(28px) saturate(140%);
   }
   .dark .group-\[\.toast\]\:bg-muted {
-    background-color: rgb(22 22 28 / 0.43) !important;
+    background-color: hsl(var(--card) / 0.43) !important;
   }
+}
+
+/* ===== Accessibility floors (US launch, 2026-11-11) =====================
+   Token-level fixes for the audit's app-wide findings, so no page layout and
+   no component file has to change to meet them. Unlayered on purpose: these
+   rules sit after every Tailwind utility, so at equal specificity they win.
+   Delete a line here once the call sites it covers have been migrated.
+
+   1. NO OPACITY ON TEXT. `text-muted-foreground/40..70`, `text-primary/40..70`
+      and `text-foreground/50` measured 1.86 to 4.49:1. Each is pinned to the
+      solid token one step down the ink ladder, which is AA on every surface
+      (ink-subtle 4.87:1 worst case light, 5.00:1 dark; plum ink 5.97:1). */
+.text-muted-foreground\/40,
+.text-muted-foreground\/45,
+.text-muted-foreground\/50,
+.text-muted-foreground\/60,
+.text-muted-foreground\/70,
+.text-muted-foreground\/80,
+.text-muted-foreground\/90 {
+  color: hsl(var(--muted-foreground));
+}
+.text-foreground\/50,
+.text-foreground\/60,
+.text-foreground\/70 {
+  color: hsl(var(--ink-muted));
+}
+.text-primary\/40,
+.text-primary\/60,
+.text-primary\/70,
+.text-primary\/80,
+.text-primary\/90 {
+  color: hsl(var(--primary-ink));
+}
+.text-success\/80 {
+  color: hsl(var(--success));
+}
+.text-warning\/80 {
+  color: hsl(var(--warning));
+}
+
+/* 2. THE 12px FLOOR. 9, 10, 10.5 and 11px text (about 750 call sites) renders
+      at 12px, the smallest size any source we follow allows (Apple's 11pt iOS
+      minimum, M3 Body Small). Nothing in the tree pairs these with a
+      responsive size that this would override. */
+.text-\[7px\],
+.text-\[9px\],
+.text-\[10px\],
+.text-\[10\.5px\],
+.text-\[11px\],
+.text-\[0\.625rem\],
+.text-\[0\.6875rem\],
+.text-\[0\.7rem\] {
+  font-size: 0.75rem;
+}
+
+/* 3. VISIBLE FOCUS for anything hand-rolled that forgot a ring: a solid 2px
+      plum outline with a 2px offset (the 2.4.13 "simplest pass"), at least
+      5.97:1 against every surface. Zero specificity, so any utility that
+      draws its own ring or sets `outline-none` still wins. */
+:where(a, button, input, select, textarea, summary, [tabindex]):where(:focus-visible) {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
 }

@@ -20,6 +20,14 @@ import { PasswordInput } from '@/components/auth/PasswordInput';
 import { PasswordChecklist, isPasswordValid } from '@/components/auth/PasswordChecklist';
 import { AuthShield } from '@/components/auth/AuthShield';
 import { AuthNotice, errorVariant } from '@/components/auth/AuthNotice';
+import { ClickwrapConsent } from '@/components/legal/ClickwrapConsent';
+import { OAuthAgreement } from '@/components/legal/OAuthAgreement';
+import { apiService } from '@/lib/api';
+import { MINIMUM_AGE, TERMS_VERSION } from '@/lib/legal';
+import { AGE_REQUIREMENT_ERROR } from '@/types/privacy';
+
+const CONSENT_REQUIRED_MESSAGE = `Confirm you are at least ${MINIMUM_AGE} and agree to the Terms to create your account.`;
+const AGE_REQUIREMENT_MESSAGE = `You must be at least ${MINIMUM_AGE} years old to create an Aspirely account.`;
 
 const ROLE_OPTIONS = [
   'Software Engineer', 'Data Scientist', 'Product Manager',
@@ -39,13 +47,16 @@ export default function Register() {
     email?: string;
     password?: string;
     confirm?: string;
+    consent?: string;
   }>({});
+  // Signup clickwrap: age + Terms. Never pre-checked.
+  const [agreed, setAgreed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [beat, setBeat] = useState<Beat>(0);
   const emailRef = useRef<HTMLInputElement | null>(null);
   const passwordRef = useRef<HTMLInputElement | null>(null);
   const prevBeatRef = useRef<Beat>(0);
-  const { register, login, isAuthenticated } = useAuth();
+  const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const reduce = useReducedMotion();
@@ -112,7 +123,7 @@ export default function Register() {
     setError('');
     // Inline, per-field validation (the checklist mirrors the backend's
     // password policy); the notice banner stays reserved for server responses.
-    const fe: { email?: string; password?: string; confirm?: string } = {};
+    const fe: { email?: string; password?: string; confirm?: string; consent?: string } = {};
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       fe.email = 'Please enter a valid email address.';
     }
@@ -122,15 +133,33 @@ export default function Register() {
     if (password !== confirmPassword) {
       fe.confirm = 'Passwords do not match.';
     }
+    if (!agreed) {
+      fe.consent = CONSENT_REQUIRED_MESSAGE;
+    }
     setFieldErrors(fe);
     if (fe.email) setBeat(0); // show the email error on the beat that owns it
-    if (fe.email || fe.password || fe.confirm) return;
+    if (fe.email || fe.password || fe.confirm || fe.consent) return;
     setIsLoading(true);
     try {
-      const result = await register(email, password, role || undefined);
+      // Called directly (not through AuthContext.register) so the clickwrap
+      // consent travels with the request and the structured 400 reason is
+      // readable. Same semantics: the token register returns is discarded.
+      const result = await apiService.register(
+        email,
+        password,
+        role || undefined,
+        undefined,
+        undefined,
+        undefined,
+        { age_confirmed: true, terms_version: TERMS_VERSION },
+      );
+      apiService.logout();
       if (result.error) {
-        setError(result.error);
-        toast.error('Registration failed', { description: result.error });
+        const ageBlocked = result.errorPayload?.error === AGE_REQUIREMENT_ERROR;
+        const message = ageBlocked ? AGE_REQUIREMENT_MESSAGE : result.error;
+        if (ageBlocked) setAgreed(false);
+        setError(message);
+        toast.error('Registration failed', { description: message });
         return;
       }
       // register() intentionally does not keep a token - sign in to enter.
@@ -378,16 +407,22 @@ export default function Register() {
                 ) : null}
               </div>
 
+              <ClickwrapConsent
+                checked={agreed}
+                onCheckedChange={(next) => {
+                  setAgreed(next);
+                  if (next && fieldErrors.consent) setFieldErrors((f) => ({ ...f, consent: undefined }));
+                }}
+                disabled={isLoading}
+                error={fieldErrors.consent}
+              />
+
               {error && <AuthNotice variant={errorVariant(error)}>{error}</AuthNotice>}
 
-              <Button type="submit" size="lg" className="w-full" disabled={isLoading}>
+              <Button type="submit" size="lg" className="w-full" disabled={isLoading || !agreed}>
                 {isLoading && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
                 {isLoading ? 'Creating account...' : 'Create account'}
               </Button>
-
-              <p className="text-center text-xs text-muted-foreground">
-                By continuing you agree to use Aspirely responsibly.
-              </p>
             </motion.div>
           )}
         </AnimatePresence>
@@ -396,6 +431,7 @@ export default function Register() {
       {beat === 0 && (
         <div className="mt-6">
           <SocialQuietRow verb="Sign up with" />
+          <OAuthAgreement className="mt-3" />
         </div>
       )}
     </AuthShell>

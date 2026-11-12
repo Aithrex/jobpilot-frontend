@@ -36,7 +36,7 @@ const STATUS_TONE: Record<string, string> = {
 };
 
 function formatTs(iso: string | null) {
-  if (!iso) return ' - ';
+  if (!iso) return 'None';
   try {
     return new Date(iso).toLocaleString(undefined, {
       year: 'numeric',

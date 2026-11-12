@@ -74,7 +74,7 @@ export function WorkAuthorizationQuestion({
         </h3>
         <p className="text-xs leading-relaxed text-muted-foreground">
           Optional, and you can change it whenever you like. We use it to rank your
-          feed - to stop putting postings in front of you that state a barrier you
+          feed, so we stop showing you postings that state a barrier you
           would hit. It never hides a job you can still apply for, and it is not
           immigration advice.
         </p>
@@ -118,14 +118,14 @@ export function WorkAuthorizationQuestion({
             Saving your answer
           </>
         ) : error ? (
-          <span className="text-warning">Not saved - {error}</span>
+          <span className="text-warning">Not saved: {error}</span>
         ) : saved && value !== 'unset' ? (
           <>
             <CheckCircle2 className="h-3 w-3 text-success" aria-hidden />
             Saved. Your feed will use this from the next search.
           </>
         ) : value === 'unset' ? (
-          <>Not answered yet. Leaving it blank is fine - nothing is filtered on a blank.</>
+          <>Not answered yet. Leaving it blank is fine. Nothing is filtered when it is blank.</>
         ) : null}
       </p>
     </section>

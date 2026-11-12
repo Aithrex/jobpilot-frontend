@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { SignupCta } from '@/components/guest/_shared';
+import { AiDisclosure } from '@/components/ai/AiDisclosure';
 import { cn } from '@/lib/utils';
 import type {
   GuestDownloadFormat,
@@ -154,6 +155,7 @@ export function GuestCompletedState({
           Your tailored resume keeps your real employers, titles, dates, and skills. Review it
           before you send it.
         </p>
+        <AiDisclosure kind="draft" className="mt-1" />
       </motion.div>
 
       {tailored.record_id ? (

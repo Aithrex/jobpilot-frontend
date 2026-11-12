@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
-import { AmbientGlow, Container, Grain, Reveal, SECTION_Y } from './_shared';
+import { Container, Grain, Reveal, SECTION_Y } from './_shared';
 
 /**
  * The close: the final action, on the page's own surface. It gets its presence
@@ -48,14 +48,13 @@ export function TrustClose({
       // like every other section.
       className={cn('relative scroll-mt-4 overflow-hidden', SECTION_Y)}
     >
-      <AmbientGlow />
       <Grain />
       <Container className="relative max-w-3xl text-center">
         <Reveal>
-          <h2 className="text-balance font-display text-[2rem] font-extrabold leading-[1.08] tracking-[-0.03em] text-foreground sm:text-[2.75rem]">
+          <h2 className="text-balance font-display text-display-sm text-foreground">
             {authed ? 'Your workspace is waiting.' : 'Start the search that keeps going.'}
           </h2>
-          <p className="mx-auto mt-4 max-w-lg text-pretty text-base leading-relaxed text-muted-foreground sm:text-lg">
+          <p className="mx-auto mt-4 max-w-[52ch] text-pretty text-body-lg text-ink-muted">
             {authed
               ? "Continue in your workspace. Matches, tailoring, and today's work are already there."
               : 'Create a free account and set your direction. Aspirely takes it from there, and you stay in charge of every step that leaves your hands.'}
@@ -65,7 +64,7 @@ export function TrustClose({
             <Button
               asChild
               size="lg"
-              className="h-12 w-full rounded-full px-8 text-base font-semibold shadow-pop sm:w-auto"
+              className="h-12 w-full rounded-full px-7 text-base font-semibold shadow-soft hover:bg-primary-hover sm:w-auto"
             >
               <Link to={href}>{label}</Link>
             </Button>
@@ -78,7 +77,7 @@ export function TrustClose({
               <button
                 type="button"
                 onClick={onUpload}
-                className="focus-ring-visible glass-pane inline-flex h-12 w-full items-center justify-center rounded-full px-8 text-base font-semibold text-foreground transition-[color,border-color,background-color] duration-200 ease-out hover:border-primary/40 hover:text-primary hover:[--glass-alpha:1] sm:w-auto"
+                className="focus-ring-visible inline-flex h-12 w-full items-center justify-center rounded-full border border-input bg-card px-7 text-base font-semibold text-foreground shadow-soft transition-[color,border-color,background-color] duration-200 ease-out hover:border-foreground/40 hover:bg-accent sm:w-auto"
               >
                 Upload your resume
               </button>
@@ -87,14 +86,14 @@ export function TrustClose({
                 asChild
                 size="lg"
                 variant="outline"
-                className="h-12 w-full rounded-full bg-card/50 px-8 text-base sm:w-auto"
+                className="h-12 w-full rounded-full border-input bg-card px-7 text-base font-semibold sm:w-auto"
               >
                 <Link to="/login">Sign in</Link>
               </Button>
             ) : null}
           </div>
 
-          <p className="mt-5 text-[13px] font-medium text-muted-foreground">
+          <p className="mt-5 text-body-md text-muted-foreground">
             {authed ? 'Continue where you left off.' : 'Free to start · No card · Private upload'}
           </p>
         </Reveal>

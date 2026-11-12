@@ -55,7 +55,7 @@ function vendorLabel(family: string) {
 
 function employerLabel(c: AtsCredential) {
   if (c.company) return c.company;
-  if (!c.tenant) return `${vendorLabel(c.ats_family)} - all employers`;
+  if (!c.tenant) return `${vendorLabel(c.ats_family)} (all employers)`;
   return c.tenant.charAt(0).toUpperCase() + c.tenant.slice(1);
 }
 
@@ -270,8 +270,8 @@ export default function EmployerLoginsPanel() {
         <p className="text-sm font-medium text-foreground">No employer logins yet</p>
         <p className="mx-auto mt-1 max-w-md text-xs text-muted-foreground">
           Some employers make you create an account before they'll take an
-          application. When that happens we create it for you with your private
-          address - and the login shows up here so you can check your status on
+          application. When that happens, we create it for you with your private
+          address, and the login shows up here so you can check your status on
           their site yourself.
         </p>
       </div>
@@ -289,9 +289,9 @@ export default function EmployerLoginsPanel() {
             </h2>
             <p className="mt-1 text-xs text-muted-foreground">
               We generate a strong password, store it encrypted, and never show it
-              until you ask. Revealing one needs a fresh check that it's you -
-              your JobPilot password, or a one-time code emailed to you - and is
-              recorded in your account's audit trail.
+              until you ask. Revealing one needs a fresh check that it's you (your
+              Aspirely password or a one-time code we email you), and every reveal
+              is recorded in your account's audit trail.
               {sharedVendors.length > 0 && (
                 <>
                   {' '}
@@ -361,7 +361,7 @@ export default function EmployerLoginsPanel() {
                   </p>
                   <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-background/60 px-3 py-2">
                     <code className="min-w-0 flex-1 truncate text-sm text-foreground">
-                      {c.username || '-'}
+                      {c.username || 'Not set yet'}
                     </code>
                     {c.username && <CopyButton value={c.username} label="email" />}
                   </div>
@@ -423,7 +423,7 @@ export default function EmployerLoginsPanel() {
                   )}
                   {c.pending_ats_reset && (
                     <p className="mt-1 text-xs text-warning">
-                      A reset is queued - this password may not work on their site
+                      A reset is queued. This password may not work on their site
                       until it completes.
                     </p>
                   )}
@@ -443,7 +443,7 @@ export default function EmployerLoginsPanel() {
             <DialogDescription>
               {method === 'email_code'
                 ? "Confirm it's you with a one-time code we email you. We record every reveal."
-                : "Confirm it's you. Enter your JobPilot account password - not the employer's. We record every reveal."}
+                : "Confirm it's you. Enter your Aspirely account password, not the employer's. We record every reveal."}
             </DialogDescription>
           </DialogHeader>
 

@@ -27,6 +27,7 @@
  * Absent keys serialize away (JSON.stringify drops `undefined`), so the
  * tracker receives "we do not know" rather than a fabricated fact.
  */
+import { rangeText } from '@/lib/displayText';
 import type { CareerPortalSeniority, Job } from '@/types/jobs';
 import type { TechFeedJob } from '@/types/techFeed';
 
@@ -42,13 +43,13 @@ const JOB_SENIORITY: ReadonlySet<string> = new Set<CareerPortalSeniority>([
 function salaryText(job: TechFeedJob): string | undefined {
   const salary = job.salary;
   if (!salary?.published) return undefined;
-  if (salary.display) return salary.display;
+  if (salary.display) return rangeText(salary.display);
 
   const currency = salary.currency ? `${salary.currency} ` : '';
   const interval = salary.interval && salary.interval !== 'year' ? ` / ${salary.interval}` : '';
   const { min_annual: min, max_annual: max } = salary;
   if (min !== null && max !== null) {
-    return `${currency}${min.toLocaleString()} - ${max.toLocaleString()}${interval}`;
+    return `${currency}${min.toLocaleString()} to ${max.toLocaleString()}${interval}`;
   }
   if (min !== null) return `${currency}${min.toLocaleString()}+${interval}`;
   if (max !== null) return `Up to ${currency}${max.toLocaleString()}${interval}`;

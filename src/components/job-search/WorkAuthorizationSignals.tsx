@@ -132,7 +132,7 @@ export function EmployerSponsorshipBadge({
       ? `Sponsored ${people} across all roles in ${period}`
       : `Sponsored ${people} in similar roles in ${period}`;
 
-  const provenance = [signal.source, signal.data_vintage ?? period].filter(Boolean).join(' - ');
+  const provenance = [signal.source, signal.data_vintage ?? period].filter(Boolean).join(' · ');
   const windowMismatch = signal.data_window?.service_claim_mismatch === true;
 
   return (
@@ -231,7 +231,7 @@ function CensusAbsentBadge({
 }) {
   const period = sponsorshipPeriodLabel(signal) as string;
   const sentence = `Filed no H-1B petitions in ${period}`;
-  const provenance = [signal.source, signal.data_vintage ?? period].filter(Boolean).join(' - ');
+  const provenance = [signal.source, signal.data_vintage ?? period].filter(Boolean).join(' · ');
 
   return (
     <HoverCard openDelay={120} closeDelay={80}>

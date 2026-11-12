@@ -195,7 +195,7 @@ function PreviewPrepare() {
           </div>
         </div>
         <div className="rounded-container border border-border p-3.5">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+          <p className="text-caption-sm font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             Why it fits
           </p>
           <div className="mt-2.5 space-y-1.5">
@@ -211,7 +211,7 @@ function PreviewPrepare() {
         </span>
         <div className="min-w-0 flex-1">
           <p className="text-[12px] font-semibold text-foreground">Tailored resume prepared</p>
-          <p className="mt-0.5 text-[11px] text-muted-foreground">Yours to review and change.</p>
+          <p className="mt-0.5 text-caption-sm text-muted-foreground">Yours to review and change.</p>
         </div>
       </div>
     </Frame>
@@ -224,7 +224,7 @@ function PreviewDecide() {
       <div className="rounded-container border border-border p-4">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <p className="text-[12px] font-semibold text-foreground">Aspirely prepared</p>
-          <span className="rounded-full border border-border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+          <span className="rounded-full border border-border px-2 py-0.5 text-caption-sm font-semibold uppercase tracking-[0.12em] text-muted-foreground">
             {STATUS_LABEL[AUTO_APPLY.status]}
           </span>
         </div>
@@ -254,7 +254,7 @@ function PreviewDecide() {
         </div>
       </div>
 
-      <div className="mt-3 flex items-center gap-2 text-[11px] text-muted-foreground">
+      <div className="mt-3 flex items-center gap-2 text-caption-sm text-muted-foreground">
         <Pause className="h-3.5 w-3.5" aria-hidden />
         Pause anytime. Nothing is submitted without your permission.
       </div>
@@ -314,7 +314,7 @@ function ChapterRow({
         transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
       />
       <div className="relative pl-8">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+        <p className="text-caption-sm font-semibold uppercase tracking-[0.16em] text-muted-foreground">
           {chapter.time}
         </p>
         <h3 className="mt-2.5 text-balance font-display text-xl font-bold leading-[1.22] tracking-[-0.018em] text-foreground sm:text-[1.4rem]">
@@ -399,7 +399,7 @@ function NarrativeLoop() {
           return (
             <li key={c.id}>
               <Reveal>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                <p className="text-caption-sm font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                   {c.time}
                 </p>
                 <h3 className="mt-2.5 text-balance font-display text-xl font-bold leading-[1.22] tracking-[-0.018em] text-foreground">
@@ -466,7 +466,7 @@ function CompoundCoda() {
     <Container className={BLOCK_GAP}>
       <Reveal>
         <div className="rounded-container border border-border bg-card p-7 shadow-panel sm:p-9">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+          <p className="text-caption-sm font-semibold uppercase tracking-[0.16em] text-muted-foreground">
             Then it repeats
           </p>
           <h3 className="mt-3 max-w-2xl text-balance font-display text-2xl font-bold leading-[1.2] tracking-[-0.02em] text-foreground">
@@ -521,7 +521,7 @@ export function WorkdayLoop({ className }: { className?: string }) {
             below carry our real UI chrome over placeholder values, including a
             picture of an approval control - so the section has to say what it
             is once, up front, where it cannot be scrolled past. */}
-        <p className="mt-4 text-[12px] text-muted-foreground">
+        <p className="mt-4 text-caption text-muted-foreground">
           An example of the Aspirely workflow. The layouts are ours; the values shown are
           placeholders, not real results.
         </p>

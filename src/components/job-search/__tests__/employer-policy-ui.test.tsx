@@ -107,8 +107,8 @@ describe('JobCard', () => {
     });
     expect(screen.getByTestId('employer-category')).toHaveTextContent('Staffing agency');
     expect(screen.getByTestId('posting-relationship')).toHaveTextContent('Client placement');
-    expect(screen.getByTestId('job-availability')).toHaveTextContent("Couldn't verify (blocked) - 2d ago");
-    expect(screen.getByTestId('job-destination')).toHaveTextContent('Applies on boards.greenhouse.io - found via Greenhouse');
+    expect(screen.getByTestId('job-availability')).toHaveTextContent("Couldn't verify (blocked), checked 2d ago");
+    expect(screen.getByTestId('job-destination')).toHaveTextContent('Applies on boards.greenhouse.io, found via Greenhouse');
   });
 
   test('no_warnings_found shows no trust line and never "Verified"; the legacy band yields to it', () => {

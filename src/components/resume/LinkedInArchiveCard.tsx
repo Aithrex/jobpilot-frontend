@@ -35,11 +35,11 @@ function DiffRow({ item }: { item: LinkedInDiffItem }) {
       <div className="mt-2 grid gap-1.5 sm:grid-cols-2">
         <div className="rounded-md bg-muted/50 px-2 py-1.5">
           <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Resume</p>
-          <p className="text-xs text-foreground/85">{item.resume_value || " - "}</p>
+          <p className="text-xs text-foreground/85">{item.resume_value || "Not listed"}</p>
         </div>
         <div className="rounded-md bg-muted/50 px-2 py-1.5">
           <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">LinkedIn</p>
-          <p className="text-xs text-foreground/85">{item.linkedin_value || " - "}</p>
+          <p className="text-xs text-foreground/85">{item.linkedin_value || "Not listed"}</p>
         </div>
       </div>
       {item.suggestion && (

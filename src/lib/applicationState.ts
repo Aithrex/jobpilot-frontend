@@ -52,7 +52,7 @@ export function applicationStateLabel(
   const key = (status ?? '').trim().toLowerCase().replace(/[\s-]+/g, '_');
   const known = key ? LABELS[key] : undefined;
   if (opts.opened && (!known || known.pre)) {
-    return { label: 'Opened application - not confirmed', tone: 'caution', preApplication: true };
+    return { label: 'Opened application, not confirmed', tone: 'caution', preApplication: true };
   }
   if (!known) return null;
   return { label: known.label, tone: known.tone, preApplication: !!known.pre };

@@ -3,8 +3,9 @@ import { Link } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
 import { BrandMark } from '@/components/BrandMark';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { useResolvedTheme } from '@/components/theme-provider';
+import { POSTER, POSTER_HEIGHT, POSTER_WIDTH, SWEEP } from '@/components/landing/three/poster';
 import { AuthAtlas, type AuthPhase, type AuthZone } from './AuthAtlas';
-import { AuthShowcase } from './AuthShowcase';
 
 /**
  * Shared auth stage for /login, /register, /reset-password and the AuthGate
@@ -129,6 +130,7 @@ export function AuthShell({
   aside?: ReactNode;
 }) {
   const reduce = !!useReducedMotion();
+  const theme = useResolvedTheme();
 
   const [focusZone, setFocusZone] = useState<AuthZone>('idle');
   const [hoverZone, setHoverZone] = useState<AuthZone | null>(null);
@@ -214,11 +216,11 @@ export function AuthShell({
               <motion.div variants={stagger} initial="hidden" animate="show" className="w-full max-w-sm">
                 <motion.h1
                   variants={fadeUp}
-                  className="mt-4 font-display text-2xl font-extrabold tracking-tight text-balance"
+                  className="mt-4 text-balance font-display text-headline-md text-foreground"
                 >
                   {title}
                 </motion.h1>
-                <motion.p variants={fadeUp} className="mt-2 text-sm text-muted-foreground">
+                <motion.p variants={fadeUp} className="mt-2 text-body-md text-ink-muted">
                   {subtitle}
                 </motion.p>
                 {banner && (
@@ -229,7 +231,7 @@ export function AuthShell({
                 <motion.div variants={fadeUp} className="mt-8">
                   {children}
                 </motion.div>
-                <motion.div variants={fadeUp} className="mt-6 text-center text-sm text-muted-foreground">
+                <motion.div variants={fadeUp} className="mt-6 text-center text-body-md text-muted-foreground">
                   {footer}
                 </motion.div>
                 {/* House motif - the mono integrity micro-chip. `mt-auto` in a
@@ -238,7 +240,7 @@ export function AuthShell({
                     smaller gap keeps it attached to the form it belongs to. */}
                 <motion.p
                   variants={fadeUp}
-                  className="mt-6 text-center font-mono text-[11px] uppercase tracking-wider text-muted-foreground/90"
+                  className="mt-6 text-center text-caption-sm font-medium text-muted-foreground"
                 >
                   Integrity-first. No fabricated claims.
                 </motion.p>
@@ -246,16 +248,33 @@ export function AuthShell({
             </main>
           </div>
 
-        {/* ── Preview pane (7/12, desktop only) ──
-            The Signal Atlas used to own this space and read as an empty panel:
-            a hairline constellation tuned for near-black, on 7/12 of the page,
-            saying nothing about the product. It now shows the workspace you are
-            signing in to, in the same window frame the landing page uses. The
-            atlas survives as the MOBILE horizon band above the form, which is
-            the shallow decorative strip it was always best at. */}
+        {/* ── Stage pane (7/12, desktop only) ──
+            The same studio frame as the landing hero: the resume sheet that
+            splits into matched job cards, as the static poster only. The auth
+            pages never load the 3D chunk; sign-in should be the fastest page
+            on the site. Decorative here, because the heading and the form
+            carry everything. Pages may pass `aside` (register's password
+            step shows its strength shield instead). */}
         <div className="relative hidden lg:col-span-7 lg:block" aria-hidden>
-          <div className="absolute inset-y-0 left-0 w-px bg-border/60" />
-          {aside ?? <AuthShowcase zone={zone} phase={phase} />}
+          <div className="absolute inset-y-0 left-0 w-px bg-border" />
+          {aside ?? (
+            <div className="flex h-full min-h-screen items-center justify-center p-10 xl:p-16">
+              <div
+                className="relative aspect-[5/4] w-full max-w-3xl overflow-hidden rounded-container border border-border shadow-soft"
+                style={{ backgroundImage: SWEEP[theme] }}
+              >
+                <img
+                  src={POSTER[theme]}
+                  width={POSTER_WIDTH}
+                  height={POSTER_HEIGHT}
+                  alt=""
+                  decoding="async"
+                  draggable={false}
+                  className="absolute inset-0 h-full w-full select-none object-contain"
+                />
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -8,7 +8,7 @@ import { applicationStateLabel } from '@/lib/applicationState';
 describe('application state copy', () => {
   test('opened but unconfirmed is never "Applied"', () => {
     const state = applicationStateLabel('interested', { opened: true });
-    expect(state?.label).toBe('Opened application - not confirmed');
+    expect(state?.label).toBe('Opened application, not confirmed');
     expect(state?.label).not.toMatch(/^Applied/);
   });
 

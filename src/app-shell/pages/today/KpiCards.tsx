@@ -61,7 +61,11 @@ function StatCard({
       </div>
       <div className="mt-3 flex items-end gap-2">
         <span className="text-display font-display leading-none text-foreground">
-          {value === null ? <span className="text-muted-foreground"> - </span> : <Stat>{value}</Stat>}
+          {value === null ? (
+            <span className="font-sans text-base text-muted-foreground">No data yet</span>
+          ) : (
+            <Stat>{value}</Stat>
+          )}
         </span>
         {trend ? <span className="pb-1"><TrendChip {...trend} /></span> : null}
       </div>

@@ -320,13 +320,13 @@ export function availabilityLineOf(
     case 'closed':
       return {
         state: 'closed',
-        text: age ? `Closed or expired - checked ${age}` : 'Closed or expired',
+        text: age ? `Closed or expired, checked ${age}` : 'Closed or expired',
         tone: 'danger',
       };
     case 'unverifiable':
       return {
         state: 'unverifiable',
-        text: age ? `Couldn't verify (blocked) - ${age}` : "Couldn't verify (blocked)",
+        text: age ? `Couldn't verify (blocked), checked ${age}` : "Couldn't verify (blocked)",
         tone: 'caution',
       };
     default:
@@ -345,7 +345,7 @@ export interface TrustLine {
 const TRUST_TITLE: Record<Exclude<TrustState, 'no_warnings_found'>, string> = {
   warnings: 'Warning signs found',
   ownership_conflict: "We couldn't confirm this board belongs to the employer",
-  suspected_fraud: 'Suspected fraud - do not share money or bank details',
+  suspected_fraud: 'Suspected fraud. Do not share money or bank details.',
 };
 
 /**

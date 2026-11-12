@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Bot, Send, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { AiDisclosure } from "@/components/ai/AiDisclosure";
 import { useMentor } from "@/hooks/useHub";
 import type { HubPathParams } from "@/types/hub";
 import { cn } from "@/lib/utils";
@@ -12,7 +13,7 @@ interface MentorChatProps {
   params?: HubPathParams;
 }
 
-const SUGGESTIONS = ["How should I start?", "I'm getting a 401 — ideas?", "Review my approach"];
+const SUGGESTIONS = ["How should I start?", "I'm getting a 401 error. Any ideas?", "Review my approach"];
 
 export default function MentorChat({ dayKey, params }: MentorChatProps) {
   const { messages, pending, send } = useMentor(dayKey, params);
@@ -41,12 +42,14 @@ export default function MentorChat({ dayKey, params }: MentorChatProps) {
           <p className="text-[11px] text-muted-foreground">Senior engineer · hints, not full solutions</p>
         </div>
       </div>
+      <AiDisclosure className="border-b border-border px-3 py-1.5" />
 
       <div ref={scrollRef} className="max-h-64 min-h-[7rem] space-y-3 overflow-y-auto px-3 py-3">
         {messages.length === 0 && !pending ? (
           <div className="space-y-2">
             <p className="text-sm text-muted-foreground">
-              I&apos;m your staff engineer on this ticket. I&apos;ll nudge you toward the answer — ask me anything.
+              I&apos;m an AI assistant playing your staff engineer on this ticket. I&apos;ll nudge you toward
+              the answer, so ask me anything.
             </p>
             <div className="flex flex-wrap gap-1.5">
               {SUGGESTIONS.map((s) => (
@@ -119,7 +122,8 @@ export default function MentorChat({ dayKey, params }: MentorChatProps) {
               submit();
             }
           }}
-          placeholder="Ask your mentor…"
+          placeholder="Ask your mentor..."
+          aria-label="Message the AI mentor"
           rows={1}
           className="max-h-24 min-h-[38px] resize-none text-sm"
         />

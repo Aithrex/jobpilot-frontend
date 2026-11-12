@@ -8,8 +8,8 @@ import { useResolvedTheme } from '@/components/theme-provider';
  * (origin) into their secured workspace (destination ring).
  *
  * It used to also serve the tall desktop pane via a `variant` prop. That pane
- * is now {@link AuthShowcase}, so the panel variant was dead code and the
- * geometry is fixed to the horizon crop.
+ * now shows the landing's studio poster (see AuthShell), so the geometry is
+ * fixed to the horizon crop.
  *
  * It REACTS to the real form:
  *

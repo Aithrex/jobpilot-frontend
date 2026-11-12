@@ -88,7 +88,7 @@ function DemonstratedRow({ entry }: { entry: MatchGapItem }) {
       {open && (
         <div className="mt-2 space-y-1 border-t border-border pt-2 text-[11px] text-muted-foreground">
           {entry.span && (
-            <p className="leading-snug text-foreground">“{entry.span.trim()}”</p>
+            <p className="leading-snug text-foreground">&quot;{entry.span.trim()}&quot;</p>
           )}
           {entry.why && <p>{entry.why}</p>}
           {entry.match_method && <p>Match: {entry.match_method}</p>}

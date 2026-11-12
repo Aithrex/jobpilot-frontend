@@ -108,7 +108,7 @@ export default function InterviewInsights({ onStartMock }: InterviewInsightsProp
             <Card className="col-span-2 p-4 sm:col-span-1">
               <p className="text-xs text-muted-foreground">Weakest area</p>
               <p className="truncate text-lg font-bold">
-                {(coach.data.stats.weakest_dimensions || []).map((d) => DIM_LABEL[d] || d).join(', ') || ' - '}
+                {(coach.data.stats.weakest_dimensions || []).map((d) => DIM_LABEL[d] || d).join(', ') || 'None yet'}
               </p>
             </Card>
           </div>
@@ -130,7 +130,7 @@ export default function InterviewInsights({ onStartMock }: InterviewInsightsProp
                 <div key={dim}>
                   <div className="mb-1 flex justify-between text-xs">
                     <span className="text-muted-foreground">{DIM_LABEL[dim] || dim}</span>
-                    <span className="font-medium tabular-nums">{v ?? ' - '}</span>
+                    <span className="font-medium tabular-nums">{v ?? 'Not scored'}</span>
                   </div>
                   <div className="h-2 overflow-hidden rounded-full bg-muted">
                     <div className={`h-full rounded-full ${scoreColor(v ?? 0)}`} style={{ width: `${v ?? 0}%` }} />

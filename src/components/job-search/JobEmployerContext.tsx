@@ -137,7 +137,7 @@ export function JobEmployerContext({
           <ExternalLink className="h-3 w-3 shrink-0" aria-hidden />
           <span className="truncate">
             Applies on <span className="font-medium text-foreground/80">{host}</span>
-            {sourceLabel ? ` - found via ${sourceLabel}` : ''}
+            {sourceLabel ? `, found via ${sourceLabel}` : ''}
           </span>
         </p>
       )}

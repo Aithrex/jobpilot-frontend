@@ -117,7 +117,7 @@ describe('availability', () => {
       { availability: { state: 'unverifiable', method: 'liveness_probe', verified_at: hoursAgo(49) } },
       { now: NOW },
     );
-    expect(line?.text).toBe("Couldn't verify (blocked) - 2d ago");
+    expect(line?.text).toBe("Couldn't verify (blocked), checked 2d ago");
     expect(line?.text).not.toMatch(/closed/i);
   });
 

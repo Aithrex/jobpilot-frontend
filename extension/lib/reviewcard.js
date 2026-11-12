@@ -136,7 +136,7 @@
         el(
           "div",
           "jp-alert",
-          "A CAPTCHA / bot check is on this page. Aspirely won't touch it — solve it and submit yourself."
+          "A CAPTCHA / bot check is on this page. Aspirely won't touch it. Solve it and submit yourself."
         )
       );
     }
@@ -204,7 +204,7 @@
 
     // Footer
     const ft = el("div", "jp-ft");
-    ft.appendChild(el("span", "jp-note", "You submit — Aspirely never clicks Submit for you."));
+    ft.appendChild(el("span", "jp-note", "You submit. Aspirely never clicks Submit for you."));
     const doneBtn = el("button", "jp-done", "Done");
     doneBtn.type = "button";
     ft.appendChild(doneBtn);

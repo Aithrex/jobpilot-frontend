@@ -126,8 +126,8 @@
   }
 
   function noteForConfidence(conf) {
-    if (conf === "medium") return "Guessed from the field label — double-check.";
-    if (conf === "low") return "AI-matched — double-check.";
+    if (conf === "medium") return "Guessed from the field label. Double-check it.";
+    if (conf === "low") return "Matched by AI. Double-check it.";
     return "";
   }
 
@@ -167,7 +167,7 @@
         <button id="jp-autofill" class="jp-btn jp-primary">Autofill this form</button>
         <button id="jp-draft" class="jp-btn">Draft an answer</button>
         <div id="jp-variants" class="jp-variants"></div>
-        <div class="jp-foot">You review &amp; submit — Aspirely never submits for you.</div>
+        <div class="jp-foot">You review &amp; submit. Aspirely never submits for you.</div>
       </div>
       <div id="jp-hud" class="jp-hud" hidden role="status" aria-live="polite">
         <div class="jp-hud-top">
@@ -242,7 +242,7 @@
       sessionPaused = !sessionPaused;
       hudPause.textContent = sessionPaused ? "Resume auto" : "Pause auto";
       if (sessionPaused) {
-        hudShow("Auto mode paused on this page — the panel button still works.", { sticky: true });
+        hudShow("Auto mode paused on this page. The panel button still works.", { sticky: true });
       } else {
         hudShow("Auto mode resumed.");
         scheduleEvaluate(300);
@@ -276,7 +276,7 @@
     q("#jp-autofill").addEventListener("click", async () => {
       const gate = await (self.JPRateLimit ? self.JPRateLimit.check() : { allowed: false, reason: "Engine not ready." });
       if (!gate.allowed) {
-        flash(gate.reason || "Rate limit reached — take a break.");
+        flash(gate.reason || "Rate limit reached. Take a short break.");
         return;
       }
 
@@ -290,8 +290,8 @@
       if (await maybeAutoSubmit(result)) return;
 
       showReviewCard();
-      if (result.captcha) flash("CAPTCHA detected — you solve it & submit.");
-      else flash(result.filled ? `Filled ${result.filled} field${result.filled === 1 ? "" : "s"} — review below` : "Nothing to autofill — see review");
+      if (result.captcha) flash("CAPTCHA detected. Solve it and submit yourself.");
+      else flash(result.filled ? `Filled ${result.filled} field${result.filled === 1 ? "" : "s"}. Review them below.` : "Nothing to autofill. See the review.");
     });
 
     // ---- Draft an answer (focus-based; preserves the original flow) ----
@@ -301,7 +301,7 @@
       const question = questionFor(field);
       if (!question) return flash("Couldn't read the question — try another box.");
       const box = q("#jp-variants");
-      box.innerHTML = `<div class="jp-loading">Drafting from your résumé…</div>`;
+      box.innerHTML = `<div class="jp-loading">Drafting from your resume...</div>`;
       const res = await send({ type: "GENERATE_ANSWER", payload: { question } });
       box.innerHTML = "";
       if (!res || !res.ok || !res.data || !Array.isArray(res.data.variants)) {
@@ -322,7 +322,7 @@
           if (field.isContentEditable) field.textContent = ans;
           else setNativeValue(field, ans);
           box.innerHTML = "";
-          flash("Inserted — edit it to make it yours.");
+          flash("Inserted. Edit it to make it yours.");
         });
         box.appendChild(card);
       });
@@ -360,7 +360,7 @@
   async function performFill(opts) {
     const auto = !!(opts && opts.auto);
     if (!self.JPResolver || !self.JPReviewCard || !self.JPRateLimit || !self.JPAdapters) {
-      return { status: "error", message: "Engine not ready — reload the page and try again." };
+      return { status: "error", message: "Engine not ready. Reload the page and try again." };
     }
 
     // Profile (sync on demand — once per session in auto mode).
@@ -421,7 +421,7 @@
     // in lib/widgets.js (ported from ApplyPilot); which fields get which values
     // is the adapter's postFill.
     if (adapter && typeof adapter.postFill === "function" && self.JPWidgets) {
-      if (auto && hasWidgetWork(adapter)) hudShow("Filling dropdowns & lists — a few seconds…", { sticky: true });
+      if (auto && hasWidgetWork(adapter)) hudShow("Filling dropdowns and lists. This takes a few seconds...", { sticky: true });
       let extra = [];
       try {
         extra = (await adapter.postFill(profile)) || [];
@@ -442,7 +442,7 @@
           label: ex.label || "Form field",
           value: ex.value,
           confidence: ex.confidence || "medium",
-          note: ex.note || "Set directly on the form — change it there if needed.",
+          note: ex.note || "Set directly on the form. Change it there if needed.",
         });
       }
     }
@@ -455,7 +455,7 @@
         id: "s" + idc++,
         kind: "sensitive",
         label: s.label,
-        note: "We never auto-answer eligibility, EEO, pay or DOB questions — that's yours.",
+        note: "We never auto-answer eligibility, EEO, pay or date-of-birth questions. Those are yours.",
       });
     }
 
@@ -486,18 +486,18 @@
       if (!eq || !cardApi) return;
       const res = await send({ type: "GENERATE_ANSWER", payload: { question: eq.label } });
       if (!res || !res.ok || !res.data || !Array.isArray(res.data.variants) || !res.data.variants.length) {
-        cardApi.setRow(id, { note: (res && res.data && (res.data.message || res.data.error)) || "Couldn't draft — try the panel's Draft button." });
+        cardApi.setRow(id, { note: (res && res.data && (res.data.message || res.data.error)) || "Couldn't draft an answer. Try the panel's Draft button." });
         return;
       }
       const first = res.data.variants[0];
       const ans = (first && (first.answer || (typeof first === "string" ? first : ""))) || "";
       if (!ans) {
-        cardApi.setRow(id, { note: "No answer returned — try again." });
+        cardApi.setRow(id, { note: "No answer returned. Please try again." });
         return;
       }
       self.JPResolver.setValue(eq.el, ans);
       lastElById.set(id, eq.el); // now inline-editable through onEdit
-      cardApi.setRow(id, { kind: "field", value: ans, confidence: "low", note: "AI draft inserted — make it yours before submitting." });
+      cardApi.setRow(id, { kind: "field", value: ans, confidence: "low", note: "AI draft inserted. Make it yours before submitting." });
     },
   };
 
@@ -528,27 +528,27 @@
     }
     if (!evalRes || !evalRes.ok) return false;
 
-    flash("Approved application — starting a 5s countdown you can cancel…");
+    flash("Approved application. Starting a 5-second countdown you can cancel...");
     self.JPAutoSubmit.runCountdown({
       seconds: 5,
       record: evalRes.record,
       onCancel: () => {
         showReviewCard();
-        flash("Auto-submit cancelled — review & submit yourself.");
+        flash("Auto-submit cancelled. Review and submit yourself.");
       },
       onSubmit: async () => {
         let res;
         try {
           res = await self.JPAutoSubmit.performSubmit(evalRes);
         } catch (_) {
-          res = { ok: false, message: "Auto-submit failed — review & submit yourself." };
+          res = { ok: false, message: "Auto-submit failed. Review and submit yourself." };
         }
         if (!res || !res.ok) {
           showReviewCard();
-          flash((res && res.message) || "Couldn't auto-submit — review & submit yourself.");
+          flash((res && res.message) || "Couldn't auto-submit. Review and submit yourself.");
         } else {
-          flash("Submitted — Aspirely clicked this site's Submit for your approved application.");
-          hudShow("Submitted — this approved application is done. 🎉");
+          flash("Submitted. Aspirely clicked this site's Submit for your approved application.");
+          hudShow("Submitted. This approved application is done.");
         }
       },
     });
@@ -631,7 +631,7 @@
         const gate = await self.JPRateLimit.check();
         if (!gate.allowed) {
           sessionStopped = true;
-          hudShow(gate.reason || "Rate limit reached — auto mode is off for now.", { sticky: true });
+          hudShow(gate.reason || "Rate limit reached. Auto mode is off for now.", { sticky: true });
           return;
         }
         result = await performFill({ auto: true });
@@ -663,13 +663,13 @@
       if (cancelledSteps.has(key)) return;
       if ((advanceAttempts.get(key) || 0) >= 2) return;
       if (detectCaptcha()) {
-        if (result && result.filled) hudShow("CAPTCHA on this page — finish and submit yourself.", { review: true });
+        if (result && result.filled) hudShow("CAPTCHA on this page. Finish and submit yourself.", { review: true });
         return;
       }
       const blockers = self.JPFlow.countBlockers();
       if (blockers > 0) {
         const filledNote = result && result.filled ? `Filled ${result.filled} · ` : "";
-        hudShow(`${filledNote}${blockers} required item${blockers === 1 ? "" : "s"} need${blockers === 1 ? "s" : ""} you — I'll continue once done.`, {
+        hudShow(`${filledNote}${blockers} required item${blockers === 1 ? "" : "s"} need${blockers === 1 ? "s" : ""} you. I'll continue once they're done.`, {
           review: !!lastRows.length,
           ttl: 10000,
         });
@@ -696,10 +696,10 @@
       clearInterval(intervalId);
       countdownActive = false;
       cancelledSteps.add(key);
-      hudShow("Auto-continue cancelled — click Next yourself when ready.", { review: !!lastRows.length });
+      hudShow("Auto-continue cancelled. Click Next yourself when you're ready.", { review: !!lastRows.length });
     };
 
-    const tick = () => hudShow(`Step complete — continuing in ${remaining}s`, { sticky: true, onCancel: cancel, progress: ((3 - remaining) / 3) * 100 });
+    const tick = () => hudShow(`Step complete. Continuing in ${remaining}s`, { sticky: true, onCancel: cancel, progress: ((3 - remaining) / 3) * 100 });
     tick();
 
     intervalId = setInterval(() => {
@@ -717,7 +717,7 @@
       const stillSafe = document.contains(btn) && self.JPFlow.isVisible(btn) && !btn.disabled && self.JPFlow.countBlockers() === 0 && !detectCaptcha();
       countdownActive = false;
       if (!stillSafe) {
-        hudShow("Held on — this step changed. Finish it and I'll continue.", { review: !!lastRows.length });
+        hudShow("Holding. This step changed. Finish it and I'll continue.", { review: !!lastRows.length });
         scheduleEvaluate(900);
         return;
       }
@@ -725,7 +725,7 @@
       try {
         btn.click();
       } catch (_) {
-        hudShow("Couldn't click Next — click it yourself.", { review: !!lastRows.length });
+        hudShow("Couldn't click Next. Click it yourself.", { review: !!lastRows.length });
         return;
       }
       hudShow("Moving to the next step…", { sticky: true, ttl: 6000 });

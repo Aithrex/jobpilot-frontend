@@ -114,7 +114,7 @@ export default function InsightsSheet({
               <MetricRow label="Offers" value={metrics.offers} />
               <MetricRow
                 label="Response rate"
-                value={metrics.respRate !== null ? `${metrics.respRate}%` : '—'}
+                value={metrics.respRate !== null ? `${metrics.respRate}%` : 'Not enough data'}
               />
             </div>
           </Section>

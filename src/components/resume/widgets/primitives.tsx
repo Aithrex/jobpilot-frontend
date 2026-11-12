@@ -135,7 +135,7 @@ export function WidgetError({ label = "Couldn't load", onRetry }: { label?: stri
       <span>{label}</span>
       {onRetry && (
         <>
-          <span aria-hidden="true"> - </span>
+          <span aria-hidden="true"> · </span>
           <button
             type="button"
             onClick={onRetry}
