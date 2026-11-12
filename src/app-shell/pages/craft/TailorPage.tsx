@@ -93,6 +93,15 @@ import { JdInputPanel } from './tailor/JdInputPanel';
 import { AtsScorePanel } from './tailor/AtsScorePanel';
 import { RegeneratePanel } from './tailor/RegeneratePanel';
 import { CoverLetterPanel } from './tailor/CoverLetterPanel';
+import { ResumeFormatControls } from './tailor/ResumeFormatControls';
+import { ScreenerPanel } from './tailor/ScreenerPanel';
+import {
+  formatOf,
+  loadSavedFormat,
+  saveFormat,
+  sameFormat,
+  type ResumeFormatPreferences,
+} from '@/lib/resumeFormat';
 
 const ResumeEditor = lazy(() => import('@/components/resume/ResumeEditor'));
 
@@ -123,6 +132,10 @@ export default function TailorPage() {
   const [tailorPct, setTailorPct] = useState<number | null>(null);
   const [tailorError, setTailorError] = useState('');
   const [result, setResult] = useState<TailorPipelineResult | null>(null);
+  // Format choices (length, spacing, accent, order). Sent with the next
+  // tailor; after tailoring, changing one re-fits the resume with no AI call.
+  const [formatPrefs, setFormatPrefs] = useState<ResumeFormatPreferences>(() => loadSavedFormat());
+  const [reformatting, setReformatting] = useState(false);
   const [atsLoading, setAtsLoading] = useState(false);
   // ATS scoring failed - surfaced beside the ATS panel with a manual retry
   // (scoring used to fail silently, leaving users staring at a spinnerless gap).
@@ -479,8 +492,8 @@ export default function TailorPage() {
       },
       pendingJobIdRef.current || undefined,
       baseChoice === AUTO_BASE
-        ? { selection_mode: 'auto' }
-        : { resume_id: baseChoice },
+        ? { selection_mode: 'auto', preferences: formatPrefs }
+        : { resume_id: baseChoice, preferences: formatPrefs },
     );
 
     if (ctrl.signal.aborted) {
@@ -846,6 +859,33 @@ export default function TailorPage() {
     [],
   );
 
+  // Re-fit the current resume to new format choices. Layout only: the
+  // backend re-selects the user's own lines (no AI). The ATS score is marked
+  // stale only when the set of lines actually changed, so switching the
+  // accent or section order never triggers a paid re-score.
+  const handleFormatChange = useCallback(
+    async (next: ResumeFormatPreferences) => {
+      const previous = formatPrefs;
+      setFormatPrefs(next);
+      saveFormat(next);
+      if (!result || sameFormat(formatOf(result.tailored_resume), next)) return;
+      setReformatting(true);
+      const resp = await apiService.reformatResume(result.tailored_resume, next, result.jd_analysis);
+      setReformatting(false);
+      if (resp.error || !resp.data?.tailored_resume) {
+        setFormatPrefs(previous);
+        toast.error(resp.error || 'Could not apply that format. Try again.');
+        return;
+      }
+      const lines = (r: TailoredFullResume) =>
+        [...(r.experience || []), ...(r.projects || [])].flatMap((e) => e.bullets || []).join('\n');
+      const changed = lines(resp.data.tailored_resume) !== lines(result.tailored_resume);
+      setResult((prev) => (prev ? { ...prev, tailored_resume: resp.data!.tailored_resume } : prev));
+      if (changed) setScoreStale(true);
+    },
+    [formatPrefs, result],
+  );
+
   const decideReview = useCallback((address: string, decision: ReviewDecision) => {
     setReviewDecisions((prev) => ({ ...prev, [address]: decision }));
     apiService.trackCraftEvent(`review_${decision}`, address);
@@ -1158,7 +1198,26 @@ export default function TailorPage() {
 
       {/* Split view */}
       <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
-        <section className="min-w-0 lg:sticky lg:top-24 lg:self-start" aria-label="Resume preview">
+        <section className="min-w-0 space-y-4 lg:sticky lg:top-24 lg:self-start" aria-label="Resume preview">
+          {result && !tailoring && (
+            <details className="group rounded-container border border-border bg-card shadow-soft">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-semibold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                <span>Format</span>
+                <span className="truncate text-xs font-normal text-muted-foreground">
+                  {formatPrefs.page_length === 'two' ? '2 pages' : '1 page'},{' '}
+                  {formatPrefs.density}, {formatPrefs.accent}
+                </span>
+              </summary>
+              <div className="border-t border-border px-4 py-4">
+                <ResumeFormatControls
+                  value={formatPrefs}
+                  onChange={handleFormatChange}
+                  busy={reformatting}
+                  note="Changes apply to this resume and your next tailor. Nothing is added; lines are only kept or left out."
+                />
+              </div>
+            </details>
+          )}
           <ResumePreviewFrame
             result={result}
             baseResume={baseResume}
@@ -1204,6 +1263,14 @@ export default function TailorPage() {
                 onQuotaBlocked={() => setQuotaDialog(dailyUsage)}
                 dailyRemaining={dailyUsage?.remaining ?? null}
                 usageLoading={usageLoading}
+                formatControls={
+                  <ResumeFormatControls
+                    value={formatPrefs}
+                    onChange={handleFormatChange}
+                    disabled={tailoring}
+                    busy={reformatting}
+                  />
+                }
               />
             }
             reviewPanel={
@@ -1251,6 +1318,8 @@ export default function TailorPage() {
                 />
               </div>
             }
+            screenerPanel={<ScreenerPanel report={result?.tailored_resume.screener} />}
+            screenerGrade={result?.tailored_resume.screener?.summary?.grade ?? null}
             regeneratePanel={
               <RegeneratePanel
                 feedback={regenFeedback}

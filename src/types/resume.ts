@@ -85,7 +85,14 @@ export interface TailoredFullResume {
     omitted_fact_ids?: string[];
     summary_locked?: boolean;
     omit_summary?: boolean;
+    /** Format choices (src/lib/resumeFormat.ts). Absent = the original layout. */
+    page_length?: 'one' | 'two';
+    density?: 'compact' | 'comfortable';
+    accent?: 'black' | 'navy';
+    section_order?: 'auto' | 'education_first' | 'experience_first';
   };
+  /** Employer-side read of this resume (backend services/screener_sim.py). */
+  screener?: ScreenerReport;
   contact: ResumeContact;
   summary: string;
   skills: Record<string, string[]>;
@@ -771,4 +778,82 @@ export interface TailoringRecord {
    */
   version_count?: number;
   has_tailored_resume?: boolean;
+}
+
+
+// ─── Screener simulator (backend services/screener_sim.py) ────────────────
+export type ScreenerVisibility = 'in_context' | 'listed_only' | 'not_visible';
+export type ScreenerEvidence = 'proven' | 'listed' | 'confirmed' | 'implied' | 'gap' | 'unknown';
+
+export interface ScreenerCriterion {
+  id: string;
+  term: string;
+  kind: 'must' | 'nice';
+  visibility: ScreenerVisibility;
+  where: string;
+  dates: string;
+  span: string;
+  recency_rank: number | null;
+  lost_in_render: boolean;
+  evidence: ScreenerEvidence;
+  source_line: string;
+  verdict: 'meets' | 'weak' | 'not_met';
+  screener?: {
+    verdict: 'meets' | 'not_met' | 'unclear';
+    quote: string;
+    quote_rejected: boolean;
+    where: string;
+    depth: string;
+  } | null;
+}
+
+export interface ScreenerReport {
+  version: string;
+  status: 'ok' | 'partial' | 'skipped';
+  mode?: 'deterministic' | 'full';
+  archetype?: string;
+  reason?: string;
+  stale?: boolean;
+  parse?: {
+    status: 'ok' | 'issues' | 'unavailable';
+    pages: number;
+    chars: number;
+    checks: { id: string; label: string; ok: boolean }[];
+  };
+  criteria?: ScreenerCriterion[];
+  summary?: {
+    must_total: number;
+    must_visible: number;
+    must_in_context: number;
+    nice_total: number;
+    nice_visible: number;
+    grade: 'A' | 'B' | 'C' | 'D' | null;
+    grade_basis: string;
+  };
+  fixes?: { criterion: string; term: string; kind: string; action: string; entry: string; source_line: string }[];
+  gaps?: { criterion: string; term: string; kind: string; adjacent: boolean; question: string }[];
+  warnings?: string[];
+  patched?: { criterion: string; term: string; entry: string; action: string; text: string }[];
+  lens?: {
+    name: string;
+    source: string;
+    signals: {
+      projects_total: number;
+      projects_without_link: string[];
+      estimated_link_deduction: [number, number];
+      tutorial_projects: string[];
+      ai_fluency_band: 'none' | 'listed_only' | 'built' | 'built_and_evaluated';
+      ai_fluency_points: string;
+      linkedin_bonus: number;
+      portfolio_bonus: number;
+      notes: string[];
+    };
+  };
+  screener?: {
+    apparent_level?: string;
+    six_second_read?: string;
+    reason_to_interview?: string;
+    top_concern?: string;
+    status?: string;
+  };
 }

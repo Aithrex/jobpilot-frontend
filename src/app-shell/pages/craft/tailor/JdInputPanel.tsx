@@ -6,6 +6,7 @@
  * (when a result exists), and the primary "Tailor My Resume" CTA. All data +
  * handlers arrive via props; the only local behavior is clipboard read.
  */
+import type React from 'react';
 import { Clipboard, RotateCw, ExternalLink, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -25,6 +26,8 @@ export interface JdInputPanelProps {
   dailyRemaining: number | null;
   usageLoading: boolean;
   onQuotaBlocked: () => void;
+  /** Format choices shown before tailoring (ResumeFormatControls). */
+  formatControls?: React.ReactNode;
 }
 
 export function JdInputPanel({
@@ -36,6 +39,7 @@ export function JdInputPanel({
   disabled,
   result,
   onSubmit,
+  formatControls,
   dailyRemaining,
   usageLoading,
   onQuotaBlocked,
@@ -152,6 +156,13 @@ export function JdInputPanel({
           jdAnalysis={result.jd_analysis}
           tailoredResume={result.tailored_resume}
         />
+      )}
+
+      {formatControls && !result && (
+        <div className="rounded-container border border-border bg-muted/30 p-4">
+          <p className="mb-3 text-sm font-semibold text-foreground">Resume format</p>
+          {formatControls}
+        </div>
       )}
 
       {/* Quota-exhausted banner - shown above the CTA so the reason is clear. */}
