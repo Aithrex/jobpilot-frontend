@@ -456,13 +456,15 @@ export function CombinedJobsPanel({
             )
           ) : lastSyncedAt ? (
             <>
-              Updated {formatAgo(lastSyncedAt)} · {roleCount} roles
+              {/* The count lives in the line above the toolbar; this line says
+                  only how fresh the board is. */}
+              Updated {formatAgo(lastSyncedAt)}
               <span className="ml-1" data-testid="jobs-timezone">
                 · days in {timeZoneName(viewerZone, 'short')}
               </span>
               {secondsUntilNext != null && (
-                <span className="ml-1 font-mono tabular-nums text-primary">
-                  · next sync {formatCountdown(secondsUntilNext)}
+                <span className="ml-1 tabular-nums">
+                  · next refresh in {formatCountdown(secondsUntilNext)}
                 </span>
               )}
             </>
