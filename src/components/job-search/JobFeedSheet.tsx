@@ -3,7 +3,6 @@ import {
   AlertCircle,
   Check,
   Loader2,
-  RefreshCw,
   RotateCcw,
   Search,
   Wand2,
@@ -379,22 +378,16 @@ export function JobFeedSheet() {
             <RotateCcw className="h-3.5 w-3.5" aria-hidden />
             Reset
           </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => sync(true)}
-            disabled={loading}
-            className="h-10 gap-1.5"
-            title="Re-scan every source now"
-          >
-            <RefreshCw className={cn('h-3.5 w-3.5', loading && 'animate-spin')} aria-hidden />
-            Sync
-          </Button>
+          {/* ONE action. "Sync" and "Search" used to sit side by side and both
+              called sync(true): two names for one click (Hick's law), and the
+              outline "Sync" stayed enabled when there were no titles to search
+              with, where the scan refuses to run anyway. */}
           <Button
             size="sm"
             onClick={() => sync(true)}
             disabled={loading || !canSearch}
             className="h-10 min-w-[5.5rem] gap-1.5"
+            title="Re-scan every source with these settings"
           >
             {loading ? (
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden />

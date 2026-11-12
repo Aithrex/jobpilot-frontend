@@ -24,7 +24,7 @@ React **18.3.1** · Vite **5.4.1** (`@vitejs/plugin-react-swc`) · TypeScript **
 
 ## Hard invariants (breaking these breaks login or prod — verify against them before every edit)
 1. **Never produce a 401 path for auth failures** and never assume one; any 401 = forced logout. Auth errors are 400/409/403/429. Auth payloads are FLAT (`{access_token,email,...}`). Reset uses `new_password`.
-2. **Build is `vite build` only.** Don't add new TS errors; ignore the known pre-existing ones (InterviewPrepTab, DailyPipelinePanel, `api.ts` parsed_resume). Run builds **from the FE dir**: `cd D:/Aithrex/jobpilot-frontend && pnpm build` (lint: `pnpm lint`).
+2. **Build is `vite build` only.** Don't add new TS errors; ignore the known pre-existing ones (InterviewPrepTab, `api.ts` parsed_resume). Run builds **from the FE dir**: `cd D:/Aithrex/jobpilot-frontend && pnpm build` (lint: `pnpm lint`).
 3. **Long LLM actions are async jobs**: kick off → get `{job_id}` → poll via `apiService.pollJob`/`/resume/job/<id>` with a loading/poll UI. Never block on a long request.
 4. **Gating is not optional**: locked features → handle 403 `upgrade_required` and 429/quota payloads via `useEntitlements` + `LockBadge`/`QuotaMeter`/`UpgradeModalProvider`/`QuotaLimitDialog`. Don't double-count tailor quota.
 5. **Adding a tab to `ResumeParser.tsx` = 6 edits**: (1) NavTab union, (2) `lazy()` import, (3) NAV_ITEMS, (4) NAV_SECTIONS, (5) VALID_NAV_TABS, (6) render switch — plus `MobileBottomNav.tsx`. Miss one → dead nav or crash.

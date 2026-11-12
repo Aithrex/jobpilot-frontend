@@ -46,7 +46,7 @@ React 18.3 · Vite 5.4 (`plugin-react-swc`) · TS 5.5 (`strict`, `noImplicitAny:
 - **`src/app-shell/`** — the shell: `nav.config.ts` (IA source of truth), `AppShell.tsx`, `TopBar`/`Sidebar`/`MobileNav`/`SubNav`/`MoreSheet`/`CommandPalette`, `pages/*` (destination layouts), `settings/*`
 - **`src/lib/api.ts`** — the API layer (singleton `apiService`, fetch, token, 401-handling, `pollJob`)
 - `src/contexts/AuthContext.tsx` — auth state
-- `src/components/` — feature tabs mounted as sections (`resume/`, `job-search/`, `autoSubmit/`, `hub/`, `mailbox/`, `billing/`, `visa/`, `beta/`, `onboarding/`, `guest/`, `landing/`)
+- `src/components/` — feature tabs mounted as sections (`resume/`, `job-search/`, `hub/`, `mailbox/`, `billing/`, `visa/`, `beta/`, `onboarding/`, `guest/`, `landing/`)
 - `src/pages/AdminPortal.tsx` — the remaining large page (~2k lines) → edit surgically
 - `src/components/ui/*` (shadcn primitives — don't hand-roll) · `src/hooks/*` (`useJobSearch`, `useEntitlements`, `useDailyUsage`) · `src/lib/utils.ts` (`cn()`) · `src/types/*`
 - `extension/` — the browser extension (Workday/Ashby/Greenhouse form-fill; own `manifest.json` + `package.sh`)
@@ -54,83 +54,22 @@ React 18.3 · Vite 5.4 (`plugin-react-swc`) · TS 5.5 (`strict`, `noImplicitAny:
 ## Conventions
 PascalCase component files; typed props interface; `@/` imports; `cn()` for conditional classes; compose shadcn `ui/*`; `sonner` for transient feedback. **Design tokens** in `src/index.css` (semantic HSL, light + dark) — never raw hex. Verify visual changes in **both themes + mobile**. Handle loading/empty/error for every async surface. Keep UI copy ASCII and dash-free (`pnpm copy:check`): a period, comma, colon, "to" for ranges, or the middot `·` between labels. AI chat surfaces show `<AiDisclosure />` (`src/components/ai/`); AI drafts show `<AiDisclosure kind="draft" />`.
 
-## The unified tech feed (flagged)
+## Deleted features (2026-11-12)
 
-Mounted at `/portals` (`src/components/resume/CareerPortalsTab.tsx`) behind a
-flag, replacing the three legacy panels when on. **Off by default.**
+The screens hidden by the 2026-10-25 focused-workspace decision
+(`docs/product/2026-10-25-focused-workspace.md`) were DELETED from this repo
+on 2026-11-12, together with every other file the app could not reach:
+the unified tech feed (Career Portals, `tech-feed/*`, `techFeed*` libs and
+hooks), the Auto Apply UI (`autoSubmit/*`, `AutonomyPanel`, `useAutoSubmit`),
+Six Seconds, Voice analysis, the legacy dashboard widgets, `DailyPipelinePanel`
+and `WorkdayJobsPanel`. Their routes still redirect to live destinations.
 
-- flag: `localStorage['aspirely.techFeed.enabled']` beats build-time
-  `VITE_TECH_FEED`; `?techfeed=1` / `?techfeed=0` writes the localStorage key,
-  so a staged rollout is a LINK, not a rebuild (`src/lib/techFeedFlag.ts`).
-- components: `src/components/job-search/tech-feed/*` — `TechFeedPanel`,
-  `TechFeedFilters` (occupation filters are the primary rail; employer-category
-  filters live in the advanced group — the two axes are deliberately separate),
-  `TechFeedFacets`, `TechFeedJobCard`, `NotInterestedMenu`.
-- state: filters are URL-owned (`src/lib/techFeedUrlState.ts`, `|` separated —
-  not `,`, because "Austin, TX").
-- **`src/lib/techFeedJobAdapter.ts` is the ONE bridge** from `TechFeedJob` to
-  the legacy `Job` the five flows take. It must never invent a value: an
-  unpublished salary, an unknown work mode and an undated posting are OMITTED,
-  not defaulted, so the tracker receives "we do not know".
-- the five flows are the EXISTING ones — `useJobSearch().saveJob/unsaveJob/
-  quickApply/beginApplyWithTailor/autoApply` plus `ApplyConfirmDialog` — wired
-  through, never reimplemented.
-- suppression is CROSS-DEVICE via `POST/DELETE/GET /api/jobs/tech-feed/feedback`
-  (`src/lib/techFeedNotInterested.ts`); localStorage is an optimistic cache
-  that reconciles from the server on mount. Only `not_interested`,
-  `irrelevant_role` and `duplicate` hide a job — `wrong_company`, `stale_job`
-  and `incorrect_metadata` are DATA-QUALITY REPORTS and the copy must not
-  promise the job will disappear.
-- **the company filter takes NAMES, not ids**
-  (`tech-feed/CompanyAutocomplete.tsx` -> `GET /api/jobs/tech-feed/companies`).
-  It used to be a free-text chips input whose values were whichever slug the
-  catalog handed the UI: a user typing "Stripe" had no way to reach
-  `emp_fd96667721fe`, and a saved filter rendered as hex forever. Ids handed
-  in on mount are resolved back to names (`?ids=`), which also follows an
-  acquisition. A LEGACY value (a bare ATS tenant) is kept and flagged, never
-  dropped - silently widening a filter is the failure mode a filter must not
-  have. The Workday catalog fan-out that used to back the suggestion chips is
-  gone with it.
-- **company categories come from the canonical facet with counts**
-  (`CompanyCategoryPicker.tsx`). The old chips input accepted any string;
-  anything outside the registry vocabulary matched nothing, silently, and
-  rendered as an applied filter. `other` is shown LAST and labelled "Not yet
-  categorised" rather than hidden, or the counts stop adding up.
-- **"Technology companies only" is a POSITIVE filter and says what it costs.**
-  It keeps the employers the registry holds technology evidence for - the same
-  rule that builds the coverage denominator - so the toggle and the coverage
-  report admit the same set by construction. The server reports
-  `employer_scope_dropped_non_tech` and `employer_scope_dropped_unclassified`
-  separately, and the second is offered back as a one-click broadening,
-  because "they are not a technology company" and "we do not know whether they
-  are" are different answers and only one of them is our gap.
-- **saved searches are SERVER-owned with a local mirror**
-  (`useSavedTechFeedSearches`, `/api/jobs/tech-feed/saved-searches`).
-  localStorage alone is a cache with no origin: clearing site data, a private
-  window or a new laptop lost every saved search silently. The client renders
-  local first, reconciles once on mount, writes through, and marks a write
-  that did not land `pendingSync`. Reconcile NEVER deletes - a search this
-  browser lacks is one saved on another device.
-- **telemetry carries no identity by construction**
-  (`src/lib/techFeedTelemetry.ts` -> `POST /api/jobs/tech-feed/telemetry`).
-  Filter KEYS, bucketed result counts and vendor slugs; never a filter value,
-  a query string or a job id. Batched on a 4s window and flushed on
-  `pagehide`; every path is `void`-returning, because telemetry that can fail
-  a user action is worse than no telemetry.
-  `search` carries the filters a search RAN with; `filter_applied` carries
-  only the keys the user just turned ON, and the first observation of a
-  filter set is skipped because it IS the URL/saved-search restore, not a
-  choice. Counting adoption off `search` counts every restore as an adoption.
-- the health banner renders the MEASURED coverage - the technology-employer
-  denominator, what share is covered, career sources covered, ownership-
-  verified-but-unvalidated sources, Tier-A, by cohort and category - and
-  ALWAYS with its age. The numbers come from a stored snapshot
-  (`coverage_snapshots`), so a figure with no age could be a week old and look
-  current; `available: false` renders as "unknown", which is not zero.
-- the card reads `eligibility` / `ineligible_reasons` / `role_alignment` /
-  `hard_requirements` (`src/lib/techFeedEligibility.ts`). An `ineligible` card
-  shows NO score and NO band; a hard requirement ("requires an active security
-  clearance") renders as a requirement to check, never as a penalty.
+The backend endpoints and `src/lib/api.ts` methods they used are UNCHANGED.
+To restore a feature, bring its files back from git
+(`git show 3361db3:<path>`, or `git checkout 3361db3 -- <path>`), and the
+design rules that governed the tech feed are in this file's history at the
+same commit. Restore only once the return criteria in the focused-workspace
+doc are met, and re-add navigation, route and tests together.
 
 ## Deploy
 Prod runs on the Oracle box behind Cloudflare, same-origin with `/api`. CI (`.github/workflows/deploy.yml`) builds after tests pass and publishes `dist/` to the `deploy/web` branch; the box copies new assets first and swaps `index.html` last, so there is no downtime. Runbook: `infra/compose/README.md` in `jobpilot-backend`. The `Dockerfile` and `nginx/default.conf` here are not used in production.
