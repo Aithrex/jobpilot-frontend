@@ -54,7 +54,7 @@ export const JOB_FEED_GRID_CLASS = 'grid grid-cols-1 items-stretch gap-3 sm:grid
 
 /** Shared frosted surface — same recipe as the Job feed drawer. */
 export const JOB_CARD_CLASS =
-  'job-card group relative flex h-full min-h-0 flex-1 flex-col overflow-hidden rounded-xl liquid-glass shadow-none';
+  'job-card group relative flex h-full min-h-0 flex-1 flex-col overflow-hidden rounded-2xl bg-card shadow-none';
 
 /** Older than this, a posting is shown greyed: still listed, visibly old. */
 export const STALE_AFTER_DAYS = 30;
@@ -430,7 +430,7 @@ export function JobCard({
         onClick={onCardClick}
         onKeyDown={onCardKeyDown}
       >
-        <CardContent className="relative z-[2] flex min-h-0 flex-1 flex-col gap-3 p-4">
+        <CardContent className="relative z-[2] flex min-h-0 flex-1 flex-col gap-3 p-5">
           {/* Who and what: the title leads; company and place sit under it. */}
           <div className="flex items-start gap-3">
             <CompanyMark job={job} />
@@ -488,7 +488,12 @@ export function JobCard({
             >
               {level.text}
             </span>
-            {job.h1b_sponsor && <SignalPill icon={Plane} label="H1B sponsor" tone="sponsor" />}
+            {/* One sponsorship chip per card: the filing-history badge below
+                and the posting-level H-1B chip say the same thing with their
+                evidence, so the plain flag shows only when neither renders. */}
+            {job.h1b_sponsor && !legacySponsorshipSignal(job.sponsorship) && job.visa_flags?.sponsors_h1b?.value !== true && (
+              <SignalPill icon={Plane} label="H1B sponsor" tone="sponsor" />
+            )}
             {job.is_remote && <SignalPill icon={Wifi} label="Remote" tone="remote" />}
             {job.contract_friendly && <SignalPill icon={FileSignature} label="Contract" tone="contract" />}
             {job.visa_flags && <VisaFlagChips flags={job.visa_flags} />}

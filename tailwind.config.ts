@@ -247,7 +247,7 @@ export default {
       // xs…9xl utilities remain untouched so existing screens don't shift.
       fontFamily: {
         sans: ["Inter", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "sans-serif"],
-        display: ["Plus Jakarta Sans", "Inter", "sans-serif"],
+        display: ["Mona Sans", "Inter", "sans-serif"],
         // Data face — scores, counts, countdowns, salaries. Distinctive, tabular.
         mono: ["JetBrains Mono", "ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
       },

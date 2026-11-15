@@ -18,7 +18,7 @@ export default function SettingsPage() {
           Account &amp; preferences
         </h1>
         <p className="mt-1 max-w-prose text-caption text-muted-foreground">
-          Your identity, connected tools, autonomy, billing, and notifications,
+          Your profile, visa timeline, connected tools, billing, and notifications,
           all in one place.
         </p>
       </header>
