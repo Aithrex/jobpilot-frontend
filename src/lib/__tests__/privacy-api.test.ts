@@ -149,15 +149,46 @@ describe('privacy state', () => {
 });
 
 describe('signup and consent', () => {
-  test('register sends age_confirmed and terms_version', async () => {
-    fetchMock.mockResolvedValue(jsonResponse({ access_token: 't', email: 'a@b.co' }, 201));
-    await apiService.register('a@b.co', 'Pw!12345', undefined, undefined, undefined, undefined, {
+  test('register sends age_confirmed and terms_version, and stores no token', async () => {
+    // Step one of sign-up: the server mails a code and answers 202, no token.
+    fetchMock.mockResolvedValue(
+      jsonResponse({ ok: true, verification_required: true, email: 'a@b.co', resend_after: 60 }, 202),
+    );
+    await apiService.register('a@b.co', 'Pw!12345', {
       age_confirmed: true,
       terms_version: TERMS_VERSION,
     });
     const body = JSON.parse(call(0).init.body as string);
     expect(body.age_confirmed).toBe(true);
     expect(body.terms_version).toBe(TERMS_VERSION);
+    expect(apiService.getToken()).toBe('test-token'); // untouched
+  });
+
+  test('the code that creates the account carries the consent, and its token is stored', async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ access_token: 'fresh', email: 'a@b.co', created: true }));
+    await apiService.verifyEmailCode({
+      email: 'a@b.co',
+      code: '123456',
+      password: 'Pw!12345',
+      consent: { age_confirmed: true, terms_version: TERMS_VERSION },
+    });
+    expect(String(call(0).url)).toMatch(/\/auth\/otp\/verify$/);
+    expect(JSON.parse(call(0).init.body as string)).toEqual({
+      email: 'a@b.co',
+      code: '123456',
+      password: 'Pw!12345',
+      age_confirmed: true,
+      terms_version: TERMS_VERSION,
+    });
+    expect(apiService.getToken()).toBe('fresh');
+  });
+
+  test('a request that never reached the server reads as a sentence, not "Failed to fetch"', async () => {
+    fetchMock.mockRejectedValue(new TypeError('Failed to fetch'));
+    const res = await apiService.checkEmail('a@b.co');
+    expect(res.status).toBe(0);
+    expect(res.errorPayload?.code).toBe('network_error');
+    expect(res.error).toBe('We could not reach Aspirely. Check your connection and try again.');
   });
 
   test('400 age_requirement surfaces as data, never as a logout', async () => {

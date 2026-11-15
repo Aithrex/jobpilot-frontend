@@ -1,9 +1,10 @@
 /**
  * Signup clickwrap and the provider-sign-in agreement line.
  *
- *  - "Create account" stays disabled until the age + Terms box is checked,
- *    and the box is never pre-checked;
- *  - the request carries `age_confirmed: true` and the current TERMS_VERSION;
+ *  - no code is sent, so no account can be made, until the age + Terms box
+ *    is checked, and the box is never pre-checked;
+ *  - the call that creates the account carries `age_confirmed: true` and the
+ *    current TERMS_VERSION;
  *  - `400 {error:"age_requirement"}` is shown as an age message (and unchecks
  *    the box), never treated as a session failure;
  *  - the agreement line sits under the provider buttons on both pages.
@@ -20,6 +21,7 @@ import Register from '@/pages/Register';
 
 const auth = {
   login: vi.fn(),
+  signInWithCode: vi.fn(),
   isAuthenticated: false,
   isLoading: false,
 };
@@ -32,13 +34,15 @@ vi.mock('@/contexts/AuthContext', () => ({
 vi.mock('@/lib/api', () => ({
   apiService: {
     getOAuthProviders: vi.fn(async () => ({ data: { providers: ['google'] }, status: 200 })),
-    beginSocialAuth: vi.fn(async () => ({ data: {}, status: 200 })),
+    socialAuthUrl: vi.fn(() => '/api/auth/oauth/google/authorize?redirect=1'),
+    checkEmail: vi.fn(async () => ({ data: { exists: false }, status: 200 })),
+    requestEmailCode: vi.fn(),
     register: vi.fn(),
-    logout: vi.fn(),
   },
 }));
 
 const api = apiService as unknown as Record<string, Mock>;
+const SENT = { data: { ok: true, message: 'sent', resend_after: 60, expires_in: 600 }, status: 200 };
 
 /**
  * The copy a sighted reader sees: drops the screen-reader-only new-tab hints
@@ -52,7 +56,8 @@ function visible(text: string): string {
     .trim();
 }
 
-async function reachPasswordBeat() {
+/** Enter a new address on /register and arrive at the create step. */
+async function reachCreateStep() {
   const user = userEvent.setup();
   render(
     <MemoryRouter initialEntries={['/register']}>
@@ -66,68 +71,72 @@ async function reachPasswordBeat() {
   await waitFor(() => expect(screen.getByLabelText('Email')).toBeInTheDocument());
   await user.type(screen.getByLabelText('Email'), 'person@example.com');
   await user.click(screen.getByRole('button', { name: 'Continue' }));
-  await screen.findByLabelText('Password');
-  await user.type(screen.getByLabelText('Password'), 'Sturdy!Pass1');
-  await user.type(screen.getByLabelText('Confirm password'), 'Sturdy!Pass1');
+  await screen.findByRole('checkbox', { name: /at least 18 years old/ });
   return user;
 }
 
 beforeEach(() => {
   vi.clearAllMocks();
-  auth.login.mockResolvedValue({});
+  auth.signInWithCode.mockResolvedValue({ created: true });
+  api.requestEmailCode.mockResolvedValue(SENT);
   sessionStorage.clear();
 });
 
 describe('signup clickwrap', () => {
-  test('the box starts unchecked and gates the submit button', async () => {
-    const user = await reachPasswordBeat();
+  test('the box starts unchecked, and no code is sent until it is checked', async () => {
+    const user = await reachCreateStep();
     const box = screen.getByRole('checkbox', {
       name: (name) =>
         visible(name) ===
         'I am at least 18 years old and agree to the Terms of Service. I have read the Privacy Policy.',
     });
-    const submit = screen.getByRole('button', { name: 'Create account' });
     expect(box).not.toBeChecked();
-    expect(submit).toBeDisabled();
+    expect(screen.getByRole('link', { name: /Terms of Service/ })).toHaveAttribute('href', '/terms');
+    expect(screen.getByRole('link', { name: /Privacy Policy/ })).toHaveAttribute('href', '/privacy');
+
+    // The button stays pressable so the reason can be said out loud; a
+    // disabled button explains nothing to a keyboard or screen-reader user.
+    await user.click(screen.getByRole('button', { name: 'Email me a code' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Confirm you are at least 18 and agree to the Terms to create your account.',
+    );
+    expect(api.requestEmailCode).not.toHaveBeenCalled();
 
     await user.click(box);
     expect(box).toBeChecked();
-    expect(submit).toBeEnabled();
-
-    expect(screen.getByRole('link', { name: /Terms of Service/ })).toHaveAttribute('href', '/terms');
-    expect(screen.getByRole('link', { name: /Privacy Policy/ })).toHaveAttribute('href', '/privacy');
+    await user.click(screen.getByRole('button', { name: 'Email me a code' }));
+    await waitFor(() => expect(api.requestEmailCode).toHaveBeenCalledTimes(1));
   });
 
-  test('sends age_confirmed and terms_version with the registration', async () => {
-    api.register.mockResolvedValue({ data: { access_token: 't', email: 'person@example.com' }, status: 201 });
-    const user = await reachPasswordBeat();
+  test('sends age_confirmed and terms_version with the call that creates the account', async () => {
+    const user = await reachCreateStep();
     await user.click(screen.getByRole('checkbox', { name: /at least 18 years old/ }));
-    await user.click(screen.getByRole('button', { name: 'Create account' }));
+    await user.click(screen.getByRole('button', { name: 'Email me a code' }));
+    await user.type(await screen.findByLabelText('6-digit code'), '123456');
 
-    await waitFor(() => expect(api.register).toHaveBeenCalledTimes(1));
-    const args = api.register.mock.calls[0];
-    expect(args[0]).toBe('person@example.com');
-    expect(args[6]).toEqual({ age_confirmed: true, terms_version: TERMS_VERSION });
-    // The register token is discarded, exactly as AuthContext.register did.
-    expect(api.logout).toHaveBeenCalled();
+    await waitFor(() => expect(auth.signInWithCode).toHaveBeenCalledTimes(1));
+    expect(auth.signInWithCode.mock.calls[0][0]).toMatchObject({
+      email: 'person@example.com',
+      code: '123456',
+      consent: { age_confirmed: true, terms_version: TERMS_VERSION },
+    });
     await screen.findByText('workspace-destination');
   });
 
   test('400 age_requirement shows the age message and unchecks the box', async () => {
-    api.register.mockResolvedValue({
+    const message = 'You must be at least 18 years old to use Aspirely.';
+    api.requestEmailCode.mockResolvedValue({
       error: 'age_requirement',
       status: 400,
-      errorPayload: { error: 'age_requirement' },
+      errorPayload: { error: 'age_requirement', code: 'age_requirement', message },
     });
-    const user = await reachPasswordBeat();
+    const user = await reachCreateStep();
     await user.click(screen.getByRole('checkbox', { name: /at least 18 years old/ }));
-    await user.click(screen.getByRole('button', { name: 'Create account' }));
+    await user.click(screen.getByRole('button', { name: 'Email me a code' }));
 
-    expect(
-      await screen.findAllByText('You must be at least 18 years old to create an Aspirely account.'),
-    ).not.toHaveLength(0);
+    expect(await screen.findByText(message)).toBeInTheDocument();
     expect(screen.getByRole('checkbox', { name: /at least 18 years old/ })).not.toBeChecked();
-    expect(auth.login).not.toHaveBeenCalled();
+    expect(auth.signInWithCode).not.toHaveBeenCalled();
   });
 });
 

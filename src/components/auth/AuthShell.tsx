@@ -1,39 +1,32 @@
-import { useState, type FocusEvent, type PointerEvent, type ReactNode } from 'react';
+import { type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { motion, useReducedMotion } from 'framer-motion';
+import { Check } from 'lucide-react';
 import { BrandMark } from '@/components/BrandMark';
-import { DURATION } from '@/lib/motion';
 import { ThemeToggle } from '@/components/theme-toggle';
-import { HeroStory } from '@/components/landing/story/HeroStory';
-import { AuthAtlas, type AuthPhase, type AuthZone } from './AuthAtlas';
+import { usePublicSurface } from '@/components/landing/_shared';
+import { LEGAL_ROUTES } from '@/lib/legal';
+import { cn } from '@/lib/utils';
+import './auth.css';
 
 /**
- * Shared auth stage for /login, /register, /reset-password and the AuthGate
- * wall - the same Signal Atlas world as the landing, rendered in whichever
- * theme the user has chosen (see the container comment). Desktop is an
- * asymmetric 5/7 split: the compact form pane on the left, a large reactive
- * atlas on the right. Mobile keeps the form primary with a shallow animated
- * horizon above it (no viewport-height traps, no keyboard obstruction).
+ * The page every sign-in screen sits on: /login, /register, /reset-password
+ * and the provider callback.
  *
- * The visual REACTS to the real form without any per-page wiring: focus and
- * hover are read via event delegation (email → origin node, password →
- * shield ring, provider buttons → social path, submit → convergence).
- * Pages additionally report REAL submission phases through the optional
- * `phase` prop (pending/error/success) - omitted, the scene is purely
- * focus-driven, so every existing consumer keeps working unchanged.
+ * It is a public page, so it uses the public system (`usePublicSurface`, the
+ * `pub-*` classes): white canvas, ink headings in Mona Sans, cobalt for the
+ * one action, and the navy chapter as the single saturated surface. On a wide
+ * screen the form sits beside that chapter; below `lg` the chapter is not
+ * shown and the form is the page.
  *
- * Fully token-driven, so the active theme re-points the semantic tokens and
- * every child stays coherent. All motion respects prefers-reduced-motion.
+ * The form column is top-anchored on phones (nothing jumps when the keyboard
+ * opens) and centred on wide screens. The page is the only scroll container.
  */
-
-/** House ease for the auth stage; shared with the page-level beat reveals. */
-export const AUTH_EASE: [number, number, number, number] = [0.16, 1, 0.3, 1];
 
 /**
  * Deep-link return path, preserved across auth. Router `state.from` covers the
- * in-app password flow; sessionStorage covers the social-OAuth full-page
- * round-trip (the provider redirect drops router state). Same-origin paths
- * only - protocol-relative and absolute URLs are rejected.
+ * in-app flow; sessionStorage covers the provider round-trip (the redirect
+ * drops router state). Same-origin paths only: protocol-relative and absolute
+ * URLs are rejected.
  */
 export const AUTH_RETURN_TO_KEY = 'auth.return_to';
 
@@ -47,7 +40,7 @@ export function stashAuthReturnTo(path: string | null): void {
   try {
     window.sessionStorage.setItem(AUTH_RETURN_TO_KEY, path);
   } catch {
-    /* storage disabled - deep link just won't survive the OAuth round-trip */
+    /* storage disabled: the deep link just won't survive the provider round-trip */
   }
 }
 
@@ -63,43 +56,24 @@ export function consumeAuthReturnTo(): string | null {
   }
 }
 
-// ── Scene wiring ─────────────────────────────────────────────────────
+/** What the product does today, in the home page's own words. */
+const PROOF: ReadonlyArray<{ title: string; body: string }> = [
+  {
+    title: "From the employer's own careers page",
+    body: 'Every role links to the original posting, with the date it went up.',
+  },
+  {
+    title: 'Visa sponsorship evidence on the card',
+    body: 'Past H-1B filings sit beside the fit, before you spend an evening applying.',
+  },
+  {
+    title: 'Tailoring that invents nothing',
+    body: 'Your resume is reordered and reworded from what is already in it.',
+  },
+];
 
-export type { AuthPhase } from './AuthAtlas';
-
-/** Map a focused/hovered element to the scene zone it belongs to. */
-function zoneFor(target: EventTarget | null): AuthZone | null {
-  if (!(target instanceof Element)) return null;
-  const input = target.closest('input');
-  if (input instanceof HTMLInputElement) {
-    const ac = (input.getAttribute('autocomplete') || '').toLowerCase();
-    if (input.type === 'password' || ac.includes('password')) return 'secure';
-    if (input.type === 'email' || ac.includes('email') || ac.includes('username')) return 'origin';
-    return null;
-  }
-  const button = target.closest('button, a');
-  if (button) {
-    const label = `${button.getAttribute('aria-label') || ''} ${button.textContent || ''}`.toLowerCase();
-    if (/google|github|linkedin|microsoft|apple/.test(label)) return 'social';
-    if (/password/.test(label)) return 'secure';
-    if ((button as HTMLButtonElement).type === 'submit') return 'submit';
-  }
-  return null;
-}
-
-function Wordmark() {
-  return (
-    <Link
-      to="/"
-      className="inline-flex min-h-11 items-center gap-2.5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-    >
-      <BrandMark />
-      <span className="font-display text-lg font-extrabold tracking-tight text-foreground">
-        Aspirely
-      </span>
-    </Link>
-  );
-}
+const FOOT_LINK =
+  'pub-auth-link inline-flex min-h-11 items-center px-1 text-sm !font-medium !text-ink-subtle hover:!text-foreground';
 
 export function AuthShell({
   title,
@@ -107,164 +81,92 @@ export function AuthShell({
   children,
   footer,
   banner,
-  phase = 'idle',
-  aside,
+  step,
 }: {
   title: string;
-  subtitle: string;
+  subtitle?: ReactNode;
   children: ReactNode;
-  footer: ReactNode;
-  /** Optional notice rendered above the form (e.g. session-expired). */
+  /** The line under the form ("New here? Create your account"). */
+  footer?: ReactNode;
+  /** A notice above the form (session ended, provider cancelled, offline). */
   banner?: ReactNode;
-  /** REAL submission phase from the page (never inferred, never faked). */
-  phase?: AuthPhase;
-  /**
-   * Replaces the default journey graphic in the desktop pane.
-   *
-   * The default is about the product, which is the right thing to show while
-   * someone signs in. When a page has something more specific to say about
-   * what the person is doing right now - register's password step showing a
-   * strength shield - it passes that instead. Desktop only; the pane is hidden
-   * below `lg` either way.
-   */
-  aside?: ReactNode;
+  /** Names the current step, so a step change re-runs the entrance. */
+  step?: string;
 }) {
-  const reduce = !!useReducedMotion();
-
-  const [focusZone, setFocusZone] = useState<AuthZone>('idle');
-  const [hoverZone, setHoverZone] = useState<AuthZone | null>(null);
-
-  const onFocusCapture = (e: FocusEvent) => {
-    const z = zoneFor(e.target);
-    if (z) setFocusZone(z);
-  };
-  const onBlurCapture = (e: FocusEvent) => {
-    // Only reset when focus truly left the pane (not moving between fields).
-    if (!e.relatedTarget) setFocusZone('idle');
-  };
-  const onPointerOverCapture = (e: PointerEvent) => {
-    setHoverZone(zoneFor(e.target));
-  };
-
-  const zone = hoverZone && hoverZone !== 'idle' ? hoverZone : focusZone;
-
-  // The form is the thing people came to use, so it has to be readable and
-  // typable at once: a short 200ms settle with a tight stagger (the whole
-  // column lands inside ~350ms), never a half-second reveal that hides the
-  // fields while someone is already reaching for them.
-  const stagger = {
-    hidden: {},
-    show: { transition: { staggerChildren: reduce ? 0 : 0.03, delayChildren: 0 } },
-  };
-  const fadeUp = {
-    hidden: { opacity: 0, y: reduce ? 0 : 6 },
-    show: { opacity: 1, y: 0, transition: { duration: reduce ? 0 : DURATION.base, ease: AUTH_EASE } },
-  };
+  const surface = usePublicSurface();
 
   return (
-    // Follows the GLOBAL theme (ThemeProvider's class on <html>), like the
-    // landing page and the workspace. This used to force `dark` on both themes
-    // so auth and landing shared one deep-ink night world - but landing stopped
-    // being always-dark (it renders `surface-editorial` in light), so the pin
-    // meant a light-mode user crossed from a light landing into a hard dark
-    // sign-in. Every surface here is token-driven (AuthAtlas included), so the
-    // scene re-points itself; only the brand logos in SocialQuietRow stay fixed.
     <div
-      className="relative min-h-screen overflow-hidden text-foreground"
-      data-auth-scene={phase !== 'idle' ? phase : zone}
+      className={cn('pub-auth min-h-screen', surface.className)}
+      style={{ colorScheme: surface.colorScheme }}
+      data-auth-step={step}
     >
-      <div aria-hidden className="pointer-events-none absolute inset-0 bg-grid-faint" />
+      <div className="grid min-h-screen grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.04fr)]">
+        <div className="flex min-h-screen flex-col px-5 sm:px-10">
+          <header className="flex h-16 shrink-0 items-center justify-between">
+            <Link
+              to="/"
+              aria-label="Aspirely home"
+              className="pub-auth-link -ml-1 inline-flex min-h-11 items-center gap-2.5 px-1 !text-foreground hover:!no-underline"
+            >
+              <BrandMark />
+              <span
+                className="font-display text-[1.1875rem] font-bold tracking-[-0.03em]"
+                style={{ fontStretch: '108%' }}
+              >
+                Aspirely
+              </span>
+            </Link>
+            <ThemeToggle />
+          </header>
 
-      {/* The theme control belongs to the PAGE, not to the form column, so it
-          sits at the page's top-right like the workspace top bar puts it -
-          rather than inside the 5/12 pane, where it read as part of the form.
-          This is a public surface a user can land on cold (deep link, expired
-          session, OAuth bounce), so it has to be able to SET the theme rather
-          than only inherit one. Same component, same store as everywhere else. */}
-      <div className="absolute right-3 top-3 z-20 sm:right-5 sm:top-4">
-        <ThemeToggle />
-      </div>
-
-      {/* `min-h-screen`, and the PAGE is the only scroll container.
-          Pinning the desktop pane to `h-screen` + `overflow-y-auto` did stop
-          the login page's few-pixel overflow, but it gave the taller pages
-          (register carries a progress bar, a role select and its helper text)
-          an inner scrollbar floating mid-page at the pane's right edge, which
-          looks broken. Login now fits because the bottom padding was trimmed;
-          register scrolls the whole page, which is what a form taller than the
-          viewport should do. */}
-      <div className="relative z-10 grid min-h-screen grid-cols-1 lg:grid-cols-12">
-          {/* ── Form pane (5/12) ── */}
-          <div
-            className="relative flex min-h-screen flex-col px-5 py-4 sm:px-8 lg:col-span-5"
-            onFocusCapture={onFocusCapture}
-            onBlurCapture={onBlurCapture}
-            onPointerOverCapture={onPointerOverCapture}
-            onPointerLeave={() => setHoverZone(null)}
-          >
-            {/* Padded right so the wordmark never collides with the page-level
-                theme control floating above it on narrow screens. */}
-            <header className="pr-14">
-              <Wordmark />
-            </header>
-
-            {/* Mobile: a shallow animated horizon - never a viewport trap. */}
-            <div className="relative -mx-5 mt-2 h-24 sm:-mx-8 lg:hidden" aria-hidden>
-              <AuthAtlas zone={zone} phase={phase} reduce={reduce} />
+          <main className="flex flex-1 justify-center pb-8 pt-6 sm:pt-10 lg:items-center lg:pt-0">
+            <div key={step} className="pub-auth-step w-full max-w-[25.5rem]">
+              <h1 className="pub-h3">{title}</h1>
+              {subtitle && <p className="pub-body mt-2.5">{subtitle}</p>}
+              {banner && <div className="mt-6">{banner}</div>}
+              <div className="mt-7">{children}</div>
+              {footer && (
+                <div className="mt-7 text-center text-[0.9375rem] text-ink-muted">{footer}</div>
+              )}
             </div>
+          </main>
 
-            {/* Top-anchored (not vertically centered) so reveals grow downward
-                with zero shift of the title and fields above. */}
-            <main className="flex flex-1 justify-center pb-6 pt-4 sm:pt-6">
-              <motion.div variants={stagger} initial="hidden" animate="show" className="w-full max-w-sm">
-                <motion.h1
-                  variants={fadeUp}
-                  className="mt-4 text-balance font-display text-headline-md text-foreground"
-                >
-                  {title}
-                </motion.h1>
-                <motion.p variants={fadeUp} className="mt-2 text-body-md text-ink-muted">
-                  {subtitle}
-                </motion.p>
-                {banner && (
-                  <motion.div variants={fadeUp} className="mt-6">
-                    {banner}
-                  </motion.div>
-                )}
-                <motion.div variants={fadeUp} className="mt-8">
-                  {children}
-                </motion.div>
-                <motion.div variants={fadeUp} className="mt-6 text-center text-body-md text-muted-foreground">
-                  {footer}
-                </motion.div>
-                {/* House motif - the mono integrity micro-chip. `mt-auto` in a
-                    column that already fills the pane pushed this to the very
-                    bottom and, with the old pb-12, past the fold. A fixed,
-                    smaller gap keeps it attached to the form it belongs to. */}
-                <motion.p
-                  variants={fadeUp}
-                  className="mt-6 text-center text-caption-sm font-medium text-muted-foreground"
-                >
-                  Integrity-first. No fabricated claims.
-                </motion.p>
-              </motion.div>
-            </main>
-          </div>
-
-        {/* ── Stage pane (7/12, desktop only) ──
-            The landing hero's product story, as its composed final frame:
-            read, matched, tailored, tracked. Still, so sign-in stays the
-            calmest and fastest page on the site. Decorative here, because the heading and the form
-            carry everything. Pages may pass `aside` (register's password
-            step shows its strength shield instead). */}
-        <div className="relative hidden lg:col-span-7 lg:block" aria-hidden>
-          <div className="absolute inset-y-0 left-0 w-px bg-border" />
-          {aside ?? (
-            <div className="flex h-full min-h-screen items-center justify-center p-10 xl:p-16">
-              <HeroStory mode="still" className="w-full max-w-3xl" />
-            </div>
-          )}
+          <footer className="flex shrink-0 flex-wrap items-center justify-center gap-x-4 pb-4">
+            <Link to={LEGAL_ROUTES.terms} className={FOOT_LINK}>
+              Terms
+            </Link>
+            <Link to={LEGAL_ROUTES.privacy} className={FOOT_LINK}>
+              Privacy
+            </Link>
+            <Link to={LEGAL_ROUTES.trust} className={FOOT_LINK}>
+              Trust
+            </Link>
+          </footer>
         </div>
+
+        <aside className="pub-brand-band pub-auth-aside" aria-label="What Aspirely does">
+          <div className="max-w-[31rem]">
+            <p className="pub-h2">Jobs worth applying to, matched to your resume.</p>
+            <ul className="mt-12 space-y-7">
+              {PROOF.map((item) => (
+                <li key={item.title} className="pub-auth-proof">
+                  <span className="pub-auth-proof-dot" aria-hidden>
+                    <Check className="h-4 w-4" strokeWidth={3} />
+                  </span>
+                  <div>
+                    <p className="pub-h4" style={{ color: 'hsl(var(--brand-band-foreground))' }}>
+                      {item.title}
+                    </p>
+                    <p className="pub-band-muted mt-1.5 text-[1.0625rem] leading-relaxed">
+                      {item.body}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </aside>
       </div>
     </div>
   );

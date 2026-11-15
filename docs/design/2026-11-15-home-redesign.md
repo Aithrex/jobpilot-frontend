@@ -233,9 +233,8 @@ All of these are held by `landing-redesign.test.tsx`:
 
 ## Not done yet
 
-- **Sign in and Create account** still use the old `AuthShell` look (the
-  previous hero illustration, blue-tinted grid). Handed to a separate
-  session together with the sign-in methods themselves.
+- **Sign in and Create account** were rebuilt on this system the same day:
+  see [`2026-11-15-sign-in.md`](2026-11-15-sign-in.md).
 - **`/trust`** keeps its older card grid inside the new shell.
 - **The signed-in app** is untouched: Jakarta headings, cobalt, the
   blue-tinted canvas.
