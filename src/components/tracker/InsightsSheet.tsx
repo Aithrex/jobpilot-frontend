@@ -245,13 +245,13 @@ export default function InsightsSheet({
             </Section>
           )}
 
-          <Section title="Email sync">
+          <Section title="Gmail">
             <p className="text-body-sm text-muted-foreground">
               <Link
                 to="/app/settings/integrations"
                 className="rounded underline-offset-2 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
-                Manage Gmail in Settings
+                What Gmail reads, and how to disconnect it
               </Link>
             </p>
           </Section>

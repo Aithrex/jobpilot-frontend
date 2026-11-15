@@ -119,6 +119,13 @@ describe('MailboxInboxTab', () => {
     api.getMailboxThreads.mockResolvedValue({ error: 'not found', status: 404 });
     renderWithProviders(<MailboxInboxTab />);
     expect(await screen.findByText(/isn't available yet/i)).toBeInTheDocument();
+    // Two email features share this product: the empty state must not send a
+    // reader hunting for Gmail in the wrong place.
+    expect(screen.getByText(/it is not your Gmail/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Open the Tracker for Gmail' })).toHaveAttribute(
+      'href',
+      '/app/apply/tracker',
+    );
   });
 });
 

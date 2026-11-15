@@ -10,6 +10,7 @@ import { Link } from 'react-router-dom';
 import { ClipboardList, X } from 'lucide-react';
 
 import type { ApplicationStatus } from '@/types/resume';
+import type { GmailOutcome } from '@/types/gmail';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
@@ -168,10 +169,14 @@ export default function TrackerPage() {
     [patch],
   );
 
-  /** A Gmail suggestion changes a stage, so the list has to catch up with it. */
+  /**
+   * A Gmail suggestion changes a stage, so the list has to catch up with it.
+   * The chosen outcome must travel with it: an unclear email has no status of
+   * its own, and dropping the choice here made every such update fail.
+   */
   const handleApplySuggestion = useCallback(
-    (id: string, recordId?: string) => {
-      void applySuggestion(id, recordId);
+    (id: string, recordId?: string, status?: GmailOutcome) => {
+      void applySuggestion(id, recordId, status);
     },
     [applySuggestion],
   );
@@ -254,7 +259,7 @@ export default function TrackerPage() {
       {suggestions.length > 0 && (scope !== 'focus' || loading || filtered.length === 0) && (
         <div className="overflow-hidden rounded-xl border border-border bg-card">
           <TrackerSection
-            label="From your inbox"
+            label="From Gmail"
             count={suggestions.length}
             dot="bg-info"
             meta="review before updating"
@@ -329,7 +334,7 @@ export default function TrackerPage() {
           </p>
           <p className="mx-auto mt-1 max-w-sm text-body-sm text-muted-foreground">
             Save a job from For you or confirm an application to start tracking it here. Gmail can
-            then match replies to those roles.
+            only match replies to roles that are in this tracker.
           </p>
           <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
             <Button asChild>
