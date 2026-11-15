@@ -116,11 +116,25 @@ export const EMAIL_UPDATES: Capability = {
 export const AUTO_APPLY: Capability = {
   id: 'auto-apply',
   name: 'Auto Apply',
-  status: 'beta',
+  status: 'coming-soon',
   blurb:
     'Choose Prepare only, Ask me first, or Apply within my rules. Queue any job with a tailored or plain resume, and Aspirely prepares or submits it within the daily limit you set.',
   evidence:
-    'Ledger queue (/api/apply/queue), modes (copilot/approval/aggressive), tailor toggle, entitlements auto_apply on all tiers + auto_submit meter. Per-job Auto Apply CTA on job cards. Admin entitlement_overrides for plan/limits/features. Executor still tenant-dependent (Workday account/OTP walls); Greenhouse/Lever/Ashby cleaner.',
+    'Was "beta" until 2026-11-15. The Auto Apply UI was deleted from the frontend on 2026-11-12 (focused-workspace decision): /app/apply/auto-apply now redirects to the tracker (App.tsx) and no card carries an Auto Apply action, so a normal user cannot reach it in the default shell, which by the rule at the top of this file is not "beta". The backend is unchanged (ledger queue /api/apply/queue, modes copilot/approval/aggressive, auto_submit meter), which is why this is coming-soon rather than planned. Move it back when the UI returns.',
+};
+
+/**
+ * The browser extension that fills application forms. Built and in the repo,
+ * but not published to any extension store, so nobody can install it yet.
+ */
+export const AUTOFILL: Capability = {
+  id: 'autofill',
+  name: 'Application autofill',
+  status: 'coming-soon',
+  blurb:
+    'A browser extension that fills application forms on common hiring systems from your profile, and leaves every field for you to review before you submit.',
+  evidence:
+    'extension/ (Workday, Ashby and Greenhouse form fill, own manifest and package.sh) exists and has a published privacy page (public/extension-privacy.html), but no store listing is linked anywhere in src/ and there is no install path for a normal user. Substantial machinery exists, so coming-soon rather than planned.',
 };
 
 export const WHATSAPP: Capability = {
@@ -157,6 +171,7 @@ export const CAPABILITIES: Capability[] = [
   TRACK,
   EMAIL_UPDATES,
   AUTO_APPLY,
+  AUTOFILL,
   WHATSAPP,
   SMS,
   PUSH,
@@ -175,8 +190,8 @@ export function capabilityById(id: string): Capability | undefined {
  */
 export const DOCK_CAPABILITIES: Capability[] = [AUTO_APPLY, WHATSAPP];
 
-/** The two roadmap features that get a full concept preview. */
-export const ROADMAP_FEATURED: Capability[] = [AUTO_APPLY, WHATSAPP];
+/** The roadmap features that get a full entry on the public site. */
+export const ROADMAP_FEATURED: Capability[] = [AUTO_APPLY, AUTOFILL, WHATSAPP];
 
 /** Secondary roadmap items, listed with their own (weaker) statuses. */
 export const ROADMAP_SECONDARY: Capability[] = [SMS, PUSH];

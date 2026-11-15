@@ -527,6 +527,138 @@
     color: hsl(var(--foreground));
   }
 
+  /* ── Public site, 2026-11-15 redesign ────────────────────────────────────
+  The public pair has its own neutrals and its own dark theme. The accent is
+  the product's cobalt (owner decision 2026-11-15, after comparing it live
+  against green, ink-and-marigold, plum and red: "blue is good").
+
+    - a true white canvas with a tinted BAND for section rhythm, and near
+      neutral greys. The shared app canvas (#F5F7FC) under white cards read
+      as one pale-blue haze top to bottom;
+    - COBALT as the action colour, kept rare so it stays an action colour;
+    - one NAVY chapter (`--brand-band`): a deep field lit from one corner,
+      never a flat flood of the button colour. A full-bleed block in the
+      same blue as the buttons read as a rendering bug;
+    - a marigold highlighter (`--mark`): the product reads a resume and a
+      posting and marks the evidence that matches, so the mark is drawn the
+      way a person marks a document. On the navy chapter it is also the one
+      button, which is what keeps that chapter from being "all blue";
+    - a wide display face for headlines (`--font-public-display`).
+
+  DARK is designed, not inverted: a near-black navy canvas, surfaces that
+  step up in lightness, a luminous periwinkle accent, and light used as
+  depth (see `.surface-nocturne` rules in landing.css).
+
+  Only values are re-pointed. Every semantic name the app relies on keeps
+  its meaning, so shared components (the guest flow, buttons, form fields)
+  behave the same inside the public surface. */
+  .surface-lumen {
+    --background: 0 0% 100%;
+    --foreground: 224 32% 9%; /* #101422 */
+    --card-foreground: 224 32% 9%;
+    --popover-foreground: 224 32% 9%;
+    --accent-foreground: 224 32% 9%;
+    --ink: 224 32% 9%;
+    --ink-muted: 223 14% 31%; /* #444A5A, 8.8:1 on white */
+    --ink-subtle: 222 10% 40%; /* #5C6170, 6.2:1 on white, 5.7:1 on the band */
+    --muted-foreground: 222 10% 40%;
+    --secondary-foreground: 223 14% 31%;
+    --muted: 222 24% 96.6%; /* #F4F6FA */
+    --secondary: 222 24% 96.6%;
+    --accent: 222 20% 92.6%;
+    --surface-strong: 222 20% 92.6%;
+    --border: 222 18% 89.8%; /* #E0E4EA */
+
+    --primary-ink: 228.4 69.8% 46%;
+    --tint: 226 86% 95%;
+    --tint-ink: 228.4 69.8% 44%;
+
+    --band: 222 24% 96.6%;
+    --band-strong: 222 20% 91%;
+    --mark: 47 100% 62%; /* #FFD43D marigold */
+    --mark-ink: 224 32% 9%;
+
+    --brand-band: 229 62% 11%; /* #0B1130 */
+    --brand-band-glow: 228 85% 48%;
+    --brand-band-glow-2: 214 95% 52%;
+    --brand-band-deep: 229 64% 8%;
+    --brand-band-foreground: 0 0% 100%;
+    --brand-band-muted: 226 60% 85%; /* 11:1 on the navy */
+    --brand-band-ink: 224 32% 10%;
+    --brand-band-accent: var(--mark);
+    --band-btn: 47 100% 62%;
+    --band-btn-fg: 229 64% 10%;
+    --band-chip: 0 0% 100%;
+
+    --shadow-stage:
+      0 1px 1px hsl(224 40% 10% / 0.04), 0 12px 24px -8px hsl(224 40% 10% / 0.08),
+      0 40px 80px -24px hsl(228 70% 40% / 0.2);
+  }
+
+  .surface-nocturne {
+    --background: 228 46% 5.5%; /* #080B15 */
+    --foreground: 220 40% 97%;
+    --card: 228 32% 9.5%; /* #101420 */
+    --card-foreground: 220 40% 97%;
+    --popover: 228 32% 9.5%;
+    --popover-foreground: 220 40% 97%;
+    --accent-foreground: 220 40% 97%;
+    --ink: 220 40% 97%;
+    --ink-muted: 224 18% 77%;
+    --ink-subtle: 224 12% 63%;
+    --muted-foreground: 224 12% 63%;
+    --secondary-foreground: 224 18% 77%;
+    --muted: 228 26% 12.5%;
+    --secondary: 228 26% 12.5%;
+    --accent: 228 24% 16.5%;
+    --surface-strong: 228 24% 16.5%;
+    --border: 228 22% 18%;
+    --input: 226 14% 48%;
+
+    --primary: 224 100% 75%; /* #80A0FF */
+    --primary-hover: 224 100% 82%;
+    --primary-foreground: 228 50% 8%;
+    --primary-ink: 224 100% 79%;
+    --ring: 224 100% 75%;
+    --nav-active: 226 52% 19%;
+    --tint: 226 56% 20%;
+    --tint-ink: 224 100% 85%;
+
+    --band: 228 42% 7.2%;
+    --band-strong: 228 24% 15%;
+    --mark: 47 100% 60%;
+    --mark-ink: 48 100% 86%;
+
+    --brand-band: 229 60% 10%;
+    --brand-band-glow: 228 92% 54%;
+    --brand-band-glow-2: 214 100% 56%;
+    --brand-band-deep: 229 64% 7%;
+    --brand-band-foreground: 0 0% 100%;
+    --brand-band-muted: 226 60% 85%;
+    --brand-band-ink: 224 32% 10%;
+    --brand-band-accent: 47 100% 62%;
+    --band-btn: 47 100% 62%;
+    --band-btn-fg: 229 64% 10%;
+    --band-chip: 0 0% 100%;
+
+    --glass-fill: 228 32% 9.5%;
+    --glass-solid: 228 32% 9.5%;
+
+    --shadow-stage:
+      0 1px 1px hsl(0 0% 0% / 0.5), 0 18px 36px -12px hsl(0 0% 0% / 0.6),
+      0 50px 110px -40px hsl(228 100% 60% / 0.34);
+  }
+
+  .surface-lumen,
+  .surface-nocturne {
+    --font-public-display: 'Mona Sans', 'Inter', system-ui, sans-serif;
+  }
+
+  .surface-lumen :is(h1, h2, h3, .font-display),
+  .surface-nocturne :is(h1, h2, h3, .font-display) {
+    font-family: var(--font-public-display);
+  }
+
   .surface-obsidian {
     --monogram-l: 74%;
     color-scheme: dark;
@@ -798,8 +930,6 @@
       radial-gradient(120% 90% at 0% -10%, hsl(224 45% 12% / 0.7), transparent 55%),
       radial-gradient(90% 70% at 100% 110%, hsl(225 50% 9% / 0.6), transparent 55%);
   }
-  .surface-lumen,
-  .surface-nocturne,
   .surface-editorial,
   .surface-obsidian,
   .surface-studio {
@@ -808,7 +938,14 @@
       radial-gradient(120% 90% at 0% -10%, hsl(224 50% 93% / 0.6), transparent 55%),
       radial-gradient(90% 70% at 100% 110%, hsl(224 45% 92% / 0.5), transparent 55%);
   }
-  .surface-nocturne,
+  /* The public pair carries NO bloom. A page-wide blue wash under a blue
+  accent was most of why the old landing read as one tint from top to bottom;
+  the public canvas is flat, and section rhythm comes from the band. */
+  .surface-lumen,
+  .surface-nocturne {
+    background-color: hsl(var(--background));
+    background-image: none;
+  }
   .surface-obsidian,
   .dark .surface-studio {
     background-image:

@@ -1,9 +1,8 @@
 import { Link } from 'react-router-dom';
-import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
-import { AUTO_APPLY, STATUS_LABEL } from '@/lib/capabilities';
-import { Container, Reveal, Section } from './_shared';
+import { AUTO_APPLY, STATUS_LABEL, isLive } from '@/lib/capabilities';
+import { Container, Section } from './_shared';
 
 /**
  * "Before you begin" - the ONE decision section on the public site.
@@ -158,13 +157,85 @@ const GROUPS: Group[] = [
   },
 ];
 
+const pick = (q: string): Answer => {
+  const found = GROUPS.flatMap((g) => g.answers).find((a) => a.q === q);
+  if (!found) throw new Error(`BeforeYouBegin: no answer for "${q}"`);
+  return found;
+};
+
+/** The automation answer carries the registry status wherever it is shown. */
+const AUTOMATION_Q = 'Will Aspirely apply without my permission?';
+
+/**
+ * THE SIX THE HOME PAGE ASKS. Twelve questions is a document; a buyer has
+ * about six real objections, and three of them were not in the twelve at all
+ * (where the sponsorship data comes from, whether an experienced person
+ * belongs here, how this differs from a job board). The full set stays on
+ * `/trust`, one link away.
+ *
+ * The same evidence rule applies: no answer without a line saying what in the
+ * product makes it true.
+ */
+const HOME_ANSWERS: readonly Answer[] = [
+  pick('Can I start for free?'),
+  {
+    q: 'Where does the sponsorship data come from?',
+    a: 'From public H-1B filing records and from the posting itself. Filing counts are shown with the year the data covers, and a posting that rules sponsorship out is flagged in its own words. Aspirely reports this evidence. It never predicts your chances.',
+    evidence:
+      'JobVisaSignals.tsx renders Approvals, LCA filings and Data vintage; "Posting says no sponsorship" comes from the posting text; lib/sponsorshipSignal.ts drops every score and band.',
+  },
+  {
+    q: 'I am not a student. Is this for me?',
+    a: 'Yes. Matching works from what your resume says, in any field and at any level, and the level is read from each posting so a senior resume is set against senior roles. If you need no visa, leave that question blank and nothing is filtered.',
+    evidence:
+      'No field allowlist in the matching path; level is read from the posting (jd_profile level statements, ExperienceLevelPicker); WorkAuthorizationQuestion: "Nothing is filtered when it is blank."',
+  },
+  {
+    q: 'How is this different from a job board?',
+    a: "A job board shows what was posted to it, reposts included. Aspirely reads employers' own career pages, folds the duplicates, tells you why a role fits your resume and what is missing, then tailors your resume for it and tracks the application.",
+    evidence:
+      'Direct-employer ingestion with aggregator reposts excluded; repost folding on the board; fit reason and gaps on each card; tailoring and tracker are shipped destinations.',
+  },
+  pick(AUTOMATION_Q),
+  pick('What happens to my resume and data?'),
+];
+
 export interface BeforeYouBeginProps {
   /** `h1` on the standalone `/trust` route, `h2` everywhere it is a section. */
   headingLevel?: 'h1' | 'h2';
+  /** 'short' is the six on the home page; 'full' is every answer, grouped. */
+  variant?: 'short' | 'full';
   className?: string;
 }
 
-export function BeforeYouBegin({ headingLevel = 'h2', className }: BeforeYouBeginProps) {
+function Disclosure({ item, showStatus = false }: { item: Answer; showStatus?: boolean }) {
+  return (
+    <details className="group">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-6 py-5 text-left text-foreground transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+        <h4 className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-[1.0625rem] font-semibold leading-snug tracking-[-0.01em]">
+          {item.q}
+          {showStatus && item.q === AUTOMATION_Q && !isLive(AUTO_APPLY.status) && (
+            <span className="pub-chip">{STATUS_LABEL[AUTO_APPLY.status]}</span>
+          )}
+        </h4>
+        <span aria-hidden className="pub-faq-icon text-muted-foreground" />
+      </summary>
+      {/* `motion-safe:` rather than a hand-rolled reduced-motion check: the
+          entrance simply does not exist for a visitor who asked for no
+          motion. */}
+      <p className="motion-safe:animate-fade-up max-w-[62ch] pb-6 pr-8 text-pretty text-[1rem] leading-relaxed text-ink-muted">
+        {item.a}
+      </p>
+    </details>
+  );
+}
+
+export function BeforeYouBegin({
+  headingLevel = 'h2',
+  variant = 'full',
+  className,
+}: BeforeYouBeginProps) {
+  const short = variant === 'short';
   const Heading = headingLevel;
   const { isAuthenticated, isLoading } = useAuth();
   const authed = !isLoading && isAuthenticated;
@@ -172,52 +243,37 @@ export function BeforeYouBegin({ headingLevel = 'h2', className }: BeforeYouBegi
   return (
     <Section id="before-you-begin" labelledBy="before-you-begin-heading" className={className}>
       <Container>
-        <div className="grid gap-12 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-16 xl:gap-20">
+        <div className="grid gap-14 lg:grid-cols-12 lg:gap-16">
           {/* THE STANDING OFFER. Sticky on desktop only: on a phone the column
               is simply the first thing you read, and a sticky block on a small
               viewport eats the screen the answers need. */}
-          <Reveal className="lg:sticky lg:top-28 lg:self-start">
-            <p className="text-caption-sm font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-              Before you begin
-            </p>
-            <Heading
-              id="before-you-begin-heading"
-              className="mt-3 text-balance font-display text-3xl font-extrabold leading-[1.1] tracking-[-0.025em] text-foreground sm:text-[2.6rem]"
-            >
-              Everything you need to know before you begin.
+          <div className="lg:sticky lg:top-28 lg:col-span-5 lg:self-start">
+            <Heading id="before-you-begin-heading" className="pub-h2">
+              {short ? 'Fair questions.' : 'Everything you need to know before you begin.'}
             </Heading>
-            <p className="mt-4 max-w-md text-pretty text-base leading-relaxed text-muted-foreground sm:text-[1.0625rem]">
-              Aspirely brings job search, preparation, learning, and career momentum into one system.
-              Here is what that means in practice.
-            </p>
 
-            {/* The one summary that does not get collapsed. It is the single
-                sentence the twelve answers below all agree on, and a reader who
-                opens none of them should still leave with it. */}
-            <p className="mt-8 max-w-md border-l-2 border-primary/40 pl-4 text-pretty text-[15px] font-medium leading-relaxed text-foreground">
-              You stay in control of your information, your applications, and every important
-              decision.
-            </p>
+            {/* The one summary that does not get collapsed, on the page that
+                is all answers. On the home page the six questions say it. */}
+            {!short && (
+              <p className="mt-8 max-w-[40ch] border-l-2 border-primary pl-5 text-pretty text-[1.0625rem] font-medium leading-relaxed text-foreground">
+                You stay in control of your information, your applications, and every important
+                decision.
+              </p>
+            )}
 
-            <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
+            <div className="mt-9 flex flex-wrap items-center gap-x-6 gap-y-4">
               {authed ? (
-                <Link
-                  to="/app/home"
-                  className="focus-ring-visible inline-flex h-12 items-center justify-center rounded-full bg-primary px-7 text-[15px] font-semibold text-primary-foreground shadow-panel transition-colors hover:bg-primary-hover"
-                >
+                <Link to="/app/home" className="focus-ring-visible pub-btn pub-btn-primary">
                   Open my workspace
                 </Link>
               ) : (
                 <>
-                  <Link
-                    to="/register"
-                    className="focus-ring-visible inline-flex h-12 items-center justify-center rounded-full bg-primary px-7 text-[15px] font-semibold text-primary-foreground shadow-panel transition-colors hover:bg-primary-hover"
-                  >
+                  <Link to="/register" className="focus-ring-visible pub-btn pub-btn-primary">
                     Create free account
                   </Link>
                   <Link
                     to="/login"
-                    className="focus-ring-visible rounded-control text-sm font-medium text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"
+                    className="focus-ring-visible rounded-control text-[0.9375rem] font-medium text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"
                   >
                     Already have an account? Sign in
                   </Link>
@@ -225,7 +281,7 @@ export function BeforeYouBegin({ headingLevel = 'h2', className }: BeforeYouBegi
               )}
             </div>
 
-            <p className="mt-6 max-w-md text-[13px] leading-relaxed text-muted-foreground">
+            <p className="mt-7 max-w-md text-[0.875rem] leading-relaxed text-muted-foreground">
               Full detail is in our{' '}
               <Link
                 to="/privacy"
@@ -242,50 +298,43 @@ export function BeforeYouBegin({ headingLevel = 'h2', className }: BeforeYouBegi
               </Link>
               .
             </p>
-          </Reveal>
+          </div>
 
-          {/* THE DETAIL. Four groups, twelve disclosures, all closed. */}
-          <div className="min-w-0">
-            {GROUPS.map((group, gi) => (
-              <Reveal
-                key={group.id}
-                delay={Math.min(gi, 3) * 0.05}
-                className={cn(gi > 0 && 'mt-10')}
-              >
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                  <h3 className="font-display text-[13px] font-bold uppercase tracking-[0.1em] text-foreground">
-                    {group.title}
-                  </h3>
-                  {group.status && (
-                    <span className="rounded-full border border-border px-2 py-0.5 text-caption-sm font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                      {STATUS_LABEL[group.status]}
-                    </span>
-                  )}
-                </div>
-
-                <div className="mt-3 divide-y divide-border border-y border-border">
-                  {group.answers.map((item) => (
-                    <details key={item.q} className="group">
-                      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
-                        <h4 className="min-w-0 font-display text-[15px] font-bold tracking-[-0.01em] text-foreground">
-                          {item.q}
-                        </h4>
-                        <ChevronDown
-                          aria-hidden
-                          className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 group-open:rotate-180 motion-reduce:transition-none"
-                        />
-                      </summary>
-                      {/* `motion-safe:` rather than a hand-rolled reduced-motion
-                          check: the entrance simply does not exist for a
-                          visitor who asked for no motion. */}
-                      <p className="motion-safe:animate-fade-up pb-5 pr-8 text-pretty text-[14px] leading-relaxed text-muted-foreground">
-                        {item.a}
-                      </p>
-                    </details>
+          {/* THE DETAIL. All closed on arrival. */}
+          <div className="min-w-0 lg:col-span-7">
+            {short ? (
+              <>
+                <div className="pub-faq divide-y divide-border border-y border-border">
+                  {HOME_ANSWERS.map((item) => (
+                    <Disclosure key={item.q} item={item} showStatus />
                   ))}
                 </div>
-              </Reveal>
-            ))}
+                <p className="mt-6 text-[0.9375rem] text-ink-muted">
+                  <Link
+                    to="/trust"
+                    className="focus-ring-visible rounded-sm font-semibold text-primary underline underline-offset-4 hover:decoration-2"
+                  >
+                    Every question, and how your data is handled
+                  </Link>
+                </p>
+              </>
+            ) : (
+              GROUPS.map((group, gi) => (
+                <div key={group.id} className={cn(gi > 0 && 'mt-12')}>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <h3 className="text-[0.9375rem] font-semibold tracking-normal text-muted-foreground">
+                      {group.title}
+                    </h3>
+                    {group.status && <span className="pub-chip">{STATUS_LABEL[group.status]}</span>}
+                  </div>
+                  <div className="pub-faq mt-3 divide-y divide-border border-y border-border">
+                    {group.answers.map((item) => (
+                      <Disclosure key={item.q} item={item} />
+                    ))}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </Container>

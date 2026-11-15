@@ -79,8 +79,13 @@ export const FREE_PRICE_LABEL = 'Free';
 export type PlanLine =
   /** Renders the capability's own name plus its registry status. Cannot overclaim. */
   | { kind: 'capability'; capabilityId: string; outcome: string }
-  /** A number already mirrored in entitlements.ts. `source` names the mirror. */
-  | { kind: 'limit'; outcome: string; value: string; source: string }
+  /**
+   * A number already mirrored in entitlements.ts. `source` names the mirror.
+   * `capabilityId` ties the limit to the capability it meters, so a limit on
+   * something that is not live yet renders that capability's status beside
+   * it instead of reading as available.
+   */
+  | { kind: 'limit'; outcome: string; value: string; source: string; capabilityId?: string }
   /** A plain outcome. `evidence` is for the next person who edits this. */
   | { kind: 'text'; outcome: string; evidence: string };
 
@@ -119,6 +124,7 @@ export const PUBLIC_PLANS: readonly PublicPlan[] = [
         outcome: 'Assisted applications',
         value: AUTO_APPLY_LIMIT('free'),
         source: 'entitlements.AUTO_APPLY_SUBMIT_LIMITS.free',
+        capabilityId: 'auto-apply',
       },
     ],
     cta: { label: 'Create free account', to: '/register' },
@@ -144,6 +150,7 @@ export const PUBLIC_PLANS: readonly PublicPlan[] = [
         outcome: 'Assisted applications',
         value: AUTO_APPLY_LIMIT('premium'),
         source: 'entitlements.AUTO_APPLY_SUBMIT_LIMITS.premium',
+        capabilityId: 'auto-apply',
       },
     ],
     cta: null,
@@ -164,6 +171,7 @@ export const PUBLIC_PLANS: readonly PublicPlan[] = [
         outcome: 'Assisted applications',
         value: AUTO_APPLY_LIMIT('premium_plus'),
         source: 'entitlements.AUTO_APPLY_SUBMIT_LIMITS.premium_plus',
+        capabilityId: 'auto-apply',
       },
     ],
     cta: null,
