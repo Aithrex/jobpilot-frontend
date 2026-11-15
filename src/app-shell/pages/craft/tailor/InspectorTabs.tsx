@@ -41,7 +41,7 @@ interface InspectorTabsProps {
 }
 
 const triggerCls =
-  'hit-target flex-1 gap-1.5 rounded-control px-2 sm:px-3 data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:shadow-none data-[state=active]:ring-1 data-[state=active]:ring-primary/30';
+  'hit-target flex-1 shrink-0 gap-1.5 whitespace-nowrap rounded-control px-2 text-caption sm:px-2.5 data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:shadow-none data-[state=active]:ring-1 data-[state=active]:ring-primary/30';
 
 export function InspectorTabs({
   active,
@@ -69,19 +69,19 @@ export function InspectorTabs({
       className="min-w-0"
     >
       {/* Tab bar */}
-      <TabsList className="mb-4 flex h-auto w-full gap-1 rounded-container border border-border bg-muted/60 p-1.5">
+      <TabsList className="mb-4 flex h-auto w-full justify-start gap-1 overflow-x-auto rounded-container border border-border bg-muted/60 p-1.5">
         {/* Below `sm` the labels collapse to icon-only VISUALLY, but stay in
             the accessible name via sr-only (an aria-label would mask the
             dynamic score/status text that follows each label). */}
         <TabsTrigger value="jd" className={triggerCls}>
-          <ClipboardList className="h-4 w-4 shrink-0" aria-hidden="true" />
-          <span className="sr-only sm:not-sr-only">Job Description</span>
+          <ClipboardList className="h-4 w-4 shrink-0 sm:hidden 2xl:block" aria-hidden="true" />
+          <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">Job Description</span>
         </TabsTrigger>
 
         {reviewPanel && (
           <TabsTrigger value="review" disabled={!hasResult} className={triggerCls}>
-            <ShieldAlert className="h-4 w-4 shrink-0" aria-hidden="true" />
-            <span className="sr-only sm:not-sr-only">Review</span>
+            <ShieldAlert className="h-4 w-4 shrink-0 sm:hidden 2xl:block" aria-hidden="true" />
+            <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">Review</span>
             {reviewPendingCount > 0 && (
               <span
                 className={cn(
@@ -99,8 +99,8 @@ export function InspectorTabs({
         )}
 
         <TabsTrigger value="ats" disabled={!hasResult} className={triggerCls}>
-          <Search className="h-4 w-4 shrink-0" aria-hidden="true" />
-          <span className="sr-only sm:not-sr-only">ATS</span>
+          <Search className="h-4 w-4 shrink-0 sm:hidden 2xl:block" aria-hidden="true" />
+          <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">ATS</span>
           {atsScore != null ? (
             <span className="ml-0.5 inline-flex items-center gap-1">
               <span
@@ -135,8 +135,8 @@ export function InspectorTabs({
 
         {screenerPanel && (
           <TabsTrigger value="screener" disabled={!hasResult} className={triggerCls}>
-            <ScanSearch className="h-4 w-4 shrink-0" aria-hidden="true" />
-            <span className="sr-only sm:not-sr-only">Screener</span>
+            <ScanSearch className="h-4 w-4 shrink-0 sm:hidden 2xl:block" aria-hidden="true" />
+            <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">Screener</span>
             {screenerGrade && (
               <span
                 className={cn(
@@ -160,13 +160,13 @@ export function InspectorTabs({
           disabled={!hasResult}
           className={triggerCls}
         >
-          <RotateCw className="h-4 w-4 shrink-0" aria-hidden="true" />
-          <span className="sr-only sm:not-sr-only">Regenerate</span>
+          <RotateCw className="h-4 w-4 shrink-0 sm:hidden 2xl:block" aria-hidden="true" />
+          <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">Regenerate</span>
         </TabsTrigger>
 
         <TabsTrigger value="cover" disabled={!hasResult} className={triggerCls}>
-          <Sparkles className="h-4 w-4 shrink-0" aria-hidden="true" />
-          <span className="sr-only sm:not-sr-only">Cover letter</span>
+          <Sparkles className="h-4 w-4 shrink-0 sm:hidden 2xl:block" aria-hidden="true" />
+          <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">Cover letter</span>
           {coverLetterReady && !coverLetterLoading ? (
             <>
               {/* Static: "ready" is a state, not activity. Only in-progress

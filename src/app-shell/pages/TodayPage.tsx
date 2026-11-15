@@ -32,7 +32,7 @@
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
-import { ArrowRight, ClipboardList, RefreshCw } from 'lucide-react';
+import { ArrowRight, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { fade } from '@/lib/motion';
@@ -225,35 +225,48 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
   }
 
   return (
-    <div className="page-full space-y-8">
-      {/* Page header */}
-      <motion.header {...zoneFade} className="flex flex-wrap items-end justify-between gap-3">
-        <div className="space-y-1">
-          <p className="overline leading-none">Home</p>
-          <h1 className="text-title font-display text-foreground">
-            {greeting()}, {name}
-          </h1>
-          <p className="text-caption text-muted-foreground">
-            {new Date().toLocaleDateString(undefined, {
-              weekday: 'long',
-              month: 'long',
-              day: 'numeric',
-            })}
+    <div className="page-full space-y-6">
+      {/* The morning band: who, when, and the two things done every day.
+          The one dark chapter on the page, same field as the public site. */}
+      <motion.header {...zoneFade} className="app-hero rounded-[1.25rem] px-5 py-6 sm:px-8 sm:py-8">
+        <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-5">
+          <div className="min-w-0 space-y-2">
+            <p className="app-hero-muted text-caption font-medium">
+              {new Date().toLocaleDateString(undefined, {
+                weekday: 'long',
+                month: 'long',
+                day: 'numeric',
+              })}
+            </p>
+            <h1 className="font-display text-[1.75rem] font-semibold leading-tight text-white sm:text-[2.125rem]">
+              {greeting()}, {name}
+            </h1>
+            <p className="app-hero-muted max-w-prose text-body-sm">
+              Your strongest matches are below. Replies and next steps are in the tracker.
+            </p>
+          </div>
+          <p role="status" aria-live="polite" className="sr-only">
+            {refreshAnnouncement}
           </p>
+          <div className="flex flex-wrap items-center gap-2.5">
+            <Link to="/app/jobs/for-you" className="app-hero-btn">
+              See my matches <ArrowRight className="h-4 w-4" aria-hidden />
+            </Link>
+            <Link to="/app/apply/tracker" className="app-hero-btn-ghost">
+              Open tracker
+            </Link>
+            <button
+              type="button"
+              onClick={() => void handleRefresh()}
+              disabled={loading}
+              aria-label="Refresh dashboard"
+              title="Refresh"
+              className="app-hero-btn-ghost w-11 px-0 disabled:opacity-50"
+            >
+              <RefreshCw className={cn('h-4 w-4', loading && 'animate-spin')} aria-hidden="true" />
+            </button>
+          </div>
         </div>
-        <p role="status" aria-live="polite" className="sr-only">
-          {refreshAnnouncement}
-        </p>
-        <button
-          type="button"
-          onClick={() => void handleRefresh()}
-          disabled={loading}
-          aria-label="Refresh dashboard"
-          className="inline-flex min-h-11 items-center gap-1.5 rounded-control border border-border bg-card px-3.5 text-caption font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-50"
-        >
-          <RefreshCw className={cn('h-3.5 w-3.5', loading && 'animate-spin')} aria-hidden="true" />
-          Refresh
-        </button>
       </motion.header>
 
       {setupOpen && (
@@ -264,23 +277,6 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
           <ContinueWorkspaceSetup className="hit-target shrink-0 text-body-sm" />
         </div>
       )}
-
-      <section aria-label="Application tracker" className="flex flex-col gap-3 rounded-container border border-border bg-card p-4 shadow-soft sm:flex-row sm:items-center sm:justify-between sm:p-5">
-        <div className="flex items-start gap-3">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            <ClipboardList className="h-5 w-5" aria-hidden />
-          </span>
-          <div className="min-w-0 space-y-0.5">
-            <h2 className="font-display text-title-sm text-foreground">Keep every application in view</h2>
-            <p className="max-w-prose text-body-sm text-muted-foreground">Connect Gmail, review replies, and follow up from your application tracker.</p>
-          </div>
-        </div>
-        <Button asChild className="min-h-11 shrink-0 gap-2 px-4 font-semibold">
-          <Link to="/app/apply/tracker">
-            Open tracker <ArrowRight className="h-4 w-4" aria-hidden />
-          </Link>
-        </Button>
-      </section>
 
       {/* Zone 1 - Where do I stand? With the hero gone this is the first thing
           the user reads: a confident, scannable horizontal KPI strip across the

@@ -121,9 +121,11 @@ export function JobEmployerContext({
         </ul>
       )}
 
+      {/* Still open, and where the application goes: one line when both fit. */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
       {availability && (
         <p
-          className={cn('flex items-center gap-1 text-caption-sm', AVAILABILITY_TEXT[availability.tone])}
+          className={cn('flex min-w-0 items-center gap-1 text-caption-sm', AVAILABILITY_TEXT[availability.tone])}
           data-testid="job-availability"
           data-state={availability.state}
         >
@@ -133,7 +135,7 @@ export function JobEmployerContext({
       )}
 
       {host && (
-        <p className="flex items-center gap-1 truncate text-caption-sm text-muted-foreground" data-testid="job-destination">
+        <p className="flex min-w-0 items-center gap-1 truncate text-caption-sm text-muted-foreground" data-testid="job-destination">
           <ExternalLink className="h-3 w-3 shrink-0" aria-hidden />
           <span className="truncate">
             Applies on <span className="font-medium text-ink-muted">{host}</span>
@@ -141,6 +143,7 @@ export function JobEmployerContext({
           </span>
         </p>
       )}
+      </div>
 
       {trust && (
         <div
