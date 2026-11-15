@@ -53,6 +53,13 @@ const FONT_REGISTRY = {
       'Copyright 2020 The Plus Jakarta Sans Project Authors (https://github.com/tokotype/PlusJakartaSans)',
     url: 'https://github.com/tokotype/PlusJakartaSans',
   },
+  'mona-sans': {
+    name: 'Mona Sans',
+    // Copied from the font file's own name table (name ID 0).
+    copyright:
+      'Copyright 2022 The Mona Sans Project Authors (https://github.com/github/mona-sans), with Reserved Font Name "Mona"',
+    url: 'https://github.com/github/mona-sans',
+  },
   'jetbrains-mono': {
     name: 'JetBrains Mono',
     copyright:

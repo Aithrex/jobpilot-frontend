@@ -58,7 +58,7 @@ export function PublicPageShell({
         Skip to content
       </a>
       <LandingNav />
-      <main id="main" ref={mainRef} className="pt-14">
+      <main id="main" ref={mainRef} className="pt-16">
         {children}
       </main>
       <LandingFooter />

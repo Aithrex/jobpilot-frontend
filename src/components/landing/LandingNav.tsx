@@ -8,15 +8,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { PUBLIC_NAV, SECTION_LINKS, useSectionJump } from './_shared';
 
 /**
- * The one floating liquid-glass surface on the public site: the Aspirely
- * wordmark, the public IA, and the account actions.
+ * The public header: the Aspirely wordmark, the public IA, and the account
+ * actions, on one bar that spans the page.
  *
- * It follows the visitor's theme rather than pinning itself. Composes the
- * canonical index.css recipes - `.glass-nav` (token fill + blur, solid
- * @supports fallback), `.glass-nav-strong` (the fill it needs to stay AA as it
- * crosses section boundaries) and `.glass-specular` (the bright top hairline
- * that makes it read as a physical pane) - so no second blur recipe is
- * hand-rolled here.
+ * At the top of a page it is transparent and sits on the hero. Once the page
+ * has scrolled it picks up the canonical frosted recipe from index.css
+ * (`.glass-nav`, `.glass-nav-strong`) and a hairline, so the bar is only ever
+ * a surface when there is content passing under it.
  *
  * ON `/` THE IA LINKS ARE REAL ANCHORS and stay that way: right-click,
  * middle-click, open-in-new-tab and no-JS all keep working. On every other
@@ -162,94 +160,108 @@ export function LandingNav() {
     };
   }, [open]);
 
+  // The bar becomes a surface only once something scrolls under it.
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 12);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  // The current link carries a short accent rule under its label; on hover
+  // the same rule draws in from the left, so the two states are one gesture.
   const linkClass = (isActive: boolean) =>
     cn(
-      'focus-ring-visible rounded-full px-3 py-1.5 text-[14px] transition-colors duration-200',
+      'focus-ring-visible relative rounded-control px-3 py-2 text-[15px] transition-colors duration-200',
+      'after:absolute after:inset-x-3 after:bottom-0.5 after:h-0.5 after:origin-left after:rounded-full after:bg-primary after:transition-transform after:duration-300 after:ease-expo motion-reduce:after:transition-none',
       isActive
-        ? 'bg-nav-active font-semibold text-primary'
-        : 'font-medium text-ink-muted hover:bg-accent hover:text-foreground',
+        ? 'font-semibold text-foreground after:scale-x-100'
+        : 'font-medium text-ink-muted after:scale-x-0 hover:text-foreground hover:after:scale-x-100',
     );
 
   return (
-    <header className="fixed inset-x-0 top-0 z-40 px-3 pt-3 sm:px-4">
-      <div className="glass-nav glass-nav-strong glass-nav-card glass-specular mx-auto flex h-[58px] max-w-[84rem] items-center justify-between gap-4 rounded-2xl border border-border px-4 sm:px-5 md:h-[60px]">
-        <Link
-          to="/"
-          aria-label="Aspirely home"
-          className="focus-ring-visible flex h-11 items-center gap-2 rounded-control font-semibold text-foreground"
-        >
-          <BrandMark size={30} />
-          <span className="hidden font-display text-[1.0625rem] font-bold tracking-tight min-[360px]:inline">
-            Aspirely
-          </span>
-        </Link>
-
-        {/* `lg`, not `md`. The IA labels got longer when Trust and FAQ merged
-            into "Before you begin", and at 768 the three links plus Sign in
-            plus the CTA no longer fit: the bar kept its height and wrapped
-            "How it works" and "Before you begin" onto two lines each. A
-            tablet is not a small desktop here - it takes the disclosure. */}
-        <nav aria-label="Primary" className="hidden items-center gap-1 lg:flex">
-          {PUBLIC_NAV.map((link) => {
-            const asAnchor = onHome && link.anchorOnHome;
-            // On `/`, highlight from the scroll-spy for every IA link — Pricing
-            // and Before you begin are real routes (so the click still navigates)
-            // but they are also on-page sections, and matching `pathname` alone
-            // left them unhighlighted the entire time a signed-in reader was
-            // scrolling the home page. Off `/`, the route is the source of truth.
-            const isActive = onHome
-              ? active === link.href.slice(1)
-              : pathname === link.route;
-            // Anchor only where there is no standalone route to fall back to.
-            // A nav link that quietly does nothing once the guest flow has
-            // unmounted its target is worse than a navigation.
-            return asAnchor ? (
-              <a
-                key={link.route}
-                href={link.href}
-                onClick={(e) => onJump(e, link.href)}
-                aria-current={isActive ? 'page' : undefined}
-                className={linkClass(isActive)}
-              >
-                {link.label}
-              </a>
-            ) : (
-              <Link
-                key={link.route}
-                to={link.route}
-                aria-current={isActive ? 'page' : undefined}
-                className={linkClass(isActive)}
-              >
-                {link.label}
-              </Link>
-            );
-          })}
-        </nav>
-
-        <div className="flex items-center gap-1">
-          {isAuthenticated ? (
-            <Link
-              to="/app/home"
-              className="focus-ring-visible inline-flex h-9 items-center rounded-full bg-primary px-4 text-[14px] font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
+    <header
+      className={cn(
+        'fixed inset-x-0 top-0 z-40 border-b transition-[background-color,border-color,box-shadow] duration-300',
+        scrolled || open
+          ? 'glass-nav glass-nav-strong glass-nav-card border-border shadow-soft'
+          : 'border-transparent',
+      )}
+    >
+      <div className="mx-auto flex h-16 w-full max-w-[77.5rem] items-center justify-between gap-4 px-5 sm:px-8 lg:px-10">
+        <div className="flex items-center gap-8">
+          <Link
+            to="/"
+            aria-label="Aspirely home"
+            className="focus-ring-visible flex h-11 items-center gap-2.5 rounded-control text-foreground"
+          >
+            <BrandMark size={30} />
+            <span
+              className="hidden font-display text-[1.1875rem] font-bold tracking-[-0.03em] min-[360px]:inline"
+              style={{ fontStretch: '108%' }}
             >
+              Aspirely
+            </span>
+          </Link>
+
+          {/* `lg`, not `md`: at tablet widths four links plus Sign in plus
+              the CTA wrap, so a tablet takes the disclosure. */}
+          <nav aria-label="Primary" className="hidden items-center lg:flex">
+            {PUBLIC_NAV.map((link) => {
+              const asAnchor = onHome && link.anchorOnHome;
+              // On `/`, highlight from the scroll-spy for every IA link. Pricing
+              // and the FAQ are real routes (so the click still navigates) but
+              // they are also on-page sections. Off `/`, the route is the
+              // source of truth.
+              const isActive = onHome ? active === link.href.slice(1) : pathname === link.route;
+              // Anchor only where there is no standalone route to fall back to.
+              // A nav link that quietly does nothing once the guest flow has
+              // unmounted its target is worse than a navigation.
+              return asAnchor ? (
+                <a
+                  key={link.route}
+                  href={link.href}
+                  onClick={(e) => onJump(e, link.href)}
+                  aria-current={isActive ? 'page' : undefined}
+                  className={linkClass(isActive)}
+                >
+                  {link.label}
+                </a>
+              ) : (
+                <Link
+                  key={link.route}
+                  to={link.route}
+                  aria-current={isActive ? 'page' : undefined}
+                  className={linkClass(isActive)}
+                >
+                  {link.label}
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
+
+        <div className="flex items-center gap-1.5">
+          {isAuthenticated ? (
+            <Link to="/app/home" className="focus-ring-visible pub-btn pub-btn-primary pub-btn-sm">
               Open my workspace
             </Link>
           ) : (
             <>
               <Link
                 to="/login"
-                className="focus-ring-visible hidden items-center rounded-full px-3 py-1.5 text-[14px] font-medium text-ink-muted transition-colors duration-200 hover:text-foreground sm:inline-flex"
+                className="focus-ring-visible hidden items-center rounded-control px-3 py-2 text-[15px] font-medium text-ink-muted transition-colors duration-200 hover:text-foreground sm:inline-flex"
               >
                 Sign in
               </Link>
-              {/* The label shortens rather than wrapping. At 390px the full
-                  phrase broke onto two lines and pushed the bar out of shape;
-                  hiding the CTA entirely was the other option and the wrong
-                  one, since this is the page's conversion. */}
+              {/* The label shortens rather than wrapping. Hiding the CTA on a
+                  phone was the other option and the wrong one, since this is
+                  the page's conversion. */}
               <Link
                 to="/register"
                 aria-label="Create free account"
-                className="focus-ring-visible inline-flex h-10 items-center whitespace-nowrap rounded-full bg-primary px-5 text-[15px] font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
+                className="focus-ring-visible pub-btn pub-btn-primary pub-btn-sm"
               >
                 <span className="sm:hidden">Sign up</span>
                 <span className="hidden sm:inline">Create free account</span>
@@ -259,7 +271,7 @@ export function LandingNav() {
 
           {/* Same control as the workspace top bar and the auth stage - one
               setting should not look like three different affordances. */}
-          <ThemeToggle className="ml-1 h-9 w-9" />
+          <ThemeToggle className="ml-0.5 h-10 w-10" />
 
           <button
             id="public-nav-toggle"
@@ -268,9 +280,9 @@ export function LandingNav() {
             aria-expanded={open}
             aria-controls="public-nav-menu"
             aria-label={open ? 'Close menu' : 'Open menu'}
-            className="focus-ring-visible grid h-11 w-11 place-items-center rounded-full text-muted-foreground transition-colors hover:text-foreground lg:hidden"
+            className="focus-ring-visible grid h-11 w-11 place-items-center rounded-control text-ink-muted transition-colors hover:text-foreground lg:hidden"
           >
-            {open ? <X className="h-[18px] w-[18px]" /> : <Menu className="h-[18px] w-[18px]" />}
+            {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </div>
       </div>
@@ -278,21 +290,19 @@ export function LandingNav() {
       {open && (
         <div
           id="public-nav-menu"
-          className="glass-nav glass-nav-strong glass-nav-card mx-auto mt-2 max-w-[84rem] rounded-2xl border border-foreground/[0.12] p-2 lg:hidden"
+          className="mx-auto w-full max-w-[77.5rem] border-t border-border px-3 pb-4 pt-2 sm:px-6 lg:hidden"
         >
           {PUBLIC_NAV.map((link) => {
-            const isActive = onHome
-              ? active === link.href.slice(1)
-              : pathname === link.route;
+            const isActive = onHome ? active === link.href.slice(1) : pathname === link.route;
             return (
               <Link
                 key={link.route}
                 to={link.route}
                 aria-current={isActive ? 'page' : undefined}
                 className={cn(
-                  'focus-ring-visible block rounded-xl px-3.5 py-3 text-[15px] transition-colors duration-200',
+                  'focus-ring-visible block rounded-control px-3 py-3.5 text-[1.0625rem] transition-colors duration-200',
                   isActive
-                    ? 'bg-primary/10 font-semibold text-primary'
+                    ? 'font-semibold text-primary'
                     : 'font-medium text-foreground hover:text-primary',
                 )}
               >
@@ -303,7 +313,7 @@ export function LandingNav() {
           {!isAuthenticated && (
             <Link
               to="/login"
-              className="focus-ring-visible block rounded-xl px-3.5 py-3 text-[15px] font-medium text-foreground transition-colors duration-200 hover:text-primary sm:hidden"
+              className="focus-ring-visible block rounded-control px-3 py-3.5 text-[1.0625rem] font-medium text-foreground transition-colors duration-200 hover:text-primary sm:hidden"
             >
               Sign in
             </Link>
