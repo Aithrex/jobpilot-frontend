@@ -574,7 +574,8 @@ export default function GmailIntegration({
             <summary className="cursor-pointer rounded font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
               What Aspirely reads, and what it never does
             </summary>
-            <GmailPromises testing={testing} />
+            {/* The 7 day note stays outside the fold, below. */}
+            <GmailPromises testing={false} />
           </details>
         ) : (
           <div className="mt-3">
