@@ -324,7 +324,7 @@ export default function ProfileTab() {
               Recruiter-ready score
             </h2>
             <p className={cn("mt-0.5 text-label-md tabular-nums", scoreTone)}>
-              {recruiterReadyScore}/100 · {scoreLabel}
+              {recruiterReadyScore}/100
             </p>
           </div>
           <span className={cn("shrink-0 rounded-full px-2.5 py-1 text-label-md", scoreChip)}>

@@ -275,7 +275,7 @@ export default function InterviewPrepTab({ embedded }: InterviewPrepTabProps) {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl border border-border bg-card p-4 shadow-soft">
+      <div className={`rounded-2xl border border-border bg-card p-4 shadow-soft${isEmbedded && !norm ? " hidden" : ""}`}>
         {/* Embedded in the /next shell the page h1 + SubNav already carry the
             title - keep only the functional stat grid. */}
         {!isEmbedded && (
@@ -286,6 +286,9 @@ export default function InterviewPrepTab({ embedded }: InterviewPrepTabProps) {
             </p>
           </>
         )}
+        {/* Progress on a generated pack. Before one exists these would be
+            four zeros, so they wait for it. */}
+        {norm && (
         <div className={`${isEmbedded ? "" : "mt-3 "}grid grid-cols-2 gap-2 sm:grid-cols-4`}>
           <div className="rounded-lg border border-primary/20 bg-primary/5 px-3 py-2">
             <p className="text-xs uppercase tracking-wide text-muted-foreground">Selected role</p>
@@ -304,6 +307,7 @@ export default function InterviewPrepTab({ embedded }: InterviewPrepTabProps) {
             <p className="text-sm font-semibold text-foreground">{progress}%</p>
           </div>
         </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-[260px_1fr] gap-4">
