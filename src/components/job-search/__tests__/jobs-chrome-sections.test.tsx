@@ -113,7 +113,7 @@ describe('DiscoverPage section-aware Jobs chrome', () => {
       expect(within(bar).getByText(label)).toBeInTheDocument();
     }
     // The sponsorship filter is on by default; it must be visible, not buried.
-    expect(within(bar).getByRole('button', { name: /visa sponsorship: hide refusals/i })).toBeInTheDocument();
+    expect(within(bar).getByRole('button', { name: /visa sponsorship: sponsor-friendly/i })).toBeInTheDocument();
     expect(within(bar).getByRole('button', { name: /where: united states/i })).toBeInTheDocument();
     expect(within(bar).getByRole('button', { name: /match: any match/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/filter jobs by title or company/i)).toBeInTheDocument();

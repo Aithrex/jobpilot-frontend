@@ -82,6 +82,11 @@ interface JobCardProps {
   onHide?: () => void;
   /** First seen after the user's previous visit (For you only). */
   isNew?: boolean;
+  /** Play the one-time scanning light across the card (new since the last
+   *  visit, or just arrived from a background refresh). */
+  sweep?: boolean;
+  /** Stagger for `sweep`, so a row of new cards scans one after another. */
+  sweepDelayMs?: number;
   /** Open the quick-look panel. When set, a click or Enter on the card body opens it. */
   onOpen?: () => void;
   /** The keyboard cursor (J/K) is on this card. */
@@ -253,7 +258,7 @@ export function ApplyConfirmDialog({
 }
 
 export function JobCard({
-  job, saved, jobStatus, onSave, onUnsave, onQuickApply, isNew = false,
+  job, saved, jobStatus, onSave, onUnsave, onQuickApply, isNew = false, sweep = false, sweepDelayMs = 0,
   applyConfirmPending, applyConfirmModalJobId, onConfirmApplied, onConfirmNotYet,
   onApplyWithTailor, onAlreadyApplied, onHide, onOpen, isCursor = false,
   compareSelected = false, onToggleCompare, repostCount = 0, note, sponsorshipRefused,
@@ -448,6 +453,13 @@ export function JobCard({
         onClick={onCardClick}
         onKeyDown={onCardKeyDown}
       >
+        {sweep && (
+          <span
+            className="job-sweep"
+            style={{ ['--sweep-delay' as string]: `${sweepDelayMs}ms` }}
+            aria-hidden
+          />
+        )}
         <CardContent className="relative z-[2] flex min-h-0 flex-1 flex-col gap-2.5 p-4 sm:p-5">
           {/* Who and what: the title leads; company and place sit under it.
               The dial on the right is the verdict, and opens its own reasons. */}

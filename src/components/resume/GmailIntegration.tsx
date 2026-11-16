@@ -10,7 +10,7 @@ import { confirmAction } from '@/components/ui/confirm';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Mail } from 'lucide-react';
+import { Mail, MailCheck, ShieldAlert } from 'lucide-react';
 
 import { apiService } from '@/lib/api';
 import { cn } from '@/lib/utils';
@@ -194,10 +194,9 @@ function reconnectReason(status: GmailStatus): string {
 }
 
 /**
- * Asking to be let in. While Google limits Aspirely to accounts added by hand,
- * sending someone to Google before their address is on that list ends on a
- * page that says "Access blocked". So the address is asked for first, and
- * Connect appears once it has been added.
+ * Asking to be let in. While Google's screen is in testing it lets through
+ * only addresses added by hand. Everyone may try Connect first; whoever Google
+ * stops asks here, and the owner adds the address.
  */
 function GmailAccessRequest({
   access,
@@ -223,9 +222,9 @@ function GmailAccessRequest({
     if (resp.error || !resp.data) {
       setProblem(
         resp.status === 400
-          ? 'Enter the full Google address you will connect, like name@gmail.com.'
+          ? 'Enter the full Google address, like name@gmail.com.'
           : resp.status === 429
-            ? 'Your request is already saved. There is no need to send it again.'
+            ? 'Your request is already saved.'
             : 'Your request could not be saved. Try again in a moment.',
       );
       return;
@@ -236,25 +235,25 @@ function GmailAccessRequest({
 
   if (waiting && !editing) {
     return (
-      <>
-        <p role="status" className="mt-3 text-label text-foreground">
-          You asked for Gmail updates for{' '}
-          <span className="font-semibold">{access.google_email}</span>
-          {formatDay(access.requested_at) ? ` on ${formatDay(access.requested_at)}` : ''}. We add each
-          address by hand, usually within a day, and email you when it is ready. There is nothing
-          else you need to do.
-        </p>
-        <button type="button" onClick={() => setEditing(true)} className={cn(QUIET_BTN, 'mt-3')}>
-          Use a different Google address
-        </button>
-      </>
+      <div role="status" className="mt-3 flex items-start gap-2.5 rounded-lg bg-signal-tint px-3 py-2.5">
+        <MailCheck className="mt-0.5 h-4 w-4 shrink-0 text-signal" aria-hidden />
+        <div className="min-w-0 text-label text-foreground">
+          <p>
+            Request sent for <span className="font-semibold">{access.google_email}</span>. We email you once
+            it is added, usually within a day. Then press Connect.
+          </p>
+          <button type="button" onClick={() => setEditing(true)} className={cn(QUIET_BTN, 'mt-1 px-0')}>
+            Use a different address
+          </button>
+        </div>
+      </div>
     );
   }
 
   return (
-    <form onSubmit={send} className="mt-3">
+    <form onSubmit={send} className="mt-3 rounded-lg border border-border bg-muted/40 p-3">
       <label className="block text-label font-medium text-foreground" htmlFor="gmail-access-address">
-        Google address you will connect
+        Your Google address
       </label>
       <div className="mt-1.5 flex flex-wrap items-center gap-2">
         <input
@@ -271,7 +270,7 @@ function GmailAccessRequest({
           )}
         />
         <button type="submit" disabled={sending || !address.trim()} className={PRIMARY_BTN}>
-          {sending ? 'Sending...' : 'Request access'}
+          {sending ? 'Sending...' : 'Ask for access'}
         </button>
         {waiting && (
           <button type="button" onClick={() => setEditing(false)} className={QUIET_BTN}>
@@ -285,8 +284,7 @@ function GmailAccessRequest({
         </p>
       )}
       <p className="mt-2 text-label text-muted-foreground">
-        Gmail updates are in early access while Google reviews Aspirely, so each address is added
-        by hand. It has to be the same account you choose on Google's screen later.
+        Use the same account you pick on Google's screen.
       </p>
     </form>
   );
@@ -309,6 +307,8 @@ export default function GmailIntegration({
   const [loading, setLoading] = useState(true);
   const [statusError, setStatusError] = useState(false);
   const [linking, setLinking] = useState(false);
+  // "Google said access blocked?" opens the ask-for-access form by hand.
+  const [askOpen, setAskOpen] = useState(false);
   const [starting, setStarting] = useState(false);
   const [following, setFollowing] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
@@ -663,27 +663,56 @@ export default function GmailIntegration({
     // An older backend sends no gate, and lets everyone through.
     const mustAsk = access?.gate === 'invite' && access.state !== 'approved';
     const chosen = access?.gate === 'invite' ? access.google_email : null;
+    // `try`: Connect first. Someone Google stopped comes back here without a
+    // connection, and is offered Ask for access straight away.
+    const tryGate = access?.gate === 'try';
+    const blockedBefore = tryGate && !!access?.attempted_at && access.state === 'none';
+    const showAsk = mustAsk || (tryGate && (blockedBefore || askOpen || access?.state === 'requested'));
     return (
       <section aria-label="Gmail connection" className={shell}>
         {row(
-          'Let Gmail keep this tracker up to date',
+          'Keep this tracker up to date from Gmail',
           <>
-            Aspirely finds the replies to your applications in Gmail: confirmations, interview
-            invites and rejections. Clear ones move the application for you. Unclear ones wait for
-            your review. Read only: Aspirely never sends, deletes or changes email.
+            Replies to your applications move them for you: confirmations, interviews and
+            rejections. Read only. Aspirely never sends or deletes email.
           </>,
           mustAsk ? null : (
-            <button type="button" onClick={handleConnect} disabled={linking} className={PRIMARY_BTN}>
-              {linking ? 'Opening Google...' : 'Connect Gmail'}
+            // After a blocked try or a request, asking is the next step and
+            // Connect steps back to a quiet "Try again".
+            <button
+              type="button"
+              onClick={handleConnect}
+              disabled={linking}
+              className={blockedBefore || access?.state === 'requested' ? QUIET_BTN : PRIMARY_BTN}
+            >
+              {linking ? 'Opening Google...' : blockedBefore || access?.state === 'requested' ? 'Try again' : 'Connect Gmail'}
             </button>
           ),
         )}
-        {mustAsk && access && (
+        {blockedBefore && (
+          <p className="mt-3 flex items-start gap-2 text-label text-foreground">
+            <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-warning" aria-hidden />
+            <span>
+              Did Google say access is blocked? Gmail is invite only for now. Ask below and we will add your
+              address.
+            </span>
+          </p>
+        )}
+        {showAsk && access && (
           <GmailAccessRequest
             access={access}
             inline={inline}
             onChanged={(next) => setStatus((prev) => (prev ? { ...prev, access: next } : prev))}
           />
+        )}
+        {tryGate && !showAsk && !linking && (
+          <button
+            type="button"
+            onClick={() => setAskOpen(true)}
+            className="mt-2 rounded text-label font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            Can't connect? Ask for access
+          </button>
         )}
         {!mustAsk && chosen && !linking && (
           <p className="mt-3 text-label text-foreground">
@@ -693,34 +722,16 @@ export default function GmailIntegration({
         )}
         {linking && (
           <p role="status" className="mt-3 text-label text-muted-foreground">
-            Taking you to Google to choose an account and allow read only access. You come back
-            here afterwards.
+            Opening Google. Pick your account and allow read only access, then you come back here.
           </p>
         )}
         {noticeBlock}
-        {inline ? (
-          <details className="mt-3 text-label text-muted-foreground">
-            <summary className="cursor-pointer rounded font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-              What Aspirely reads, and what it never does
-            </summary>
-            {/* The 7 day note stays outside the fold, below. */}
-            <GmailPromises testing={false} />
-          </details>
-        ) : (
-          <div className="mt-3">
-            <p className="text-label font-medium text-foreground">
-              What Aspirely reads, and what it never does
-            </p>
-            <GmailPromises testing={testing} />
-          </div>
-        )}
-        {/* Not yet relevant to someone who cannot connect until they are added. */}
-        {inline && testing && !mustAsk && (
-          <p className="mt-2 text-label text-muted-foreground">
-            For now Google ends each Gmail connection after 7 days, while it reviews Aspirely. You
-            will be asked to reconnect then.
-          </p>
-        )}
+        <details className="mt-3 text-label text-muted-foreground">
+          <summary className="cursor-pointer rounded font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            What Aspirely reads, and what it never does
+          </summary>
+          <GmailPromises testing={testing && !mustAsk} />
+        </details>
       </section>
     );
   }
@@ -858,10 +869,8 @@ export default function GmailIntegration({
               </>
             ) : (
               <>
-                Nothing has been read yet. Press Check Gmail now to look through the last 60 days
-                of email for replies to{' '}
-                {tracked ? `your ${plural(tracked, 'application', 'applications')}` : 'your applications'}
-                . One press does the whole check.
+                One press reads the last 60 days for replies to{' '}
+                {tracked ? `your ${plural(tracked, 'application', 'applications')}` : 'your applications'}.
               </>
             )}
           </p>

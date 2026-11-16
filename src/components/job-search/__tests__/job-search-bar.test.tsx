@@ -101,7 +101,7 @@ describe('the bar states the search without opening anything', () => {
     expect(segment(/^Roles: Data Analyst, Product Analyst$/)).toHaveTextContent('Data Analyst +1');
     expect(segment(/^Where: United States$/)).toHaveTextContent('United States');
     expect(segment(/^Experience level: Entry \+ Mid$/)).toHaveTextContent('Entry + Mid');
-    expect(segment(/^Visa sponsorship: Hide refusals$/)).toHaveTextContent('Hide refusals');
+    expect(segment(/^Visa sponsorship: Sponsor-friendly$/)).toHaveTextContent('Sponsor-friendly');
     expect(segment(/^Filter by company$/)).toHaveTextContent('All companies');
     expect(segment(/^Match: Any match$/)).toHaveTextContent('Any match');
   });
@@ -113,10 +113,10 @@ describe('the bar states the search without opening anything', () => {
     await waitFor(() => expect(feed.visibleJobs.map((j) => j.job_id)).toEqual(['likely', 'unknown']));
 
     await user.click(within(bar()).getByRole('button', { name: /^Visa sponsorship/ }));
-    expect(screen.getByText('Do you need visa sponsorship?')).toBeInTheDocument();
-    const chosen = screen.getByRole('radio', { name: /hide refusals/i });
+    expect(screen.getByText('Need visa sponsorship?')).toBeInTheDocument();
+    const chosen = screen.getByRole('radio', { name: /hide jobs that won't sponsor/i });
     expect(chosen).toBeChecked();
-    expect(chosen).toHaveTextContent('hides 1');
+    expect(chosen).toHaveTextContent('1 hidden');
     // The promise never made: a record is not a guarantee.
     expect(screen.getByText(/a track record, not a promise/i)).toBeInTheDocument();
   });
@@ -129,12 +129,12 @@ describe('filters apply as they are chosen', () => {
     await waitFor(() => expect(feed.visibleJobs).toHaveLength(2));
 
     await user.click(within(bar()).getByRole('button', { name: /^Visa sponsorship/ }));
-    await user.click(screen.getByRole('radio', { name: /past sponsors only/i }));
+    await user.click(screen.getByRole('radio', { name: /only known sponsors/i }));
     expect(feed.sponsorFilter).toBe('proven');
     expect(feed.visibleJobs.map((j) => j.job_id)).toEqual(['likely']);
-    expect(within(bar()).getByRole('button', { name: 'Visa sponsorship: Past sponsors only' })).toBeInTheDocument();
+    expect(within(bar()).getByRole('button', { name: 'Visa sponsorship: Known sponsors' })).toBeInTheDocument();
 
-    await user.click(screen.getByRole('radio', { name: /every job, sponsoring or not/i }));
+    await user.click(screen.getByRole('radio', { name: /^all jobs/i }));
     expect(feed.sponsorFilter).toBe('all');
     expect(feed.visibleJobs).toHaveLength(3);
     // Filters never start a new search of employer sites.
@@ -176,7 +176,7 @@ describe('filters apply as they are chosen', () => {
 });
 
 describe('changing what is searched runs the search exactly once', () => {
-  test('closing Where after a change searches; closing it unchanged does not', async () => {
+  test('closing Where after a change the server reads searches once; closing it unchanged does not', async () => {
     const user = userEvent.setup();
     mount();
     await waitFor(() => expect(feed.visibleJobs).toHaveLength(2));
@@ -186,26 +186,31 @@ describe('changing what is searched runs the search exactly once', () => {
     await user.keyboard('{Escape}');
     expect(state.sync).not.toHaveBeenCalled();
 
+    // Remote-only is asked of the server, so it needs a search: the stored
+    // board for those settings first (not forced).
     await user.click(within(bar()).getByRole('button', { name: /^Where:/ }));
     await user.click(screen.getByRole('switch', { name: /remote jobs only/i }));
     expect(within(bar()).getByRole('button', { name: 'Where: Remote · United States' })).toBeInTheDocument();
     await user.keyboard('{Escape}');
-
     expect(state.sync).toHaveBeenCalledTimes(1);
-    expect(state.sync).toHaveBeenCalledWith(true);
+    expect(state.sync).toHaveBeenCalledWith(false);
+
+    // Reopened and closed with nothing new: no second search.
+    await user.click(within(bar()).getByRole('button', { name: /^Where:/ }));
+    await user.keyboard('{Escape}');
+    expect(state.sync).toHaveBeenCalledTimes(1);
   });
 
-  test('the Search button in the editor searches once, not once more on close', async () => {
+  test('a city filters the board at once and never starts a search', async () => {
     const user = userEvent.setup();
     mount();
     await waitFor(() => expect(feed.visibleJobs).toHaveLength(2));
 
     await user.click(within(bar()).getByRole('button', { name: /^Where:/ }));
-    await user.click(screen.getByRole('switch', { name: /remote jobs only/i }));
-    await user.click(screen.getByRole('button', { name: 'Search' }));
-
-    await waitFor(() => expect(screen.queryByText('Where do you want to work?')).not.toBeInTheDocument());
-    expect(state.sync).toHaveBeenCalledTimes(1);
+    await user.type(screen.getByRole('textbox', { name: 'City' }), 'Austin');
+    await user.keyboard('{Escape}');
+    expect(within(bar()).getByRole('button', { name: /^Where: Austin/ })).toBeInTheDocument();
+    expect(state.sync).not.toHaveBeenCalled();
   });
 
   test('titles changed but not searched are flagged, and closing the editor searches', async () => {

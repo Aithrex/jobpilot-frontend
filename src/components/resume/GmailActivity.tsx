@@ -102,7 +102,12 @@ export default function GmailActivity({
                     )}
                   </div>
                   {change.undone ? (
-                    <span className="shrink-0 text-label text-muted-foreground">Undone</span>
+                    <span
+                      className="shrink-0 text-label text-muted-foreground"
+                      title={change.corrected ? 'A closer read found this email was not an interview, so it was put back.' : undefined}
+                    >
+                      {change.corrected ? 'Put back: not an interview' : 'Undone'}
+                    </span>
                   ) : change.undoable ? (
                     <button
                       type="button"

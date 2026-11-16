@@ -26,6 +26,9 @@ import { PanelCard, PanelEmpty, PanelError, ZoneHeading, StatusPill, Stat } from
 const APPLICATIONS_HREF = '/app/apply/tracker';
 const MAX_ROWS = 8;
 
+/** How many rows Home shows; the rest are one click away. */
+const RECENT_LIMIT = 6;
+
 export function RecentActivityPanel({
   state,
   applications,
@@ -41,7 +44,7 @@ export function RecentActivityPanel({
     <PanelCard>
       <ZoneHeading
         title="Recent applications"
-        hint="Latest recorded application dates, across all tracker stages."
+        hint="Your newest six. The rest are in the tracker."
         action={
           state === 'ready' && rows.length > 0 ? (
             <Link
@@ -81,9 +84,10 @@ export function RecentActivityPanel({
           }
         />
       ) : (
-        <div className="max-h-[26rem] overflow-auto rounded-control border border-border">
+        // No scroll box inside the page: the newest few, and View all.
+        <div className="overflow-hidden rounded-control border border-border">
           <Table>
-            <TableHeader className="sticky top-0 z-10 bg-card [&_th]:bg-card">
+            <TableHeader className="bg-card [&_th]:bg-card">
               <TableRow className="hover:bg-transparent">
                 <TableHead className="text-caption">Role</TableHead>
                 <TableHead className="text-caption">Status</TableHead>
@@ -91,7 +95,7 @@ export function RecentActivityPanel({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rows.map(({ record, day }) => {
+              {rows.slice(0, RECENT_LIMIT).map(({ record, day }) => {
                 return (
                   <TableRow key={record.record_id}>
                     <TableCell className="max-w-[16rem] py-3">

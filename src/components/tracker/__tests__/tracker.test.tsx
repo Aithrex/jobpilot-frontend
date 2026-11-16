@@ -151,18 +151,20 @@ describe('views', () => {
     renderTracker();
     const summary = await screen.findByRole('region', { name: 'How your search is going' });
 
-    await user.click(within(summary).getByRole('button', { name: /^Got an interview/ }));
+    await user.click(within(summary).getByRole('button', { name: /^Interview/ }));
     expect(viewTab('Applications')).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByText('Interview Role')).toBeInTheDocument();
     expect(screen.queryByText('Waiting Role')).not.toBeInTheDocument();
 
     // Another number replaces the filter instead of stacking on it.
-    await user.click(within(summary).getByRole('button', { name: /^Waiting for a reply/ }));
+    await user.click(within(summary).getByRole('button', { name: /waiting/ }));
     expect(screen.getByText('Waiting Role')).toBeInTheDocument();
     expect(screen.queryByText('Interview Role')).not.toBeInTheDocument();
 
+    // Heard back shows the ones that answered, a no included.
     await user.click(within(summary).getByRole('button', { name: /^Heard back/ }));
-    expect(viewTab('Insights')).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByText('Interview Role')).toBeInTheDocument();
+    expect(screen.queryByText('Waiting Role')).not.toBeInTheDocument();
   });
 
   test('the tracker opens on To do, not on everything', async () => {
@@ -537,7 +539,7 @@ describe('slim list rows', () => {
     renderTracker();
 
     expect(await screen.findByText('Base resume')).toBeInTheDocument();
-    expect(screen.getByText('Match score 71')).toBeInTheDocument();
+    expect(screen.getByText('ATS 71')).toBeInTheDocument();
   });
 
   test('the list asks for slim rows and fetches the rest only when one is opened', async () => {
@@ -603,7 +605,7 @@ describe('unanswered apply prompt', () => {
 });
 
 describe('header and detail pane', () => {
-  test('the summary answers four questions in words, not just numbers', async () => {
+  test('the summary shows the week, the journey and the wait, with the share between steps', async () => {
     listTailoringRecords.mockResolvedValue({
       data: {
         records: [
@@ -616,17 +618,19 @@ describe('header and detail pane', () => {
     });
     renderTracker();
     const summary = await screen.findByRole('region', { name: 'How your search is going' });
-    const tile = (name: RegExp) => within(summary).getByRole('button', { name });
+    const step = (name: RegExp) => within(summary).getByRole('button', { name });
 
-    // One sent today; none in the seven days before that.
-    expect(tile(/^Sent, last 7 days/)).toHaveTextContent('1');
-    expect(tile(/^Sent, last 7 days/)).toHaveTextContent('1 more than the week before');
-    // Three were sent (a saved job was not). Two got an answer, and a no counts.
-    expect(tile(/^Heard back/)).toHaveTextContent('67%');
-    expect(tile(/^Heard back/)).toHaveTextContent('2 of the 3 you sent');
-    // One of the three reached an interview, and it is still at that stage.
-    expect(tile(/^Got an interview/)).toHaveTextContent('33% of those sent · 1 in progress');
-    expect(tile(/^Waiting for a reply/)).toHaveTextContent('1');
+    // One sent this week, against the default goal of ten.
+    expect(within(summary).getByText('sent this week')).toBeInTheDocument();
+    expect(summary).toHaveTextContent('1 / 10');
+    expect(step(/^Show the applications from the last 7 days/)).toBeInTheDocument();
+    // Three were sent (a saved job was not); two answered, and a no counts.
+    await waitFor(() => expect(step(/^Applied/)).toHaveTextContent('3'));
+    expect(step(/^Heard back/)).toHaveTextContent('2');
+    expect(step(/^Heard back/)).toHaveTextContent('67% of applied');
+    // One of the two that answered reached an interview.
+    expect(step(/^Interview/)).toHaveTextContent('1');
+    expect(step(/^Interview/)).toHaveTextContent('50% of heard back');
   });
 
   test('Insights draws the same numbers and says when there is too little to compare', async () => {

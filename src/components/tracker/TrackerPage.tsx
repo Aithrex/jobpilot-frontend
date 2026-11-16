@@ -27,7 +27,8 @@ import ApplicationDetail from './ApplicationDetail';
 import FocusView from './FocusView';
 import InsightsView from './InsightsView';
 import StageRail from './StageRail';
-import TrackerSummary, { type SummaryTarget } from './TrackerSummary';
+import JourneyStrip, { type JourneyTarget } from './JourneyStrip';
+import Celebration, { type CelebrationSignal } from './Celebration';
 import TrackerToolbar from './TrackerToolbar';
 import { presetRange, statusKeyOf, type DatePreset } from './trackerConfig';
 import { computeInsights } from './trackerInsights';
@@ -144,7 +145,7 @@ export default function TrackerPage() {
 
   /** A tile is a question; pressing it shows the rows that answer it. */
   const openSummary = useCallback(
-    (target: SummaryTarget) => {
+    (target: JourneyTarget) => {
       clearFilters();
       if (target === 'insights') {
         setView('insights');
@@ -154,9 +155,16 @@ export default function TrackerPage() {
       if (target === 'recent') setDatePreset('7d');
       if (target === 'interviewing') setStatusFilter(new Set<ApplicationStatus>(['interviewing']));
       if (target === 'waiting') setStatusFilter(new Set<ApplicationStatus>(['applied']));
+      if (target === 'offer') setStatusFilter(new Set<ApplicationStatus>(['offer']));
+      if (target === 'replied')
+        setStatusFilter(new Set<ApplicationStatus>(['interviewing', 'offer', 'rejected']));
     },
     [clearFilters],
   );
+
+  // An offer (and a first interview) gets a short burst: the milestones of a
+  // search deserve a moment, briefly and never in the way.
+  const [celebration, setCelebration] = useState<CelebrationSignal | null>(null);
 
   /** Selecting fetches the rest of the record; the list only carried a summary. */
   const handleSelect = useCallback(
@@ -168,8 +176,14 @@ export default function TrackerPage() {
   );
 
   const handlePatch = useCallback(
-    (id: string, body: ApplicationPatch, opts?: { quiet?: boolean }) => patch(id, body, opts),
-    [patch],
+    (id: string, body: ApplicationPatch, opts?: { quiet?: boolean }) => {
+      const before = records.find((r) => r.record_id === id)?.application?.status;
+      if (body.status === 'offer' && before !== 'offer') setCelebration({ id: Date.now(), kind: 'offer' });
+      else if (body.status === 'interviewing' && before !== 'interviewing' && insights.interviewed === 0)
+        setCelebration({ id: Date.now(), kind: 'interview' });
+      return patch(id, body, opts);
+    },
+    [patch, records, insights.interviewed],
   );
 
   /**
@@ -221,11 +235,12 @@ export default function TrackerPage() {
     <div className="space-y-4">
       <div className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card shadow-soft">
         {!loading && !loadError && records.length > 0 && (
-          <TrackerSummary insights={insights} onOpen={openSummary} />
+          <JourneyStrip insights={insights} onOpen={openSummary} />
         )}
         <GmailIntegration onSyncComplete={handleSyncComplete} showReviewQueue={false} inline />
       </div>
       <GmailReviewLoadError error={suggestionsError} onRetry={() => void reloadSuggestions()} />
+      <Celebration signal={celebration} />
     </div>
   );
 

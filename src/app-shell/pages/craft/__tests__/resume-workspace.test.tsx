@@ -204,7 +204,8 @@ describe('Recently tailored (Tailor start screen)', () => {
     const card = await screen.findByRole('link', {
       name: /open the resume tailored for staff engineer at acme corp/i,
     });
-    expect(card).toHaveAttribute('href', '/app/resume/tailored');
+    // Opens that one resume on the Tailored page, not the top of the list.
+    expect(card.getAttribute('href')).toMatch(/^\/app\/resume\/tailored\?open=/);
     expect(within(card).queryByRole('link')).toBeNull();
     expect(within(card).getByText('82')).toBeInTheDocument();
   });

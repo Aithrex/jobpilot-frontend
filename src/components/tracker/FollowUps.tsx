@@ -120,7 +120,7 @@ export default function FollowUps({
                     <span className="mt-0.5 flex items-center gap-1.5 text-body-sm text-muted-foreground">
                       {typeof score === 'number' && (
                         <span className={cn('font-medium tabular-nums', atsTone(score))}>
-                          Match score {Math.round(score)}
+                          ATS {Math.round(score)}
                         </span>
                       )}
                       {typeof score === 'number' && baseResume && <span aria-hidden>·</span>}

@@ -70,9 +70,9 @@ export function JobFeedSheet() {
     visibleJobs,
     titlesPending,
     usOnly,
-    usState,
+    country,
+    region,
     city,
-    location,
     remoteOnly,
   } = useCombinedJobsCtx();
 
@@ -80,14 +80,16 @@ export function JobFeedSheet() {
   // narrows the list and has already applied. So the sheet's one button says
   // "Search" only when there is a new search to run, and otherwise just shows
   // the list.
-  const where = whereSummary({ usOnly, usState, city, location, remoteOnly });
-  const whereAtOpen = useRef(where);
+  // A place filters the board at once; only "US or not" and remote-only are
+  // asked of the server, so only they need a new search.
+  const scanKey = `${usOnly}|${remoteOnly}`;
+  const whereAtOpen = useRef(scanKey);
   useEffect(() => {
-    if (customizeOpen) whereAtOpen.current = where;
+    if (customizeOpen) whereAtOpen.current = scanKey;
     // Only when the sheet opens: later edits are what we compare against.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customizeOpen]);
-  const searchChanged = titlesPending || where !== whereAtOpen.current;
+  const searchChanged = titlesPending || scanKey !== whereAtOpen.current;
 
   const roleCount = jobs.length;
   const statusLine = useMemo(() => {

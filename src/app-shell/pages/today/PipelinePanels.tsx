@@ -138,23 +138,27 @@ export function ApplicationTrend({
             </AreaChart>
           </ChartContainer>
           {/* Equivalent data table - hidden visually, available to assistive tech. */}
-          <table className="sr-only">
-            <caption>Applications per day, last 30 days</caption>
-            <thead>
-              <tr>
-                <th scope="col">Date</th>
-                <th scope="col">Applications</th>
-              </tr>
-            </thead>
-            <tbody>
-              {series.map((d) => (
-                <tr key={d.date}>
-                  <td>{d.label}</td>
-                  <td>{d.count}</td>
+          {/* A table ignores height, so `sr-only` on the table itself still
+              stretches the page: hide a wrapper instead. */}
+          <div className="sr-only">
+            <table>
+              <caption>Applications per day, last 30 days</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Date</th>
+                  <th scope="col">Applications</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {series.map((d) => (
+                  <tr key={d.date}>
+                    <td>{d.label}</td>
+                    <td>{d.count}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </figure>
       )}
       {state === 'ready' && undatedCount > 0 && (

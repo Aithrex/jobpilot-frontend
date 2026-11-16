@@ -57,9 +57,13 @@ PascalCase component files; typed props interface; `@/` imports; `cn()` for cond
 ## Messages people see (2026-11-16)
 One voice for errors, hover hints and confirmations, enforced in one place each:
 - **Errors:** `apiService` passes every failure through `userFacingError` (`src/lib/errorCopy.ts`), so a code (`resume_not_parsed`), a status (`HTTP 502`) or a stack trace never reaches the screen, and a sentence the server wrote for people is shown as sent. Branch on `status` / `errorPayload.error`, never on the message text. Toasts use `notifyError("Couldn't <do the thing>", resp.error)` (`src/lib/notify.ts`): a title that says what did not happen, the reason under it. Never `toast.error(resp.error)` on its own. Titles are sentence case, no full stop, no exclamation mark, no "Failed to ..." or "... failed".
-- **Words:** no internal abbreviations in copy: "job description" not "JD", "match score" not "ATS score", "reading your resume" not "parsing", "used for job matching" not "active".
+- **Words:** no internal abbreviations in copy: "job description" not "JD", "reading your resume" not "parsing", "used for job matching" not "active". Two scores, two names: a JOB's fit to the resume is the "match score" (fit_score, job cards, tracker); a TAILORED RESUME's score is the "ATS score" (backend `services/ats_score.py`, owner's choice 2026-11-16). Never call one by the other's name.
 - **Hover hints:** a plain `title` is enough. `HoverTips` (`src/components/ui/hover-tips.tsx`, mounted in `App.tsx`) shows every `title` in the app tooltip, on hover and keyboard focus. Write a phrase that says what the control does. `data-native-title` opts an element out.
 - **Confirmations:** `await confirmAction({ title, description, confirmLabel, destructive })` (`src/components/ui/confirm.tsx`), never `window.confirm`. The confirm button names the action, never "OK".
+
+## Jobs board refresh and place (2026-11-16)
+- The 30-minute refresh is STAGED (`useCombinedJobs.run(..., 'interval')`): it never reshuffles the list; new roles wait behind a "N new roles" pill (`pendingNewCount`, `applyPending`), a refresh with nothing new is applied quietly, failures retry with backoff, offline waits, tabs share refreshes over `BroadcastChannel('aspirely-board')`.
+- Where (country, region, city) is a filter on the stored board in the browser (`src/lib/places.ts`, `selectForYouJobs({ place })`). The server never read `location`; only `us_only` and `remote_only` reach it. Do not send a place to the scan: a different `location` makes the stored board look stale.
 
 ## Deleted features (2026-11-12)
 

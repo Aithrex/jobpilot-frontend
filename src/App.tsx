@@ -55,7 +55,6 @@ const LegacyNextRedirect = lazy(() =>
 const TodayPage = lazy(() => import('@/app-shell/pages/TodayPage'));
 const ApplicationsPage = lazy(() => import('@/app-shell/pages/ApplicationsPage'));
 const TrackerPage = lazy(() => import('@/components/tracker/TrackerPage'));
-const MailboxInboxTab = lazy(() => import('@/components/mailbox/MailboxInboxTab'));
 const PipelineSection = lazy(() => import('@/app-shell/pages/PipelineSection'));
 const GrowPage = lazy(() => import('@/app-shell/pages/GrowPage'));
 const DiscoverPage = lazy(() => import('@/app-shell/pages/DiscoverPage'));
@@ -68,8 +67,6 @@ const SettingsPage = lazy(() => import('@/app-shell/pages/SettingsPage'));
 const LearningHubTab = lazy(() => import('@/components/hub/LearningHubTab'));
 const NetworkTab = lazy(() => import('@/components/resume/NetworkTab'));
 const EventsTab = lazy(() => import('@/components/resume/EventsTab'));
-const InterviewPrepTab = lazy(() => import('@/components/resume/InterviewPrepTab'));
-const CareerCopilotTab = lazy(() => import('@/components/resume/CareerCopilotTab'));
 const JobOpportunitiesTab = lazy(() => import('@/components/resume/JobOpportunitiesTab'));
 
 // Craft mounts the resume tools directly as nested sections.
@@ -197,14 +194,16 @@ function AppContent() {
                 <Route index element={<Navigate to="tracker" replace />} />
                 <Route path="tracker" element={<TrackerPage />} />
                 <Route path="auto-apply" element={<Navigate to="/app/apply/tracker" replace />} />
-                <Route path="inbox" element={<MailboxInboxTab />} />
+                {/* Hidden for now (2026-11-16): old links land on the tracker. */}
+                <Route path="inbox" element={<Navigate to="/app/apply/tracker" replace />} />
                 <Route path="pipeline" element={<PipelineSection />} />
               </Route>
               <Route path="grow" element={<GrowPage />}>
                 <Route index element={<Navigate to="learning" replace />} />
                 <Route path="learning" element={<LearningHubTab />} />
-                <Route path="interview" element={<InterviewPrepTab />} />
-                <Route path="copilot" element={<CareerCopilotTab />} />
+                {/* Hidden for now (2026-11-16): old links land on Learning Hub. */}
+                <Route path="interview" element={<Navigate to="/app/grow/learning" replace />} />
+                <Route path="copilot" element={<Navigate to="/app/grow/learning" replace />} />
                 <Route path="network" element={<NetworkTab />} />
                 <Route path="events" element={<EventsTab />} />
               </Route>

@@ -401,7 +401,7 @@ function ActivityRow({ a }: { a: Activity }) {
           <span className={`block text-xs font-bold tabular-nums ${
             a.ats_score >= 80 ? 'text-success' : a.ats_score >= 60 ? 'text-warning' : 'text-destructive'
           }`}>
-            Match score {a.ats_score}
+            ATS score {a.ats_score}
           </span>
         )}
         <TimeStamp iso={a.timestamp} className="block text-caption-sm text-muted-foreground mt-0.5" />
@@ -1281,7 +1281,7 @@ function OverviewPanel({ stats, users, onSelectUser }: {
           />
           <KPICard
             label="Tailoring Sessions" value={fmtNum(stats.total_tailoring_sessions)}
-            sub={`+${stats.tailoring_7d} this week · avg match score ${avgAts ?? EMPTY_VALUE}`}
+            sub={`+${stats.tailoring_7d} this week · avg ATS score ${avgAts ?? EMPTY_VALUE}`}
             icon={<Icon.Bolt c="w-4 h-4" />} color="violet" trend={tailoringTrend}
             sparklineData={days.map(d => d.value)}
           />
@@ -1313,8 +1313,8 @@ function OverviewPanel({ stats, users, onSelectUser }: {
         </Card>
         <Card>
           <SectionHeading
-            title="Match score distribution"
-            subtitle={atsScores.length > 0 ? `${atsScores.length} scored sessions · avg ${avgAts}` : 'No match scores yet'}
+            title="ATS score distribution"
+            subtitle={atsScores.length > 0 ? `${atsScores.length} scored sessions · avg ${avgAts}` : 'No ATS scores yet'}
           />
           {atsScores.length > 0 ? (
             <MiniBars buckets={atsBuckets} color="emerald" />
@@ -2055,7 +2055,7 @@ function TailoringRecordCard({ r }: { r: any }) {
               <span className={`text-lg font-bold tabular-nums ${
                 ats >= 80 ? 'text-success' : ats >= 60 ? 'text-warning' : 'text-destructive'
               }`}>{ats}</span>
-              <span className="text-caption-sm text-muted-foreground uppercase">Match score</span>
+              <span className="text-caption-sm text-muted-foreground uppercase">ATS score</span>
             </div>
           )}
           <TimeStamp iso={r.created_at} className="text-caption-sm text-muted-foreground" />

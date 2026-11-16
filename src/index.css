@@ -816,6 +816,29 @@
     min-height: 100%;
   }
 
+  /* A hand over everything that does something when clicked (owner,
+     2026-11-16: "hand cursor should come" was missing in places). Buttons
+     already get it from Tailwind's preflight; these are the rest. */
+  summary,
+  label[for],
+  select,
+  [role='button'],
+  [role='tab'],
+  [role='option'],
+  [role='switch'],
+  [role='checkbox'],
+  [role='radio'],
+  [role='menuitem'],
+  [role='menuitemradio'],
+  [role='menuitemcheckbox'],
+  [data-openable='true'] {
+    cursor: pointer;
+  }
+  :disabled,
+  [aria-disabled='true'] {
+    cursor: not-allowed;
+  }
+
   body {
     @apply text-foreground antialiased;
     /* SMOOTHNESS, part 1: type. `optimizeLegibility` turns on ligatures and
@@ -843,6 +866,9 @@
   .font-display {
     font-family: 'Mona Sans', 'Inter', sans-serif;
     letter-spacing: -0.025em;
+    /* Tight tracking closed the gaps between words ("Addorreplace"); the
+       space keeps its width so headings still read as words. */
+    word-spacing: 0.06em;
   }
   /* Small headings sit at body scale, where display tracking closes up. */
   h3 {
@@ -974,8 +1000,10 @@
   `.glass-nav` and, when the surface sits on card/sidebar tokens, add the
   matching tint modifier. Reserved for sticky/fixed chrome: top bar,
   mobile nav, sidebar, command palette, sticky filter bars. */
+  /* 0.92, not 0.72: at 0.72 the page's own text showed through the bar
+     while scrolling (cold read, 2026-11-16). The blur stays for depth. */
   .glass-nav {
-    background-color: hsl(var(--card) / 0.72);
+    background-color: hsl(var(--card) / 0.92);
     -webkit-backdrop-filter: blur(28px) saturate(140%);
     backdrop-filter: blur(28px) saturate(140%);
   }
@@ -985,7 +1013,7 @@
     backdrop-filter: blur(28px) saturate(140%);
   }
   .dark .glass-nav {
-    background-color: hsl(var(--card) / 0.72);
+    background-color: hsl(var(--card) / 0.92);
   }
   .dark .glass-nav-soft {
     background-color: hsl(var(--card) / 0.55);
@@ -1887,6 +1915,79 @@
   }
 }
 /* The "New" chip: one light sweep as it appears, then still. */
+/* A new card is SCANNED once: a soft band of light with a bright leading edge
+   travels top to bottom, the way a scanner reads a page, then is gone.
+   Transform and opacity only. Stagger comes from --sweep-delay. */
+.job-sweep {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 1;
+}
+.job-sweep::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 45%;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    hsl(var(--info) / 0.05) 45%,
+    hsl(var(--info) / 0.16) 90%,
+    hsl(var(--info) / 0.55) 98.6%,
+    transparent 100%
+  );
+  transform: translateY(-105%);
+  opacity: 0;
+  animation: job-scan 1500ms cubic-bezier(0.45, 0, 0.25, 1) var(--sweep-delay, 0ms) 1 both;
+}
+@keyframes job-scan {
+  0% {
+    transform: translateY(-105%);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(225%);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .job-sweep::before {
+    animation: none;
+    opacity: 0;
+  }
+}
+
+/* The "N new roles" pill: floats over the list, never moves it. */
+@keyframes new-roles-in {
+  from {
+    transform: translateY(-12px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+.new-roles-pill {
+  animation: new-roles-in 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .new-roles-pill {
+    animation: none;
+  }
+}
+
 .job-new-chip {
   position: relative;
   overflow: hidden;

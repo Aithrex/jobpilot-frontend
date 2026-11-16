@@ -13,6 +13,7 @@ import { applyUrlKey, SENIORITY_LEVELS, type SeniorityLevel } from '@/lib/career
 import { useSavedJobs } from '@/hooks/useSavedJobTabCounts';
 import { HIDDEN_JOBS_CHANGED, loadHiddenJobIds, persistHiddenJobId, unhideJobId } from '@/lib/hiddenJobs';
 import { isNewSince, selectForYouJobs } from '@/lib/forYouSelection';
+import { ANYWHERE } from '@/lib/places';
 import { isPassedOverIn, loadImpressions } from '@/lib/boardImpressions';
 import type { ExperienceView, WorkdayJob, WorkdayRecency } from '@/types/jobs';
 
@@ -124,11 +125,22 @@ interface CombinedJobsContextValue extends CombinedJobsController, ReturnType<ty
   lastSyncedAt: number | null;
   secondsUntilNext: number | null;
   sync: (force: boolean) => void;
+  /** The browser is offline; the board waits and catches up after. */
+  offline: boolean;
+  /** The last refresh failed and is being retried; the list is the last good one. */
+  refreshFailing: boolean;
   /** Begin scanning (called the first time the Jobs tab opens). Idempotent. */
   ensureStarted: () => void;
 
   // Server-side scan params (drive the next sync).
   /** United States only facet (default ON). Sent to the scan as `us_only`. */
+  /** Where to work: an ISO country code or `ANYWHERE`. Replaces the old
+   *  US-only switch, which is derived from it. */
+  country: string;
+  setCountry: (code: string) => void;
+  /** A state, province or region of `country`, or ''. */
+  region: string;
+  setRegion: (v: string) => void;
   usOnly: boolean;
   setUsOnly: (v: boolean) => void;
   /** US-only narrowing: full state name / "Remote" / "" for anywhere. */
@@ -201,9 +213,25 @@ export function CombinedJobsProvider({ children }: { children: React.ReactNode }
   // Scan params hydrate from the same versioned key the hook's titles use, so
   // the whole saved setup survives reloads together.
   const [initialPrefs] = useState(loadCombinedPrefs);
-  const [usOnly, setUsOnly] = useState(initialPrefs.usOnly ?? true);
-  const [usState, setUsState] = useState(initialPrefs.usState ?? '');
+  const [country, setCountryState] = useState<string>(
+    initialPrefs.country ?? (initialPrefs.usOnly === false ? ANYWHERE : 'US'),
+  );
+  const [region, setRegion] = useState<string>(initialPrefs.region ?? initialPrefs.usState ?? '');
+  const setCountry = useCallback((code: string) => {
+    setCountryState((prev) => {
+      if (prev !== code) setRegion('');
+      return code;
+    });
+  }, []);
+  // The old switch and state picker, kept as views of the new choice.
+  const usOnly = country === 'US';
+  const setUsOnly = useCallback((v: boolean) => setCountry(v ? 'US' : ANYWHERE), [setCountry]);
+  const usState = usOnly ? region : '';
+  const setUsState = setRegion;
   const [city, setCity] = useState(initialPrefs.city ?? '');
+  // Place is a filter on the stored board, not a scan parameter (see
+  // `scanLocation` below and src/lib/places.ts).
+  const place = useMemo(() => ({ country, region, city }), [country, region, city]);
   const [location, setLocation] = useState(initialPrefs.location ?? '');
   const [remoteOnly, setRemoteOnly] = useState(initialPrefs.remoteOnly ?? false);
   const [customizeOpen, setCustomizeOpen] = useState(false);
@@ -319,34 +347,33 @@ export function CombinedJobsProvider({ children }: { children: React.ReactNode }
   const selection = useMemo(() => selectForYouJobs(feed.jobs, {
     recency, search, seniorityLevels, minScore, sponsorFilter, showApplied, sortBy,
     hiddenJobIds, getJobStatus, showWeaker, seenThrough, newOnly, isPassedOver,
-    companies, collapseReposts,
+    companies, collapseReposts, place,
   }), [feed.jobs, recency, search, seniorityLevels, minScore, sponsorFilter,
     showApplied, sortBy, hiddenJobIds, getJobStatus, showWeaker, seenThrough, newOnly,
-    isPassedOver, companies, collapseReposts]);
+    isPassedOver, companies, collapseReposts, place]);
 
   const ensureStarted = useCallback(() => setStarted(true), []);
 
   const resetScope = useCallback(() => {
-    setUsOnly(true);
-    setUsState('');
+    setCountry('US');
     setCity('');
     setLocation('');
     setRemoteOnly(false);
   }, []);
 
-  // The effective location the scan sends: when US-only is on we compose the
-  // optional "city, state" narrowing; otherwise the raw free-text field wins.
-  const scanLocation = usOnly
-    ? [city.trim(), usState].filter(Boolean).join(', ')
-    : location.trim();
+  // The scan never narrows by place: the server did not read it (inventory
+  // feed), and a different `location` made the stored board look stale, so a
+  // state pick started three fresh scans. Place filters the board instead
+  // (`place`). Only "US or not" still reaches the server.
+  const scanLocation = '';
 
   // Write-through persistence for the scan params only. Titles are persisted
   // by the shared `useJobTitles` store (into the same key), so both surfaces
   // save one set instead of racing two.
   useEffect(() => {
     if (!feed.ready) return;
-    saveCombinedPrefs({ location, remoteOnly, usOnly, usState, city });
-  }, [feed.ready, location, remoteOnly, usOnly, usState, city]);
+    saveCombinedPrefs({ location, remoteOnly, usOnly, usState, city, country, region });
+  }, [feed.ready, location, remoteOnly, usOnly, usState, city, country, region]);
 
   const autoSync = useAutoSync({
     enabled: started && feed.ready,
@@ -355,8 +382,47 @@ export function CombinedJobsProvider({ children }: { children: React.ReactNode }
     // local midnight rather than up to 30 minutes later.
     refreshOnNewDay: true,
     isBusy: feed.loading,
-    onSync: (force, reason) => feed.run(force, { location: scanLocation, remoteOnly, usOnly }, reason),
+    onSync: async (force, reason) => {
+      const outcome = await feed.run(force, { location: scanLocation, remoteOnly, usOnly }, reason);
+      if (outcome !== 'error') broadcastRefreshed();
+      return outcome;
+    },
   });
+
+  // Several open tabs: when one refreshes, the others re-arm their countdown
+  // (so they do not all ask at once) and quietly pick up the stored board,
+  // which offers its new roles the same way ("5 new roles").
+  const channelRef = useRef<BroadcastChannel | null>(null);
+  const tabId = useRef(Math.random().toString(36).slice(2));
+  function broadcastRefreshed() {
+    try {
+      channelRef.current?.postMessage({ type: 'board-refreshed', from: tabId.current, at: Date.now() });
+    } catch {
+      /* a closed channel is not worth an error */
+    }
+  }
+  const { touch } = autoSync;
+  const runRef = useRef(feed.run);
+  runRef.current = feed.run;
+  const scanArgsRef = useRef({ location: scanLocation, remoteOnly, usOnly });
+  scanArgsRef.current = { location: scanLocation, remoteOnly, usOnly };
+  useEffect(() => {
+    if (typeof BroadcastChannel === 'undefined') return;
+    const channel = new BroadcastChannel('aspirely-board');
+    channelRef.current = channel;
+    channel.onmessage = (event: MessageEvent) => {
+      const msg = event.data as { type?: string; from?: string } | null;
+      if (!msg || msg.type !== 'board-refreshed' || msg.from === tabId.current) return;
+      touch();
+      if (document.visibilityState === 'visible') {
+        void runRef.current(false, scanArgsRef.current, 'interval');
+      }
+    };
+    return () => {
+      channel.close();
+      channelRef.current = null;
+    };
+  }, [touch]);
 
   // A resume change that replaced titles: say what moved, with Undo, and
   // re-scan a feed that already ran on the old titles instead of leaving
@@ -404,8 +470,14 @@ export function CombinedJobsProvider({ children }: { children: React.ReactNode }
     // stored board read at 10:05 that the server built at 09:50 is 15 min old.
     lastSyncedAt: feed.builtAt ?? autoSync.lastSyncedAt,
     secondsUntilNext: autoSync.secondsUntilNext,
+    offline: autoSync.offline,
+    refreshFailing: autoSync.failing,
     sync: autoSync.sync,
     ensureStarted,
+    country,
+    setCountry,
+    region,
+    setRegion,
     usOnly,
     setUsOnly,
     usState,
