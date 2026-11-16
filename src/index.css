@@ -816,6 +816,29 @@
     min-height: 100%;
   }
 
+  /* A hand over everything that does something when clicked (owner,
+     2026-11-16: "hand cursor should come" was missing in places). Buttons
+     already get it from Tailwind's preflight; these are the rest. */
+  summary,
+  label[for],
+  select,
+  [role='button'],
+  [role='tab'],
+  [role='option'],
+  [role='switch'],
+  [role='checkbox'],
+  [role='radio'],
+  [role='menuitem'],
+  [role='menuitemradio'],
+  [role='menuitemcheckbox'],
+  [data-openable='true'] {
+    cursor: pointer;
+  }
+  :disabled,
+  [aria-disabled='true'] {
+    cursor: not-allowed;
+  }
+
   body {
     @apply text-foreground antialiased;
     /* SMOOTHNESS, part 1: type. `optimizeLegibility` turns on ligatures and

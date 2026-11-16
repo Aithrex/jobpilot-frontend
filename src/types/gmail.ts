@@ -87,13 +87,16 @@ export interface GmailStatus {
 export interface GmailAccess {
   mode: 'testing' | 'production';
   expires_at?: string | null;
-  /** Absent on an older backend, which let everyone through. */
-  gate?: 'open' | 'invite';
+  /** Absent on an older backend, which let everyone through. `try`: everyone
+   *  may connect; whoever Google stops is offered Ask for access. */
+  gate?: 'open' | 'invite' | 'try';
   state?: 'none' | 'requested' | 'approved';
   /** The Google account that was asked for, and must be chosen on Google's screen. */
   google_email?: string | null;
   requested_at?: string | null;
   decided_at?: string | null;
+  /** A recent Connect press that has not produced a connection (`try` gate). */
+  attempted_at?: string | null;
 }
 
 /** An automatic status move made by a sync, which the user may undo. */

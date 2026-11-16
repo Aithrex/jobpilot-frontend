@@ -26,7 +26,7 @@ function failureFor(code: string | null): Failure {
     case "access_denied":
       return {
         title: "Gmail was not connected",
-        body: `You left Google's screen without allowing access. ${NOTHING_CONNECTED} You can connect whenever you like.`,
+        body: `Google did not finish the connection. ${NOTHING_CONNECTED} If Google said access is blocked, ask for access in the tracker and we will add your address.`,
         retry: true,
       };
     case "missing_params":

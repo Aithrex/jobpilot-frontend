@@ -84,7 +84,7 @@ describe('not connected', () => {
       },
     });
     renderCard();
-    expect(await screen.findByText('Let Gmail keep this tracker up to date')).toBeInTheDocument();
+    expect(await screen.findByText('Keep this tracker up to date from Gmail')).toBeInTheDocument();
     expect(screen.getByText(/sends, deletes, moves or marks\s+email\. Access is read only/)).toBeInTheDocument();
     expect(screen.getByText(/never used for ads and never used to train AI/)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Privacy policy' })).toHaveAttribute(
@@ -110,7 +110,7 @@ describe('not connected', () => {
     );
     // Connecting: the button stays busy and the page says where they are going.
     expect(screen.getByRole('button', { name: 'Opening Google...' })).toBeDisabled();
-    expect(screen.getByText(/Taking you to Google/)).toBeInTheDocument();
+    expect(screen.getByText(/Opening Google\. Pick your account/)).toBeInTheDocument();
   });
 
   test('a failed start says nothing was connected and never shows the server text', async () => {
@@ -487,17 +487,17 @@ describe('early access', () => {
     const user = userEvent.setup();
     renderCard();
 
-    await screen.findByText('Let Gmail keep this tracker up to date');
+    await screen.findByText('Keep this tracker up to date from Gmail');
     expect(screen.queryByRole('button', { name: 'Connect Gmail' })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Request access' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Ask for access' })).toBeDisabled();
 
-    await user.type(screen.getByLabelText('Google address you will connect'), ' priya@gmail.test ');
-    await user.click(screen.getByRole('button', { name: 'Request access' }));
+    await user.type(screen.getByLabelText('Your Google address'), ' priya@gmail.test ');
+    await user.click(screen.getByRole('button', { name: 'Ask for access' }));
 
     expect(api.requestGmailAccess).toHaveBeenCalledWith('priya@gmail.test');
     const note = await screen.findByRole('status');
     expect(note).toHaveTextContent('priya@gmail.test');
-    expect(note).toHaveTextContent('email you when it is ready');
+    expect(note).toHaveTextContent('We email you once it is added');
     expect(api.getGmailAuthUrl).not.toHaveBeenCalled();
   });
 
@@ -512,8 +512,8 @@ describe('early access', () => {
     renderCard();
 
     expect(await screen.findByRole('status')).toHaveTextContent('old@gmail.test');
-    await user.click(screen.getByRole('button', { name: 'Use a different Google address' }));
-    expect(screen.getByLabelText('Google address you will connect')).toHaveValue('old@gmail.test');
+    await user.click(screen.getByRole('button', { name: 'Use a different address' }));
+    expect(screen.getByLabelText('Your Google address')).toHaveValue('old@gmail.test');
   });
 
   test('a refused address is explained in words and nothing is lost', async () => {
@@ -522,13 +522,13 @@ describe('early access', () => {
     const user = userEvent.setup();
     renderCard();
 
-    await user.type(await screen.findByLabelText('Google address you will connect'), 'priya@gmail');
-    await user.click(screen.getByRole('button', { name: 'Request access' }));
+    await user.type(await screen.findByLabelText('Your Google address'), 'priya@gmail');
+    await user.click(screen.getByRole('button', { name: 'Ask for access' }));
 
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent('Enter the full Google address');
     expect(alert).not.toHaveTextContent('gmail_address_invalid');
-    expect(screen.getByLabelText('Google address you will connect')).toHaveValue('priya@gmail');
+    expect(screen.getByLabelText('Your Google address')).toHaveValue('priya@gmail');
   });
 
   test('once the address is added, Connect appears and names the account to choose', async () => {
@@ -542,7 +542,7 @@ describe('early access', () => {
 
     expect(await screen.findByRole('button', { name: 'Connect Gmail' })).toBeEnabled();
     expect(screen.getByText(/On Google's screen choose/)).toHaveTextContent('priya@gmail.test');
-    expect(screen.queryByRole('button', { name: 'Request access' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Ask for access' })).not.toBeInTheDocument();
   });
 
   test('a backend that sends no gate still offers Connect, as it always did', async () => {
@@ -551,5 +551,43 @@ describe('early access', () => {
     });
     renderCard();
     expect(await screen.findByRole('button', { name: 'Connect Gmail' })).toBeEnabled();
+  });
+});
+
+describe('connect first (gate "try", the default while Google is in testing)', () => {
+  const TRY: GmailStatus = status({
+    connected: false,
+    state: 'not_connected',
+    gmail_address: null,
+    access: { mode: 'testing', expires_at: null, gate: 'try', state: 'none', google_email: null, attempted_at: null },
+  });
+
+  test('everyone gets Connect, with a quiet way to ask if Google blocks them', async () => {
+    api.getGmailStatus.mockResolvedValue({ data: TRY });
+    const user = userEvent.setup();
+    renderCard();
+    expect(await screen.findByRole('button', { name: 'Connect Gmail' })).toBeEnabled();
+    expect(screen.queryByLabelText('Your Google address')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /access blocked\? ask for access/i }));
+    expect(screen.getByLabelText('Your Google address')).toBeInTheDocument();
+  });
+
+  test('back from Google without a connection: asking is offered at once', async () => {
+    api.getGmailStatus.mockResolvedValue({
+      data: { ...TRY, access: { ...TRY.access!, attempted_at: '2026-11-16T10:00:00+00:00' } },
+    });
+    renderCard();
+    expect(await screen.findByText(/Did Google say access is blocked\?/)).toBeInTheDocument();
+    expect(screen.getByLabelText('Your Google address')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Connect Gmail' })).toBeEnabled();
+  });
+
+  test('after asking, the request is shown and Connect stays for when it is added', async () => {
+    api.getGmailStatus.mockResolvedValue({
+      data: { ...TRY, access: { ...TRY.access!, state: 'requested', google_email: 'priya@gmail.test' } },
+    });
+    renderCard();
+    expect(await screen.findByRole('status')).toHaveTextContent('priya@gmail.test');
+    expect(screen.getByRole('button', { name: 'Connect Gmail' })).toBeEnabled();
   });
 });

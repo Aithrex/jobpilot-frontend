@@ -109,7 +109,8 @@ describe('GmailCallback', () => {
   test('cancelling at Google is not treated as an error code dump', async () => {
     renderAt('/oauth/gmail/callback?error=access_denied');
     expect(await screen.findByRole('heading', { name: 'Gmail was not connected' })).toBeInTheDocument();
-    expect(screen.getByText(/You left Google's screen without allowing access/)).toBeInTheDocument();
+    expect(screen.getByText(/Google did not finish the connection/)).toBeInTheDocument();
+    expect(screen.getByText(/ask for access in the tracker/)).toBeInTheDocument();
     expect(api.finishGmailLink).not.toHaveBeenCalled();
   });
 

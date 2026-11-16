@@ -294,7 +294,7 @@ export default function ProfileTab() {
           Your profile
         </h2>
         <p className={settingsCardHintCls}>
-          The more of this you fill in, the better your matches, tailoring and interview prep.
+          The more you fill in, the better your matches and tailoring.
         </p>
         <div className="mt-5 flex items-center justify-between gap-3">
           <p id="profile-completion-label" className="text-label-lg text-foreground">
@@ -485,7 +485,7 @@ export default function ProfileTab() {
       >
         <div className="flex items-center justify-between gap-3">
           <h2 id="profile-strategy-title" className={settingsCardTitleCls}>
-            Career strategy (Copilot memory)
+            Career strategy
           </h2>
           {memoryLoading && (
             <span className="inline-flex items-center gap-1.5 text-caption text-muted-foreground" role="status">
@@ -619,7 +619,7 @@ export default function ProfileTab() {
         </div>
 
         <p className={cn(settingsHelpCls, "mt-0 max-w-prose")}>
-          These settings are synced to Copilot memory and used to personalize JD analysis, cold outreach, and interview prep.
+          Used to fit your matches and tailoring to your goals.
         </p>
 
         <div className="rounded-lg border border-border bg-muted p-4">
@@ -691,7 +691,7 @@ export default function ProfileTab() {
           </Button>
           {strategySaved && (
             <p className="flex items-center gap-1.5 text-sm text-success" role="status">
-              <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" /> Career strategy synced to Copilot
+              <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" /> Career strategy saved
             </p>
           )}
         </div>

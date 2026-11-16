@@ -149,7 +149,7 @@ export default function VisaTimelineTab() {
     <div className="space-y-6">
       <div className="space-y-1">
         <div className="flex flex-wrap items-center gap-2">
-          <h2 className="font-display text-title-lg text-foreground">Visa Timeline Copilot</h2>
+          <h2 className="font-display text-title-lg text-foreground">Your visa timeline</h2>
           <Badge variant="outline" className="border-border text-caption-sm uppercase tracking-wide text-muted-foreground">
             Beta
           </Badge>

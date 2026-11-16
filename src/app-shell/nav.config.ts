@@ -3,15 +3,12 @@ import {
   Bell,
   BookOpen,
   Bookmark,
-  Bot,
   Briefcase,
   CalendarDays,
-  ClipboardList,
   CreditCard,
   FileCheck2,
   FolderOpen,
   Home,
-  Inbox,
   KeyRound,
   Layers,
   LayoutList,
@@ -183,14 +180,8 @@ export const APPLY_SECTIONS: NavSection[] = [
     keywords: "pipeline kanban status applied interview offer",
   },
   // Deferred product surfaces and their old-route redirects are documented
-  // in docs/product/2026-10-25-focused-workspace.md.
-  {
-    to: "inbox",
-    label: "Inbox",
-    icon: Inbox,
-    hint: "Mail sent to your Aspirely application address. Not Gmail",
-    keywords: "email mail replies recruiter messages managed address",
-  },
+  // in docs/product/2026-10-25-focused-workspace.md. Inbox (the managed
+  // application address) is hidden for now (owner, 2026-11-16).
   {
     to: "pipeline",
     label: "Pipeline",
@@ -200,6 +191,8 @@ export const APPLY_SECTIONS: NavSection[] = [
   },
 ];
 
+// Interview Prep and Career Copilot are hidden for now (owner, 2026-11-16);
+// their old addresses redirect to Learning Hub in App.tsx.
 export const GROW_SECTIONS: NavSection[] = [
   {
     to: "learning",
@@ -207,20 +200,6 @@ export const GROW_SECTIONS: NavSection[] = [
     icon: BookOpen,
     hint: "Close skill gaps with a guided sprint",
     keywords: "skills course sprint tickets practice",
-  },
-  {
-    to: "interview",
-    label: "Interview Prep",
-    icon: ClipboardList,
-    hint: "Practice questions and mock interviews",
-    keywords: "mock behavioral coach star questions",
-  },
-  {
-    to: "copilot",
-    label: "Career Copilot",
-    icon: Bot,
-    hint: "Ask about your search and get a next step",
-    keywords: "chat assistant advice ai",
   },
   {
     to: "network",
