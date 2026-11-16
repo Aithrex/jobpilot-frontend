@@ -60,7 +60,7 @@ const VERDICT_META: Record<
 const FLAG_LABELS: Record<string, string> = {
   ungrounded_metric: 'contains a number with no source in your resume',
   downgraded_metric: 'an unsourced number was removed',
-  unsupported_product: 'names a JD tool your resume never mentions',
+  unsupported_product: 'names a tool from the posting that your resume never mentions',
 };
 
 const VERDICT_ORDER: Record<BulletVerdict, number> = {

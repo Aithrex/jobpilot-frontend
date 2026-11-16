@@ -58,6 +58,13 @@ interface JobEmployerContextProps {
   showDestination?: boolean;
   /** Render "No warning signs found (automated check)" for a clean row. Off by default. */
   showCleanTrust?: boolean;
+  /**
+   * Card mode: say only what needs a second look. A direct employer whose
+   * posting was seen open is the normal case, and repeating it on every card
+   * buried the cards where it was NOT true (a staffing agency, a posting we
+   * could not confirm). The full block renders in the details panel.
+   */
+  compact?: boolean;
   className?: string;
 }
 
@@ -66,6 +73,7 @@ export function JobEmployerContext({
   sourceLabel,
   showDestination = true,
   showCleanTrust = false,
+  compact = false,
   className,
 }: JobEmployerContextProps) {
   if (!hasEmployerPolicyFields(row)) return null;
@@ -75,14 +83,19 @@ export function JobEmployerContext({
   // evidence yet - Stripe and SpaceX among them) and read as a warning about
   // the job. It is still never called direct; it is simply not labelled.
   const known = employerCategoryOf(row);
-  const category = known && known.kind !== 'unknown' ? known : null;
+  const classified = known && known.kind !== 'unknown' ? known : null;
+  const category = compact && classified?.kind === 'operating' ? null : classified;
   const relationship = postingRelationshipLabels(row);
   // "Seen on the employer's board" is said only of an employer we classified
   // as an operating business - otherwise the board we saw may be an agency's.
-  const availability = availabilityLineOf(row, { onEmployerBoard: category?.kind === 'operating' });
+  const availabilityLine = availabilityLineOf(row, { onEmployerBoard: classified?.kind === 'operating' });
+  const availability = compact && availabilityLine?.state === 'verified_open' ? null : availabilityLine;
   const trust = trustLineOf(row, { showClean: showCleanTrust });
   const host = showDestination ? applicationDestinationHost(row) : null;
   const AvailabilityIcon = availability ? AVAILABILITY_ICON[availability.state] : Clock3;
+  // Nothing to flag on this card: render no wrapper, so it takes no space.
+  if (compact && !category && relationship.length === 0 && !availability && !trust) return null;
+  const showHost = host && (!compact || !!category || !!availability);
 
   return (
     <div className={cn('space-y-1', className)} data-testid="job-employer-context">
@@ -134,7 +147,7 @@ export function JobEmployerContext({
         </p>
       )}
 
-      {host && (
+      {showHost && (
         <p className="flex min-w-0 items-center gap-1 truncate text-caption-sm text-muted-foreground" data-testid="job-destination">
           <ExternalLink className="h-3 w-3 shrink-0" aria-hidden />
           <span className="truncate">

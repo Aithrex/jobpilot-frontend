@@ -23,6 +23,7 @@ vi.mock('@/hooks/useJobTitles', () => ({ useJobTitles: () => ({
 vi.mock('@/hooks/useCombinedJobs', () => ({
   loadCombinedPrefs: () => ({}), saveCombinedPrefs: vi.fn(),
   useCombinedJobs: () => ({ jobs: state.jobs, ready: true, loading: false, hasResult: true,
+    titles: ['Analyst'], titlesPending: false,
     canSearch: true, resumeSkillCount: 5, progress: { done: 3, total: 3 },
     states: { workday: {}, careers: {}, mncs: {} }, run: vi.fn(), builtAt: 1,
     seenThrough: state.seenThrough }),

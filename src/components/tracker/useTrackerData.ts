@@ -4,6 +4,7 @@
  * fields). Lifted out of the old ApplicationsTab so the view components stay
  * presentational.
  */
+import { notifyError } from '@/lib/notify';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -225,7 +226,7 @@ export function useTrackerData() {
   const dismissStale = useCallback(async (recordId: string) => {
     const r = await apiService.dismissIntelligenceFollowup(recordId);
     if (r.error) {
-      toast.error(r.error);
+      notifyError("Couldn't dismiss that reminder", r.error);
       return false;
     }
     setStaleApps((prev) => prev.filter((x) => x.record_id !== recordId));

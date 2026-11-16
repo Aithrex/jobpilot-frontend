@@ -54,6 +54,13 @@ React 18.3 · Vite 5.4 (`plugin-react-swc`) · TS 5.5 (`strict`, `noImplicitAny:
 ## Conventions
 PascalCase component files; typed props interface; `@/` imports; `cn()` for conditional classes; compose shadcn `ui/*`; `sonner` for transient feedback. **Design tokens** in `src/index.css` (semantic HSL, light + dark) — never raw hex. Verify visual changes in **both themes + mobile**. Handle loading/empty/error for every async surface. Keep UI copy ASCII and dash-free (`pnpm copy:check`): a period, comma, colon, "to" for ranges, or the middot `·` between labels. AI chat surfaces show `<AiDisclosure />` (`src/components/ai/`); AI drafts show `<AiDisclosure kind="draft" />`.
 
+## Messages people see (2026-11-16)
+One voice for errors, hover hints and confirmations, enforced in one place each:
+- **Errors:** `apiService` passes every failure through `userFacingError` (`src/lib/errorCopy.ts`), so a code (`resume_not_parsed`), a status (`HTTP 502`) or a stack trace never reaches the screen, and a sentence the server wrote for people is shown as sent. Branch on `status` / `errorPayload.error`, never on the message text. Toasts use `notifyError("Couldn't <do the thing>", resp.error)` (`src/lib/notify.ts`): a title that says what did not happen, the reason under it. Never `toast.error(resp.error)` on its own. Titles are sentence case, no full stop, no exclamation mark, no "Failed to ..." or "... failed".
+- **Words:** no internal abbreviations in copy: "job description" not "JD", "match score" not "ATS score", "reading your resume" not "parsing", "used for job matching" not "active".
+- **Hover hints:** a plain `title` is enough. `HoverTips` (`src/components/ui/hover-tips.tsx`, mounted in `App.tsx`) shows every `title` in the app tooltip, on hover and keyboard focus. Write a phrase that says what the control does. `data-native-title` opts an element out.
+- **Confirmations:** `await confirmAction({ title, description, confirmLabel, destructive })` (`src/components/ui/confirm.tsx`), never `window.confirm`. The confirm button names the action, never "OK".
+
 ## Deleted features (2026-11-12)
 
 The screens hidden by the 2026-10-25 focused-workspace decision

@@ -484,7 +484,7 @@ export function useJobSearch() {
     });
     setApplyConfirmJob((job) => (job?.job_id === jobId ? null : job));
     if (resp.error) {
-      toast.error('Could not mark as applied', { description: resp.error });
+      toast.error("Couldn't mark it as applied", { description: resp.error });
       return resp;
     }
     if (resp.data) {
@@ -526,7 +526,7 @@ export function useJobSearch() {
   const markAlreadyApplied = useCallback(async (job: Job) => {
     const resp = await apiService.touchJobPipeline(job, 'applied');
     if (resp.error) {
-      toast.error('Could not mark as applied', { description: resp.error });
+      toast.error("Couldn't mark it as applied", { description: resp.error });
       return resp;
     }
     if (resp.data) {
@@ -631,7 +631,7 @@ export function useJobSearch() {
         posting_job_id: job.job_id,
       });
       if (resp.error) {
-        toast.error('Could not queue Auto Apply', { description: resp.error });
+        toast.error("Couldn't queue Auto Apply", { description: resp.error });
         return resp;
       }
       if (resp.data?.skipped) {

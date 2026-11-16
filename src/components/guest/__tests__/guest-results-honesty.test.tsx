@@ -314,9 +314,10 @@ describe('fit breakdown', () => {
     await openMatches(user);
 
     const panel = await screen.findByTestId('fit-breakdown');
-    // Band + version stamp come from the server.
+    // The band comes from the server. The scorer's version number is an
+    // internal stamp and is not shown to people.
     expect(within(panel).getByText('Strong fit')).toBeInTheDocument();
-    expect(within(panel).getByText('Scorer 2.0')).toBeInTheDocument();
+    expect(within(panel).queryByText(/Scorer/)).not.toBeInTheDocument();
     expect(within(panel).getByText(/Strong overlap on the core stack/)).toBeInTheDocument();
 
     // Component contributions, scaled against the published weights.

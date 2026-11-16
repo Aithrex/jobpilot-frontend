@@ -156,7 +156,7 @@ const StreakWidget = forwardRef<StreakWidgetHandle, { compact?: boolean }>(({ co
         {/* ── Today's count (primary) ───────────────────────────────── */}
         <div
           className="flex items-center gap-2 shrink-0"
-          title={`${data.today_count} application${data.today_count === 1 ? '' : 's'} applied today`}
+          title={`${data.today_count} application${data.today_count === 1 ? '' : 's'} sent today`}
         >
           <div className="relative">
             {todayActive && (

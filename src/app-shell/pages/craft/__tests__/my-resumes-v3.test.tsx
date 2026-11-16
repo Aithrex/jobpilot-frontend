@@ -6,8 +6,13 @@
  * PUT /resume/active {resume_id}; 409 resume_not_parsed surfaces as a
  * user-facing toast, and unparsed rows can't be activated at all.
  * The API layer is mocked at the apiService boundary (house style).
+ *
+ * The page speaks the user's words (2026-11-16): the resume in use is "Used
+ * for job matching" rather than "Active", and a new upload is being "read"
+ * rather than "parsed". The behaviour under those words is unchanged.
  */
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, test, vi, type Mock } from 'vitest';
 
@@ -25,6 +30,8 @@ vi.mock('@/lib/api', () => ({
     setActiveResume: vi.fn(),
     deleteResume: vi.fn(),
     uploadResumeForParser: vi.fn(),
+    getResumeStatus: vi.fn(),
+    downloadResumeFile: vi.fn(),
   },
 }));
 
@@ -64,24 +71,44 @@ function rows(): ResumeAssetRow[] {
   ];
 }
 
+/** The page links to the Tailor tool, so it needs a router around it. */
+function renderPage() {
+  return render(
+    <MemoryRouter>
+      <MyResumesPage />
+    </MemoryRouter>,
+  );
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   api.listBaseResumes.mockResolvedValue({ data: { versions: rows() } });
+  api.getResumeStatus.mockResolvedValue({
+    data: {
+      has_resume: true,
+      filename: 'alpha.pdf',
+      experience_years: 2,
+      job_titles: ['Data Analyst Intern', 'Junior Business Analyst'],
+      skills: ['SQL', 'Python', 'Tableau'],
+    },
+  });
 });
 
 describe('MyResumesPage (Resume Platform v3)', () => {
-  test('renders v3 rows: filenames, Active badge, parse-status chip', async () => {
-    render(<MyResumesPage />);
+  test('renders v3 rows: filenames, the in-use badge, and where each file stands', async () => {
+    renderPage();
 
     expect(await screen.findByText('alpha.pdf')).toBeInTheDocument();
     expect(screen.getByText('beta.docx')).toBeInTheDocument();
     expect(screen.getByText('gamma.pdf')).toBeInTheDocument();
 
-    expect(screen.getByText('Active')).toBeInTheDocument();
-    expect(screen.getByText('Parsing')).toBeInTheDocument();
+    // Exactly one resume is the one job matching runs on, and it says so.
+    expect(screen.getByText('Used for job matching')).toBeInTheDocument();
+    expect(screen.getByText('Reading your resume')).toBeInTheDocument();
+    expect(screen.getAllByText('Ready')).toHaveLength(2);
 
     // Unparsed rows can't be activated (the backend would answer 409).
-    const useButtons = screen.getAllByRole('button', { name: 'Set as active' });
+    const useButtons = screen.getAllByRole('button', { name: 'Use for job matching' });
     expect(useButtons).toHaveLength(2); // beta (enabled) + gamma (disabled)
     expect(useButtons[0]).toBeEnabled();
     expect(useButtons[1]).toBeDisabled();
@@ -89,10 +116,10 @@ describe('MyResumesPage (Resume Platform v3)', () => {
 
   test('active switch calls setActiveResume with the resume_id and reloads', async () => {
     api.setActiveResume.mockResolvedValue({ data: { resume_id: 'ra-parsed' } });
-    render(<MyResumesPage />);
+    renderPage();
 
     const [betaButton] = await screen.findAllByRole('button', {
-      name: 'Set as active',
+      name: 'Use for job matching',
     });
     await userEvent.click(betaButton);
 
@@ -109,19 +136,18 @@ describe('MyResumesPage (Resume Platform v3)', () => {
       status: 409,
       errorPayload: { error: 'resume_not_parsed' },
     });
-    render(<MyResumesPage />);
+    renderPage();
 
     const [betaButton] = await screen.findAllByRole('button', {
-      name: 'Set as active',
+      name: 'Use for job matching',
     });
     await userEvent.click(betaButton);
 
     await waitFor(() =>
       expect(toastMock.error).toHaveBeenCalledWith(
-        "Couldn't set active resume",
+        "Couldn't switch resumes",
         expect.objectContaining({
-          description:
-            'This resume has not finished parsing yet. Try again in a moment.',
+          description: 'We are still reading this resume. Try again in a moment.',
         }),
       ),
     );
@@ -135,7 +161,7 @@ describe('MyResumesPage (Resume Platform v3)', () => {
         'File storage is temporarily unavailable. Please try again in a few minutes.',
       status: 503,
     });
-    const { container } = render(<MyResumesPage />);
+    const { container } = renderPage();
     await screen.findByText('alpha.pdf');
 
     const input = container.querySelector('input[type="file"]');
@@ -146,11 +172,49 @@ describe('MyResumesPage (Resume Platform v3)', () => {
 
     await waitFor(() =>
       expect(toastMock.error).toHaveBeenCalledWith(
-        'Upload failed',
+        "Couldn't upload that file",
         expect.objectContaining({
           description: expect.stringMatching(/temporarily unavailable/i),
         }),
       ),
     );
+  });
+  test('shows what was read from the resume job matching uses', async () => {
+    renderPage();
+
+    const panel = await screen.findByRole('complementary', {
+      name: /what we read from your resume/i,
+    });
+    expect(within(panel).getByText(/From alpha\.pdf/)).toBeInTheDocument();
+    expect(within(panel).getByText('2 years')).toBeInTheDocument();
+    expect(within(panel).getByText('Data Analyst Intern, Junior Business Analyst')).toBeInTheDocument();
+    for (const skill of ['SQL', 'Python', 'Tableau']) {
+      expect(within(panel).getByText(skill)).toBeInTheDocument();
+    }
+  });
+
+  test('a failed read of that summary never breaks the list', async () => {
+    api.getResumeStatus.mockRejectedValue(new Error('boom'));
+    renderPage();
+
+    expect(await screen.findByText('alpha.pdf')).toBeInTheDocument();
+    expect(screen.queryByRole('complementary', { name: /what we read/i })).toBeNull();
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  test('View opens the stored file for that row', async () => {
+    api.downloadResumeFile.mockResolvedValue(new Blob(['%PDF-'], { type: 'application/pdf' }));
+    const open = vi.spyOn(window, 'open').mockImplementation(() => null);
+    // jsdom has no object URLs.
+    const createObjectURL = vi.fn(() => 'blob:fixture');
+    Object.assign(URL, { createObjectURL, revokeObjectURL: vi.fn() });
+    renderPage();
+
+    const [viewAlpha] = await screen.findAllByRole('button', { name: 'View' });
+    await userEvent.click(viewAlpha);
+
+    await waitFor(() => expect(api.downloadResumeFile).toHaveBeenCalledWith('ra-active'));
+    expect(open).toHaveBeenCalledWith('blob:fixture', '_blank', 'noopener,noreferrer');
+    open.mockRestore();
   });
 });

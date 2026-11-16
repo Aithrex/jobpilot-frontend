@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { userFacingError } from '@/lib/errorCopy';
 import { DURATION, EASE_DECELERATE } from '@/lib/motion';
 import { apiService, VERSION_LIMIT_MESSAGE } from '@/lib/api';
 import { isTrimmedOutcome, resumeTrimDescription } from '@/lib/resumeLayoutSpec';
@@ -47,7 +48,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PanelError } from '@/app-shell/pages/today/primitives';
-import { SmartFiltersInline } from '@/components/job-search/SmartFiltersInline';
 import OnboardingHero from '@/components/resume/OnboardingHero';
 import ApplyOutcomeDialog, { type ApplyOutcome } from '@/components/resume/ApplyOutcomeDialog';
 import { buildCoverLetterFilename } from '@/lib/filename';
@@ -88,6 +88,8 @@ import { resolveAnchor } from '@/lib/reviewAnchors';
 import type { EvidenceTarget } from './tailor/MatchGapsPanel';
 import { bestMatch } from '@/lib/textDiff';
 import { ProgressStepper } from './tailor/ProgressStepper';
+import { StartPreview } from './tailor/StartPreview';
+import { RecentTailored } from './tailor/RecentTailored';
 import { NudgeBar } from './tailor/NudgeBar';
 import { ResumePreviewFrame } from './tailor/ResumePreviewFrame';
 import { AiDisclosure } from '@/components/ai/AiDisclosure';
@@ -229,15 +231,15 @@ export default function TailorPage() {
     if (job.jd_fetch_failed) {
       toast.warning(
         job.url
-          ? `Couldn't auto-fetch this JD. Opening the posting in a new tab and pasting it works, OR click "Retry JD fetch" beside the textarea.`
-          : "Couldn't auto-fetch this JD. Please copy-paste it from the posting into the box below.",
+          ? "We couldn't read this job posting automatically. Open it and paste the text here, or choose Read the posting again."
+          : "We couldn't read this job posting automatically. Please copy it from the posting and paste it into the box.",
         { duration: 8000 },
       );
       if (job.url) {
         const cached = readCachedJdText(job.url);
         if (cached) {
           setJdText(cached);
-          toast.success('JD recovered from session cache.');
+          toast.success('We recovered the job description.');
           return;
         }
         apiService
@@ -246,7 +248,7 @@ export default function TailorPage() {
             if (r.data?.ok && r.data.jd_text) {
               setJdText(r.data.jd_text);
               cacheJdText(job.url!, r.data.jd_text);
-              toast.success('JD auto-fetched on retry. Review and tailor.');
+              toast.success('Job description loaded. Review it, then tailor.');
             }
           })
           .catch(() => {
@@ -373,10 +375,10 @@ export default function TailorPage() {
         ats_scores: atsScores,
       });
       if (resp.error) {
-        toast.error("Couldn't save the ATS score to your history");
+        toast.error("Couldn't save the match score to your history");
       }
     } catch {
-      toast.error("Couldn't save the ATS score to your history");
+      toast.error("Couldn't save the match score to your history");
     }
   }, []);
 
@@ -612,7 +614,7 @@ export default function TailorPage() {
       );
       setDownloading(null);
       if (r.error) {
-        toast.error('Download failed', { description: r.error });
+        toast.error("Couldn't download that file", { description: r.error });
         return;
       }
       if (r.data) {
@@ -725,7 +727,7 @@ export default function TailorPage() {
         return;
       }
       setRegenError(resp.error);
-      toast.error('Regeneration failed', { description: resp.error });
+      toast.error("Couldn't update the resume", { description: resp.error });
       return;
     }
     if (resp.data?.tailored_resume) {
@@ -800,7 +802,7 @@ export default function TailorPage() {
           });
           return;
         }
-        toast.error('Cover letter generation failed', { description: resp.error });
+        toast.error("Couldn't write the cover letter", { description: resp.error });
         return;
       }
       if (resp.data?.cover_letter) {
@@ -828,7 +830,7 @@ export default function TailorPage() {
     );
     setCoverLetterDownloading(false);
     if (r.error) {
-      toast.error('Download failed', { description: r.error });
+      toast.error("Couldn't download that file", { description: r.error });
       return;
     }
     if (r.data) {
@@ -877,7 +879,7 @@ export default function TailorPage() {
       setReformatting(false);
       if (resp.error || !resp.data?.tailored_resume) {
         setFormatPrefs(previous);
-        toast.error(resp.error || 'Could not apply that format. Try again.');
+        toast.error(resp.error || "Couldn't apply that format. Please try again.");
         return;
       }
       const lines = (r: TailoredFullResume) =>
@@ -1101,23 +1103,25 @@ export default function TailorPage() {
   const handleRetryFetch = useCallback(async () => {
     if (!pendingJobUrl || retryingJdFetch) return;
     setRetryingJdFetch(true);
-    const fetching = toast.loading('Fetching JD...', { duration: 50000 });
+    const fetching = toast.loading('Reading the job posting...', { duration: 50000 });
     try {
       const r = await apiService.fetchJobDescription(pendingJobUrl);
       toast.dismiss(fetching);
       if (r.data?.ok && r.data.jd_text) {
         setJdText(r.data.jd_text);
         cacheJdText(pendingJobUrl, r.data.jd_text);
-        toast.success('JD fetched. Review and tailor.');
+        toast.success('Job description loaded. Review it, then tailor.');
       } else {
         toast.warning(
-          r.data?.error || "Still couldn't fetch. Open the posting and paste manually.",
+          userFacingError(r.data?.error) === 'Something went wrong. Please try again.'
+            ? "We still couldn't read that posting. Open it and paste the text here."
+            : userFacingError(r.data?.error),
           { duration: 8000 },
         );
       }
     } catch {
       toast.dismiss(fetching);
-      toast.error('Network issue. Try again or paste manually.');
+      toast.error('Connection problem. Try again, or paste the job description yourself.');
     } finally {
       setRetryingJdFetch(false);
     }
@@ -1154,25 +1158,27 @@ export default function TailorPage() {
     ([, item]) => item.verdict === 'UNSUPPORTED',
   );
 
+  const formatSummary = [
+    formatPrefs.page_length === 'two' ? '2 pages' : '1 page',
+    formatPrefs.density,
+    formatPrefs.accent === 'navy' ? 'navy headings' : 'black headings',
+  ].join(', ');
+  // The file the start screen shows: the one pinned for this job, else the
+  // one used for job matching, else the first that is ready.
+  const startResume =
+    parsedResumes.find((r) => r.resume_id === baseChoice) ??
+    parsedResumes.find((r) => r.is_active) ??
+    parsedResumes[0] ??
+    null;
+  const idle = !result && !tailoring;
+
   return (
     <div className="space-y-5">
-      {/* StreakWidget moved to the Resume overview panel (`/app/resume`): a
-          per-account stat belongs on the section landing, not buried inside
-          one tool. */}
-      {/* APIFY DISABLED (temporary): <SmartFiltersInline /> feeds the hidden Apify pipeline. Restore to re-enable. */}
-
       <ProgressStepper currentStep={currentStep} />
 
-      {baseSelection && result && (
+      {/* Which file was picked matters only when there was a choice. */}
+      {baseSelection && result && parsedResumes.length > 1 && (
         <BaseResumeUsedBanner selection={baseSelection} />
-      )}
-      {!tailoring && (parsedResumes.length > 1 || !result) && (
-        <BaseResumePicker
-          resumes={parsedResumes}
-          value={baseChoice}
-          onChange={setBaseChoice}
-          disabled={tailoring}
-        />
       )}
 
       {tailorError && (
@@ -1184,67 +1190,11 @@ export default function TailorPage() {
         </div>
       )}
 
-      <NudgeBar
-        result={result}
-        versionsCount={versions.length}
-        coverLetter={coverLetter}
-        coverLetterLoading={coverLetterLoading}
-        dismissedNudges={dismissedNudges}
-        onDismiss={(id) => setDismissedNudges((s) => new Set(s).add(id))}
-        onDownload={() => handleDownload('pdf')}
-        onReviewAts={() => setInspectorTab('ats')}
-        onGenerateCoverLetter={() => {
-          setInspectorTab('cover');
-          setTimeout(handleCoverLetter, 300);
-        }}
-      />
-
-      {/* Split view */}
+      {/* Two columns that read left to right as cause and effect: what goes
+          in (the job posting, then the tools for the result) and what comes
+          out (the resume). On a phone the working column comes first. */}
       <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
-        {/* On a phone the empty preview used to sit above the job description,
-            so the first thing to do was a scroll. Until there is a result it
-            follows the inspector there; on wide screens nothing moves. */}
-        <section
-          className={`min-w-0 space-y-4 lg:sticky lg:top-24 lg:self-start${result ? '' : ' order-2 lg:order-none'}`}
-          aria-label="Resume preview"
-        >
-          {result && !tailoring && (
-            <details className="group rounded-container border border-border bg-card shadow-soft">
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-semibold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                <span>Format</span>
-                <span className="truncate text-xs font-normal text-muted-foreground">
-                  {formatPrefs.page_length === 'two' ? '2 pages' : '1 page'},{' '}
-                  {formatPrefs.density}, {formatPrefs.accent}
-                </span>
-              </summary>
-              <div className="border-t border-border px-4 py-4">
-                <ResumeFormatControls
-                  value={formatPrefs}
-                  onChange={handleFormatChange}
-                  busy={reformatting}
-                  note="Changes apply to this resume and your next tailor. Nothing is added; lines are only kept or left out."
-                />
-              </div>
-            </details>
-          )}
-          {result && !tailoring && <AiDisclosure kind="draft" className="px-1" />}
-          <ResumePreviewFrame
-            result={result}
-            baseResume={baseResume}
-            previousResume={previousResume}
-            regenView={regenView}
-            onRegenViewChange={setRegenView}
-            versions={versions}
-            onRestoreVersion={handleRestoreVersion}
-            onRevert={handleRevert}
-            phase={phase}
-            pct={tailorPct}
-            elapsedSeconds={tailorElapsed}
-            onCancel={handleCancel}
-          />
-        </section>
-
-        <section className={`min-w-0${result ? '' : ' order-1 lg:order-none'}`} aria-label="Inspector">
+        <section className="min-w-0 space-y-4" aria-label={result ? 'Result tools' : 'Job posting'}>
           <InspectorTabs
             active={inspectorTab}
             onChange={setInspectorTab}
@@ -1280,6 +1230,19 @@ export default function TailorPage() {
                     disabled={tailoring}
                     busy={reformatting}
                   />
+                }
+                formatSummary={formatSummary}
+                // With one resume there is nothing to pick, and the preview
+                // beside the form already names the file.
+                resumePicker={
+                  parsedResumes.length > 1 ? (
+                    <BaseResumePicker
+                      resumes={parsedResumes}
+                      value={baseChoice}
+                      onChange={setBaseChoice}
+                      disabled={tailoring}
+                    />
+                  ) : undefined
                 }
               />
             }
@@ -1353,7 +1316,7 @@ export default function TailorPage() {
                     await navigator.clipboard.writeText(coverLetter);
                     toast.success('Copied to clipboard');
                   } catch {
-                    toast.error('Could not copy. Select the text and copy it manually.');
+                    toast.error("Couldn't copy. Select the text and copy it manually.");
                   }
                 }}
                 jobTitle={result?.jd_analysis.job_title || ''}
@@ -1361,8 +1324,66 @@ export default function TailorPage() {
               />
             }
           />
+          {/* A suggestion for what to do next sits under the tools, not above
+              the result: the first thing to see after tailoring is the resume. */}
+          <NudgeBar
+            result={result}
+            versionsCount={versions.length}
+            coverLetter={coverLetter}
+            coverLetterLoading={coverLetterLoading}
+            dismissedNudges={dismissedNudges}
+            onDismiss={(id) => setDismissedNudges((s) => new Set(s).add(id))}
+            onDownload={() => handleDownload('pdf')}
+            onReviewAts={() => setInspectorTab('ats')}
+            onGenerateCoverLetter={() => {
+              setInspectorTab('cover');
+              setTimeout(handleCoverLetter, 300);
+            }}
+          />
+        </section>
+
+        <section className="min-w-0 space-y-4 lg:sticky lg:top-24 lg:self-start" aria-label="Resume preview">
+          {result && !tailoring && (
+            <details className="group rounded-container border border-border bg-card shadow-soft">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-semibold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                <span>Format</span>
+                <span className="truncate text-xs font-normal text-muted-foreground">
+                  {formatSummary}
+                </span>
+              </summary>
+              <div className="border-t border-border px-4 py-4">
+                <ResumeFormatControls
+                  value={formatPrefs}
+                  onChange={handleFormatChange}
+                  busy={reformatting}
+                  note="Changes apply to this resume and your next tailor. Nothing is added; lines are only kept or left out."
+                />
+              </div>
+            </details>
+          )}
+          {result && !tailoring && <AiDisclosure kind="draft" className="px-1" />}
+          {idle ? (
+            <StartPreview resume={startResume} />
+          ) : (
+            <ResumePreviewFrame
+              result={result}
+              baseResume={baseResume}
+              previousResume={previousResume}
+              regenView={regenView}
+              onRegenViewChange={setRegenView}
+              versions={versions}
+              onRestoreVersion={handleRestoreVersion}
+              onRevert={handleRevert}
+              phase={phase}
+              pct={tailorPct}
+              elapsedSeconds={tailorElapsed}
+              onCancel={handleCancel}
+            />
+          )}
         </section>
       </div>
+
+      {idle && <RecentTailored />}
 
       {/* Sticky bottom toolbar. Below lg it sits ABOVE the fixed MobileNav
           (same bottom-0 z-40 otherwise - the tab bar painted over Download);
@@ -1379,7 +1400,7 @@ export default function TailorPage() {
               ? { duration: 0 }
               : { duration: DURATION.slow, ease: EASE_DECELERATE }
           }
-          className="fixed bottom-[calc(4rem+env(safe-area-inset-bottom))] left-0 right-0 z-40 border-t border-border bg-card/90 shadow-float backdrop-blur-xl lg:bottom-0"
+          className="job-search-pop fixed bottom-[calc(4rem+env(safe-area-inset-bottom))] left-0 right-0 z-40 border-t border-border lg:bottom-0"
         >
           <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
             <div className="flex min-w-0 flex-1 items-center gap-3">
@@ -1407,53 +1428,14 @@ export default function TailorPage() {
               </div>
             </div>
 
-            {typeof result.ats_scores?.overall === 'number' && (
-              <div
-                className={cn(
-                  'hidden shrink-0 items-center gap-2 rounded-control border px-4 py-2 lg:flex',
-                  result.ats_scores.overall >= 80
-                    ? 'border-success/25 bg-success/10'
-                    : result.ats_scores.overall >= 60
-                      ? 'border-warning/25 bg-warning/10'
-                      : 'border-destructive/25 bg-destructive/10',
-                )}
-              >
-                <span
-                  className={cn(
-                    'h-2 w-2 rounded-full',
-                    result.ats_scores.overall >= 80
-                      ? 'bg-success'
-                      : result.ats_scores.overall >= 60
-                        ? 'bg-warning'
-                        : 'bg-destructive',
-                  )}
-                />
-                <span
-                  className={cn(
-                    'text-xs font-semibold tabular-nums',
-                    result.ats_scores.overall >= 80
-                      ? 'text-success'
-                      : result.ats_scores.overall >= 60
-                        ? 'text-warning'
-                        : 'text-destructive',
-                  )}
-                >
-                  {result.ats_scores.overall} ATS
-                  {typeof scoreDelta === 'number' && scoreDelta !== 0
-                    ? ` (${scoreDelta > 0 ? '+' : ''}${scoreDelta})`
-                    : ''}
-                </span>
-              </div>
-            )}
-
             <div className="flex shrink-0 items-center gap-1.5">
-              <Button variant="ghost" size="sm" onClick={handleStartNew} title="Start a new tailor" aria-label="Start a new tailor" className="hit-target">
+              <Button variant="ghost" size="sm" onClick={handleStartNew} title="Start over with a different job posting" aria-label="Tailor for another job" className="hit-target">
                 <Sparkles className="h-4 w-4" aria-hidden="true" />
-                <span className="hidden md:inline">New tailor</span>
+                <span className="hidden md:inline">Tailor for another job</span>
               </Button>
-              <Button variant="ghost" size="sm" onClick={() => setEditing(true)} title="Edit the tailored resume" aria-label="Edit the tailored resume" className="hit-target">
+              <Button variant="ghost" size="sm" onClick={() => setEditing(true)} title="Edit the text of this resume yourself" aria-label="Edit the tailored resume" className="hit-target">
                 <PencilLine className="h-4 w-4" aria-hidden="true" />
-                <span className="hidden md:inline">Edit</span>
+                <span className="hidden md:inline">Edit text</span>
               </Button>
               <div className="mx-0.5 h-6 w-px bg-border" aria-hidden="true" />
               <DropdownMenu open={downloadMenuOpen} onOpenChange={setDownloadMenuOpen}>

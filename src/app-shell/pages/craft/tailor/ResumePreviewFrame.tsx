@@ -36,7 +36,7 @@ const SEGMENT_STYLES: Record<PreviewMode, { label: string; active: string }> = {
     active: 'bg-primary/20 text-primary ring-1 ring-primary/30 shadow-soft',
   },
   base: {
-    label: 'Base',
+    label: 'Original',
     active: 'bg-card text-foreground ring-1 ring-border shadow-soft',
   },
   previous: {
@@ -44,7 +44,7 @@ const SEGMENT_STYLES: Record<PreviewMode, { label: string; active: string }> = {
     active: 'bg-card text-foreground ring-1 ring-border shadow-soft',
   },
   diff: {
-    label: 'Diff',
+    label: 'What changed',
     active: 'bg-warning/15 text-warning ring-1 ring-warning/30 shadow-soft',
   },
 };
@@ -228,7 +228,7 @@ export function ResumePreviewFrame({
             <PanelEmpty
               icon={FileText}
               title="Ready to tailor"
-              body="Paste a job description in the Job description panel, then choose Tailor my resume."
+              body="Paste the job posting, then choose Tailor my resume."
             />
           </div>
         )}

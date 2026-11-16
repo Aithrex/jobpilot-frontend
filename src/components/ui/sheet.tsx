@@ -29,9 +29,16 @@ const SheetOverlay = React.forwardRef<
 SheetOverlay.displayName = SheetPrimitive.Overlay.displayName;
 
 const sheetVariants = cva(
-  'fixed z-50 gap-4 liquid-glass p-6 shadow-lg transition ease-in-out data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:duration-200 data-[state=open]:duration-300',
+  'fixed z-50 gap-4 p-6 shadow-lg transition ease-in-out data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:duration-200 data-[state=open]:duration-300',
   {
     variants: {
+      // Frosted glass by default. `solid` is for a sheet that holds a long
+      // form: several paragraphs of explanation must not show the page
+      // through them.
+      surface: {
+        glass: 'liquid-glass',
+        solid: 'job-search-pop',
+      },
       side: {
         top: 'inset-x-0 top-0 border-b data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top',
         bottom: 'inset-x-0 bottom-0 border-t data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom',
@@ -42,19 +49,28 @@ const sheetVariants = cva(
     },
     defaultVariants: {
       side: 'right',
+      surface: 'glass',
     },
   }
 );
 
-interface SheetContentProps extends React.ComponentPropsWithoutRef<typeof SheetPrimitive.Content>, VariantProps<typeof sheetVariants> {
+interface SheetContentProps
+  extends React.ComponentPropsWithoutRef<typeof SheetPrimitive.Content>,
+    Omit<VariantProps<typeof sheetVariants>, 'surface'> {
   overlayClassName?: string;
+  /** An opaque surface instead of frosted glass. */
+  solid?: boolean;
 }
 
 const SheetContent = React.forwardRef<React.ElementRef<typeof SheetPrimitive.Content>, SheetContentProps>(
-  ({ side = 'right', className, overlayClassName, children, ...props }, ref) => (
+  ({ side = 'right', className, overlayClassName, solid = false, children, ...props }, ref) => (
     <SheetPortal>
       <SheetOverlay className={overlayClassName} />
-      <SheetPrimitive.Content ref={ref} className={cn(sheetVariants({ side }), className)} {...props}>
+      <SheetPrimitive.Content
+        ref={ref}
+        className={cn(sheetVariants({ side, surface: solid ? 'solid' : 'glass' }), className)}
+        {...props}
+      >
         {children}
         <SheetPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary">
           <X className="h-4 w-4" />

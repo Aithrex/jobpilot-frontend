@@ -1,22 +1,7 @@
-import { useMemo, type ReactNode } from 'react';
-import {
-  AlertCircle,
-  Check,
-  Loader2,
-  RotateCcw,
-  Search,
-  Wand2,
-} from 'lucide-react';
+import { useEffect, useMemo, useRef, type ReactNode } from 'react';
+import { ArrowRight, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import {
   Sheet,
   SheetContent,
@@ -25,136 +10,106 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
-import { Switch } from '@/components/ui/switch';
-import { ChipsInput } from '@/components/job-search/ChipsInput';
 import { useCombinedJobsCtx } from '@/components/job-search/CombinedJobsProvider';
-import { JOB_TITLES_CAP } from '@/hooks/useJobTitles';
-import { PillSwitch } from '@/components/ui/pill-switch';
-import { cn } from '@/lib/utils';
+import { CompanyFilterList } from '@/components/job-search/CompanyFilter';
+import { whereSummary } from '@/components/job-search/JobSearchBar';
 import { ExperienceLevelList } from '@/components/job-search/ExperienceLevelPicker';
-
-const ANY_STATE = '__any__';
-
-const US_STATES = [
-  'Remote',
-  'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut',
-  'Delaware', 'District of Columbia', 'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois',
-  'Indiana', 'Iowa', 'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland', 'Massachusetts',
-  'Michigan', 'Minnesota', 'Mississippi', 'Missouri', 'Montana', 'Nebraska', 'Nevada',
-  'New Hampshire', 'New Jersey', 'New Mexico', 'New York', 'North Carolina', 'North Dakota',
-  'Ohio', 'Oklahoma', 'Oregon', 'Pennsylvania', 'Rhode Island', 'South Carolina',
-  'South Dakota', 'Tennessee', 'Texas', 'Utah', 'Vermont', 'Virginia', 'Washington',
-  'West Virginia', 'Wisconsin', 'Wyoming',
-] as const;
-
-const MIN_SCORE_OPTIONS = [0, 40, 60, 80] as const;
-
-const SOURCE_KEYS = ['workday', 'careers', 'mncs'] as const;
-
-const SOURCE_SHORT: Record<(typeof SOURCE_KEYS)[number], string> = {
-  workday: 'Workday',
-  careers: 'Careers',
-  mncs: 'MNCs',
-};
+import {
+  EditorHeading,
+  MatchEditor,
+  PostedEditor,
+  RolesEditor,
+  SearchAction,
+  SwitchRow,
+  VisaEditor,
+  WhereEditor,
+} from '@/components/job-search/jobSearchEditors';
 
 function formatAgo(ms: number): string {
   const s = Math.max(0, Math.round((Date.now() - ms) / 1000));
   if (s < 45) return 'just now';
   const m = Math.round(s / 60);
-  if (m < 60) return `${m}m ago`;
+  if (m < 60) return `${m} min ago`;
   return `${Math.round(m / 60)}h ago`;
 }
 
-function formatCountdown(sec: number): string {
-  const m = Math.floor(sec / 60);
-  return `${m}:${String(sec % 60).padStart(2, '0')}`;
-}
-
-function FieldLabel({ htmlFor, children }: { htmlFor?: string; children: ReactNode }) {
-  return (
-    <label htmlFor={htmlFor} className="overline mb-2 block">
-      {children}
-    </label>
-  );
-}
-
-function ToggleRow({
-  id,
-  label,
-  checked,
-  onCheckedChange,
-}: {
-  id: string;
-  label: string;
-  checked: boolean;
-  onCheckedChange: (v: boolean) => void;
-}) {
-  return (
-    <label
-      htmlFor={id}
-      className="flex min-h-10 cursor-pointer items-center justify-between gap-2 rounded-lg border border-border/70 bg-background/55 px-3"
-    >
-      <span className="text-sm font-medium text-foreground">{label}</span>
-      <Switch id={id} checked={checked} onCheckedChange={onCheckedChange} />
-    </label>
-  );
+function Section({ children }: { children: ReactNode }) {
+  return <section className="border-b border-border/50 px-5 py-5 last:border-b-0 sm:px-6">{children}</section>;
 }
 
 /**
- * Right-side Job feed controls. Titles, location, listing filters, then Search.
+ * Every search and filter control in one sheet.
+ *
+ * On a phone this IS the filter surface: the search bar collapses to one
+ * summary button that opens it. On a wide screen the same editors open one at
+ * a time from the bar, and this sheet is what "Change search and filters"
+ * opens from an empty board.
+ *
+ * Order follows how a search is built: what and where first (they change what
+ * is searched and need Search), then the filters that only narrow the list
+ * and apply as you tap.
  */
 export function JobFeedSheet() {
   const {
     jobs,
     loading,
-    states,
     progress,
-    titles,
-    setTitles,
-    resumeTitles,
-    smartSuggestTitles,
-    suggestingTitles,
-    canSearch,
-    lastScanTitles,
-    titlesPending,
     lastSyncedAt,
-    secondsUntilNext,
-    sync,
-    usOnly,
-    setUsOnly,
-    usState,
-    setUsState,
-    city,
-    setCity,
-    location,
-    setLocation,
-    remoteOnly,
-    setRemoteOnly,
     customizeOpen,
     setCustomizeOpen,
     resetScope,
-    minScore,
-    setMinScore,
-    sponsorFilter,
+    resetSeniorityLevels,
     setSponsorFilter,
+    setMinScore,
+    setCompanies,
     showApplied,
     setShowApplied,
+    collapseReposts,
+    setCollapseReposts,
+    repostsFolded,
+    visibleJobs,
+    titlesPending,
+    usOnly,
+    usState,
+    city,
+    location,
+    remoteOnly,
   } = useCombinedJobsCtx();
+
+  // Titles and place change WHAT is searched; every other control only
+  // narrows the list and has already applied. So the sheet's one button says
+  // "Search" only when there is a new search to run, and otherwise just shows
+  // the list.
+  const where = whereSummary({ usOnly, usState, city, location, remoteOnly });
+  const whereAtOpen = useRef(where);
+  useEffect(() => {
+    if (customizeOpen) whereAtOpen.current = where;
+    // Only when the sheet opens: later edits are what we compare against.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customizeOpen]);
+  const searchChanged = titlesPending || where !== whereAtOpen.current;
 
   const roleCount = jobs.length;
   const statusLine = useMemo(() => {
     if (loading) {
       return progress.total > 0
-        ? `${progress.done}/${progress.total} companies · ${roleCount} roles`
-        : 'Scanning...';
+        ? `Checking ${progress.done} of ${progress.total} employer sites. ${roleCount} roles so far.`
+        : 'Searching employer sites...';
     }
-    if (lastSyncedAt) {
-      const next =
-        secondsUntilNext != null ? ` · next ${formatCountdown(secondsUntilNext)}` : '';
-      return `${formatAgo(lastSyncedAt)} · ${roleCount} roles${next}`;
-    }
-    return `${roleCount} roles`;
-  }, [loading, progress.done, progress.total, roleCount, lastSyncedAt, secondsUntilNext]);
+    // One count, said one way: what these filters show, out of what was found.
+    const showing = `Showing ${visibleJobs.length} of ${roleCount} ${roleCount === 1 ? 'role' : 'roles'}`;
+    return lastSyncedAt ? `${showing}. Updated ${formatAgo(lastSyncedAt)}.` : `${showing}.`;
+  }, [loading, progress.done, progress.total, roleCount, lastSyncedAt, visibleJobs.length]);
+
+  const resetAll = () => {
+    resetScope();
+    resetSeniorityLevels();
+    setSponsorFilter('friendly');
+    setMinScore(0);
+    setCompanies(new Set());
+    setShowApplied(false);
+    setCollapseReposts(true);
+  };
 
   return (
     <Sheet open={customizeOpen} onOpenChange={(open) => setCustomizeOpen(open)}>
@@ -162,240 +117,101 @@ export function JobFeedSheet() {
         side="right"
         overlayClassName="bg-black/40"
         id="job-feed-sheet"
-        className="liquid-glass flex w-full flex-col gap-0 overflow-hidden rounded-l-2xl border-l p-0 sm:max-w-md"
+        solid
+        className="flex w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-md sm:rounded-l-2xl"
       >
-        <SheetHeader className="space-y-3 border-b border-border/50 px-6 pb-4 pt-5 text-left">
+        <SheetHeader className="space-y-2 border-b border-border/50 px-5 pb-4 pt-5 text-left sm:px-6">
           <div className="pr-8">
-            <p className="overline">Jobs</p>
-            <SheetTitle className="mt-1 font-display text-xl font-semibold tracking-tight">
-              Job feed
+            <SheetTitle className="font-display text-xl font-semibold tracking-tight">
+              Your job search
             </SheetTitle>
-            <SheetDescription className="mt-1 font-mono text-caption-sm tabular-nums text-muted-foreground" aria-live="polite">
+            <SheetDescription className="mt-1 text-caption text-muted-foreground" aria-live="polite">
               {statusLine}
             </SheetDescription>
           </div>
-
-          <ul className="grid grid-cols-3 gap-1.5" aria-label="Source status">
-            {SOURCE_KEYS.map((k) => {
-              const st = states[k];
-              const active = st.loading;
-              const done = !st.loading && (st.withResults > 0 || st.tenantsTotal > 0);
-              return (
-                <li
-                  key={k}
-                  className={cn(
-                    'flex items-center gap-1.5 rounded-md border border-border/60 bg-background/50 px-2 py-1.5 text-caption-sm font-semibold',
-                    st.error
-                      ? 'text-destructive'
-                      : active
-                        ? 'text-primary'
-                        : done
-                          ? 'text-foreground'
-                          : 'text-muted-foreground',
-                  )}
-                >
-                  {active ? (
-                    <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-current" />
-                  ) : st.error ? (
-                    <AlertCircle className="h-2.5 w-2.5 shrink-0" aria-hidden />
-                  ) : done ? (
-                    <Check className="h-2.5 w-2.5 shrink-0" aria-hidden />
-                  ) : (
-                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-muted-foreground/40" />
-                  )}
-                  <span className="truncate">
-                    {SOURCE_SHORT[k]}
-                    {active && st.tenantsTotal > 0 ? ` ${st.tenantsDone}/${st.tenantsTotal}` : ''}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-
           {loading && (
-            <Progress
-              value={progress.total ? (progress.done / progress.total) * 100 : 8}
-              className="h-1"
-            />
+            <Progress value={progress.total ? (progress.done / progress.total) * 100 : 8} className="h-1" />
           )}
         </SheetHeader>
 
-        <div className="flex-1 space-y-7 overflow-y-auto px-6 py-5">
-          <section>
-            <FieldLabel>Titles</FieldLabel>
-            <ChipsInput
-              values={titles}
-              onChange={setTitles}
-              maxItems={JOB_TITLES_CAP}
-              placeholder="Backend Engineer"
-              defaultValues={
-                resumeTitles.length ? resumeTitles.slice(0, JOB_TITLES_CAP) : undefined
-              }
-              accentClass="border-border bg-muted/60 text-foreground"
-              emptyState="Add a title"
-              helperText="These titles shape your For you matches across employer sites."
-            />
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => void smartSuggestTitles()}
-              disabled={suggestingTitles}
-              className="hit-target mt-2 h-8 px-2 text-caption-sm font-medium text-muted-foreground hover:text-foreground"
-            >
-              {suggestingTitles ? (
-                <Loader2 className="mr-1.5 h-3 w-3 animate-spin" aria-hidden />
-              ) : (
-                <Wand2 className="mr-1.5 h-3 w-3" aria-hidden />
-              )}
-              {suggestingTitles ? 'Suggesting...' : 'Suggest from resume'}
-            </Button>
-            {titlesPending && lastScanTitles && (
-              <p className="mt-2 text-caption-sm font-medium text-warning">
-                Titles changed. Press Search to apply them.
-              </p>
-            )}
-            {!canSearch && (
-              <p className="mt-2 flex items-center gap-1.5 text-caption-sm font-medium text-warning">
-                <AlertCircle className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                Add a title
-              </p>
-            )}
-          </section>
-
-          <section>
-            <FieldLabel>Location</FieldLabel>
-            <div className="grid grid-cols-2 gap-2">
-              <ToggleRow
-                id="combined-us-only"
-                label="United States"
-                checked={usOnly}
-                onCheckedChange={setUsOnly}
-              />
-              <ToggleRow
-                id="combined-remote-only"
-                label="Remote"
-                checked={remoteOnly}
-                onCheckedChange={setRemoteOnly}
-              />
-            </div>
-            {usOnly ? (
-              <div className="mt-2 grid grid-cols-2 gap-2">
-                <Select
-                  value={usState || ANY_STATE}
-                  onValueChange={(v) => setUsState(v === ANY_STATE ? '' : v)}
-                >
-                  <SelectTrigger id="combined-state" className="h-10" aria-label="State">
-                    <SelectValue placeholder="State" />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-72">
-                    <SelectItem value={ANY_STATE}>All states</SelectItem>
-                    {US_STATES.map((s) => (
-                      <SelectItem key={s} value={s}>
-                        {s}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Input
-                  id="combined-city"
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                  placeholder="City"
-                  aria-label="City"
-                  className="h-10"
-                />
-              </div>
-            ) : (
-              <Input
-                id="combined-location"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                placeholder="City, country, or Remote"
-                aria-label="Location"
-                className="mt-2 h-10"
-              />
-            )}
-          </section>
-
-          <section>
-            <FieldLabel>Filters</FieldLabel>
+        <div className="flex-1 overflow-y-auto overscroll-contain">
+          {/* Filters first: they are what people come here to change, and
+              they apply as they are tapped. Visa leads because it is the one
+              that is on by default. The search itself (titles and place) sits
+              under them and needs Search. */}
+          <Section>
+            <VisaEditor />
+          </Section>
+          <Section>
+            <PostedEditor />
+          </Section>
+          <Section>
             <div className="space-y-3">
-              <div>
-                <p className="mb-1.5 text-caption-sm font-medium text-muted-foreground">Experience level</p>
-                <ExperienceLevelList />
-              </div>
-
-              <div>
-                <p className="mb-1.5 text-caption-sm font-medium text-muted-foreground">Match</p>
-                <PillSwitch
-                  fill
-                  aria-label="Minimum match score"
-                  layoutId="feed-score-pill"
-                  value={String(minScore)}
-                  onValueChange={(v) => setMinScore(Number(v))}
-                  options={MIN_SCORE_OPTIONS.map((n) => ({
-                    value: String(n),
-                    label: n === 0 ? 'Any' : `${n}+`,
-                  }))}
-                />
-              </div>
-
-              <div>
-                <p className="mb-1.5 text-caption-sm font-medium text-muted-foreground">Sponsorship</p>
-                <PillSwitch
-                  fill
-                  aria-label="Sponsorship filter"
-                  layoutId="feed-sponsor-pill"
-                  value={sponsorFilter}
-                  onValueChange={setSponsorFilter}
-                  options={[
-                    { value: 'all', label: 'All' },
-                    { value: 'friendly', label: 'Friendly' },
-                    { value: 'proven', label: 'Proven' },
-                  ]}
-                />
-              </div>
-
-              <ToggleRow
-                id="combined-show-applied"
-                label="Show applied"
+              <EditorHeading
+                title="Which experience levels?"
+                hint="Opens on the level your resume shows. Change it any time."
+              />
+              <ExperienceLevelList />
+            </div>
+          </Section>
+          <Section>
+            <MatchEditor />
+          </Section>
+          <Section>
+            <RolesEditor id="sheet-roles" />
+          </Section>
+          <Section>
+            <WhereEditor idPrefix="sheet-where" />
+          </Section>
+          <Section>
+            <div className="space-y-2">
+              <EditorHeading title="Also show" />
+              <SwitchRow
+                id="sheet-show-applied"
+                label="Jobs I already applied to"
+                hint="Listed at the bottom, after the open ones."
                 checked={showApplied}
                 onCheckedChange={setShowApplied}
               />
+              {(repostsFolded > 0 || !collapseReposts) && (
+                <SwitchRow
+                  id="sheet-show-reposts"
+                  label={`Repeat postings${repostsFolded > 0 ? ` (${repostsFolded})` : ''}`}
+                  hint="The same role posted again by the same company in the same city."
+                  checked={!collapseReposts}
+                  onCheckedChange={(v) => setCollapseReposts(!v)}
+                />
+              )}
             </div>
+          </Section>
+          <section className="-mx-0 border-b-0">
+            <CompanyFilterList />
           </section>
         </div>
 
-        <SheetFooter className="flex-row items-center gap-2 border-t border-border/50 px-6 py-3 sm:space-x-0">
+        <SheetFooter className="flex-row items-center gap-2 border-t border-border/50 px-5 py-3 sm:space-x-0 sm:px-6">
           <Button
             type="button"
             variant="ghost"
             size="sm"
-            onClick={resetScope}
-            className="mr-auto h-10 gap-1.5 px-2 text-muted-foreground"
+            onClick={resetAll}
+            className="h-10 gap-1.5 px-2 text-muted-foreground"
           >
             <RotateCcw className="h-3.5 w-3.5" aria-hidden />
-            Reset
+            Reset all filters
           </Button>
-          {/* ONE action. "Sync" and "Search" used to sit side by side and both
-              called sync(true): two names for one click (Hick's law), and the
-              outline "Sync" stayed enabled when there were no titles to search
-              with, where the scan refuses to run anyway. */}
-          <Button
-            size="sm"
-            onClick={() => sync(true)}
-            disabled={loading || !canSearch}
-            className="h-10 min-w-[5.5rem] gap-1.5"
-            title="Re-scan every source with these settings"
-          >
-            {loading ? (
-              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-            ) : (
-              <Search className="h-4 w-4" aria-hidden />
-            )}
-            {loading ? 'Searching' : 'Search'}
-          </Button>
+          <span className="ml-auto" />
+          {/* ONE action. Filters apply as they are tapped, so it shows the
+              list; after a change to the titles or the place it runs that
+              search instead. */}
+          {searchChanged ? (
+            <SearchAction onDone={() => setCustomizeOpen(false)} />
+          ) : (
+            <Button size="sm" onClick={() => setCustomizeOpen(false)} className="h-10 gap-1.5">
+              Show {visibleJobs.length} {visibleJobs.length === 1 ? 'role' : 'roles'}
+              <ArrowRight className="h-4 w-4" aria-hidden />
+            </Button>
+          )}
         </SheetFooter>
       </SheetContent>
     </Sheet>

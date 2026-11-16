@@ -43,7 +43,17 @@ function isPdf(filename: string): boolean {
 
 type State = 'idle' | 'loading' | 'ready' | 'unavailable';
 
-export function ResumeFilePreview({ resume }: { resume: ResumeAssetRow }) {
+export function ResumeFilePreview({
+  resume,
+  frameClassName = 'h-[420px]',
+  compactFallback = false,
+}: {
+  resume: ResumeAssetRow;
+  /** Height of the inline PDF frame. */
+  frameClassName?: string;
+  /** Keep the "cannot preview here" state short, for a phone-first column. */
+  compactFallback?: boolean;
+}) {
   const [state, setState] = useState<State>('idle');
   const [url, setUrl] = useState<string | null>(null);
   const [mobile] = useState(isMobileDevice);
@@ -104,7 +114,7 @@ export function ResumeFilePreview({ resume }: { resume: ResumeAssetRow }) {
       setTimeout(() => URL.revokeObjectURL(href), 60_000);
     } catch {
       // Say so: a button that silently does nothing reads as broken.
-      toast.error('Could not open the file. Try again in a moment.');
+      toast.error("Couldn't open the file. Please try again in a moment.");
     } finally {
       setOpening(false);
     }
@@ -130,13 +140,48 @@ export function ResumeFilePreview({ resume }: { resume: ResumeAssetRow }) {
         <iframe
           src={`${url}#view=FitH&toolbar=0`}
           title={`Preview of ${resume.filename}`}
-          className="h-[420px] w-full"
+          className={cn('w-full', frameClassName)}
         />
       </div>
     );
   }
 
   // Fallback: DOCX, mobile, or a failed fetch.
+  const reason = isPdf(resume.filename)
+    ? 'Inline preview needs a larger screen. Open the file to read it.'
+    : 'Inline preview works for PDF files. Open the file to read it.';
+  const openButton = (
+    <Button
+      variant="outline"
+      size="sm"
+      className={cn('min-h-11', compactFallback ? 'shrink-0' : 'mt-1')}
+      onClick={openFile}
+      disabled={opening}
+      aria-busy={opening}
+    >
+      {opening ? (
+        <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+      ) : (
+        <Download className="mr-2 h-4 w-4" aria-hidden="true" />
+      )}
+      {opening ? 'Opening' : 'Open resume'}
+    </Button>
+  );
+
+  // One row: where the column is mostly about something else (the Tailor
+  // start screen on a phone), a tall empty box said "nothing here" at length.
+  if (compactFallback) {
+    return (
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-container border border-dashed border-border bg-muted/30 px-4 py-3">
+        <div className="min-w-0 flex-1 basis-48">
+          <p className="text-sm font-medium text-foreground">Preview not available here</p>
+          <p className="text-caption text-muted-foreground">{reason}</p>
+        </div>
+        {openButton}
+      </div>
+    );
+  }
+
   return (
     <div
       className={cn(
@@ -148,26 +193,8 @@ export function ResumeFilePreview({ resume }: { resume: ResumeAssetRow }) {
         <FileText className="h-5 w-5" aria-hidden="true" />
       </span>
       <p className="text-body font-medium text-foreground">Preview not available here</p>
-      <p className="max-w-sm text-caption text-muted-foreground">
-        {isPdf(resume.filename)
-          ? 'Inline preview needs a larger screen. Open the file to read it.'
-          : 'Inline preview works for PDF files. Open the file to read it.'}
-      </p>
-      <Button
-        variant="outline"
-        size="sm"
-        className="mt-1 min-h-11"
-        onClick={openFile}
-        disabled={opening}
-        aria-busy={opening}
-      >
-        {opening ? (
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
-        ) : (
-          <Download className="mr-2 h-4 w-4" aria-hidden="true" />
-        )}
-        {opening ? 'Opening' : 'Open resume'}
-      </Button>
+      <p className="max-w-sm text-caption text-muted-foreground">{reason}</p>
+      {openButton}
     </div>
   );
 }

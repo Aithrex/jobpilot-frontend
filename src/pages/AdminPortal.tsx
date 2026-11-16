@@ -1819,7 +1819,7 @@ function AccessOverrideCard({ email, storedPlan }: { email: string; storedPlan?:
     setLoading(true);
     const res = await apiService.getAdminUserOverride(email);
     if (res.error) {
-      toast.error('Failed to load access override', { description: res.error });
+      toast.error("Couldn't load the access override", { description: res.error });
       setOverride(null);
     } else {
       setOverride(res.data ?? null);
@@ -1841,7 +1841,7 @@ function AccessOverrideCard({ email, storedPlan }: { email: string; storedPlan?:
     setSaving(true);
     const res = await apiService.setAdminUserOverride(email, overrides);
     if (res.error) {
-      toast.error('Could not update access override', { description: res.error });
+      toast.error("Couldn't update the access override", { description: res.error });
       setSaving(false);
       return;
     }

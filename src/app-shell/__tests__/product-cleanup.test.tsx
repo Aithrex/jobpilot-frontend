@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { Outlet } from 'react-router-dom';
 import { describe, expect, test, vi } from 'vitest';
 import App from '@/App';
-import { ALL_DESTINATIONS, RESUME_GROUPS } from '@/app-shell/nav.config';
+import { ALL_DESTINATIONS, RESUME_SECTIONS } from '@/app-shell/nav.config';
 
 vi.mock('@/pages/Landing', () => ({ default: () => <div>Landing</div> }));
 vi.mock('@/contexts/AuthContext', () => ({ AuthProvider: ({ children }: { children: React.ReactNode }) => children }));
@@ -26,7 +26,7 @@ describe('focused product navigation', () => {
     for (const path of ['/app/jobs/portals', '/app/apply/auto-apply', '/app/resume/six-seconds', '/app/resume/voice', '/app/settings/autonomy']) {
       expect(paths).not.toContain(path);
     }
-    expect(RESUME_GROUPS.flatMap((group) => group.items)).not.toContain('voice');
+    expect(RESUME_SECTIONS.map((section) => section.to)).not.toContain('voice');
     expect(paths).toContain('/app/apply/tracker');
   });
 

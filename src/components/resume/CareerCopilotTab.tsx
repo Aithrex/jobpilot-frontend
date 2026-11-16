@@ -1,3 +1,5 @@
+import { confirmAction } from '@/components/ui/confirm';
+import { notifyError } from '@/lib/notify';
 import {
   useCallback,
   useEffect,
@@ -590,7 +592,7 @@ export default function CareerCopilotTab() {
     setInput("");
     const r = await apiService.sendCareerCopilotMessage(msg, showJd && jdPaste.trim() ? jdPaste : undefined);
     setSending(false);
-    if (r.error) { toast.error(r.error); return; }
+    if (r.error) { notifyError("Couldn't send your message", r.error); return; }
     const d = r.data!;
     if (d.messages) setMessages(d.messages as CopilotMessage[]);
     if (d.citations) setCitations(d.citations);
@@ -600,7 +602,7 @@ export default function CareerCopilotTab() {
   };
 
   const onReset = async () => {
-    if (!window.confirm("Clear this chat history?")) return;
+    if (!(await confirmAction({ title: 'Clear this chat?', description: 'Your conversation with the copilot will be removed. This cannot be undone.', confirmLabel: 'Clear chat', destructive: true }))) return;
     await apiService.resetCareerCopilotChat();
     setMessages([]); setCitations([]); setCompliance("");
     void loadState();
@@ -625,12 +627,12 @@ export default function CareerCopilotTab() {
     setPgBusy(true);
     const r = await apiService.advancePlaygroundStep();
     setPgBusy(false);
-    if (r.error || !r.data?.ok) { toast.error(r.data?.error || r.error); return; }
+    if (r.error || !r.data?.ok) { notifyError("Couldn't move to the next step", r.data?.error || r.error); return; }
     setPlayground((r.data.playground as PlaygroundState) || null);
   };
 
   const resetPlay = async () => {
-    if (!window.confirm("Reset learning progress?")) return;
+    if (!(await confirmAction({ title: 'Reset your learning progress?', description: 'Your place in this track will start over.', confirmLabel: 'Reset progress', destructive: true }))) return;
     await apiService.resetPlaygroundTrack();
     setPlayground(null); setQuiz(null); setQuizAnswers({}); setQuizSubmitted(false);
   };
@@ -641,7 +643,7 @@ export default function CareerCopilotTab() {
     const r = await apiService.generatePlaygroundQuiz({ topic, difficulty: "medium", count: 4 });
     setPgBusy(false);
     if (r.data?.questions) { setQuiz(r.data.questions); setQuizAnswers({}); setQuizSubmitted(false); }
-    else toast.error(r.error || "Could not generate quiz");
+    else toast.error(r.error || "Couldn't generate the quiz");
   };
 
   const currentStep = playground?.steps?.[playground.current_step ?? 0];
@@ -652,7 +654,7 @@ export default function CareerCopilotTab() {
 
   const createCampaign = async () => {
     if (!newCampaign.company.trim() || !newCampaign.role.trim()) {
-      toast.error("Company and role required"); return;
+      toast.error("Enter a company and a role"); return;
     }
     setOutreachBusy(true);
     const r = await apiService.createOutreachCampaign({
@@ -670,16 +672,16 @@ export default function CareerCopilotTab() {
 
   const markStep = async (campId: string, stepIdx: number, status: string) => {
     const r = await apiService.updateOutreachStep(campId, { step_index: stepIdx, status });
-    if (r.error) { toast.error(r.error); return; }
+    if (r.error) { notifyError("Couldn't update that step", r.error); return; }
     void loadCampaigns();
   };
 
   // ─── Memory ─────────────────────────────────────────────────────────────
 
   const addMemory = async () => {
-    if (!newMemKey.trim() || !newMemVal.trim()) { toast.error("Key and value required"); return; }
+    if (!newMemKey.trim() || !newMemVal.trim()) { toast.error("Fill in both fields first"); return; }
     const r = await apiService.saveMemoryNote(newMemKey.trim(), newMemVal.trim());
-    if (r.error) { toast.error(r.error); return; }
+    if (r.error) { notifyError("Couldn't save that note", r.error); return; }
     setNewMemKey(""); setNewMemVal("");
     void loadMemory();
     toast.success("Memory saved");
@@ -688,10 +690,10 @@ export default function CareerCopilotTab() {
   // Permanent deletes confirm first (Jakob: destructive actions never fire on
   // the first tap) and report the outcome either way.
   const delMemory = async (key: string) => {
-    if (!window.confirm(`Forget "${key}"? The copilot will no longer use this note.`)) return;
+    if (!(await confirmAction({ title: `Forget "${key}"?`, description: 'The copilot will no longer use this note.', confirmLabel: 'Forget note', destructive: true }))) return;
     const r = await apiService.deleteMemoryNote(key);
     if (r?.error) {
-      toast.error(r.error);
+      notifyError("Couldn't remove that note", r.error);
       return;
     }
     toast.success("Memory removed");
@@ -700,14 +702,14 @@ export default function CareerCopilotTab() {
 
   const addContact = async () => {
     if (!newContact.name.trim()) {
-      toast.error("Contact name is required");
+      toast.error("Enter the contact's name");
       return;
     }
     setNetworkBusy(true);
     const r = await apiService.addNetworkContact(newContact);
     setNetworkBusy(false);
     if (r.error) {
-      toast.error(r.error);
+      notifyError("Couldn't add the contact", r.error);
       return;
     }
     setNewContact({
@@ -722,10 +724,10 @@ export default function CareerCopilotTab() {
   };
 
   const removeContact = async (contactId: string) => {
-    if (!window.confirm("Delete this contact? This cannot be undone.")) return;
+    if (!(await confirmAction({ title: 'Delete this contact?', description: 'This cannot be undone.', confirmLabel: 'Delete contact', destructive: true }))) return;
     const r = await apiService.deleteNetworkContact(contactId);
     if (r.error) {
-      toast.error(r.error);
+      notifyError("Couldn't delete the contact", r.error);
       return;
     }
     toast.success("Contact deleted");
@@ -735,7 +737,7 @@ export default function CareerCopilotTab() {
   const makeIntro = async (contactId: string) => {
     const r = await apiService.generateNetworkIntro(contactId);
     if (r.error || !r.data?.intro?.message) {
-      toast.error(r.error || "Could not generate intro");
+      toast.error(r.error || "Couldn't generate the intro");
       return;
     }
     setIntroByContact((prev) => ({ ...prev, [contactId]: r.data!.intro.message }));
@@ -743,7 +745,7 @@ export default function CareerCopilotTab() {
 
   const addOffer = async () => {
     if (!newOffer.company.trim() || !newOffer.role.trim()) {
-      toast.error("Company and role are required");
+      toast.error("Enter a company and a role");
       return;
     }
     setOfferBusy(true);
@@ -760,7 +762,7 @@ export default function CareerCopilotTab() {
     });
     setOfferBusy(false);
     if (r.error) {
-      toast.error(r.error);
+      notifyError("Couldn't save the offer", r.error);
       return;
     }
     setNewOffer({
@@ -777,10 +779,10 @@ export default function CareerCopilotTab() {
   };
 
   const removeOffer = async (offerId: string) => {
-    if (!window.confirm("Delete this offer? This cannot be undone.")) return;
+    if (!(await confirmAction({ title: 'Delete this offer?', description: 'This cannot be undone.', confirmLabel: 'Delete offer', destructive: true }))) return;
     const r = await apiService.deleteOffer(offerId);
     if (r.error) {
-      toast.error(r.error);
+      notifyError("Couldn't delete the offer", r.error);
       return;
     }
     toast.success("Offer deleted");
@@ -791,7 +793,7 @@ export default function CareerCopilotTab() {
     const ask = "Request a higher base compensation while staying collaborative.";
     const r = await apiService.generateNegotiationScript(offerId, ask);
     if (r.error || !r.data?.script?.email_body) {
-      toast.error(r.error || "Failed to generate script");
+      toast.error(r.error || "Couldn't generate the script");
       return;
     }
     setNegotiationByOffer((prev) => ({ ...prev, [offerId]: r.data!.script.email_body }));

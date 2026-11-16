@@ -1,3 +1,4 @@
+import { confirmAction } from '@/components/ui/confirm';
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import type { TailoredFullResume, ResumeExperience, ResumeEducation, ResumeProject, JDAnalysis } from '@/types/resume';
 import { apiService } from '@/lib/api';
@@ -226,8 +227,18 @@ export default function ResumeEditor({ resume: initialResume, jdAnalysis, record
     return () => window.removeEventListener('beforeunload', handler);
   }, [isModified]);
 
-  const handleBack = useCallback(() => {
-    if (isModified && !window.confirm('You have unsaved changes. Leave anyway?')) return;
+  const handleBack = useCallback(async () => {
+    if (
+      isModified &&
+      !(await confirmAction({
+        title: 'Leave without saving?',
+        description: 'You have changes to this resume that are not saved yet.',
+        confirmLabel: 'Leave',
+        cancelLabel: 'Keep editing',
+        destructive: true,
+      }))
+    )
+      return;
     onBack();
   }, [isModified, onBack]);
 
@@ -359,7 +370,7 @@ export default function ResumeEditor({ resume: initialResume, jdAnalysis, record
       updateBullet(section, index, bulletIdx, resp.data.rewritten);
       toast.success('Bullet rewritten');
     } else {
-      toast.error('Rewrite failed', { description: resp.error || 'Please try again' });
+      toast.error("Couldn't rewrite that", { description: resp.error || 'Please try again' });
     }
   }, [resume, rewritingBullet, jdAnalysis, updateBullet]);
 
@@ -423,7 +434,7 @@ export default function ResumeEditor({ resume: initialResume, jdAnalysis, record
       },
     );
     setDownloading(null);
-    if (r.error) { toast.error('Download failed', { description: r.error }); return; }
+    if (r.error) { toast.error("Couldn't download that file", { description: r.error }); return; }
     if (r.data) {
       const u = URL.createObjectURL(r.data);
       const a = document.createElement('a');
@@ -442,9 +453,18 @@ export default function ResumeEditor({ resume: initialResume, jdAnalysis, record
   }, [resume, jdAnalysis, recordId, isModified, onEditedVersionSaved]);
 
   // Reset to original
-  const handleReset = useCallback(() => {
+  const handleReset = useCallback(async () => {
     // Destructive: every edit in this session goes. Same confirm pattern as Back.
-    if (!window.confirm('Discard all your edits and restore the tailored version?')) return;
+    if (
+      !(await confirmAction({
+        title: 'Discard your edits?',
+        description: 'The resume goes back to the tailored version. Your edits in this session are lost.',
+        confirmLabel: 'Discard edits',
+        cancelLabel: 'Keep editing',
+        destructive: true,
+      }))
+    )
+      return;
     setResume(JSON.parse(JSON.stringify(initialResume)));
   }, [initialResume]);
 

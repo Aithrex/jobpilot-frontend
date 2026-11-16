@@ -278,7 +278,7 @@ export default function BatchTailor() {
           ? { ...j, coverLetter: { status: 'failed', error: resp.error || 'Generation failed' } }
           : j,
       ));
-      toast.error(`Cover letter failed for "${job.title}"`);
+      toast.error(`Couldn't write a cover letter for "${job.title}"`);
       return;
     }
     setBatchJobs(prev => prev.map(j =>
@@ -391,7 +391,7 @@ export default function BatchTailor() {
           ? { ...j, atsScores: { status: 'failed', error: resp.error || 'Scoring failed' } }
           : j,
       ));
-      toast.error(`ATS score failed for "${job.title}"`);
+      toast.error(`Couldn't score the resume for "${job.title}"`);
       return;
     }
     setBatchJobs(prev => prev.map(j =>
@@ -437,7 +437,7 @@ export default function BatchTailor() {
   const handleDownload = useCallback(async (job: BatchJob, fmt: 'pdf' | 'docx') => {
     if (!job.result) return;
     const r = await apiService.downloadTailoredResume(job.result.tailored_resume, job.result.jd_analysis, fmt);
-    if (r.error) { toast.error('Download failed'); return; }
+    if (r.error) { toast.error("Couldn't download that file"); return; }
     if (r.data) {
       const u = URL.createObjectURL(r.data);
       const a = document.createElement('a'); a.href = u; a.download = r.filename || `resume.${fmt}`; a.click(); URL.revokeObjectURL(u);
@@ -459,11 +459,9 @@ export default function BatchTailor() {
     <div className="space-y-5">
       {/* Tab header - same editorial pattern as the other workspace tabs. */}
       <div className="space-y-1">
-        <h2 className="font-display text-h2 text-foreground">Batch tailor</h2>
+        <h2 className="font-display text-h2 text-foreground">Tailor for several jobs at once</h2>
         <p className="max-w-prose text-caption text-muted-foreground">
-          Add up to {BATCH_TAILOR_MAX} job descriptions and tailor your resume to each in one run.
-          Every edit stays honest and traceable. You can also tick rows on the Daily Pipeline and send
-          them here in one shot.
+          Paste up to {BATCH_TAILOR_MAX} job postings and get a resume written for each one in a single run.
         </p>
       </div>
 

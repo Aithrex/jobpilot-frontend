@@ -1,8 +1,8 @@
-import { BriefcaseBusiness, Check, ChevronDown, Sparkles } from 'lucide-react';
+import { Check, GraduationCap, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useCombinedJobsCtx } from '@/components/job-search/CombinedJobsProvider';
+import { SearchSegment } from '@/components/job-search/SearchSegment';
 import {
   SENIORITY_LEVELS,
   sameLevels,
@@ -35,10 +35,12 @@ const SHORT: Record<SeniorityLevel, string> = {
   staff: 'Staff+',
 };
 
-function summary(levels: readonly SeniorityLevel[]): string {
+/** "Entry + Mid", or "All levels" when nothing is narrowed. */
+export function levelSummary(levels: readonly SeniorityLevel[]): string {
   if (!levels.length) return 'All levels';
   return levels.map((l) => SHORT[l]).join(' + ');
 }
+const summary = levelSummary;
 
 function basisLine(view: ExperienceView): string {
   const years =
@@ -48,18 +50,34 @@ function basisLine(view: ExperienceView): string {
   return years;
 }
 
-/** Explain the total without hiding roles whose postings omit experience. */
-export function ExperienceCountBreakdown({ className }: { className?: string }) {
+/**
+ * The total, and what it is made of, as a sentence: "7 roles: 3 Entry, 3 Mid,
+ * 1 with no level stated". Says why a role with no stated level is on a board
+ * narrowed to two levels, without hiding it.
+ *
+ * It used to read as an equation ("7 roles = 3 Entry + 3 Mid + 1 no level
+ * stated"), which is how the count is checked, not how a person reads it.
+ */
+export function ExperienceCountBreakdown({
+  className,
+  emphasis = false,
+}: {
+  className?: string;
+  /** Set the total in ink, as the board's headline count. */
+  emphasis?: boolean;
+}) {
   const { seniorityLevels, levelCounts: counts, visibleJobs } = useCombinedJobsCtx();
   const total = `${visibleJobs.length} role${visibleJobs.length === 1 ? '' : 's'}`;
   const parts = seniorityLevels.map((level) => `${counts[level]} ${SHORT[level]}`);
-  parts.push(`${counts.unknown} no level stated`);
+  parts.push(`${counts.unknown} with no level stated`);
+  const rest = seniorityLevels.length
+    ? `: ${parts.join(', ')}`
+    : ` across all levels, including ${counts.unknown} with no level stated`;
 
   return (
     <p aria-label="Experience count breakdown" className={cn('text-xs leading-relaxed text-muted-foreground', className)}>
-      {seniorityLevels.length
-        ? `${total} = ${parts.join(' + ')}`
-        : `${total} across all levels, including ${counts.unknown} with no level stated`}
+      <span className={emphasis ? 'font-semibold text-foreground' : undefined}>{total}</span>
+      {rest}
     </p>
   );
 }
@@ -177,42 +195,26 @@ export function ExperienceLevelList({ className }: { className?: string }) {
   );
 }
 
-/** The board's toolbar button: what is applied, at a glance, and the list. */
+/** The Experience segment of the search bar: what is applied, at a glance,
+ *  and the checklist behind it. */
 export function ExperienceLevelPicker() {
   const { seniorityLevels, experienceView } = useCombinedJobsCtx();
   const mine = experienceView?.levels ?? [];
   const isMine = mine.length > 0 && sameLevels(seniorityLevels, mine);
+  const changed = mine.length > 0 ? !isMine : seniorityLevels.length > 0;
 
   return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          aria-label={`Experience level: ${summary(seniorityLevels)}`}
-          className={cn(
-            'inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition-colors hover:bg-muted',
-            seniorityLevels.length ? 'border-primary/50 bg-primary/5' : 'border-border',
-          )}
-        >
-          <BriefcaseBusiness className="h-3.5 w-3.5" aria-hidden />
-          <span className="hidden text-muted-foreground 2xl:inline">Experience:</span>
-          <span>{summary(seniorityLevels)}</span>
-          {isMine && (
-            <span className="rounded-full bg-primary/15 px-1.5 py-0.5 text-caption-sm font-semibold text-primary">
-              Your level
-            </span>
-          )}
-          <ChevronDown className="h-3.5 w-3.5 opacity-60" aria-hidden />
-        </button>
-      </PopoverTrigger>
-      <PopoverContent
-        align="start"
-        className="w-[22rem] max-w-[calc(100vw-2rem)] overflow-y-auto p-3"
-        style={{ maxHeight: 'var(--radix-popover-content-available-height, 80vh)' }}
-      >
-        <p className="mb-2 text-sm font-semibold">Experience level</p>
-        <ExperienceLevelList />
-      </PopoverContent>
-    </Popover>
+    <SearchSegment
+      icon={GraduationCap}
+      label="Experience"
+      value={summary(seniorityLevels)}
+      tag={isMine ? 'Your level' : undefined}
+      ariaLabel={`Experience level: ${summary(seniorityLevels)}`}
+      changed={changed}
+      testId="search-segment-level"
+    >
+      <p className="mb-2 text-sm font-semibold">Which experience levels?</p>
+      <ExperienceLevelList />
+    </SearchSegment>
   );
 }

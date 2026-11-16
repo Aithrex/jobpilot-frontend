@@ -1,80 +1,72 @@
 /**
- * ProgressStepper - the 3-step horizontal stepper for the Tailor page
- * (Upload Resume → Add Job Description → Review & Download).
+ * ProgressStepper - the three things that happen on the Tailor page, in the
+ * words a first-time user would use: add the job, we tailor it, you check and
+ * download.
+ *
+ * It used to open on "Upload Resume", a step that is always already done by
+ * the time this page renders, inside a full-width card. It is now one quiet
+ * line: it orients, it does not compete with the form under it.
  *
  * Presentational: derives per-step status from `currentStep` alone.
- * Done + active steps use the brand/primary tone; upcoming steps are muted.
  */
 import { Fragment } from 'react';
 import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const STEPS = [
-  { n: 1 as const, label: 'Upload Resume' },
-  { n: 2 as const, label: 'Add Job Description' },
-  { n: 3 as const, label: 'Review & Download' },
+  { n: 1 as const, label: 'Add the job posting' },
+  { n: 2 as const, label: 'We tailor your resume' },
+  { n: 3 as const, label: 'Check it and download' },
 ];
 
 export function ProgressStepper({ currentStep }: { currentStep: 1 | 2 | 3 }) {
   return (
-    <div className="surface shadow-soft rounded-container px-4 sm:px-8 py-4">
-      <ol
-        aria-label="Tailoring progress"
-        className="flex items-center justify-center gap-2 sm:gap-4"
-      >
-        {STEPS.map((s, i, arr) => {
-          const status =
-            currentStep > s.n ? 'done' : currentStep === s.n ? 'active' : 'upcoming';
-          return (
-            <Fragment key={s.n}>
-              <li
-                aria-current={status === 'active' ? 'step' : undefined}
-                className="flex items-center gap-2 sm:gap-3 min-w-0"
+    <ol aria-label="Tailoring progress" className="flex items-center gap-2 sm:gap-3">
+      {STEPS.map((s, i, arr) => {
+        const status =
+          currentStep > s.n ? 'done' : currentStep === s.n ? 'active' : 'upcoming';
+        return (
+          <Fragment key={s.n}>
+            <li
+              aria-current={status === 'active' ? 'step' : undefined}
+              className="flex min-w-0 items-center gap-2"
+            >
+              <span
+                aria-hidden="true"
+                className={cn(
+                  'flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold transition-colors duration-200',
+                  status === 'done' && 'bg-signal text-signal-foreground',
+                  status === 'active' && 'bg-primary text-primary-foreground',
+                  status === 'upcoming' && 'bg-muted text-muted-foreground',
+                )}
               >
-                <div
-                  aria-hidden="true"
-                  className={cn(
-                    'w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-colors duration-200',
-                    status === 'done' &&
-                      'bg-signal text-signal-foreground shadow-soft',
-                    status === 'active' &&
-                      'bg-primary text-primary-foreground ring-4 ring-primary/20 shadow-soft',
-                    status === 'upcoming' && 'bg-muted text-muted-foreground',
-                  )}
-                >
-                  {status === 'done' ? (
-                    <Check className="w-4 h-4" aria-hidden="true" />
-                  ) : (
-                    s.n
-                  )}
-                </div>
-                {/* Visible ≥sm; below sm the label stays in the a11y tree. */}
-                <span
-                  className={cn(
-                    'text-xs sm:text-sm font-medium sr-only sm:not-sr-only transition-colors',
-                    status === 'active' && 'text-foreground',
-                    status === 'done' && 'text-signal',
-                    status === 'upcoming' && 'text-muted-foreground',
-                  )}
-                >
-                  {s.label}
-                  {status === 'done' && <span className="sr-only"> (completed)</span>}
-                </span>
-              </li>
-              {i < arr.length - 1 && (
-                <li
-                  role="presentation"
-                  aria-hidden="true"
-                  className={cn(
-                    'h-[2px] flex-1 max-w-[80px] rounded-full transition-colors duration-200',
-                    currentStep > s.n ? 'bg-signal' : 'bg-muted',
-                  )}
-                />
-              )}
-            </Fragment>
-          );
-        })}
-      </ol>
-    </div>
+                {status === 'done' ? <Check className="h-3.5 w-3.5" aria-hidden="true" /> : s.n}
+              </span>
+              {/* Visible from sm up; below it only the current step is named,
+                  and every label stays in the accessibility tree. */}
+              <span
+                className={cn(
+                  'truncate text-caption font-medium transition-colors',
+                  status === 'active' ? 'text-foreground' : 'sr-only text-muted-foreground sm:not-sr-only',
+                )}
+              >
+                {s.label}
+                {status === 'done' && <span className="sr-only"> (completed)</span>}
+              </span>
+            </li>
+            {i < arr.length - 1 && (
+              <li
+                role="presentation"
+                aria-hidden="true"
+                className={cn(
+                  'h-px w-5 shrink-0 rounded-full transition-colors duration-200 sm:w-8',
+                  currentStep > s.n ? 'bg-signal' : 'bg-border',
+                )}
+              />
+            )}
+          </Fragment>
+        );
+      })}
+    </ol>
   );
 }

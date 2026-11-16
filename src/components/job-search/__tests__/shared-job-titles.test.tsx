@@ -138,18 +138,18 @@ function renderJobFeed() {
 
 async function openJobFeed(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole('button', { name: /open shared job feed/i }));
-  await screen.findByPlaceholderText('Backend Engineer');
+  await screen.findByPlaceholderText('Type a job title and press Enter');
 }
 
 async function closeJobFeed(user: ReturnType<typeof userEvent.setup>) {
   await user.keyboard('{Escape}');
   await waitFor(() =>
-    expect(screen.queryByPlaceholderText('Backend Engineer')).not.toBeInTheDocument(),
+    expect(screen.queryByPlaceholderText('Type a job title and press Enter')).not.toBeInTheDocument(),
   );
 }
 
 function jobFeedTitlesInput() {
-  return screen.getByPlaceholderText('Backend Engineer');
+  return screen.getByPlaceholderText('Type a job title and press Enter');
 }
 
 function cachedTitles(): string[] {

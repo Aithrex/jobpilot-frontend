@@ -23,7 +23,7 @@ export function CopySectionButton({ getText }: { getText: () => string }) {
           toast.success("Section copied to clipboard");
           setTimeout(() => setCopied(false), 1500);
         } catch {
-          toast.error("Could not copy. Select the text and copy it manually.");
+          toast.error("Couldn't copy. Select the text and copy it manually.");
         }
       }}
       // Hidden until hover only where hover exists (md and up); on touch the

@@ -60,7 +60,7 @@ export default function BetaLabTab() {
 
   const runSimilar = useCallback(async () => {
     if (similarJd.trim().length < 80) {
-      toast.error('Paste at least a paragraph of the JD.');
+      toast.error('Paste at least a paragraph of the job description.');
       return;
     }
     setSimilar({ kind: 'loading' });
@@ -198,7 +198,7 @@ export default function BetaLabTab() {
               rows={4}
               maxLength={15000}
               aria-label="Job description to match"
-              placeholder="Paste the JD you'd like to find more like..."
+              placeholder="Paste a job description you would like to find more like..."
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm leading-relaxed text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             />
             <Button

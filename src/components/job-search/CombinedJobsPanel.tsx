@@ -6,8 +6,9 @@ import {
   FileText,
   Loader2,
   Radar,
+  RefreshCw,
   Rocket,
-  ShieldAlert,
+  SlidersHorizontal,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -15,6 +16,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ApplyConfirmDialog, JOB_FEED_GRID_CLASS, JobCard, JOB_CARD_CLASS } from '@/components/job-search/JobCard';
 import { JobFeedPager } from '@/components/job-search/JobFeedPager';
 import { useCombinedJobsCtx } from '@/components/job-search/CombinedJobsProvider';
+import { ExperienceCountBreakdown } from '@/components/job-search/ExperienceLevelPicker';
 import { useJobTitles } from '@/hooks/useJobTitles';
 import { timeZoneName, useViewerTimeZone } from '@/lib/viewerTimezone';
 import { JOB_FEED_PAGE_SIZE, RECENCY_OPTIONS, toJob } from '@/lib/careerJobs';
@@ -38,11 +40,6 @@ function formatAgo(ms: number): string {
   const m = Math.round(s / 60);
   if (m < 60) return `${m}m ago`;
   return `${Math.round(m / 60)}h ago`;
-}
-
-function formatCountdown(sec: number): string {
-  const m = Math.floor(sec / 60);
-  return `${m}:${String(sec % 60).padStart(2, '0')}`;
 }
 
 interface CombinedJobsPanelProps {
@@ -104,7 +101,6 @@ export function CombinedJobsPanel({
     canSearch,
     titlesPending,
     lastSyncedAt,
-    secondsUntilNext,
     sync,
     ensureStarted,
     setCustomizeOpen,
@@ -115,6 +111,7 @@ export function CombinedJobsPanel({
     minScore,
     sponsorFilter,
     showApplied,
+    setShowApplied,
     sortBy,
     page,
     setPage,
@@ -185,6 +182,13 @@ export function CombinedJobsPanel({
     [listJobs, page],
   );
   const byId = useMemo(() => new Map(jobs.map((j) => [j.job_id, j])), [jobs]);
+  // "New" marks a card only when it tells cards apart. On a first visit of
+  // the day every card under Today is new, and a badge plus a glowing ring on
+  // all of them repeated what the Today tab already says.
+  const everyCardIsNew = useMemo(
+    () => listJobs.length > 0 && listJobs.every((j) => isNewJob(j)),
+    [listJobs, isNewJob],
+  );
   // How many reposts fold under each card, so the card can say so.
   const repostCounts = useMemo(() => {
     const counts = new Map<string, number>();
@@ -386,15 +390,6 @@ export function CombinedJobsPanel({
       {...cardMotion}
       className="flex h-full flex-col gap-1.5"
     >
-      {job.sponsorship === 'refused' && (
-        <p className="flex items-start gap-1.5 rounded-lg border border-destructive/30 bg-destructive/10 px-2.5 py-1.5 text-caption-sm font-medium leading-snug text-destructive">
-          <ShieldAlert className="mt-0.5 h-3 w-3 shrink-0" aria-hidden />
-          <span>
-            This posting states it won't sponsor a visa
-            {job.sponsor_note ? `: ${job.sponsor_note}` : '.'}
-          </span>
-        </p>
-      )}
       <SwipeableCard
         enabled={coarse}
         onSwipeRight={() => saveWithUndo(job)}
@@ -404,7 +399,8 @@ export function CombinedJobsPanel({
         job={toJob(job, 'career portal')}
         saved={isJobSaved(job.job_id)}
         jobStatus={getJobStatus(job.job_id, job.apply_link)}
-        isNew={isNewJob(job)}
+        isNew={!everyCardIsNew && isNewJob(job)}
+        showVisaUnknown={sponsorFilter !== 'all'}
         onOpen={() => {
           setCursorId(job.job_id);
           setQuickId(job.job_id);
@@ -413,6 +409,7 @@ export function CombinedJobsPanel({
         compareSelected={compareIds.includes(job.job_id)}
         onToggleCompare={() => toggleCompare(job)}
         repostCount={repostCounts.get(job.job_id) ?? 0}
+        sponsorshipRefused={job.sponsorship === 'refused' ? (job.sponsor_note || true) : undefined}
         onSave={() => acted(job, () => saveJob(toJob(job, 'career portal')))}
         onUnsave={() => unsaveJob(job.job_id)}
         onQuickApply={(opts) => acted(job, () => quickApply(toJob(job, 'career portal'), opts))}
@@ -438,73 +435,47 @@ export function CombinedJobsPanel({
 
   return (
     <div className="space-y-5" ref={rootRef}>
-      <div className="flex flex-wrap items-center gap-2">
-        <p className="min-w-0 flex-1 text-xs text-muted-foreground" aria-live="polite">
+      {/* One line says what is on the board and how fresh it is. The date
+          window, sort and filters all live in the chrome above; the notes
+          about what was folded away sit under the list, where a seeker looks
+          once the visible roles run out. */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <div className="min-w-0 flex-1" aria-live="polite">
           {loading ? (
-            progress.total > 0 ? (
-              `Scanning ${progress.done} of ${progress.total} companies · ${roleCount} roles so far`
-            ) : (
-              'Starting scan across all sources...'
-            )
-          ) : lastSyncedAt ? (
-            <>
-              {/* The count lives in the line above the toolbar; this line says
-                  only how fresh the board is. */}
-              Updated {formatAgo(lastSyncedAt)}
-              <span className="ml-1" data-testid="jobs-timezone">
-                · days in {timeZoneName(viewerZone, 'short')}
-              </span>
-              {secondsUntilNext != null && (
-                <span className="ml-1 tabular-nums">
-                  · next refresh in {formatCountdown(secondsUntilNext)}
-                </span>
-              )}
-            </>
+            <p className="text-sm text-muted-foreground">
+              {progress.total > 0
+                ? `Checking ${progress.done} of ${progress.total} employer sites. ${roleCount} roles so far.`
+                : 'Searching employer sites...'}
+            </p>
+          ) : hasResult && roleCount > 0 ? (
+            <ExperienceCountBreakdown emphasis className="text-sm" />
           ) : null}
           {titlesPending && (
-            <span className="ml-1.5 font-medium text-warning">Title changes need Search.</span>
+            <p className="text-xs font-medium text-warning">Title changes need Search.</p>
           )}
-        </p>
+        </div>
         {loading && (
           <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary" aria-hidden />
         )}
+        {!loading && lastSyncedAt && (
+          <p
+            className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground"
+            title={`Days are counted in ${timeZoneName(viewerZone)}. The board refreshes on its own every 30 minutes.`}
+          >
+            <span data-testid="jobs-updated">Updated {formatAgo(lastSyncedAt)}</span>
+            <button
+              type="button"
+              onClick={() => sync(false)}
+              aria-label="Check for new roles now"
+              title="Check for new roles now"
+              className="press hit-target grid h-7 w-7 place-items-center rounded-full text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <RefreshCw className="h-3.5 w-3.5" aria-hidden />
+            </button>
+          </p>
+        )}
         {hasResult && <ShortcutsButton open={shortcutsOpen} onOpenChange={setShortcutsOpen} />}
       </div>
-      {pageCount > 1 && (
-        <p className="text-xs tabular-nums text-muted-foreground">
-          Showing {(page - 1) * PAGE_SIZE + 1}-{Math.min(page * PAGE_SIZE, roleCount)} of {roleCount} matching roles
-        </p>
-      )}
-      {weakerMatchCount > 0 && (
-        <p className="text-xs text-muted-foreground" data-testid="jobs-weaker-matches">
-          {showWeaker
-            ? `Showing ${weakerMatchCount} weaker ${weakerMatchCount === 1 ? 'match' : 'matches'}.`
-            : `${weakerMatchCount} weaker ${weakerMatchCount === 1 ? 'match' : 'matches'} hidden.`}{' '}
-          <button
-            type="button"
-            className="hit-target rounded-sm font-medium text-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            aria-pressed={showWeaker}
-            onClick={() => setShowWeaker(!showWeaker)}
-          >
-            {showWeaker ? 'Hide them' : 'Show them'}
-          </button>
-        </p>
-      )}
-      {(repostsFolded > 0 || !collapseReposts) && hasResult && (
-        <p className="text-xs text-muted-foreground" data-testid="jobs-reposts-folded">
-          {collapseReposts
-            ? `${repostsFolded} likely ${repostsFolded === 1 ? 'repost' : 'reposts'} (same company, title and city) folded under the first copy.`
-            : 'Showing every copy of reposted roles.'}{' '}
-          <button
-            type="button"
-            className="hit-target rounded-sm font-medium text-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            aria-pressed={!collapseReposts}
-            onClick={() => setCollapseReposts(!collapseReposts)}
-          >
-            {collapseReposts ? 'Show them' : 'Fold them'}
-          </button>
-        </p>
-      )}
       {loading && (
         <Progress
           value={progress.total ? (progress.done / progress.total) * 100 : 8}
@@ -590,9 +561,65 @@ export function CombinedJobsPanel({
           </div>
 
           {pageCount > 1 && (
-            <JobFeedPager page={page} pageCount={pageCount} onPageChange={setPage} />
+            <div className="space-y-2">
+              <p className="text-center text-xs tabular-nums text-muted-foreground">
+                Showing {(page - 1) * PAGE_SIZE + 1}-{Math.min(page * PAGE_SIZE, roleCount)} of {roleCount} matching roles
+              </p>
+              <JobFeedPager page={page} pageCount={pageCount} onPageChange={setPage} />
+            </div>
           )}
         </>
+      )}
+
+      {/* What was folded away, said where the list ends. */}
+      {(weakerMatchCount > 0 || hasResult) && (
+        <div className="space-y-1 border-t border-border/50 pt-4 text-center">
+          {weakerMatchCount > 0 && (
+            <p className="text-xs text-muted-foreground" data-testid="jobs-weaker-matches">
+              {showWeaker
+                ? `Showing ${weakerMatchCount} weaker ${weakerMatchCount === 1 ? 'match' : 'matches'}.`
+                : `${weakerMatchCount} weaker ${weakerMatchCount === 1 ? 'match' : 'matches'} hidden.`}{' '}
+              <button
+                type="button"
+                className="hit-target rounded-sm font-medium text-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                aria-pressed={showWeaker}
+                onClick={() => setShowWeaker(!showWeaker)}
+              >
+                {showWeaker ? 'Hide them' : 'Show them'}
+              </button>
+            </p>
+          )}
+          {hasResult && (repostsFolded > 0 || !collapseReposts) && (
+            <p className="text-xs text-muted-foreground" data-testid="jobs-reposts-folded">
+              {collapseReposts
+                ? `${repostsFolded} likely ${repostsFolded === 1 ? 'repost' : 'reposts'} (same company, title and city) folded under the first copy.`
+                : 'Showing every copy of reposted roles.'}{' '}
+              <button
+                type="button"
+                className="hit-target rounded-sm font-medium text-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                aria-pressed={!collapseReposts}
+                onClick={() => setCollapseReposts(!collapseReposts)}
+              >
+                {collapseReposts ? 'Show every copy' : 'Fold them'}
+              </button>
+            </p>
+          )}
+          {hasResult && (
+            <p className="text-xs text-muted-foreground" data-testid="jobs-applied-hidden">
+              {showApplied
+                ? 'Roles you applied to are listed last.'
+                : 'Roles you already applied to are not shown here.'}{' '}
+              <button
+                type="button"
+                className="hit-target rounded-sm font-medium text-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                aria-pressed={showApplied}
+                onClick={() => setShowApplied(!showApplied)}
+              >
+                {showApplied ? 'Hide applied roles' : 'Show applied roles'}
+              </button>
+            </p>
+          )}
+        </div>
       )}
 
       {/* ── Empty state ── */}
@@ -602,8 +629,8 @@ export function CombinedJobsPanel({
           <p className="font-medium text-foreground">No roles match these filters in this window.</p>
           <p className="mx-auto mt-1 max-w-prose text-xs">
             {maxDays < 30
-              ? 'Widen the date window or change titles and filters in Job feed.'
-              : 'Change titles and filters in Job feed to see more roles.'}
+              ? 'Try a wider date window, or loosen a filter in the search bar above.'
+              : 'Loosen a filter in the search bar above, or add another job title.'}
           </p>
           {/* Never a dead end: the widening move, plus the way into the
               filters that produced the empty list. */}
@@ -614,7 +641,7 @@ export function CombinedJobsPanel({
               </Button>
             )}
             <Button variant="outline" size="sm" className="h-10 gap-1.5" onClick={() => setCustomizeOpen(true)}>
-              <Radar className="h-3.5 w-3.5" aria-hidden /> Open Job feed
+              <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden /> Change search and filters
             </Button>
           </div>
         </div>
@@ -626,9 +653,9 @@ export function CombinedJobsPanel({
           <div className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-full bg-primary/10 text-primary">
             <Radar className="h-5 w-5" aria-hidden />
           </div>
-          <p className="text-sm font-medium text-foreground">Your job feed is ready to set up</p>
+          <p className="text-sm font-medium text-foreground">Tell us what you are looking for</p>
           <p className="mx-auto mt-1 max-w-md text-xs text-muted-foreground">
-            Open Job feed on the right to add titles, location, then Search. Listings stay on this page.
+            Add the job titles you want in the search bar above, then press Search. Matching roles appear here.
           </p>
           <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
             <Button
@@ -637,7 +664,7 @@ export function CombinedJobsPanel({
               className="h-10 gap-1.5 rounded-lg font-semibold hover:border-primary/40 hover:bg-primary/10 hover:text-primary [&_svg]:h-3.5 [&_svg]:w-3.5"
               onClick={() => setCustomizeOpen(true)}
             >
-              <Radar className="h-3.5 w-3.5" aria-hidden /> Open Job feed
+              <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden /> Set up my search
             </Button>
             <Button
               size="sm"
@@ -645,13 +672,13 @@ export function CombinedJobsPanel({
               onClick={() => sync(false)}
               disabled={!ready || !canSearch}
             >
-              <Rocket className="h-3.5 w-3.5" aria-hidden /> Load my feed
+              <Rocket className="h-3.5 w-3.5" aria-hidden /> Find my jobs
             </Button>
           </div>
           {ready && !canSearch && (
             <p className="mx-auto mt-3 flex max-w-md items-center justify-center gap-1.5 px-4 text-caption-sm font-medium text-warning">
               <AlertCircle className="h-3.5 w-3.5 shrink-0" aria-hidden />
-              Add at least one role title or upload a resume to build your job feed.
+              Add at least one job title or upload a resume to start your search.
             </p>
           )}
         </div>

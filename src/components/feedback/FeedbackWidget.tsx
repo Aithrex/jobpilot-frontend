@@ -72,14 +72,14 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
 
   const submit = async () => {
     if (!message.trim()) {
-      toast.error("Tell me what you're thinking. Message can't be blank.");
+      toast.error('Type a message first.');
       return;
     }
     setSubmitting(true);
     const resp = await apiService.submitFeedback(message.trim(), type);
     setSubmitting(false);
     if (resp.error) {
-      toast.error(resp.error || "Could not send feedback. Try again in a moment.");
+      toast.error(resp.error || "Couldn't send your feedback. Please try again in a moment.");
       return;
     }
     toast.success("Thanks. Feedback received. I read every one.");

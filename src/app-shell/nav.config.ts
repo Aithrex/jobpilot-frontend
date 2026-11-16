@@ -136,69 +136,43 @@ export const JOBS_SECTIONS: NavSection[] = [
   },
 ];
 
+/**
+ * Resume's sections, named for what a person does there rather than for the
+ * feature ("Library", "Batch" and "Tailored" each needed explaining).
+ * Tailor leads because it is what the destination is FOR: `/app/resume` opens
+ * on it. Tailoring for several jobs at once is a paid extra most people never
+ * need, so it sits last instead of second.
+ */
 export const RESUME_SECTIONS: NavSection[] = [
   {
     to: "tailor",
-    label: "Tailor",
+    label: "Tailor for a job",
     icon: Wand2,
-    hint: "Rewrite one resume for one job description",
-    keywords: "jd rewrite ats keywords cover letter",
-  },
-  {
-    to: "batch",
-    label: "Batch",
-    icon: Layers,
-    hint: "Tailor against several roles at once",
-    keywords: "bulk multiple queue",
+    hint: "Rewrite your resume for one job posting",
+    keywords: "jd rewrite ats keywords cover letter tailor",
   },
   {
     to: "library",
-    label: "Library",
+    label: "My resumes",
     icon: FolderOpen,
-    hint: "Your base resumes and uploads",
-    keywords: "upload base master versions pdf docx",
+    hint: "The resumes you uploaded",
+    keywords: "library upload base master versions pdf docx",
   },
   {
     to: "tailored",
-    label: "Tailored",
+    label: "Tailored resumes",
     icon: FileCheck2,
-    hint: "Everything you have already tailored",
-    keywords: "history downloads generated",
+    hint: "Everything you tailored, ready to download",
+    keywords: "history downloads generated versions tailored",
+  },
+  {
+    to: "batch",
+    label: "Several jobs at once",
+    icon: Layers,
+    hint: "Tailor your resume for many job postings in one go",
+    keywords: "batch bulk multiple queue",
   },
 ];
-
-/**
- * Resume's sections grouped by intent, for the contextual left rail on
- * `/app/resume/*`. Purely a VIEW over {@link RESUME_SECTIONS}: the flat list
- * above stays the single source of truth for routing, the command palette and
- * the mobile More sheet, so a section can never appear in one and not the
- * other. Membership is by `to`, and the rail asserts the mapping is total.
- */
-export interface NavGroup {
-  /** Rail heading. Rendered uppercase via the `.overline` recipe. */
-  label: string;
-  /** `NavSection.to` values, in display order. */
-  items: string[];
-}
-
-export const RESUME_GROUPS: NavGroup[] = [
-  { label: "Create", items: ["tailor", "batch"] },
-  { label: "Manage", items: ["library", "tailored"] },
-];
-
-/**
- * Rail-only labels. The tab strip had to stay terse to fit horizontally; a
- * vertical rail has room for the words a user would actually say. Sections
- * absent from this map keep their {@link RESUME_SECTIONS} label - "Six
- * Seconds" is deliberately one of them, it is a product name, not a
- * description.
- */
-export const RESUME_RAIL_LABELS: Record<string, string> = {
-  tailor: "Tailor a resume",
-  batch: "Batch tailor",
-  library: "Resume library",
-  tailored: "Tailored versions",
-};
 
 export const APPLY_SECTIONS: NavSection[] = [
   {

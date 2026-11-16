@@ -1053,7 +1053,7 @@ describe('sponsorship', () => {
     renderLanding();
     const text = section().textContent ?? '';
     for (const chip of [
-      'Sponsors H-1B',
+      'Has sponsored H-1B',
       'Posting says no sponsorship',
       'E-Verify',
       'Accepts CPT',

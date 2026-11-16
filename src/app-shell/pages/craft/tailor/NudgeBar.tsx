@@ -74,7 +74,7 @@ export function NudgeBar({
         <>
           Resume regenerated:{' '}
           <strong className="text-foreground">
-            ATS score is now {scores!.overall}/100
+            Match score is now {scores!.overall}/100
           </strong>
           . Download your updated version when ready.
         </>

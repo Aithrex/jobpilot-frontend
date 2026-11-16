@@ -120,7 +120,7 @@ export default function ApplicationRow({
             <span className="mt-0.5 flex items-center gap-1.5 text-body-sm text-muted-foreground">
               {typeof ats === 'number' && (
                 <span className={cn('font-medium tabular-nums', atsTone(ats))}>
-                  ATS {Math.round(ats)}
+                  Match score {Math.round(ats)}
                 </span>
               )}
               {baseResume && (

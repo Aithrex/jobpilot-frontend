@@ -32,7 +32,7 @@ describe('on-demand tailored history', () => {
     await screen.findByText('Engineer first · Acme');
     expect(getPage).toHaveBeenCalledTimes(1);
     expect(apiService.listTailoringRecords).not.toHaveBeenCalled();
-    expect(screen.getByText('500 matching sessions · 1 loaded')).toBeInTheDocument();
+    expect(screen.getByText('500 tailored resumes · showing 1')).toBeInTheDocument();
     getPage.mockResolvedValueOnce(result(['second']));
     fireEvent.click(screen.getByRole('button', { name: 'Load more resumes' }));
     await screen.findByText('Engineer second · Acme');
@@ -61,7 +61,7 @@ describe('on-demand tailored history', () => {
   test('sends company, sort and preset filters to the server', async () => {
     mount();
     await screen.findByText('Engineer first · Acme');
-    fireEvent.click(screen.getByRole('button', { name: 'Advanced filters' }));
+    fireEvent.click(screen.getByRole('button', { name: 'More filters' }));
     fireEvent.change(screen.getByLabelText('Company'), { target: { value: 'Remote Corp' } });
     await waitFor(() => expect(getPage).toHaveBeenLastCalledWith(expect.objectContaining({ company: 'Remote Corp' })));
     fireEvent.click(screen.getByRole('button', { name: 'Oldest' }));

@@ -7,6 +7,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet';
 import { CompanyLogo } from '@/components/CompanyLogo';
+import { JobEmployerContext } from '@/components/job-search/JobEmployerContext';
 import { JobFitDetails } from '@/components/job-search/JobFitDetails';
 import { EmployerSponsorshipBadge } from '@/components/job-search/WorkAuthorizationSignals';
 import { VisaFlagChips } from '@/components/job-search/JobVisaSignals';
@@ -144,6 +145,10 @@ export function JobQuickLook({
               <section aria-label="Why this matches">
                 <h3 className="mb-2 text-label-md text-foreground">Why this matches you</h3>
                 <JobFitDetails job={job} />
+              </section>
+              <section aria-label="About this posting">
+                <h3 className="mb-2 text-label-md text-foreground">About this posting</h3>
+                <JobEmployerContext row={job} showCleanTrust />
               </section>
               <section aria-label="Job description">
                 <h3 className="mb-2 text-label-md text-foreground">Job description</h3>

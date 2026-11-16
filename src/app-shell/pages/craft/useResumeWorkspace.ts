@@ -11,7 +11,7 @@ export interface ResumeWorkspaceData {
   activeResume: ResumeAssetRow | null;
   /** Tailoring records newest-first. */
   recentRecords: TailoringRecord[];
-  /** Raw counts for the overview panel. Facts, not derived metrics. */
+  /** Raw list lengths. Facts, not derived metrics. */
   resumeCount: number;
   tailoredCount: number;
   reload: () => void;
@@ -20,11 +20,10 @@ export interface ResumeWorkspaceData {
 /**
  * The Resume workspace's shared read model.
  *
- * The dock's health panel and the centre dashboard describe the same two
- * facts (is there an active resume, what has been tailored), so they read
- * from one place. Both panels are independent for FAILURE, though: one
- * endpoint erroring must not blank the other, which is why the two states are
- * tracked separately rather than as a single page-level flag.
+ * Two facts every Resume section may want: which resumes are uploaded, and
+ * what was tailored most recently. They are independent for FAILURE: one
+ * endpoint erroring must not blank the other, which is why the two states
+ * are tracked separately rather than as a single page-level flag.
  */
 export function useResumeWorkspace(): ResumeWorkspaceData {
   const [resumesState, setResumesState] = useState<PanelState>('loading');
@@ -96,59 +95,4 @@ export function useResumeWorkspace(): ResumeWorkspaceData {
     tailoredCount,
     reload: () => void load(),
   };
-}
-
-/* ── Resume health ────────────────────────────────────────────────────────
- * Derived ONLY from facts the frontend already holds. Deliberately not a
- * score: a percentage implies a rubric we do not have, and inventing one
- * would be fabricated analytics. Instead it reports a small number of
- * checks that are each individually verifiable in the UI.
- */
-
-export interface HealthCheck {
-  label: string;
-  /** `true` = satisfied, `false` = actionable, `null` = not yet known. */
-  done: boolean | null;
-}
-
-export interface ResumeHealth {
-  checks: HealthCheck[];
-  /** Satisfied checks over known checks - null while anything is loading. */
-  ratio: { done: number; total: number } | null;
-}
-
-export function resumeHealth(data: ResumeWorkspaceData): ResumeHealth {
-  const { resumesState, tailoredState, activeResume, recentRecords } = data;
-
-  const resumesKnown = resumesState === 'ready';
-  const tailoredKnown = tailoredState === 'ready';
-
-  const hasActive = resumesKnown ? activeResume !== null : null;
-  // `parse_status` gates tailoring server-side, so an unparsed base resume is
-  // a real, actionable gap rather than a cosmetic one.
-  const parsed = resumesKnown
-    ? activeResume !== null && activeResume.parse_status === 'parsed'
-    : null;
-  const hasTailored = tailoredKnown ? recentRecords.length > 0 : null;
-
-  const checks: HealthCheck[] = [
-    { label: hasActive ? 'Active resume set' : 'No active resume', done: hasActive },
-    { label: parsed ? 'Resume parsed and ready' : 'Resume not parsed yet', done: parsed },
-    {
-      label: tailoredState === 'error'
-        ? 'Tailored history unavailable'
-        : tailoredState === 'loading'
-          ? 'Checking tailored versions...'
-          : hasTailored ? 'Recent version saved' : 'Nothing tailored yet',
-      done: hasTailored,
-    },
-  ];
-
-  const known = checks.filter((c) => c.done !== null);
-  const ratio =
-    known.length === checks.length
-      ? { done: known.filter((c) => c.done).length, total: checks.length }
-      : null;
-
-  return { checks, ratio };
 }

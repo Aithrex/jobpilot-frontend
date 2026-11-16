@@ -3,12 +3,13 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import {
   ExternalLink, BookmarkPlus, BookmarkCheck, Sparkles, Target,
   FileText, Wand2, Users, ShieldCheck, CircleOff, Plane, Wifi,
-  FileSignature, Loader2, ChevronDown, Scale, Clock3, MoreHorizontal, Check,
+  FileSignature, Loader2, ChevronDown, ChevronRight, Scale, Clock3, MoreHorizontal, Check, ShieldAlert,
 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
@@ -49,7 +50,7 @@ import { toTitleCase } from '@/lib/format';
 import { useCountUp } from '@/hooks/useCountUp';
 import type { Job } from '@/types/jobs';
 
-/** Compact tiles: 2 / 3 / 4 columns as the Jobs page widens. */
+/** Compact tiles: 1 / 2 / 3 / 4 columns as the Jobs page widens. */
 export const JOB_FEED_GRID_CLASS = 'grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4';
 
 /** Shared frosted surface — same recipe as the Job feed drawer. */
@@ -92,6 +93,13 @@ interface JobCardProps {
   repostCount?: number;
   /** Where the user stands with this role (Saved: "Saved 3 days ago, resume tailored"). */
   note?: string;
+  /** The posting says it will not sponsor a visa. A string carries the
+   *  posting's own wording, shown on hover. */
+  sponsorshipRefused?: string | boolean;
+  /** Say so when nothing is known about sponsorship, instead of leaving the
+   *  visa line out. Set while the board is filtered for sponsorship: next to
+   *  cards that say "Has sponsored H-1B", a card that says nothing reads as "no". */
+  showVisaUnknown?: boolean;
 }
 
 /** A click that landed on one of the card's own controls, not its body. */
@@ -146,12 +154,12 @@ function MatchScoreRing({ job }: { job: Job }) {
           />
         )}
       </svg>
-      <span className="absolute inset-0 flex flex-col items-center justify-center leading-none" aria-hidden>
-        <span className={cn('font-mono text-sm font-bold tabular-nums', band.text)}>
+      {/* The number alone: the band words sit in the chip under the title,
+          so a second caption here ("fit") was a different word for the same
+          thing. */}
+      <span className="absolute inset-0 flex items-center justify-center leading-none" aria-hidden>
+        <span className={cn('font-mono font-bold tabular-nums', scored ? 'text-[15px]' : 'text-caption-sm', band.text)}>
           {scored ? shown : 'N/A'}
-        </span>
-        <span className="text-caption-sm leading-none uppercase tracking-wide text-muted-foreground">
-          {scored ? 'fit' : 'n/a'}
         </span>
       </span>
     </div>
@@ -248,7 +256,8 @@ export function JobCard({
   job, saved, jobStatus, onSave, onUnsave, onQuickApply, isNew = false,
   applyConfirmPending, applyConfirmModalJobId, onConfirmApplied, onConfirmNotYet,
   onApplyWithTailor, onAlreadyApplied, onHide, onOpen, isCursor = false,
-  compareSelected = false, onToggleCompare, repostCount = 0, note,
+  compareSelected = false, onToggleCompare, repostCount = 0, note, sponsorshipRefused,
+  showVisaUnknown = false,
 }: JobCardProps) {
   const reduceMotion = useReducedMotion();
   const [expanded, setExpanded] = useState(false);
@@ -316,7 +325,7 @@ export function JobCard({
     try {
       await handleTailor();
     } catch {
-      toast.error('Could not open Tailor');
+      toast.error("Couldn't open the Tailor tool");
       setTailoring(false);
     }
   };
@@ -329,7 +338,7 @@ export function JobCard({
       await onApplyWithTailor?.();
       await handleTailor();
     } catch {
-      toast.error('Could not open Tailor');
+      toast.error("Couldn't open the Tailor tool");
       setTailoring(false);
     }
   };
@@ -357,7 +366,7 @@ export function JobCard({
       const res = await apiService.checkJobTrust(job);
       const r = res.data;
       if (!r) {
-        toast.error('Could not scan this posting');
+        toast.error("Couldn't scan this posting");
         return;
       }
       const scanTitle = r.trust_band === 'high_risk'
@@ -368,7 +377,7 @@ export function JobCard({
       else if (r.trust_band === 'caution') toast.warning(scanTitle, { description });
       else toast.success(scanTitle, { description });
     } catch {
-      toast.error('Scan failed. Try again');
+      toast.error("Couldn't scan this posting. Please try again.");
     } finally {
       setScanning(false);
     }
@@ -382,11 +391,6 @@ export function JobCard({
   const sourceLabel = job.source ? toTitleCase(job.source) : '';
   const level = jobLevelLabel(job);
   const posted = postedAgeLabel(job) || job.date_posted || '';
-  const meta = [
-    job.salary,
-    toTitleCase(job.employment_type),
-    posted && sourceLabel ? `${posted} via ${sourceLabel}` : posted || (sourceLabel ? `Via ${sourceLabel}` : ''),
-  ].filter(Boolean);
   const rawDays = (job as Job & { days_ago?: number | null }).days_ago;
   const daysOld = typeof rawDays === 'number' ? rawDays : null;
   const stale = daysOld != null && daysOld > STALE_AFTER_DAYS;
@@ -414,6 +418,20 @@ export function JobCard({
   const inAppliedPipeline = isAppliedSavedJob({ status: jobStatus ?? undefined });
   const skills = job.matched_skills ?? [];
 
+  // The location line already says "Remote"; a second Remote chip is noise.
+  const showRemoteChip = !!job.is_remote && !/remote/i.test(location);
+  // Full-time is the default; only an unusual type earns a place on the card.
+  const employment = toTitleCase(job.employment_type);
+  const facts = [
+    job.salary,
+    employment && !/^full[\s-]?time$/i.test(employment) ? employment : '',
+    posted,
+  ].filter(Boolean);
+  const hasVisaRow = !!sponsorshipRefused
+    || (job.h1b_sponsor && !legacySponsorshipSignal(job.sponsorship) && job.visa_flags?.sponsors_h1b?.value !== true)
+    || !!job.visa_flags
+    || !!legacySponsorshipSignal(job.sponsorship);
+
   return (
     <>
       <div
@@ -430,8 +448,9 @@ export function JobCard({
         onClick={onCardClick}
         onKeyDown={onCardKeyDown}
       >
-        <CardContent className="relative z-[2] flex min-h-0 flex-1 flex-col gap-3 p-5">
-          {/* Who and what: the title leads; company and place sit under it. */}
+        <CardContent className="relative z-[2] flex min-h-0 flex-1 flex-col gap-2.5 p-4 sm:p-5">
+          {/* Who and what: the title leads; company and place sit under it.
+              The dial on the right is the verdict, and opens its own reasons. */}
           <div className="flex items-start gap-3">
             <CompanyMark job={job} />
             <div className="min-w-0 flex-1">
@@ -441,21 +460,22 @@ export function JobCard({
               >
                 {title}
               </h3>
-              <p className="mt-1 truncate text-caption text-muted-foreground" title={[company, location].filter(Boolean).join(', ')}>
+              <p className="mt-0.5 truncate text-caption text-muted-foreground" title={[company, location].filter(Boolean).join(', ')}>
                 <span className="font-medium text-ink-muted">{company}</span>
                 <span aria-hidden> · </span>
                 {location || 'Location undisclosed'}
               </p>
             </div>
-            {/* The ring alone holds the right edge, so every header is the
-                same height whatever the band label says. The label leads
-                the facts row below instead. */}
-            <div className="shrink-0">
+            <WhyThisScoreButton
+              job={job}
+              className="job-card-dial -mr-1 -mt-1 shrink-0 rounded-full p-1"
+            >
               <MatchScoreRing job={job} />
-            </div>
+            </WhyThisScoreButton>
           </div>
 
-          {/* Facts a screener and the user both check first. */}
+          {/* The verdict in words, the level, and what is new. Three chips at
+              most, so the row never wraps into a wall of pills. */}
           <div className="flex flex-wrap items-center gap-1.5">
             <span
               className={cn(
@@ -465,16 +485,6 @@ export function JobCard({
             >
               {band.label}
             </span>
-            {isNew && (
-              <span
-                className="job-new-chip inline-flex items-center gap-1 rounded-full border border-info/40 bg-info/10 px-2 py-0.5 text-caption-sm font-semibold text-info"
-                title="New since your last visit"
-                data-testid="job-new-badge"
-              >
-                <span className="h-1.5 w-1.5 rounded-full bg-info" aria-hidden />
-                New
-              </span>
-            )}
             <span
               className={cn(
                 'inline-flex items-center rounded-full border px-2 py-0.5 text-caption-sm font-semibold',
@@ -488,19 +498,18 @@ export function JobCard({
             >
               {level.text}
             </span>
-            {/* One sponsorship chip per card: the filing-history badge below
-                and the posting-level H-1B chip say the same thing with their
-                evidence, so the plain flag shows only when neither renders. */}
-            {job.h1b_sponsor && !legacySponsorshipSignal(job.sponsorship) && job.visa_flags?.sponsors_h1b?.value !== true && (
-              <SignalPill icon={Plane} label="H1B sponsor" tone="sponsor" />
-            )}
-            {job.is_remote && <SignalPill icon={Wifi} label="Remote" tone="remote" />}
+            {showRemoteChip && <SignalPill icon={Wifi} label="Remote" tone="remote" />}
             {job.contract_friendly && <SignalPill icon={FileSignature} label="Contract" tone="contract" />}
-            {job.visa_flags && <VisaFlagChips flags={job.visa_flags} />}
-            {/* The employer's filing history, in the one framing this
-                product uses for it. Renders NOTHING without data - an
-                absence of filings is not evidence about an employer. */}
-            <EmployerSponsorshipBadge signal={legacySponsorshipSignal(job.sponsorship)} />
+            {isNew && (
+              <span
+                className="job-new-chip inline-flex items-center gap-1 rounded-full border border-info/40 bg-info/10 px-2 py-0.5 text-caption-sm font-semibold text-info"
+                title="New since your last visit"
+                data-testid="job-new-badge"
+              >
+                <span className="h-1.5 w-1.5 rounded-full bg-info" aria-hidden />
+                New
+              </span>
+            )}
             {compareSelected && (
               <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-caption-sm font-medium text-primary">
                 <Scale className="h-3 w-3" aria-hidden /> Comparing
@@ -513,9 +522,51 @@ export function JobCard({
             </p>
           )}
 
-          {/* Employer type, availability, destination and warnings - only
-              when the server sent the employer-policy blocks. */}
-          <JobEmployerContext row={job} sourceLabel={sourceLabel || null} />
+          {/* Visa, on a line of its own so it is always in the same place.
+              One sponsorship reading per card: the filing-history badge and
+              the posting-level H-1B chip say the same thing with their
+              evidence, so the plain flag shows only when neither renders. */}
+          {hasVisaRow && (
+            <div className="flex flex-wrap items-center gap-1.5" data-testid="job-visa-row">
+              {sponsorshipRefused && (
+                <span
+                  className="inline-flex items-center gap-1 rounded-full border border-destructive/30 bg-destructive/10 px-2 py-0.5 text-caption-sm font-semibold text-destructive"
+                  title={typeof sponsorshipRefused === 'string' ? sponsorshipRefused : undefined}
+                  data-testid="job-sponsorship-refused"
+                >
+                  <ShieldAlert className="h-3 w-3 shrink-0" aria-hidden />
+                  Says it will not sponsor a visa
+                </span>
+              )}
+              {job.h1b_sponsor && !legacySponsorshipSignal(job.sponsorship) && job.visa_flags?.sponsors_h1b?.value !== true && (
+                <SignalPill icon={Plane} label="Has sponsored H-1B" tone="sponsor" />
+              )}
+              {job.visa_flags && <VisaFlagChips flags={job.visa_flags} />}
+              {/* The employer's filing history, in the one framing this
+                  product uses for it. Renders NOTHING without data - an
+                  absence of filings is not evidence about an employer. */}
+              <EmployerSponsorshipBadge signal={legacySponsorshipSignal(job.sponsorship)} />
+            </div>
+          )}
+
+          {!hasVisaRow && showVisaUnknown && (
+            <p className="text-caption-sm text-muted-foreground" data-testid="job-visa-unknown">
+              No sponsorship information found
+            </p>
+          )}
+
+          {/* Pay and age: the two facts people look for next. */}
+          {facts.length > 0 && (
+            <p className="truncate text-caption tabular-nums text-ink-muted" title={facts.join(' · ')}>
+              {facts.join(' · ')}
+            </p>
+          )}
+
+          {/* Only what needs a second look: a staffing or consultancy
+              employer, a posting we could not confirm is open, or a warning.
+              A direct employer with an open posting is the normal case and
+              is said once, in the details panel. */}
+          <JobEmployerContext row={job} sourceLabel={sourceLabel || null} compact />
           {showLegacyTrust && job.trust_band && (
             <div className="flex flex-wrap items-center gap-1.5">
               <JobTrustBadge band={job.trust_band} score={job.trust_score} reasons={job.trust_reasons} />
@@ -531,41 +582,54 @@ export function JobCard({
             </div>
           )}
 
-          {/* "Why this score" always sits at the end of this line, so it is in
-              the same place on every card instead of wrapping wherever the
-              chips above happen to end. */}
+          {/* Why it matched, and the way into everything else about the job. */}
           <div className="flex items-start justify-between gap-2">
-          {(skills.length > 0 || job.missing_skills?.length > 0) ? (
-            <p className="flex min-w-0 items-start gap-1.5 text-caption-sm leading-snug text-muted-foreground" data-testid="job-skill-match">
-              <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-signal" aria-hidden />
-              <span className="min-w-0">
-                {skills.length > 0 ? (
-                  <>
-                    Matches <span className="font-medium text-foreground">{skills.slice(0, 4).join(', ')}</span>
-                    {skills.length > 4 && <> +{skills.length - 4}</>}
-                  </>
-                ) : (
-                  'No listed skills matched yet'
-                )}
-                {job.missing_skills?.length > 0 && (
-                  <> · {job.missing_skills.length} gap{job.missing_skills.length === 1 ? '' : 's'}</>
-                )}
-              </span>
-            </p>
-          ) : (
-            <span />
-          )}
-            <WhyThisScoreButton job={job} className="-mr-1.5 -mt-0.5 shrink-0" />
+            {(skills.length > 0 || job.missing_skills?.length > 0) ? (
+              <p className="flex min-w-0 items-start gap-1.5 text-caption-sm leading-snug text-muted-foreground" data-testid="job-skill-match">
+                <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-signal" aria-hidden />
+                <span className="min-w-0">
+                  {skills.length > 0 ? (
+                    <>
+                      Matches <span className="font-medium text-foreground">{skills.slice(0, 4).join(', ')}</span>
+                      {skills.length > 4 && <> +{skills.length - 4}</>}
+                    </>
+                  ) : (
+                    'No listed skills matched yet'
+                  )}
+                  {/* One or two gaps are named: which skill is missing is what
+                      decides apply or skip. More than that is a count. */}
+                  {job.missing_skills?.length > 0 && job.missing_skills.length <= 2 && (
+                    <> · Missing <span className="font-medium text-foreground">{job.missing_skills.join(', ')}</span></>
+                  )}
+                  {job.missing_skills?.length > 2 && (
+                    <> · {job.missing_skills.length} gaps</>
+                  )}
+                </span>
+              </p>
+            ) : (
+              <span />
+            )}
+            <button
+              type="button"
+              onClick={() => {
+                if (onOpen) onOpen();
+                else setExpanded((v) => !v);
+              }}
+              aria-expanded={onOpen ? undefined : expanded}
+              className="interactive hit-target -mr-1.5 -mt-0.5 inline-flex shrink-0 items-center gap-0.5 rounded-md px-1.5 py-0.5 text-caption-sm font-semibold text-primary hover:bg-primary/10"
+            >
+              Details
+              {onOpen ? (
+                <ChevronRight className="h-3 w-3" aria-hidden />
+              ) : (
+                <ChevronDown className={cn('h-3 w-3 transition-transform duration-base ease-standard motion-reduce:transition-none', expanded && 'rotate-180')} aria-hidden />
+              )}
+            </button>
           </div>
 
           {note && (
             <p className="truncate text-caption-sm font-medium text-ink-muted" data-testid="job-note">
               {note}
-            </p>
-          )}
-          {meta.length > 0 && (
-            <p className="truncate text-caption-sm tabular-nums text-muted-foreground" title={meta.join(' · ')}>
-              {meta.join(' · ')}
             </p>
           )}
           {(stale || repostCount > 0) && (
@@ -602,7 +666,7 @@ export function JobCard({
             )}
           </AnimatePresence>
 
-          <div className="mt-auto space-y-2 border-t border-border/40 pt-2.5">
+          <div className="mt-auto space-y-2 border-t border-border/40 pt-3">
             {showAppState && appState && (
               <p
                 className={cn(
@@ -654,119 +718,101 @@ export function JobCard({
                 </div>
               </div>
             ) : (
-              <div className="space-y-1.5">
-                <div className="grid grid-cols-2 gap-1.5">
-                  <Button
-                    size="sm"
-                    onClick={() => {
-                      if (inAppliedPipeline) onQuickApply();
-                      else setApplyChoiceOpen(true);
-                    }}
-                    title={apply.fallback ? 'Apply link missing. Opens Google search, then asks how you want to apply' : 'Choose tailor, apply with your base resume, or mark already applied'}
-                    className="h-10 min-w-0 gap-1.5 text-xs font-semibold"
-                  >
-                    <ExternalLink className="h-3.5 w-3.5" />
-                    {inAppliedPipeline ? 'Reopen' : 'Apply'}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => void startTailorHandoff()}
-                    disabled={tailoring}
-                    aria-busy={tailoring}
-                    title="Open Tailor with this job's description"
-                    className="h-10 min-w-0 gap-1.5 border-border bg-card text-xs font-semibold text-foreground hover:border-primary hover:bg-primary/10 hover:text-primary disabled:opacity-70"
-                  >
-                    {tailoring ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
-                    ) : (
-                      <Wand2 className="h-3.5 w-3.5" />
-                    )}
-                    {tailoring ? 'Opening...' : 'Tailor resume'}
-                  </Button>
-                </div>
-                <div className="flex flex-wrap items-center gap-1.5">
-                  {!inAppliedPipeline && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => void toggleSave()}
-                      disabled={saving}
-                      aria-busy={saving}
-                      title={saved ? 'Remove from saved' : 'Save this job'}
-                      className={cn('hit-target h-9 gap-1.5 px-2.5 text-xs font-medium hover:bg-accent',
-                        saved
-                          ? 'text-signal hover:text-signal'
-                          : 'text-muted-foreground hover:text-foreground')}
-                    >
-                      {saving ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
-                      ) : saved ? (
-                        <BookmarkCheck className="h-3.5 w-3.5" />
-                      ) : (
-                        <BookmarkPlus className="h-3.5 w-3.5" />
-                      )}
-                      {saving ? (saved ? 'Removing...' : 'Saving...') : saved ? 'Saved' : 'Save'}
-                    </Button>
+              /* One row: the two things to do with a job, then the quiet
+                 housekeeping as icons. Everything else lives under More. */
+              <div className="flex items-center gap-1.5">
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    if (inAppliedPipeline) onQuickApply();
+                    else setApplyChoiceOpen(true);
+                  }}
+                  title={apply.fallback ? 'Apply link missing. Opens Google search, then asks how you want to apply' : 'Choose tailor, apply with your base resume, or mark already applied'}
+                  className="h-10 min-w-0 flex-1 gap-1.5 px-3 text-xs font-semibold"
+                >
+                  <ExternalLink className="hidden h-3.5 w-3.5 shrink-0 min-[420px]:block" />
+                  {inAppliedPipeline ? 'Reopen' : 'Apply'}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => void startTailorHandoff()}
+                  disabled={tailoring}
+                  aria-busy={tailoring}
+                  title="Open Tailor with this job's description"
+                  className="h-10 min-w-0 flex-[1.35] gap-1.5 border-border bg-card px-3 text-xs font-semibold text-foreground hover:border-primary hover:bg-primary/10 hover:text-primary disabled:opacity-70"
+                >
+                  {tailoring ? (
+                    <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" aria-hidden />
+                  ) : (
+                    <Wand2 className="hidden h-3.5 w-3.5 shrink-0 min-[420px]:block" />
                   )}
+                  <span className="truncate">{tailoring ? 'Opening...' : 'Tailor resume'}</span>
+                </Button>
+                {!inAppliedPipeline && (
                   <Button
                     size="sm"
                     variant="ghost"
-                    onClick={() => setExpanded((v) => !v)}
-                    aria-expanded={expanded}
-                    className="hit-target h-9 gap-1 px-2.5 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
+                    onClick={() => void toggleSave()}
+                    disabled={saving}
+                    aria-busy={saving}
+                    aria-label={saving ? (saved ? 'Removing...' : 'Saving...') : saved ? 'Saved' : 'Save'}
+                    title={saved ? 'Saved. Click to remove from saved' : 'Save this job for later'}
+                    className={cn('hit-target h-10 w-9 shrink-0 px-0 hover:bg-accent sm:w-10',
+                      saved
+                        ? 'text-signal hover:text-signal'
+                        : 'text-muted-foreground hover:text-foreground')}
                   >
-                    Details
-                    <ChevronDown className={cn('h-3.5 w-3.5 transition-transform duration-base ease-standard motion-reduce:transition-none', expanded && 'rotate-180')} aria-hidden />
-                  </Button>
-                  <span className="ml-auto flex items-center gap-0.5">
-                    {onHide && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={onHide}
-                        title="Hide this job from For you"
-                        aria-label="Hide this job"
-                        className="hit-target h-9 w-9 px-0 text-muted-foreground hover:bg-accent hover:text-foreground"
-                      >
-                        <CircleOff className="h-4 w-4" aria-hidden />
-                      </Button>
+                    {saving ? (
+                      <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                    ) : saved ? (
+                      <BookmarkCheck className="h-4 w-4" aria-hidden />
+                    ) : (
+                      <BookmarkPlus className="h-4 w-4" aria-hidden />
                     )}
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          aria-label={`More for ${title}`}
-                          className="hit-target h-9 gap-1 px-2.5 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
-                        >
-                          More
-                          <MoreHorizontal className="h-3.5 w-3.5" aria-hidden />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-56">
-                        <DropdownMenuItem onSelect={() => openAnalysis('summarize')}>
-                          <Sparkles className="mr-2 h-4 w-4" aria-hidden /> AI summary
+                  </Button>
+                )}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      aria-label={`More for ${title}`}
+                      title="More: not interested, summary, skill gaps, cover letter, referrals, compare"
+                      className="hit-target h-10 w-9 shrink-0 px-0 text-muted-foreground hover:bg-accent hover:text-foreground sm:w-10"
+                    >
+                      <MoreHorizontal className="h-4 w-4" aria-hidden />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-60">
+                    {onHide && (
+                      <>
+                        <DropdownMenuItem onSelect={onHide} aria-label="Hide this job">
+                          <CircleOff className="mr-2 h-4 w-4" aria-hidden /> Not interested
                         </DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => openAnalysis('missing_skills')}>
-                          <Target className="mr-2 h-4 w-4" aria-hidden /> Skill-gap analysis
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => openAnalysis('cover_letter')}>
-                          <FileText className="mr-2 h-4 w-4" aria-hidden /> Generate cover letter
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => setReferralOpen(true)}>
-                          <Users className="mr-2 h-4 w-4" aria-hidden /> Find someone who can refer you
-                        </DropdownMenuItem>
-                        {onToggleCompare && (
-                          <DropdownMenuItem onSelect={onToggleCompare}>
-                            <Scale className="mr-2 h-4 w-4" aria-hidden />
-                            {compareSelected ? 'Remove from compare' : 'Add to compare'}
-                          </DropdownMenuItem>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </span>
-                </div>
+                        <DropdownMenuSeparator />
+                      </>
+                    )}
+                    <DropdownMenuItem onSelect={() => openAnalysis('summarize')}>
+                      <Sparkles className="mr-2 h-4 w-4" aria-hidden /> Summarize this job
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => openAnalysis('missing_skills')}>
+                      <Target className="mr-2 h-4 w-4" aria-hidden /> Show my skill gaps
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => openAnalysis('cover_letter')}>
+                      <FileText className="mr-2 h-4 w-4" aria-hidden /> Write a cover letter
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => setReferralOpen(true)}>
+                      <Users className="mr-2 h-4 w-4" aria-hidden /> Find someone who can refer you
+                    </DropdownMenuItem>
+                    {onToggleCompare && (
+                      <DropdownMenuItem onSelect={onToggleCompare}>
+                        <Scale className="mr-2 h-4 w-4" aria-hidden />
+                        {compareSelected ? 'Remove from compare' : 'Compare with other jobs'}
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             )}
 

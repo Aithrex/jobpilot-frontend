@@ -1,3 +1,4 @@
+import { notifyError } from '@/lib/notify';
 import { useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -70,7 +71,7 @@ export default function EventsTab({ embedded }: EventsTabProps) {
     const res = await apiService.refreshEvents();
     setRefreshing(false);
     if (res.error) {
-      toast.error('Refresh failed', { description: res.error });
+      toast.error("Couldn't refresh", { description: res.error });
       return;
     }
     toast.success(`Pulled ${res.data?.upserted ?? 0} events`);
@@ -80,7 +81,7 @@ export default function EventsTab({ embedded }: EventsTabProps) {
   const setRelation = async (e: EventItem, relation: EventRelation) => {
     const next = e.relation === relation ? 'dismissed' : relation;
     const res = await apiService.setEventRelation(e.event_id, next);
-    if (res.error) { toast.error(res.error); return; }
+    if (res.error) { notifyError("Couldn't update that event", res.error); return; }
     qc.invalidateQueries({ queryKey: ['events'] });
     if (next === 'won' || next === 'attended') {
       toast.success(next === 'won' ? 'Marked as won' : 'Marked as attended', {

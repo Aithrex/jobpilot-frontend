@@ -6,6 +6,7 @@
  * without dragging the connect / sync / disconnect chrome onto the page with
  * them. GmailIntegration still composes this, so Settings is unchanged.
  */
+import { notifyError } from '@/lib/notify';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -67,7 +68,7 @@ export function useGmailSuggestions(enabled: boolean, onChanged?: () => void) {
           : await apiService.applyGmailSuggestion(id);
       setBusyId(null);
       if (resp.error) {
-        toast.error(resp.error);
+        notifyError("Couldn't apply that update", resp.error);
         return;
       }
       setSuggestions((prev) => prev.filter((s) => s.suggestion_id !== id));
@@ -81,7 +82,7 @@ export function useGmailSuggestions(enabled: boolean, onChanged?: () => void) {
     const resp = await apiService.dismissGmailSuggestion(id);
     setBusyId(null);
     if (resp.error) {
-      toast.error(resp.error);
+      notifyError("Couldn't dismiss that suggestion", resp.error);
       return;
     }
     setSuggestions((prev) => prev.filter((s) => s.suggestion_id !== id));

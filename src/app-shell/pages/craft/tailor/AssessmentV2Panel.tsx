@@ -10,7 +10,7 @@ import type { AssessmentV2Result, ATSScores } from '@/types/resume';
 import { isAssessmentV2 } from '@/lib/atsScores';
 
 const DISCLAIMER =
-  'CareerOS evaluates your resume against the job description. This is not an employer-specific score or a guarantee of passing screening.';
+  'Aspirely evaluates your resume against the job description. This is not an employer-specific score or a guarantee of passing screening.';
 
 const BUCKET_LABEL: Record<string, string> = {
   supported_and_satisfied: 'Supported and satisfied',
@@ -177,7 +177,7 @@ export function AssessmentV2Panel({
   return (
     <div className="space-y-5 p-5 sm:p-6">
       <section className="rounded-container border border-border bg-card p-5 space-y-3">
-        <h2 className="text-title-sm text-foreground">ATS score</h2>
+        <h2 className="text-title-sm text-foreground">Match score</h2>
         <p className="text-sm text-foreground">{formatRequiredLine(reqCov)}</p>
         {prefCov &&
           typeof prefCov.denominator === 'number' &&

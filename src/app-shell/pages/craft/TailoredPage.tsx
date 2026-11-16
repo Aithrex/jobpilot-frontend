@@ -18,6 +18,7 @@ import {
   CalendarDays,
   CalendarRange,
   ChevronDown,
+  FileCheck2,
   FileDown,
   Flame,
   MessagesSquare,
@@ -57,6 +58,9 @@ import {
 const VersionDiffViewer = lazy(() => import('@/components/resume/VersionDiffViewer'));
 
 type SortKey = 'newest' | 'oldest' | 'ats';
+
+/** The quick filters appear once the list is longer than this. */
+const PRESETS_FROM = 6;
 
 const sourceBadge: Record<TailoringVersion['source'], { label: string; cls: string }> = {
   initial: { label: 'Initial', cls: 'bg-primary/10 text-primary border-primary/25' },
@@ -164,7 +168,7 @@ export default function TailoredPage() {
     if (dateFrom || dateTo) {
       chips.push({ key: 'date', label: `${dateFrom || '...'} to ${dateTo || '...'}`, clear: () => { setDateFrom(''); setDateTo(''); } });
     }
-    if (atsMin > 0) chips.push({ key: 'ats', label: `ATS ${atsMin}+`, clear: () => setAtsMin(0) });
+    if (atsMin > 0) chips.push({ key: 'ats', label: `Match score ${atsMin}+`, clear: () => setAtsMin(0) });
     if (hasRegensOnly) chips.push({ key: 'regens', label: 'Multi-version', clear: () => setHasRegensOnly(false) });
     if (quickPreset) {
       const names: Record<HistoryPreset, string> = {
@@ -213,8 +217,8 @@ export default function TailoredPage() {
     });
   }, []);
   const copyJd = useCallback(async (text: string) => {
-    try { await navigator.clipboard.writeText(text); toast.success('JD copied'); }
-    catch { toast.error('Copy failed'); }
+    try { await navigator.clipboard.writeText(text); toast.success('Job description copied'); }
+    catch { toast.error("Couldn't copy"); }
   }, []);
 
   const handleDownloadVersion = useCallback(async (
@@ -230,7 +234,7 @@ export default function TailoredPage() {
       const fullResp = await apiService.getTailoringRecord(rec.record_id);
       if (fullResp.error || !fullResp.data?.record) {
         setDownloading(null);
-        toast.error('Failed to load version content');
+        toast.error("Couldn't load that version");
         return;
       }
       const full = fullResp.data.record as TailoringRecord;
@@ -238,7 +242,7 @@ export default function TailoredPage() {
       tailored = (v as any)?.tailored_resume;
       if (!tailored) {
         setDownloading(null);
-        toast.error('Version content missing');
+        toast.error("Couldn't find that version");
         return;
       }
     }
@@ -254,7 +258,7 @@ export default function TailoredPage() {
       },
     );
     setDownloading(null);
-    if (r.error) { toast.error('Download failed', { description: r.error }); return; }
+    if (r.error) { toast.error("Couldn't download that file", { description: r.error }); return; }
     if (r.data) {
       const u = URL.createObjectURL(r.data);
       const a = document.createElement('a');
@@ -275,11 +279,37 @@ export default function TailoredPage() {
     }
   }, [setRecords]);
 
+  // The row's own Download: the version in use, as PDF, without expanding.
+  const [downloadingRow, setDownloadingRow] = useState<string | null>(null);
+  const handleDownloadCurrent = useCallback(async (rec: TailoringRecord) => {
+    setDownloadingRow(rec.record_id);
+    try {
+      let full = rec;
+      if (!rec.versions?.length) {
+        const resp = await apiService.getTailoringRecord(rec.record_id);
+        if (resp.error || !resp.data?.record) {
+          toast.error("Couldn't load this resume");
+          return;
+        }
+        full = resp.data.record as TailoringRecord;
+      }
+      const ordered = (full.versions || []).slice().sort((a, b) => b.version_number - a.version_number);
+      const current = ordered.find(v => v.version_id === full.current_version_id) ?? ordered[0];
+      if (!current) {
+        toast.error('This resume has no saved version to download yet');
+        return;
+      }
+      await handleDownloadVersion(full, current, 'pdf');
+    } finally {
+      setDownloadingRow(null);
+    }
+  }, [handleDownloadVersion]);
+
   const handleSetCurrent = useCallback(async (recordId: string, versionId: string) => {
     setSettingCurrent(versionId);
     const resp = await apiService.setCurrentResumeVersion(recordId, versionId);
     setSettingCurrent(null);
-    if (resp.error) { toast.error('Failed to set current version'); return; }
+    if (resp.error) { toast.error("Couldn't make that the current version"); return; }
     toast.success('Marked as current version');
     setRecords(prev => prev.map(r =>
       r.record_id === recordId ? { ...r, current_version_id: versionId } : r,
@@ -307,7 +337,7 @@ export default function TailoredPage() {
         });
         return;
       }
-      toast.error('Delete failed');
+      toast.error("Couldn't delete that");
       return;
     }
     toast.success('Record deleted');
@@ -322,9 +352,10 @@ export default function TailoredPage() {
     <div className="space-y-4">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div className="space-y-1">
-          <h2 className="font-display text-h2 text-foreground">Tailored versions</h2>
+          <h2 className="font-display text-h2 text-foreground">Tailored resumes</h2>
           <p className="text-caption text-muted-foreground">
-            {total} matching session{total === 1 ? '' : 's'} · {records.length} loaded
+            {total} tailored resume{total === 1 ? '' : 's'}
+            {records.length < total ? ` · showing ${records.length}` : ''}
           </p>
         </div>
         <button
@@ -340,7 +371,7 @@ export default function TailoredPage() {
       {(
         <div className="rounded-container border border-border surface overflow-hidden">
           {/* Row 1 - search + sort */}
-          <div className="px-4 py-3 flex items-center gap-3 flex-wrap border-b border-border">
+          <div className="px-4 py-3 flex items-center gap-3 flex-wrap">
             <div className="relative flex-1 min-w-[240px]">
               <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
               <input
@@ -366,7 +397,7 @@ export default function TailoredPage() {
               {([
                 ['newest', 'Newest'],
                 ['oldest', 'Oldest'],
-                ['ats', 'Best ATS'],
+                ['ats', 'Best match'],
               ] as [SortKey, string][]).map(([k, lbl]) => (
                 <button
                   key={k}
@@ -381,24 +412,45 @@ export default function TailoredPage() {
                 >{lbl}</button>
               ))}
             </div>
+            <button
+              type="button"
+              onClick={() => setAdvancedOpen(o => !o)}
+              aria-expanded={advancedOpen}
+              aria-controls="advanced-filters"
+              className={`inline-flex min-h-11 items-center gap-1 text-xs font-medium px-3 rounded-control transition-all ${focusRing} ${
+                advancedOpen
+                  ? 'bg-primary/15 text-primary'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+              }`}
+            >
+              {advancedOpen ? 'Fewer filters' : 'More filters'}
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${advancedOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
+            </button>
           </div>
 
-          {/* Row 2 - quick-preset chips with live counts */}
-          <div className="px-4 py-2.5 flex items-center gap-2 overflow-x-auto border-b border-border">
-            <span className="text-caption-sm font-semibold uppercase tracking-wider text-muted-foreground shrink-0">Quick</span>
+          {/* Row 2 - quick-preset chips with live counts. Offered once there
+              is enough to filter: six chips above three rows was more
+              controls than content. */}
+          {((summary?.total ?? total) > PRESETS_FROM || quickPreset) && (
+          <div className="px-4 py-2.5 flex items-center gap-2 overflow-x-auto border-t border-border">
+            <span className="text-caption-sm font-semibold uppercase tracking-wider text-muted-foreground shrink-0">Show only</span>
             {([
               // Eight presets read as one undifferentiated row, so they are
               // grouped by what they filter on (time, score, stage, versions)
               // with a hairline between groups. Order and behaviour unchanged.
               { k: 'week',          label: 'This week',      count: presetCounts.week,         icon: CalendarDays,   group: 'time' },
               { k: 'month',         label: 'Last 30 days',   count: presetCounts.month,        icon: CalendarRange,  group: 'time' },
-              { k: 'highAts',       label: 'High match 80+', count: presetCounts.highAts,      icon: Sparkles,       group: 'score' },
+              { k: 'highAts',       label: 'Strong match (80+)', count: presetCounts.highAts,  icon: Sparkles,       group: 'score' },
               { k: 'needsWork',     label: 'Needs work',     count: presetCounts.needsWork,    icon: Wrench,         group: 'score' },
               { k: 'interviewing',  label: 'Interviewing',   count: presetCounts.interviewing, icon: MessagesSquare, group: 'stage' },
               { k: 'offers',        label: 'Offers',         count: presetCounts.offers,       icon: Flame,          group: 'stage' },
               { k: 'pending',       label: 'Due soon',       count: presetCounts.pending,      icon: Zap,            group: 'stage' },
-              { k: 'multiVersion',  label: 'Multi-version',  count: presetCounts.multiVersion, icon: RefreshCw,      group: 'versions' },
-            ] as { k: HistoryPreset; label: string; count: number; icon: LucideIcon; group: string }[]).map((p, i, all) => {
+              { k: 'multiVersion',  label: 'Revised',        count: presetCounts.multiVersion, icon: RefreshCw,      group: 'versions' },
+            ] as { k: HistoryPreset; label: string; count: number; icon: LucideIcon; group: string }[])
+              // A preset that would show nothing is not offered: eight chips
+              // with half of them greyed out at zero read as a broken toolbar.
+              .filter((p) => p.count > 0 || quickPreset === p.k)
+              .map((p, i, all) => {
               const active = quickPreset === p.k;
               const dim = p.count === 0;
               const Icon = p.icon;
@@ -430,49 +482,33 @@ export default function TailoredPage() {
             })}
           </div>
 
-          {/* Row 3 - applied-filter chips + advanced toggle + result summary */}
-          <div className="px-4 py-2.5 flex items-center gap-2 flex-wrap">
-            {activeChips.length > 0 ? (
-              <>
-                <span className="text-caption-sm font-semibold uppercase tracking-wider text-muted-foreground shrink-0">Active</span>
-                {activeChips.map(c => (
-                  <button
-                    key={c.key}
-                    type="button"
-                    onClick={c.clear}
-                    aria-label={`Remove filter: ${c.label}`}
-                    className={`inline-flex min-h-11 items-center gap-1.5 px-3 rounded-full text-xs tracking-wide bg-primary/10 text-primary border border-primary/25 hover:bg-primary/20 transition-colors ${focusRing}`}
-                  >
-                    {c.label}
-                    <X className="w-3.5 h-3.5" aria-hidden="true" />
-                  </button>
-                ))}
-                <button onClick={resetFilters} className={`min-h-11 px-2 rounded-control text-xs text-muted-foreground hover:text-destructive ml-1 ${focusRing}`}>
-                  Clear all
+          )}
+
+          {/* Row 3 - applied-filter chips, shown only while a filter is on */}
+          {activeChips.length > 0 && (
+            <div className="px-4 py-2.5 flex items-center gap-2 flex-wrap border-t border-border">
+              <span className="text-caption-sm font-semibold uppercase tracking-wider text-muted-foreground shrink-0">Filtered by</span>
+              {activeChips.map(c => (
+                <button
+                  key={c.key}
+                  type="button"
+                  onClick={c.clear}
+                  aria-label={`Remove filter: ${c.label}`}
+                  className={`inline-flex min-h-11 items-center gap-1.5 px-3 rounded-full text-xs tracking-wide bg-primary/10 text-primary border border-primary/25 hover:bg-primary/20 transition-colors ${focusRing}`}
+                >
+                  {c.label}
+                  <X className="w-3.5 h-3.5" aria-hidden="true" />
                 </button>
-              </>
-            ) : (
-              <span className="text-xs text-muted-foreground italic">No filters applied</span>
-            )}
-            <div className="flex-1" />
-            <span className="text-xs text-muted-foreground">
-              <b className="text-foreground">{records.length}</b> of {total}
-            </span>
-            <button
-              type="button"
-              onClick={() => setAdvancedOpen(o => !o)}
-              aria-expanded={advancedOpen}
-              aria-controls="advanced-filters"
-              className={`inline-flex min-h-11 items-center gap-1 text-xs font-medium px-3 rounded-control transition-all ${focusRing} ${
-                advancedOpen
-                  ? 'bg-primary/15 text-primary'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-              }`}
-            >
-              {advancedOpen ? 'Hide advanced' : 'Advanced filters'}
-              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${advancedOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
-            </button>
-          </div>
+              ))}
+              <button onClick={resetFilters} className={`min-h-11 px-2 rounded-control text-xs text-muted-foreground hover:text-destructive ml-1 ${focusRing}`}>
+                Clear all
+              </button>
+              <div className="flex-1" />
+              <span className="text-xs text-muted-foreground">
+                <b className="text-foreground">{records.length}</b> of {total}
+              </span>
+            </div>
+          )}
 
           {/* Advanced drawer (collapsible) */}
           {advancedOpen && (
@@ -493,7 +529,7 @@ export default function TailoredPage() {
                   ))}
                 </select>
               </FilterInput>
-              <FilterInput label={atsMin > 0 ? `ATS ${atsMin}+` : 'ATS minimum'}>
+              <FilterInput label={atsMin > 0 ? `Match score ${atsMin}+` : 'Minimum match score'}>
                 <div className="flex items-center gap-2">
                   <input
                     type="range"
@@ -536,7 +572,7 @@ export default function TailoredPage() {
           <Sparkles className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
           <p className="text-sm font-medium text-foreground">No tailored resumes yet</p>
           <p className="mx-auto mt-1 max-w-prose text-xs text-muted-foreground">
-            Paste a job description in Tailor and each version you create lands here.
+            Tailor your resume for a job and it is saved here, ready to download again.
           </p>
           <Button asChild className="mt-4 min-h-11">
             <Link to={appPath('resume', 'tailor')}>Tailor a resume</Link>
@@ -565,7 +601,9 @@ export default function TailoredPage() {
                     aria-expanded={isOpen}
                     className={`flex min-h-11 items-center gap-3 min-w-0 flex-1 text-left rounded-control ${focusRing}`}
                   >
-                    <div className="w-2 h-2 rounded-full shrink-0 bg-primary" />
+                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-control bg-primary/10 text-primary" aria-hidden="true">
+                      <FileCheck2 className="w-4 h-4" />
+                    </span>
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium text-foreground truncate">
                         {title}{company && company !== 'Not specified' ? ` · ${company}` : ''}
@@ -577,7 +615,7 @@ export default function TailoredPage() {
                         {(rec.base_selection?.filename || rec.base_resume_filename) && (
                           <>
                             <span>·</span>
-                            <span title="Base resume used for this tailoring">
+                            <span title="The resume this was tailored from">
                               from {rec.base_selection?.filename || rec.base_resume_filename}
                             </span>
                           </>
@@ -585,7 +623,7 @@ export default function TailoredPage() {
                         {typeof ats === 'number' && (
                           <>
                             <span>·</span>
-                            <span className={`font-semibold ${atsColor(ats)}`}>ATS {ats}/100</span>
+                            <span className={`font-semibold ${atsColor(ats)}`}>Match score {ats}</span>
                           </>
                         )}
                         {(() => {
@@ -605,11 +643,29 @@ export default function TailoredPage() {
                         )}
                       </p>
                     </div>
-                    <ChevronDown className={`w-4 h-4 text-muted-foreground shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
+                    <span className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-muted-foreground">
+                      <span className="hidden sm:inline">{isOpen ? 'Hide versions' : 'Versions and job'}</span>
+                      <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
+                    </span>
                   </button>
                   <button
                     type="button"
-                    title="Delete record"
+                    title="Download the current version as PDF"
+                    aria-label={`Download resume for ${title} as PDF`}
+                    disabled={downloadingRow === rec.record_id}
+                    onClick={() => void handleDownloadCurrent(rec)}
+                    className={`inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-control border border-border bg-background px-3 text-xs font-semibold text-foreground hover:border-primary/40 hover:text-primary transition-colors disabled:opacity-60 ${focusRing}`}
+                  >
+                    {downloadingRow === rec.record_id ? (
+                      <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
+                    ) : (
+                      <FileDown className="w-4 h-4" aria-hidden="true" />
+                    )}
+                    <span className="hidden sm:inline">Download</span>
+                  </button>
+                  <button
+                    type="button"
+                    title="Delete this tailored resume"
                     aria-label={`Delete tailoring record: ${title}`}
                     disabled={deleting === rec.record_id}
                     onClick={() => setPendingDelete({ id: rec.record_id, label: title })}
@@ -643,7 +699,7 @@ export default function TailoredPage() {
                               aria-expanded={jdOpenFor.has(rec.record_id)}
                               aria-controls={`jd-text-${rec.record_id}`}
                               className={`min-h-11 text-xs px-2.5 rounded text-primary hover:bg-primary/10 ${focusRing}`}
-                            >{jdOpenFor.has(rec.record_id) ? 'Hide JD' : 'View JD'}</button>
+                            >{jdOpenFor.has(rec.record_id) ? 'Hide job description' : 'View job description'}</button>
                           ) : (
                             <span role="status" aria-live="polite" className="text-xs text-muted-foreground italic">
                               Loading job description...
@@ -709,7 +765,7 @@ export default function TailoredPage() {
                             <span className={`text-xs tracking-wide px-1.5 py-0.5 rounded border ${badge.cls}`}>{badge.label}</span>
                             {isCurrent && <span className="text-xs tracking-wide px-1.5 py-0.5 rounded bg-success/15 text-success border border-success/25">Current</span>}
                             {typeof vAts === 'number' && (
-                              <span className={`text-xs font-medium ${atsColor(vAts)}`}>ATS {vAts}</span>
+                              <span className={`text-xs font-medium ${atsColor(vAts)}`}>Match score {vAts}</span>
                             )}
                             <span className="text-xs text-muted-foreground ml-auto">{formatDate(v.created_at)}</span>
                           </div>
