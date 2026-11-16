@@ -10,15 +10,9 @@ import { AnimatedOutlet } from "../AnimatedOutlet";
  */
 export default function GrowPage() {
   return (
-    <div className="page-measure flex flex-col gap-6">
+    <div className="page-measure flex flex-col gap-4">
       <header>
-        <p className="overline mb-1">Grow</p>
-        <h1 className="text-title font-display text-foreground">
-          Build skills &amp; momentum
-        </h1>
-        <p className="mt-1 max-w-prose text-caption text-muted-foreground">
-          Learning paths, interview prep, networking, and events in one place.
-        </p>
+        <h1 className="text-title font-display text-foreground">Grow</h1>
       </header>
 
       <SubNav ariaLabel="Grow sections" items={GROW_SECTIONS} />

@@ -195,7 +195,7 @@ export function ExperienceLevelPicker() {
           )}
         >
           <BriefcaseBusiness className="h-3.5 w-3.5" aria-hidden />
-          <span className="hidden text-muted-foreground sm:inline">Experience:</span>
+          <span className="hidden text-muted-foreground 2xl:inline">Experience:</span>
           <span>{summary(seniorityLevels)}</span>
           {isMine && (
             <span className="rounded-full bg-primary/15 px-1.5 py-0.5 text-caption-sm font-semibold text-primary">

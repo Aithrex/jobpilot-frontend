@@ -288,42 +288,14 @@ export default function ProfileTab() {
 
   return (
     <div className="space-y-6">
-      {/* Overview: completion, readiness, gaps and memory sync at a glance. */}
+      {/* Overview: how complete the profile is. The score and its gaps follow. */}
       <section aria-labelledby="profile-overview-title" className={settingsCardCls}>
         <h2 id="profile-overview-title" className={settingsCardTitleCls}>
-          Profile &amp; career strategy
+          Your profile
         </h2>
         <p className={settingsCardHintCls}>
-          Industry-level profile configuration for better tailoring, outreach, and copilot guidance.
+          The more of this you fill in, the better your matches, tailoring and interview prep.
         </p>
-        <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <div className="rounded-lg bg-muted px-3 py-2">
-            <dt className="text-caption-sm uppercase tracking-wide text-muted-foreground">Completion</dt>
-            <dd className="text-label-lg tabular-nums text-foreground">{completion}%</dd>
-          </div>
-          <div className="rounded-lg bg-muted px-3 py-2">
-            <dt className="text-caption-sm uppercase tracking-wide text-muted-foreground">Readiness</dt>
-            <dd className={cn("text-label-lg tabular-nums", scoreTone)}>{recruiterReadyScore}/100</dd>
-          </div>
-          <div className="rounded-lg bg-muted px-3 py-2">
-            <dt className="text-caption-sm uppercase tracking-wide text-muted-foreground">Open gaps</dt>
-            <dd
-              className={cn(
-                "text-label-lg tabular-nums",
-                topGaps.length > 0 ? "text-warning" : "text-muted-foreground",
-              )}
-            >
-              {topGaps.length}
-            </dd>
-          </div>
-          <div className="rounded-lg bg-muted px-3 py-2">
-            <dt className="text-caption-sm uppercase tracking-wide text-muted-foreground">Memory sync</dt>
-            <dd className={cn("text-label-lg", memoryLoading ? "text-muted-foreground" : "text-foreground")}>
-              {memoryLoading ? "Loading..." : "Ready"}
-            </dd>
-          </div>
-        </dl>
-
         <div className="mt-5 flex items-center justify-between gap-3">
           <p id="profile-completion-label" className="text-label-lg text-foreground">
             Profile completion
@@ -343,9 +315,6 @@ export default function ProfileTab() {
             style={{ width: `${completion}%` }}
           />
         </div>
-        <p className={settingsHelpCls}>
-          Higher completion improves quality of AI suggestions, outreach sequences, and interview prep.
-        </p>
       </section>
 
       <section aria-labelledby="profile-score-title" className={settingsCardCls}>

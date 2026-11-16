@@ -39,12 +39,8 @@ function CraftWorkspace() {
 
   return (
     <div className="surface-studio studio-canvas page-full min-h-[calc(100vh-4rem)]">
-      <header className="mb-5">
-        <p className="overline mb-1">Resume</p>
-        <h1 className="text-title font-display text-foreground">Shape your story</h1>
-        <p className="mt-1 text-caption text-muted-foreground">
-          Create stronger resumes for every opportunity.
-        </p>
+      <header className="mb-4">
+        <h1 className="text-title font-display text-foreground">Resume</h1>
       </header>
 
       <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">

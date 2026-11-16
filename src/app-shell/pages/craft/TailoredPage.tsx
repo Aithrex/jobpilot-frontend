@@ -322,7 +322,6 @@ export default function TailoredPage() {
     <div className="space-y-4">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div className="space-y-1">
-          <p className="overline">Manage</p>
           <h2 className="font-display text-h2 text-foreground">Tailored versions</h2>
           <p className="text-caption text-muted-foreground">
             {total} matching session{total === 1 ? '' : 's'} · {records.length} loaded

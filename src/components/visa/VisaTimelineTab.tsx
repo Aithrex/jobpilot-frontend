@@ -148,7 +148,6 @@ export default function VisaTimelineTab() {
   return (
     <div className="space-y-6">
       <div className="space-y-1">
-        <p className="overline">F-1 / OPT / H-1B</p>
         <div className="flex flex-wrap items-center gap-2">
           <h2 className="font-display text-title-lg text-foreground">Visa Timeline Copilot</h2>
           <Badge variant="outline" className="border-border text-caption-sm uppercase tracking-wide text-muted-foreground">

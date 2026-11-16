@@ -11,16 +11,9 @@ import { AnimatedOutlet } from "../AnimatedOutlet";
  */
 export default function SettingsPage() {
   return (
-    <div className="page-measure flex flex-col gap-6">
+    <div className="page-measure flex flex-col gap-4">
       <header>
-        <p className="overline mb-1">Settings</p>
-        <h1 className="text-title font-display text-foreground">
-          Account &amp; preferences
-        </h1>
-        <p className="mt-1 max-w-prose text-caption text-muted-foreground">
-          Your profile, visa timeline, connected tools, billing, and notifications,
-          all in one place.
-        </p>
+        <h1 className="text-title font-display text-foreground">Settings</h1>
       </header>
 
       <SubNav ariaLabel="Settings sections" items={SETTINGS_SECTIONS} />

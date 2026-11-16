@@ -219,8 +219,8 @@ describe('Resume overview', () => {
   test('/app/resume renders the workspace overview, not a Tailor redirect', async () => {
     renderShell('/app/resume');
 
-    expect(await screen.findByRole('heading', { name: /shape your story/i })).toBeInTheDocument();
-    expect(screen.getByText(/create stronger resumes for every opportunity/i)).toBeInTheDocument();
+    // The destination header is the page name alone (2026-11-15 redesign).
+    expect(await screen.findByRole('heading', { level: 1, name: 'Resume' })).toBeInTheDocument();
     expect(screen.queryByText('stub:tailor')).not.toBeInTheDocument();
   });
 

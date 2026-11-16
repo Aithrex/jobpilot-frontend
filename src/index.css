@@ -114,13 +114,13 @@
   Light: ink 17.73 canvas; muted text 8.87; control edge 3.72 on a card,
   3.30 on the raised fill. Dark: fg 16.14; muted 9.13; control edge 4.41 on
   a card (was 2.96:1, the audit's one 1.4.11 failure), 3.88 raised. */
-    --studio-canvas-hsl: 220 75% 98.4%; /* #F8FAFE */
+    --studio-canvas-hsl: 220 20% 97.3%;
     --studio-card-hsl: 0 0% 100%;
-    --studio-muted-hsl: 220 54.5% 95.7%; /* #EEF2FA */
-    --studio-canvas-dark-hsl: 224.4 50.9% 10.4%; /* #0D1428 */
-    --studio-card-dark-hsl: 224.1 45.9% 14.5%; /* #141D36 */
-    --studio-raised-dark-hsl: 224.6 41.9% 18.2%; /* #1B2542 */
-    --studio-border-dark-hsl: 225 36.4% 25.9%; /* #2A365A */
+    --studio-muted-hsl: 222 24% 95.4%;
+    --studio-canvas-dark-hsl: 228 46% 5.5%;
+    --studio-card-dark-hsl: 228 32% 9.5%;
+    --studio-raised-dark-hsl: 228 26% 12.5%;
+    --studio-border-dark-hsl: 228 22% 18%;
     --studio-input-dark-hsl: 224.7 20.3% 54.7%; /* #7480A3 */
 
     /* Obsidian: a deeper dark, kept for a product window nested in a dark
@@ -1395,9 +1395,7 @@
   banding, no decoration; it just stops the canvas reading as a flat sheet. */
   .studio-canvas {
     background-color: hsl(var(--background));
-    background-image:
-      radial-gradient(120% 90% at 10% 0%, hsl(var(--primary) / 0.07), transparent 60%),
-      radial-gradient(110% 80% at 100% 6%, hsl(var(--primary) / 0.05), transparent 58%);
+    background-image: none;
   }
 
   /* THE frosted surface. One blur value for the whole Resume tab so panels

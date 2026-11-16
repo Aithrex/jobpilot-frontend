@@ -459,7 +459,6 @@ export default function BatchTailor() {
     <div className="space-y-5">
       {/* Tab header - same editorial pattern as the other workspace tabs. */}
       <div className="space-y-1">
-        <p className="overline">Create</p>
         <h2 className="font-display text-h2 text-foreground">Batch tailor</h2>
         <p className="max-w-prose text-caption text-muted-foreground">
           Add up to {BATCH_TAILOR_MAX} job descriptions and tailor your resume to each in one run.
