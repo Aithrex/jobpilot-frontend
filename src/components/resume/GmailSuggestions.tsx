@@ -161,7 +161,7 @@ export default function GmailSuggestions({
         return (
           <li
             key={s.suggestion_id}
-            className="flex flex-wrap items-start gap-x-3 gap-y-2 px-3 py-2.5"
+            className="flex flex-wrap items-start gap-x-3 gap-y-2 px-4 py-3.5"
           >
             <div className="w-full min-w-0 flex-auto sm:w-auto sm:flex-1">
               <p className="truncate text-body font-medium text-foreground">
@@ -193,28 +193,43 @@ export default function GmailSuggestions({
                   </>
                 )}
               </p>
-              {s.subject && (
-                <p className="mt-1 break-words text-label font-medium text-foreground">
-                  {s.subject}
+              {/* The email itself, set apart as a quote: subject, who and
+                  when on one line, then what it said. */}
+              {(s.subject || s.from_address || s.snippet) && (
+                <div className="mt-2 max-w-3xl rounded-lg border-l-2 border-primary/40 bg-muted/50 px-3 py-2">
+                  {s.subject && (
+                    <p className="break-words text-label font-medium text-foreground">
+                      {s.subject}
+                    </p>
+                  )}
+                  <p className="mt-0.5 flex flex-wrap gap-x-2 text-caption-sm text-muted-foreground">
+                    {s.from_address && <span className="break-all">{s.from_address}</span>}
+                    {received && !Number.isNaN(received.getTime()) && (
+                      <span>
+                        Email received{' '}
+                        <time dateTime={s.email_received_at}>{received.toLocaleString()}</time>
+                      </span>
+                    )}
+                  </p>
+                  {s.snippet && (
+                    <p className="mt-1.5 break-words text-label font-normal text-ink-muted">{s.snippet}</p>
+                  )}
+                </div>
+              )}
+              {/* Why this is suggested, as one quiet line. */}
+              {(s.reason || s.match_reason || typeof s.match_confidence === 'number') && (
+                <p className="mt-1.5 flex flex-wrap gap-x-2 gap-y-0.5 text-caption-sm text-muted-foreground">
+                  {s.reason && <span>{s.reason}</span>}
+                  {s.match_reason && <span>{s.match_reason}</span>}
+                  {typeof s.match_confidence === 'number' && (
+                    <span className="tabular-nums">
+                      {Math.round(s.match_confidence * 100)}% application match confidence
+                    </span>
+                  )}
                 </p>
               )}
-              <div className="mt-1 space-y-1 text-label text-muted-foreground">
-                {s.from_address && <p className="break-all">{s.from_address}</p>}
-                {received && !Number.isNaN(received.getTime()) && (
-                  <p>
-                    Email received{' '}
-                    <time dateTime={s.email_received_at}>{received.toLocaleString()}</time>
-                  </p>
-                )}
-                {s.snippet && <p className="break-words">{s.snippet}</p>}
-                {s.reason && <p>{s.reason}</p>}
-                {s.match_reason && <p>{s.match_reason}</p>}
-                {typeof s.match_confidence === 'number' && (
-                  <p>{Math.round(s.match_confidence * 100)}% application match confidence</p>
-                )}
-              </div>
               {needsMatch && (
-                <p className="mt-3 text-label text-muted-foreground">
+                <p className="mt-2 text-caption-sm text-muted-foreground">
                   No matching application is available in your tracker. This email is kept here for
                   review; no application status has been changed.
                 </p>
@@ -290,7 +305,7 @@ export default function GmailSuggestions({
                         ? onApply(s.suggestion_id, selectedRecord)
                         : onApply(s.suggestion_id)
                   }
-                  className="rounded-md bg-primary px-2.5 py-1 text-label font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+                  className="hit-target rounded-lg bg-primary px-3 py-1.5 text-label font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
                 >
                   Update status
                 </button>
