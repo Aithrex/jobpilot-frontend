@@ -74,6 +74,25 @@ describe('Home application history', () => {
     expect(apiService.getSavedJobs).not.toHaveBeenCalled();
   });
 
+  test('the funnel counts the same rows the tracker counts, not a second server number', async () => {
+    vi.mocked(apiService.getPipelineFunnel).mockResolvedValue({ data: {
+      stages: [{ key: 'applied', label: 'Applied', count: 99 }],
+      conversion: { applied_to_interview: 0, interview_to_offer: 0, applied_to_offer: 0 }, untracked_stages: [],
+    } });
+    vi.mocked(apiService.listTailoringRecords).mockResolvedValue({ data: { records: [
+      record('Waiting', { status: 'applied', applied_date: localDayISO(-3) }),
+      record('Talking', { status: 'interviewing', applied_date: localDayISO(-20) }),
+      record('Offer', { status: 'offer', applied_date: localDayISO(-40) }),
+    ] } });
+    render(<MemoryRouter><TodayPage /></MemoryRouter>);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Refresh dashboard' })).toBeEnabled());
+
+    expect(screen.getByLabelText('Applied: 3')).toBeInTheDocument();
+    expect(screen.getByLabelText('Interview: 2')).toBeInTheDocument();
+    expect(screen.getByLabelText('Offer: 1')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Applied: 99')).not.toBeInTheDocument();
+  });
+
   test('a history failure shows retry states instead of zero applications', async () => {
     vi.mocked(apiService.listTailoringRecords).mockResolvedValue({ error: 'page two failed' });
     render(<MemoryRouter><TodayPage /></MemoryRouter>);

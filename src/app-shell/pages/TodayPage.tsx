@@ -30,6 +30,7 @@
  * its skeletons - otherwise an unfinished onboarding flag flashes the empty
  * page, then swaps in KPIs/matches and drops Continue workspace setup.
  */
+import { computeInsights } from '@/components/tracker/trackerInsights';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowRight, RefreshCw } from 'lucide-react';
@@ -179,6 +180,29 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
   const applicationCount = overview?.applications.total ?? records?.length ?? 0;
   const countsUnknown = settled && err.overview && err.records;
   const activity = useMemo(() => records ? summarizeApplicationActivity(records) : null, [records]);
+  // The funnel comes from the SAME rows and the SAME rule as the tracker
+  // (every stage an application reached), so Home and Tracker never disagree.
+  // The server's funnel stays as the fallback when the rows could not load.
+  const shownFunnel = useMemo<PipelineFunnel | null>(() => {
+    if (!records) return funnel;
+    const ins = computeInsights(records);
+    const rate = (a: number, b: number) => (b ? Math.round((a / b) * 100) : 0);
+    return {
+      stages: [
+        { key: 'applied', label: 'Applied', count: ins.applied },
+        { key: 'replied', label: 'Heard back', count: ins.replied },
+        { key: 'interviewing', label: 'Interview', count: ins.interviewed },
+        { key: 'offer', label: 'Offer', count: ins.offers },
+      ],
+      conversion: {
+        applied_to_interview: rate(ins.interviewed, ins.applied),
+        interview_to_offer: rate(ins.offers, ins.interviewed),
+        applied_to_offer: rate(ins.offers, ins.applied),
+      },
+      untracked_stages: [],
+    };
+  }, [records, funnel]);
+  const funnelFailed = records ? false : err.funnel;
   const firstRunHome = shouldShowFirstRunHome({
     onboarded: user?.onboarded,
     settled,
@@ -288,7 +312,7 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
           overview={overview}
           readiness={readiness}
           applicationsToday={activity?.todayCount ?? null}
-          funnel={funnel}
+          funnel={shownFunnel}
         />
       </motion.section>
 
@@ -319,8 +343,8 @@ export default function TodayPage({ userName }: TodayPageProps = {}) {
         </div>
         <div className="lg:col-span-1">
           <ConversionFunnel
-            state={panelState(err.funnel)}
-            funnel={funnel}
+            state={panelState(funnelFailed)}
+            funnel={shownFunnel}
             onRetry={() => void load()}
           />
         </div>
