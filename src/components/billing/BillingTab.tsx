@@ -33,6 +33,16 @@ const USAGE_ORDER = [
   'learning_plan_generate',
 ];
 
+/**
+ * A plan's feature key as words: "ats_scores" reads "ATS scores". Only the
+ * casing changes; the server's list of what a plan includes is shown as sent.
+ */
+function featureLabel(key: string): string {
+  const words = key.replace(/_/g, ' ').trim();
+  const cased = words.charAt(0).toUpperCase() + words.slice(1);
+  return cased.replace(/\bats\b/gi, 'ATS').replace(/\bgmail\b/gi, 'Gmail').replace(/\bai\b/gi, 'AI');
+}
+
 export default function BillingTab() {
   const { data, isLoading, isError, refetch, isFetching } = useBillingPlan();
   const { open } = useUpgrade();
@@ -137,7 +147,7 @@ export default function BillingTab() {
                   {(data.plans?.[p]?.features || []).filter((f) => !['auto_apply', 'auto_submit', 'six_seconds', 'voice_graph'].includes(f)).slice(0, 6).map((f) => (
                     <li key={f} className="flex items-center gap-1.5">
                       <Check className="h-3 w-3 shrink-0 text-signal" aria-hidden="true" />
-                      <span>{f.replace(/_/g, ' ')}</span>
+                      <span>{featureLabel(f)}</span>
                     </li>
                   ))}
                 </ul>

@@ -202,7 +202,7 @@ export default function LearningHubTab() {
               </span>
               <div>
                 <h2 className="text-xl font-extrabold tracking-tight text-foreground">Learning Hub</h2>
-                <p className="text-xs text-muted-foreground">Your story-driven engineering journey</p>
+                <p className="text-xs text-muted-foreground">Story-based practice, one chapter at a time</p>
               </div>
             </div>
           </div>
