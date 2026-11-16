@@ -102,7 +102,13 @@ export function waitingDays(record: TailoringRecord, now: number = Date.now()): 
   if (!isWaiting(record)) return null;
   const sent = appliedMs(record) ?? toMs(record.application?.updated_at) ?? toMs(record.created_at);
   if (sent === null) return null;
-  return Math.max(0, Math.floor((now - sent) / DAY_MS));
+  // Whole calendar days, midnight to midnight. Counting elapsed 24-hour
+  // spans from noon made every wait read one day short until midday.
+  const startOfDay = (ms: number) => {
+    const d = new Date(ms);
+    return Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
+  };
+  return Math.max(0, Math.round((startOfDay(now) - startOfDay(sent)) / DAY_MS));
 }
 
 /**
