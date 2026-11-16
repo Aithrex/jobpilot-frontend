@@ -113,7 +113,6 @@ export default function NotificationsTab() {
   return (
     <div className="space-y-6">
       <div className="space-y-1">
-        <p className="overline">Settings · Notifications</p>
         <div className="flex items-center gap-2">
           <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary/10 text-primary">
             <Bell className="h-5 w-5" aria-hidden="true" />
