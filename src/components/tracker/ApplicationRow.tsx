@@ -141,7 +141,7 @@ export default function ApplicationRow({
 
         <span className="shrink-0 text-right">
           {appliedDay ? (
-            <span className="block text-body-sm tabular-nums text-muted-foreground">
+            <span title="The day you applied" className="block text-body-sm tabular-nums text-muted-foreground">
               {formatCivilDay(appliedDay)}
             </span>
           ) : (

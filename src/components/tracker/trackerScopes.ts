@@ -10,18 +10,24 @@
 import type { TailoringRecord } from '@/types/resume';
 
 import { statusKeyOf } from './trackerConfig';
+import { FOLLOW_UP_AFTER_DAYS, needsFollowUp } from './trackerInsights';
 import { daysUntil, isConfirmationPending } from './trackerUtils';
 
-export type Scope = 'focus' | 'active' | 'all';
+/**
+ * The three things the page can be about. They used to be Focus, Active and
+ * All, which named how much of one list to show; these name what you came to
+ * do, and Insights was a button nobody found.
+ */
+export type TrackerView = 'todo' | 'applications' | 'insights';
 
-export const SCOPES: { key: Scope; label: string; hint: string }[] = [
-  { key: 'focus', label: 'Focus', hint: 'Needs a decision from you' },
-  { key: 'active', label: 'Active', hint: 'Everything still in play' },
-  { key: 'all', label: 'All', hint: 'Including closed' },
+export const VIEWS: { key: TrackerView; label: string; hint: string }[] = [
+  { key: 'todo', label: 'To do', hint: 'Only what needs something from you' },
+  { key: 'applications', label: 'Applications', hint: 'Every application, by stage' },
+  { key: 'insights', label: 'Insights', hint: 'How your search is going, in numbers' },
 ];
 
-/** Days of silence after applying before we call it going quiet. */
-export const GOING_QUIET_DAYS = 10;
+/** Days of silence after applying before a follow-up is suggested. */
+export const GOING_QUIET_DAYS = FOLLOW_UP_AFTER_DAYS;
 /** How far ahead "this week" looks. Matches the old upcoming banner. */
 export const UPCOMING_DAYS = 14;
 
@@ -29,12 +35,6 @@ const CLOSED = new Set(['rejected', 'withdrawn', 'ghosted']);
 
 export function isClosed(record: TailoringRecord): boolean {
   return CLOSED.has(statusKeyOf(record.application?.status));
-}
-
-/** Whole days since an ISO instant, or null when it is unparseable. */
-function daysSince(iso?: string | null): number | null {
-  const ahead = daysUntil(iso);
-  return ahead === null ? null : -ahead;
 }
 
 /**
@@ -55,7 +55,7 @@ export interface FocusSection {
 export const FOCUS_SECTIONS: FocusSection[] = [
   {
     id: 'unanswered',
-    label: 'Needs an answer',
+    label: 'Confirm you applied',
     description: 'Tailored resumes you have not said whether you applied to',
     match: (r) => isConfirmationPending(r.application),
   },
@@ -79,15 +79,9 @@ export const FOCUS_SECTIONS: FocusSection[] = [
   },
   {
     id: 'quiet',
-    label: 'Going quiet',
-    description: `Applied over ${GOING_QUIET_DAYS} days ago with no reply`,
-    match: (r) => {
-      if (statusKeyOf(r.application?.status) !== 'applied') return false;
-      const since = daysSince(
-        r.application?.updated_at || r.application?.applied_at || r.updated_at,
-      );
-      return since !== null && since >= GOING_QUIET_DAYS;
-    },
+    label: 'Follow up',
+    description: `Applied ${GOING_QUIET_DAYS} or more days ago with no reply`,
+    match: (r) => needsFollowUp(r),
   },
 ];
 
@@ -115,15 +109,14 @@ export function buildFocusSections(
   }));
 }
 
-/** How many records want attention. Drives the Focus count in the toolbar. */
+/** How many records want attention. Drives the To do count in the toolbar. */
 export function focusCount(records: TailoringRecord[]): number {
   return records.filter(
     (r) => !isClosed(r) && FOCUS_SECTIONS.some((s) => s.match(r)),
   ).length;
 }
 
-export function scopeRecords(records: TailoringRecord[], scope: Scope): TailoringRecord[] {
-  if (scope === 'all') return records;
-  if (scope === 'active') return records.filter((r) => !isClosed(r));
+export function viewRecords(records: TailoringRecord[], view: TrackerView): TailoringRecord[] {
+  if (view !== 'todo') return records;
   return records.filter((r) => !isClosed(r) && FOCUS_SECTIONS.some((s) => s.match(r)));
 }

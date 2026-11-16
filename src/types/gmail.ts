@@ -75,7 +75,25 @@ export interface GmailStatus {
   tracked_applications?: number;
   sync?: GmailSyncRun | null;
   auto_sync?: { enabled: boolean; interval_hours: number } | null;
-  access?: { mode: 'testing' | 'production'; expires_at?: string | null } | null;
+  access?: GmailAccess | null;
+}
+
+/**
+ * Whether this person may start Google's screen. While Google limits Aspirely
+ * to a list of accounts added by hand, `gate` is `invite`: a person asks, the
+ * address is added, and only then is Connect offered. Sending anyone else to
+ * Google ends on a page that says "Access blocked", with no way back.
+ */
+export interface GmailAccess {
+  mode: 'testing' | 'production';
+  expires_at?: string | null;
+  /** Absent on an older backend, which let everyone through. */
+  gate?: 'open' | 'invite';
+  state?: 'none' | 'requested' | 'approved';
+  /** The Google account that was asked for, and must be chosen on Google's screen. */
+  google_email?: string | null;
+  requested_at?: string | null;
+  decided_at?: string | null;
 }
 
 /** An automatic status move made by a sync, which the user may undo. */
@@ -131,4 +149,26 @@ export interface GmailSuggestion {
   email_role?: string;
   evidence_message_id?: string;
   gmail_thread_id?: string;
+}
+
+/** One person or address on the app's copy of Google's test-user list. */
+export interface GmailAccessRow {
+  user_email: string | null;
+  google_email: string | null;
+  state: 'requested' | 'approved';
+  requested_at: string | null;
+  decided_at: string | null;
+  decided_by?: string | null;
+  connected?: boolean;
+}
+
+/** What the owner sees: who is waiting, who is in, how many places are left. */
+export interface GmailAccessOverview {
+  gate: 'open' | 'invite';
+  consent_mode: 'testing' | 'production';
+  limit: number;
+  used: number;
+  pending: GmailAccessRow[];
+  approved: GmailAccessRow[];
+  connected_without_a_record: string[];
 }

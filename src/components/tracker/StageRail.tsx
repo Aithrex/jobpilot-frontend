@@ -189,7 +189,7 @@ export default function StageRail({
               </span>
               <span
                 aria-hidden
-                className="overline whitespace-nowrap [writing-mode:vertical-rl]"
+                className="whitespace-nowrap text-caption font-semibold uppercase tracking-wide text-muted-foreground [writing-mode:vertical-rl]"
               >
                 {section.label}
               </span>

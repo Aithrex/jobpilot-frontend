@@ -1,8 +1,13 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import GmailSuggestions, { type GmailSuggestion } from '@/components/resume/GmailSuggestions';
+import GmailSuggestions, {
+  explainMatch,
+  explainReason,
+  gmailReviewRetry,
+  type GmailSuggestion,
+} from '@/components/resume/GmailSuggestions';
 import GmailIntegrationCard from '@/components/resume/GmailIntegration';
 import { apiService } from '@/lib/api';
 
@@ -29,6 +34,9 @@ function GmailIntegration(props: Parameters<typeof GmailIntegrationCard>[0]) {
 }
 
 beforeEach(() => {
+  // The one automatic second try, without the wait.
+  gmailReviewRetry.delayMs = 0;
+  vi.mocked(apiService.listGmailSuggestions).mockReset();
   vi.mocked(apiService.listGmailSuggestions).mockResolvedValue({ data: { suggestions: [] } });
   vi.mocked(apiService.getGmailStatus).mockResolvedValue({
     data: { configured: false, connected: false, pending_suggestions: 0 },
@@ -41,11 +49,28 @@ describe('Gmail review', () => {
     vi.mocked(apiService.getGmailStatus).mockResolvedValue({
       data: { configured: true, connected: true, pending_suggestions: 105 },
     });
-    vi.mocked(apiService.listGmailSuggestions).mockResolvedValueOnce({ error: 'Could not load the complete Gmail review queue.' });
+    // The page tries a second time by itself before it says anything.
+    vi.mocked(apiService.listGmailSuggestions)
+      .mockResolvedValueOnce({ error: 'Request timed out. Please try again.' })
+      .mockResolvedValueOnce({ error: 'Request timed out. Please try again.' });
     render(<GmailIntegration />);
-    expect(await screen.findByRole('alert')).toHaveTextContent('Could not load the complete Gmail review queue.');
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('Email updates from Gmail did not load.');
+    expect(alert).not.toHaveTextContent('timed out');
     const user = userEvent.setup();
-    await user.click(screen.getByRole('button', { name: 'Retry email reviews' }));
+    await user.click(screen.getByRole('button', { name: 'Load email updates' }));
+    await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument());
+  });
+
+  test('one slow answer is retried quietly and never shown as an error', async () => {
+    vi.mocked(apiService.getGmailStatus).mockResolvedValue({
+      data: { configured: true, connected: true, pending_suggestions: 0 },
+    });
+    const calls = vi.mocked(apiService.listGmailSuggestions);
+    calls.mockClear();
+    calls.mockResolvedValueOnce({ error: 'Request timed out. Please try again.' });
+    render(<GmailIntegration />);
+    await waitFor(() => expect(calls).toHaveBeenCalledTimes(2));
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
@@ -378,5 +403,44 @@ describe('Gmail review', () => {
     });
     expect(screen.getByRole('alert')).toHaveTextContent('Google connection expired');
     expect(screen.getByRole('button', { name: 'Check Gmail now' })).toBeEnabled();
+  });
+});
+
+/**
+ * The scan stores its notes in the words of a log. A person reading an email
+ * card gets a sentence, and a note this build has never seen is shown as sent.
+ */
+describe('why an email is read the way it is, in plain words', () => {
+  test('the quoted phrase is kept and the log label is dropped', () => {
+    expect(explainReason('Decline phrase: "we have decided to move forward with other candidates"')).toBe(
+      'The email says: "we have decided to move forward with other candidates"',
+    );
+    expect(explainReason('Possible decline, please check: "Unfortunately, at this time"')).toBe(
+      'This may be a no. The email says: "Unfortunately, at this time"',
+    );
+    expect(
+      explainReason('Interview wording inside an application receipt, please check: "schedule a call"'),
+    ).toBe('This reads like a confirmation that also mentions next steps: "schedule a call"');
+  });
+
+  test('an older email says so, and "unclear" is not repeated under a card that already says it', () => {
+    expect(explainReason('Email predates your latest status change. Offer phrase: "offer letter attached"')).toBe(
+      'This email is older than the last change you made. The email says: "offer letter attached"',
+    );
+    expect(explainReason('Outcome is unclear. Review this email and choose the application status.')).toBeNull();
+    expect(explainReason('The recruiter asks for a time on Thursday.')).toBe(
+      'The recruiter asks for a time on Thursday.',
+    );
+    expect(explainReason(undefined)).toBeNull();
+  });
+
+  test('only what the person needs to act on is said about the match', () => {
+    expect(
+      explainMatch(
+        'Company identified in application content; Exact role title in email; Email requisition is not uniquely confirmed in this application',
+      ),
+    ).toEqual(['The email gives a job number your tracker does not have, so check it is this application.']);
+    expect(explainMatch('Company identified in application content; Exact role title in email')).toEqual([]);
+    expect(explainMatch('Two roles at this company')).toEqual(['Two roles at this company']);
   });
 });

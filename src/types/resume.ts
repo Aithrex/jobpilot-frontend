@@ -641,6 +641,14 @@ export interface ApplicationInfo {
   resume_used?: "base" | "tailored";
   /** An unanswered "Did you apply?" prompt is waiting on this record. */
   confirmation_pending?: boolean;
+  /**
+   * The first time the application reached each stage, as ISO instants. The
+   * status says where it is now; this says where it has been, so a rejection
+   * after an interview still counts as an interview. Absent on older rows.
+   */
+  stage_dates?: Partial<Record<ApplicationStatus, string>> | null;
+  /** When the user waved off the follow-up nudge for this application. */
+  followup_dismissed_at?: string | null;
 }
 
 export type QDifficulty = "easy" | "medium" | "hard";
