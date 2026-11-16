@@ -1,15 +1,12 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiService } from '@/lib/api';
 import { AuthShell } from '@/components/auth/AuthShell';
 import { PasswordInput } from '@/components/auth/PasswordInput';
 import { PasswordChecklist, isPasswordValid } from '@/components/auth/PasswordChecklist';
-import { AuthShield } from '@/components/auth/AuthShield';
-import { AuthNotice, errorVariant } from '@/components/auth/AuthNotice';
+import { AuthNotice } from '@/components/auth/AuthNotice';
 import { ForgotPasswordDialog } from '@/components/auth/ForgotPasswordDialog';
 
 /**
@@ -29,6 +26,7 @@ export default function ResetPassword() {
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
   const [requestOpen, setRequestOpen] = useState(false);
+  const [deadLink, setDeadLink] = useState(false);
 
   useEffect(() => {
     if (!token) setError('This reset link is missing its token. Request a fresh link to continue.');
@@ -47,14 +45,14 @@ export default function ResetPassword() {
       const resp = await apiService.resetPassword(token, password);
       if (resp.error) {
         setError(resp.error);
-        toast.error('Reset failed', { description: resp.error });
+        if (/expired|invalid/i.test(resp.error)) setDeadLink(true);
         return;
       }
       setDone(true);
       toast.success('Password saved. Redirecting to sign in.');
       setTimeout(() => navigate('/login', { replace: true }), 1800);
     } catch {
-      setError('Network error. Check your connection and try again.');
+      setError('We could not reach Aspirely. Check your connection and try again.');
     } finally {
       setSubmitting(false);
     }
@@ -64,15 +62,10 @@ export default function ResetPassword() {
     <AuthShell
       title="Set a new password"
       subtitle="Choose a strong password. You will sign in fresh once it is saved."
-      // Same task as register's password beat, against the same five rules from
-      // the same checkPasswordRules - so it gets the same shield rather than the
-      // product journey. Suppressed once saved (the form is gone) and when the
-      // link has no token (there is nothing to type into).
-      aside={!done && token ? <AuthShield password={password} /> : undefined}
       footer={
         <Link
           to="/login"
-          className="inline-flex min-h-11 items-center rounded px-2 font-semibold text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          className="pub-auth-link inline-flex min-h-11 items-center px-2"
         >
           Back to sign in
         </Link>
@@ -83,25 +76,27 @@ export default function ResetPassword() {
           <AuthNotice variant="success">
             Password saved. Redirecting you to sign in...
           </AuthNotice>
-          <Button
-            size="lg"
-            className="w-full"
+          <button
+            type="button"
+            className="pub-btn pub-btn-primary"
             onClick={() => navigate('/login', { replace: true })}
           >
             Continue to sign in
-          </Button>
+          </button>
         </div>
       ) : (
         <form onSubmit={handleSubmit} noValidate>
           <div className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="new-password">New password</Label>
+              <label htmlFor="new-password" className="block text-sm font-semibold text-foreground">
+                New password
+              </label>
               <PasswordInput
                 id="new-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Create a strong password"
-                className="h-11"
+                className="pub-auth-field"
                 autoComplete="new-password"
                 enterKeyHint="next"
                 capsLockWarning
@@ -112,13 +107,15 @@ export default function ResetPassword() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="confirm-password">Confirm password</Label>
+              <label htmlFor="confirm-password" className="block text-sm font-semibold text-foreground">
+                Confirm password
+              </label>
               <PasswordInput
                 id="confirm-password"
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
                 placeholder="Re-enter your new password"
-                className="h-11"
+                className="pub-auth-field"
                 autoComplete="new-password"
                 enterKeyHint="go"
                 required
@@ -129,25 +126,25 @@ export default function ResetPassword() {
                 }
               />
               {confirm.length > 0 && !passwordsMatch && (
-                <p id="confirm-error" className="text-xs text-destructive" role="alert">
+                <p id="confirm-error" className="text-sm text-destructive" role="alert">
                   Passwords do not match. Re-enter the same password in both fields.
                 </p>
               )}
             </div>
 
-            {error && <AuthNotice variant={errorVariant(error)}>{error}</AuthNotice>}
+            {error && <AuthNotice variant="error">{error}</AuthNotice>}
 
             {/* A dead or tokenless link is recoverable from right here: the
                 way forward is a fresh link, not a disabled button. */}
-            {!token ? (
-              <Button type="button" size="lg" className="w-full" onClick={() => setRequestOpen(true)}>
+            {!token || deadLink ? (
+              <button type="button" className="pub-btn pub-btn-primary" onClick={() => setRequestOpen(true)}>
                 Request a new link
-              </Button>
+              </button>
             ) : (
-              <Button type="submit" size="lg" className="w-full" disabled={!canSubmit}>
+              <button type="submit" className="pub-btn pub-btn-primary" disabled={!canSubmit}>
                 {submitting && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
                 {submitting ? 'Saving...' : 'Save new password'}
-              </Button>
+              </button>
             )}
           </div>
         </form>

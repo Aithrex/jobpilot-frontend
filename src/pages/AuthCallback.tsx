@@ -1,29 +1,84 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { consumeAuthReturnTo } from '@/components/auth/AuthShell';
-import { Loader2, AlertCircle } from 'lucide-react';
-import { toast } from 'sonner';
+import { AuthShell, consumeAuthReturnTo } from '@/components/auth/AuthShell';
+import { AuthNotice } from '@/components/auth/AuthNotice';
+import { providerLabel } from '@/components/auth/SocialQuietRow';
 
 /**
- * Landing route for social sign-in. The backend redirects here with the JWT (or
- * an error) in the URL FRAGMENT - `/oauth/callback#token=...` or `#error=...` - so
- * the credential never hits server/proxy logs. We read it, hydrate auth, and
- * forward into the app.
+ * Landing route for a provider sign-in. The backend redirects here with the
+ * session token, or an error code, in the URL FRAGMENT
+ * (`/oauth/callback#token=...` or `#error=...&provider=google`), so the token
+ * never reaches a server or proxy log. This page reads it, clears it from the
+ * address bar, and either enters the app or says plainly what happened.
+ *
+ * A failure STAYS on screen until the person chooses what to do next. It used
+ * to bounce back to sign-in after two seconds, before anyone could read it.
  */
-const ERROR_COPY: Record<string, string> = {
-  invalid_state: 'Your sign-in link expired. Please try again.',
-  no_email: "We couldn't get a verified email from that provider. Try a different method.",
-  oauth_failed: 'Sign-in failed. Please try again.',
-  provider_not_configured: "That sign-in method isn't available right now.",
-  unknown_provider: "That sign-in method isn't available right now.",
-  access_denied: 'Sign-in was cancelled.',
-};
+
+type Failure = { title: string; body: string; cancelled?: boolean };
+
+const CANCELLED = new Set(['access_denied', 'user_cancelled_authorize', 'user_cancelled_login', 'consent_required']);
+
+export function describeProviderError(code: string, provider: string): Failure {
+  const name = provider ? providerLabel(provider) : 'that provider';
+  if (CANCELLED.has(code)) {
+    return {
+      cancelled: true,
+      title: 'Sign-in was cancelled',
+      body: `You left ${name} before finishing. Nothing was changed. You can try again or use your email.`,
+    };
+  }
+  switch (code) {
+    case 'invalid_state':
+      return {
+        title: 'That sign-in attempt expired',
+        body: 'It took longer than 10 minutes, or it was finished in a different browser than it started in. Please start again.',
+      };
+    case 'email_unverified':
+      return {
+        title: `${name} has not confirmed your email`,
+        body: `${name} did not tell us this email address is verified, so we cannot sign you in with it. Use your email and a code instead.`,
+      };
+    case 'no_email':
+      return {
+        title: `${name} did not share an email`,
+        body: 'We need an email address to find or create your account. Use your email and a code instead.',
+      };
+    case 'link_not_allowed':
+      return {
+        title: 'This email already has an account',
+        body: `Sign in with your email first. ${name} cannot be attached to an existing account automatically.`,
+      };
+    case 'account_closed':
+      return {
+        title: 'This account has been closed',
+        body: 'Write to us if you think that is a mistake.',
+      };
+    case 'rate_limited':
+      return {
+        title: 'Too many attempts',
+        body: 'Please wait a few minutes and try again.',
+      };
+    case 'provider_not_configured':
+    case 'unknown_provider':
+      return {
+        title: 'That sign-in method is not available',
+        body: 'Use your email and a code instead.',
+      };
+    default:
+      return {
+        title: `We could not sign you in with ${name}`,
+        body: 'Something went wrong on the way back. Please try again, or use your email and a code.',
+      };
+  }
+}
 
 export default function AuthCallback() {
   const navigate = useNavigate();
   const { hydrateFromToken } = useAuth();
-  const [error, setError] = useState<string | null>(null);
+  const [failure, setFailure] = useState<Failure | null>(null);
   const ran = useRef(false);
 
   useEffect(() => {
@@ -34,68 +89,55 @@ export default function AuthCallback() {
     const params = new URLSearchParams(hash);
     const token = params.get('token');
     const errCode = params.get('error');
+    const provider = params.get('provider') ?? '';
 
-    // Clear the fragment so the token isn't left in the address bar / history.
+    // Clear the fragment so the token is not left in the address bar or history.
     if (window.history.replaceState) {
       window.history.replaceState(null, '', window.location.pathname);
     }
 
     if (errCode) {
-      const msg = ERROR_COPY[errCode] || 'Sign-in failed. Please try again.';
-      setError(msg);
-      toast.error('Sign-in failed', { description: msg });
-      const t = window.setTimeout(() => navigate('/login', { replace: true }), 2200);
-      return () => window.clearTimeout(t);
+      setFailure(describeProviderError(errCode, provider));
+      return;
     }
-
     if (!token) {
-      setError('Sign-in could not be completed. Please try again.');
-      const t = window.setTimeout(() => navigate('/login', { replace: true }), 2200);
-      return () => window.clearTimeout(t);
+      // Opened directly, or reached again with Back: there is nothing to finish.
+      setFailure({
+        title: 'There is no sign-in to finish',
+        body: 'This page completes a sign-in that starts on the sign-in page.',
+      });
+      return;
     }
 
     hydrateFromToken(token).then((res) => {
       if (res.error) {
-        setError(res.error);
-        toast.error('Sign-in failed', { description: res.error });
-        window.setTimeout(() => navigate('/login', { replace: true }), 2200);
-      } else {
-        toast.success('Signed in');
-        // Honor a deep link stashed before the OAuth round-trip (the provider
-        // redirect drops router state); falls back to the post-login default.
-        navigate(consumeAuthReturnTo() ?? '/app/home', { replace: true });
+        setFailure({ title: 'We could not finish signing you in', body: res.error });
+        return;
       }
+      // Honour a deep link stashed before the provider round-trip.
+      navigate(consumeAuthReturnTo() ?? '/app/home', { replace: true });
     });
   }, [hydrateFromToken, navigate]);
 
+  if (!failure) {
+    return (
+      <AuthShell title="Signing you in" subtitle="One moment.">
+        <div role="status" aria-live="polite" className="flex items-center gap-3 text-ink-muted">
+          <Loader2 className="h-5 w-5 animate-spin text-primary" aria-hidden />
+          <span>Finishing sign-in...</span>
+        </div>
+      </AuthShell>
+    );
+  }
+
   return (
-    <main className="flex min-h-screen items-center justify-center bg-background px-4 text-foreground">
-      <div
-        className="flex max-w-sm flex-col items-center gap-3 text-center"
-        role={error ? 'alert' : 'status'}
-        aria-live={error ? 'assertive' : 'polite'}
-      >
-        {error ? (
-          <>
-            <AlertCircle className="h-8 w-8 text-destructive" aria-hidden />
-            <h1 className="font-display text-title-md text-foreground">{error}</h1>
-            <p className="text-body-sm text-muted-foreground">Taking you back to sign in...</p>
-            {/* No need to wait out the redirect. */}
-            <Link
-              to="/login"
-              replace
-              className="inline-flex min-h-11 items-center rounded px-2 text-sm font-semibold text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-            >
-              Back to sign in
-            </Link>
-          </>
-        ) : (
-          <>
-            <Loader2 className="h-8 w-8 animate-spin text-primary" aria-hidden />
-            <h1 className="text-body-sm font-normal text-muted-foreground">Completing sign-in...</h1>
-          </>
-        )}
+    <AuthShell title={failure.title}>
+      <div className="space-y-5">
+        <AuthNotice variant={failure.cancelled ? 'info' : 'error'}>{failure.body}</AuthNotice>
+        <Link to="/login" replace className="pub-btn pub-btn-primary">
+          Back to sign in
+        </Link>
       </div>
-    </main>
+    </AuthShell>
   );
 }

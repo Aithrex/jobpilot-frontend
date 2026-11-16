@@ -77,8 +77,8 @@ export function ForgotPasswordDialog({ open, onClose, initialEmail = '' }: Forgo
             <p className="text-sm text-muted-foreground leading-relaxed">
               If <span className="font-mono">{email.trim()}</span> is registered, a
               reset link is on its way. The link is valid for 30 minutes. Check
-              spam too. If you don't receive anything within 5 minutes, contact
-              support.
+              spam too. You can also sign in with an emailed code instead, with
+              no password at all.
             </p>
             <div className="flex justify-end">
               <Button onClick={onClose}>Close</Button>

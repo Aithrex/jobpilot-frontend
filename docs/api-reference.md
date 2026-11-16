@@ -18,16 +18,21 @@ relative to the API base (`VITE_API_URL`, default `http://localhost:5000/api`).
 
 | Method | Endpoint | 🔒 | Purpose | `api.ts` |
 | --- | --- | --- | --- | --- |
-| POST | `/auth/register` | | Create account | `register()` |
-| POST | `/auth/login` | | Sign in, returns `access_token` | `login()` |
+| POST | `/auth/check-email` | | Does this address have an account, and how does it sign in (`has_password`, `methods`, `closed`) | `checkEmail()` |
+| POST | `/auth/login` | | Password sign-in, returns `access_token` | `login()` |
+| POST | `/auth/otp/request` | | Email a 6-digit code | `requestEmailCode()` |
+| POST | `/auth/otp/verify` | | Trade the code for a session; creates the account for a new address | `verifyEmailCode()` |
+| POST | `/auth/register` | | Step one of password sign-up: mails a code, stores nothing (`202`) | `register()` |
+| GET | `/auth/oauth/providers` | | Which provider buttons to show | `getOAuthProviders()` |
+| GET | `/auth/oauth/<provider>/authorize?redirect=1` | | Navigate here to start a provider sign-in | `socialAuthUrl()` |
 | GET | `/auth/profile` | 🔒 | Current user profile | `getProfile()` |
 | PUT | `/auth/profile` | 🔒 | Update name/role/sector | `updateProfile()` |
 | GET | `/auth/verify` | 🔒 | Validate the stored token | `verifyToken()` |
-| POST | `/auth/check-email` | | Does this email exist? (drives login vs register) | `checkEmail()` |
 | POST | `/auth/check-user` | | Lookup by device fingerprint | `checkUser()` |
-| POST | `/auth/validate-password` | | Pre-validate a password | `validatePassword()` |
 | POST | `/auth/request-password-reset` | | Email a reset link | `requestPasswordReset()` |
 | POST | `/auth/reset-password` | | Reset password with token | `resetPassword()` |
+
+Every sign-in failure is `{error, code, message}` with status 400, 403, 409, 429 or 503, never 401. Every 429 carries `retry_after` (seconds) and a `Retry-After` header. A request that never reached the server comes back from `apiService` as `status: 0`, `errorPayload.code: "network_error"`. The full contract, with every `code`, is `docs/specs/sign-in.md` in `jobpilot-backend`.
 
 ---
 

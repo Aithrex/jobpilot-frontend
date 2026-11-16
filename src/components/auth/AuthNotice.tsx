@@ -1,43 +1,20 @@
-import { ReactNode } from 'react';
-import { AlertCircle, CheckCircle2, Info, Clock } from 'lucide-react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { AlertCircle, CheckCircle2, Clock, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export type AuthNoticeVariant = 'error' | 'success' | 'info' | 'rate-limit';
-
-const STYLES: Record<AuthNoticeVariant, string> = {
-  error: 'border-destructive/30 bg-destructive/10 text-destructive',
-  success: 'border-success/30 bg-success/10 text-success',
-  info: 'border-primary/25 bg-primary/10 text-foreground',
-  'rate-limit': 'border-warning/40 bg-warning/10 text-warning',
-};
+export type AuthNoticeVariant = 'error' | 'success' | 'info' | 'wait';
 
 const ICONS: Record<AuthNoticeVariant, typeof AlertCircle> = {
   error: AlertCircle,
   success: CheckCircle2,
   info: Info,
-  'rate-limit': Clock,
+  wait: Clock,
 };
 
 /**
- * Heuristic for the 429 / throttle case. The auth API surfaces failures as a
- * message string (never a 401 logout), so we detect the "slow down" family to
- * render an encouraging amber notice instead of an alarming red one.
- */
-export function looksRateLimited(msg?: string | null): boolean {
-  if (!msg) return false;
-  return /too many|rate.?limit|try again (in|later|after)|slow down|temporarily|throttl/i.test(
-    msg,
-  );
-}
-
-/** Pick the right variant for a raw error string (rate-limit vs. generic error). */
-export function errorVariant(msg?: string | null): AuthNoticeVariant {
-  return looksRateLimited(msg) ? 'rate-limit' : 'error';
-}
-
-/**
- * Inline auth feedback banner. Errors/throttles announce assertively; success
- * and info announce politely. State is carried by icon + text, not colour.
+ * Inline feedback on a sign-in page. Errors and waits are announced at once;
+ * success and info politely. The state is carried by the icon and the words,
+ * never by colour alone.
  */
 export function AuthNotice({
   variant,
@@ -49,19 +26,47 @@ export function AuthNotice({
   className?: string;
 }) {
   const Icon = ICONS[variant];
-  const assertive = variant === 'error' || variant === 'rate-limit';
+  const assertive = variant === 'error' || variant === 'wait';
   return (
     <div
       role={assertive ? 'alert' : 'status'}
       aria-live={assertive ? 'assertive' : 'polite'}
-      className={cn(
-        'flex items-start gap-2.5 rounded-lg border px-3.5 py-2.5 text-sm',
-        STYLES[variant],
-        className,
-      )}
+      data-variant={variant}
+      className={cn('pub-auth-notice', className)}
     >
-      <Icon className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
-      <span className="leading-relaxed">{children}</span>
+      <Icon className="mt-[0.1875rem] h-4 w-4 shrink-0" aria-hidden />
+      <span className="min-w-0">{children}</span>
     </div>
   );
+}
+
+/** "45 seconds", "1 minute", "12 minutes": a wait, in words. */
+export function formatWait(seconds: number): string {
+  if (seconds < 60) return `${seconds} ${seconds === 1 ? 'second' : 'seconds'}`;
+  const minutes = Math.ceil(seconds / 60);
+  return `${minutes} ${minutes === 1 ? 'minute' : 'minutes'}`;
+}
+
+/**
+ * Whole seconds left until `until` (a `Date.now()` timestamp), ticking down
+ * to 0. Derived from the clock on every tick, so a throttled background tab
+ * comes back with the right number.
+ */
+export function useSecondsUntil(until: number | null): number {
+  const left = () => (until ? Math.max(0, Math.ceil((until - Date.now()) / 1000)) : 0);
+  const [seconds, setSeconds] = useState(left);
+
+  useEffect(() => {
+    setSeconds(left());
+    if (!until || until <= Date.now()) return;
+    const id = window.setInterval(() => {
+      const next = left();
+      setSeconds(next);
+      if (next <= 0) window.clearInterval(id);
+    }, 500);
+    return () => window.clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [until]);
+
+  return seconds;
 }
