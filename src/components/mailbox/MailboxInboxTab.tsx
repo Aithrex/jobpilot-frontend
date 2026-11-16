@@ -1,7 +1,8 @@
 import { useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Inbox, MailX } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { apiService } from '@/lib/api';
 import { cn } from '@/lib/utils';
@@ -115,8 +116,13 @@ export default function MailboxInboxTab() {
     return (
       <PanelEmpty
         icon={MailX}
-        title="Managed mailbox isn't available yet"
-        body="Your managed application address is not available yet. Connect Gmail from the application tracker to review updates."
+        title="The Aspirely application address isn't available yet"
+        body="This inbox is for a separate Aspirely email address you could give to employers. It is not switched on, and it is not your Gmail. Replies found in your Gmail appear in the Tracker."
+        action={
+          <Button asChild variant="outline" size="sm">
+            <Link to="/app/apply/tracker">Open the Tracker for Gmail</Link>
+          </Button>
+        }
       />
     );
   }

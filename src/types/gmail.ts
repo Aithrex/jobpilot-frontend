@@ -10,6 +10,51 @@ export interface GmailSyncSummary {
   skipped_already_seen?: number;
   skipped_no_match?: number;
   skipped_already_in_status?: number;
+  /** Why a finished run ended the way it did. */
+  outcome?: GmailSyncOutcome | null;
+  tracked_applications?: number;
+  /** Set on a first scan: how many days back it read. */
+  window_days?: number;
+}
+
+export type GmailState =
+  | 'unavailable'
+  | 'not_connected'
+  | 'needs_reconnect'
+  | 'never_synced'
+  | 'syncing'
+  | 'paused'
+  | 'synced';
+
+export type GmailSyncOutcome = 'no_applications' | 'no_mail' | 'no_matches' | 'up_to_date' | 'updated';
+
+export type GmailReconnectReason = 'expired_or_revoked' | 'permission_missing';
+
+export type GmailErrorCode =
+  | 'gmail_reconnect_required'
+  | 'gmail_rate_limited'
+  | 'gmail_unavailable'
+  | 'gmail_policy_blocked'
+  | 'gmail_time_limit'
+  | 'gmail_error';
+
+/** One press of Sync: a run that reads batch after batch until the window is done. */
+export interface GmailSyncRun {
+  run_id: string;
+  trigger?: 'manual' | 'scheduled';
+  state: 'running' | 'paused' | 'completed' | 'failed';
+  started_at?: string | null;
+  updated_at?: string | null;
+  finished_at?: string | null;
+  batches?: number;
+  messages_scanned?: number;
+  auto_applied?: number;
+  suggested?: number;
+  deferred?: number;
+  ignored?: number;
+  outcome?: GmailSyncOutcome | null;
+  error_code?: GmailErrorCode | string | null;
+  error?: string | null;
 }
 
 export interface GmailStatus {
@@ -17,9 +62,37 @@ export interface GmailStatus {
   connected: boolean;
   gmail_address?: string | null;
   last_synced_at?: string | null;
-  pending_suggestions: number;
+  /** Null on a light (polling) read, which skips the review count. */
+  pending_suggestions: number | null;
   has_more?: boolean;
   last_sync_summary?: GmailSyncSummary | null;
+  /** The one field that picks a screen. Absent on an older backend. */
+  state?: GmailState;
+  linked_at?: string | null;
+  needs_reconnect?: boolean;
+  /** An unknown value gets the general reconnect wording. */
+  reconnect_reason?: GmailReconnectReason | string | null;
+  tracked_applications?: number;
+  sync?: GmailSyncRun | null;
+  auto_sync?: { enabled: boolean; interval_hours: number } | null;
+  access?: { mode: 'testing' | 'production'; expires_at?: string | null } | null;
+}
+
+/** An automatic status move made by a sync, which the user may undo. */
+export interface GmailChange {
+  suggestion_id: string;
+  record_id: string;
+  company?: string;
+  title?: string;
+  from_status: string | null;
+  to_status: string;
+  subject?: string;
+  from_address?: string;
+  email_received_at?: string | null;
+  applied_at?: string | null;
+  sync_run_id?: string | null;
+  undoable: boolean;
+  undone: boolean;
 }
 
 export type GmailOutcome =

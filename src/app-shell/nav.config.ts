@@ -214,8 +214,8 @@ export const APPLY_SECTIONS: NavSection[] = [
     to: "inbox",
     label: "Inbox",
     icon: Inbox,
-    hint: "Replies to your managed application address",
-    keywords: "email mail replies recruiter messages",
+    hint: "Mail sent to your Aspirely application address. Not Gmail",
+    keywords: "email mail replies recruiter messages managed address",
   },
   {
     to: "pipeline",
