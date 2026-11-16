@@ -205,7 +205,7 @@ export default function TrackerPage() {
               <span className="font-semibold tabular-nums text-foreground">{metrics.active}</span>{' '}
               still open
             </p>
-            <div className="grid flex-1 grid-cols-2 gap-1 sm:flex sm:flex-none sm:items-center">
+            <div className="grid flex-1 grid-cols-4 gap-1 sm:flex sm:flex-none sm:items-center">
               {(
                 [
                   ['applied', 'Awaiting response'],
@@ -231,7 +231,7 @@ export default function TrackerPage() {
                       if (!on) setStatusFilter(new Set([stage]));
                     }}
                     className={cn(
-                      'flex items-baseline gap-1.5 rounded-lg px-2.5 py-1.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                      'flex flex-col rounded-lg px-1.5 py-1.5 text-left transition-colors sm:flex-row sm:items-baseline sm:gap-1.5 sm:px-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                       on ? 'bg-primary/10 text-primary' : 'hover:bg-muted',
                     )}
                   >
@@ -246,7 +246,7 @@ export default function TrackerPage() {
                     >
                       {count}
                     </span>
-                    <span className="text-body-sm text-muted-foreground">{label}</span>
+                    <span className="text-caption-sm leading-tight text-muted-foreground sm:text-body-sm">{label}</span>
                   </button>
                 );
               })}

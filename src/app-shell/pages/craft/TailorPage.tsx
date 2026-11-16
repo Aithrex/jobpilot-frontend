@@ -1201,7 +1201,13 @@ export default function TailorPage() {
 
       {/* Split view */}
       <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
-        <section className="min-w-0 space-y-4 lg:sticky lg:top-24 lg:self-start" aria-label="Resume preview">
+        {/* On a phone the empty preview used to sit above the job description,
+            so the first thing to do was a scroll. Until there is a result it
+            follows the inspector there; on wide screens nothing moves. */}
+        <section
+          className={`min-w-0 space-y-4 lg:sticky lg:top-24 lg:self-start${result ? '' : ' order-2 lg:order-none'}`}
+          aria-label="Resume preview"
+        >
           {result && !tailoring && (
             <details className="group rounded-container border border-border bg-card shadow-soft">
               <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-semibold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
@@ -1238,7 +1244,7 @@ export default function TailorPage() {
           />
         </section>
 
-        <section className="min-w-0" aria-label="Inspector">
+        <section className={`min-w-0${result ? '' : ' order-1 lg:order-none'}`} aria-label="Inspector">
           <InspectorTabs
             active={inspectorTab}
             onChange={setInspectorTab}

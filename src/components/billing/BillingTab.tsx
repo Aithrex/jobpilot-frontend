@@ -66,7 +66,7 @@ export default function BillingTab() {
   if (isLoading || !data) {
     // Shaped like the loaded view: plan card, usage list, three plan cards.
     return (
-      <div className="max-w-3xl space-y-6" aria-busy="true">
+      <div className="space-y-6" aria-busy="true">
         <Skeleton className="h-24 w-full rounded-xl" />
         <Skeleton className="h-48 w-full rounded-xl" />
         <div className="grid gap-3 sm:grid-cols-3">
@@ -86,7 +86,7 @@ export default function BillingTab() {
     // No self-container (mx-auto/p-4): both mounts - /next settings and the
     // classic workspace - already pad and align their content; centering here
     // broke the settings panels' shared left alignment.
-    <div className="max-w-3xl space-y-6">
+    <div className="space-y-6">
       {/* Current plan */}
       <Card className="overflow-hidden">
         <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">

@@ -759,7 +759,10 @@ export default function GmailIntegration({
           </p>
         )}
 
-        <p className="mt-3 text-label text-muted-foreground">
+        {/* In the tracker on a phone this line repeats the fold just below it
+            and pushes the list down, so it is kept only when it carries the
+            7 day notice. */}
+        <p className={cn('mt-3 text-label text-muted-foreground', inline && !testing && 'hidden sm:block')}>
           {autoSync
             ? `Aspirely also checks by itself about every ${plural(autoSync.interval_hours, 'hour', 'hours')}, so you do not have to press anything. `
             : ''}
