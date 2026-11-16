@@ -2411,7 +2411,14 @@ class ApiService {
     tailoredResume: import('../types/resume').TailoredFullResume,
     jdAnalysis: import('../types/resume').JDAnalysis,
     signal?: AbortSignal,
-    opts?: { recordId?: string; versionId?: string; format?: 'pdf' | 'docx'; idempotencyKey?: string },
+    opts?: {
+      recordId?: string;
+      versionId?: string;
+      format?: 'pdf' | 'docx';
+      idempotencyKey?: string;
+      /** The resume it was tailored from, scored by the same rules (`ats_before`). */
+      sourceResume?: import('../types/resume').TailoredFullResume | null;
+    },
   ): Promise<ApiResponse<{ ats_scores: import('../types/resume').ATSScores }>> {
     const submitResp = await this.request<{ job_id: string }>(
       '/resume/ats-scores',
@@ -2424,6 +2431,7 @@ class ApiService {
           version_id: opts?.versionId || '',
           format: opts?.format || 'pdf',
           idempotency_key: opts?.idempotencyKey || '',
+          ...(opts?.sourceResume ? { source_resume: opts.sourceResume } : {}),
         }),
       },
       30000,

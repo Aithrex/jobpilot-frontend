@@ -68,6 +68,10 @@ export interface CombinedJobsPrefs {
   usState?: string;
   /** US-only narrowing: optional city. */
   city?: string;
+  /** Where to work: ISO country code or "ANY" (src/lib/places.ts). */
+  country?: string;
+  /** A state, province or region of `country`. */
+  region?: string;
   /** `accountKey.currentAccountKey()` of the account that saved it. */
   owner?: string;
 }

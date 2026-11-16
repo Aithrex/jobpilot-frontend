@@ -1,3 +1,4 @@
+import { inPlace, type PlaceSelection } from '@/lib/places';
 import type { CompanyType, WorkdayJob, WorkdayRecency } from '@/types/jobs';
 import {
   inRecencyWindow,
@@ -33,6 +34,9 @@ export interface ForYouFilters {
   isPassedOver?: (job: WorkdayJob) => boolean;
   /** Companies the board is narrowed to (`companyKeyOf`). Empty = all. */
   companies?: ReadonlySet<string>;
+  /** Where the seeker wants to work. Applied here, not by the server: the
+   *  stored board covers the whole country (src/lib/places.ts). */
+  place?: PlaceSelection;
   /** Fold likely reposts (same company + title + city) under their first card. */
   collapseReposts?: boolean;
 }
@@ -97,7 +101,7 @@ export function foldedWeakerMatches(rows: readonly WorkdayJob[]): Set<WorkdayJob
 export function selectForYouJobs(jobs: WorkdayJob[], filters: ForYouFilters) {
   const { recency, search, seniorityLevels, minScore, sponsorFilter, showApplied, sortBy,
     hiddenJobIds, getJobStatus, showWeaker = false, seenThrough = null, isPassedOver,
-    companies, collapseReposts = false } = filters;
+    companies, collapseReposts = false, place } = filters;
   const newOnly = !!filters.newOnly && !!seenThrough;
   const recencyWindow = RECENCY_OPTIONS.find((option) => option.key === recency) ?? RECENCY_OPTIONS[0];
   // Postel: a pasted 'data   analyst' or a stray double space still matches.
@@ -107,7 +111,9 @@ export function selectForYouJobs(jobs: WorkdayJob[], filters: ForYouFilters) {
   const isNew = (job: WorkdayJob) => isNewSince(job, seenThrough);
   // Every filter but the company one, so the company checklist can count
   // what choosing a company would show.
+  const placeOn = !!place && (place.country !== 'US' || !!place.region || !!place.city.trim());
   const beforeCompany = jobs.filter((job) =>
+    (!placeOn || inPlace(job, place!)) &&
     (!query || `${job.title} ${job.company}`.replace(/\s+/g, ' ').toLowerCase().includes(query)) &&
     (!minScore || (job.match_score ?? 0) >= minScore) &&
     (sponsorFilter !== 'friendly' || job.sponsorship !== 'refused') &&

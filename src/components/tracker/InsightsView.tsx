@@ -145,23 +145,27 @@ function Weekly({ insights }: { insights: TrackerInsights }) {
         <span>Week of {formatCivilDay(insights.weeks[0].start)}</span>
         <span>This week</span>
       </div>
-      <table className="sr-only">
-        <caption>Applications sent in each of the last {insights.weeks.length} weeks</caption>
-        <thead>
-          <tr>
-            <th scope="col">Week starting</th>
-            <th scope="col">Applications</th>
-          </tr>
-        </thead>
-        <tbody>
-          {insights.weeks.map((week) => (
-            <tr key={week.start}>
-              <th scope="row">{formatCivilDay(week.start)}</th>
-              <td>{week.count}</td>
+      {/* A table ignores height, so `sr-only` on the table itself still
+          stretches the page: hide a wrapper instead. */}
+      <div className="sr-only">
+        <table>
+          <caption>Applications sent in each of the last {insights.weeks.length} weeks</caption>
+          <thead>
+            <tr>
+              <th scope="col">Week starting</th>
+              <th scope="col">Applications</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {insights.weeks.map((week) => (
+              <tr key={week.start}>
+                <th scope="row">{formatCivilDay(week.start)}</th>
+                <td>{week.count}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </Card>
   );
 }

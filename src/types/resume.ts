@@ -384,7 +384,47 @@ export interface AssessmentV2Result {
   ledger?: { requirements?: AssessmentLedgerRow[] } | null;
 }
 
+/** One part of the ATS score (backend `services/ats_score.py`). */
+export interface AtsComponent {
+  key: string;
+  label: string;
+  points: number;
+  max: number;
+  note?: string;
+}
+
+/**
+ * The ATS score: one strict number for this resume against this job, with
+ * what moved it. `score` is null when the job's requirements could not be
+ * read (`band: "unavailable"`), never a made-up number.
+ */
+export interface AtsResult {
+  version: string;
+  score: number | null;
+  band: 'excellent' | 'strong' | 'good' | 'fair' | 'weak' | 'needs_work' | 'unavailable';
+  label: string;
+  reason?: string;
+  components: AtsComponent[];
+  deductions: { key: string; points: number; reason: string }[];
+  caps: { key: string; limit: number; reason: string }[];
+  held_back_by?: string | null;
+  skills: {
+    proven: string[];
+    in_projects: string[];
+    listed_only: string[];
+    missing: string[];
+    nice_to_have_missing: string[];
+  };
+  years?: { required: number | null; relevant: number; total: number };
+  degree?: { required: string | null; or_equivalent: boolean; met: boolean };
+  fixes: string[];
+}
+
 export interface ATSScores {
+  /** The ATS score with its breakdown (ats-1.0 and later). `overall` equals `ats.score`. */
+  ats?: AtsResult;
+  /** The resume it was tailored from, scored by the same rules. */
+  ats_before?: { version: string; score: number | null; band: string; label: string } | null;
   assessment_version?: string;
   document_assessment?: DocumentAssessment;
   /** 2 = legacy honest rubric; 3 = evidence-v1 sidecar; 4 = assessment-v2. */

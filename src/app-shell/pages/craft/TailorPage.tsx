@@ -90,16 +90,14 @@ import { bestMatch } from '@/lib/textDiff';
 import { ProgressStepper } from './tailor/ProgressStepper';
 import { StartPreview } from './tailor/StartPreview';
 import { RecentTailored } from './tailor/RecentTailored';
-import { NudgeBar } from './tailor/NudgeBar';
 import { ResumePreviewFrame } from './tailor/ResumePreviewFrame';
 import { AiDisclosure } from '@/components/ai/AiDisclosure';
 import { InspectorTabs } from './tailor/InspectorTabs';
 import { JdInputPanel } from './tailor/JdInputPanel';
-import { AtsScorePanel } from './tailor/AtsScorePanel';
+import { AtsScoreCard } from './tailor/AtsScoreCard';
 import { RegeneratePanel } from './tailor/RegeneratePanel';
 import { CoverLetterPanel } from './tailor/CoverLetterPanel';
 import { ResumeFormatControls } from './tailor/ResumeFormatControls';
-import { ScreenerPanel } from './tailor/ScreenerPanel';
 import {
   formatOf,
   loadSavedFormat,
@@ -150,6 +148,10 @@ export default function TailorPage() {
   // The parsed BASE resume (arrives with the tailor result) - powers the
   // Base preview segment, diff-vs-base, and "Restore original" in review.
   const [baseResume, setBaseResume] = useState<TailoredFullResume | null>(null);
+  // Read by the scorer without re-creating it: the original resume is scored
+  // by the same rules so the result shows before and after.
+  const baseResumeRef = useRef<TailoredFullResume | null>(null);
+  baseResumeRef.current = baseResume;
   // Per-claim review decisions (keyed by structural address).
   const [reviewDecisions, setReviewDecisions] = useState<
     Record<string, ReviewDecision>
@@ -194,7 +196,6 @@ export default function TailorPage() {
 
   const [inspectorTab, setInspectorTab] = useState<InspectorTabKey>('jd');
   const [versions, setVersions] = useState<VersionEntry[]>([]);
-  const [dismissedNudges, setDismissedNudges] = useState<Set<string>>(new Set());
 
   /* ── Handoffs (via the shared craftHandoff helper) ───────────────────────── */
 
@@ -391,7 +392,9 @@ export default function TailorPage() {
       setAtsLoading(true);
       setAtsError('');
       apiService
-        .fetchATSScores(res.tailored_resume, res.jd_analysis, ctrl.signal)
+        .fetchATSScores(res.tailored_resume, res.jd_analysis, ctrl.signal, {
+          sourceResume: baseResumeRef.current,
+        })
         .then((r) => {
           if (ctrl.signal.aborted) return;
           setAtsLoading(false);
@@ -412,19 +415,17 @@ export default function TailorPage() {
             setResult((p) => (p ? { ...p, ats_scores: r.data!.ats_scores } : p));
             updateRecordATS(r.data.ats_scores);
             setScoreStale(false);
-            if (!opts?.silent) {
-              const unsupported =
-                res.tailored_resume.verification?.counts.unsupported ?? 0;
-              setInspectorTab(unsupported > 0 ? 'review' : 'ats');
-            }
+            // The score is the first thing to see. Lines that need a check
+            // show as a warning right under it, one click away.
+            if (!opts?.silent) setInspectorTab('ats');
           } else {
-            setAtsError(r.error || "Couldn't score this resume against the JD.");
+            setAtsError(r.error || "Couldn't score this resume. Try again.");
           }
         })
         .catch(() => {
           if (ctrl.signal.aborted) return;
           setAtsLoading(false);
-          setAtsError('Network issue while scoring. Check your connection.');
+          setAtsError("Couldn't reach us to score this resume. Check your connection.");
         });
     },
     [updateRecordATS],
@@ -1174,7 +1175,12 @@ export default function TailorPage() {
 
   return (
     <div className="space-y-5">
-      <ProgressStepper currentStep={currentStep} />
+      {/* Where you are, and the resumes you already made, on one line at
+          the top: nothing worth finding sits below the fold. */}
+      <div className="flex flex-col gap-3 2xl:flex-row 2xl:items-center 2xl:justify-between 2xl:gap-6">
+        <ProgressStepper currentStep={currentStep} />
+        {idle && <RecentTailored className="2xl:max-w-[60%]" />}
+      </div>
 
       {/* Which file was picked matters only when there was a choice. */}
       {baseSelection && result && parsedResumes.length > 1 && (
@@ -1258,41 +1264,16 @@ export default function TailorPage() {
               />
             }
             atsPanel={
-              <div>
-                {atsError && !atsLoading && (
-                  <div
-                    role="alert"
-                    className="mx-4 mt-4 flex flex-wrap items-center justify-between gap-3 rounded-control border border-destructive/30 bg-destructive/10 px-4 py-3"
-                  >
-                    <p className="min-w-0 flex-1 text-sm text-destructive">
-                      {atsError}
-                    </p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => result && runAtsScoring(result)}
-                      disabled={!result}
-                      className="min-h-11 shrink-0"
-                    >
-                      Score now
-                    </Button>
-                  </div>
-                )}
-                <AtsScorePanel
-                  recordId={recordIdRef.current || undefined}
-                  scores={result?.ats_scores ?? null}
-                  resume={result?.tailored_resume ?? null}
-                  matchGaps={result?.tailored_resume.match_gaps ?? null}
-                  onAttachEvidence={handleAttachEvidence}
-                  stale={scoreStale}
-                  onRescore={handleRescore}
-                  rescoring={atsLoading}
-                  delta={scoreDelta}
-                />
-              </div>
+              <AtsScoreCard
+                scores={result?.ats_scores ?? null}
+                loading={atsLoading}
+                error={atsError}
+                stale={scoreStale}
+                onRescore={() => (scoreStale ? handleRescore() : result && runAtsScoring(result))}
+                jobTitle={result?.jd_analysis.job_title || ''}
+                company={result?.jd_analysis.company || ''}
+              />
             }
-            screenerPanel={<ScreenerPanel report={result?.tailored_resume.screener} />}
-            screenerGrade={result?.tailored_resume.screener?.summary?.grade ?? null}
             regeneratePanel={
               <RegeneratePanel
                 feedback={regenFeedback}
@@ -1323,22 +1304,6 @@ export default function TailorPage() {
                 company={result?.jd_analysis.company || ''}
               />
             }
-          />
-          {/* A suggestion for what to do next sits under the tools, not above
-              the result: the first thing to see after tailoring is the resume. */}
-          <NudgeBar
-            result={result}
-            versionsCount={versions.length}
-            coverLetter={coverLetter}
-            coverLetterLoading={coverLetterLoading}
-            dismissedNudges={dismissedNudges}
-            onDismiss={(id) => setDismissedNudges((s) => new Set(s).add(id))}
-            onDownload={() => handleDownload('pdf')}
-            onReviewAts={() => setInspectorTab('ats')}
-            onGenerateCoverLetter={() => {
-              setInspectorTab('cover');
-              setTimeout(handleCoverLetter, 300);
-            }}
           />
         </section>
 
@@ -1383,7 +1348,6 @@ export default function TailorPage() {
         </section>
       </div>
 
-      {idle && <RecentTailored />}
 
       {/* Sticky bottom toolbar. Below lg it sits ABOVE the fixed MobileNav
           (same bottom-0 z-40 otherwise - the tab bar painted over Download);

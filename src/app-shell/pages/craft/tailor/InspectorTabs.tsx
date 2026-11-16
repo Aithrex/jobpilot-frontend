@@ -1,22 +1,23 @@
 /**
- * Inspector tab chrome (the Tailor tool's working column).
+ * The Tailor tool's working column.
  *
- * Presentational shell - owns only the active-tab selection contract (lifted to
- * props). Builds the tab bar on shadcn Tabs, with score/status affordances,
- * and renders caller-supplied panels as content.
+ * Before there is a result: only the job posting form.
  *
- * Two rules keep it readable for someone who has never tailored a resume:
- *   - Before there is a result there are no tabs at all, only the job posting
- *     form. Five greyed-out tabs said "there is a lot here you cannot use".
- *   - Tabs are named for what you do in them, not for the system behind them:
- *     "Match score" not "ATS", "Recruiter view" not "Screener", "Ask for
- *     changes" not "Regenerate", "Check facts" not "Review".
+ * After tailoring (2026-11-16, owner: "keep just the ATS score"): the ATS
+ * score card is the whole view. Under it, a warning when lines need the
+ * person's check, and three tools as one quiet row. A tool opens in place with
+ * a way back to the score, so nothing is hidden in a strip of six tabs and
+ * nothing competes with the number.
+ *
+ * Tools are named for what the person does: "Ask for changes", not
+ * "Regenerate"; "Check facts", not "Review".
  */
 import type { ReactNode } from 'react';
-import { ClipboardList, Search, RotateCw, Sparkles, ShieldAlert, ScanSearch } from 'lucide-react';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { ArrowLeft, ClipboardList, RotateCw, ShieldAlert, Sparkles, type LucideIcon } from 'lucide-react';
 
+import { DURATION, EASE_DECELERATE } from '@/lib/motion';
 import { cn } from '@/lib/utils';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 import { scoreTone } from './primitives';
 import type { InspectorTabKey } from './types';
@@ -38,16 +39,17 @@ interface InspectorTabsProps {
   jdPanel: ReactNode;
   reviewPanel?: ReactNode;
   atsPanel: ReactNode;
-  /** Employer-side read of the PDF (must-haves found / missing). */
-  screenerPanel?: ReactNode;
-  /** Screener grade letter for the tab badge. */
-  screenerGrade?: string | null;
   regeneratePanel: ReactNode;
   coverPanel: ReactNode;
 }
 
-const triggerCls =
-  'hit-target min-h-10 flex-1 shrink-0 gap-1.5 whitespace-nowrap rounded-control px-2 text-caption sm:justify-start sm:px-3 2xl:justify-center data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:shadow-none data-[state=active]:ring-1 data-[state=active]:ring-primary/30';
+interface Tool {
+  key: InspectorTabKey;
+  label: string;
+  hint: string;
+  icon: LucideIcon;
+  status?: 'ready' | 'busy' | null;
+}
 
 export function InspectorTabs({
   active,
@@ -63,12 +65,12 @@ export function InspectorTabs({
   jdPanel,
   reviewPanel,
   atsPanel,
-  screenerPanel,
-  screenerGrade = null,
   regeneratePanel,
   coverPanel,
 }: InspectorTabsProps) {
-  // Nothing tailored yet: the form on its own, no strip of disabled tabs.
+  const reduce = useReducedMotion();
+
+  // Nothing tailored yet: the form on its own.
   if (!hasResult) {
     return (
       <div className="min-w-0 rounded-container border border-border bg-card shadow-soft">
@@ -77,174 +79,114 @@ export function InspectorTabs({
     );
   }
 
+  const tools: Tool[] = [
+    { key: 'regenerate', label: 'Ask for changes', hint: 'Say what to change and get a new version', icon: RotateCw },
+    {
+      key: 'cover',
+      label: 'Cover letter',
+      hint: coverLetterReady ? 'Your cover letter for this job' : 'Write a cover letter for this job',
+      icon: Sparkles,
+      status: coverLetterLoading ? 'busy' : coverLetterReady ? 'ready' : null,
+    },
+    { key: 'jd', label: 'Job posting', hint: 'See or change the job posting', icon: ClipboardList },
+  ];
+  const panels: Partial<Record<InspectorTabKey, ReactNode>> = {
+    review: reviewPanel,
+    regenerate: regeneratePanel,
+    cover: coverPanel,
+    jd: jdPanel,
+  };
+  const showingScore = active === 'ats' || active === 'screener' || !panels[active];
+  const motionProps = {
+    initial: reduce ? false : { opacity: 0, y: 6 },
+    animate: { opacity: 1, y: 0 },
+    exit: reduce ? undefined : { opacity: 0, y: -4 },
+    transition: { duration: reduce ? 0 : DURATION.fast, ease: EASE_DECELERATE },
+  };
+  const backLabel =
+    atsScore != null ? `ATS score ${atsScore}${atsStale ? ', edited since' : ''}` : atsLoading ? 'ATS score, scoring' : 'ATS score';
+
   return (
-    <Tabs
-      value={active}
-      onValueChange={(v) => onChange(v as InspectorTabKey)}
-      className="min-w-0"
-    >
-      {/* Tab bar */}
-      {/* A phone gets six icon tabs in a row. From `sm` up the six tools sit
-          in a 3 x 2 palette, each with its icon and full name, so none is
-          hidden behind a sideways scroll (the sixth tab used to be cut off).
-          On very wide screens they fit on one line. */}
-      <TabsList className="mb-4 flex h-auto w-full justify-start gap-1 rounded-container border border-border bg-muted/60 p-1.5 sm:grid sm:grid-cols-3 2xl:grid-cols-6">
-        {/* Below `sm` the labels collapse to icon-only VISUALLY, but stay in
-            the accessible name via sr-only (an aria-label would mask the
-            dynamic score/status text that follows each label). */}
-        <TabsTrigger value="ats" disabled={!hasResult} className={triggerCls}>
-          <Search className="h-4 w-4 shrink-0" aria-hidden="true" />
-          <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">Match score</span>
-          {atsScore != null ? (
-            <span className="ml-0.5 inline-flex items-center gap-1">
-              <span
-                className={cn(
-                  'text-caption-sm font-bold tabular-nums',
-                  scoreTone(atsScore).text,
-                )}
-              >
-                {atsScore}
-              </span>
-              {atsStale && (
-                <>
-                  <span
-                    title="Edited since scored"
-                    aria-hidden="true"
-                    className="h-1.5 w-1.5 rounded-full bg-warning"
-                  />
-                  <span className="sr-only">Score outdated. Edited since scored</span>
-                </>
-              )}
-            </span>
-          ) : atsLoading ? (
-            <>
-              <span
-                aria-hidden="true"
-                className="h-1.5 w-1.5 animate-pulse rounded-full bg-warning"
-              />
-              <span className="sr-only">Scoring in progress</span>
-            </>
-          ) : null}
-        </TabsTrigger>
+    <div className="min-w-0">
+      <AnimatePresence mode="wait" initial={false}>
+        {showingScore ? (
+          <motion.div key="score" className="space-y-3" {...motionProps}>
+            {atsPanel}
 
-        {reviewPanel && (
-          <TabsTrigger value="review" disabled={!hasResult} className={triggerCls}>
-            <ShieldAlert className="h-4 w-4 shrink-0" aria-hidden="true" />
-            <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">Check facts</span>
-            {reviewPendingCount > 0 && (
-              <span
+            {reviewPanel && reviewPendingCount > 0 && (
+              <button
+                type="button"
+                onClick={() => onChange('review')}
                 className={cn(
-                  'ml-0.5 inline-flex min-w-[16px] items-center justify-center rounded-full px-1 text-caption-sm font-bold tabular-nums',
+                  'press flex w-full items-center gap-3 rounded-container border px-4 py-3 text-left transition-colors',
                   reviewHasUnsupported
-                    ? 'bg-destructive/15 text-destructive'
-                    : 'bg-warning/15 text-warning',
+                    ? 'border-destructive/30 bg-destructive/10 hover:bg-destructive/15'
+                    : 'border-warning/30 bg-warning/10 hover:bg-warning/15',
                 )}
+                title="Lines we could not trace back to your resume. Check them before you send it."
               >
-                {reviewPendingCount}
-                <span className="sr-only"> flagged claims pending review</span>
-              </span>
+                <ShieldAlert
+                  className={cn('h-5 w-5 shrink-0', reviewHasUnsupported ? 'text-destructive' : 'text-warning')}
+                  aria-hidden
+                />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-body-sm font-semibold text-foreground">
+                    {reviewPendingCount === 1 ? '1 line needs your check' : `${reviewPendingCount} lines need your check`}
+                  </span>
+                  <span className="block text-caption text-muted-foreground">Before you send it</span>
+                </span>
+                <span className="text-caption font-semibold text-foreground">Check</span>
+              </button>
             )}
-          </TabsTrigger>
+
+            <div className="grid grid-cols-3 gap-2" role="group" aria-label="More for this resume">
+              {tools.map(({ key, label, hint, icon: Icon, status }) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => onChange(key)}
+                  title={hint}
+                  className="press group relative flex min-h-[4.25rem] flex-col items-center justify-center gap-1.5 rounded-container border border-border bg-card px-2 py-3 text-center shadow-soft transition-colors hover:border-primary/40 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <Icon className="h-[18px] w-[18px] text-muted-foreground transition-colors group-hover:text-primary" aria-hidden />
+                  <span className="text-caption font-semibold leading-tight text-foreground">{label}</span>
+                  {status && (
+                    <span
+                      className={cn(
+                        'absolute right-2 top-2 h-1.5 w-1.5 rounded-full',
+                        status === 'ready' ? 'bg-success' : 'animate-pulse bg-warning',
+                      )}
+                      aria-hidden
+                    />
+                  )}
+                  {status && (
+                    <span className="sr-only">{status === 'ready' ? 'Ready' : 'Writing'}</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        ) : (
+          <motion.div key={active} className="space-y-3" {...motionProps}>
+            <button
+              type="button"
+              onClick={() => onChange('ats')}
+              className="press inline-flex min-h-10 items-center gap-2 rounded-full border border-border bg-card px-3 text-caption font-semibold text-foreground shadow-soft transition-colors hover:border-primary/40 hover:text-primary"
+              title="Back to the ATS score"
+            >
+              <ArrowLeft className="h-4 w-4" aria-hidden />
+              <span>ATS score</span>
+              {atsScore != null && (
+                <span className={cn('tabular-nums', scoreTone(atsScore).text)} aria-hidden>
+                  {atsScore}
+                </span>
+              )}
+              <span className="sr-only">{backLabel}</span>
+            </button>
+            <div className="rounded-container border border-border bg-card shadow-soft">{panels[active]}</div>
+          </motion.div>
         )}
-
-        {screenerPanel && (
-          <TabsTrigger value="screener" disabled={!hasResult} className={triggerCls}>
-            <ScanSearch className="h-4 w-4 shrink-0" aria-hidden="true" />
-            <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">Recruiter view</span>
-            {screenerGrade && (
-              <span
-                className={cn(
-                  'ml-0.5 text-caption-sm font-bold',
-                  screenerGrade === 'A' || screenerGrade === 'B'
-                    ? 'text-success'
-                    : screenerGrade === 'C'
-                      ? 'text-warning'
-                      : 'text-destructive',
-                )}
-              >
-                {screenerGrade}
-                <span className="sr-only"> screener grade</span>
-              </span>
-            )}
-          </TabsTrigger>
-        )}
-
-        <TabsTrigger
-          value="regenerate"
-          disabled={!hasResult}
-          className={triggerCls}
-        >
-          <RotateCw className="h-4 w-4 shrink-0" aria-hidden="true" />
-          <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">Ask for changes</span>
-        </TabsTrigger>
-
-        <TabsTrigger value="cover" disabled={!hasResult} className={triggerCls}>
-          <Sparkles className="h-4 w-4 shrink-0" aria-hidden="true" />
-          <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">Cover letter</span>
-          {coverLetterReady && !coverLetterLoading ? (
-            <>
-              {/* Static: "ready" is a state, not activity. Only in-progress
-                  dots animate on this strip. */}
-              <span className="h-1.5 w-1.5 rounded-full bg-success" aria-hidden="true" />
-              <span className="sr-only">Cover letter ready</span>
-            </>
-          ) : coverLetterLoading ? (
-            <>
-              <span
-                aria-hidden="true"
-                className="h-1.5 w-1.5 animate-pulse rounded-full bg-warning"
-              />
-              <span className="sr-only">Generating cover letter</span>
-            </>
-          ) : null}
-        </TabsTrigger>
-        <TabsTrigger value="jd" className={triggerCls}>
-          <ClipboardList className="h-4 w-4 shrink-0" aria-hidden="true" />
-          <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">Job posting</span>
-        </TabsTrigger>
-      </TabsList>
-
-      {/* Panels - each wrapped in a token-driven surface */}
-      <TabsContent
-        value="jd"
-        className="mt-0 rounded-container border border-border bg-card shadow-soft"
-      >
-        {jdPanel}
-      </TabsContent>
-      {reviewPanel && (
-        <TabsContent
-          value="review"
-          className="mt-0 rounded-container border border-border bg-card shadow-soft"
-        >
-          {reviewPanel}
-        </TabsContent>
-      )}
-      <TabsContent
-        value="ats"
-        className="mt-0 rounded-container border border-border bg-card shadow-soft"
-      >
-        {atsPanel}
-      </TabsContent>
-      {screenerPanel && (
-        <TabsContent
-          value="screener"
-          className="mt-0 rounded-container border border-border bg-card shadow-soft"
-        >
-          {screenerPanel}
-        </TabsContent>
-      )}
-      <TabsContent
-        value="regenerate"
-        className="mt-0 rounded-container border border-border bg-card shadow-soft"
-      >
-        {regeneratePanel}
-      </TabsContent>
-      <TabsContent
-        value="cover"
-        className="mt-0 rounded-container border border-border bg-card shadow-soft"
-      >
-        {coverPanel}
-      </TabsContent>
-    </Tabs>
+      </AnimatePresence>
+    </div>
   );
 }

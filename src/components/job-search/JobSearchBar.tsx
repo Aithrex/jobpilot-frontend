@@ -39,6 +39,7 @@ import {
   visaLabel,
 } from '@/components/job-search/jobSearchEditors';
 import { RECENCY_OPTIONS, sameLevels } from '@/lib/careerJobs';
+import { ANYWHERE, placeSummary } from '@/lib/places';
 import { cn } from '@/lib/utils';
 
 /* ── What each segment says ──────────────────────────────────────────────── */
@@ -49,15 +50,16 @@ function rolesSummary(titles: readonly string[]): string {
 }
 
 export function whereSummary(scope: {
-  usOnly: boolean;
-  usState: string;
+  country?: string;
+  region?: string;
+  usOnly?: boolean;
+  usState?: string;
   city: string;
-  location: string;
+  location?: string;
   remoteOnly: boolean;
 }): string {
-  const place = scope.usOnly
-    ? [scope.city.trim(), scope.usState].filter(Boolean).join(', ') || 'United States'
-    : scope.location.trim() || 'Anywhere';
+  const country = scope.country ?? (scope.usOnly === false ? ANYWHERE : 'US');
+  const place = placeSummary({ country, region: scope.region ?? scope.usState ?? '', city: scope.city });
   return scope.remoteOnly ? `Remote · ${place}` : place;
 }
 
@@ -84,9 +86,9 @@ export function JobSearchBar() {
     loading,
     sync,
     usOnly,
-    usState,
+    country,
+    region,
     city,
-    location,
     remoteOnly,
     seniorityLevels,
     resetSeniorityLevels,
@@ -102,9 +104,10 @@ export function JobSearchBar() {
     setCustomizeOpen,
   } = ctx;
 
-  const scope = { usOnly, usState, city, location, remoteOnly };
-  const where = whereSummary(scope);
-  const whereChanged = !(usOnly && !usState && !city.trim() && !remoteOnly);
+  const where = whereSummary({ country, region, city, remoteOnly });
+  const whereChanged = !(country === 'US' && !region && !city.trim() && !remoteOnly);
+  // What the server is asked: only these need a new search when they change.
+  const scanKey = `${usOnly}|${remoteOnly}`;
   const mine = experienceView?.levels ?? [];
   const isMine = mine.length > 0 && sameLevels(seniorityLevels, mine);
   const levelChanged = mine.length > 0 ? !isMine : seniorityLevels.length > 0;
@@ -123,7 +126,7 @@ export function JobSearchBar() {
   // Titles and place change WHAT is searched. Closing either editor with a
   // change that was not searched yet runs the search, so a click outside
   // never leaves the board showing the old search under the new words.
-  const whereAtOpen = useRef(where);
+  const whereAtOpen = useRef(scanKey);
   // Set by the editor's own Search button, so closing right after it does not
   // start the same search a second time.
   const searchedFromEditor = useRef(false);
@@ -178,17 +181,12 @@ export function JobSearchBar() {
             ariaLabel={`Where: ${where}`}
             changed={whereChanged}
             onOpenChange={(open) => {
-              if (open) whereAtOpen.current = where;
-              else searchIfStale(whereAtOpen.current !== where);
+              if (open) whereAtOpen.current = scanKey;
+              else if (whereAtOpen.current !== scanKey && canSearch && !loading) sync(false);
             }}
             testId="search-segment-where"
           >
-            {(close) => (
-              <>
-                <WhereEditor />
-                <ScopeFooter close={closeAfterSearch(close)} />
-              </>
-            )}
+            <WhereEditor />
           </SearchSegment>
 
           <ExperienceLevelPicker />

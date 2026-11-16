@@ -9,7 +9,7 @@
  * someone who has not read the scoring rules.
  */
 import type { ReactNode } from 'react';
-import { AlertCircle, Check, Loader2, Search, Wand2 } from 'lucide-react';
+import { AlertCircle, BadgeCheck, Check, Globe2, Loader2, Search, ShieldCheck, Wand2, type LucideIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -25,21 +25,12 @@ import { useCombinedJobsCtx, type SponsorFilter } from '@/components/job-search/
 import { FIT_BANDS } from '@/components/job-search/fitBands';
 import { JOB_TITLES_CAP } from '@/hooks/useJobTitles';
 import { RECENCY_OPTIONS } from '@/lib/careerJobs';
+import { ANYWHERE, COUNTRIES, countryByCode } from '@/lib/places';
 import { timeZoneName, useViewerTimeZone } from '@/lib/viewerTimezone';
 import { cn } from '@/lib/utils';
 
 const ANY_STATE = '__any__';
 
-const US_STATES = [
-  'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut',
-  'Delaware', 'District of Columbia', 'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois',
-  'Indiana', 'Iowa', 'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland', 'Massachusetts',
-  'Michigan', 'Minnesota', 'Mississippi', 'Missouri', 'Montana', 'Nebraska', 'Nevada',
-  'New Hampshire', 'New Jersey', 'New Mexico', 'New York', 'North Carolina', 'North Dakota',
-  'Ohio', 'Oklahoma', 'Oregon', 'Pennsylvania', 'Rhode Island', 'South Carolina',
-  'South Dakota', 'Tennessee', 'Texas', 'Utah', 'Vermont', 'Virginia', 'Washington',
-  'West Virginia', 'Wisconsin', 'Wyoming',
-] as const;
 
 /* ── Shared pieces ───────────────────────────────────────────────────────── */
 
@@ -64,6 +55,7 @@ export function ChoiceRow({
   hint,
   trailing,
   swatch,
+  icon: Icon,
 }: {
   selected: boolean;
   onSelect: () => void;
@@ -73,6 +65,8 @@ export function ChoiceRow({
   trailing?: ReactNode;
   /** Small colour dot that ties the row to what the cards show. */
   swatch?: string;
+  /** A small picture of the choice, read before the words. */
+  icon?: LucideIcon;
 }) {
   return (
     <button
@@ -100,6 +94,7 @@ export function ChoiceRow({
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-1.5 text-sm font-medium leading-tight text-foreground">
           {swatch && <span className={cn('h-2 w-2 shrink-0 rounded-full', swatch)} aria-hidden />}
+          {Icon && <Icon className={cn('h-4 w-4 shrink-0', selected ? 'text-primary' : 'text-muted-foreground')} aria-hidden />}
           {title}
         </span>
         {hint && <span className="mt-0.5 block text-caption-sm leading-snug text-muted-foreground">{hint}</span>}
@@ -228,57 +223,61 @@ export function RolesEditor({ id = 'roles' }: { id?: string }) {
 
 /* ── Where ───────────────────────────────────────────────────────────────── */
 
+/**
+ * Where to work: a country, then that country's states or provinces the same
+ * way US states always were, then an optional city. A pick filters the board
+ * at once. Only "the US or not" and "remote only" reach the server, so only
+ * they start a new search (see JobSearchBar).
+ */
 export function WhereEditor({ idPrefix = 'where' }: { idPrefix?: string }) {
-  const {
-    usOnly,
-    setUsOnly,
-    usState,
-    setUsState,
-    city,
-    setCity,
-    location,
-    setLocation,
-    remoteOnly,
-    setRemoteOnly,
-  } = useCombinedJobsCtx();
+  const { country, setCountry, region, setRegion, city, setCity, remoteOnly, setRemoteOnly } =
+    useCombinedJobsCtx();
+  const current = countryByCode(country);
+  const regions = current?.regions ?? [];
+  const label = current?.regionLabel ?? 'Region';
 
   return (
     <div className="space-y-3">
-      <EditorHeading
-        title="Where do you want to work?"
-        hint="Narrow to a state or city, or leave it open to see more."
-      />
-      <div className="space-y-2">
-        <SwitchRow
-          id={`${idPrefix}-us-only`}
-          label="United States only"
-          hint="Turn off to search other countries."
-          checked={usOnly}
-          onCheckedChange={setUsOnly}
-        />
-        <SwitchRow
-          id={`${idPrefix}-remote-only`}
-          label="Remote jobs only"
-          hint="Hide jobs that need you on site."
-          checked={remoteOnly}
-          onCheckedChange={setRemoteOnly}
-        />
-      </div>
-      {usOnly ? (
-        <div className="grid grid-cols-2 gap-2">
-          <Select value={usState || ANY_STATE} onValueChange={(v) => setUsState(v === ANY_STATE ? '' : v)}>
-            <SelectTrigger id={`${idPrefix}-state`} className="h-10" aria-label="State">
-              <SelectValue placeholder="State" />
-            </SelectTrigger>
-            <SelectContent className="max-h-72">
-              <SelectItem value={ANY_STATE}>All states</SelectItem>
-              {US_STATES.map((s) => (
-                <SelectItem key={s} value={s}>
-                  {s}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+      <EditorHeading title="Where do you want to work?" />
+      <Select value={country} onValueChange={setCountry}>
+        <SelectTrigger id={`${idPrefix}-country`} className="h-10" aria-label="Country">
+          <span className="flex min-w-0 items-center gap-2">
+            {country === ANYWHERE ? (
+              <Globe2 className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+            ) : (
+              <span className="grid h-5 w-7 shrink-0 place-items-center rounded bg-muted text-[10px] font-bold tracking-wide text-muted-foreground" aria-hidden>
+                {country}
+              </span>
+            )}
+            <SelectValue placeholder="Country" />
+          </span>
+        </SelectTrigger>
+        <SelectContent className="max-h-80">
+          {COUNTRIES.map((c) => (
+            <SelectItem key={c.code} value={c.code}>
+              {c.name}
+            </SelectItem>
+          ))}
+          <SelectItem value={ANYWHERE}>Anywhere</SelectItem>
+        </SelectContent>
+      </Select>
+      {country !== ANYWHERE && (
+        <div className={cn('grid gap-2', regions.length ? 'grid-cols-2' : 'grid-cols-1')}>
+          {regions.length > 0 && (
+            <Select value={region || ANY_STATE} onValueChange={(v) => setRegion(v === ANY_STATE ? '' : v)}>
+              <SelectTrigger id={`${idPrefix}-region`} className="h-10" aria-label={label}>
+                <SelectValue placeholder={label} />
+              </SelectTrigger>
+              <SelectContent className="max-h-72">
+                <SelectItem value={ANY_STATE}>{`Any ${label.toLowerCase()}`}</SelectItem>
+                {regions.map((reg) => (
+                  <SelectItem key={reg.name} value={reg.name}>
+                    {reg.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
           <Input
             id={`${idPrefix}-city`}
             value={city}
@@ -288,16 +287,13 @@ export function WhereEditor({ idPrefix = 'where' }: { idPrefix?: string }) {
             className="h-10"
           />
         </div>
-      ) : (
-        <Input
-          id={`${idPrefix}-location`}
-          value={location}
-          onChange={(e) => setLocation(e.target.value)}
-          placeholder="City, country, or Remote"
-          aria-label="Location"
-          className="h-10"
-        />
       )}
+      <SwitchRow
+        id={`${idPrefix}-remote-only`}
+        label="Remote jobs only"
+        checked={remoteOnly}
+        onCheckedChange={setRemoteOnly}
+      />
     </div>
   );
 }
@@ -355,31 +351,40 @@ export function PostedEditor() {
 
 /* ── Visa ────────────────────────────────────────────────────────────────── */
 
-/** `short` is what the bar shows, and it is cut from the option's own title,
- *  so the bar and the list never use two wordings for one choice. */
-export const VISA_CHOICES: Array<{ value: SponsorFilter; short: string; title: string; hint: string }> = [
+/** `short` is what the bar shows. Plain words (owner, 2026-11-16: the old
+ *  "Hide refusals: jobs that say they will not sponsor" read too heavy). */
+export const VISA_CHOICES: Array<{
+  value: SponsorFilter;
+  short: string;
+  title: string;
+  hint: string;
+  icon: LucideIcon;
+}> = [
   {
     value: 'friendly',
-    short: 'Hide refusals',
-    title: 'Hide refusals: jobs that say they will not sponsor',
-    hint: 'Best for most people who need a visa. Everything else stays, including jobs that say nothing about it.',
+    short: 'Skip no-visa jobs',
+    title: "Skip jobs that won't sponsor",
+    hint: "Jobs that sponsor or don't say stay.",
+    icon: ShieldCheck,
   },
   {
     value: 'proven',
-    short: 'Past sponsors only',
-    title: 'Past sponsors only',
-    hint: 'Only employers with recent H-1B approvals on public record. Fewer jobs, better odds.',
+    short: 'Known sponsors',
+    title: 'Only known sponsors',
+    hint: 'Recent H-1B approvals on record.',
+    icon: BadgeCheck,
   },
   {
     value: 'all',
-    short: 'Every job',
-    title: 'Every job, sponsoring or not',
-    hint: 'Choose this if you do not need a visa.',
+    short: 'All jobs',
+    title: 'All jobs',
+    hint: "For people who don't need a visa.",
+    icon: Globe2,
   },
 ];
 
 export function visaLabel(value: SponsorFilter): string {
-  return VISA_CHOICES.find((c) => c.value === value)?.short ?? 'Every job';
+  return VISA_CHOICES.find((c) => c.value === value)?.short ?? 'All jobs';
 }
 
 export function VisaEditor() {
@@ -395,10 +400,7 @@ export function VisaEditor() {
 
   return (
     <div className="space-y-3">
-      <EditorHeading
-        title="Do you need visa sponsorship?"
-        hint="We read each posting and the public H-1B record of each employer."
-      />
+      <EditorHeading title="Need visa sponsorship?" />
       <div role="radiogroup" aria-label="Visa sponsorship" className="space-y-1">
         {VISA_CHOICES.map((choice) => (
           <ChoiceRow
@@ -407,12 +409,13 @@ export function VisaEditor() {
             onSelect={() => setSponsorFilter(choice.value)}
             title={choice.title}
             hint={choice.hint}
+            icon={choice.icon}
             trailing={trailing[choice.value]}
           />
         ))}
       </div>
       <p className="text-caption-sm leading-snug text-muted-foreground">
-        Past sponsorship is a track record, not a promise about any one application.
+        From public H-1B records. A track record, not a promise.
       </p>
     </div>
   );

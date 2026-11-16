@@ -11,9 +11,9 @@
  * Fully on the design system's semantic tokens; monolith inline-SVG icons were
  * swapped for lucide equivalents (ChevronDown / FileDown / Sparkles / Trash2).
  */
-import { Fragment, useState, useEffect, useCallback, useMemo, Suspense, lazy } from 'react';
+import { Fragment, useState, useEffect, useCallback, useMemo, useRef, Suspense, lazy } from 'react';
 import { toast } from 'sonner';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   CalendarDays,
   CalendarRange,
@@ -209,6 +209,23 @@ export default function TailoredPage() {
       }
     }
   }, [records]);
+  // `?open=<record_id>` (from the recent strip on Tailor): open that resume
+  // and bring it into view once, as soon as it is in the list.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const openParam = searchParams.get('open');
+  const openedFromLink = useRef<string | null>(null);
+  useEffect(() => {
+    if (!openParam || loading || openedFromLink.current === openParam) return;
+    if (!records.some(r => r.record_id === openParam)) return;
+    openedFromLink.current = openParam;
+    if (!expanded.has(openParam)) void toggleExpanded(openParam);
+    window.setTimeout(() => {
+      document.getElementById(`record-${openParam}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 80);
+    const next = new URLSearchParams(searchParams);
+    next.delete('open');
+    setSearchParams(next, { replace: true });
+  }, [openParam, loading, records, expanded, toggleExpanded, searchParams, setSearchParams]);
   const toggleJd = useCallback((id: string) => {
     setJdOpenFor(prev => {
       const next = new Set(prev);
@@ -593,7 +610,7 @@ export default function TailoredPage() {
             const versions = (rec.versions || []).slice().sort((a, b) => b.version_number - a.version_number);
             const currentId = rec.current_version_id || versions[0]?.version_id;
             return (
-              <div key={rec.record_id} className="rounded-container border border-border bg-card shadow-soft overflow-hidden">
+              <div key={rec.record_id} id={`record-${rec.record_id}`} className="scroll-mt-24 rounded-container border border-border bg-card shadow-soft overflow-hidden">
                 <div className="px-4 py-2 flex items-center gap-2 hover:bg-muted/50 transition-colors">
                   <button
                     type="button"
