@@ -141,6 +141,8 @@
     --brand-mark-from-hsl: 228.4 69.8% 49.4%;
     --brand-mark-to-hsl: 229.2 73.6% 20.8%; /* #0E1C5C */
     --brand-mark-fg-hsl: 0 0% 100%;
+    /* The long hand of the mark. Mint #4BE3A0: 4.6:1 to 9.5:1 across the tile. */
+    --brand-mark-accent-hsl: 153.6 73.1% 59.2%;
 
     /* Categorical chart palette (cap 8, always add a second cue). Steps
   lightness as well as hue so series survive greyscale. */
