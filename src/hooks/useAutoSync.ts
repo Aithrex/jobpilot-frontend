@@ -2,6 +2,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { viewerTzOffsetMinutes } from '@/lib/viewerTimezone';
 
 export type SyncReason = 'initial' | 'interval' | 'manual';
+/** What a run reports back. `error` schedules an early retry with backoff. */
+export type SyncOutcome = 'ok' | 'error' | 'skipped' | void;
+
+/** First retry after a failed refresh; doubles each time, up to the interval. */
+const RETRY_BASE_MS = 60 * 1000;
 
 interface UseAutoSyncOptions {
   /** Auto behaviors (initial auto-load + interval refresh + countdown) only
@@ -16,7 +21,7 @@ interface UseAutoSyncOptions {
   /** Runs the actual search. `force` = bypass cache (used by interval +
    *  manual refresh). Resolve when the run finishes so we can stamp
    *  `lastSyncedAt` and re-arm the countdown. */
-  onSync: (force: boolean, reason: SyncReason) => Promise<unknown> | unknown;
+  onSync: (force: boolean, reason: SyncReason) => Promise<SyncOutcome | unknown> | SyncOutcome | unknown;
   /** Also re-run just after the viewer's local midnight. For results whose
    *  labels are calendar days ("Today", "Yesterday"): a scan taken at 11pm
    *  must not keep calling yesterday's roles "today" for up to an interval. */
@@ -47,6 +52,13 @@ interface AutoSyncState {
   autoArmed: boolean;
   /** Trigger a run by hand. `force` bypasses cache. Re-arms the countdown. */
   sync: (force: boolean) => void;
+  /** Another tab (or the server) just refreshed: re-arm the countdown from now
+   *  without running anything, so open tabs do not all ask at once. */
+  touch: () => void;
+  /** The browser says it is offline. Auto refresh waits for the connection. */
+  offline: boolean;
+  /** The last refresh failed; a retry is scheduled sooner than usual. */
+  failing: boolean;
 }
 
 /**
@@ -78,6 +90,13 @@ export function useAutoSync({
   const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
   const [nextSyncAt, setNextSyncAt] = useState<number | null>(null);
   const [nowTick, setNowTick] = useState<number>(() => Date.now());
+  const [offline, setOffline] = useState<boolean>(
+    () => typeof navigator !== 'undefined' && navigator.onLine === false,
+  );
+  const [failures, setFailures] = useState(0);
+  const failuresRef = useRef(0);
+  const offlineRef = useRef(offline);
+  offlineRef.current = offline;
 
   // Keep the latest closures/flags in refs so the interval effect doesn't need
   // to tear down and rebuild on every render (which would reset the cadence).
@@ -92,14 +111,30 @@ export function useAutoSync({
     // Never stack scans: skip if one is in flight (either ours or the panel's).
     if (runningRef.current || isBusyRef.current) return;
     runningRef.current = true;
+    let outcome: unknown;
     try {
-      await onSyncRef.current(force, reason);
+      outcome = await onSyncRef.current(force, reason);
+    } catch {
+      outcome = 'error';
     } finally {
       runningRef.current = false;
-      setLastSyncedAt(Date.now());
-      setNextSyncAt(dueAfter(Date.now()));
     }
-  }, [dueAfter]);
+    const now = Date.now();
+    if (outcome === 'error') {
+      // Keep what is on screen and try again soon: 1, 2, 4 ... minutes.
+      failuresRef.current += 1;
+      setFailures(failuresRef.current);
+      const wait = Math.min(intervalMs, RETRY_BASE_MS * 2 ** (failuresRef.current - 1));
+      setNextSyncAt(now + wait);
+      // `lastSyncedAt` stays where it was: nothing new was shown.
+      setLastSyncedAt((prev) => prev ?? now);
+      return;
+    }
+    failuresRef.current = 0;
+    setFailures(0);
+    setLastSyncedAt(now);
+    setNextSyncAt(dueAfter(now));
+  }, [dueAfter, intervalMs]);
 
   // Initial auto-load - once, when auto sync first becomes enabled.
   useEffect(() => {
@@ -116,10 +151,10 @@ export function useAutoSync({
   useEffect(() => {
     if (!enabled) return;
 
-    const base = lastSyncedAt ?? Date.now();
-    const delay = Math.max(0, dueAfter(base) - Date.now());
+    const due = nextSyncAt ?? dueAfter(lastSyncedAt ?? Date.now());
+    const delay = Math.max(0, due - Date.now());
     const id = window.setTimeout(() => {
-      if (document.visibilityState !== 'visible' || isBusyRef.current) return;
+      if (document.visibilityState !== 'visible' || isBusyRef.current || offlineRef.current) return;
       void doSync(true, 'interval');
     }, delay);
 
@@ -137,7 +172,26 @@ export function useAutoSync({
       window.clearTimeout(id);
       document.removeEventListener('visibilitychange', onVisible);
     };
-  }, [enabled, dueAfter, lastSyncedAt, doSync]);
+  }, [enabled, dueAfter, lastSyncedAt, nextSyncAt, doSync]);
+
+  // Offline: wait. Back online: catch up at once if a refresh came due.
+  useEffect(() => {
+    const goOffline = () => setOffline(true);
+    const goOnline = () => {
+      setOffline(false);
+      if (!enabled) return;
+      setNextSyncAt((next) => {
+        if (next == null || Date.now() >= next || failuresRef.current > 0) void doSync(false, 'interval');
+        return next;
+      });
+    };
+    window.addEventListener('offline', goOffline);
+    window.addEventListener('online', goOnline);
+    return () => {
+      window.removeEventListener('offline', goOffline);
+      window.removeEventListener('online', goOnline);
+    };
+  }, [enabled, doSync]);
 
   // 1-second ticker purely for the countdown display; only armed once we have
   // a scheduled next sync so idle surfaces don't tick.
@@ -151,6 +205,14 @@ export function useAutoSync({
     void doSync(force, 'manual');
   }, [doSync]);
 
+  const touch = useCallback(() => {
+    const now = Date.now();
+    failuresRef.current = 0;
+    setFailures(0);
+    setLastSyncedAt(now);
+    setNextSyncAt(dueAfter(now));
+  }, [dueAfter]);
+
   const secondsUntilNext = enabled && nextSyncAt != null
     ? Math.max(0, Math.round((nextSyncAt - nowTick) / 1000))
     : null;
@@ -160,5 +222,8 @@ export function useAutoSync({
     secondsUntilNext,
     autoArmed: enabled && lastSyncedAt != null,
     sync,
+    touch,
+    offline,
+    failing: failures > 0,
   };
 }

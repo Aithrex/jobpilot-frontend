@@ -3,12 +3,15 @@ import { toast } from 'sonner';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import {
   AlertCircle,
+  ArrowUp,
+  Check,
   FileText,
   Loader2,
   Radar,
   RefreshCw,
   Rocket,
   SlidersHorizontal,
+  WifiOff,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -126,6 +129,12 @@ export function CombinedJobsPanel({
     collapseReposts,
     setCollapseReposts,
     repostsFolded,
+    pendingNewCount,
+    applyPending,
+    arrivedIds,
+    refreshing,
+    offline,
+    refreshFailing,
   } = useCombinedJobsCtx();
   const coarse = useCoarsePointer();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -383,7 +392,34 @@ export function CombinedJobsPanel({
     [compareIds, byId],
   );
 
-  const renderJob = (job: WorkdayJob) => (
+  // New roles from a background refresh wait in a pill instead of moving the
+  // list. Someone already at the top of the list just gets them, scanned in.
+  const showPending = useCallback(() => {
+    applyPending?.();
+    rootRef.current?.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+  }, [applyPending, reduceMotion]);
+  useEffect(() => {
+    if (!pendingNewCount) return;
+    const top = rootRef.current?.getBoundingClientRect().top ?? 0;
+    if (top > -120 && !quickId) applyPending?.();
+  }, [pendingNewCount, applyPending, quickId]);
+  // "Check now" is calm: one press a minute; the board refreshes itself anyway.
+  const [checkedAt, setCheckedAt] = useState<number | null>(null);
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!checkedAt) return;
+    const id = window.setInterval(() => setNow(Date.now()), 5000);
+    return () => window.clearInterval(id);
+  }, [checkedAt]);
+  const coolingDown = !!checkedAt && now - checkedAt < 60_000;
+  const checkNow = () => {
+    if (coolingDown) return;
+    setCheckedAt(Date.now());
+    setNow(Date.now());
+    sync(false);
+  };
+
+  const renderJob = (job: WorkdayJob, index = 0) => (
     <motion.div
       key={job.job_id}
       layout={reduceMotion ? false : 'position'}
@@ -400,6 +436,8 @@ export function CombinedJobsPanel({
         saved={isJobSaved(job.job_id)}
         jobStatus={getJobStatus(job.job_id, job.apply_link)}
         isNew={!everyCardIsNew && isNewJob(job)}
+        sweep={!!arrivedIds?.has(job.job_id) || (!everyCardIsNew && isNewJob(job))}
+        sweepDelayMs={Math.min(index, 8) * 90}
         showVisaUnknown={sponsorFilter !== 'all'}
         onOpen={() => {
           setCursorId(job.job_id);
@@ -460,22 +498,52 @@ export function CombinedJobsPanel({
         {!loading && lastSyncedAt && (
           <p
             className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground"
-            title={`Days are counted in ${timeZoneName(viewerZone)}. The board refreshes on its own every 30 minutes.`}
+            title={`Days are counted in ${timeZoneName(viewerZone)}. The list checks for new roles every 30 minutes.`}
           >
-            <span data-testid="jobs-updated">Updated {formatAgo(lastSyncedAt)}</span>
+            {offline ? (
+              <span className="inline-flex items-center gap-1 text-warning" data-testid="jobs-offline">
+                <WifiOff className="h-3.5 w-3.5" aria-hidden /> Offline · list from {formatAgo(lastSyncedAt)}
+              </span>
+            ) : refreshFailing ? (
+              <span className="inline-flex items-center gap-1" data-testid="jobs-refresh-failing">
+                <AlertCircle className="h-3.5 w-3.5 text-warning" aria-hidden /> Couldn't check for new roles. Trying again soon.
+              </span>
+            ) : (
+              <span data-testid="jobs-updated">Updated {formatAgo(lastSyncedAt)}</span>
+            )}
             <button
               type="button"
-              onClick={() => sync(false)}
-              aria-label="Check for new roles now"
-              title="Check for new roles now"
-              className="press hit-target grid h-7 w-7 place-items-center rounded-full text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              onClick={checkNow}
+              disabled={coolingDown || offline || refreshing}
+              aria-label={coolingDown ? 'Checked just now' : 'Check for new roles now'}
+              title={coolingDown ? 'Checked just now. The list also checks every 30 minutes.' : 'Check for new roles now'}
+              className="press hit-target grid h-7 w-7 place-items-center rounded-full text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-default disabled:opacity-60"
             >
-              <RefreshCw className="h-3.5 w-3.5" aria-hidden />
+              {coolingDown && !refreshing ? (
+                <Check className="h-3.5 w-3.5 text-signal" aria-hidden />
+              ) : (
+                <RefreshCw className={cn('h-3.5 w-3.5', refreshing && 'animate-spin')} aria-hidden />
+              )}
             </button>
           </p>
         )}
         {hasResult && <ShortcutsButton open={shortcutsOpen} onOpenChange={setShortcutsOpen} />}
       </div>
+      {pendingNewCount > 0 && (
+        // Fixed, not sticky: the shell's <main> clips overflow-x, which makes
+        // it the sticky container, and it never scrolls itself.
+        <div className="pointer-events-none fixed inset-x-0 top-[5.25rem] z-40 flex justify-center px-4">
+          <button
+            type="button"
+            onClick={showPending}
+            className="new-roles-pill press pointer-events-auto inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-pop transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            data-testid="new-roles-pill"
+          >
+            <ArrowUp className="h-4 w-4" aria-hidden />
+            {pendingNewCount === 1 ? '1 new role' : `${pendingNewCount} new roles`}
+          </button>
+        </div>
+      )}
       {loading && (
         <Progress
           value={progress.total ? (progress.done / progress.total) * 100 : 8}
@@ -556,7 +624,7 @@ export function CombinedJobsPanel({
         <>
           <div className={JOB_FEED_GRID_CLASS}>
             <AnimatePresence initial={false} mode="popLayout">
-              {pagedJobs.map((j) => renderJob(j))}
+              {pagedJobs.map((j, i) => renderJob(j, i))}
             </AnimatePresence>
           </div>
 

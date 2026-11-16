@@ -125,6 +125,10 @@ interface CombinedJobsContextValue extends CombinedJobsController, ReturnType<ty
   lastSyncedAt: number | null;
   secondsUntilNext: number | null;
   sync: (force: boolean) => void;
+  /** The browser is offline; the board waits and catches up after. */
+  offline: boolean;
+  /** The last refresh failed and is being retried; the list is the last good one. */
+  refreshFailing: boolean;
   /** Begin scanning (called the first time the Jobs tab opens). Idempotent. */
   ensureStarted: () => void;
 
@@ -378,8 +382,47 @@ export function CombinedJobsProvider({ children }: { children: React.ReactNode }
     // local midnight rather than up to 30 minutes later.
     refreshOnNewDay: true,
     isBusy: feed.loading,
-    onSync: (force, reason) => feed.run(force, { location: scanLocation, remoteOnly, usOnly }, reason),
+    onSync: async (force, reason) => {
+      const outcome = await feed.run(force, { location: scanLocation, remoteOnly, usOnly }, reason);
+      if (outcome !== 'error') broadcastRefreshed();
+      return outcome;
+    },
   });
+
+  // Several open tabs: when one refreshes, the others re-arm their countdown
+  // (so they do not all ask at once) and quietly pick up the stored board,
+  // which offers its new roles the same way ("5 new roles").
+  const channelRef = useRef<BroadcastChannel | null>(null);
+  const tabId = useRef(Math.random().toString(36).slice(2));
+  function broadcastRefreshed() {
+    try {
+      channelRef.current?.postMessage({ type: 'board-refreshed', from: tabId.current, at: Date.now() });
+    } catch {
+      /* a closed channel is not worth an error */
+    }
+  }
+  const { touch } = autoSync;
+  const runRef = useRef(feed.run);
+  runRef.current = feed.run;
+  const scanArgsRef = useRef({ location: scanLocation, remoteOnly, usOnly });
+  scanArgsRef.current = { location: scanLocation, remoteOnly, usOnly };
+  useEffect(() => {
+    if (typeof BroadcastChannel === 'undefined') return;
+    const channel = new BroadcastChannel('aspirely-board');
+    channelRef.current = channel;
+    channel.onmessage = (event: MessageEvent) => {
+      const msg = event.data as { type?: string; from?: string } | null;
+      if (!msg || msg.type !== 'board-refreshed' || msg.from === tabId.current) return;
+      touch();
+      if (document.visibilityState === 'visible') {
+        void runRef.current(false, scanArgsRef.current, 'interval');
+      }
+    };
+    return () => {
+      channel.close();
+      channelRef.current = null;
+    };
+  }, [touch]);
 
   // A resume change that replaced titles: say what moved, with Undo, and
   // re-scan a feed that already ran on the old titles instead of leaving
@@ -427,6 +470,8 @@ export function CombinedJobsProvider({ children }: { children: React.ReactNode }
     // stored board read at 10:05 that the server built at 09:50 is 15 min old.
     lastSyncedAt: feed.builtAt ?? autoSync.lastSyncedAt,
     secondsUntilNext: autoSync.secondsUntilNext,
+    offline: autoSync.offline,
+    refreshFailing: autoSync.failing,
     sync: autoSync.sync,
     ensureStarted,
     country,

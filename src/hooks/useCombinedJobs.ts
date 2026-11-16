@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useJobTitles } from '@/hooks/useJobTitles';
 import { apiService } from '@/lib/api';
 import { currentAccountKey, ownedByAnotherAccount } from '@/lib/accountKey';
@@ -6,7 +6,7 @@ import { mergeJobs } from '@/lib/careerJobs';
 import { mergePolicies } from '@/lib/employerPolicy';
 import type { PolicyBlock } from '@/types/employerPolicy';
 import type { BoardSnapshot, WorkdayJob, WorkdayJobsParams, WorkdayJobsResult } from '@/types/jobs';
-import type { SyncReason } from '@/hooks/useAutoSync';
+import type { SyncOutcome, SyncReason } from '@/hooks/useAutoSync';
 
 /**
  * Combined Job feed scan (Workday + career pages + MNC).
@@ -166,7 +166,18 @@ export interface CombinedJobsController {
     force: boolean,
     opts?: { location?: string; remoteOnly?: boolean; usOnly?: boolean },
     reason?: SyncReason,
-  ) => Promise<void>;
+  ) => Promise<SyncOutcome>;
+  /**
+   * A background refresh found roles that are not on screen. They wait here
+   * instead of reshuffling the list under the reader; `applyPending` shows
+   * them. Null when nothing is waiting.
+   */
+  pendingNewCount: number;
+  applyPending: () => void;
+  /** Roles that just arrived from `applyPending`, for a one-time highlight. */
+  arrivedIds: ReadonlySet<string>;
+  /** A quiet background refresh is running (the list is not changing). */
+  refreshing: boolean;
 }
 
 /**
@@ -201,8 +212,24 @@ export function useCombinedJobs(enabled = true): CombinedJobsController {
   const titlesRef = useRef<string[]>([]);
   titlesRef.current = titles;
 
+  // A background refresh is STAGED: it fills these instead of the list on
+  // screen, and only roles that are new to the reader are offered.
+  const sourcesRef = useRef(sources);
+  sourcesRef.current = sources;
+  const hasResultRef = useRef(false);
+  const stagingRef = useRef(false);
+  const stagedRef = useRef<Record<SourceKey, WorkdayJob[]> | null>(null);
+  const stagedBuiltRef = useRef<number | null>(null);
+  const [pendingNewIds, setPendingNewIds] = useState<string[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const [arrivedIds, setArrivedIds] = useState<ReadonlySet<string>>(() => new Set());
+
   /** Render one finished tab - from a scan or from the stored board. */
   const applyResult = useCallback((key: SourceKey, data: WorkdayJobsResult) => {
+    if (stagingRef.current && stagedRef.current) {
+      stagedRef.current = { ...stagedRef.current, [key]: data.jobs ?? [] };
+      return;
+    }
     setSources((s) => ({ ...s, [key]: data.jobs ?? [] }));
     // Absent on an older backend - and then it must not keep a previous
     // scan's counts, which would describe a different result set.
@@ -224,12 +251,17 @@ export function useCombinedJobs(enabled = true): CombinedJobsController {
 
   const runOne = useCallback(
     async (key: SourceKey, fn: typeof apiService.searchWorkdayJobs, params: WorkdayJobsParams) => {
-      setStates((s) => ({ ...s, [key]: { ...EMPTY_STATE, loading: true } }));
+      // A staged (background) refresh is quiet: the list and its status line
+      // stay as they are while it runs.
+      const quiet = stagingRef.current;
+      if (!quiet) setStates((s) => ({ ...s, [key]: { ...EMPTY_STATE, loading: true } }));
       const resp = await fn(params, (partial) => {
-        if (partial?.jobs?.length) {
+        // A staged refresh never streams into the list on screen.
+        if (partial?.jobs?.length && !stagingRef.current) {
           setSources((s) => ({ ...s, [key]: partial.jobs }));
         }
-        if (partial?.policy) setPolicies((p) => ({ ...p, [key]: partial.policy ?? null }));
+        if (partial?.policy && !quiet) setPolicies((p) => ({ ...p, [key]: partial.policy ?? null }));
+        if (quiet) return;
         setStates((s) => ({
           ...s,
           [key]: {
@@ -241,13 +273,15 @@ export function useCombinedJobs(enabled = true): CombinedJobsController {
         }));
       });
       if (resp.error) {
+        if (quiet) return false;
         setStates((s) => ({
           ...s,
           [key]: { ...s[key], loading: false, error: resp.error ?? 'Scan failed' },
         }));
-        return;
+        return false;
       }
       if (resp.data) applyResult(key, resp.data);
+      return true;
     },
     [applyResult],
   );
@@ -280,7 +314,8 @@ export function useCombinedJobs(enabled = true): CombinedJobsController {
       }
       if (!shown) return 'none';
       const built = snap.built_at ? Date.parse(snap.built_at) : NaN;
-      setBuiltAt(Number.isFinite(built) ? built : null);
+      if (stagingRef.current) stagedBuiltRef.current = Number.isFinite(built) ? built : null;
+      else setBuiltAt(Number.isFinite(built) ? built : null);
       return snap.fresh ? 'fresh' : 'shown';
     },
     [applyResult],
@@ -312,20 +347,77 @@ export function useCombinedJobs(enabled = true): CombinedJobsController {
       // stored board first; only "Sync now" (manual + force) skips it. A
       // fresh board needs no scan at all - which is the whole point: opening
       // Jobs is a read, not three scans.
-      if (reason !== 'manual' || !force) {
-        if ((await loadSnapshot(params)) === 'fresh') return;
+      //
+      // The 30-minute tick is STAGED once something is on screen: what it
+      // brings is compared with what the reader is looking at, and only roles
+      // they have not seen are offered ("5 new roles"), never reshuffled in.
+      const staged = reason === 'interval' && hasResultRef.current;
+      stagingRef.current = staged;
+      if (staged) setRefreshing(true);
+      stagedRef.current = staged ? { ...sourcesRef.current } : null;
+      stagedBuiltRef.current = null;
+      let outcome: SyncOutcome = 'ok';
+      try {
+        let snapshot: 'fresh' | 'shown' | 'none' = 'none';
+        if (reason !== 'manual' || !force) {
+          snapshot = await loadSnapshot(params);
+        }
+        if (snapshot !== 'fresh') {
+          const results = await Promise.all([
+            runOne('workday', apiService.searchWorkdayJobs.bind(apiService), { ...params, force_refresh: force }),
+            runOne('careers', apiService.searchCareerPagesJobs.bind(apiService), { ...params, force_refresh: force }),
+            runOne('mncs', apiService.searchMncJobs.bind(apiService), { ...params, force_refresh: force }),
+          ]);
+          // Every source failed and nothing stored stood in: a failed refresh.
+          if (results.every((ok) => !ok) && snapshot === 'none') outcome = 'error';
+          else if (staged) stagedBuiltRef.current = Date.now();
+          else setBuiltAt(Date.now());
+        }
+      } finally {
+        stagingRef.current = false;
+        setRefreshing(false);
       }
-      await Promise.all([
-        runOne('workday', apiService.searchWorkdayJobs.bind(apiService), { ...params, force_refresh: force }),
-        runOne('careers', apiService.searchCareerPagesJobs.bind(apiService), { ...params, force_refresh: force }),
-        runOne('mncs', apiService.searchMncJobs.bind(apiService), { ...params, force_refresh: force }),
-      ]);
-      setBuiltAt(Date.now());
+      if (staged && stagedRef.current && outcome !== 'error') {
+        const on = new Set(
+          mergeJobs(sourcesRef.current.workday, sourcesRef.current.careers, sourcesRef.current.mncs).map((j) => j.job_id),
+        );
+        const next = stagedRef.current;
+        const fresh = mergeJobs(next.workday, next.careers, next.mncs)
+          .map((j) => j.job_id)
+          .filter((id) => !on.has(id));
+        if (fresh.length === 0) {
+          // Nothing new to the reader: take the refresh quietly.
+          setSources(next);
+          if (stagedBuiltRef.current) setBuiltAt(stagedBuiltRef.current);
+          stagedRef.current = null;
+          setPendingNewIds([]);
+        } else {
+          setPendingNewIds(fresh);
+        }
+      }
+      return outcome;
     },
     [runOne, loadSnapshot],
   );
 
+  const applyPending = useCallback(() => {
+    const next = stagedRef.current;
+    if (!next) return;
+    setSources(next);
+    if (stagedBuiltRef.current) setBuiltAt(stagedBuiltRef.current);
+    stagedRef.current = null;
+    setArrivedIds(new Set(pendingNewIds));
+    setPendingNewIds([]);
+  }, [pendingNewIds]);
+  // The highlight is a moment, not a state: it clears itself.
+  useEffect(() => {
+    if (!arrivedIds.size) return;
+    const id = window.setTimeout(() => setArrivedIds(new Set()), 8000);
+    return () => window.clearTimeout(id);
+  }, [arrivedIds]);
+
   const jobs = useMemo(() => mergeJobs(sources.workday, sources.careers, sources.mncs), [sources]);
+  hasResultRef.current = hasResult;
   const policy = useMemo(
     () => mergePolicies([policies.workday, policies.careers, policies.mncs]),
     [policies],
@@ -366,5 +458,9 @@ export function useCombinedJobs(enabled = true): CombinedJobsController {
     builtAt,
     seenThrough,
     run,
+    pendingNewCount: pendingNewIds.length,
+    applyPending,
+    arrivedIds,
+    refreshing,
   };
 }
