@@ -10,6 +10,7 @@
 import { CheckCircle2 } from 'lucide-react';
 
 import type { TailoringRecord } from '@/types/resume';
+import type { GmailOutcome } from '@/types/gmail';
 import GmailSuggestions, { type GmailSuggestion } from '@/components/resume/GmailSuggestions';
 import { Button } from '@/components/ui/button';
 
@@ -23,7 +24,7 @@ interface FocusViewProps {
   records: TailoringRecord[];
   suggestions: GmailSuggestion[];
   suggestionBusyId: string | null;
-  onApplySuggestion: (id: string, recordId?: string) => void;
+  onApplySuggestion: (id: string, recordId?: string, status?: GmailOutcome) => void;
   onDismissSuggestion: (id: string) => void;
   selectedId: string | null;
   savingId: string | null;
@@ -67,15 +68,15 @@ export default function FocusView({
 
   return (
     <div className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card">
-      {/* Inbox-derived stage changes are decisions too, and they were only ever
+      {/* Gmail-derived stage changes are decisions too, and they were only ever
           reachable through the Insights sheet, which is not where anyone looks
           first. */}
       {suggestions.length > 0 && (
         <TrackerSection
-          label="From your inbox"
+          label="From Gmail"
           count={suggestions.length}
           dot="bg-info"
-          meta="detected in Gmail"
+          meta="review before updating"
         >
           <GmailSuggestions
             suggestions={suggestions}

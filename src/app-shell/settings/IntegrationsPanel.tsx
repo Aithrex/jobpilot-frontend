@@ -141,7 +141,7 @@ export default function IntegrationsPanel() {
       <section className="space-y-3">
         <SectionHeading
           title="Gmail"
-          description="Sync your inbox so Aspirely can suggest application status updates."
+          description="Let Aspirely read replies to your applications and keep the Tracker up to date. Read only. Reviews of unclear email also appear in the Tracker."
         />
         <GmailIntegration />
       </section>

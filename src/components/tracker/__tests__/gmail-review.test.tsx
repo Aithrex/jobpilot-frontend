@@ -1,8 +1,9 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import GmailSuggestions, { type GmailSuggestion } from '@/components/resume/GmailSuggestions';
-import GmailIntegration from '@/components/resume/GmailIntegration';
+import GmailIntegrationCard from '@/components/resume/GmailIntegration';
 import { apiService } from '@/lib/api';
 
 vi.mock('@/lib/api', () => ({
@@ -14,8 +15,18 @@ vi.mock('@/lib/api', () => ({
     applyGmailSuggestion: vi.fn().mockResolvedValue({ data: { suggestion: {} } }),
     syncGmail: vi.fn(),
     pollGmailSyncJob: vi.fn(),
+    getGmailActivity: vi.fn().mockResolvedValue({ data: { changes: [] } }),
   },
 }));
+
+/** The card links to Find jobs and the privacy policy, so it needs a router. */
+function GmailIntegration(props: Parameters<typeof GmailIntegrationCard>[0]) {
+  return (
+    <MemoryRouter>
+      <GmailIntegrationCard {...props} />
+    </MemoryRouter>
+  );
+}
 
 beforeEach(() => {
   vi.mocked(apiService.listGmailSuggestions).mockResolvedValue({ data: { suggestions: [] } });
@@ -154,13 +165,15 @@ describe('Gmail review', () => {
     expect(screen.queryByRole('button', { name: 'Update status' })).not.toBeInTheDocument();
   });
 
-  test('batch summary distinguishes unknown outcomes saved for review', async () => {
+  test('a finished check says what was read, what moved and what waits for review', async () => {
     vi.mocked(apiService.getGmailStatus).mockResolvedValue({
       data: {
         configured: true,
         connected: true,
         pending_suggestions: 3,
+        last_synced_at: new Date().toISOString(),
         last_sync_summary: {
+          outcome: 'updated',
           messages_scanned: 50,
           auto_applied: 2,
           suggested: 3,
@@ -171,7 +184,9 @@ describe('Gmail review', () => {
       },
     });
     render(<GmailIntegration />);
-    expect(await screen.findByRole('status')).toHaveTextContent('2 need an outcome review');
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'Checked 50 emails. 2 statuses updated for you, 3 waiting for your review.',
+    );
   });
 
   test('an ambiguous rejection requires an explicit role and shows the email evidence', async () => {
@@ -221,11 +236,12 @@ describe('Gmail review', () => {
 
   test('unavailable Gmail setup is explained rather than silently removed', async () => {
     render(<GmailIntegration />);
-    expect(await screen.findByText('Gmail connection is unavailable')).toBeInTheDocument();
+    expect(await screen.findByText('Gmail connection is switched off')).toBeInTheDocument();
+    expect(screen.getByText(/nothing is read from your email/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Connect Gmail' })).toBeDisabled();
   });
 
-  test('a completed batch does not claim the first scan never ran', async () => {
+  test('a check that stopped part way says it continues by itself, with no Continue sync chore', async () => {
     vi.mocked(apiService.getGmailStatus).mockResolvedValue({
       data: {
         configured: true,
@@ -237,12 +253,13 @@ describe('Gmail review', () => {
       },
     });
     render(<GmailIntegration />);
-    expect(await screen.findByText(/First scan partially complete/)).toBeInTheDocument();
+    expect(await screen.findByText('Gmail check paused, more email to read')).toBeInTheDocument();
+    expect(screen.getByText(/50 emails read so far/)).toBeInTheDocument();
     expect(screen.getByRole('status')).toHaveTextContent(
-      'Last batch: 50 emails checked, 2 statuses updated, 7 suggestions',
+      'Aspirely carries on by itself within about 30 minutes',
     );
-    expect(screen.getByRole('button', { name: 'Continue sync' })).toBeEnabled();
-    expect(screen.queryByText(/last sync never/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Continue now' })).toBeEnabled();
+    expect(screen.queryByText(/Not checked yet/i)).not.toBeInTheDocument();
   });
 
   test('a finished scan labels the completion watermark separately from batch counts', async () => {
@@ -257,9 +274,9 @@ describe('Gmail review', () => {
       },
     });
     render(<GmailIntegration />);
-    expect(await screen.findByText(/Last full scan just now/)).toBeInTheDocument();
-    expect(screen.getByRole('status')).toHaveTextContent('Last batch: 3 emails checked');
-    expect(screen.getByRole('button', { name: 'Sync now' })).toBeEnabled();
+    expect(await screen.findByText(/Last checked just now/)).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('Last check: 3 emails checked');
+    expect(screen.getByRole('button', { name: 'Check Gmail now' })).toBeEnabled();
   });
 
   test('candidate dates distinguish repeated roles and only identical labels need a reference', async () => {
@@ -339,7 +356,7 @@ describe('Gmail review', () => {
     expect(onApply).toHaveBeenCalledWith('repeat-role', 'record-22222222');
   });
 
-  test('a failed background sync gives an inline retryable error', async () => {
+  test('a failed check on an older backend (job, no run) gives an inline retryable error', async () => {
     vi.mocked(apiService.getGmailStatus).mockResolvedValue({
       data: { configured: true, connected: true, pending_suggestions: 0 },
     });
@@ -350,16 +367,16 @@ describe('Gmail review', () => {
       data: { status: 'failed', error: 'Google connection expired. Reconnect Gmail.' },
     });
     render(<GmailIntegration />);
-    const button = await screen.findByRole('button', { name: 'Sync now' });
+    const button = await screen.findByRole('button', { name: 'Check Gmail now' });
     vi.useFakeTimers();
     await act(async () => {
       fireEvent.click(button);
     });
-    expect(screen.getByRole('button', { name: 'Syncing...' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Checking...' })).toBeDisabled();
     await act(async () => {
       await vi.advanceTimersByTimeAsync(2000);
     });
     expect(screen.getByRole('alert')).toHaveTextContent('Google connection expired');
-    expect(screen.getByRole('button', { name: 'Sync now' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Check Gmail now' })).toBeEnabled();
   });
 });

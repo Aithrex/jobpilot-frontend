@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Check, Copy, Loader2, MailCheck, MailX, RefreshCw } from 'lucide-react';
@@ -130,9 +131,14 @@ export default function MailboxSettingsPanel() {
     return (
       <div className="rounded-container border border-dashed border-border bg-muted/30 px-6 py-10 text-center">
         <MailX className="mx-auto mb-2 h-6 w-6 text-muted-foreground" aria-hidden="true" />
-        <p className="text-sm font-medium text-foreground">Managed mailbox isn't available yet</p>
+        <p className="text-sm font-medium text-foreground">The Aspirely application address isn't available yet</p>
         <p className="mx-auto mt-1 max-w-sm text-xs text-muted-foreground">
-          Your managed application address is not available yet. You can connect Gmail from the application tracker.
+          This is a separate Aspirely email address you could give to employers. It is not switched on, and it is
+          not your Gmail. To connect Gmail, open the{' '}
+          <Link to="/app/apply/tracker" className="font-medium text-primary hover:underline">
+            Tracker
+          </Link>
+          .
         </p>
       </div>
     );

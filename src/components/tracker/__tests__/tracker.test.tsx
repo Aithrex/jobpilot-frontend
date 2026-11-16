@@ -275,11 +275,48 @@ describe('the Focus queue', () => {
     const user = userEvent.setup();
     renderTracker();
 
-    const inbox = await screen.findByRole('button', { name: /^From your inbox 1/ });
+    const inbox = await screen.findByRole('button', { name: /^From Gmail 1/ });
     expect(inbox).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Update status' }));
     await waitFor(() => expect(applyGmailSuggestion).toHaveBeenCalledWith('s-1'));
+  });
+
+  test('an unclear email applied from the tracker sends the outcome the user chose', async () => {
+    // The tracker used to forward only (id, recordId), so every "Outcome needs
+    // review" item was refused with a 400 and only Settings could resolve one.
+    listGmailSuggestions.mockResolvedValue({
+      data: {
+        suggestions: [
+          {
+            suggestion_id: 's-unclear',
+            record_id: 'r-today',
+            title: 'Today Role',
+            company: 'Acme',
+            current_status: 'applied',
+            suggested_status: null,
+            requires_status_selection: true,
+            confidence: 0,
+            applied: false,
+            dismissed: false,
+            candidate_records: [{ record_id: 'r-today', company: 'Acme', title: 'Today Role' }],
+          },
+        ],
+      },
+    });
+    applyGmailSuggestion.mockResolvedValue({ data: { suggestion: {} } });
+    const user = userEvent.setup();
+    renderTracker();
+
+    await screen.findByRole('button', { name: /^From Gmail 1/ });
+    expect(screen.getByText('Outcome needs review')).toBeInTheDocument();
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Choose application' }), 'r-today');
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Choose outcome' }), 'rejected');
+    await user.click(screen.getByRole('button', { name: 'Update status' }));
+
+    await waitFor(() =>
+      expect(applyGmailSuggestion).toHaveBeenCalledWith('s-unclear', 'r-today', 'rejected'),
+    );
   });
 
   test('pending inbox reviews remain visible once when Focus has no search matches', async () => {
@@ -302,13 +339,13 @@ describe('the Focus queue', () => {
     });
     const user = userEvent.setup();
     renderTracker();
-    await screen.findByRole('button', { name: /^From your inbox 1/ });
+    await screen.findByRole('button', { name: /^From Gmail 1/ });
     await user.type(
       screen.getByRole('textbox', { name: 'Search applications' }),
       'No role matches this',
     );
     expect(screen.getByText('Nothing matches those filters.')).toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: /^From your inbox 1/ })).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: /^From Gmail 1/ })).toHaveLength(1);
     expect(screen.getAllByRole('button', { name: 'Update status' })).toHaveLength(1);
   });
 });

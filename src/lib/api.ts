@@ -221,7 +221,7 @@ class ApiService {
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('auth:session-expired'));
         }
-        return { error: 'Session expired. Please sign in again.' };
+        return { error: 'Session expired. Please sign in again.', status: 401 };
       }
 
       if (!response.ok) {
@@ -3508,10 +3508,27 @@ class ApiService {
   // Gmail integration - auto-update application status from inbox
   // ============================================
 
-  async getGmailStatus(): Promise<
+  /** `light` skips the review count: use it when polling a running sync. */
+  async getGmailStatus(light = false): Promise<
     ApiResponse<import('../types/gmail').GmailStatus>
   > {
-    return this.request('/resume/gmail/status');
+    return this.request(`/resume/gmail/status${light ? '?light=1' : ''}`);
+  }
+
+  /** Automatic status moves from the last 30 days, newest first. */
+  async getGmailActivity(limit = 20): Promise<
+    ApiResponse<{ changes: import('../types/gmail').GmailChange[] }>
+  > {
+    return this.request(`/resume/gmail/activity?limit=${limit}`);
+  }
+
+  /** Put an application back to the status it had before an automatic move. */
+  async undoGmailChange(suggestionId: string): Promise<
+    ApiResponse<{ suggestion: import('../types/gmail').GmailSuggestion; restored_status?: string | null }>
+  > {
+    return this.request(`/resume/gmail/suggestions/${encodeURIComponent(suggestionId)}/undo`, {
+      method: 'POST',
+    });
   }
 
   async getGmailAuthUrl(): Promise<ApiResponse<{ auth_url: string }>> {
@@ -3531,8 +3548,10 @@ class ApiService {
   async syncGmail(): Promise<
     ApiResponse<{
       ok: boolean;
-      job_id: string;
+      job_id?: string;
+      run_id?: string;
       status: string;
+      already_running?: boolean;
     }>
   > {
     return this.request('/resume/gmail/sync', { method: 'POST' }, 30000);
@@ -3543,6 +3562,7 @@ class ApiService {
       status: 'queued' | 'processing' | 'completed' | 'failed';
       result?: import('../types/gmail').GmailSyncSummary;
       error?: string;
+      error_code?: string;
     }>
   > {
     return this.request(`/resume/job/${jobId}`);
