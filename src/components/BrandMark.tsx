@@ -10,23 +10,18 @@ import { cn } from '@/lib/utils';
  * the gradient the moment the brand colour changed, and the rest hardcoded
  * `text-white`.
  *
- * WHY THE GLYPH IS NOT A SPARKLE ANY MORE
- * ---------------------------------------
- * It used to be lucide's `Sparkles`. A sparkle is the single most over-used
- * glyph in the category - it says "there is AI in here" and nothing else, it
- * is shared with several thousand other products, and it is decorative rather
- * than ownable. Aspirely is not selling the presence of a model; it is selling
- * a job search that keeps its direction.
+ * WHAT THE MARK IS
+ * ----------------
+ * Two clock hands on a centre pin that together read as a tick: time saved,
+ * and the right role, in one shape. The short hand and the pin take the tile's
+ * foreground colour; the long hand is mint, the product's "worth applying to"
+ * signal. It replaced the A-shaped ascent on 2026-11-16; the owner chose a
+ * mark that does not depend on the initial. (Before that it was lucide's
+ * `Sparkles`, which says "there is AI in here" and nothing else.)
  *
- * So the mark is now an ASCENT WITH A MARKED DESTINATION: two strokes rising
- * to a point, a crossbar, and a filled node at the apex. It reads as a route
- * climbing toward a waypoint, and it resolves as an "A" without being a letter
- * set in a typeface. Nothing here is a trademark-like borrowing, and it is
- * drawn from scratch as four primitives.
- *
- * It is deliberately built from stroked geometry rather than a filled
- * silhouette, because a stroked mark keeps its identity at 16px favicon size
- * where a filled one turns into a blob.
+ * It is built from stroked geometry rather than a filled silhouette, because
+ * a stroked mark keeps its identity at 16px favicon size where a filled one
+ * turns into a blob.
  *
  * ONE MARK, BOTH THEMES. The tile used to ride `--brand-from`/`--brand-to`,
  * which also drive gradient TEXT (the landing headline). Text on a dark page
@@ -37,7 +32,7 @@ import { cn } from '@/lib/utils';
  *
  * The tile has its own `--brand-mark-*` gradient, identical in light and dark,
  * and the glyph rides `--brand-mark-fg-hsl` against it (6.71:1 -> 11.2:1
- * across the ramp). That is also what makes it literally the same logo
+ * across the ramp), with the long hand on `--brand-mark-accent-hsl`. That is also what makes it literally the same logo
  * everywhere rather than a logo plus a dark-mode variant to keep in sync.
  *
  * ONE SHAPE, EVERY SIZE. Sharing a gradient was not enough, because the call
@@ -52,32 +47,32 @@ import { cn } from '@/lib/utils';
  * it supply the accessible name on the link or heading beside it.
  */
 
-/** Glyph edge as a fraction of the tile. 9/16 - the mean of what the five
- * hand-rolled copies had converged on, and it centres well at every size. */
-const GLYPH_RATIO = 0.5625;
+/** Glyph edge as a fraction of the tile. 0.76 is the small cut of the logo
+ * (see docs/brand/logo): every placement in the app is 32px or smaller, where
+ * the larger 0.70 cut with an open pin hole stops reading. */
+const GLYPH_RATIO = 0.76;
 /** Corner radius as a fraction of the tile. At the default 32px this is
- * exactly `rounded-control` (8px), so the common case is unchanged. */
+ * exactly `rounded-control` (8px). */
 const RADIUS_RATIO = 0.25;
 
 /**
  * The mark itself, without the tile. Exported for the rare surface that needs
- * the glyph on its own (a large marketing lockup, an SVG favicon export)
- * rather than the filled chip.
+ * the glyph on its own rather than the filled chip.
  *
  * Geometry notes, so the next editor does not "tidy" it into something that
  * breaks at small sizes:
- *  - The apex node is r=2.15 on a 24 grid. Below about r=1.8 it stops reading
- *    as a deliberate waypoint at 16px and starts looking like a rendering
- *    artefact of the join.
- *  - The crossbar sits at y=13.4, below the optical centre. Placed at the true
- *    centre it reads as a letter A; lower, it reads as a stage marker on a
- *    route, which is the intent.
- *  - Round caps and joins throughout. Mitred joins at this stroke weight
- *    produce a needle at the apex that aliases badly.
+ *  - The pin sits at (9.9, 16.7), low and left of centre, so the ink of the
+ *    whole glyph balances in the tile. Centring the pin pushes the long hand
+ *    out of the top-right corner.
+ *  - The short hand is 45 degrees and 0.47 of the long one. Longer, and the
+ *    pair stops reading as a tick; shorter, and it stops reading as a clock.
+ *  - The pin is solid and slightly wider than the stroke (1.06x). Without it
+ *    the mark is only a tick; it is what makes the two strokes clock hands.
+ *  - Round caps throughout. Butt caps at this weight alias badly at 16px.
  */
 export function BrandGlyph({
   className,
-  strokeWidth = 2.2,
+  strokeWidth = 3.6,
   style,
 }: {
   className?: string;
@@ -93,24 +88,23 @@ export function BrandGlyph({
       aria-hidden
       focusable="false"
     >
-      {/* The ascent: two strokes climbing to the apex. */}
+      {/* The long hand: mint, the signal colour. Drawn first so the pin
+          covers its root. */}
       <path
-        d="M4.7 19.6 12 5.4l7.3 14.2"
-        stroke="currentColor"
-        strokeWidth={strokeWidth}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      {/* The stage marker across the route. */}
-      <path
-        d="M8.85 13.4h6.3"
-        stroke="currentColor"
+        d="M9.9 16.7 19.9 3.9"
+        stroke="hsl(var(--brand-mark-accent-hsl))"
         strokeWidth={strokeWidth}
         strokeLinecap="round"
       />
-      {/* The destination. Filled, so it reads as arrival rather than as
-          another segment of the path. */}
-      <circle cx="12" cy="5.4" r="2.15" fill="currentColor" />
+      {/* The short hand. */}
+      <path
+        d="M4.5 11.3 9.9 16.7"
+        stroke="currentColor"
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+      />
+      {/* The centre pin. */}
+      <circle cx="9.9" cy="16.7" r={strokeWidth * 1.06} fill="currentColor" />
     </svg>
   );
 }
