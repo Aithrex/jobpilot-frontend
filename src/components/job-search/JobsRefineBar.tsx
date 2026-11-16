@@ -81,7 +81,7 @@ export function JobsRefineBar() {
         <span className="mx-1 hidden h-6 w-px shrink-0 bg-border sm:block" aria-hidden />
         <ExperienceLevelPicker />
         <CompanyFilter className="h-9" />
-        <div className="ml-auto flex shrink-0 items-center gap-2 pl-2">
+        <div className="flex shrink-0 items-center gap-2 sm:ml-auto sm:pl-2">
           <PillSwitch
             aria-label="Sort jobs"
             value={sortBy}

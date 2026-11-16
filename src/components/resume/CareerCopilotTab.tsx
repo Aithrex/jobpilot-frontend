@@ -5,6 +5,7 @@ import {
   useRef,
   useState,
   Fragment,
+  type ReactNode,
 } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -141,6 +142,26 @@ const CHANNEL_ICON: Record<string, typeof Mail> = {
 };
 
 // ─── Small shared components ────────────────────────────────────────────────
+
+/**
+ * The model answers with light markdown. Bold and inline code are the two
+ * marks that show up as stray asterisks and backticks when printed raw, so
+ * those two are rendered and everything else is left as written. Builds
+ * React nodes, never HTML, so nothing in a reply can inject markup.
+ */
+function chatText(content: string): ReactNode[] {
+  return String(content ?? '')
+    .split(/(\*\*[^*\n]+\*\*|`[^`\n]+`)/g)
+    .map((part, i) => {
+      if (part.length > 4 && part.startsWith('**') && part.endsWith('**')) {
+        return <strong key={i} className="font-semibold">{part.slice(2, -2)}</strong>;
+      }
+      if (part.length > 2 && part.startsWith('`') && part.endsWith('`')) {
+        return <code key={i} className="rounded bg-background/70 px-1 py-0.5 font-mono text-[0.85em]">{part.slice(1, -1)}</code>;
+      }
+      return part;
+    });
+}
 
 function PipelineChips({ steps }: { steps: PipelineStep[] }) {
   if (!steps?.length) return null;
@@ -832,24 +853,15 @@ export default function CareerCopilotTab() {
   return (
     <div className="space-y-5">
       {/* Header */}
-      <header className="mesh-accent rounded-2xl border border-primary/20 p-5 sm:p-6 shadow-soft">
+      <header>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="space-y-1">
-            <p className="overline">
-              Grow · Copilot
-            </p>
             <h2 className="font-display text-h2 text-foreground">
               Career Copilot
             </h2>
             <p className="max-w-prose text-sm text-muted-foreground leading-relaxed">
-              Ask naturally and get grounded responses from your resume context. Use this workspace for outreach, interview drills,
-              application strategy, networking, and offer decisions. All in one guided flow.
+              Ask about outreach, interviews, strategy or an offer. Answers are grounded in your resume.
             </p>
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              <span className="rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-caption-sm font-semibold text-primary">Resume-grounded answers</span>
-              <span className="rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-caption-sm font-semibold text-primary">Multi-agent tools</span>
-              <span className="rounded-full border border-success/20 bg-success/10 px-2 py-0.5 text-caption-sm font-semibold text-success">Actionable next steps</span>
-            </div>
             {!hasResume && (
               <p className="mt-1 text-sm text-warning">
                 No parsed resume. Upload in <strong>My Resumes</strong> for grounded answers.
@@ -958,7 +970,7 @@ export default function CareerCopilotTab() {
                             ? "bg-primary text-primary-foreground"
                             : "bg-muted text-foreground"
                         }`}>
-                          <div className="whitespace-pre-wrap break-words">{m.content}</div>
+                          <div className="whitespace-pre-wrap break-words">{isUser ? m.content : chatText(m.content)}</div>
                           {!isUser && pipe?.length ? <PipelineChips steps={pipe} /> : null}
                           {!isUser && tools?.length ? <ToolCallLog calls={tools} /> : null}
                           {!isUser && deliv ? <DeliverableCard d={deliv} /> : null}
@@ -1522,7 +1534,7 @@ export default function CareerCopilotTab() {
               <Lightbulb className="h-4 w-4 text-warning" /> Next best actions
             </h3>
             <p className="text-caption-sm text-muted-foreground mt-1">
-              Adaptive picks from your latest context + behavior patterns.
+              Suggested from your recent activity.
             </p>
             <ul className="mt-3 space-y-2">
               {nba.map((a, i) => (
@@ -1541,32 +1553,6 @@ export default function CareerCopilotTab() {
             {nba.length === 0 && (
               <p className="mt-2 text-xs text-muted-foreground">No suggestions yet. Chat once to get personalized next actions.</p>
             )}
-          </div>
-
-          {/* Context card */}
-          <div className="rounded-2xl border border-border bg-card p-4 text-xs shadow-soft">
-            <p className="font-bold text-foreground flex items-center gap-1.5">
-              <Layers className="h-3.5 w-3.5 text-primary" /> System overview
-            </p>
-            <ul className="mt-2 space-y-1.5 text-muted-foreground">
-              <li className="flex items-center gap-1.5">
-                <span className={`h-2 w-2 rounded-full ${hasResume ? "bg-success" : "bg-destructive"}`} />
-                Resume: {hasResume ? "loaded" : "missing"}
-              </li>
-              <li>Messages: {messages.length}</li>
-              <li>Campaigns: {campaigns.length}</li>
-              <li>Memory notes: {Object.keys(memoryNotes).length}</li>
-            </ul>
-          </div>
-
-          {/* How it works */}
-          <div className="rounded-2xl border border-border bg-card p-4 text-xs text-muted-foreground leading-relaxed shadow-soft">
-            <p className="font-semibold text-foreground">How the agentic loop works</p>
-            <p className="mt-1.5">
-              Each message enters a <strong>ReAct orchestrator</strong>. Aspirely decides which tools to call
-              (resume RAG, JD analysis, bullet tailoring, email drafting, PPT/project scaffolding, quiz generation).
-              Tool results feed back for up to 5 rounds, and every agent and tool call shows up in the pipeline chips.
-            </p>
           </div>
         </aside>
       </div>

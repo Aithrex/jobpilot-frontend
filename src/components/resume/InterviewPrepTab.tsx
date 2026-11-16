@@ -280,7 +280,7 @@ export default function InterviewPrepTab({ embedded }: InterviewPrepTabProps) {
             title - keep only the functional stat grid. */}
         {!isEmbedded && (
           <>
-            <p className="overline">Grow · Interview</p><h2 className="mt-1 font-display text-h2 text-foreground">Interview Prep</h2>
+            <h2 className="font-display text-h2 text-foreground">Interview Prep</h2>
             <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
               Question banks, timed mock answers with AI grading, and a coach that knows your resume and the job description.
             </p>

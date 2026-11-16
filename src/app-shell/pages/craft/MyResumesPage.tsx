@@ -90,7 +90,6 @@ export default function MyResumesPage() {
     <div className="space-y-5">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div className="space-y-1">
-          <p className="overline">Manage</p>
           <h2 className="font-display text-h2 text-foreground">Resume library</h2>
           <p className="max-w-prose text-caption text-muted-foreground">
             Active is used for job matching. Tailor picks the best resume for

@@ -105,10 +105,6 @@ export default function EventsTab({ embedded }: EventsTabProps) {
       ) : (
         <header className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <div className="flex items-center gap-1.5 text-muted-foreground">
-              <Trophy className="h-4 w-4" aria-hidden="true" />
-              <span className="overline">Grow · Events</span>
-            </div>
             <h2 className="font-display text-h2 text-foreground">Hackathons & webinars, vetted</h2>
             <p className="text-sm text-muted-foreground">Legitimacy-scored so you only invest in events worth your time.</p>
           </div>
