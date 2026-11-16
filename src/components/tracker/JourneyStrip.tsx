@@ -136,50 +136,50 @@ export default function JourneyStrip({
 
   return (
     <section aria-label="How your search is going" className="grid gap-px bg-border lg:grid-cols-[minmax(0,17.5rem)_minmax(0,1fr)_minmax(0,13.5rem)]">
-      {/* This week, toward a goal. */}
+      {/* This week, toward a goal; under it the streak and the goal picker. */}
       <div className="flex items-center gap-3 bg-card px-4 py-3.5">
         <button
           type="button"
           onClick={() => onOpen('recent')}
-          className="press flex items-center gap-3 rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="press shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           title="Show the applications from the last 7 days"
         >
           <GoalRing sent={sent} goal={goal} />
-          <span className="min-w-0">
-            <span className="block font-display text-2xl font-semibold leading-none text-foreground">
-              <Count value={sent} />
-              <span className="text-body-sm font-medium text-muted-foreground"> / {goal}</span>
-            </span>
-            <span className="mt-1 block whitespace-nowrap text-caption text-muted-foreground">sent this week</span>
-          </span>
         </button>
-        <div className="ml-auto flex flex-col items-end gap-1.5">
-          {streak >= 2 && (
-            <span
-              className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-warning/10 px-2 py-0.5 text-caption-sm font-semibold text-warning"
-              title={`${streak} weeks in a row with at least one application`}
-            >
-              <Flame className="h-3 w-3" aria-hidden />
-              {streak}-week streak
-            </span>
-          )}
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-caption-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              title="Change your weekly goal"
-            >
-              <Target className="h-3 w-3" aria-hidden />
-              Goal
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Applications a week</DropdownMenuLabel>
-              {GOALS.map((g) => (
-                <DropdownMenuItem key={g} onSelect={() => setGoal(g)} className={cn(g === goal && 'font-semibold text-primary')}>
-                  {g} a week
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+        <div className="min-w-0">
+          <p className="font-display text-2xl font-semibold leading-none text-foreground">
+            <Count value={sent} />
+            <span className="text-body-sm font-medium text-muted-foreground"> / {goal}</span>
+          </p>
+          <p className="mt-1 whitespace-nowrap text-caption text-muted-foreground">sent this week</p>
+          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+            {streak >= 2 && (
+              <span
+                className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-warning/10 px-2 py-0.5 text-caption-sm font-semibold text-warning"
+                title={`${streak} weeks in a row with at least one application`}
+              >
+                <Flame className="h-3 w-3" aria-hidden />
+                {streak}-week streak
+              </span>
+            )}
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-caption-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                title="Change your weekly goal"
+              >
+                <Target className="h-3 w-3" aria-hidden />
+                Goal
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuLabel>Applications a week</DropdownMenuLabel>
+                {GOALS.map((g) => (
+                  <DropdownMenuItem key={g} onSelect={() => setGoal(g)} className={cn(g === goal && 'font-semibold text-primary')}>
+                    {g} a week
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </div>
 

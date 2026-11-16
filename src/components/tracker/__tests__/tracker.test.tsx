@@ -622,7 +622,8 @@ describe('header and detail pane', () => {
 
     // One sent this week, against the default goal of ten.
     expect(within(summary).getByText('sent this week')).toBeInTheDocument();
-    expect(step(/^Show the applications from the last 7 days|sent this week/)).toHaveTextContent('/ 10');
+    expect(summary).toHaveTextContent('1 / 10');
+    expect(step(/^Show the applications from the last 7 days/)).toBeInTheDocument();
     // Three were sent (a saved job was not); two answered, and a no counts.
     await waitFor(() => expect(step(/^Applied/)).toHaveTextContent('3'));
     expect(step(/^Heard back/)).toHaveTextContent('2');
