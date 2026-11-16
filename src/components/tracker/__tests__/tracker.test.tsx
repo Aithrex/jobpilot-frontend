@@ -4,6 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import TrackerPage from '@/components/tracker/TrackerPage';
+import { ConfirmHost } from '@/components/ui/confirm';
 import { formatCivilDay, localDayISO } from '@/lib/applicationDates';
 
 const listTailoringRecords = vi.fn();
@@ -21,8 +22,14 @@ vi.mock('@/lib/api', () => ({
     listGmailSuggestions: (...a: unknown[]) => listGmailSuggestions(...a),
     applyGmailSuggestion: (...a: unknown[]) => applyGmailSuggestion(...a),
     dismissGmailSuggestion: (...a: unknown[]) => dismissGmailSuggestion(...a),
-    getFunnelAnalytics: () => Promise.resolve({ data: null }),
-    getStaleApplications: () => Promise.resolve({ data: null }),
+    // The summary, follow-ups and Insights are worked out from the rows. If the
+    // page ever asks the server for them again, these make the test say so.
+    getFunnelAnalytics: () => {
+      throw new Error('the tracker must not fetch funnel analytics');
+    },
+    getStaleApplications: () => {
+      throw new Error('the tracker must not fetch stale applications');
+    },
     reframeRejection: () => Promise.resolve({ data: null }),
     generateIntelligenceFollowup: () => Promise.resolve({ data: null }),
     dismissIntelligenceFollowup: () => Promise.resolve({ data: null }),
@@ -64,6 +71,7 @@ function renderTracker() {
   return render(
     <MemoryRouter>
       <TrackerPage />
+      <ConfirmHost />
     </MemoryRouter>,
   );
 }
@@ -90,12 +98,12 @@ function setViewport(kind: 'desktop' | 'phone') {
   );
 }
 
-const scopeButton = (name: 'Focus' | 'Active' | 'All') =>
-  screen.getByRole('radio', { name: new RegExp(`^${name}`) });
+const viewTab = (name: 'To do' | 'Applications' | 'Insights') =>
+  screen.getByRole('tab', { name: new RegExp(`^${name}`) });
 
-/** Most assertions are about the pipeline, which lives behind the All scope. */
+/** Most assertions are about the stages, which live behind the Applications tab. */
 async function showAll(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(scopeButton('All'));
+  await user.click(viewTab('Applications'));
 }
 
 async function pickDatePreset(user: ReturnType<typeof userEvent.setup>, label: string) {
@@ -121,7 +129,7 @@ beforeEach(() => {
   });
 });
 
-describe('scopes', () => {
+describe('views', () => {
   test('Gmail remains available when the tracker is empty', async () => {
     listTailoringRecords.mockResolvedValue({ data: { records: [] } });
     renderTracker();
@@ -129,41 +137,53 @@ describe('scopes', () => {
     expect(screen.getByRole('button', { name: 'Connect Gmail' })).toBeInTheDocument();
   });
 
-  test('rejected summary opens the closed records instead of the active scope', async () => {
+  test('a summary number opens the rows behind it', async () => {
     listTailoringRecords.mockResolvedValue({
       data: {
         records: [
-          record('r-live', 'Live Role', TODAY),
+          record('r-wait', 'Waiting Role', YESTERDAY),
+          record('r-talk', 'Interview Role', LONG_AGO, 'interviewing'),
           record('r-dead', 'Rejected Role', LONG_AGO, 'rejected'),
         ],
       },
     });
     const user = userEvent.setup();
     renderTracker();
-    await user.click(await screen.findByRole('button', { name: 'Rejected 1' }));
-    expect(scopeButton('All')).toHaveAttribute('aria-checked', 'true');
-    expect(screen.queryByText('Live Role')).not.toBeInTheDocument();
-    expect(screen.getByText('Rejected Role')).toBeInTheDocument();
+    const summary = await screen.findByRole('region', { name: 'How your search is going' });
+
+    await user.click(within(summary).getByRole('button', { name: /^Got an interview/ }));
+    expect(viewTab('Applications')).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByText('Interview Role')).toBeInTheDocument();
+    expect(screen.queryByText('Waiting Role')).not.toBeInTheDocument();
+
+    // Another number replaces the filter instead of stacking on it.
+    await user.click(within(summary).getByRole('button', { name: /^Waiting for a reply/ }));
+    expect(screen.getByText('Waiting Role')).toBeInTheDocument();
+    expect(screen.queryByText('Interview Role')).not.toBeInTheDocument();
+
+    await user.click(within(summary).getByRole('button', { name: /^Heard back/ }));
+    expect(viewTab('Insights')).toHaveAttribute('aria-selected', 'true');
   });
-  test('the tracker opens on Focus, not on everything', async () => {
+
+  test('the tracker opens on To do, not on everything', async () => {
     renderTracker();
 
     // Old Role went quiet months ago; the rest are recent and want nothing.
     expect(await screen.findByText('Old Role')).toBeInTheDocument();
     expect(screen.queryByText('Today Role')).not.toBeInTheDocument();
-    expect(scopeButton('Focus')).toHaveAttribute('aria-checked', 'true');
+    expect(viewTab('To do')).toHaveAttribute('aria-selected', 'true');
   });
 
-  test('the counts describe each scope, not the current filter', async () => {
+  test('each tab says how much is behind it', async () => {
     renderTracker();
     await screen.findByText('Old Role');
 
-    expect(scopeButton('Focus')).toHaveAccessibleName('Focus 1');
-    expect(scopeButton('Active')).toHaveAccessibleName('Active 4');
-    expect(scopeButton('All')).toHaveAccessibleName('All 4');
+    expect(viewTab('To do')).toHaveAccessibleName('To do 1');
+    expect(viewTab('Applications')).toHaveAccessibleName('Applications 4');
+    expect(viewTab('Insights')).toHaveAccessibleName('Insights');
   });
 
-  test('All shows the whole pipeline', async () => {
+  test('Applications shows every stage', async () => {
     const user = userEvent.setup();
     renderTracker();
     await screen.findByText('Old Role');
@@ -174,7 +194,7 @@ describe('scopes', () => {
     expect(screen.getByText('Yesterday Role')).toBeInTheDocument();
   });
 
-  test('Active hides closed applications', async () => {
+  test('closed applications stay out of the way until Closed is opened', async () => {
     listTailoringRecords.mockResolvedValue({
       data: {
         records: [
@@ -185,14 +205,17 @@ describe('scopes', () => {
     });
     const user = userEvent.setup();
     renderTracker();
+    await screen.findByRole('tab', { name: /^Applications/ });
+    await showAll(user);
 
-    await user.click(await screen.findByRole('radio', { name: /^Active/ }));
     expect(screen.getByText('Live Role')).toBeInTheDocument();
     expect(screen.queryByText('Rejected Role')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Closed, 1 applications' }));
+    expect(screen.getByText('Rejected Role')).toBeInTheDocument();
   });
 });
 
-describe('the Focus queue', () => {
+describe('the To do list', () => {
   test('an unanswered apply prompt outranks every other reason', async () => {
     listTailoringRecords.mockResolvedValue({
       data: {
@@ -203,7 +226,7 @@ describe('the Focus queue', () => {
     });
     renderTracker();
 
-    const section = await screen.findByRole('button', { name: /^Needs an answer 1$/ });
+    const section = await screen.findByRole('button', { name: /^Confirm you applied 1$/ });
     expect(section).toBeInTheDocument();
   });
 
@@ -240,16 +263,16 @@ describe('the Focus queue', () => {
     expect(screen.queryByText('Rejected Role')).not.toBeInTheDocument();
   });
 
-  test('the all-clear offers the pipeline instead of a dead end', async () => {
+  test('the all-clear offers every application instead of a dead end', async () => {
     listTailoringRecords.mockResolvedValue({
       data: { records: [record('r-fresh', 'Fresh Role', TODAY)] },
     });
     const user = userEvent.setup();
     renderTracker();
 
-    await user.click(await screen.findByRole('button', { name: /see the pipeline/i }));
+    await user.click(await screen.findByRole('button', { name: 'See all applications' }));
 
-    expect(scopeButton('Active')).toHaveAttribute('aria-checked', 'true');
+    expect(viewTab('Applications')).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByText('Fresh Role')).toBeInTheDocument();
   });
 
@@ -319,7 +342,7 @@ describe('the Focus queue', () => {
     );
   });
 
-  test('pending inbox reviews remain visible once when Focus has no search matches', async () => {
+  test('pending inbox reviews remain visible once when To do has no search matches', async () => {
     listGmailSuggestions.mockResolvedValue({
       data: {
         suggestions: [
@@ -452,7 +475,7 @@ describe('the stage rail', () => {
     const user = userEvent.setup();
     renderTracker();
 
-    await user.click(await screen.findByRole('radio', { name: /^All/ }));
+    await user.click(await screen.findByRole('tab', { name: /^Applications/ }));
 
     // Nothing is live, so Closed opens rather than an empty Saved column.
     expect(screen.getByText('Rejected Role')).toBeInTheDocument();
@@ -485,7 +508,7 @@ describe('the stage rail', () => {
     const user = userEvent.setup();
     renderTracker();
 
-    await user.click(await screen.findByRole('radio', { name: /^All/ }));
+    await user.click(await screen.findByRole('tab', { name: /^Applications/ }));
 
     // Only the most recent day is open; the rest are one line each.
     expect(screen.getByText('Role 0-0')).toBeInTheDocument();
@@ -580,29 +603,63 @@ describe('unanswered apply prompt', () => {
 });
 
 describe('header and detail pane', () => {
-  test('the summary says how many are tracked and a stage count toggles its filter', async () => {
+  test('the summary answers four questions in words, not just numbers', async () => {
     listTailoringRecords.mockResolvedValue({
       data: {
         records: [
           record('r-live', 'Live Role', TODAY),
+          record('r-talk', 'Interview Role', LONG_AGO, 'interviewing'),
           record('r-dead', 'Rejected Role', LONG_AGO, 'rejected'),
+          record('r-saved', 'Saved Role', null, 'saved'),
         ],
       },
     });
+    renderTracker();
+    const summary = await screen.findByRole('region', { name: 'How your search is going' });
+    const tile = (name: RegExp) => within(summary).getByRole('button', { name });
+
+    // One sent today; none in the seven days before that.
+    expect(tile(/^Sent, last 7 days/)).toHaveTextContent('1');
+    expect(tile(/^Sent, last 7 days/)).toHaveTextContent('1 more than the week before');
+    // Three were sent (a saved job was not). Two got an answer, and a no counts.
+    expect(tile(/^Heard back/)).toHaveTextContent('67%');
+    expect(tile(/^Heard back/)).toHaveTextContent('2 of the 3 you sent');
+    // One of the three reached an interview, and it is still at that stage.
+    expect(tile(/^Got an interview/)).toHaveTextContent('33% of those sent · 1 in progress');
+    expect(tile(/^Waiting for a reply/)).toHaveTextContent('1');
+  });
+
+  test('Insights draws the same numbers and says when there is too little to compare', async () => {
     const user = userEvent.setup();
     renderTracker();
-    const summary = await screen.findByRole('region', { name: 'Application summary' });
-    expect(summary).toHaveTextContent('2 tracked, 1 still open');
+    await screen.findByText('Old Role');
+    await user.click(viewTab('Insights'));
 
-    const rejected = within(summary).getByRole('button', { name: 'Rejected 1' });
-    await user.click(rejected);
-    expect(rejected).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.queryByText('Live Role')).not.toBeInTheDocument();
+    const funnel = screen.getByRole('list', { name: 'Applications that reached each stage' });
+    expect(within(funnel).getAllByRole('listitem')[0]).toHaveTextContent('Sent');
+    // The figures a reader tries to add up are added up on the page.
+    expect(screen.getByText(/^Of the 3 you sent: 0 answered, 3 still waiting\.$/)).toBeInTheDocument();
+    expect(within(funnel).getAllByRole('listitem')[0]).toHaveTextContent('3');
+    expect(screen.getByRole('table', { name: /Applications sent in each of the last 8 weeks/ })).toBeInTheDocument();
+    expect(screen.getAllByText(/Not enough applications to compare yet/)).toHaveLength(2);
+    // Filters belong to the lists; they are not offered over the charts.
+    expect(screen.queryByRole('textbox', { name: 'Search applications' })).not.toBeInTheDocument();
+  });
 
-    // A second press clears the stage filter instead of stacking it.
-    await user.click(rejected);
-    expect(rejected).toHaveAttribute('aria-pressed', 'false');
-    expect(screen.getByText('Live Role')).toBeInTheDocument();
+  test('applications past the point of a reply can be closed in one step', async () => {
+    updateApplication.mockResolvedValue({ data: { application: { status: 'ghosted' } } });
+    const user = userEvent.setup();
+    renderTracker();
+    await screen.findByText('Old Role');
+    await user.click(viewTab('Insights'));
+
+    await user.click(screen.getByRole('button', { name: 'Mark 1 as no response' }));
+    await user.click(await screen.findByRole('button', { name: 'Mark as no response' }));
+
+    await waitFor(() => expect(updateApplication).toHaveBeenCalledWith('r-old', { status: 'ghosted' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: /Mark \d+ as no response/ })).not.toBeInTheDocument(),
+    );
   });
 
   test('Export sits in the toolbar and is off when the view is empty', async () => {
@@ -648,7 +705,9 @@ describe('header and detail pane', () => {
       },
     });
     renderTracker();
-    const line = (await screen.findByText(/86% sure/)).parentElement;
-    expect(line).toHaveTextContent('Move from Applied to Interviewing, 86% sure');
+    const line = (await screen.findByText(/^Move from/)).closest('p');
+    expect(line).toHaveTextContent('Move from Applied to Interviewing');
+    // A bare percentage answered nothing a reader asked ("sure of what?").
+    expect(line).not.toHaveTextContent('%');
   });
 });

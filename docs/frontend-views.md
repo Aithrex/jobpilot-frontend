@@ -175,12 +175,15 @@ Versioned tailored outputs.
 | `DELETE /resume/tailoring-records/{id}` 🔒 | Delete |
 
 ### Applications — `components/tracker/TrackerPage.tsx` · tab `applications`
-Pipeline tracker + Gmail auto-status, beside a detail pane. Three scopes:
-**Focus** (the default — unanswered apply prompts, overdue and upcoming next
-actions, applications gone quiet, plus the Gmail suggestion queue), **Active**
-and **All**. Active and All render the stage rail: six stages side by side with
-one open, and any stage over ~25 rows rolled up to a header per day. Metrics,
-funnel, Gmail connect/sync and stale-app nudges live in the Insights sheet.
+Application tracker + Gmail auto-status, beside a detail pane. Four summary
+numbers on top (sent in the last 7 days, heard back, got an interview, waiting),
+then three views: **To do** (the default: Gmail updates to confirm, unanswered
+apply prompts, overdue and upcoming next actions, applications a week or more
+without a reply), **Applications** (the stage rail: six stages side by side with
+one open, and any stage over ~25 rows rolled up to a header per day) and
+**Insights** (the funnel, applications per week, how long the unanswered ones
+have waited, and what gets interviews). Every number is worked out from the list
+rows in `trackerInsights.ts`; the page fetches no separate analytics.
 
 | Endpoint | Why |
 | --- | --- |
@@ -190,7 +193,8 @@ funnel, Gmail connect/sync and stale-app nudges live in the Insights sheet.
 | `GET /resume/streak` 🔒 | Streak widget |
 | `GET /resume/gmail/status` 🔒 · `POST /resume/gmail/sync` ⏳ 🔒 | Gmail connection + inbox sync |
 | `GET /resume/gmail/suggestions` 🔒 · `…/apply` · `…/dismiss` 🔒 | Review suggested status changes |
-| `GET /resume/career-copilot/intelligence/stale` 🔒 · `…/followup` 🔒 | Stale-app nudges + follow-up drafts |
+| `POST /resume/gmail/access-request` 🔒 | Ask to connect Gmail while it is by invitation |
+| `POST /resume/career-copilot/intelligence/followup` ⏳ 🔒 · `…/followup/{id}/dismiss` 🔒 | Draft a follow-up on request; hide a follow-up nudge |
 
 ### Interview Prep — `components/resume/InterviewPrepTab.tsx` · tab `interview`
 Practice questions, AI coach, mock interview.

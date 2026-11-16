@@ -18,6 +18,8 @@ interface GmailActivityProps {
   onUndo: (change: GmailChange) => void;
   /** Rows shown before "Show all". */
   preview?: number;
+  /** Start folded to one line. For the tracker, where the list sits above the applications. */
+  defaultOpen?: boolean;
   className?: string;
 }
 
@@ -27,9 +29,10 @@ export default function GmailActivity({
   error,
   onUndo,
   preview = 3,
+  defaultOpen = true,
   className,
 }: GmailActivityProps) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(defaultOpen);
   const [all, setAll] = useState(false);
   if (changes.length === 0) return null;
   const shown = all ? changes : changes.slice(0, preview);
@@ -46,7 +49,7 @@ export default function GmailActivity({
           onClick={() => setOpen((v) => !v)}
           className="rounded text-label font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          {open ? 'Hide' : `Show ${changes.length}`}
+          {open ? 'Hide' : `Show ${changes.length} ${changes.length === 1 ? 'change' : 'changes'}`}
         </button>
       </div>
       {open && (

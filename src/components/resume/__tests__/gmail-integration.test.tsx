@@ -15,6 +15,7 @@ vi.mock('@/lib/api', () => ({
   apiService: {
     getGmailStatus: vi.fn(),
     getGmailAuthUrl: vi.fn(),
+    requestGmailAccess: vi.fn(),
     getGmailActivity: vi.fn(),
     undoGmailChange: vi.fn(),
     syncGmail: vi.fn(),
@@ -231,7 +232,7 @@ describe('connected', () => {
   });
 
   test.each([
-    ['no_mail', { messages_scanned: 0 }, 'Nothing new: no email has arrived since the last check.'],
+    ['no_mail', { messages_scanned: 0 }, 'Nothing new: no email about job applications has arrived since the last check.'],
     [
       'no_matches',
       { messages_scanned: 212 },
@@ -454,5 +455,101 @@ describe('what Gmail changed', () => {
     await screen.findByText('Gmail connected');
     expect(screen.queryByRole('region', { name: 'What Gmail changed' })).not.toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+});
+
+/**
+ * While Google limits Aspirely to accounts added by hand, a person who is not
+ * on the list would be stopped on Google's own page. So the card asks for the
+ * address first and offers Connect only once it has been added.
+ */
+describe('early access', () => {
+  const WAITING_ROOM: GmailStatus = status({
+    connected: false,
+    state: 'not_connected',
+    gmail_address: null,
+    access: { mode: 'testing', expires_at: null, gate: 'invite', state: 'none', google_email: null },
+  });
+
+  test('nobody is sent to Google before asking: the card takes an address instead', async () => {
+    api.getGmailStatus.mockResolvedValue({ data: WAITING_ROOM });
+    api.requestGmailAccess.mockResolvedValue({
+      data: {
+        access: {
+          mode: 'testing',
+          gate: 'invite',
+          state: 'requested',
+          google_email: 'priya@gmail.test',
+          requested_at: '2026-11-16T10:00:00+00:00',
+        },
+      },
+    });
+    const user = userEvent.setup();
+    renderCard();
+
+    await screen.findByText('Let Gmail keep this tracker up to date');
+    expect(screen.queryByRole('button', { name: 'Connect Gmail' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Request access' })).toBeDisabled();
+
+    await user.type(screen.getByLabelText('Google address you will connect'), ' priya@gmail.test ');
+    await user.click(screen.getByRole('button', { name: 'Request access' }));
+
+    expect(api.requestGmailAccess).toHaveBeenCalledWith('priya@gmail.test');
+    const note = await screen.findByRole('status');
+    expect(note).toHaveTextContent('priya@gmail.test');
+    expect(note).toHaveTextContent('email you when it is ready');
+    expect(api.getGmailAuthUrl).not.toHaveBeenCalled();
+  });
+
+  test('a request already made is shown as waiting, and the address can be changed', async () => {
+    api.getGmailStatus.mockResolvedValue({
+      data: {
+        ...WAITING_ROOM,
+        access: { mode: 'testing', gate: 'invite', state: 'requested', google_email: 'old@gmail.test' },
+      },
+    });
+    const user = userEvent.setup();
+    renderCard();
+
+    expect(await screen.findByRole('status')).toHaveTextContent('old@gmail.test');
+    await user.click(screen.getByRole('button', { name: 'Use a different Google address' }));
+    expect(screen.getByLabelText('Google address you will connect')).toHaveValue('old@gmail.test');
+  });
+
+  test('a refused address is explained in words and nothing is lost', async () => {
+    api.getGmailStatus.mockResolvedValue({ data: WAITING_ROOM });
+    api.requestGmailAccess.mockResolvedValue({ error: 'gmail_address_invalid', status: 400 });
+    const user = userEvent.setup();
+    renderCard();
+
+    await user.type(await screen.findByLabelText('Google address you will connect'), 'priya@gmail');
+    await user.click(screen.getByRole('button', { name: 'Request access' }));
+
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('Enter the full Google address');
+    expect(alert).not.toHaveTextContent('gmail_address_invalid');
+    expect(screen.getByLabelText('Google address you will connect')).toHaveValue('priya@gmail');
+  });
+
+  test('once the address is added, Connect appears and names the account to choose', async () => {
+    api.getGmailStatus.mockResolvedValue({
+      data: {
+        ...WAITING_ROOM,
+        access: { mode: 'testing', gate: 'invite', state: 'approved', google_email: 'priya@gmail.test' },
+      },
+    });
+    renderCard();
+
+    expect(await screen.findByRole('button', { name: 'Connect Gmail' })).toBeEnabled();
+    expect(screen.getByText(/On Google's screen choose/)).toHaveTextContent('priya@gmail.test');
+    expect(screen.queryByRole('button', { name: 'Request access' })).not.toBeInTheDocument();
+  });
+
+  test('a backend that sends no gate still offers Connect, as it always did', async () => {
+    api.getGmailStatus.mockResolvedValue({
+      data: { ...WAITING_ROOM, access: { mode: 'testing', expires_at: null } },
+    });
+    renderCard();
+    expect(await screen.findByRole('button', { name: 'Connect Gmail' })).toBeEnabled();
   });
 });

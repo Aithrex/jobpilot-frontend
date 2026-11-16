@@ -38,6 +38,60 @@ const OUTCOMES: { value: GmailOutcome; label: string }[] = [
 ];
 
 /**
+ * The scan's note on why it reads an email the way it does, as a sentence for
+ * the person looking at that email. The stored notes are written for a log
+ * ("Decline phrase: ...", "Email requisition is not uniquely confirmed in this
+ * application"). A note this build does not know is shown as it came.
+ */
+export function explainReason(reason?: string | null): string | null {
+  if (!reason) return null;
+  const older = 'Email predates your latest status change. ';
+  if (reason.startsWith(older)) {
+    const rest = explainReason(reason.slice(older.length));
+    return `This email is older than the last change you made.${rest ? ` ${rest}` : ''}`;
+  }
+  if (reason.startsWith('Outcome is unclear')) return null;
+  const quoted = reason.match(/^([^"]+?):? "(.*)"$/);
+  if (!quoted) return reason;
+  const [, lead, words] = quoted;
+  if (lead.startsWith('Possible decline')) return `This may be a no. The email says: "${words}"`;
+  if (lead.startsWith('Interview wording inside an application receipt')) {
+    return `This reads like a confirmation that also mentions next steps: "${words}"`;
+  }
+  if (lead.startsWith('Receipt only')) return `The email confirms they have your application: "${words}"`;
+  if (lead.startsWith('Withdrawal confirmed')) return `The email confirms you withdrew: "${words}"`;
+  if (lead.startsWith('Conflicting outcomes')) {
+    return `Earlier and later emails disagree. The latest one says: "${words}"`;
+  }
+  if (/^(?:Decline phrase|Offer phrase|Interview signal)$/.test(lead)) return `The email says: "${words}"`;
+  return reason;
+}
+
+const MATCH_NOTES: [RegExp, string | null][] = [
+  [/requisition is not uniquely confirmed/i, 'The email gives a job number your tracker does not have, so check it is this application.'],
+  [/Several applications match/i, 'More than one of your applications fits this email.'],
+  [/Role title not confirmed/i, 'The email does not name the role.'],
+  [/Role evidence identifies a possible application/i, 'This looks like one of your applications. Confirm which.'],
+  // Said elsewhere on the card, or only of interest to a log.
+  [/does not match a tracked application|No tracked application matches/i, null],
+  [/^(?:Company identified in application content|Exact role title in email|Company name matches sender domain label|Saved recruiter email matches sender|Sent in the company's name|Application requisition matches email)$/i, null],
+];
+
+/** What the person should know about which application an email belongs to. */
+export function explainMatch(matchReason?: string | null): string[] {
+  const notes: string[] = [];
+  for (const part of (matchReason || '').split(';').map((text) => text.trim()).filter(Boolean)) {
+    const known = MATCH_NOTES.find(([pattern]) => pattern.test(part));
+    const note = known ? known[1] : part;
+    if (note && !notes.includes(note)) notes.push(note);
+  }
+  return notes;
+}
+
+/** How long to wait before the one automatic second try. */
+export const gmailReviewRetry = { delayMs: 1200 };
+
+/**
  * Owns the suggestion list so both the tracker and the Settings panel get the
  * same fetch, optimistic removal and error handling.
  */
@@ -49,9 +103,15 @@ export function useGmailSuggestions(enabled: boolean, onChanged?: () => void) {
   const reload = useCallback(async () => {
     if (!enabled) return;
     setLoadError(null);
-    const resp = await apiService.listGmailSuggestions(false);
+    let resp = await apiService.listGmailSuggestions(false);
+    // One quiet second try. A slow first answer is common just after a deploy
+    // or a long scan, and nobody should have to press a button for that.
+    if (!resp.data && resp.status !== 401) {
+      await new Promise((resolve) => setTimeout(resolve, gmailReviewRetry.delayMs));
+      resp = await apiService.listGmailSuggestions(false);
+    }
     if (resp.data) setSuggestions(resp.data.suggestions || []);
-    else setLoadError(resp.error || 'Could not load the complete Gmail review queue.');
+    else setLoadError(resp.error || 'The list did not load.');
   }, [enabled]);
 
   useEffect(() => {
@@ -94,9 +154,20 @@ export function useGmailSuggestions(enabled: boolean, onChanged?: () => void) {
 export function GmailReviewLoadError({ error, onRetry }: { error: string | null; onRetry: () => void }) {
   if (!error) return null;
   return (
-    <p role="alert" className="rounded-lg border border-destructive/30 p-3 text-label text-destructive">
-      {error}{' '}
-      <button type="button" className="hit-target font-medium underline" onClick={onRetry}>Retry email reviews</button>
+    <p
+      role="alert"
+      className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-border bg-card px-4 py-3 text-body-sm text-foreground"
+    >
+      <span className="min-w-0 flex-1 basis-64">
+        Email updates from Gmail did not load. Your applications below are not affected.
+      </span>
+      <button
+        type="button"
+        className="hit-target rounded-md border border-border px-2.5 py-1 font-medium text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        onClick={onRetry}
+      >
+        Load email updates
+      </button>
     </p>
   );
 }
@@ -123,12 +194,14 @@ export default function GmailSuggestions({
   return (
     <ul className={cn('divide-y divide-border/60', className)}>
       {suggestions.map((s) => {
-        const confidence = Math.round((s.confidence || 0) * 100);
         const selectedRecord = selectedRecords[s.suggestion_id];
         const selectedStatus = selectedStatuses[s.suggestion_id];
         const needsStatus = Boolean(s.requires_status_selection || !s.suggested_status);
         const needsChoice = Boolean(s.requires_record_selection || needsStatus);
         const received = s.email_received_at ? new Date(s.email_received_at) : null;
+        const notes = [explainReason(s.reason), ...explainMatch(s.match_reason)].filter(
+          (note): note is string => Boolean(note),
+        );
         const records: NonNullable<GmailSuggestion['candidate_records']> =
           s.candidate_records ??
           (s.record_id
@@ -175,7 +248,10 @@ export default function GmailSuggestions({
               </p>
               <p className="text-label text-muted-foreground">
                 {needsStatus ? (
-                  'Outcome needs review'
+                  // Kept as one phrase: tests and screen readers find the card by it.
+                  <span title="The email is about this application but does not say what happened">
+                    Outcome needs review
+                  </span>
                 ) : (
                   <>
                     {s.current_status ? 'Move from ' : 'Mark as '}
@@ -190,7 +266,7 @@ export default function GmailSuggestions({
                     <span className={STATUS_TONE[s.suggested_status || ''] || STATUS_TONE.draft}>
                       {statusMeta(s.suggested_status).label}
                     </span>
-                    <span className="tabular-nums">, {confidence}% sure</span>
+
                   </>
                 )}
               </p>
@@ -208,7 +284,14 @@ export default function GmailSuggestions({
                     {received && !Number.isNaN(received.getTime()) && (
                       <span>
                         Email received{' '}
-                        <time dateTime={s.email_received_at}>{received.toLocaleString()}</time>
+                        <time dateTime={s.email_received_at}>
+                          {received.toLocaleString(undefined, {
+                            month: 'short',
+                            day: 'numeric',
+                            hour: 'numeric',
+                            minute: '2-digit',
+                          })}
+                        </time>
                       </span>
                     )}
                   </p>
@@ -218,16 +301,14 @@ export default function GmailSuggestions({
                 </div>
               )}
               {/* Why this is suggested, as one quiet line. */}
-              {(s.reason || s.match_reason || typeof s.match_confidence === 'number') && (
-                <p className="mt-1.5 flex flex-wrap gap-x-2 gap-y-0.5 text-caption-sm text-muted-foreground">
-                  {s.reason && <span>{s.reason}</span>}
-                  {s.match_reason && <span>{s.match_reason}</span>}
-                  {typeof s.match_confidence === 'number' && (
-                    <span className="tabular-nums">
-                      {Math.round(s.match_confidence * 100)}% application match confidence
-                    </span>
-                  )}
-                </p>
+              {/* A second percentage ("97% application match confidence") sat
+                  here beside "85% sure" and nobody could say which to trust. */}
+              {notes.length > 0 && (
+                <ul className="mt-1.5 space-y-0.5 text-label text-muted-foreground">
+                  {notes.map((note) => (
+                    <li key={note}>{note}</li>
+                  ))}
+                </ul>
               )}
               {needsMatch && (
                 <p className="mt-2 text-caption-sm text-muted-foreground">
@@ -237,7 +318,7 @@ export default function GmailSuggestions({
               )}
               {needsChoice && !needsMatch && (
                 <label className="mt-3 block text-label font-medium text-foreground">
-                  Choose application
+                  Which application is this about?
                   <select
                     aria-label="Choose application"
                     className="mt-1 block w-full rounded-md border border-input bg-background p-2 text-body text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -250,7 +331,7 @@ export default function GmailSuggestions({
                       }))
                     }
                   >
-                    <option value="">Select the matching role...</option>
+                    <option value="">Pick the application</option>
                     {candidates.map((candidate) => (
                       <option key={candidate.recordId} value={candidate.recordId}>
                         {candidate.label}
@@ -264,7 +345,7 @@ export default function GmailSuggestions({
               )}
               {needsStatus && !needsMatch && (
                 <label className="mt-3 block text-label font-medium text-foreground">
-                  Choose outcome
+                  What does the email say happened?
                   <select
                     aria-label="Choose outcome"
                     className="mt-1 block w-full rounded-md border border-input bg-background p-2 text-body text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -279,7 +360,7 @@ export default function GmailSuggestions({
                       }))
                     }
                   >
-                    <option value="">Select the outcome confirmed by this email...</option>
+                    <option value="">Pick what happened</option>
                     {OUTCOMES.map((outcome) => (
                       <option key={outcome.value} value={outcome.value}>
                         {outcome.label}
@@ -315,9 +396,10 @@ export default function GmailSuggestions({
                 type="button"
                 disabled={busyId === s.suggestion_id}
                 onClick={() => onDismiss(s.suggestion_id)}
+                title="Leave the application as it is and take this email off the list"
                 className="rounded-md px-2 py-1 text-label text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
               >
-                Dismiss
+                Ignore this email
               </button>
             </div>
           </li>

@@ -27,7 +27,13 @@ import {
   plural,
   startGmailConnect,
 } from '@/components/resume/gmailState';
-import type { GmailChange, GmailStatus, GmailSyncRun, GmailSyncSummary } from '@/types/gmail';
+import type {
+  GmailAccess,
+  GmailChange,
+  GmailStatus,
+  GmailSyncRun,
+  GmailSyncSummary,
+} from '@/types/gmail';
 
 /** Gmail mark - Google's literal brand colors (intentional; all chrome around it stays tokenized). */
 const GMAIL_MARK = 'bg-gradient-to-br from-[#EA4335] via-[#FBBC05] to-[#34A853]';
@@ -58,9 +64,10 @@ function GmailPromises({ testing }: { testing: boolean }) {
   return (
     <ul className="mt-2 list-disc space-y-1 pl-5 text-label text-muted-foreground">
       <li>
-        <span className="font-medium text-foreground">Reads:</span> your email, to find replies
-        about the jobs in your tracker. The first check covers the last 60 days in every folder
-        except Promotions and Social.
+        <span className="font-medium text-foreground">Reads:</span> only email about job
+        applications. Aspirely asks Gmail for messages from the last 60 days that mention things
+        like an application or an interview, and opens nothing else. Promotions and Social are
+        left out.
       </li>
       <li>
         <span className="font-medium text-foreground">Keeps:</span> only the sender, subject, date
@@ -117,11 +124,11 @@ function ResultLine({ summary, tracked }: { summary: GmailSyncSummary; tracked: 
     case 'no_mail':
       return summary.window_days ? (
         <>
-          Nothing to read: no email arrived in the last {summary.window_days} days outside
-          Promotions and Social.
+          Nothing to read: Gmail found no email about job applications in the last{' '}
+          {summary.window_days} days.
         </>
       ) : (
-        <>Nothing new: no email has arrived since the last check.</>
+        <>Nothing new: no email about job applications has arrived since the last check.</>
       );
     case 'no_matches':
       return (
@@ -184,6 +191,105 @@ function reconnectReason(status: GmailStatus): string {
       // A reason this build does not know still gets a true sentence.
       return 'The saved access no longer works. Reconnect to create a new one.';
   }
+}
+
+/**
+ * Asking to be let in. While Google limits Aspirely to accounts added by hand,
+ * sending someone to Google before their address is on that list ends on a
+ * page that says "Access blocked". So the address is asked for first, and
+ * Connect appears once it has been added.
+ */
+function GmailAccessRequest({
+  access,
+  inline,
+  onChanged,
+}: {
+  access: GmailAccess;
+  inline: boolean;
+  onChanged: (next: GmailAccess) => void;
+}) {
+  const waiting = access.state === 'requested';
+  const [address, setAddress] = useState(access.google_email || '');
+  const [editing, setEditing] = useState(!waiting);
+  const [sending, setSending] = useState(false);
+  const [problem, setProblem] = useState<string | null>(null);
+
+  const send = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setSending(true);
+    setProblem(null);
+    const resp = await apiService.requestGmailAccess(address.trim());
+    setSending(false);
+    if (resp.error || !resp.data) {
+      setProblem(
+        resp.status === 400
+          ? 'Enter the full Google address you will connect, like name@gmail.com.'
+          : resp.status === 429
+            ? 'Your request is already saved. There is no need to send it again.'
+            : 'Your request could not be saved. Try again in a moment.',
+      );
+      return;
+    }
+    setEditing(resp.data.access.state === 'none');
+    onChanged(resp.data.access);
+  };
+
+  if (waiting && !editing) {
+    return (
+      <>
+        <p role="status" className="mt-3 text-label text-foreground">
+          You asked for Gmail updates for{' '}
+          <span className="font-semibold">{access.google_email}</span>
+          {formatDay(access.requested_at) ? ` on ${formatDay(access.requested_at)}` : ''}. We add each
+          address by hand, usually within a day, and email you when it is ready. There is nothing
+          else you need to do.
+        </p>
+        <button type="button" onClick={() => setEditing(true)} className={cn(QUIET_BTN, 'mt-3')}>
+          Use a different Google address
+        </button>
+      </>
+    );
+  }
+
+  return (
+    <form onSubmit={send} className="mt-3">
+      <label className="block text-label font-medium text-foreground" htmlFor="gmail-access-address">
+        Google address you will connect
+      </label>
+      <div className="mt-1.5 flex flex-wrap items-center gap-2">
+        <input
+          id="gmail-access-address"
+          type="email"
+          required
+          autoComplete="email"
+          value={address}
+          onChange={(event) => setAddress(event.target.value)}
+          placeholder="name@gmail.com"
+          className={cn(
+            'h-10 min-w-0 flex-1 basis-56 rounded-lg border border-input bg-background px-3 text-body text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+            inline && 'sm:max-w-xs',
+          )}
+        />
+        <button type="submit" disabled={sending || !address.trim()} className={PRIMARY_BTN}>
+          {sending ? 'Sending...' : 'Request access'}
+        </button>
+        {waiting && (
+          <button type="button" onClick={() => setEditing(false)} className={QUIET_BTN}>
+            Cancel
+          </button>
+        )}
+      </div>
+      {problem && (
+        <p role="alert" className="mt-2 text-label text-destructive">
+          {problem}
+        </p>
+      )}
+      <p className="mt-2 text-label text-muted-foreground">
+        Gmail updates are in early access while Google reviews Aspirely, so each address is added
+        by hand. It has to be the same account you choose on Google's screen later.
+      </p>
+    </form>
+  );
 }
 
 export default function GmailIntegration({
@@ -399,9 +505,10 @@ export default function GmailIntegration({
     if (error) {
       setLinking(false);
       setNotice({ tone: 'error', text: error });
+      void loadStatus();
     }
     // On success the browser is leaving for Google; keep the button busy.
-  }, []);
+  }, [loadStatus]);
 
   const handleDisconnect = useCallback(async () => {
     const confirmed = await confirmAction({
@@ -552,18 +659,37 @@ export default function GmailIntegration({
   }
 
   if (state === 'not_connected') {
+    const access = status.access;
+    // An older backend sends no gate, and lets everyone through.
+    const mustAsk = access?.gate === 'invite' && access.state !== 'approved';
+    const chosen = access?.gate === 'invite' ? access.google_email : null;
     return (
       <section aria-label="Gmail connection" className={shell}>
         {row(
           'Let Gmail keep this tracker up to date',
           <>
-            Connect Gmail and Aspirely finds the replies to your applications: confirmations,
-            interview invites and rejections. Clear ones move the application for you. Unclear ones
-            wait for your review. Read only: Aspirely never sends, deletes or changes email.
+            Aspirely finds the replies to your applications in Gmail: confirmations, interview
+            invites and rejections. Clear ones move the application for you. Unclear ones wait for
+            your review. Read only: Aspirely never sends, deletes or changes email.
           </>,
-          <button type="button" onClick={handleConnect} disabled={linking} className={PRIMARY_BTN}>
-            {linking ? 'Opening Google...' : 'Connect Gmail'}
-          </button>,
+          mustAsk ? null : (
+            <button type="button" onClick={handleConnect} disabled={linking} className={PRIMARY_BTN}>
+              {linking ? 'Opening Google...' : 'Connect Gmail'}
+            </button>
+          ),
+        )}
+        {mustAsk && access && (
+          <GmailAccessRequest
+            access={access}
+            inline={inline}
+            onChanged={(next) => setStatus((prev) => (prev ? { ...prev, access: next } : prev))}
+          />
+        )}
+        {!mustAsk && chosen && !linking && (
+          <p className="mt-3 text-label text-foreground">
+            Your address has been added. On Google's screen choose{' '}
+            <span className="font-semibold">{chosen}</span>.
+          </p>
         )}
         {linking && (
           <p role="status" className="mt-3 text-label text-muted-foreground">
@@ -588,7 +714,8 @@ export default function GmailIntegration({
             <GmailPromises testing={testing} />
           </div>
         )}
-        {inline && testing && (
+        {/* Not yet relevant to someone who cannot connect until they are added. */}
+        {inline && testing && !mustAsk && (
           <p className="mt-2 text-label text-muted-foreground">
             For now Google ends each Gmail connection after 7 days, while it reviews Aspirely. You
             will be asked to reconnect then.
@@ -629,7 +756,8 @@ export default function GmailIntegration({
           busyId={undoBusyId}
           error={undoError}
           onUndo={handleUndo}
-          className="mt-4"
+          defaultOpen={!inline}
+          className={inline ? 'mt-3' : 'mt-4'}
         />
       </section>
     );
@@ -762,24 +890,36 @@ export default function GmailIntegration({
           </p>
         )}
 
-        {/* In the tracker on a phone this line repeats the fold just below it
-            and pushes the list down, so it is kept only when it carries the
-            7 day notice. */}
-        <p className={cn('mt-3 text-label text-muted-foreground', inline && !testing && 'hidden sm:block')}>
-          {autoSync
-            ? `Aspirely also checks by itself about every ${plural(autoSync.interval_hours, 'hour', 'hours')}, so you do not have to press anything. `
-            : ''}
-          {testing &&
-            (expires
-              ? `Google will end this connection on ${expires} and you will be asked to reconnect. That is Google's 7 day limit while it reviews Aspirely. `
-              : 'Google ends each connection after 7 days while it reviews Aspirely. You will be asked to reconnect then. ')}
-          Read only: Aspirely never sends, deletes or changes email.
-        </p>
+        {/* In Settings these lines are the page. In the tracker they sat above
+            every application, so there they wait behind the fold below. */}
+        {!inline && (
+          <p className="mt-3 text-label text-muted-foreground">
+            {autoSync
+              ? `Aspirely also checks by itself about every ${plural(autoSync.interval_hours, 'hour', 'hours')}, so you do not have to press anything. `
+              : ''}
+            {testing &&
+              (expires
+                ? `Google will end this connection on ${expires} and you will be asked to reconnect. That is Google's 7 day limit while it reviews Aspirely. `
+                : 'Google ends each connection after 7 days while it reviews Aspirely. You will be asked to reconnect then. ')}
+            Read only: Aspirely never sends, deletes or changes email.
+          </p>
+        )}
 
         <details className="mt-2 text-label text-muted-foreground">
           <summary className="cursor-pointer rounded font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-            What Aspirely reads, and what it never does
+            {inline ? 'About this connection' : 'What Aspirely reads, and what it never does'}
           </summary>
+          {inline && (
+            <p className="mt-2">
+              {autoSync
+                ? `Aspirely checks by itself about every ${plural(autoSync.interval_hours, 'hour', 'hours')}, so you do not have to press anything. `
+                : ''}
+              {testing &&
+                (expires
+                  ? `Google will end this connection on ${expires} and you will be asked to reconnect. That is Google's 7 day limit while it reviews Aspirely.`
+                  : 'Google ends each connection after 7 days while it reviews Aspirely. You will be asked to reconnect then.')}
+            </p>
+          )}
           <GmailPromises testing={testing} />
           <p className="mt-2">
             A status moves by itself only when the email clearly names one of your applications and
@@ -793,7 +933,8 @@ export default function GmailIntegration({
           busyId={undoBusyId}
           error={undoError}
           onUndo={handleUndo}
-          className="mt-4"
+          defaultOpen={!inline}
+          className={inline ? 'mt-3' : 'mt-4'}
         />
       </div>
 

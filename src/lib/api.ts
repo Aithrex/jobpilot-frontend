@@ -3605,6 +3605,16 @@ class ApiService {
     return this.request('/resume/gmail/auth-url');
   }
 
+  /** Ask to be let in while Gmail connect is by invitation. */
+  async requestGmailAccess(
+    googleEmail: string,
+  ): Promise<ApiResponse<{ access: import('../types/gmail').GmailAccess }>> {
+    return this.request('/resume/gmail/access-request', {
+      method: 'POST',
+      body: JSON.stringify({ google_email: googleEmail }),
+    });
+  }
+
   async finishGmailLink(
     code: string,
     state: string,
@@ -3655,8 +3665,12 @@ class ApiService {
     const incomplete = { error: 'Could not load the complete Gmail review queue. Please try again.' };
     let offset = 0;
     for (let pageNumber = 0; pageNumber < 100; pageNumber++) {
+      // Longer than the default: this list is checked against every tracked
+      // application, and the default cut a slow answer off as an error.
       const response = await this.request<Page>(
         `/resume/gmail/suggestions?offset=${offset}${includeResolved ? '&include_resolved=true' : ''}`,
+        {},
+        30000,
       );
       if (response.error || !response.data) return response;
       const page = response.data;
@@ -4610,6 +4624,26 @@ class ApiService {
 
   async getAdminTechFeedOps() {
     return this.request<Record<string, unknown>>('/admin/ops/tech-feed');
+  }
+
+  /** Who is waiting for Gmail, who has been added, and how many places are used. */
+  async getAdminGmailAccess() {
+    return this.request<import('../types/gmail').GmailAccessOverview>('/admin/gmail-access');
+  }
+
+  /** Record that an address is now on Google's test-user list. */
+  async approveAdminGmailAccess(target: { user_email?: string; google_email?: string }) {
+    return this.request<import('../types/gmail').GmailAccessOverview & { notified?: boolean }>(
+      '/admin/gmail-access/approve',
+      { method: 'POST', body: JSON.stringify(target) },
+    );
+  }
+
+  async removeAdminGmailAccess(target: { user_email?: string; google_email?: string }) {
+    return this.request<import('../types/gmail').GmailAccessOverview & { removed?: boolean }>(
+      '/admin/gmail-access/remove',
+      { method: 'POST', body: JSON.stringify(target) },
+    );
   }
 
   // --- Saved searches: server-owned, locally mirrored ------------------

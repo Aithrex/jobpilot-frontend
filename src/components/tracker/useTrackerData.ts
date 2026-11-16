@@ -11,19 +11,6 @@ import { toast } from 'sonner';
 import { apiService } from '@/lib/api';
 import type { ApplicationStatus, TailoringRecord } from '@/types/resume';
 
-export interface FunnelData {
-  counts: Record<string, number>;
-  conversions: Record<string, number>;
-  insight?: { headline: string; insight: string; action_items: string[] };
-}
-
-export interface StaleApp {
-  record_id: string;
-  job_title: string;
-  company: string;
-  days_stale: number;
-}
-
 export interface Reframe {
   acknowledgement: string;
   what_went_right: string;
@@ -39,10 +26,8 @@ export function useTrackerData() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
 
-  const [funnel, setFunnel] = useState<FunnelData | null>(null);
-  const [funnelLoading, setFunnelLoading] = useState(true);
-  const [staleApps, setStaleApps] = useState<StaleApp[]>([]);
   const [reframe, setReframe] = useState<Reframe | null>(null);
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   /** Records already fetched in full. Reset whenever the slim list reloads. */
   const hydratedRef = useRef<Set<string>>(new Set());
@@ -55,15 +40,14 @@ export function useTrackerData() {
   const load = useCallback(async ({ silent = false }: { silent?: boolean } = {}) => {
     if (!silent) {
       setLoading(true);
-      setFunnelLoading(true);
       setLoadError(null);
     }
 
-    // Records are all the list needs — resolve them first and clear the
-    // page-level loading flag the moment they land, rather than waiting on the
-    // slowest of three endpoints. `view=list` keeps that first payload to the
-    // fields a row renders; opening one fetches the rest.
-    const recordsPromise = apiService.listTailoringRecords({ view: 'list' }).then((resp) => {
+    // One request. The summary, the follow-up queue and Insights are all worked
+    // out from these rows (trackerInsights.ts), so there is nothing else to wait
+    // for and nothing that can disagree with the list. `view=list` keeps the
+    // payload to the fields a row renders; opening one fetches the rest.
+    await apiService.listTailoringRecords({ view: 'list' }).then((resp) => {
       if (resp.error) {
         // Track the failure so the page can offer a retry instead of
         // masquerading as an empty pipeline.
@@ -78,25 +62,6 @@ export function useTrackerData() {
       }
       if (!silent) setLoading(false);
     });
-
-    const auxPromise = Promise.all([
-      apiService.getFunnelAnalytics(),
-      apiService.getStaleApplications(5),
-    ]).then(([funnelResp, staleResp]) => {
-      if (funnelResp.data?.ok) {
-        setFunnel({
-          counts: funnelResp.data.counts || {},
-          conversions: funnelResp.data.conversions || {},
-          insight: funnelResp.data.insight,
-        });
-      }
-      if (staleResp.data?.stale_applications) {
-        setStaleApps(staleResp.data.stale_applications as StaleApp[]);
-      }
-      if (!silent) setFunnelLoading(false);
-    });
-
-    await Promise.all([recordsPromise, auxPromise]);
   }, []);
 
   const refetch = useCallback(() => load(), [load]);
@@ -150,23 +115,6 @@ export function useTrackerData() {
     [updateRecord],
   );
 
-  // Keeps the server-side funnel counts in lockstep with the local sections
-  // after a stage change. Fire-and-forget; a failure here is not worth a toast.
-  const refreshFunnel = useCallback(async () => {
-    try {
-      const r = await apiService.getFunnelAnalytics();
-      if (r.data) {
-        setFunnel({
-          counts: r.data.counts || {},
-          conversions: r.data.conversions || {},
-          insight: r.data.insight,
-        });
-      }
-    } catch {
-      /* best effort */
-    }
-  }, []);
-
   /** Optimistic stage change with rollback. Used by drag, the pane and the row. */
   const setStatus = useCallback(
     async (id: string, status: ApplicationStatus) => {
@@ -193,14 +141,13 @@ export function useTrackerData() {
         ...r,
         application: { ...(r.application || {}), ...resp.data!.application },
       }));
-      refreshFunnel();
 
       if (status === 'rejected') {
         const refr = await apiService.reframeRejection(id);
         if (refr.data?.reframe) setReframe(refr.data.reframe);
       }
     },
-    [records, updateRecord, refreshFunnel],
+    [records, updateRecord],
   );
 
   /** Field-level save. `quiet` suppresses the toast for one-tap prompt answers. */
@@ -217,30 +164,66 @@ export function useTrackerData() {
         ...r,
         application: { ...(r.application || {}), ...resp.data!.application },
       }));
-      if (body.status) refreshFunnel();
       if (!quiet) toast.success('Saved');
     },
-    [updateRecord, refreshFunnel],
+    [updateRecord],
   );
 
-  const dismissStale = useCallback(async (recordId: string) => {
-    const r = await apiService.dismissIntelligenceFollowup(recordId);
-    if (r.error) {
-      notifyError("Couldn't dismiss that reminder", r.error);
-      return false;
-    }
-    setStaleApps((prev) => prev.filter((x) => x.record_id !== recordId));
-    return true;
-  }, []);
+  /** Wave off the follow-up nudge. It comes back if the application changes. */
+  const dismissFollowUp = useCallback(
+    async (recordId: string) => {
+      const r = await apiService.dismissIntelligenceFollowup(recordId);
+      if (r.error) {
+        notifyError("Couldn't hide that reminder", r.error);
+        return false;
+      }
+      const now = new Date().toISOString();
+      updateRecord(recordId, (rec) => ({
+        ...rec,
+        application: { ...(rec.application || {}), followup_dismissed_at: now },
+      }));
+      return true;
+    },
+    [updateRecord],
+  );
+
+  /**
+   * Move several applications to one stage. A few at a time, so a tracker of
+   * hundreds does not open hundreds of connections; each row updates as its
+   * own save lands, and the ones that failed are reported, not hidden.
+   */
+  const setStatusForMany = useCallback(
+    async (ids: string[], status: ApplicationStatus) => {
+      if (!ids.length) return { moved: 0, failed: 0 };
+      setBulkBusy(true);
+      let moved = 0;
+      let failed = 0;
+      const queue = [...ids];
+      const worker = async () => {
+        for (let id = queue.shift(); id; id = queue.shift()) {
+          const resp = await apiService.updateApplication(id, { status });
+          if (resp.error || !resp.data) {
+            failed += 1;
+            continue;
+          }
+          moved += 1;
+          const saved = resp.data.application;
+          updateRecord(id, (r) => ({ ...r, application: { ...(r.application || {}), ...saved } }));
+        }
+      };
+      await Promise.all(Array.from({ length: Math.min(4, ids.length) }, worker));
+      setBulkBusy(false);
+      return { moved, failed };
+    },
+    [updateRecord],
+  );
 
   return {
     records,
     loading,
     loadError,
     savingId,
-    funnel,
-    funnelLoading,
-    staleApps,
+    bulkBusy,
     reframe,
     setReframe,
     refetch,
@@ -248,6 +231,7 @@ export function useTrackerData() {
     hydrate,
     setStatus,
     patch,
-    dismissStale,
+    dismissFollowUp,
+    setStatusForMany,
   };
 }

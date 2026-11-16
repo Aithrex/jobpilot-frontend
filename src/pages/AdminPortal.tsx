@@ -8,12 +8,14 @@ import { useNavigate } from 'react-router-dom';
 import { FeedbackPanel } from './admin/FeedbackPanel';
 import { QuotasPanel } from './admin/QuotasPanel';
 import { TechFeedOpsPanel } from './admin/TechFeedOpsPanel';
+import { GmailAccessPanel } from './admin/GmailAccessPanel';
 
 type Tab =
   | 'overview'
   | 'users'
   | 'quotas'
   | 'feedback'
+  | 'gmail'
   | 'techfeed';
 
 // ─── Types ────────────────────────────────────────────────────────────────
@@ -752,6 +754,7 @@ const NAV_ITEMS: { key: Tab; label: string; icon: React.ComponentType<{ c?: stri
   { key: 'users',        label: 'Users',          icon: Icon.Users },
   { key: 'quotas',       label: 'Quotas',         icon: Icon.Bolt },
   { key: 'feedback',     label: 'Feedback',       icon: Icon.Doc },
+  { key: 'gmail',        label: 'Gmail access',   icon: Icon.Users },
   { key: 'techfeed',     label: 'Tech feed',      icon: Icon.Bolt },
 ];
 
@@ -1045,6 +1048,7 @@ export default function AdminPortal() {
     users:        { title: 'Users',          subtitle: `${stats?.total_users ?? 0} registered · ${stats?.users_7d ?? 0} this week` },
     quotas:       { title: 'Quotas',         subtitle: 'Daily tailor limits per user. Raise for active job hunts.' },
     feedback:     { title: 'Feedback',       subtitle: 'User-submitted notes, bugs, and ideas. Respond and resolve.' },
+    gmail:        { title: 'Gmail access',   subtitle: 'People waiting to connect Gmail, and the addresses already added at Google.' },
     techfeed:     { title: 'Tech feed ops',  subtitle: 'Coverage, queues, and health. Aggregate counts only.' },
   };
 
@@ -1110,6 +1114,8 @@ export default function AdminPortal() {
                   <QuotasPanel />
                 ) : tab === 'feedback' ? (
                   <FeedbackPanel />
+                ) : tab === 'gmail' ? (
+                  <GmailAccessPanel />
                 ) : (
                   <TechFeedOpsPanel />
                 )}
