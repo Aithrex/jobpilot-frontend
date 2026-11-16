@@ -1,20 +1,21 @@
 import { useEffect, useState } from 'react';
 import { apiService } from '@/lib/api';
 import { Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
 
 /**
- * Quiet social sign-in row for the cinematic auth stage: a hairline "or"
- * divider, then Google as a compact labelled button plus icon-only buttons for
- * any other providers the backend advertises. The OAuth behavior is identical
- * to SocialAuthButtons (same apiService calls, same branching); only the
- * presentation differs - this row sits BELOW the email form.
+ * The provider buttons on a sign-in page: one full-width "Continue with ..."
+ * button per provider the backend lists at /auth/oauth/providers, and nothing
+ * for a provider it does not list. They sit ABOVE the email form.
+ *
+ * Pressing one NAVIGATES to the backend, which redirects to the provider and
+ * sets the cookie that ties the flow to this browser. It is never a fetch.
  */
 
 type Provider = 'google' | 'github' | 'linkedin' | 'microsoft' | 'apple';
 
-/** Google is always presented as the primary option; the rest stay gated. */
-const SECONDARY_ORDER: Provider[] = ['github', 'linkedin', 'microsoft', 'apple'];
+export type SocialProvider = Provider;
+
+const ORDER: Provider[] = ['google', 'microsoft', 'apple', 'linkedin', 'github'];
 const LABEL: Record<Provider, string> = {
   google: 'Google',
   github: 'GitHub',
@@ -23,8 +24,11 @@ const LABEL: Record<Provider, string> = {
   apple: 'Apple',
 };
 
-/* Official provider brand marks - brand colors are exempt from the token rule
-   (same SVGs as SocialAuthButtons). */
+export function providerLabel(provider: string): string {
+  return LABEL[provider as Provider] ?? provider;
+}
+
+/* Official provider brand marks: brand colours are exempt from the token rule. */
 function BrandIcon({ provider }: { provider: Provider }) {
   const cls = 'h-[18px] w-[18px] shrink-0';
   switch (provider) {
@@ -68,12 +72,18 @@ function BrandIcon({ provider }: { provider: Provider }) {
 }
 
 interface Props {
-  /** Verb used in the accessible labels: "Continue with" / "Sign up with". */
-  verb?: string;
+  /** Show only these providers (the ones an account is linked to). */
+  only?: string[];
+  /** Draw the "or" divider under the buttons. */
+  divider?: boolean;
+  /** Use the solid button for the first provider (it is the way in). */
+  emphasis?: boolean;
+  disabled?: boolean;
 }
 
-export function SocialQuietRow({ verb = 'Continue with' }: Props) {
-  // `null` = we haven't heard back yet (unknown), array = the configured set.
+export function SocialQuietRow({ only, divider = true, emphasis = false, disabled = false }: Props) {
+  // `null` = not heard back yet. Buttons appear only once the backend has
+  // listed them, so a provider that is switched off is never offered.
   const [providers, setProviders] = useState<Provider[] | null>(null);
   const [pending, setPending] = useState<Provider | null>(null);
 
@@ -81,102 +91,72 @@ export function SocialQuietRow({ verb = 'Continue with' }: Props) {
     let alive = true;
     apiService.getOAuthProviders().then((res) => {
       if (!alive) return;
-      const list = (res.data?.providers || []).filter((p): p is Provider =>
-        (['google', ...SECONDARY_ORDER] as string[]).includes(p),
-      );
-      setProviders(list);
+      const listed = res.data?.providers || [];
+      setProviders(ORDER.filter((p) => listed.includes(p)));
     });
     return () => {
       alive = false;
     };
   }, []);
 
-  // Google is configured only if the backend advertised it. `null` (still
-  // loading) is treated as "attempt it" - the flow surfaces any real error.
-  const googleConfigured = providers === null ? null : providers.includes('google');
-  const others = providers ? SECONDARY_ORDER.filter((p) => providers.includes(p)) : [];
+  // Coming back with the Back button restores this page from the browser's
+  // cache with the spinner still showing. Clear it.
+  useEffect(() => {
+    const reset = () => setPending(null);
+    window.addEventListener('pageshow', reset);
+    return () => window.removeEventListener('pageshow', reset);
+  }, []);
 
-  const startProvider = async (provider: Provider) => {
+  const shown = (providers ?? []).filter((p) => !only || only.includes(p));
+  if (providers !== null && shown.length === 0) return null;
+
+  const start = (provider: Provider) => {
     setPending(provider);
-    const res = await apiService.beginSocialAuth(provider, { redirect: true });
-    // On success the browser is already navigating to the provider.
-    return res;
+    window.location.assign(apiService.socialAuthUrl(provider));
   };
-
-  const onGoogle = async () => {
-    // Not configured yet → be honest, never fake success or throw a scary error.
-    if (googleConfigured === false) {
-      toast.info('Google sign-in is being set up', {
-        description: 'It is almost ready. Continue with your email for now.',
-      });
-      return;
-    }
-    const res = await startProvider('google');
-    if (res.error) {
-      setPending(null);
-      toast.info('Google sign-in is being set up', {
-        description: res.error || 'It is almost ready. Continue with your email for now.',
-      });
-    }
-  };
-
-  const onOther = async (provider: Provider) => {
-    const res = await startProvider(provider);
-    if (res.error) {
-      setPending(null);
-      toast.error('Could not start sign-in', { description: res.error });
-    }
-  };
-
-  const busy = pending !== null;
 
   return (
-    <div className="space-y-4">
-      {/* Hairline divider - no solid mask, so the backdrop glow shows through. */}
-      <div className="flex items-center gap-3" aria-hidden>
-        <span className="h-px flex-1 bg-border/70" />
-        <span className="text-xs uppercase tracking-wide text-muted-foreground">or</span>
-        <span className="h-px flex-1 bg-border/70" />
+    <div className="space-y-5">
+      <div className="space-y-2.5" aria-busy={providers === null}>
+        {providers === null ? (
+          // Holds the first button's place, so the form does not jump.
+          <div className="pub-btn pub-btn-secondary animate-pulse" aria-hidden />
+        ) : (
+          shown.map((p, index) => (
+            <button
+              key={p}
+              type="button"
+              onClick={() => start(p)}
+              disabled={disabled || pending !== null}
+              aria-busy={pending === p}
+              className={`pub-btn ${emphasis && index === 0 ? 'pub-btn-primary' : 'pub-btn-secondary'}`}
+            >
+              {pending === p ? (
+                <Loader2 className="h-[18px] w-[18px] animate-spin" aria-hidden />
+              ) : (
+                <span
+                  className={
+                    emphasis && index === 0
+                      ? 'flex h-7 w-7 items-center justify-center rounded-full bg-white'
+                      : 'flex'
+                  }
+                >
+                  <BrandIcon provider={p} />
+                </span>
+              )}
+              <span>Continue with {LABEL[p]}</span>
+            </button>
+          ))
+        )}
       </div>
 
-      <div className="flex items-stretch justify-center gap-2.5">
-        {/* PRIMARY - Google is always the obvious first choice. */}
-        <button
-          type="button"
-          onClick={onGoogle}
-          disabled={busy}
-          aria-busy={pending === 'google'}
-          aria-label={`${verb} Google`}
-          className="inline-flex h-11 flex-1 items-center justify-center gap-2.5 rounded-xl border border-border bg-card px-4 text-sm font-medium text-foreground shadow-soft transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-60"
-        >
-          {pending === 'google' ? (
-            <Loader2 className="h-[18px] w-[18px] animate-spin" aria-hidden />
-          ) : (
-            <BrandIcon provider="google" />
-          )}
-          <span>{LABEL.google}</span>
-        </button>
-
-        {/* SECONDARY - only the providers the backend actually advertises. */}
-        {others.map((p) => (
-          <button
-            key={p}
-            type="button"
-            onClick={() => onOther(p)}
-            disabled={busy}
-            aria-busy={pending === p}
-            aria-label={`${verb} ${LABEL[p]}`}
-            title={`${verb} ${LABEL[p]}`}
-            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground shadow-soft transition-colors hover:border-primary/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-60"
-          >
-            {pending === p ? (
-              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-            ) : (
-              <BrandIcon provider={p} />
-            )}
-          </button>
-        ))}
-      </div>
+      {divider && (
+        <div className="flex items-center gap-3" aria-hidden>
+          <span className="h-px flex-1 bg-border" />
+          <span className="text-sm text-ink-subtle">or</span>
+          <span className="h-px flex-1 bg-border" />
+        </div>
+      )}
     </div>
   );
 }

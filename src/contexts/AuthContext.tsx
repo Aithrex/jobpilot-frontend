@@ -42,6 +42,25 @@ function mapProfile(data: ProfileData): AuthUser {
   };
 }
 
+/**
+ * The answer to a sign-in attempt. On failure `code` is the backend's machine
+ * code (invalid_credentials, no_password, email_unverified, account_locked,
+ * rate_limited, account_closed, code_invalid, code_expired, code_locked,
+ * consent_required, network_error ...) and `payload` is the whole error body
+ * (`retry_after`, `methods`, `attempts_left`). Sign-in failures are never a
+ * 401, so none of them ends the session.
+ */
+export interface SignInResult {
+  error?: string;
+  code?: string;
+  status?: number;
+  payload?: Record<string, unknown>;
+  /** The emailed code created this account. */
+  created?: boolean;
+  /** An old, never-verified password was removed from the account. */
+  passwordRemoved?: boolean;
+}
+
 interface AuthContextType {
   user: AuthUser | null;
   isAuthenticated: boolean;
@@ -54,15 +73,14 @@ interface AuthContextType {
     password: string,
     session_id?: string,
     fingerprint_hash?: string
-  ) => Promise<{ error?: string }>;
-  register: (
-    email: string,
-    password: string,
-    role?: string,
-    sector?: string,
-    session_id?: string,
-    fingerprint_hash?: string
-  ) => Promise<{ error?: string }>;
+  ) => Promise<SignInResult>;
+  /** Trade an emailed code for a session (sign in, or create the account). */
+  signInWithCode: (input: {
+    email: string;
+    code: string;
+    password?: string;
+    consent?: { age_confirmed: boolean; terms_version: string };
+  }) => Promise<SignInResult>;
   checkUser: (fingerprint_hash: string) => Promise<{ exists: boolean; email?: string } | null>;
   updateProfile: (data: { name?: string; role?: string; sector?: string }) => Promise<{ error?: string }>;
   /** Persist onboarding/personalization preferences; refreshes the user. */
@@ -123,59 +141,56 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [refreshProfile]);
 
+  /** Everything that follows a fresh token, for every sign-in method. */
+  const afterSignIn = useCallback(async () => {
+    // Claim any guest-onboarding work (resume + tailors) into this account
+    // before the app loads - idempotent server-side, clears guest_id on
+    // success, and never fails the sign-in.
+    await claimGuestIfPresent();
+    await refreshProfile();
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('auth:login'));
+    }
+  }, [refreshProfile]);
+
+  const failure = (response: {
+    error?: string;
+    status?: number;
+    errorPayload?: Record<string, unknown>;
+  }): SignInResult => ({
+    error: (response.errorPayload?.message as string | undefined) ?? response.error,
+    code: response.errorPayload?.code as string | undefined,
+    status: response.status,
+    payload: response.errorPayload,
+  });
+
   const login = async (
     email: string,
     password: string,
     session_id?: string,
     fingerprint_hash?: string
-  ) => {
+  ): Promise<SignInResult> => {
     try {
       const response = await apiService.login(email, password, session_id, fingerprint_hash);
-      if (response.error) {
-        return { error: response.error };
-      }
-      if (response.data) {
-        // Claim any guest-onboarding work (resume + tailors) into this
-        // account before the app loads - idempotent server-side, clears
-        // guest_id on success, and never fails the login.
-        await claimGuestIfPresent();
-        await refreshProfile();
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('auth:login'));
-        }
-      }
+      if (response.error) return failure(response);
+      if (response.data) await afterSignIn();
       return {};
     } catch {
-      return { error: 'Login failed. Please try again.' };
+      return { error: 'Sign in failed. Please try again.' };
     }
   };
 
-  const register = async (
-    email: string,
-    password: string,
-    role?: string,
-    sector?: string,
-    session_id?: string,
-    fingerprint_hash?: string
-  ) => {
+  const signInWithCode: AuthContextType['signInWithCode'] = async (input) => {
     try {
-      const response = await apiService.register(
-        email,
-        password,
-        role,
-        sector,
-        session_id,
-        fingerprint_hash
-      );
-      if (response.error) {
-        return { error: response.error };
-      }
-      // Don't auto-login - clear any token set by the API call and let the
-      // user sign in explicitly.
-      apiService.logout();
-      return { success: true };
+      const response = await apiService.verifyEmailCode(input);
+      if (response.error) return failure(response);
+      if (response.data) await afterSignIn();
+      return {
+        created: !!response.data?.created,
+        passwordRemoved: !!response.data?.password_removed,
+      };
     } catch {
-      return { error: 'Registration failed. Please try again.' };
+      return { error: 'Sign in failed. Please try again.' };
     }
   };
 
@@ -230,19 +245,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null);
         return { error: 'Sign-in could not be completed. Please try again.' };
       }
-      // Social sign-in path - same guest-claim hook as password login.
-      await claimGuestIfPresent();
-      await refreshProfile();
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('auth:login'));
-      }
+      await afterSignIn();
       return {};
     } catch {
       apiService.logout();
       setUser(null);
       return { error: 'Sign-in could not be completed. Please try again.' };
     }
-  }, [refreshProfile]);
+  }, [afterSignIn]);
 
   const logout = () => {
     apiService.logout();
@@ -260,7 +270,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAdmin,
         isLoading,
         login,
-        register,
+        signInWithCode,
         checkUser,
         updateProfile,
         savePreferences,

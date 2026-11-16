@@ -12,7 +12,7 @@
  *      UI entrance 280ms, so every response lands inside 300ms and well
  *      inside the 400ms Doherty threshold. Nothing waits on an animation.
  *      The one exception is the landing's product story
- *      (`components/landing/story`), a looped illustration with a Pause
+ *      (`components/landing/tour`), a looped illustration with a Pause
  *      control, not a UI response.
  *   2. Motion is CHEAP. `opacity` and `transform` only - never height, width,
  *      top or left, so nothing reflows mid-animation.

@@ -50,7 +50,8 @@ vi.mock('@/contexts/AuthContext', () => ({
 vi.mock('@/lib/api', () => ({
   apiService: {
     getOAuthProviders: vi.fn(async () => ({ data: { providers: ['google'] }, status: 200 })),
-    beginSocialAuth: vi.fn(async () => ({ data: {}, status: 200 })),
+    socialAuthUrl: vi.fn(() => '/api/auth/oauth/google/authorize?redirect=1'),
+    checkEmail: vi.fn(async () => ({ data: { exists: false }, status: 200 })),
     getPrivacy: vi.fn(async () => ({ data: privacyState, status: 200 })),
     updatePrivacy: vi.fn(async () => ({ data: privacyState, status: 200 })),
     getUnsubscribe: vi.fn(async () => ({ data: { list: 'digests' }, status: 200 })),
@@ -120,7 +121,7 @@ describe('legal surface has zero axe violations', () => {
     expect(await axeViolations(container)).toEqual([]);
   });
 
-  test('register form, both beats, with the clickwrap', async () => {
+  test('register form, both steps, with the clickwrap', async () => {
     const user = userEvent.setup();
     const { container } = renderAt('/register', '/register', <Register />);
     await waitFor(() => expect(screen.getByLabelText('Email')).toBeInTheDocument());

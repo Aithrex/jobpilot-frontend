@@ -37,20 +37,28 @@ CTA (`Get started` vs `Open workspace`).
 | --- | --- |
 | `GET /auth/verify` 🔒 · `GET /auth/profile` 🔒 | Via `AuthProvider` if a token exists |
 
-### Login — `src/pages/Login.tsx` (`/login`)
+### Sign in and sign up — `src/components/auth/SignInFlow.tsx` (`/login`, `/register`)
+
+One email-first screen behind both routes (`Login.tsx` and `Register.tsx` only
+choose the wording). Steps: address, then password / provider or code / new
+account, then the emailed code. The step is kept in router state, so Back
+walks the steps.
 
 | Endpoint | Why |
 | --- | --- |
-| `POST /auth/login` | Sign in |
-| `GET /auth/profile` 🔒 | Hydrate the user after login |
+| `GET /auth/oauth/providers` | Which provider buttons to show |
+| `POST /auth/check-email` | Pick the step after the address |
+| `POST /auth/login` | Password sign-in |
+| `POST /auth/otp/request` | Email a code (sign in, new account, confirm an email) |
+| `POST /auth/register` | New account with a password: checks it, then emails the code |
+| `POST /auth/otp/verify` | Enter the code: signs in or creates the account |
+| `GET /auth/profile` 🔒 | Hydrate the user after sign-in |
 | `POST /auth/request-password-reset` | "Forgot password?" dialog |
 
-### Register — `src/pages/Register.tsx` (`/register`)
+### Provider callback — `src/pages/AuthCallback.tsx` (`/oauth/callback`)
 
-| Endpoint | Why |
-| --- | --- |
-| `POST /auth/register` | Create the account |
-| `POST /auth/login` + `GET /auth/profile` 🔒 | Auto sign-in after signup |
+Reads `#token=` or `#error=<code>&provider=` from the fragment. Errors stay on
+screen (`describeProviderError`) until the person goes back to sign in.
 
 ### Reset Password — `src/pages/ResetPassword.tsx` (`/reset-password`)
 

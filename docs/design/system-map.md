@@ -37,7 +37,7 @@
 > Tailwind `purple`, `violet` and `fuchsia` scales are remapped to one cobalt
 > ramp so older hard-coded classes follow the brand. Motion: UI responses stay
 > under 300ms (`src/lib/motion.ts`); the landing's looped product story
-> (`src/components/landing/story/`) is the one long animation and has Pause.
+> (`src/components/landing/tour/`) is the one long animation and has Pause.
 
 ## 1. Thesis: "Ink and Aubergine"
 

@@ -109,6 +109,43 @@ interface GuestCapability {
   deviceToken?: string;
 }
 
+/** What `request` answers when the request never reached the server. */
+export const NETWORK_ERROR_CODE = 'network_error';
+export const NETWORK_ERROR_MESSAGE =
+  'We could not reach Aspirely. Check your connection and try again.';
+
+/** How an existing account can sign in, from `/auth/check-email`. */
+export interface EmailLookup {
+  exists: boolean;
+  has_password?: boolean;
+  /** 'password' and any linked providers, e.g. ['password', 'google']. */
+  methods?: string[];
+  /** The account was deleted and is being erased. */
+  closed?: boolean;
+}
+
+/** `/auth/otp/request` and `/auth/register`: a code is on its way. */
+export interface CodeSent {
+  ok: boolean;
+  message: string;
+  /** Seconds before another code may be requested. */
+  resend_after: number;
+  /** Seconds the code stays valid. */
+  expires_in: number;
+}
+
+/** The flat sign-in payload, plus what `/auth/otp/verify` adds. */
+export interface SessionPayload {
+  access_token: string;
+  email: string;
+  role?: string;
+  sector?: string;
+  /** The code created this account. */
+  created?: boolean;
+  /** An old, never-verified password was removed from the account. */
+  password_removed?: boolean;
+}
+
 interface ApiResponse<T> {
   data?: T;
   error?: string;
@@ -244,6 +281,18 @@ class ApiService {
       if (error instanceof Error && error.name === 'AbortError') {
         return { error: 'Request timed out. Please try again.' };
       }
+      // fetch rejects with a TypeError ("Failed to fetch", "Load failed",
+      // "NetworkError when attempting to fetch resource") when the request
+      // never reached a server: offline, DNS, a dropped connection. That is
+      // the browser's wording, not ours, so it is replaced; `status: 0` and
+      // `errorPayload.code` let a caller tell it from an answer.
+      if (error instanceof TypeError) {
+        return {
+          error: NETWORK_ERROR_MESSAGE,
+          status: 0,
+          errorPayload: { code: NETWORK_ERROR_CODE },
+        };
+      }
       return {
         error: error instanceof Error ? error.message : 'Network error',
       };
@@ -255,55 +304,90 @@ class ApiService {
   // ============================================
 
   /**
-   * POST /api/auth/register. `consent` is the signup clickwrap: the backend
-   * stores `terms.version` / `accepted_at` / `age_confirmed`, and answers
-   * `age_confirmed: false` with `400 {error:"age_requirement"}` (never 401).
-   * Both fields are optional on the wire for older clients.
+   * POST /api/auth/register: step one of password sign-up. It checks the
+   * request and mails a 6-digit code; it stores nothing and returns no token.
+   * The account is created by `verifyEmailCode`, which carries the code, the
+   * same password and the consent. `409 {code:"account_exists", methods}`
+   * when the address already has an account.
    */
-  async register(
-    email: string,
-    password: string,
-    role?: string,
-    sector?: string,
-    session_id?: string,
-    fingerprint_hash?: string,
-    consent?: SignupConsent,
-  ) {
-    const response = await this.request<{
-      access_token: string;
-      email: string;
-    }>('/auth/register', {
-      method: 'POST',
-      body: JSON.stringify({
-        email,
-        password,
-        role,
-        sector,
-        session_id,
-        fingerprint_hash,
-        ...(consent
-          ? { age_confirmed: consent.age_confirmed, terms_version: consent.terms_version }
-          : {}),
-      }),
-    });
+  async register(email: string, password: string, consent?: SignupConsent) {
+    return this.request<CodeSent & { email: string; verification_required: true }>(
+      '/auth/register',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          email,
+          password,
+          ...(consent
+            ? { age_confirmed: consent.age_confirmed, terms_version: consent.terms_version }
+            : {}),
+        }),
+      },
+      undefined,
+      { skipAuth: true },
+    );
+  }
 
+  /** POST /api/auth/otp/request: mail a 6-digit sign-in code. */
+  async requestEmailCode(email: string) {
+    return this.request<CodeSent>(
+      '/auth/otp/request',
+      { method: 'POST', body: JSON.stringify({ email }) },
+      undefined,
+      { skipAuth: true },
+    );
+  }
+
+  /**
+   * POST /api/auth/otp/verify: trade a code for a session. Signs in an
+   * existing account; creates one for a new address (which needs `consent`,
+   * and takes an optional `password`). Failures are 400 / 403 / 429 with a
+   * `code` in `errorPayload`: code_invalid, code_expired, code_locked,
+   * consent_required, weak_password, account_closed, rate_limited.
+   */
+  async verifyEmailCode(input: {
+    email: string;
+    code: string;
+    password?: string;
+    consent?: SignupConsent;
+  }) {
+    const response = await this.request<SessionPayload>(
+      '/auth/otp/verify',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          email: input.email,
+          code: input.code,
+          ...(input.password ? { password: input.password } : {}),
+          ...(input.consent
+            ? {
+                age_confirmed: input.consent.age_confirmed,
+                terms_version: input.consent.terms_version,
+              }
+            : {}),
+        }),
+      },
+      undefined,
+      { skipAuth: true },
+    );
     if (response.data?.access_token) {
       this.setToken(response.data.access_token);
     }
-
     return response;
   }
 
   async login(email: string, password: string, session_id?: string, fingerprint_hash?: string) {
-    const response = await this.request<{
-      access_token: string;
-      email: string;
-      role?: string;
-      sector?: string;
-    }>('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, password, session_id, fingerprint_hash }),
-    });
+    // skipAuth: a stale token must never turn a sign-in answer into the
+    // forced-logout path. Sign-in failures are 400 / 403 / 429, never 401.
+    const response = await this.request<SessionPayload>(
+      '/auth/login',
+      {
+        method: 'POST',
+        body: JSON.stringify({ email, password, session_id, fingerprint_hash }),
+      },
+      undefined,
+      { skipAuth: true },
+    );
 
     if (response.data?.access_token) {
       this.setToken(response.data.access_token);
@@ -548,24 +632,13 @@ class ApiService {
   }
 
   /**
-   * Begin a social sign-in: fetches the provider's authorize URL and (by
-   * default) redirects the browser to it. The provider then 302s back to
-   * /oauth/callback#token=... which AuthCallback consumes.
+   * Where to send the browser to start a provider sign-in. The backend
+   * answers with a redirect to the provider and sets the cookie that ties the
+   * flow to this browser, so this must be a NAVIGATION, never a fetch: a
+   * cookie set on a cross-origin fetch response (local dev) is dropped.
    */
-  async beginSocialAuth(
-    provider: string,
-    opts?: { redirect?: boolean; fingerprint_hash?: string },
-  ) {
-    const qs = opts?.fingerprint_hash
-      ? `?fingerprint_hash=${encodeURIComponent(opts.fingerprint_hash)}`
-      : '';
-    const res = await this.request<{ authorize_url: string }>(
-      `/auth/oauth/${encodeURIComponent(provider)}/authorize${qs}`,
-    );
-    if (res.data?.authorize_url && opts?.redirect !== false && typeof window !== 'undefined') {
-      window.location.assign(res.data.authorize_url);
-    }
-    return res;
+  socialAuthUrl(provider: string): string {
+    return `${this.baseURL}/auth/oauth/${encodeURIComponent(provider)}/authorize?redirect=1`;
   }
 
   // ── Personalization / onboarding preferences ─────────────────
@@ -1232,18 +1305,14 @@ class ApiService {
     }>('/resume/beta/ab-telemetry', { method: 'GET' });
   }
 
+  /** POST /api/auth/check-email: does this address have an account, and how does it sign in. */
   async checkEmail(email: string) {
-    return this.request<{ exists: boolean }>('/auth/check-email', {
-      method: 'POST',
-      body: JSON.stringify({ email }),
-    });
-  }
-
-  async validatePassword(email: string, password: string) {
-    return this.request<{ valid: boolean }>('/auth/validate-password', {
-      method: 'POST',
-      body: JSON.stringify({ email, password }),
-    });
+    return this.request<EmailLookup>(
+      '/auth/check-email',
+      { method: 'POST', body: JSON.stringify({ email }) },
+      undefined,
+      { skipAuth: true },
+    );
   }
 
   // ============================================
