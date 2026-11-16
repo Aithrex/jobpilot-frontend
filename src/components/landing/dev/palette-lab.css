@@ -1,0 +1,180 @@
+/*
+ * DEVELOPMENT ONLY. Alternative accents for the public site, so the owner can
+ * compare them live on the real page. Loaded only by PaletteLab, which is
+ * only mounted by `vite dev`; none of this reaches a production build.
+ *
+ * The shipped palette (cobalt) is the plain `.surface-lumen` /
+ * `.surface-nocturne` in src/index.css. To adopt one of these instead, copy
+ * its values over the matching lines there and delete this folder.
+ */
+
+/* ── Evergreen: deep green with the marigold kept ──────────────────────── */
+.surface-lumen[data-palette='evergreen'] {
+  --primary: 161 84% 21%;
+  --primary-hover: 161 86% 15%;
+  --primary-ink: 161 84% 21%;
+  --ring: 161 84% 21%;
+  --nav-active: 152 50% 92%;
+  --tint: 152 55% 91%;
+  --tint-ink: 161 84% 20%;
+  --brand-band: 163 72% 10%;
+  --brand-band-glow: 161 84% 24%;
+  --brand-band-glow-2: 150 70% 30%;
+  --brand-band-muted: 150 45% 86%;
+  --band-btn-fg: 163 74% 9%;
+  --brand-mark-from-hsl: 161 80% 26%;
+  --brand-mark-to-hsl: 163 76% 11%;
+}
+.surface-nocturne[data-palette='evergreen'] {
+  --primary: 152 58% 58%;
+  --primary-hover: 152 64% 68%;
+  --primary-foreground: 163 60% 8%;
+  --primary-ink: 152 58% 62%;
+  --ring: 152 58% 58%;
+  --nav-active: 160 40% 15%;
+  --tint: 160 40% 15%;
+  --tint-ink: 152 60% 72%;
+  --brand-band: 163 64% 9%;
+  --brand-band-glow: 161 84% 26%;
+  --brand-band-glow-2: 150 70% 30%;
+  --brand-band-muted: 150 40% 82%;
+  --band-btn-fg: 163 74% 9%;
+  --brand-mark-from-hsl: 161 80% 26%;
+  --brand-mark-to-hsl: 163 76% 11%;
+}
+
+/* ── Daybreak: ink does the work, marigold is the only colour ──────────── */
+.surface-lumen[data-palette='daybreak'] {
+  --primary: 224 32% 9%;
+  --primary-hover: 224 18% 22%;
+  --primary-ink: 224 32% 9%;
+  --ring: 224 32% 9%;
+  --nav-active: 48 100% 90%;
+  --tint: 47 100% 62%;
+  --tint-ink: 224 32% 9%;
+  --brand-band: 224 32% 8%;
+  --brand-band-glow: 44 100% 50%;
+  --brand-band-glow-2: 36 100% 50%;
+  --brand-mark-from-hsl: 224 32% 12%;
+  --brand-mark-to-hsl: 224 34% 5%;
+  --brand-mark-fg-hsl: 47 100% 62%;
+}
+.surface-nocturne[data-palette='daybreak'] {
+  --primary: 47 100% 62%;
+  --primary-hover: 47 100% 72%;
+  --primary-foreground: 224 32% 9%;
+  --primary-ink: 47 100% 66%;
+  --ring: 47 100% 62%;
+  --nav-active: 45 40% 16%;
+  --tint: 47 100% 62%;
+  --tint-ink: 224 32% 9%;
+  --brand-band: 224 32% 8%;
+  --brand-band-glow: 44 100% 50%;
+  --brand-band-glow-2: 36 100% 50%;
+  --brand-mark-from-hsl: 224 32% 12%;
+  --brand-mark-to-hsl: 224 34% 5%;
+  --brand-mark-fg-hsl: 47 100% 62%;
+}
+
+/* ── Plum: a berry accent with the marigold kept ───────────────────────── */
+.surface-lumen[data-palette='plum'] {
+  --primary: 322 62% 34%;
+  --primary-hover: 322 64% 26%;
+  --primary-ink: 322 62% 34%;
+  --ring: 322 62% 34%;
+  --nav-active: 320 60% 94%;
+  --tint: 320 60% 94%;
+  --tint-ink: 322 62% 32%;
+  --brand-band: 322 58% 11%;
+  --brand-band-glow: 322 62% 36%;
+  --brand-band-glow-2: 300 60% 36%;
+  --brand-band-muted: 320 60% 90%;
+  --band-btn-fg: 322 60% 12%;
+  --brand-mark-from-hsl: 322 60% 40%;
+  --brand-mark-to-hsl: 322 62% 18%;
+}
+.surface-nocturne[data-palette='plum'] {
+  --primary: 322 70% 74%;
+  --primary-hover: 322 76% 82%;
+  --primary-foreground: 322 60% 10%;
+  --primary-ink: 322 70% 78%;
+  --ring: 322 70% 74%;
+  --nav-active: 322 36% 17%;
+  --tint: 322 36% 17%;
+  --tint-ink: 322 76% 82%;
+  --brand-band: 322 56% 10%;
+  --brand-band-glow: 322 62% 38%;
+  --brand-band-glow-2: 300 60% 38%;
+  --brand-band-muted: 320 55% 88%;
+  --band-btn-fg: 322 60% 12%;
+  --brand-mark-from-hsl: 322 60% 40%;
+  --brand-mark-to-hsl: 322 62% 18%;
+}
+
+/* ── Poppy: a warm red, for comparison ─────────────────────────────────── */
+.surface-lumen[data-palette='poppy'] {
+  --primary: 6 78% 47%;
+  --primary-hover: 6 80% 39%;
+  --primary-ink: 6 80% 42%;
+  --ring: 6 78% 47%;
+  --nav-active: 8 100% 95%;
+  --tint: 8 100% 94%;
+  --tint-ink: 6 80% 40%;
+  --brand-band: 6 70% 12%;
+  --brand-band-glow: 6 78% 44%;
+  --brand-band-glow-2: 20 90% 46%;
+  --brand-band-muted: 10 100% 93%;
+  --band-btn-fg: 6 78% 12%;
+  --brand-mark-from-hsl: 6 80% 52%;
+  --brand-mark-to-hsl: 6 78% 30%;
+}
+.surface-nocturne[data-palette='poppy'] {
+  --primary: 8 100% 72%;
+  --primary-hover: 8 100% 80%;
+  --primary-foreground: 6 70% 10%;
+  --primary-ink: 8 100% 76%;
+  --ring: 8 100% 72%;
+  --nav-active: 6 40% 17%;
+  --tint: 6 40% 17%;
+  --tint-ink: 8 100% 80%;
+  --brand-band: 6 70% 10%;
+  --brand-band-glow: 6 78% 44%;
+  --brand-band-glow-2: 20 90% 46%;
+  --brand-band-muted: 10 100% 93%;
+  --band-btn-fg: 6 78% 12%;
+  --brand-mark-from-hsl: 6 80% 52%;
+  --brand-mark-to-hsl: 6 78% 30%;
+}
+
+/* The picker itself. */
+.palette-lab {
+  position: fixed;
+  left: 1rem;
+  bottom: 1rem;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.5rem 0.75rem 0.5rem 0.875rem;
+  border-radius: 999px;
+  background: hsl(0 0% 8%);
+  color: hsl(0 0% 100%);
+  font: 600 0.8125rem/1 'Inter', system-ui, sans-serif;
+  box-shadow: 0 10px 30px -8px hsl(0 0% 0% / 0.5);
+}
+.palette-lab button {
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 999px;
+  border: 2px solid hsl(0 0% 100% / 0.25);
+  cursor: pointer;
+}
+.palette-lab button[aria-pressed='true'] {
+  border-color: hsl(0 0% 100%);
+  box-shadow: 0 0 0 2px hsl(0 0% 8%), 0 0 0 4px hsl(0 0% 100%);
+}
+.palette-lab span[data-name] {
+  min-width: 5.25rem;
+  color: hsl(0 0% 100% / 0.75);
+  font-weight: 500;
+}

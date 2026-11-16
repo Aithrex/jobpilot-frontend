@@ -137,7 +137,7 @@ export function VisaFlagChips({ flags }: { flags: VisaFlags }) {
   if (positives.length === 0 && !clearance) return null;
 
   return (
-    <div className="flex flex-wrap gap-1">
+    <div className="contents">
       {positives.map((k) => {
         const h1b = k === 'sponsors_h1b' ? h1bChip(flags.sponsors_h1b) : null;
         return (
@@ -146,8 +146,8 @@ export function VisaFlagChips({ flags }: { flags: VisaFlags }) {
           title={flags[k]?.evidence || undefined}
           className={
             h1b?.low
-              ? 'inline-flex items-center gap-0.5 rounded-md border border-warning/30 bg-warning/10 px-1.5 py-0.5 text-caption-sm font-medium text-warning'
-              : 'inline-flex items-center gap-0.5 rounded-md border border-success/25 bg-success/10 px-1.5 py-0.5 text-caption-sm font-medium text-success'
+              ? 'inline-flex items-center gap-0.5 rounded-full border border-warning/30 bg-warning/10 px-2 py-0.5 text-caption-sm font-semibold text-warning'
+              : 'inline-flex items-center gap-0.5 rounded-full border border-success/25 bg-success/10 px-2 py-0.5 text-caption-sm font-semibold text-success'
           }
         >
           <BadgeCheck className="h-2.5 w-2.5" />
@@ -158,7 +158,7 @@ export function VisaFlagChips({ flags }: { flags: VisaFlags }) {
       {clearance && (
         <span
           title={flags.clearance_required?.evidence || 'This role requires a security clearance.'}
-          className="inline-flex items-center gap-0.5 rounded-md border border-destructive/40 bg-destructive/10 px-1.5 py-0.5 text-caption-sm font-semibold text-destructive"
+          className="inline-flex items-center gap-0.5 rounded-full border border-destructive/40 bg-destructive/10 px-2 py-0.5 text-caption-sm font-semibold text-destructive"
         >
           <ShieldAlert className="h-2.5 w-2.5" />
           {FLAG_LABELS.clearance_required}

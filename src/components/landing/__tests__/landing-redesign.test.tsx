@@ -1,20 +1,25 @@
 /**
- * Landing redesign - the honesty and interaction contract for the Aspirely
- * Live Workspace landing page.
+ * The public home page - its honesty and interaction contract.
  *
- * These tests exist to stop specific regressions that would each be a lie or a
- * usability failure on a public page:
- *  - the primary CTA quietly becoming a two-click upload again,
- *  - decorative content growing a fabricated company, job title or score,
+ * The page was rebuilt on 2026-11-15 as a sales page that shows rather than
+ * tells: a four-step product tour a visitor can drive, five feature scenes to
+ * operate, a sponsorship switch, the roadmap. The composition changed; the
+ * rules these tests exist to hold did not. Each one stops a regression that would be
+ * a lie or a usability failure on a public page:
+ *  - an upload CTA quietly becoming a two-click upload again,
+ *  - a product scene growing a real company name, an outcome claim or a score
+ *    written as a percentage,
+ *  - sample data shown without saying it is sample data,
  *  - a roadmap capability drifting into looking available,
  *  - a "coming soon" control that appears to do something and doesn't,
  *  - status labels being hand-typed into a component instead of read from the
- *  one registry.
+ *    one registry,
+ *  - a price being printed before one has been decided.
  *
  * The API layer is mocked at the `apiService` boundary, matching the existing
  * guest-landing-flow suite.
  */
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, test, vi, type Mock } from 'vitest';
@@ -26,13 +31,25 @@ import LandingExperience from '@/components/landing/LandingExperience';
 import { LandingNav } from '@/components/landing/LandingNav';
 import { RouteLoadingFallback } from '@/App';
 import { setReducedMotion } from '@/test/setup';
-import { STORY_LABEL } from '@/components/landing/story/HeroStory';
+import { TOUR_LABEL } from '@/components/landing/tour/ProductTour';
+import { SAMPLE_TAG } from '@/components/landing/_shared';
+import {
+  RESUME_LINES,
+  SAMPLE_NOTE,
+  SAMPLE_ROLES,
+  TAILOR_PLAN,
+  tailoredOrder,
+} from '@/components/landing/sample';
+import { fitBand } from '@/components/job-search/fitBands';
 import {
   AUTO_APPLY,
   CAPABILITIES,
-  DOCK_CAPABILITIES,
+  NO_WAITLIST_CTA,
+  ROADMAP_FEATURED,
+  ROADMAP_SECONDARY,
   STATUS_LABEL,
   WHATSAPP,
+  isLive,
 } from '@/lib/capabilities';
 import { PLAN_LABEL, PLAN_ORDER } from '@/lib/entitlements';
 
@@ -86,8 +103,8 @@ function renderLanding() {
   );
 }
 
-/** The editorial transformation stage (Resume / Understood / Matched / Tailored). */
-const signalPanel = () => screen.getByRole('tabpanel', { name: /Resume transformation stage/i });
+const byId = (id: string) => document.getElementById(id) as HTMLElement;
+const hero = () => byId('try');
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -99,7 +116,7 @@ beforeEach(() => {
   api.guestSession.mockResolvedValue({ data: { exists: false }, status: 200 });
 });
 
-// ── 1. Upload is ONE click from the primary CTA ──────────────────
+// ── 1. Upload is ONE click from every upload CTA ─────────────────
 
 describe('primary CTA', () => {
   test('EVERY upload CTA opens the SAME single file input on that click', async () => {
@@ -112,18 +129,17 @@ describe('primary CTA', () => {
     const input = inputs[0] as HTMLInputElement;
     const clickSpy = vi.spyOn(input, 'click').mockImplementation(() => {});
 
-    // The nav carries no upload CTA - the page's upload actions live in the
-    // hero and the closing section, so the bar does not repeat them.
-    // 1 - the hero's secondary CTA.
-    await user.click(screen.getByRole('button', { name: /^Find my matches$/i }));
-    // 2 - the drop surface under the CTAs. Same picker as the secondary CTA.
+    // The upload has ONE name wherever it is a button: the hero, the
+    // sponsorship chapter and the close.
+    const triggers = screen.getAllByRole('button', { name: /^Find my matches$/i });
+    expect(triggers).toHaveLength(3);
+    for (const trigger of triggers) await user.click(trigger);
+    // Plus the drop surface under the tour. Same picker.
     await user.click(
       await screen.findByRole('button', { name: /Drop your resume to see your matches/i }),
     );
-    // 3 - the closing CTA (used to be an <a href="#try"> too).
-    await user.click(await screen.findByRole('button', { name: /^Upload your resume$/i }));
 
-    expect(clickSpy).toHaveBeenCalledTimes(3);
+    expect(clickSpy).toHaveBeenCalledTimes(4);
     // And none of them is an anchor that merely scrolls to the hero.
     expect(document.querySelectorAll('a[href="#try"]')).toHaveLength(0);
   });
@@ -132,29 +148,24 @@ describe('primary CTA', () => {
     renderLanding();
     const banner = screen.getByRole('banner');
 
-    // This test used to assert the OPPOSITE - that the bar carried no sign-in
-    // and exactly one button - on the reasoning that both CTAs already sat in
-    // the hero and repeating them was noise. That was right for the page it
-    // was written against: a single-purpose guest-upload page whose only
-    // meaningful action was upload.
-    //
-    // It is wrong for this one. The public site now has five destinations and
-    // two sub-routes; a visitor can land mid-page or arrive on /pricing, and
-    // under the old rule such a visitor had no path to sign in at all. And
-    // "pricing must be discoverable before account creation" cannot be
-    // satisfied by a header that does not navigate to pricing.
-    expect(within(banner).getByRole('link', { name: /How it works/i })).toBeInTheDocument();
+    expect(within(banner).getByRole('link', { name: /^Features$/i })).toHaveAttribute(
+      'href',
+      '#features',
+    );
+    expect(within(banner).getByRole('link', { name: /^Sponsorship$/i })).toHaveAttribute(
+      'href',
+      '#sponsorship',
+    );
+    // Pricing and the FAQ are routes, not anchors: the marketing sections
+    // unmount the moment a guest upload starts, and an anchor to a section
+    // that no longer exists silently does nothing.
     expect(within(banner).getByRole('link', { name: /^Pricing$/i })).toHaveAttribute(
       'href',
       '/pricing',
     );
-    // Was "Trust and FAQ", pointing at two sections that answered the same
-    // questions twice. One section, one label; the ROUTE is unchanged, because
-    // renaming a public URL to match a heading costs readers, not us.
-    expect(within(banner).getByRole('link', { name: /Before you begin/i })).toHaveAttribute(
-      'href',
-      '/trust',
-    );
+    // Labelled FAQ (it was "Before you begin", the section's own heading). The
+    // ROUTE is unchanged, because renaming a public URL costs readers, not us.
+    expect(within(banner).getByRole('link', { name: /^FAQ$/i })).toHaveAttribute('href', '/trust');
     expect(within(banner).getByRole('link', { name: /^Sign in$/i })).toHaveAttribute(
       'href',
       '/login',
@@ -164,10 +175,9 @@ describe('primary CTA', () => {
       '/register',
     );
 
-    // What SURVIVES from the old rule, and is the part that was actually
-    // load-bearing: the bar is not a fourth upload trigger. The CTA test above
-    // counts exactly three, and a nav upload control would break that contract
-    // from a distance.
+    // The bar is not a fourth upload trigger. The CTA test above counts
+    // exactly three, and a nav upload control would break that contract from a
+    // distance.
     expect(within(banner).queryByRole('button', { name: /upload|resume|find my matches/i })).toBeNull();
     expect(within(banner).queryByRole('link', { name: /upload|resume/i })).toBeNull();
 
@@ -190,34 +200,34 @@ describe('primary CTA', () => {
     expect(input.type).toBe('file');
     const clickSpy = vi.spyOn(input, 'click').mockImplementation(() => {});
 
-    await user.click(screen.getByRole('button', { name: /^Find my matches$/i }));
+    await user.click(within(hero()).getByRole('button', { name: /^Find my matches$/i }));
 
     // The CTA itself opened the dialog. It did not scroll to, or focus, a
     // different uploader and wait for a second activation.
     expect(clickSpy).toHaveBeenCalledTimes(1);
   });
 
-  test('the hero has no film and no raster image; its picture is the labelled product story', () => {
+  test('the hero has no film and no raster image; its picture is the labelled product tour', () => {
     renderLanding();
-    const hero = document.getElementById('try') as HTMLElement;
 
-    // Owner decision 2026-11-12: the still 3D render (and its baked posters)
-    // was replaced by a code-native story of the product working. No video,
-    // no image to wait for, and one accessible name for the whole picture.
-    expect(hero.querySelector('video')).toBeNull();
-    expect(hero.querySelectorAll('img')).toHaveLength(0);
-    expect(within(hero).getByRole('img', { name: STORY_LABEL })).toBeInTheDocument();
-    // It loops longer than 5s, so a pause control must exist (WCAG 2.2.2).
-    expect(within(hero).getByRole('button', { name: /pause animation/i })).toBeInTheDocument();
+    // No video, no image to wait for, no WebGL: the picture of the product is
+    // the product's own markup, with one accessible name for the whole scene.
+    expect(hero().querySelector('video')).toBeNull();
+    expect(hero().querySelectorAll('img')).toHaveLength(0);
+    expect(hero().querySelector('canvas')).toBeNull();
+    expect(within(hero()).getByRole('group', { name: TOUR_LABEL })).toBeInTheDocument();
+    // It plays through its steps for longer than 5s, so a pause control must
+    // exist (WCAG 2.2.2).
+    expect(within(hero()).getByRole('button', { name: /pause animation/i })).toBeInTheDocument();
 
-    const cta = within(hero).getByRole('link', { name: /^Create free account$/i });
-    expect(cta).toBeInTheDocument();
+    expect(within(hero()).getByRole('link', { name: /^Create free account$/i })).toBeInTheDocument();
   });
-
 });
 
-describe('honesty of the pre-upload composition', () => {
-  test('no fabricated company, job title, or match score is rendered', async () => {
+// ── 2. Sample data is honest about being sample data ─────────────
+
+describe('honesty of the product scenes', () => {
+  test('no real company, no outcome claim, and no score written as a percentage', async () => {
     renderLanding();
     await screen.findByRole('heading', { level: 1 });
 
@@ -227,103 +237,275 @@ describe('honesty of the pre-upload composition', () => {
     for (const brand of ['Stripe', 'Google', 'Meta', 'Amazon', 'Netflix', 'Acme', 'TechCorp']) {
       expect(text).not.toContain(brand);
     }
-    // Any "NN% match"-shaped claim before a real resume has been read.
+    // Any "NN% match"-shaped claim. The product reports a band and a score,
+    // never a percentage of anything.
     expect(text).not.toMatch(/\d{1,3}\s*%\s*(match|fit)/i);
+    expect(text).not.toMatch(/\d+\s*%/);
     // Placeholder job titles from the old demo vocabulary.
     expect(text).not.toMatch(/Senior (Frontend|Backend|Software) Engineer at/i);
+    // No outcome is promised anywhere on the page.
+    expect(text).not.toMatch(/guarantee|guaranteed|get hired|hired faster|success rate|faster than/i);
+    expect(text).not.toMatch(/\b\d+x\b/i);
+    // And no count of people, because there is no audited one to print.
+    expect(text).not.toMatch(/trusted by|\b\d[\d,.]*\s*(k|m|million|thousand)?\+?\s*(users|job seekers|members)\b/i);
   });
 
-  test('the hero stage says plainly that it is fictional', () => {
+  test('every scene that uses sample data says so in words', () => {
     renderLanding();
-    const hero = document.getElementById('try') as HTMLElement;
-    expect(hero.querySelector('video')).toBeNull();
-    expect(within(hero).getByText(/fictional, not real results/i)).toBeInTheDocument();
-    expect(within(hero).getByRole('img', { name: /Fictional, not real data/i })).toBeInTheDocument();
+
+    // The tour: in its accessible name AND in visible text beside it.
+    expect(within(hero()).getByRole('group', { name: /Sample data, not real results/i })).toBeInTheDocument();
+    expect(hero().textContent).toContain(SAMPLE_NOTE);
+    // The other scenes reuse the same roles, and
+    // say so too, with a tag rather than a repeated sentence.
+    for (const id of ['noise', 'features', 'sponsorship']) {
+      expect(byId(id).textContent, `#${id}`).toContain(SAMPLE_TAG);
+    }
   });
 
+  test("the sample scores sit in the product's own bands, with the product's own words", () => {
+    // A sample that showed "Strong match" beside a 60 would teach visitors a
+    // scale the product does not use. The bands come from the scoring engine
+    // via `fitBands.ts`; the sample may not drift from them.
+    for (const role of SAMPLE_ROLES) {
+      expect(fitBand(role.score).label, `${role.title} (${role.score})`).toBe(role.band);
+    }
+  });
+
+  test('every sample role states a gap as well as a fit', () => {
+    // The product says what is missing as plainly as what matches. A sample
+    // board of nothing but perfect fits would misdescribe it.
+    for (const role of SAMPLE_ROLES) {
+      expect(role.gap.length).toBeGreaterThan(0);
+      expect(role.asks.some((a) => !a.met), `${role.title} shows no gap`).toBe(true);
+    }
+  });
 });
 
-describe('product demo accessibility', () => {
-  test('the idle hero stage is one named image, and never a keyboard trap', () => {
+// ── 3. The product tour is a real, operable control ──────────────
+
+describe('product tour', () => {
+  const tour = () => within(hero()).getByRole('group', { name: TOUR_LABEL });
+  const steps = () => within(tour()).getByRole('tablist', { name: /Tour steps/i });
+  const openStep = async (user: ReturnType<typeof userEvent.setup>, name: RegExp) => {
+    await user.click(within(steps()).getByRole('tab', { name }));
+  };
+
+  test('the four steps are real tabs with one tab stop, in the product order', async () => {
+    const user = userEvent.setup();
     renderLanding();
-    const hero = document.getElementById('try') as HTMLElement;
-    expect(hero.querySelector('video')).toBeNull();
-    // The story is ONE named picture. Its step and pause controls sit
-    // outside it, so nothing focusable hides inside an image role, and there
-    // is no WebGL canvas at all.
-    const stage = within(hero).getByRole('img', { name: STORY_LABEL });
-    expect(stage.querySelectorAll('button, a, input, [tabindex]')).toHaveLength(0);
-    expect(hero.querySelector('canvas')).toBeNull();
-    expect(within(hero).getByRole('button', { name: /pause animation/i })).toBeInTheDocument();
-    expect(within(hero).getByRole('group', { name: /story steps/i })).toBeInTheDocument();
+
+    const tabs = within(steps()).getAllByRole('tab');
+    expect(tabs.map((t) => t.textContent?.split(' ')[0])).toEqual(['1Read', '2Match', '3Tailor', '4Track']);
+    // Roving tabindex: exactly one step is in the tab order.
+    expect(tabs.filter((t) => t.getAttribute('tabindex') === '0')).toHaveLength(1);
+    // It opens on the outcome, the matches, not on the input.
+    expect(tabs[1]).toHaveAttribute('aria-selected', 'true');
+
+    tabs[1].focus();
+    await user.keyboard('{ArrowRight}');
+    expect(tabs[2]).toHaveAttribute('aria-selected', 'true');
+    expect(tabs[2]).toHaveFocus();
   });
 
+  test('the matches are a real vertical tablist, and the reading follows the role', async () => {
+    const user = userEvent.setup();
+    renderLanding();
+    await openStep(user, /^Match/);
+
+    const list = await within(tour()).findByRole('tablist', { name: /Sample roles/i });
+    expect(list).toHaveAttribute('aria-orientation', 'vertical');
+    const roles = within(list).getAllByRole('tab');
+    expect(roles).toHaveLength(SAMPLE_ROLES.length);
+    expect(roles.filter((t) => t.getAttribute('tabindex') === '0')).toHaveLength(1);
+
+    roles[0].focus();
+    await user.keyboard('{ArrowDown}');
+    expect(roles[1]).toHaveAttribute('aria-selected', 'true');
+    expect(roles[1]).toHaveFocus();
+    // The reading cross-fades, so the new role's band arrives a beat later.
+    const reading = document.getElementById(roles[1].getAttribute('aria-controls') as string) as HTMLElement;
+    expect(reading).toHaveAttribute('aria-labelledby', roles[1].id);
+    expect(await within(reading).findByText(SAMPLE_ROLES[1].band)).toBeInTheDocument();
+  });
+
+  test('every button inside the tour does something: the role you pick carries through', async () => {
+    const user = userEvent.setup();
+    renderLanding();
+    await openStep(user, /^Match/);
+
+    // Pick the second role, save it, then tailor for it.
+    const list = await within(tour()).findByRole('tablist', { name: /Sample roles/i });
+    await user.click(within(list).getAllByRole('tab')[1]);
+    // The reading cross-fades between roles; wait for the new one before
+    // pressing anything in it.
+    await within(tour()).findByText(`${SAMPLE_ROLES[1].title} at ${SAMPLE_ROLES[1].company}`);
+    const save = await within(tour()).findByRole('button', { name: /^Save$/ });
+    await user.click(save);
+    expect(await within(tour()).findByRole('button', { name: /^Saved$/ })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+
+    await user.click(within(tour()).getByRole('button', { name: /Tailor resume/ }));
+    expect(within(steps()).getByRole('tab', { name: /^Tailor/ })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    // The tailoring step is about THAT role, not a fixed one.
+    await user.click(await within(tour()).findByRole('button', { name: /^Tailored$/ }));
+    expect(tour().textContent).toContain(
+      `Tailored for ${SAMPLE_ROLES[1].title}, ${SAMPLE_ROLES[1].company}`,
+    );
+
+    await user.click(within(tour()).getByRole('button', { name: /Mark as applied/ }));
+    expect(within(steps()).getByRole('tab', { name: /^Track/ })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    // The tour does not dead-end: its last step offers the real thing, through
+    // the page's one file picker.
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const clickSpy = vi.spyOn(input, 'click').mockImplementation(() => {});
+    await user.click(await within(tour()).findByRole('button', { name: /Try it with my resume/i }));
+    expect(clickSpy).toHaveBeenCalledTimes(1);
+
+    // Nothing in the tour touches the network.
+    expect(api.guestOnboard).not.toHaveBeenCalled();
+    expect(api.guestMatches).not.toHaveBeenCalled();
+    expect(api.guestTailor).not.toHaveBeenCalled();
+  });
+
+  test('once a visitor takes the tour it never moves by itself again', async () => {
+    const user = userEvent.setup();
+    renderLanding();
+
+    expect(within(hero()).getByRole('button', { name: /pause animation/i })).toBeInTheDocument();
+    await openStep(user, /^Tailor/);
+
+    // With nothing left to pause, the pause control goes too.
+    expect(within(hero()).queryByRole('button', { name: /pause animation|play animation/i })).toBeNull();
+    expect(within(steps()).getByRole('tab', { name: /^Tailor/ })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+  });
+
+  test('tailoring adds no fact: the same lines, word for word, in a different order', async () => {
+    const user = userEvent.setup();
+    renderLanding();
+    await openStep(user, /^Tailor/);
+
+    const group = await within(tour()).findByRole('group', { name: /resume version/i });
+    const original = within(group).getByRole('button', { name: /^Original$/ });
+    const tailored = within(group).getByRole('button', { name: /^Tailored$/ });
+    const lines = () =>
+      Array.from(tour().querySelectorAll('.pub-sheet li')).map((li) => li.textContent ?? '');
+
+    expect(original).toHaveAttribute('aria-pressed', 'true');
+    const before = lines();
+    expect(before).toHaveLength(RESUME_LINES.length);
+
+    await user.click(tailored);
+    expect(tailored).toHaveAttribute('aria-pressed', 'true');
+    const after = lines();
+
+    // THE RULE THE PRODUCT IS BUILT ON, held structurally. If this demo ever
+    // grows a new number or a stronger verb, it is demonstrating the one
+    // thing Aspirely refuses to do.
+    expect(after).not.toEqual(before);
+    expect([...after].sort()).toEqual([...before].sort());
+    expect(tour().textContent).toMatch(/No fact was added\./);
+
+    await user.click(original);
+    expect(lines()).toEqual(before);
+  });
+
+  test('the tailoring plan for EVERY sample role only reorders and marks', () => {
+    // The plan has no field for new wording at all; this pins that the data
+    // cannot smuggle any in.
+    const ids = RESUME_LINES.map((l) => l.id);
+    const phrases = RESUME_LINES.flatMap((l) =>
+      l.text.filter((seg) => typeof seg !== 'string').map((seg) => (seg as { mark: string }).mark),
+    );
+    for (const role of SAMPLE_ROLES) {
+      const plan = TAILOR_PLAN[role.id];
+      expect(plan, `${role.id} has no tailoring plan`).toBeTruthy();
+      expect(Object.keys(plan).sort()).toEqual(['lead', 'marks']);
+      const order = tailoredOrder(role.id);
+      expect([...order].sort()).toEqual([...ids].sort());
+      expect(order, `${role.id} is not reordered`).not.toEqual(ids);
+      for (const mark of plan.marks) expect(phrases).toContain(mark);
+    }
+  });
 });
+
+// ── 4. Capability status comes from the registry ─────────────────
 
 describe('capability status', () => {
-  test('Available-now and Coming-next are distinct sections', async () => {
+  test('what ships and what is coming are distinct sections', () => {
     renderLanding();
+    const shipped = byId('features');
+    const roadmap = byId('coming-next');
+    expect(shipped).toBeTruthy();
+    expect(roadmap).toBeTruthy();
+    expect(shipped).not.toBe(roadmap);
+    expect(shipped.contains(roadmap)).toBe(false);
 
-    const availableHeading = await screen.findByRole('heading', {
-      name: /From resume to tracked, in one pass\./i,
-    });
-    const comingHeading = screen.getByRole('heading', {
-      name: /From matched to applied\./i,
-    });
-
-    // They are in different sections - never blended into one list.
-    const availableSection = availableHeading.closest('section');
-    const comingSection = comingHeading.closest('section');
-    expect(availableSection).not.toBeNull();
-    expect(comingSection).not.toBeNull();
-    expect(availableSection).not.toBe(comingSection);
+    // Nothing in the shipped story carries a roadmap status.
+    const text = shipped.textContent ?? '';
+    for (const label of [STATUS_LABEL['coming-soon'], STATUS_LABEL.planned, STATUS_LABEL.beta]) {
+      expect(text).not.toContain(label);
+    }
   });
 
-  test('Auto Apply carries its registry status, and never reads as Available', async () => {
-    renderLanding();
-    const heading = await screen.findByRole('heading', { name: 'Auto Apply' });
-    const card = heading.closest('div')?.parentElement as HTMLElement;
-
-    // This used to assert the literal string 'Coming soon'. That froze a
-    // snapshot of the registry rather than testing it: Auto Apply moved to
-    // 'beta' and the card correctly started rendering 'Beta', so the test
-    // failed while the code was right. The point of the test is that a
-    // roadmap capability must never read as shipped - assert THAT, against
-    // whatever the registry currently says.
-    expect(within(card).getByText(STATUS_LABEL[AUTO_APPLY.status])).toBeInTheDocument();
-    expect(within(card).queryByText(STATUS_LABEL.available)).not.toBeInTheDocument();
+  test('nothing on the roadmap is live, and nothing live is on the roadmap', () => {
+    // The registry rule: a capability is live only if a normal user can reach
+    // it in the default shell. The roadmap section says "not available yet"
+    // in its own heading, so listing a live capability there would be wrong
+    // in the other direction.
+    for (const cap of [...ROADMAP_FEATURED, ...ROADMAP_SECONDARY]) {
+      expect(isLive(cap.status), `${cap.name} is live but listed as roadmap`).toBe(false);
+    }
   });
 
-  test('WhatsApp is labelled Coming soon, and described as alerts + approvals (not "messages")', async () => {
+  test('every featured roadmap entry renders with its registry status, never as Available', () => {
     renderLanding();
-    const heading = await screen.findByRole('heading', {
-      name: /WhatsApp alerts and approvals/i,
-    });
-    const card = heading.closest('div')?.parentElement as HTMLElement;
+    for (const cap of ROADMAP_FEATURED) {
+      const heading = screen.getByRole('heading', { name: cap.name });
+      const entry = heading.closest('li') as HTMLElement;
+      expect(within(entry).getByText(STATUS_LABEL[cap.status])).toBeInTheDocument();
+      expect(within(entry).queryByText(STATUS_LABEL.available)).not.toBeInTheDocument();
+      expect(entry.textContent).toContain(cap.blurb);
+    }
+    // Auto Apply in particular: its UI was removed from the default shell on
+    // 2026-11-12, so it may not read as usable.
+    expect(isLive(AUTO_APPLY.status)).toBe(false);
+  });
 
-    expect(within(card).getByText('Coming soon')).toBeInTheDocument();
+  test('WhatsApp is labelled Coming soon, and described as alerts + approvals (not "messages")', () => {
+    renderLanding();
+    const heading = screen.getByRole('heading', { name: /WhatsApp alerts and approvals/i });
+    const entry = heading.closest('li') as HTMLElement;
+
+    expect(within(entry).getByText('Coming soon')).toBeInTheDocument();
     expect(WHATSAPP.status).toBe('coming-soon');
 
     // Guardrails that keep this from reading as recruiter spam.
-    const text = card.textContent ?? '';
+    const text = entry.textContent ?? '';
     expect(text).toMatch(/opt-in/i);
     expect(text).toMatch(/never recruiter outreach/i);
     // No implication of a Meta/WhatsApp endorsement.
     expect(text).not.toMatch(/official|partner|endorsed|verified by/i);
   });
 
-  test('statuses with different readiness are stated differently', async () => {
+  test('statuses with different readiness are stated differently', () => {
     renderLanding();
-    await screen.findByRole('heading', { name: 'Auto Apply' });
 
-    // SMS and push are materially less built than Auto Apply / WhatsApp, so
-    // they must never be presented as the same kind of unfinished.
-    //
-    // The weaker status is carried by the row's own heading rather than by a
-    // badge on each name: "Also planned: SMS alerts, Web and mobile push" says
-    // it once, where a per-item chip said it three times in four words. What
-    // matters is that the statement is present, is the PLANNED one, and comes
-    // from the registry - not which element carries it.
+    // SMS and push are materially less built than the featured entries, so
+    // they must never be presented as the same kind of unfinished. The weaker
+    // status is carried once by the row's own label, and comes from the
+    // registry.
     const planned = screen.getByText(new RegExp(`Also ${STATUS_LABEL.planned}:`, 'i'));
     const row = planned.parentElement as HTMLElement;
 
@@ -335,92 +517,109 @@ describe('capability status', () => {
     expect(STATUS_LABEL['coming-soon']).toBe('Coming soon');
   });
 
-  test('every rendered status string comes from the registry', async () => {
-    renderLanding();
-    await screen.findByRole('heading', { level: 1 });
-
+  test('every status string in the registry is one the label table defines', () => {
     const allowed = new Set(Object.values(STATUS_LABEL));
-    // Any badge-like status word on the page must be one the registry defines.
     for (const cap of CAPABILITIES) {
       expect(allowed.has(STATUS_LABEL[cap.status])).toBe(true);
-    }
-    // And the dock reflects registry order/state rather than hardcoded copy.
-    // The filter here used to be `!isLive(c.status)`, which encoded an
-    // assumption that nothing in the dock was live. Auto Apply is 'beta',
-    // which IS live, so the filter silently dropped it and the assertion
-    // failed on a correct dock. What the dock promises is that it lists the
-    // not-yet-shipped capabilities in registry order and labels each from the
-    // registry - so assert the contents and the labels, not the liveness.
-    expect(DOCK_CAPABILITIES.map((c) => c.id)).toEqual(['auto-apply', 'whatsapp']);
-    for (const cap of DOCK_CAPABILITIES) {
-      expect(screen.getAllByText(STATUS_LABEL[cap.status]).length).toBeGreaterThan(0);
     }
   });
 });
 
-// ── 5. Coming-soon controls are inert and never claim a waitlist ──
+// ── 5. The roadmap offers nothing that looks operable ────────────
 
 describe('future-feature controls', () => {
-  test('interacting with roadmap surfaces calls no backend API', async () => {
-    const user = userEvent.setup();
+  const roadmap = () => byId('coming-next');
+
+  test('the roadmap offers nothing that operates a feature', () => {
     renderLanding();
-    await screen.findByRole('heading', { name: 'Auto Apply' });
-
-    // Click every roadmap affordance we can reach.
-    for (const name of [/Auto Apply/i, /WhatsApp/i]) {
-      const buttons = screen.queryAllByRole('button', { name });
-      for (const b of buttons) await user.click(b);
-    }
-
+    // A picture of an interface that does not exist, or a button that does
+    // nothing, is how a roadmap starts to read as a feature list. The only
+    // interactive thing here is a native disclosure that unfolds the detail.
+    expect(roadmap().querySelectorAll('button, a, input')).toHaveLength(0);
+    expect(roadmap().querySelectorAll('details')).toHaveLength(ROADMAP_FEATURED.length);
+    expect(roadmap().querySelectorAll('details[open]')).toHaveLength(0);
     expect(api.guestOnboard).not.toHaveBeenCalled();
     expect(api.guestMatches).not.toHaveBeenCalled();
     expect(api.guestTailor).not.toHaveBeenCalled();
     expect(api.guestClaim).not.toHaveBeenCalled();
   });
 
-  test('no waitlist is offered or confirmed - the only action is a free account', async () => {
+  test('no waitlist is offered or confirmed - the only action is a free account', () => {
     renderLanding();
-    await screen.findByRole('heading', { name: 'Auto Apply' });
-
     const text = document.body.textContent ?? '';
     // There is no waitlist table in the backend, so nothing may say this.
     expect(text).not.toMatch(/join (the )?waitlist/i);
     expect(text).not.toMatch(/you're on the list|added to the waitlist|we'll be in touch/i);
-    expect(text).toMatch(/Create a free account to hear when it launches/i);
+    expect(roadmap().textContent).toContain(NO_WAITLIST_CTA);
   });
 
-  test('roadmap items do not use a padlock (they are not paid features)', async () => {
+  test('roadmap items do not use a padlock (they are not paid features)', () => {
     renderLanding();
-    await screen.findByRole('heading', { name: 'Auto Apply' });
     // A lock reads "pay to unlock". None of these are purchasable - and the
     // upgrade endpoint is a stub, so a lock would be doubly misleading.
     expect(document.querySelector('.lucide-lock-keyhole')).toBeNull();
+    expect(document.querySelector('.lucide-lock')).toBeNull();
+  });
+
+  test('the roadmap is structurally lighter than what actually ships', () => {
+    renderLanding();
+    // jsdom does no layout, so this proxies section weight with rendered node
+    // count, excluding decorative subtrees. How much page a feature occupies
+    // is itself a claim about how real it is.
+    const substance = (el: HTMLElement) =>
+      Array.from(el.querySelectorAll<HTMLElement>('*')).filter(
+        (n) => !n.closest('[aria-hidden="true"]'),
+      ).length;
+    // Measured against the hero, where the product is actually shown working.
+    expect(substance(roadmap())).toBeLessThan(substance(hero()));
   });
 });
 
 // ── 6. Reduced motion ────────────────────────────────────────────
 
 describe('reduced motion', () => {
-  test('with motion off the hero still paints copy and CTAs, with no film', async () => {
+  test('with motion off the hero paints copy, both actions and a still tour', () => {
     setReducedMotion(true);
     renderLanding();
-    const hero = document.getElementById('try') as HTMLElement;
 
-    // The promise and both actions paint immediately.
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/your resume in/i);
-    expect(within(hero).getByRole('link', { name: /^Create free account$/i })).toBeInTheDocument();
-    expect(within(hero).getByRole('button', { name: /^Find my matches$/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/wake up to jobs/i);
+    expect(within(hero()).getByRole('link', { name: /^Create free account$/i })).toBeInTheDocument();
+    expect(within(hero()).getByRole('button', { name: /^Find my matches$/i })).toBeInTheDocument();
 
-    // No <video> and no poster: the hero is copy and CTAs on the canvas.
-    expect(hero.querySelector('video')).toBeNull();
-    expect(hero.querySelector('img[src*="poster"], img[src*="hero"]')).toBeNull();
-
-    // The story shows its composed final frame and never moves, so there is
-    // nothing to pause and no step controls to drive.
-    expect(document.querySelector('[data-hero-story]')).toHaveAttribute('data-hero-story', 'still');
-    expect(within(hero).queryByRole('button', { name: /pause animation/i })).toBeNull();
+    // The tour never moves by itself, so there is nothing to pause.
+    expect(document.querySelector('[data-product-tour]')).toHaveAttribute(
+      'data-product-tour',
+      'still',
+    );
+    expect(within(hero()).queryByRole('button', { name: /pause animation/i })).toBeNull();
+    // It is still fully operable.
+    expect(within(hero()).getByRole('tablist', { name: /Tour steps/i })).toBeInTheDocument();
   });
 
+  test('with motion off every scene opens already resolved, with nothing waiting on a timer', async () => {
+    setReducedMotion(true);
+    const user = userEvent.setup();
+    renderLanding();
+    const steps = within(hero()).getByRole('tablist', { name: /Tour steps/i });
+
+    // Tailoring: already on the tailored version.
+    await user.click(within(steps).getByRole('tab', { name: /^Tailor/ }));
+    expect(within(hero()).getByRole('button', { name: /^Tailored$/ })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(hero().textContent).toMatch(/No fact was added\./);
+
+    // The pipeline: the reply has already arrived, and there is no replay.
+    await user.click(within(steps).getByRole('tab', { name: /^Track/ }));
+    expect(hero().textContent).toMatch(/Interview invitation from /);
+    expect(within(hero()).queryByRole('button', { name: /replay/i })).toBeNull();
+
+    // Sponsorship: the board is already sorted by evidence.
+    expect(
+      within(byId('sponsorship')).getByRole('switch', { name: /I need sponsorship/i }),
+    ).toHaveAttribute('aria-checked', 'true');
+  });
 });
 
 describe('route loading fallback', () => {
@@ -437,37 +636,30 @@ describe('route loading fallback', () => {
   });
 });
 
-// ── 7b. One surface per page, chosen by the theme ────────────────
+// ── 7. One surface per page, chosen by the theme ─────────────────
 
 describe('surface language', () => {
   test('ONE surface owns the page, and with a light preference it is the bright canvas', async () => {
     const { container } = renderLanding();
     await screen.findByRole('heading', { level: 1 });
 
-    // The page used to be obsidian at the top and bottom with a pearl band
-    // bolted through the middle, which meant the theme toggle changed nothing
-    // and scrolling went dark, light, dark.
     const root = container.firstElementChild as HTMLElement;
     expect(root.className).toContain('surface-lumen');
     expect(root.className).not.toContain('surface-nocturne');
     expect(root.className).not.toContain('surface-obsidian');
     expect(root.style.colorScheme).toBe('light');
 
-    // Every marketing section inherits it - none re-declares a surface, and
-    // there is no band boundary left inside the page.
-    for (const name of [/From matched to applied\./i, /Real openings\./i]) {
-      const section = screen.getByRole('heading', { name }).closest('section') as HTMLElement;
-      expect(section.className).not.toContain('surface-nocturne');
-      expect(section.className).not.toContain('surface-lumen');
+    // Sections are told apart by the band, never by re-declaring a surface:
+    // a nested surface is how a page ends up dark, light, dark as you scroll.
+    for (const section of Array.from(document.querySelectorAll('section'))) {
+      expect(section.className).not.toMatch(/surface-(lumen|nocturne|obsidian|editorial|studio)/);
     }
+    expect(root.querySelectorAll('[class*="surface-"]')).toHaveLength(0);
   });
 
   test('the public page follows the visitor: an OS preference for dark gets the dark surface', async () => {
-    // Owner decision 2026-11-11, superseding the earlier "light unless the
-    // toggle was pressed" rule. That rule existed because the old dark landing
-    // was a near-black slab with a film wash over it; the redesigned page is
-    // one neutral token system with a 3D stage lit for both themes, so the
-    // resolved theme (system preference, or an explicit choice) now decides.
+    // Owner decision 2026-11-11: the resolved theme (system preference, or an
+    // explicit choice) decides.
     const real = window.matchMedia;
     Object.defineProperty(window, 'matchMedia', {
       writable: true,
@@ -488,9 +680,9 @@ describe('surface language', () => {
       expect(root.className).toContain('dark');
       expect(root.className).not.toContain('surface-lumen');
       expect(root.style.colorScheme).toBe('dark');
-      // And the story sits inside that dark surface, so its tokens resolve dark.
-      const story = document.querySelector('[data-hero-story]') as HTMLElement;
-      expect(story.closest('.surface-nocturne')).not.toBeNull();
+      // And the tour sits inside that dark surface, so its tokens resolve dark.
+      const tour = document.querySelector('[data-product-tour]') as HTMLElement;
+      expect(tour.closest('.surface-nocturne')).not.toBeNull();
     } finally {
       Object.defineProperty(window, 'matchMedia', {
         writable: true,
@@ -500,19 +692,13 @@ describe('surface language', () => {
     }
   });
 
-  test('the illustrations follow the theme instead of pinning themselves dark', async () => {
+  test('the product scenes follow the theme instead of pinning themselves light or dark', async () => {
     renderLanding();
     await screen.findByRole('heading', { level: 1 });
 
-    // Both product windows were briefly held at obsidian regardless of theme,
-    // which left a light page carrying black slabs. Neither may re-declare a
-    // surface, and nothing inside them may be drawn with a literal white or
-    // black - those are the two ways an illustration stops inverting.
-    const frame = document.querySelector('[data-hero-story]') as HTMLElement;
-    expect(frame.closest('.surface-obsidian')).toBeNull();
-    expect(signalPanel().className).not.toContain('surface-obsidian');
-
-    for (const root of [frame, signalPanel()]) {
+    // Nothing in a scene may be drawn with a literal white or black - that is
+    // how an illustration stops inverting with the page around it.
+    for (const root of [hero(), byId('noise'), byId('features'), byId('sponsorship')]) {
       const literals = Array.from(root.querySelectorAll<HTMLElement>('*')).filter((el) => {
         const c = typeof el.className === 'string' ? el.className : '';
         return /(^|\s)(bg|border|text)-(white|black)(\/|\s|$)/.test(c);
@@ -527,21 +713,15 @@ describe('surface language', () => {
     await screen.findByRole('heading', { level: 1 });
     const root = container.firstElementChild as HTMLElement;
 
-    // The shared three-state control cycles light → dark → system → light, and
-    // its label names both the state you are in and the one a press moves you
-    // to. Every run starts at "system" (localStorage is cleared), so the first
-    // press lands on the EXPLICIT light choice - which this suite's matchMedia
-    // already resolved to, hence no visible change - and the second reaches
-    // dark. That second press is the one that must repaint the whole page.
+    // The shared three-state control cycles light, dark, system. Every run
+    // starts at "system" (localStorage is cleared), so the first press lands
+    // on the EXPLICIT light choice and the second reaches dark.
     await user.click(screen.getByRole('button', { name: /theme: system/i }));
     expect(root.className).toContain('surface-lumen');
 
     await user.click(screen.getByRole('button', { name: /theme: light/i }));
 
     expect(screen.getByRole('button', { name: /theme: dark/i })).toBeInTheDocument();
-    // Charcoal, never the plum-black obsidian: pressing the toggle on the
-    // public page lands in the same dark world the product uses rather than in
-    // a third one.
     expect(root.className).toContain('surface-nocturne');
     expect(root.className).toContain('dark');
     expect(root.className).not.toContain('surface-lumen');
@@ -549,104 +729,7 @@ describe('surface language', () => {
   });
 });
 
-// ── 7c. The transformation sequence ──────────────────────────────
-
-describe('resume transformation sequence', () => {
-  test('the six stages are real, keyboard-operable tabs', async () => {
-    const user = userEvent.setup();
-    renderLanding();
-    const tablist = await screen.findByRole('tablist', {
-      name: /Resume transformation stages/i,
-    });
-    const tabs = within(tablist).getAllByRole('tab');
-
-    // Resume, Understood, Matched, Tailored, Tracked, Updates - the full flow.
-    expect(tabs.map((t) => t.textContent?.split(/(?=[A-Z])/)[0])).toHaveLength(6);
-    expect(tabs.filter((t) => t.getAttribute('tabindex') === '0')).toHaveLength(1);
-
-    tabs[0].focus();
-    await user.keyboard('{End}');
-    expect(tabs[5]).toHaveFocus();
-    expect(tabs[5]).toHaveAttribute('aria-selected', 'true');
-
-    await user.keyboard('{Home}');
-    expect(tabs[0]).toHaveAttribute('aria-selected', 'true');
-
-    // The Tailored stage (index 3) carries the rewrite AND the guarantee.
-    await user.click(tabs[3]);
-    expect(tabs[3]).toHaveAttribute('aria-selected', 'true');
-    expect(await within(signalPanel()).findByText('IntegrityGuard')).toBeInTheDocument();
-  });
-
-  test('driving the sequence never fabricates data', async () => {
-    const user = userEvent.setup();
-    renderLanding();
-    const tablist = await screen.findByRole('tablist', {
-      name: /Resume transformation stages/i,
-    });
-    for (const tab of within(tablist).getAllByRole('tab')) await user.click(tab);
-
-    const text = document.body.textContent ?? '';
-    for (const brand of ['Stripe', 'Google', 'Meta', 'Amazon', 'Netflix', 'Acme', 'TechCorp']) {
-      expect(text).not.toContain(brand);
-    }
-    expect(text).not.toMatch(/\d{1,3}\s*%\s*(match|fit)/i);
-  });
-
-  test('reduced motion lands on the headline stage fully resolved, no scrolling required', async () => {
-    const user = userEvent.setup();
-    setReducedMotion(true);
-    renderLanding();
-    const tablist = await screen.findByRole('tablist', {
-      name: /Resume transformation stages/i,
-    });
-    const tabs = within(tablist).getAllByRole('tab');
-
-    // The sequence auto-advances for everyone else; a reduced-motion visitor
-    // must never have to wait or scroll to be shown the shipped product. It
-    // resolves to the first stage (Resume) with its content already painted.
-    expect(tabs[0]).toHaveAttribute('aria-selected', 'true');
-    expect(within(signalPanel()).getByText('Experience')).toBeInTheDocument();
-
-    // And the integrity guarantee is a few clicks away, never hidden.
-    await user.click(tabs[3]);
-    expect(await within(signalPanel()).findByText('IntegrityGuard')).toBeInTheDocument();
-  });
-});
-
-// ── 7d. The roadmap must never outweigh the shipped product ──────
-
-describe('roadmap weight', () => {
-  test('Coming next is structurally lighter than what actually ships', async () => {
-    renderLanding();
-    const shipped = (
-      await screen.findByRole('heading', { name: /From resume to tracked, in one pass\./i })
-    ).closest('section') as HTMLElement;
-    const roadmap = screen
-      .getByRole('heading', { name: /From matched to applied\./i })
-      .closest('section') as HTMLElement;
-
-    // jsdom does no layout, so this proxies section weight with rendered node
-    // count. The roadmap section was once the TALLEST thing on the page -
-    // bigger than the hero, for two features that do not work. How much page a
-    // feature occupies is itself a claim about how real it is.
-    //
-    // Decorative subtrees are excluded from BOTH sides. Every section on this
-    // page draws redacted structure out of many tiny aria-hidden bars, and a
-    // raw node count therefore measures how detailed a section's illustration
-    // is rather than how much it claims: the roadmap's two 110px preview cards
-    // out-count the entire shipped stepper on nodes alone. Counting only nodes
-    // that carry meaning to a reader compares the thing the rule is about.
-    const substance = (el: HTMLElement) =>
-      Array.from(el.querySelectorAll<HTMLElement>('*')).filter(
-        (n) => !n.closest('[aria-hidden="true"]'),
-      ).length;
-
-    expect(substance(roadmap)).toBeLessThan(substance(shipped));
-  });
-});
-
-// ── 7e. Copy rule ────────────────────────────────────────────────
+// ── 8. Copy rule ─────────────────────────────────────────────────
 
 describe('copy rules', () => {
   test('no user-visible string uses a long dash, curly quote or accented letter', async () => {
@@ -654,20 +737,14 @@ describe('copy rules', () => {
     await screen.findByRole('heading', { level: 1 });
 
     const text = document.body.textContent ?? '';
-    // Long dashes and smart punctuation render inconsistently across the
-    // fonts and clients this copy travels through; the middot is the house
-    // separator. "resume" is always spelled without accents.
-    // Escapes, not literals. Written literally, this character class is itself a
-    // target of scripts/ascii-copy-sweep.mjs: the sweep rewrote the en/em dashes
-    // and curly quotes inside it into ASCII, turning the guard into /[- - ''""]/,
-    // which matches ordinary hyphens and straight quotes and fails on correct
-    // copy. Escaped, the assertion survives its own sweep.
-    expect(text).not.toMatch(/[\u2013\u2014\u2018\u2019\u201C\u201D\u2026]/);
-    expect(text).not.toMatch(/[\u00C0-\u024F]/);
+    // Escapes, not literals: written literally this character class is itself
+    // a target of scripts/ascii-copy-sweep.mjs.
+    expect(text).not.toMatch(/[–—‘’“”…]/);
+    expect(text).not.toMatch(/[À-ɏ]/);
   });
 });
 
-// ── 8. Layout safety ─────────────────────────────────────────────
+// ── 9. Layout safety ─────────────────────────────────────────────
 
 describe('layout', () => {
   test('the page root clips horizontal overflow', async () => {
@@ -678,30 +755,26 @@ describe('layout', () => {
     // than measuring real overflow (that is covered by browser verification).
     expect(root.className).toContain('overflow-x-clip');
   });
-
 });
 
-// ── 12. The public IA, the daily-agent preview, pricing and trust ────
-//
-// These cover the sections added when the landing stopped being a
-// single-purpose guest-upload page. Note that the honesty assertions in
-// section 3 sweep the WHOLE document, so they already cover these sections
-// too: a fabricated company or a match percentage in the briefing preview
-// fails there rather than needing its own test here.
+// ── 10. The public IA ────────────────────────────────────────────
 
 describe('public IA', () => {
-  test('the marketing movements render in the required reading order', async () => {
+  test('the sections render in the order the argument is made', async () => {
     renderLanding();
     await screen.findByRole('heading', { level: 1 });
 
     const ids = [
       'try',
-      'how-it-works',
-      'how',
+      // The problem comes straight after the promise.
+      'noise',
+      // Then the first buyer's deciding question, before the feature detail.
+      'sponsorship',
+      'features',
       'pricing',
-      'proof',
-      // `trust` and `faq` merged into one decision section here.
       'before-you-begin',
+      // The roadmap sits AFTER everything that ships and after the price, so
+      // nothing unshipped stands between a ready buyer and the offer.
       'coming-next',
       'get-started',
     ];
@@ -724,191 +797,406 @@ describe('public IA', () => {
     await screen.findByRole('heading', { level: 1 });
     const h1s = screen.getAllByRole('heading', { level: 1 });
     expect(h1s).toHaveLength(1);
-    expect(h1s[0]).toHaveTextContent(/your resume in\. matched jobs out\./i);
+    expect(h1s[0]).toHaveTextContent('Wake up to jobs worth applying to.');
+    expect(hero().contains(h1s[0])).toBe(true);
   });
 
-  test('every new marketing section is labelled by its own heading', async () => {
+  test('every marketing section is labelled by its own heading', async () => {
     renderLanding();
     await screen.findByRole('heading', { level: 1 });
-    for (const id of ['how-it-works', 'pricing', 'before-you-begin']) {
-      const section = document.getElementById(id) as HTMLElement;
+    for (const id of [
+      'noise',
+      'features',
+      'sponsorship',
+      'coming-next',
+      'pricing',
+      'before-you-begin',
+    ]) {
+      const section = byId(id);
       const labelledBy = section.getAttribute('aria-labelledby');
       expect(labelledBy, `#${id} has no aria-labelledby`).toBeTruthy();
       expect(document.getElementById(labelledBy as string)).toBeTruthy();
     }
   });
+
+  test('every header link that is an anchor points at a section that exists', () => {
+    renderLanding();
+    const banner = screen.getByRole('banner');
+    const anchors = within(banner)
+      .getAllByRole('link')
+      .map((a) => a.getAttribute('href') ?? '')
+      .filter((href) => href.startsWith('#'));
+    expect(anchors.length).toBeGreaterThan(0);
+    for (const href of anchors) {
+      expect(document.getElementById(href.slice(1)), `${href} has no target`).toBeTruthy();
+    }
+  });
 });
 
-describe('the workday loop', () => {
-  const section = () => document.getElementById('how-it-works') as HTMLElement;
+// ── 11a. The problem: a wall of listings, cleared ────────────────
 
-  test('one section now carries the whole product story, in order', () => {
-    renderLanding();
-    const headings = within(section())
-      .getAllByRole('heading', { level: 3 })
-      .map((h) => h.textContent);
+describe('the problem', () => {
+  const section = () => byId('noise');
 
-    // This used to be two sections three apart - "How it works" (three
-    // numbered steps) and "A day with Aspirely" (three chapters of a day) -
-    // telling the same loop twice in two visual languages. They are one
-    // walkthrough now, and it keeps the `how-it-works` id so the header link
-    // and the scroll-spy need no change.
-    expect(headings).toEqual([
-      'Start with the work only you can do.',
-      'It finds the signal and prepares the work.',
-      'You stay in control of every important move.',
-      // The fourth is the coda: applying is half a job search, and the
-      // section would under-sell the platform without it.
-      'And the next day starts stronger.',
-    ]);
-  });
-
-  test('each chapter is anchored to a point in the day, without inventing a schedule', () => {
-    renderLanding();
-    const text = section().textContent ?? '';
-    expect(text).toContain('Set direction');
-    expect(text).toContain('While you are away / Aspirely works');
-    expect(text).toContain('When you return / Your judgment');
-
-    // The labels are RELATIVE on purpose. An earlier draft opened with
-    // "09:00 / Set direction", which reads as a promise that Aspirely runs on a
-    // clock - a schedule the product does not guarantee and no endpoint backs.
-    // "While you are away" and "When you return" say the same thing about
-    // sequence while claiming nothing about timing.
-    expect(text).not.toMatch(/\b\d{1,2}:\d{2}\s*(am|pm)?\b/i);
-  });
-
-  test('the merged-away section is gone, and nothing links to it', () => {
-    renderLanding();
-    expect(document.getElementById('daily-briefing')).toBeNull();
-    expect(document.querySelectorAll('a[href="#daily-briefing"]')).toHaveLength(0);
-    // The old copy went with it rather than being duplicated into the merge.
-    expect(document.body.textContent).not.toMatch(/three steps, then it runs/i);
-    expect(document.body.textContent).not.toMatch(/a day with aspirely/i);
-  });
-
-  test('it is labelled as an example, and the approval control is inert', () => {
+  test('it names the reasons listings are cleared, and the counts add up', () => {
     renderLanding();
     expect(
-      within(section()).getByText(/an example of the aspirely workflow/i),
+      within(section()).getByRole('heading', { name: /Most listings are not worth your evening\./ }),
     ).toBeInTheDocument();
 
-    // A picture of a control, not a control. A real button here would be a
-    // dead control on a marketing page, which this suite refuses elsewhere.
-    expect(within(section()).queryByRole('button', { name: /approve/i })).toBeNull();
-    expect(within(section()).queryByRole('link', { name: /approve/i })).toBeNull();
+    const reasons = within(section()).getAllByRole('listitem');
+    expect(reasons.map((li) => li.textContent?.replace(/\d+$/, '').trim())).toEqual([
+      'Reposts',
+      'Over a month old',
+      'Wrong level',
+      'No sponsorship',
+    ]);
+    // 24 in, 5 left: the picture and the numbers cannot disagree.
+    const cleared = reasons.reduce((n, li) => n + Number(li.textContent?.match(/\d+$/)?.[0]), 0);
+    expect(section().textContent).toMatch(/24\s*listings/);
+    expect(24 - cleared).toBe(SAMPLE_ROLES.length);
   });
 
-  test('the preview frames fabricate no data', () => {
+  test('the button really runs it: the wall clears down to the sample roles', async () => {
+    const user = userEvent.setup();
     renderLanding();
-    const text = section().textContent ?? '';
-    // The frames carry OUR ui labels over bar-and-pill placeholders. What they
-    // must never carry is a value that looks like a real match, count or
-    // outcome. (The document-wide company/score sweep in section 3 covers the
-    // rest.)
-    expect(text).not.toMatch(/\d+\s*%/);
-    expect(text).not.toMatch(/\b\d+\s+(new\s+)?(roles|matches|jobs|applications)\b/i);
-    expect(text).not.toMatch(/guarantee|guaranteed|hired/i);
+    await user.click(within(section()).getByRole('button', { name: /Clear the noise/i }));
+    expect(
+      await within(section()).findByText(/worth applying to/i, {}, { timeout: 6000 }),
+    ).toBeInTheDocument();
+    expect(within(section()).getByRole('button', { name: /Bring the wall back/i })).toBeInTheDocument();
   });
 
-  test('it states plainly that nothing is submitted without permission', () => {
+  test('with motion off it opens already cleared, and the button still swaps the two states', async () => {
+    setReducedMotion(true);
+    const user = userEvent.setup();
     renderLanding();
-    expect(section().textContent).toMatch(/nothing is submitted without your permission/i);
+    expect(section().textContent).toMatch(/5\s*worth applying to/);
+    await user.click(within(section()).getByRole('button', { name: /Bring the wall back/i }));
+    expect(section().textContent).toMatch(/24\s*listings/);
+    await user.click(within(section()).getByRole('button', { name: /Clear the noise/i }));
+    expect(section().textContent).toMatch(/5\s*worth applying to/);
   });
 
-  test('the story does not stop at applying - it closes the loop', () => {
+  test('the wall is a picture: nothing in it is exposed or operable', () => {
     renderLanding();
-    const text = section().textContent ?? '';
-
-    // Without this beat the section reads as a better auto-apply. Aspirely
-    // also carries interview prep, the skill gaps applications reveal, and a
-    // weekly read - all shipped surfaces under /app/grow.
-    expect(text).toMatch(/and the next day starts stronger/i);
-    expect(text).toMatch(/interview preparation/i);
-    expect(text).toMatch(/gaps your applications reveal/i);
-    expect(text).toMatch(/weekly read/i);
-
-    // And it still claims nothing about outcomes.
-    expect(text).not.toMatch(/hired|guarantee|success rate|faster than/i);
-  });
-
-  test('the approval state carries the Auto Apply registry status', () => {
-    renderLanding();
-    expect(within(section()).getByText(STATUS_LABEL[AUTO_APPLY.status])).toBeInTheDocument();
+    const wall = section().querySelector('[aria-hidden="true"].relative') as HTMLElement;
+    expect(wall).toBeTruthy();
+    expect(wall.querySelectorAll('button, a, input, [tabindex]')).toHaveLength(0);
   });
 });
 
-describe('pricing on the public page', () => {
-  test('the three plan names come from the entitlements contract, in order', () => {
+// ── 11b. Features: a deck of five cards to handle ────────────────
+
+describe('features', () => {
+  const section = () => byId('features');
+  const tabs = () => within(within(section()).getByRole('tablist', { name: /^Features$/ })).getAllByRole('tab');
+  const card = () => within(section()).getByRole('tabpanel');
+  const open = async (user: ReturnType<typeof userEvent.setup>, title: RegExp) => {
+    const tab = tabs().find((t) => title.test(t.textContent ?? '')) as HTMLElement;
+    await user.click(tab);
+  };
+
+  test('five features, as real tabs with one tab stop, in order', async () => {
+    const user = userEvent.setup();
     renderLanding();
-    const section = document.getElementById('pricing') as HTMLElement;
-    const names = within(section)
+    const titles = [
+      'It will not stretch the truth.',
+      'One role, once.',
+      'Practice on your own roles.',
+      'See what keeps coming up.',
+      'Your contact details stay with you.',
+    ];
+    expect(tabs()).toHaveLength(titles.length);
+    tabs().forEach((t, i) => expect(t.textContent).toContain(titles[i]));
+    expect(tabs().filter((t) => t.getAttribute('tabindex') === '0')).toHaveLength(1);
+
+    tabs()[0].focus();
+    await user.keyboard('{ArrowDown}');
+    expect(tabs()[1]).toHaveAttribute('aria-selected', 'true');
+    expect(card()).toHaveAttribute('aria-labelledby', tabs()[1].id);
+
+    // The load-bearing sentence, in the wording the trust pages use.
+    await user.click(tabs()[0]);
+    expect(section().textContent).toMatch(/Tailoring moves emphasis, never facts\./);
+    // And it still claims nothing about outcomes.
+    expect(section().textContent).not.toMatch(/hired|guarantee|success rate|faster than/i);
+  });
+
+  test('only the front card is exposed; the cards behind it are a picture of depth', () => {
+    renderLanding();
+    const all = Array.from(section().querySelectorAll<HTMLElement>('[data-feature-card]'));
+    expect(all).toHaveLength(5);
+    const behind = all.filter((c) => c.getAttribute('aria-hidden') === 'true');
+    expect(behind).toHaveLength(4);
+    for (const c of behind) expect(c.querySelectorAll('button, [role="slider"], [role="switch"]')).toHaveLength(0);
+  });
+
+  test('the arrows turn the deck in both directions and wrap', async () => {
+    const user = userEvent.setup();
+    renderLanding();
+    await user.click(within(section()).getByRole('button', { name: /Previous feature/i }));
+    expect(tabs()[4]).toHaveAttribute('aria-selected', 'true');
+    await user.click(within(section()).getByRole('button', { name: /Next feature/i }));
+    expect(tabs()[0]).toHaveAttribute('aria-selected', 'true');
+  });
+
+  test('the guard: a pushed title is shown, then held back to what the resume says', async () => {
+    const user = userEvent.setup();
+    renderLanding();
+    const sheet = () => card().querySelector('[data-guard-sheet]') as HTMLElement;
+
+    await user.click(within(card()).getByRole('button', { name: /Promote the title/i }));
+    expect(sheet().textContent).toContain('Senior Analyst');
+    expect(await within(card()).findByText(/Held back\./, {}, { timeout: 3000 })).toBeInTheDocument();
+    expect(sheet().textContent).toContain('Analyst Intern');
+    expect(sheet().textContent).not.toContain('Senior Analyst');
+  });
+
+  test('the guard: the number is a real slider, and letting go returns it to the resume', () => {
+    renderLanding();
+    const slider = within(card()).getByRole('slider', { name: /Team size on the resume/i });
+    expect(slider).toHaveAttribute('aria-valuenow', '12');
+    expect(slider).toHaveAttribute('aria-valuemin', '12');
+
+    fireEvent.keyDown(slider, { key: 'ArrowRight' });
+    fireEvent.keyDown(slider, { key: 'ArrowRight' });
+    expect(slider).toHaveAttribute('aria-valuenow', '20');
+    expect(card().querySelector('[data-guard-sheet]')?.textContent).toContain('a team of 20');
+
+    fireEvent.keyUp(slider, { key: 'ArrowRight' });
+    expect(slider).toHaveAttribute('aria-valuenow', '12');
+    expect(card().querySelector('[data-guard-sheet]')?.textContent).toContain('a team of 12');
+    expect(within(card()).getByText(/Held back\./)).toBeInTheDocument();
+  });
+
+  test('reposts fold into the employer listing, and can be shown again', async () => {
+    const user = userEvent.setup();
+    renderLanding();
+    await open(user, /One role, once/);
+
+    const fold = within(card()).getByRole('button', { name: /Fold the reposts/i });
+    expect(fold).toHaveAttribute('aria-pressed', 'false');
+    expect(within(card()).getAllByText(/Job board repost/)).toHaveLength(2);
+    await user.click(fold);
+    expect(within(card()).getByRole('button', { name: /Show the reposts/i })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(card().textContent).toMatch(/2 reposts folded into the original/);
+    expect(card().textContent).toMatch(/Employer's careers page/);
+  });
+
+  test('an interview card turns over to show what it was built from', async () => {
+    const user = userEvent.setup();
+    renderLanding();
+    await open(user, /Practice on your own roles/);
+
+    const flip = within(card()).getByRole('button', { name: /what this question was built from/i });
+    expect(flip).toHaveAttribute('aria-pressed', 'false');
+    await user.click(flip);
+    expect(within(card()).getByRole('button', { name: /Show the question/i })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    // The back quotes a line that is really in the sample resume.
+    const lines = RESUME_LINES.map((l) =>
+      l.text.map((seg) => (typeof seg === 'string' ? seg : seg.mark)).join(''),
+    );
+    expect(lines.some((line) => card().textContent?.includes(line))).toBe(true);
+  });
+
+  test('the skill gaps are counted from the sample roles, not typed', async () => {
+    const user = userEvent.setup();
+    renderLanding();
+    await open(user, /See what keeps coming up/);
+    const counts = new Map<string, number>();
+    for (const role of SAMPLE_ROLES) {
+      for (const ask of role.asks) if (!ask.met) counts.set(ask.label, (counts.get(ask.label) ?? 0) + 1);
+    }
+    const [top, n] = [...counts.entries()].sort((a, b) => b[1] - a[1])[0];
+    const bar = within(card()).getByRole('button', { name: new RegExp(top) });
+    expect(bar.textContent).toContain(`${n} of ${SAMPLE_ROLES.length} roles`);
+  });
+
+  test('the privacy card is a real switch between the resume and what the model is sent', async () => {
+    const user = userEvent.setup();
+    renderLanding();
+    await open(user, /Your contact details stay with you/);
+    const sw = within(card()).getByRole('switch', { name: /What the AI model is sent/i });
+    const face = (name: string) => card().querySelector(`[data-face="${name}"]`) as HTMLElement;
+
+    // Motion on and nothing scrolled: it arrives showing the resume.
+    expect(sw).toHaveAttribute('aria-checked', 'false');
+    expect(face('sent')).toHaveAttribute('aria-hidden', 'true');
+    await user.click(sw);
+    expect(sw).toHaveAttribute('aria-checked', 'true');
+    expect(face('resume')).toHaveAttribute('aria-hidden', 'true');
+    expect(face('sent')).toHaveAttribute('aria-hidden', 'false');
+    // Three contact details masked; the work itself is never masked.
+    expect(within(face('sent')).getAllByText('masked')).toHaveLength(3);
+    expect(face('sent').textContent).toMatch(/Wrote SQL queries/);
+    expect(face('sent').textContent).not.toMatch(/you@example\.com/);
+  });
+});
+
+// ── 12. Sponsorship ──────────────────────────────────────────────
+
+describe('sponsorship', () => {
+  const section = () => byId('sponsorship');
+  const order = () =>
+    within(section())
+      .getAllByRole('listitem')
+      .map((li) => SAMPLE_ROLES.find((r) => li.textContent?.includes(r.company))?.id);
+
+  test("it names the evidence, in the product's own chip wording", () => {
+    renderLanding();
+    const text = section().textContent ?? '';
+    for (const chip of [
+      'Sponsors H-1B',
+      'Posting says no sponsorship',
+      'E-Verify',
+      'Accepts CPT',
+      'No citizenship req',
+      'Clearance required',
+    ]) {
+      expect(text).toContain(chip);
+    }
+    expect(text).toMatch(/public H-1B filings and the posting's own words/i);
+  });
+
+  test('one switch re-sorts the same roles: evidence first, a refusal last', async () => {
+    const user = userEvent.setup();
+    renderLanding();
+    const sw = within(section()).getByRole('switch', { name: /I need sponsorship/i });
+
+    // Off: by fit alone.
+    expect(sw).toHaveAttribute('aria-checked', 'false');
+    expect(order()).toEqual([...SAMPLE_ROLES].sort((a, b) => b.score - a.score).map((r) => r.id));
+    expect(section().textContent).toMatch(/Sponsorship off\./);
+
+    await user.click(sw);
+    expect(sw).toHaveAttribute('aria-checked', 'true');
+    expect(section().textContent).toMatch(/Sponsorship on\./);
+    const sorted = order();
+    const kinds = sorted.map((id) => SAMPLE_ROLES.find((r) => r.id === id)?.visa.kind);
+    expect(kinds[0]).toBe('sponsors');
+    expect(kinds[kinds.length - 1]).toBe('refuses');
+    // Nothing is removed: a refusal is flagged, not hidden.
+    expect([...sorted].sort()).toEqual(SAMPLE_ROLES.map((r) => r.id).sort());
+  });
+
+  test('it reports evidence and never predicts a chance', () => {
+    renderLanding();
+    const text = section().textContent ?? '';
+    // `lib/sponsorshipSignal.ts` drops every score and band for this reason.
+    expect(text).toMatch(/Evidence, not odds\./);
+    expect(text).toMatch(/It never predicts your chances\./);
+    expect(text).not.toMatch(/\d+\s*%|likely to|likelihood|probab/i);
+  });
+
+  test('it does not shut out a reader with no visa need', () => {
+    renderLanding();
+    // Matches the product: the work-authorization question is optional and
+    // nothing is filtered while it is blank.
+    expect(section().textContent).toMatch(/No visa need\? Leave it off and nothing is filtered\./);
+  });
+});
+
+// ── 14. Pricing ──────────────────────────────────────────────────
+
+describe('pricing on the public page', () => {
+  const section = () => byId('pricing');
+
+  test('the home page shows the one plan a visitor can take, named from the contract', () => {
+    renderLanding();
+    const names = within(section())
       .getAllByRole('heading', { level: 3 })
       .map((h) => h.textContent);
-    expect(names).toEqual(PLAN_ORDER.map((id) => PLAN_LABEL[id]));
+    expect(names).toEqual([PLAN_LABEL.free]);
+    // The paid tiers are one sentence, still named from the contract and
+    // still in its order, and the full comparison is one link away.
+    const paid = PLAN_ORDER.filter((id) => id !== 'free').map((id) => PLAN_LABEL[id]);
+    expect(section().textContent).toContain(`${paid.join(' and ')} are not on sale yet.`);
+    expect(
+      within(section()).getByRole('link', { name: /See what each plan includes/i }),
+    ).toHaveAttribute('href', '/pricing');
   });
 
   test('no price, currency symbol or per-month string renders anywhere on the page', async () => {
     renderLanding();
     await screen.findByRole('heading', { level: 1 });
     const text = document.body.textContent ?? '';
-    expect(text).not.toMatch(/[$\u20ac\u00a3\u20b9]/);
+    expect(text).not.toMatch(/[$€£₹]/);
     expect(text).not.toMatch(/\b\d+\.\d{2}\b/);
     expect(text).not.toMatch(/\/\s*mo\b/i);
   });
 
-  test('the only pricing CTA is account creation, and paid tiers carry no control at all', () => {
+  test('the only pricing CTA is account creation, and nothing pretends to sell a paid tier', () => {
     renderLanding();
-    const section = document.getElementById('pricing') as HTMLElement;
-    const ctas = within(section)
+    const ctas = within(section())
       .getAllByRole('link')
       .filter((a) => /create free account/i.test(a.textContent ?? ''));
     expect(ctas).toHaveLength(1);
     expect(ctas[0]).toHaveAttribute('href', '/register');
-    // A disabled "coming soon" button is exactly what the roadmap sections
-    // refuse to ship, so pricing may not grow one either.
-    expect(within(section).queryAllByRole('button')).toHaveLength(0);
-    expect(within(section).getAllByText(/included when paid plans open/i)).toHaveLength(2);
+    // A disabled "coming soon" button is exactly what the roadmap section
+    // refuses to ship, so pricing may not grow one either.
+    expect(section().querySelectorAll('button, input')).toHaveLength(0);
+  });
+
+  test('a limit on a capability that is not live carries that capability status', () => {
+    renderLanding();
+    // "Assisted applications 25 a month" read as something you could use
+    // today while the roadmap called Auto Apply unfinished. The limit renders
+    // the registry status of the capability it meters.
+    const lines = Array.from(section().querySelectorAll('li')).filter((li) =>
+      /assisted applications/i.test(li.textContent ?? ''),
+    );
+    expect(lines).toHaveLength(1);
+    if (isLive(AUTO_APPLY.status)) {
+      expect(lines[0].textContent).not.toContain(STATUS_LABEL['coming-soon']);
+    } else {
+      expect(lines[0].textContent).toContain(STATUS_LABEL[AUTO_APPLY.status]);
+    }
   });
 });
 
-describe('before you begin', () => {
-  const section = () => document.getElementById('before-you-begin') as HTMLElement;
+// ── 15. Before you begin (the FAQ) ───────────────────────────────
 
-  test('the two duplicated sections are gone, and nothing links to them', () => {
+describe('fair questions', () => {
+  const section = () => byId('before-you-begin');
+
+  test('there is one questions section, not two saying the same thing', () => {
     renderLanding();
-
-    // `#trust` (six open answers under "Before you sign up") and `#faq` (seven
-    // disclosures) sat next to each other saying the same six things twice in
-    // two visual languages: what this is, who it is for, that nothing submits
-    // without permission, that the free plan exists, and that you can leave.
-    // A reader who had just been told something does not trust it more for
-    // being told it again one section later.
     expect(document.getElementById('trust')).toBeNull();
     expect(document.getElementById('faq')).toBeNull();
     expect(document.querySelectorAll('a[href="#trust"], a[href="#faq"]')).toHaveLength(0);
-
-    // The old headings went with them rather than being carried into the merge.
-    const text = document.body.textContent ?? '';
-    expect(text).not.toMatch(/the questions worth asking first/i);
-    expect(text).not.toMatch(/common questions\./i);
-    expect(text).not.toMatch(/read all six answers/i);
   });
 
-  test('one section carries the decision: the offer, the control line, and one CTA', () => {
+  test('the home page asks six real objections, and the full set is one link away', () => {
     renderLanding();
+    expect(within(section()).getByRole('heading', { name: /Fair questions\./i })).toBeInTheDocument();
 
-    expect(
-      within(section()).getByRole('heading', {
-        name: /Everything you need to know before you begin\./i,
-      }),
-    ).toBeInTheDocument();
-    expect(section().textContent).toMatch(
-      /You stay in control of your information, your applications, and every important decision\./i,
+    const questions = Array.from(section().querySelectorAll('summary')).map((el) =>
+      (el.querySelector('h4')?.childNodes[0].textContent ?? '').trim(),
     );
+    expect(questions).toEqual([
+      'Can I start for free?',
+      'Where does the sponsorship data come from?',
+      'I am not a student. Is this for me?',
+      'How is this different from a job board?',
+      'Will Aspirely apply without my permission?',
+      'What happens to my resume and data?',
+    ]);
+    // ALL CLOSED on arrival.
+    expect(section().querySelectorAll('details[open]')).toHaveLength(0);
+    expect(
+      within(section()).getByRole('link', { name: /Every question, and how your data is handled/i }),
+    ).toHaveAttribute('href', '/trust');
+  });
 
-    // ONE primary action, and a quiet sign-in beside it. A decision section
-    // with two competing commands is asking the reader to decide twice.
+  test('one primary action, a quiet sign-in, and the legal detail linked rather than restated', () => {
+    renderLanding();
     const ctas = within(section())
       .getAllByRole('link')
       .filter((a) => /^create free account$/i.test(a.textContent ?? ''));
@@ -918,8 +1206,6 @@ describe('before you begin', () => {
       'href',
       '/login',
     );
-
-    // The legal detail is linked, never restated in the answers.
     expect(within(section()).getByRole('link', { name: /privacy policy/i })).toHaveAttribute(
       'href',
       '/privacy',
@@ -930,45 +1216,21 @@ describe('before you begin', () => {
     );
   });
 
-  test('the answers are grouped, and every one is a native disclosure', () => {
-    renderLanding();
-
-    const groups = within(section())
-      .getAllByRole('heading', { level: 3 })
-      .map((h) => h.textContent);
-    expect(groups).toEqual([
-      'Who Aspirely is for',
-      'What Aspirely helps with',
-      'Control and automation',
-      'Plans, privacy, and flexibility',
-    ]);
-
-    // Native <details>/<summary>: focusable, Enter/Space-operable and
-    // state-exposing for free, with no Radix accordion in the eager chunk.
-    const summaries = section().querySelectorAll('summary');
-    expect(summaries).toHaveLength(12);
-    summaries.forEach((el) => {
-      expect(el.getAttribute('tabindex')).not.toBe('-1');
-    });
-
-    // ALL CLOSED on arrival. One pre-opened panel makes the other eleven read
-    // as less important versions of it.
-    expect(section().querySelectorAll('details[open]')).toHaveLength(0);
-  });
-
-  test('the load-bearing answers survived the merge intact', async () => {
+  test('the load-bearing answers are intact', async () => {
     const user = userEvent.setup();
     renderLanding();
+    const text = section().textContent ?? '';
 
     // The automation answer is the one a nervous visitor is actually here for,
-    // and it may never be softened into "you are in control" alone.
-    expect(
-      within(section()).getByRole('heading', { name: /Will Aspirely apply without my permission\?/i }),
-    ).toBeInTheDocument();
-    expect(section().textContent).toMatch(/no setting at all until you choose one/i);
-
-    // ...and it still carries the registry's status rather than a hand-typed one.
+    // and it carries the registry's status rather than a hand-typed one.
+    expect(text).toMatch(/no setting at all until you choose one/i);
     expect(within(section()).getByText(STATUS_LABEL[AUTO_APPLY.status])).toBeInTheDocument();
+    // Sponsorship: where the data comes from, and what it is not.
+    expect(text).toMatch(/public H-1B filing records/);
+    expect(text).toMatch(/It never predicts your chances\./);
+    // Nobody is shut out for not being a student or not needing a visa.
+    expect(text).toMatch(/in any field and at any level/);
+    expect(text).toMatch(/leave that question blank and nothing is filtered/);
 
     // Opening one is a real disclosure, not a link somewhere else.
     const summary = within(section()).getByRole('heading', {
@@ -979,16 +1241,24 @@ describe('before you begin', () => {
   });
 });
 
-// ── 13. The redesigned hero: two real actions, and a real film ──────────
+// ── 16. The hero ─────────────────────────────────────────────────
 
 describe('hero composition', () => {
-  const hero = () => document.getElementById('try') as HTMLElement;
-
-  test('the headline is the promise, and it is the only h1', async () => {
+  test('the headline is the promise, and it is the only h1', () => {
     renderLanding();
     const h1 = screen.getByRole('heading', { level: 1 });
-    expect(h1).toHaveTextContent('Your resume in. Matched jobs out.');
+    expect(h1).toHaveTextContent('Wake up to jobs worth applying to.');
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
+  });
+
+  test('the supporting line says what the page as a whole has to prove', () => {
+    renderLanding();
+    const text = hero().textContent ?? '';
+    // The three things no competing homepage leads with: where the jobs come
+    // from, the visa evidence, and that tailoring invents nothing.
+    expect(text).toMatch(/employers' own career pages/);
+    expect(text).toMatch(/visa sponsorship evidence/);
+    expect(text).toMatch(/without inventing a thing/);
   });
 
   test('the two hero actions are Create free account and Find my matches, and both are real', async () => {
@@ -998,9 +1268,7 @@ describe('hero composition', () => {
     const account = within(hero()).getByRole('link', { name: /^Create free account$/i });
     expect(account).toHaveAttribute('href', '/register');
 
-    // The second action must START something, not scroll somewhere. The hero
-    // briefly paired the account CTA with "See how it works", which spent the
-    // second-most valuable control on the page moving the viewport.
+    // The second action must START something, not scroll somewhere.
     const matches = within(hero()).getByRole('button', { name: /^Find my matches$/i });
     const input = (await screen.findByLabelText(/^Resume file/)) as HTMLInputElement;
     const clickSpy = vi.spyOn(input, 'click').mockImplementation(() => {});
@@ -1010,42 +1278,31 @@ describe('hero composition', () => {
     expect(within(hero()).queryByText(/see how it works/i)).toBeNull();
   });
 
-  test('the hero carries ONE trust line, not a stack of reassurances', () => {
+  test('the first thing the hero says is who it is for, without shutting anyone out', () => {
     renderLanding();
-    expect(
-      within(hero()).getByText(/Free to start\. Nothing is submitted without your approval\./i),
-    ).toBeInTheDocument();
-    // The three separate micro-notes that used to sit under the CTAs are gone;
-    // each one made the next one cheaper.
-    expect(within(hero()).queryByText(/no account needed/i)).toBeNull();
+    const text = hero().textContent ?? '';
+    expect(text).toMatch(/Built for the F-1 and OPT job search\./);
+    expect(text).toMatch(/Works the same with no visa need\./);
+    // And it comes before the headline, not after it.
+    const h1 = screen.getByRole('heading', { level: 1 });
+    const who = within(hero()).getByText(/Built for the F-1 and OPT job search\./);
+    expect(who.compareDocumentPosition(h1) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  test('the hero carries ONE trust line, and it sells the no-account upload', () => {
+    renderLanding();
+    expect(hero().textContent).toMatch(/Free to start\.\s*No account needed to see your matches\./);
+    // One line, not a stack: the older reassurances are gone.
+    expect(within(hero()).queryByText(/Nothing is submitted without your approval/i)).toBeNull();
     expect(within(hero()).queryByText(/Private upload/i)).toBeNull();
   });
 
-  test('the existing-user path is present but does not compete with the CTAs', () => {
+  test('sign-in lives in the header, and the hero does not repeat it', () => {
     renderLanding();
-    const signIn = within(hero()).getByRole('link', { name: /^Sign in$/i });
-    expect(signIn).toHaveAttribute('href', '/login');
-    // It follows both primary actions in reading order rather than sitting
-    // between them.
-    const account = within(hero()).getByRole('link', { name: /^Create free account$/i });
-    expect(account.compareDocumentPosition(signIn) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-  });
-
-  test('the idle hero shows the fictional 3D stage, not invented results', () => {
-    renderLanding();
-    expect(screen.getByRole('img', { name: /Fictional, not real data/i })).toBeInTheDocument();
-    expect(screen.getByText(/Illustration only/i)).toBeInTheDocument();
-    // Still no fabricated outcomes inside that window.
-    expect(document.body.textContent ?? '').not.toMatch(/\d{1,3}\s*%\s*(match|fit)/i);
-  });
-});
-
-describe('hero product film', () => {
-  test('the generated loop and poster are not mounted on the hero', () => {
-    renderLanding();
-    const hero = document.getElementById('try') as HTMLElement;
-    expect(hero.querySelector('video')).toBeNull();
-    expect(hero.querySelector('img[src*="aspirely-hero"]')).toBeNull();
+    expect(within(hero()).queryByRole('link', { name: /^Sign in$/i })).toBeNull();
+    expect(
+      within(screen.getByRole('banner')).getByRole('link', { name: /^Sign in$/i }),
+    ).toHaveAttribute('href', '/login');
   });
 });
 
@@ -1067,23 +1324,36 @@ describe('public nav current page', () => {
       'aria-current',
       'page',
     );
-    expect(within(banner).getByRole('link', { name: /How it works/i })).not.toHaveAttribute(
+    expect(within(banner).getByRole('link', { name: /^Features$/i })).not.toHaveAttribute(
       'aria-current',
     );
-    expect(within(banner).getByRole('link', { name: /Before you begin/i })).not.toHaveAttribute(
+    expect(within(banner).getByRole('link', { name: /^FAQ$/i })).not.toHaveAttribute(
       'aria-current',
     );
   });
 
-  test('on /trust, Before you begin is marked current', () => {
+  test('on /trust, FAQ is marked current', () => {
     renderNav('/trust');
     const banner = screen.getByRole('banner');
-    expect(within(banner).getByRole('link', { name: /Before you begin/i })).toHaveAttribute(
+    expect(within(banner).getByRole('link', { name: /^FAQ$/i })).toHaveAttribute(
       'aria-current',
       'page',
     );
     expect(within(banner).getByRole('link', { name: /^Pricing$/i })).not.toHaveAttribute(
       'aria-current',
+    );
+  });
+
+  test('off the home page the section links go to the home page, not to a missing anchor', () => {
+    renderNav('/pricing');
+    const banner = screen.getByRole('banner');
+    expect(within(banner).getByRole('link', { name: /^Features$/i })).toHaveAttribute(
+      'href',
+      '/#features',
+    );
+    expect(within(banner).getByRole('link', { name: /^Sponsorship$/i })).toHaveAttribute(
+      'href',
+      '/#sponsorship',
     );
   });
 });
@@ -1100,49 +1370,44 @@ describe('signed-in public chrome', () => {
     expect(screen.queryByRole('link', { name: /create free account/i })).toBeNull();
     expect(screen.queryByRole('button', { name: /find my matches/i })).toBeNull();
     expect(screen.queryByRole('link', { name: /find my matches/i })).toBeNull();
-    expect(screen.queryByRole('button', { name: /upload your resume/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /try it with my resume/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /drop your resume/i })).toBeNull();
     expect(screen.queryByText(/already have an account/i)).toBeNull();
-    expect(screen.queryByText(/create a free account and set your direction/i)).toBeNull();
+    // With no guest flow there is no file input to open either.
+    expect(document.querySelectorAll('input[type="file"]')).toHaveLength(0);
   });
 
   test('the bar and the hero each carry one workspace action, not a stack of them', () => {
     renderLanding();
     const banner = screen.getByRole('banner');
-    const hero = document.getElementById('try') as HTMLElement;
 
     const navCta = within(banner).getByRole('link', { name: /^Open my workspace$/i });
     expect(navCta).toHaveAttribute('href', '/app/home');
     expect(within(banner).queryByRole('link', { name: /^Sign in$/i })).toBeNull();
     expect(within(banner).queryByRole('link', { name: /create free account/i })).toBeNull();
 
-    const heroCtas = within(hero).getAllByRole('link', { name: /^Open my workspace$/i });
+    const heroCtas = within(hero()).getAllByRole('link', { name: /^Open my workspace$/i });
     expect(heroCtas).toHaveLength(1);
     expect(heroCtas[0]).toHaveAttribute('href', '/app/home');
-    expect(within(hero).queryByText(/you're signed in/i)).toBeInTheDocument();
+    expect(within(hero()).queryByText(/you're signed in/i)).toBeInTheDocument();
   });
 
-  test('pricing, before you begin, the close, and the footer all continue the workspace, not signup', () => {
+  test('sponsorship, pricing, the FAQ, the close and the footer all continue the workspace, not signup', () => {
     renderLanding();
 
-    const pricing = document.getElementById('pricing') as HTMLElement;
-    const pricingCta = within(pricing).getByRole('link', { name: /^Open my workspace$/i });
-    expect(pricingCta).toHaveAttribute('href', '/app/home');
-    expect(within(pricing).queryByRole('link', { name: /create free account/i })).toBeNull();
+    for (const id of ['sponsorship', 'pricing', 'before-you-begin', 'get-started']) {
+      const section = byId(id);
+      expect(
+        within(section).getByRole('link', { name: /^Open my workspace$/i }),
+        `#${id}`,
+      ).toHaveAttribute('href', '/app/home');
+      expect(within(section).queryByRole('link', { name: /create free account/i })).toBeNull();
+      expect(within(section).queryByRole('link', { name: /sign in/i })).toBeNull();
+    }
 
-    const before = document.getElementById('before-you-begin') as HTMLElement;
-    expect(within(before).getByRole('link', { name: /^Open my workspace$/i })).toHaveAttribute(
-      'href',
-      '/app/home',
-    );
-    expect(within(before).queryByRole('link', { name: /sign in/i })).toBeNull();
-
-    const close = document.getElementById('get-started') as HTMLElement;
-    expect(within(close).getByRole('heading', { name: /your workspace is waiting/i })).toBeInTheDocument();
-    expect(within(close).getByRole('link', { name: /^Open my workspace$/i })).toHaveAttribute(
-      'href',
-      '/app/home',
-    );
-    expect(within(close).queryByRole('link', { name: /^Sign in$/i })).toBeNull();
+    expect(
+      within(byId('get-started')).getByRole('heading', { name: /your workspace is waiting/i }),
+    ).toBeInTheDocument();
 
     const footer = screen.getByRole('contentinfo');
     expect(within(footer).getByRole('link', { name: /^Workspace$/i })).toHaveAttribute(
@@ -1152,4 +1417,3 @@ describe('signed-in public chrome', () => {
     expect(within(footer).queryByRole('link', { name: /^Sign in$/i })).toBeNull();
   });
 });
-

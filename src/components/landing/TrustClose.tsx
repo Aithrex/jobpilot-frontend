@@ -1,29 +1,23 @@
 import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import { Upload } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Container, Grain, Reveal, SECTION_Y } from './_shared';
+import { Container, Section } from './_shared';
 
 /**
- * The close: the final action, on the page's own surface. It gets its presence
- * from the ambient glow and the grain rather than from flipping to a different
- * colour world, so a light-theme page stays light all the way to the footer.
+ * The close: the offer once more, and the two ways to take it.
  *
- * The closing CTA opens the page's ONE file dialog on this click via the
- * shared picker (`onUpload`) rather than scrolling back up to the hero and
- * making the visitor click a second control. Without a picker (guest
- * onboarding off) it is an honest link to account creation.
+ * It is the last thing on `/`, `/pricing` and `/trust`. On `/` it also carries
+ * the third of the page's three upload triggers; on the other routes there is
+ * no guest flow mounted, so it offers sign-in instead.
  *
- * Precise language by contract: never "verified sponsor", never a deletion
- * promise the backups do not satisfy, never a count of anything.
+ * A signed-in reader is never sold signup here: they get one way back to the
+ * workspace they already have.
  */
 
 export interface TrustCloseProps {
-  /** Opens the shared resume picker. Absent = guest upload is unavailable. */
+  /** Opens the page's ONE file picker. Absent wherever guest upload is not available. */
   onUpload?: () => void;
-  /** Where the CTA goes when there is no picker to open. */
   fallbackHref?: string;
-  /** CTA label used in the no-picker mode. */
   fallbackLabel?: string;
 }
 
@@ -40,64 +34,44 @@ export function TrustClose({
   const showSignIn = !authed && !onUpload;
 
   return (
-    <section
-      id="get-started"
-      aria-label="Get started"
-      // `id` moved off `trust`, which now belongs to the real trust answers
-      // section. No surface of its own: the close inherits the page's theme
-      // like every other section.
-      className={cn('relative scroll-mt-4 overflow-hidden', SECTION_Y)}
-    >
-      <Grain />
-      <Container className="relative max-w-3xl text-center">
-        <Reveal>
-          <h2 className="text-balance font-display text-display-sm text-foreground">
-            {authed ? 'Your workspace is waiting.' : 'Start the search that keeps going.'}
-          </h2>
-          <p className="mx-auto mt-4 max-w-[52ch] text-pretty text-body-lg text-ink-muted">
-            {authed
-              ? "Continue in your workspace. Matches, tailoring, and today's work are already there."
-              : 'Create a free account and set your direction. Aspirely takes it from there, and you stay in charge of every step that leaves your hands.'}
-          </p>
+    <Section id="get-started" label="Get started" className="pub-band">
+      <Container>
+        <div className="pub-stage grid gap-x-12 gap-y-9 p-8 sm:p-12 lg:grid-cols-12 lg:items-end lg:p-16">
+          <div className="lg:col-span-7">
+            <h2 className="pub-h2 max-w-[16ch]">
+              {authed ? 'Your workspace is waiting.' : 'Tomorrow can start with a short list.'}
+            </h2>
+            <p className="pub-lede mt-5 max-w-[48ch]">
+              {authed
+                ? "Continue in your workspace. Matches, tailoring, and today's work are already there."
+                : 'Create a free account, or drop in a resume and see your matches first.'}
+            </p>
+          </div>
 
-          <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Button
-              asChild
-              size="lg"
-              className="h-12 w-full rounded-full px-7 text-base font-semibold shadow-soft hover:bg-primary-hover sm:w-auto"
-            >
-              <Link to={href}>{label}</Link>
-            </Button>
-            {/* Keeps the exact accessible name `Upload your resume`: it is one
-                of the three triggers that share the page's single file input,
-                and the count is asserted. Never shown to a signed-in reader —
-                they already have a workspace, and pairing it with Sign in was
-                the conflict that made the close look like a signup page. */}
+          <div className="flex flex-col gap-3 sm:flex-row lg:col-span-5 lg:flex-col xl:flex-row xl:justify-end">
+            <Link to={href} className="focus-ring-visible pub-btn pub-btn-primary">
+              {label}
+            </Link>
+            {/* One of the triggers that share the page's single file input,
+                under the same name it has everywhere else. Never shown to a
+                signed-in reader. */}
             {showUpload ? (
               <button
                 type="button"
                 onClick={onUpload}
-                className="focus-ring-visible inline-flex h-12 w-full items-center justify-center rounded-full border border-input bg-card px-7 text-base font-semibold text-foreground shadow-soft transition-[color,border-color,background-color] duration-200 ease-out hover:border-foreground/40 hover:bg-accent sm:w-auto"
+                className="focus-ring-visible pub-btn pub-btn-secondary"
               >
-                Upload your resume
+                <Upload aria-hidden className="h-[1.125rem] w-[1.125rem]" />
+                Find my matches
               </button>
             ) : showSignIn ? (
-              <Button
-                asChild
-                size="lg"
-                variant="outline"
-                className="h-12 w-full rounded-full border-input bg-card px-7 text-base font-semibold sm:w-auto"
-              >
-                <Link to="/login">Sign in</Link>
-              </Button>
+              <Link to="/login" className="focus-ring-visible pub-btn pub-btn-secondary">
+                Sign in
+              </Link>
             ) : null}
           </div>
-
-          <p className="mt-5 text-body-md text-muted-foreground">
-            {authed ? 'Continue where you left off.' : 'Free to start · No card · Private upload'}
-          </p>
-        </Reveal>
+        </div>
       </Container>
-    </section>
+    </Section>
   );
 }

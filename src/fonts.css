@@ -100,3 +100,25 @@
   src: url('/fonts/jetbrains-mono-700.woff2') format('woff2');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
+
+/* Mona Sans (GitHub, SIL OFL 1.1): the public site's display face. One
+   variable file carries weight 200 to 900 and width 75% to 125%, so the
+   marketing headlines can run wide and tight without a second family.
+
+   It is the latin subset exactly as Google Fonts serves it, like every other
+   file in public/fonts. Do NOT re-instance or re-subset it to save bytes: the
+   licence reserves the font name "Mona", so a file we modify ourselves could
+   not keep that name. (Trimming it to the range the headlines use would save
+   about 38 KB; it is not worth a licence question.)
+
+   The signed-in app still sets its headings in Plus Jakarta Sans until its
+   own pages are redesigned. */
+@font-face {
+  font-family: 'Mona Sans';
+  font-style: normal;
+  font-weight: 200 900;
+  font-stretch: 75% 125%;
+  font-display: swap;
+  src: url('/fonts/mona-sans-var.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}

@@ -10,6 +10,16 @@
 > `docs/design/token-decisions.md`, `docs/design/tokens.proposal.css`,
 > `docs/design/token-reference.html` (the proposal that BECAME this system).
 
+> **2026-11-15: the PUBLIC pair (`.surface-lumen`, `.surface-nocturne`) was
+> redesigned.** White canvas with a neutral band, near-neutral ink, COBALT as
+> the action colour (kept rare), a marigold highlighter (`--mark`), one navy
+> chapter lit from a corner (`--brand-band`), no page-wide bloom, Mona Sans as
+> the public display face, and a designed dark theme with its own periwinkle
+> accent. The signed-in app is unchanged. Values, roles and the research
+> behind them: [`2026-11-15-home-redesign.md`](2026-11-15-home-redesign.md).
+> Where the table below disagrees with that note for a public page, the note
+> and `src/index.css` are right.
+
 > **2026-11-12: the accent moved from plum to COBALT AND MINT.** The owner
 > chose it from a 13-option study (light and dark, live product story, WCAG
 > and hue contrast). Sections below that name `--plum-*` or a 289/302 hue are

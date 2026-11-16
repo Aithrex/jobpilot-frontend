@@ -1,0 +1,538 @@
+/*
+ * The public site's own layer: type, bands, the highlighter and the product
+ * scenes. Everything here reads the semantic tokens that `.surface-lumen` and
+ * `.surface-nocturne` declare in index.css, so one palette edit there re-skins
+ * the whole public site and nothing in this file names a colour.
+ *
+ * Class names carry the `pub-` prefix so they cannot collide with the app's
+ * component recipes.
+ */
+
+/* ── Type ─────────────────────────────────────────────────────────────────
+   One display family, run wide and tight. The scale steps 17 / 20 / 28 / 56 /
+   92, so each level is unmistakably a different level rather than a slightly
+   larger version of the one below it. */
+.pub-h1,
+.pub-h2,
+.pub-h3 {
+  font-family: var(--font-public-display);
+  color: hsl(var(--foreground));
+  text-wrap: balance;
+}
+
+.pub-h1 {
+  font-size: clamp(2.75rem, 1.1rem + 5.3vw, 5.625rem);
+  font-weight: 620;
+  font-stretch: 112%;
+  line-height: 0.97;
+  letter-spacing: -0.045em;
+}
+
+.pub-h2 {
+  font-size: clamp(2rem, 1.2rem + 2.9vw, 3.5rem);
+  font-weight: 600;
+  font-stretch: 110%;
+  line-height: 1.03;
+  letter-spacing: -0.036em;
+}
+
+.pub-h3 {
+  font-size: clamp(1.5rem, 1.25rem + 0.9vw, 2rem);
+  font-weight: 600;
+  font-stretch: 108%;
+  line-height: 1.1;
+  letter-spacing: -0.028em;
+}
+
+.pub-h4 {
+  font-family: var(--font-public-display);
+  font-size: 1.3125rem;
+  font-weight: 600;
+  font-stretch: 106%;
+  line-height: 1.2;
+  letter-spacing: -0.022em;
+  color: hsl(var(--foreground));
+  text-wrap: balance;
+}
+
+.pub-lede {
+  font-size: clamp(1.0625rem, 1rem + 0.28vw, 1.1875rem);
+  line-height: 1.55;
+  color: hsl(var(--ink-muted));
+  text-wrap: pretty;
+}
+
+.pub-body {
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  color: hsl(var(--ink-muted));
+  text-wrap: pretty;
+}
+
+/* ── Bands ────────────────────────────────────────────────────────────────
+   The page alternates the white canvas with one tinted band, and spends one
+   saturated band on the section that most sets Aspirely apart. */
+.pub-band {
+  background-color: hsl(var(--band));
+}
+
+.pub-brand-band {
+  position: relative;
+  isolation: isolate;
+  color: hsl(var(--brand-band-foreground));
+  --ring: var(--brand-band-foreground);
+  /* A deep field lit from one corner. Deliberately NOT the button colour
+     laid edge to edge: that read as a block that had failed to render. */
+  background-color: hsl(var(--brand-band));
+  background-image:
+    radial-gradient(85% 120% at 4% -12%, hsl(var(--brand-band-glow) / 0.78), transparent 60%),
+    radial-gradient(70% 95% at 104% 112%, hsl(var(--brand-band-glow-2) / 0.36), transparent 62%);
+}
+
+/* A fine dot grid that fades at both edges, so the field has a surface. */
+.pub-brand-band::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: radial-gradient(hsl(0 0% 100% / 0.1) 1px, transparent 1px);
+  background-size: 22px 22px;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 22%, #000 78%, transparent);
+  mask-image: linear-gradient(to bottom, transparent, #000 22%, #000 78%, transparent);
+}
+
+.pub-brand-band .pub-h2 {
+  color: hsl(var(--brand-band-foreground));
+}
+
+.pub-band-muted {
+  color: hsl(var(--brand-band-muted));
+}
+
+/* A product scene that sits on the brand band is an ordinary scene again. */
+.pub-brand-band .pub-stage {
+  color: hsl(var(--foreground));
+  --ring: var(--primary);
+}
+
+/* ── The highlighter ──────────────────────────────────────────────────────
+   Drawn the way a marker crosses a line of print: it starts at the left edge
+   of the phrase and runs to the right. `data-on` arms it, so a scene can mark
+   its evidence in sequence; without the attribute the phrase is simply marked,
+   which is also what reduced motion gets. */
+.pub-mark {
+  background-image: linear-gradient(hsl(var(--mark)), hsl(var(--mark)));
+  background-repeat: no-repeat;
+  background-position: 0 78%;
+  background-size: 100% 68%;
+  color: hsl(var(--mark-ink));
+  padding: 0 0.16em;
+  margin: 0 -0.16em;
+  border-radius: 0.14em;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  font-weight: 600;
+}
+
+.surface-nocturne .pub-mark {
+  background-image: linear-gradient(hsl(var(--mark) / 0.26), hsl(var(--mark) / 0.26));
+}
+
+.pub-mark[data-on='false'] {
+  background-size: 0% 68%;
+  color: inherit;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .pub-mark[data-on] {
+    transition:
+      background-size 620ms cubic-bezier(0.22, 1, 0.36, 1),
+      color 300ms ease;
+  }
+}
+
+/* ── Buttons ──────────────────────────────────────────────────────────────
+   Two shapes for the whole public site. The primary carries the accent; the
+   secondary is ink on the surface, so the accent marks exactly one action
+   wherever the two sit together. */
+.pub-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  height: 3.25rem;
+  padding: 0 1.625rem;
+  border-radius: 0.875rem;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  white-space: nowrap;
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease,
+    box-shadow 180ms ease,
+    transform 120ms ease;
+}
+
+.pub-btn:active {
+  transform: scale(0.98);
+}
+
+.pub-btn-primary {
+  background-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  box-shadow:
+    inset 0 1px 0 hsl(0 0% 100% / 0.14),
+    0 1px 2px hsl(var(--foreground) / 0.2),
+    0 6px 16px -8px hsl(var(--primary) / 0.45);
+}
+
+.pub-btn-primary:hover {
+  background-color: hsl(var(--primary-hover));
+}
+
+.pub-btn-secondary {
+  background-color: hsl(var(--card));
+  color: hsl(var(--foreground));
+  border: 1px solid hsl(var(--input) / 0.55);
+  box-shadow: 0 1px 2px hsl(var(--foreground) / 0.05);
+}
+
+.pub-btn-secondary:hover {
+  border-color: hsl(var(--foreground) / 0.55);
+  background-color: hsl(var(--band));
+}
+
+/* On the saturated band the roles invert: the solid button is white. */
+.pub-brand-band .pub-btn-primary {
+  background-color: hsl(var(--band-btn));
+  color: hsl(var(--band-btn-fg));
+  box-shadow: 0 8px 24px -10px hsl(0 0% 0% / 0.45);
+}
+
+.pub-brand-band .pub-btn-primary:hover {
+  background-color: hsl(var(--band-btn) / 0.9);
+}
+
+/* The second action on the dark chapter: an outline that reads on navy. */
+.pub-btn-ghost-on-band {
+  border: 1px solid hsl(var(--brand-band-foreground) / 0.4);
+  color: hsl(var(--brand-band-foreground));
+}
+
+.pub-btn-ghost-on-band:hover {
+  border-color: hsl(var(--brand-band-foreground) / 0.8);
+  background-color: hsl(var(--brand-band-foreground) / 0.08);
+}
+
+/* "New", and anything else that needs the accent as a quiet fill. */
+.pub-tint {
+  background-color: hsl(var(--tint));
+  color: hsl(var(--tint-ink));
+}
+
+.pub-btn-sm {
+  height: 2.5rem;
+  padding: 0 1rem;
+  border-radius: 0.75rem;
+  font-size: 0.9375rem;
+}
+
+/* ── Product scenes ───────────────────────────────────────────────────────
+   Every picture of the product on the public site is built from these. They
+   are set in the product's own text face, so a scene reads as the app and the
+   words around it read as us talking about the app. */
+.pub-stage {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background-color: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 1.25rem;
+  box-shadow: var(--shadow-stage);
+}
+
+.pub-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3125rem;
+  height: 1.5rem;
+  padding: 0 0.5rem;
+  border-radius: 0.4375rem;
+  border: 1px solid hsl(var(--border));
+  background-color: hsl(var(--card));
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  color: hsl(var(--ink-muted));
+}
+
+.pub-chip-signal {
+  border-color: hsl(var(--signal) / 0.28);
+  background-color: hsl(var(--signal-tint));
+  color: hsl(var(--signal));
+}
+
+.pub-chip-warn {
+  border-color: hsl(var(--warning) / 0.3);
+  background-color: hsl(var(--warning) / 0.1);
+  color: hsl(var(--warning));
+}
+
+/* The fit ring: the product's own reading of a 0 to 100 score. */
+.pub-ring-track {
+  stroke: hsl(var(--band-strong));
+}
+
+/* A numbered pin that ties a legend entry to the part of a scene it explains. */
+.pub-pin {
+  display: inline-grid;
+  place-items: center;
+  width: 1.375rem;
+  height: 1.375rem;
+  border-radius: 999px;
+  background-color: hsl(var(--foreground));
+  color: hsl(var(--background));
+  font-family: 'Inter', sans-serif;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+  transition:
+    background-color 200ms ease,
+    transform 240ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.pub-pin[data-active='true'] {
+  background-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  transform: scale(1.18);
+}
+
+/* The part of a scene a legend entry is pointing at. */
+.pub-spot {
+  border-radius: 0.5rem;
+  transition:
+    box-shadow 240ms ease,
+    background-color 240ms ease;
+}
+
+.pub-spot[data-active='true'] {
+  background-color: hsl(var(--primary) / 0.07);
+  box-shadow: 0 0 0 6px hsl(var(--primary) / 0.07);
+}
+
+/* Native disclosure, with the plus that turns into a minus. */
+.pub-faq summary::-webkit-details-marker {
+  display: none;
+}
+
+.pub-faq-icon {
+  position: relative;
+  width: 0.875rem;
+  height: 0.875rem;
+  flex-shrink: 0;
+}
+
+.pub-faq-icon::before,
+.pub-faq-icon::after {
+  content: '';
+  position: absolute;
+  inset: 50% 0 auto 0;
+  height: 1.5px;
+  margin-top: -0.75px;
+  background-color: currentColor;
+  border-radius: 1px;
+  transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.pub-faq-icon::after {
+  transform: rotate(90deg);
+}
+
+details[open] > summary .pub-faq-icon::after {
+  transform: rotate(0deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pub-btn,
+  .pub-pin,
+  .pub-spot,
+  .pub-faq-icon::before,
+  .pub-faq-icon::after {
+    transition: none;
+  }
+}
+
+/* ── Interactive scenes ───────────────────────────────────────────────────
+   The next thing worth clicking breathes three times and then holds still. */
+@keyframes pub-nudge {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 hsl(var(--primary) / 0.45);
+  }
+  60% {
+    box-shadow: 0 0 0 10px hsl(var(--primary) / 0);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .pub-nudge {
+    animation: pub-nudge 1.6s ease-out 0.6s 3;
+  }
+}
+
+/* A feature tile: a small scene on top, a title and one line under it. */
+.pub-tile {
+  display: flex;
+  flex-direction: column;
+  background-color: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 1.25rem;
+  overflow: hidden;
+}
+
+.pub-tile-scene {
+  position: relative;
+  flex: 1;
+  min-height: 15rem;
+  padding: 1.5rem;
+  background-color: hsl(var(--band));
+  border-bottom: 1px solid hsl(var(--border));
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* A sheet of the resume, wherever one is drawn. */
+.pub-sheet {
+  background-color: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 2px hsl(var(--foreground) / 0.05), 0 10px 24px -14px hsl(var(--foreground) / 0.25);
+}
+
+/* The small control every scene uses for "do the thing again". */
+.pub-mini-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  height: 2.25rem;
+  padding: 0 0.875rem;
+  border-radius: 0.625rem;
+  border: 1px solid hsl(var(--input) / 0.5);
+  background-color: hsl(var(--card));
+  color: hsl(var(--foreground));
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transition:
+    border-color 180ms ease,
+    background-color 180ms ease,
+    transform 120ms ease;
+}
+
+.pub-mini-btn:hover {
+  border-color: hsl(var(--foreground) / 0.5);
+}
+
+.pub-mini-btn:active {
+  transform: scale(0.97);
+}
+
+.pub-mini-btn-solid {
+  border-color: transparent;
+  background-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+
+.pub-mini-btn-solid:hover {
+  border-color: transparent;
+  background-color: hsl(var(--primary-hover));
+}
+
+/* A switch, for the two scenes that are a before and an after. */
+.pub-switch {
+  position: relative;
+  width: 2.75rem;
+  height: 1.625rem;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background-color: hsl(var(--input) / 0.55);
+  transition: background-color 200ms ease;
+}
+
+.pub-switch::after {
+  content: '';
+  position: absolute;
+  top: 0.1875rem;
+  left: 0.1875rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 999px;
+  background-color: hsl(0 0% 100%);
+  box-shadow: 0 1px 3px hsl(0 0% 0% / 0.3);
+  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.pub-switch[aria-checked='true'] {
+  background-color: hsl(var(--primary));
+}
+
+.pub-switch[aria-checked='true']::after {
+  transform: translateX(1.125rem);
+}
+
+.pub-switch-on-band[aria-checked='true'] {
+  background-color: hsl(var(--band-btn));
+}
+
+.pub-switch-on-band {
+  background-color: hsl(var(--brand-band-foreground) / 0.3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pub-mini-btn,
+  .pub-switch,
+  .pub-switch::after {
+    transition: none;
+  }
+}
+
+/* ── Dark, designed ───────────────────────────────────────────────────────
+   On a near-black canvas, depth comes from light rather than from shadow:
+   a glow behind the hero stage, a lit top edge on every surface, a button
+   that carries its own halo. None of this exists in the light theme. */
+.surface-nocturne .pub-hero {
+  background-image:
+    radial-gradient(58% 46% at 72% 4%, hsl(228 100% 62% / 0.2), transparent 70%),
+    radial-gradient(44% 38% at 12% 34%, hsl(214 100% 58% / 0.1), transparent 72%);
+}
+
+.surface-nocturne .pub-stage,
+.surface-nocturne .pub-tile,
+.surface-nocturne .pub-sheet {
+  border-color: hsl(228 28% 21%);
+  background-image: linear-gradient(180deg, hsl(0 0% 100% / 0.04), transparent 28%);
+}
+
+.surface-nocturne .pub-btn-primary {
+  box-shadow:
+    0 0 0 1px hsl(var(--primary) / 0.4),
+    0 10px 32px -8px hsl(var(--primary) / 0.6);
+}
+
+.surface-nocturne .pub-brand-band .pub-btn-primary {
+  box-shadow:
+    0 0 0 1px hsl(var(--band-btn) / 0.5),
+    0 10px 36px -8px hsl(var(--band-btn) / 0.45);
+}
+
+.surface-nocturne .pub-brand-band {
+  border-top: 1px solid hsl(228 60% 30% / 0.6);
+  border-bottom: 1px solid hsl(228 60% 30% / 0.6);
+}
+
+.surface-nocturne .pub-mark {
+  background-image: linear-gradient(hsl(var(--mark) / 0.3), hsl(var(--mark) / 0.3));
+}

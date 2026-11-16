@@ -15,7 +15,8 @@ Developer documentation for the JobPilot web app. Start here.
 | **[Job feed title filtering](job-feed-title-filtering.md)** | Understand why Sync title chips seed search but do not hard-filter results |
 | **[Design system map](design/system-map.md)** | Look up a live token — this describes what is actually in `src/index.css` |
 | **[Token decisions](design/token-decisions.md)** | Understand why a token has the value it has |
-| **[Landing v8 brief](design/landing-v8-brief.md)** | Work on the public landing page |
+| **[Home page redesign](design/2026-11-15-home-redesign.md)** | Work on the public home page: the palette, type, structure and motion decided on 2026-11-15, and the research behind them |
+| **[Landing v8 brief](design/landing-v8-brief.md)** | Read the guest-flow contract on `/` (its layout and copy are superseded by the redesign note above) |
 
 Everything design-related now sits under **`design/`**, including
 [`design/archive/`](design/archive/) for superseded direction documents kept
