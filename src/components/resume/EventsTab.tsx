@@ -14,6 +14,7 @@ import {
   Bookmark, CalendarCheck, CircleCheck, PenLine, ChevronDown, AlertCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { formatCivilDay } from '@/lib/applicationDates';
 import type { EventItem, EventRelation } from '@/types/events';
 
 const TYPES = [
@@ -206,7 +207,7 @@ function EventCard({
       {e.description && <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{e.description}</p>}
 
       <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-        {e.start_date && <span className="inline-flex items-center gap-1"><Calendar className="h-3 w-3" /> {e.start_date}</span>}
+        {e.start_date && <span className="inline-flex items-center gap-1"><Calendar className="h-3 w-3" /> {formatCivilDay(e.start_date, { month: 'short', day: 'numeric', year: 'numeric' }) || e.start_date}</span>}
         {e.location && <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" /> {e.location}</span>}
         {e.prize_pool && <span className="inline-flex items-center gap-1"><Gift className="h-3 w-3" /> {e.prize_pool}</span>}
       </div>

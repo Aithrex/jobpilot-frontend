@@ -8,6 +8,16 @@ export function threadSender(t: ThreadSummary): string {
   return t.participants?.find(Boolean) || 'Unknown sender';
 }
 
+/**
+ * The sender as a person reads it: the display name from "Name <address>",
+ * or the bare address when there is no name. The full value stays available
+ * as the row's title, so nothing is hidden, only moved out of the way.
+ */
+export function senderName(raw: string): string {
+  const name = raw.replace(/<[^>]*>/g, '').replace(/^["'\s]+|["'\s]+$/g, '');
+  return name || raw.replace(/[<>]/g, '').trim() || raw;
+}
+
 function relativeTime(iso?: string): string {
   if (!iso) return '';
   const d = new Date(iso);
@@ -127,12 +137,13 @@ export function ThreadList({ threads, selectedId, onSelect }: ThreadListProps) {
               <span className="min-w-0 flex-1">
                 <span className="flex items-center justify-between gap-2">
                   <span
+                    title={threadSender(t)}
                     className={cn(
                       'truncate text-sm',
                       unread ? 'font-semibold text-foreground' : 'font-medium text-foreground',
                     )}
                   >
-                    {threadSender(t)}
+                    {senderName(threadSender(t))}
                   </span>
                   <span className="shrink-0 text-caption-sm tabular-nums text-muted-foreground">
                     {relativeTime(t.last_message_at)}

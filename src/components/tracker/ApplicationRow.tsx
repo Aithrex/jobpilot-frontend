@@ -99,7 +99,7 @@ export default function ApplicationRow({
       >
         <span
           aria-hidden
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted text-body-sm font-semibold text-ink-muted"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-caption font-semibold text-primary"
         >
           {initials(company || title)}
         </span>
