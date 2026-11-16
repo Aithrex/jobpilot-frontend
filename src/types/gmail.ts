@@ -114,6 +114,8 @@ export interface GmailChange {
   sync_run_id?: string | null;
   undoable: boolean;
   undone: boolean;
+  /** Put back by a later, stricter read of the same email (not by the person). */
+  corrected?: boolean;
 }
 
 export type GmailOutcome =

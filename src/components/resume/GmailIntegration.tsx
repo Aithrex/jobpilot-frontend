@@ -677,8 +677,15 @@ export default function GmailIntegration({
             rejections. Read only. Aspirely never sends or deletes email.
           </>,
           mustAsk ? null : (
-            <button type="button" onClick={handleConnect} disabled={linking} className={PRIMARY_BTN}>
-              {linking ? 'Opening Google...' : 'Connect Gmail'}
+            // After a blocked try or a request, asking is the next step and
+            // Connect steps back to a quiet "Try again".
+            <button
+              type="button"
+              onClick={handleConnect}
+              disabled={linking}
+              className={blockedBefore || access?.state === 'requested' ? QUIET_BTN : PRIMARY_BTN}
+            >
+              {linking ? 'Opening Google...' : blockedBefore || access?.state === 'requested' ? 'Try again' : 'Connect Gmail'}
             </button>
           ),
         )}
@@ -699,8 +706,12 @@ export default function GmailIntegration({
           />
         )}
         {tryGate && !showAsk && !linking && (
-          <button type="button" onClick={() => setAskOpen(true)} className={cn(QUIET_BTN, 'mt-2 px-0')}>
-            Google said access blocked? Ask for access
+          <button
+            type="button"
+            onClick={() => setAskOpen(true)}
+            className="mt-2 rounded text-label font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            Can't connect? Ask for access
           </button>
         )}
         {!mustAsk && chosen && !linking && (
@@ -858,10 +869,8 @@ export default function GmailIntegration({
               </>
             ) : (
               <>
-                Nothing has been read yet. Press Check Gmail now to look through the last 60 days
-                of email for replies to{' '}
-                {tracked ? `your ${plural(tracked, 'application', 'applications')}` : 'your applications'}
-                . One press does the whole check.
+                One press reads the last 60 days for replies to{' '}
+                {tracked ? `your ${plural(tracked, 'application', 'applications')}` : 'your applications'}.
               </>
             )}
           </p>

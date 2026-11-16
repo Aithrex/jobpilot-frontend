@@ -292,7 +292,7 @@ export function computeInsights(
       ),
       compare(
         'score',
-        'Match score when you applied',
+        'ATS score when you applied',
         ['80 and above', '60 to 79', 'Under 60'],
         (record) => {
           const score = record.ats_scores?.overall;

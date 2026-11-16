@@ -376,10 +376,10 @@ export default function TailorPage() {
         ats_scores: atsScores,
       });
       if (resp.error) {
-        toast.error("Couldn't save the match score to your history");
+        toast.error("Couldn't save the ATS score to your history");
       }
     } catch {
-      toast.error("Couldn't save the match score to your history");
+      toast.error("Couldn't save the ATS score to your history");
     }
   }, []);
 

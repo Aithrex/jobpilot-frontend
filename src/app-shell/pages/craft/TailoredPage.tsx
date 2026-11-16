@@ -168,7 +168,7 @@ export default function TailoredPage() {
     if (dateFrom || dateTo) {
       chips.push({ key: 'date', label: `${dateFrom || '...'} to ${dateTo || '...'}`, clear: () => { setDateFrom(''); setDateTo(''); } });
     }
-    if (atsMin > 0) chips.push({ key: 'ats', label: `Match score ${atsMin}+`, clear: () => setAtsMin(0) });
+    if (atsMin > 0) chips.push({ key: 'ats', label: `ATS score ${atsMin}+`, clear: () => setAtsMin(0) });
     if (hasRegensOnly) chips.push({ key: 'regens', label: 'Multi-version', clear: () => setHasRegensOnly(false) });
     if (quickPreset) {
       const names: Record<HistoryPreset, string> = {
@@ -546,7 +546,7 @@ export default function TailoredPage() {
                   ))}
                 </select>
               </FilterInput>
-              <FilterInput label={atsMin > 0 ? `Match score ${atsMin}+` : 'Minimum match score'}>
+              <FilterInput label={atsMin > 0 ? `ATS score ${atsMin}+` : 'Minimum ATS score'}>
                 <div className="flex items-center gap-2">
                   <input
                     type="range"
@@ -640,7 +640,7 @@ export default function TailoredPage() {
                         {typeof ats === 'number' && (
                           <>
                             <span>·</span>
-                            <span className={`font-semibold ${atsColor(ats)}`}>Match score {ats}</span>
+                            <span className={`font-semibold ${atsColor(ats)}`}>ATS score {ats}</span>
                           </>
                         )}
                         {(() => {
@@ -782,7 +782,7 @@ export default function TailoredPage() {
                             <span className={`text-xs tracking-wide px-1.5 py-0.5 rounded border ${badge.cls}`}>{badge.label}</span>
                             {isCurrent && <span className="text-xs tracking-wide px-1.5 py-0.5 rounded bg-success/15 text-success border border-success/25">Current</span>}
                             {typeof vAts === 'number' && (
-                              <span className={`text-xs font-medium ${atsColor(vAts)}`}>Match score {vAts}</span>
+                              <span className={`text-xs font-medium ${atsColor(vAts)}`}>ATS score {vAts}</span>
                             )}
                             <span className="text-xs text-muted-foreground ml-auto">{formatDate(v.created_at)}</span>
                           </div>

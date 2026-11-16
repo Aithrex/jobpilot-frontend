@@ -14,8 +14,10 @@ import { useEffect, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import {
   ArrowRight,
+  Check,
   ChevronDown,
   CircleDashed,
+  FolderGit2,
   Info,
   ListChecks,
   Lock,
@@ -40,6 +42,15 @@ const TONES: Record<string, Tone> = {
   needs_work: { stroke: 'hsl(var(--destructive))', text: 'text-destructive', tint: 'bg-destructive/10', glow: 'hsl(var(--destructive) / 0.12)' },
   unavailable: { stroke: 'hsl(var(--muted-foreground))', text: 'text-muted-foreground', tint: 'bg-muted', glow: 'transparent' },
 };
+
+/** One line that answers "can I send this?". */
+function verdict(score: number | null): string | null {
+  if (score == null) return null;
+  if (score >= 80) return 'Ready to send';
+  if (score >= 70) return 'Close. The fixes below help most.';
+  if (score >= 55) return 'Worth fixing before you apply';
+  return 'Needs work before you apply';
+}
 
 /** Band for a score with no `ats` block (records scored before ats-1.0). */
 function legacyBand(score: number): { band: string; label: string } {
@@ -127,30 +138,40 @@ function MustHaveBar({ ats }: { ats: AtsResult }) {
           <span key={s} title={`${s}: ${what}`} className={cn('h-full flex-1 rounded-full', cls)} />
         ))}
       </div>
-      {(missing.length > 0 || listed.length > 0) && (
-        <div className="flex flex-wrap gap-1.5 pt-0.5">
-          {listed.map((s) => (
-            <span
-              key={`l-${s}`}
-              title="Only in your skills list. Show it in a job bullet."
-              className="inline-flex items-center gap-1 rounded-full border border-warning/30 bg-warning/10 px-2 py-0.5 text-caption-sm font-medium text-warning"
-            >
-              <ListChecks className="h-3 w-3" aria-hidden />
-              {s}
-            </span>
-          ))}
-          {missing.map((s) => (
-            <span
-              key={`m-${s}`}
-              title="Not on your resume"
-              className="inline-flex items-center gap-1 rounded-full border border-dashed border-border px-2 py-0.5 text-caption-sm font-medium text-muted-foreground"
-            >
-              <CircleDashed className="h-3 w-3" aria-hidden />
-              {s}
-            </span>
-          ))}
-        </div>
-      )}
+      <div className="flex flex-wrap gap-1.5 pt-0.5">
+        {proven.map((sk) => (
+          <span key={`p-${sk}`} title="Shown in a job bullet" className="inline-flex items-center gap-1 rounded-full bg-signal-tint px-2 py-0.5 text-caption-sm font-medium text-signal">
+            <Check className="h-3 w-3" aria-hidden />
+            {sk}
+          </span>
+        ))}
+        {projects.map((sk) => (
+          <span key={`j-${sk}`} title="Shown in a project" className="inline-flex items-center gap-1 rounded-full border border-signal/30 px-2 py-0.5 text-caption-sm font-medium text-signal">
+            <FolderGit2 className="h-3 w-3" aria-hidden />
+            {sk}
+          </span>
+        ))}
+        {listed.map((sk) => (
+          <span
+            key={`l-${sk}`}
+            title="Only in your skills list. Show it in a job bullet."
+            className="inline-flex items-center gap-1 rounded-full border border-warning/30 bg-warning/10 px-2 py-0.5 text-caption-sm font-medium text-warning"
+          >
+            <ListChecks className="h-3 w-3" aria-hidden />
+            {sk}
+          </span>
+        ))}
+        {missing.map((sk) => (
+          <span
+            key={`m-${sk}`}
+            title="Not on your resume"
+            className="inline-flex items-center gap-1 rounded-full border border-dashed border-border px-2 py-0.5 text-caption-sm font-medium text-muted-foreground"
+          >
+            <CircleDashed className="h-3 w-3" aria-hidden />
+            {sk}
+          </span>
+        ))}
+      </div>
     </div>
   );
 }
@@ -264,6 +285,7 @@ export function AtsScoreCard({ scores, loading, error, stale, onRescore, jobTitl
             <div className="min-w-0 space-y-1.5">
               <p className={cn('font-display text-[1.6rem] font-semibold leading-tight', tone.text)}>{label}</p>
               {role && <p className="truncate text-caption text-muted-foreground" title={role}>{role}</p>}
+              {verdict(score) && <p className="text-body-sm font-medium text-foreground">{verdict(score)}</p>}
               {gain != null && (
                 <p
                   className={cn(
@@ -273,9 +295,9 @@ export function AtsScoreCard({ scores, loading, error, stale, onRescore, jobTitl
                   title="Your original resume, scored by the same rules"
                 >
                   {gain > 0 && <TrendingUp className="h-3.5 w-3.5" aria-hidden />}
-                  {before}
+                  <span className="font-medium">Before</span> {before}
                   <ArrowRight className="h-3 w-3" aria-hidden />
-                  {score}
+                  <span className="font-medium">Now</span> {score}
                   {gain > 0 && <span className="font-medium">(+{gain})</span>}
                 </p>
               )}

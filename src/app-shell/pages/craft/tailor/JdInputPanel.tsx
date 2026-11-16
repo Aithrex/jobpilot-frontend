@@ -283,7 +283,7 @@ export function JdInputPanel({
         )}
         {!usageLoading && dailyRemaining !== null && dailyRemaining > 0 && (
           <p className="text-center text-caption-sm tabular-nums text-muted-foreground">
-            {dailyRemaining} tailor{dailyRemaining === 1 ? '' : 's'} left today
+            {dailyRemaining} {dailyRemaining === 1 ? 'resume' : 'resumes'} left to tailor today
           </p>
         )}
       </div>

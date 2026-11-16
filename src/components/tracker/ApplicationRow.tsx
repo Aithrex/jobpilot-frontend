@@ -10,7 +10,7 @@
  * the apply prompt sits as a sibling beneath it rather than nested inside,
  * which would be invalid and unreachable.
  */
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, BellRing } from 'lucide-react';
 
 import type { TailoringRecord } from '@/types/resume';
 import { appliedDayOf, formatCivilDay } from '@/lib/applicationDates';
@@ -19,7 +19,6 @@ import { cn } from '@/lib/utils';
 import { APPLY_PROMPT, statusMeta } from './trackerConfig';
 import type { ApplicationPatch } from './useTrackerData';
 import {
-  atsTone,
   companyOf,
   daysUntil,
   initials,
@@ -119,8 +118,8 @@ export default function ApplicationRow({
           {hasSignals && (
             <span className="mt-0.5 flex items-center gap-1.5 text-body-sm text-muted-foreground">
               {typeof ats === 'number' && (
-                <span className={cn('font-medium tabular-nums', atsTone(ats))}>
-                  Match score {Math.round(ats)}
+                <span className="tabular-nums" title="How well the tailored resume scores for this job">
+                  ATS {Math.round(ats)}
                 </span>
               )}
               {baseResume && (
@@ -147,15 +146,17 @@ export default function ApplicationRow({
           ) : (
             <span className="block text-body-sm text-muted-foreground">Not applied</span>
           )}
-          {due !== null && (overdue || urgent) && (
+          {due !== null && (overdue || urgent) && app.status !== 'offer' && (
+            // A verb, not just a date: what is due, and when.
             <span
               className={cn(
                 'mt-0.5 flex items-center justify-end gap-1 text-body-sm font-medium',
-                overdue ? 'text-destructive' : 'text-warning',
+                overdue ? 'text-destructive' : 'text-primary',
               )}
+              title={app.next_action_note || 'Your next step for this application'}
             >
-              <AlertTriangle className="h-3 w-3" aria-hidden />
-              {relDate(app.next_action_date)}
+              {overdue ? <AlertTriangle className="h-3 w-3" aria-hidden /> : <BellRing className="h-3 w-3" aria-hidden />}
+              {overdue ? `Follow up, ${relDate(app.next_action_date).toLowerCase()}` : `Follow up ${relDate(app.next_action_date).toLowerCase()}`}
             </span>
           )}
         </span>

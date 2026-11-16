@@ -101,7 +101,7 @@ describe('the bar states the search without opening anything', () => {
     expect(segment(/^Roles: Data Analyst, Product Analyst$/)).toHaveTextContent('Data Analyst +1');
     expect(segment(/^Where: United States$/)).toHaveTextContent('United States');
     expect(segment(/^Experience level: Entry \+ Mid$/)).toHaveTextContent('Entry + Mid');
-    expect(segment(/^Visa sponsorship: Skip no-visa jobs$/)).toHaveTextContent('Skip no-visa jobs');
+    expect(segment(/^Visa sponsorship: Sponsor-friendly$/)).toHaveTextContent('Sponsor-friendly');
     expect(segment(/^Filter by company$/)).toHaveTextContent('All companies');
     expect(segment(/^Match: Any match$/)).toHaveTextContent('Any match');
   });
@@ -114,9 +114,9 @@ describe('the bar states the search without opening anything', () => {
 
     await user.click(within(bar()).getByRole('button', { name: /^Visa sponsorship/ }));
     expect(screen.getByText('Need visa sponsorship?')).toBeInTheDocument();
-    const chosen = screen.getByRole('radio', { name: /skip jobs that won't sponsor/i });
+    const chosen = screen.getByRole('radio', { name: /hide jobs that won't sponsor/i });
     expect(chosen).toBeChecked();
-    expect(chosen).toHaveTextContent('hides 1');
+    expect(chosen).toHaveTextContent('1 hidden');
     // The promise never made: a record is not a guarantee.
     expect(screen.getByText(/a track record, not a promise/i)).toBeInTheDocument();
   });

@@ -70,6 +70,7 @@ export function RecentTailored({ className }: { className?: string }) {
                     className={cn('shrink-0 font-mono text-caption font-semibold tabular-nums', scoreTone(score).text)}
                     title="ATS score"
                   >
+                    <span className="font-sans text-caption-sm font-medium text-muted-foreground">ATS </span>
                     {score}
                   </span>
                 )}

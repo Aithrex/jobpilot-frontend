@@ -866,6 +866,9 @@
   .font-display {
     font-family: 'Mona Sans', 'Inter', sans-serif;
     letter-spacing: -0.025em;
+    /* Tight tracking closed the gaps between words ("Addorreplace"); the
+       space keeps its width so headings still read as words. */
+    word-spacing: 0.06em;
   }
   /* Small headings sit at body scale, where display tracking closes up. */
   h3 {
@@ -997,8 +1000,10 @@
   `.glass-nav` and, when the surface sits on card/sidebar tokens, add the
   matching tint modifier. Reserved for sticky/fixed chrome: top bar,
   mobile nav, sidebar, command palette, sticky filter bars. */
+  /* 0.92, not 0.72: at 0.72 the page's own text showed through the bar
+     while scrolling (cold read, 2026-11-16). The blur stays for depth. */
   .glass-nav {
-    background-color: hsl(var(--card) / 0.72);
+    background-color: hsl(var(--card) / 0.92);
     -webkit-backdrop-filter: blur(28px) saturate(140%);
     backdrop-filter: blur(28px) saturate(140%);
   }
@@ -1008,7 +1013,7 @@
     backdrop-filter: blur(28px) saturate(140%);
   }
   .dark .glass-nav {
-    background-color: hsl(var(--card) / 0.72);
+    background-color: hsl(var(--card) / 0.92);
   }
   .dark .glass-nav-soft {
     background-color: hsl(var(--card) / 0.55);

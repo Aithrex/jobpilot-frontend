@@ -200,7 +200,7 @@ describe('connected', () => {
     renderCard();
     expect(await screen.findByText(/Not checked yet/)).toBeInTheDocument();
     expect(screen.getByRole('status')).toHaveTextContent(
-      'look through the last 60 days of email for replies to your 4 applications. One press does the whole check.',
+      'One press reads the last 60 days for replies to your 4 applications.',
     );
     expect(screen.getByText(/checks by itself about every 6 hours/)).toBeInTheDocument();
   });
@@ -568,7 +568,7 @@ describe('connect first (gate "try", the default while Google is in testing)', (
     renderCard();
     expect(await screen.findByRole('button', { name: 'Connect Gmail' })).toBeEnabled();
     expect(screen.queryByLabelText('Your Google address')).not.toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: /access blocked\? ask for access/i }));
+    await user.click(screen.getByRole('button', { name: /can't connect\? ask for access/i }));
     expect(screen.getByLabelText('Your Google address')).toBeInTheDocument();
   });
 
@@ -579,7 +579,8 @@ describe('connect first (gate "try", the default while Google is in testing)', (
     renderCard();
     expect(await screen.findByText(/Did Google say access is blocked\?/)).toBeInTheDocument();
     expect(screen.getByLabelText('Your Google address')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Connect Gmail' })).toBeEnabled();
+    // Connect steps back: asking is the next step now.
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeEnabled();
   });
 
   test('after asking, the request is shown and Connect stays for when it is added', async () => {
@@ -588,6 +589,6 @@ describe('connect first (gate "try", the default while Google is in testing)', (
     });
     renderCard();
     expect(await screen.findByRole('status')).toHaveTextContent('priya@gmail.test');
-    expect(screen.getByRole('button', { name: 'Connect Gmail' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeEnabled();
   });
 });

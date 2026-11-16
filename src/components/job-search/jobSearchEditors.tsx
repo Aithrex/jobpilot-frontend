@@ -241,7 +241,9 @@ export function WhereEditor({ idPrefix = 'where' }: { idPrefix?: string }) {
       <EditorHeading title="Where do you want to work?" />
       <Select value={country} onValueChange={setCountry}>
         <SelectTrigger id={`${idPrefix}-country`} className="h-10" aria-label="Country">
-          <span className="flex min-w-0 items-center gap-2">
+          {/* A div, not a span: the trigger clamps a span child to one line,
+              which stacks a flex row. */}
+          <div className="flex min-w-0 items-center gap-2">
             {country === ANYWHERE ? (
               <Globe2 className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
             ) : (
@@ -249,8 +251,10 @@ export function WhereEditor({ idPrefix = 'where' }: { idPrefix?: string }) {
                 {country}
               </span>
             )}
-            <SelectValue placeholder="Country" />
-          </span>
+            <span className="truncate">
+              <SelectValue placeholder="Country" />
+            </span>
+          </div>
         </SelectTrigger>
         <SelectContent className="max-h-80">
           {COUNTRIES.map((c) => (
@@ -362,9 +366,9 @@ export const VISA_CHOICES: Array<{
 }> = [
   {
     value: 'friendly',
-    short: 'Skip no-visa jobs',
-    title: "Skip jobs that won't sponsor",
-    hint: "Jobs that sponsor or don't say stay.",
+    short: 'Sponsor-friendly',
+    title: "Hide jobs that won't sponsor",
+    hint: "For OPT, STEM OPT and H-1B. Jobs that sponsor or don't say stay.",
     icon: ShieldCheck,
   },
   {
@@ -393,7 +397,7 @@ export function VisaEditor() {
   const refused = jobs.filter((j) => j.sponsorship === 'refused').length;
   const proven = jobs.filter((j) => j.sponsorship === 'likely').length;
   const trailing: Record<SponsorFilter, ReactNode> = {
-    friendly: refused > 0 ? `hides ${refused}` : null,
+    friendly: refused > 0 ? `${refused} hidden` : null,
     proven: proven > 0 ? `${proven} jobs` : null,
     all: null,
   };
