@@ -195,7 +195,7 @@ export default function MockInterview({
     });
     setEvaluating(false);
     if (r.error || !r.data?.evaluation) {
-      toast.error("Evaluation failed", { description: r.error });
+      toast.error("Couldn't evaluate your answer", { description: r.error });
       return;
     }
     const evalNorm = normalizeEvaluation(r.data.evaluation);

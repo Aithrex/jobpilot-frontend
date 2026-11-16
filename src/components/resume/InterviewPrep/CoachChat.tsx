@@ -1,3 +1,4 @@
+import { confirmAction } from '@/components/ui/confirm';
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { GraduationCap, Sparkles } from "lucide-react";
@@ -64,7 +65,7 @@ export default function CoachChat({
     const r = await apiService.chatWithCoach(recordId, msg);
     setSending(false);
     if (r.error) {
-      toast.error("Coach is offline", { description: r.error });
+      toast.error("The coach is unavailable right now", { description: r.error });
       // Roll back the optimistic message so the user can retry
       setMessages(prev => prev.filter(m => m !== optimistic));
       return;
@@ -73,7 +74,7 @@ export default function CoachChat({
   };
 
   const reset = async () => {
-    if (!window.confirm("Clear conversation history? This cannot be undone.")) return;
+    if (!(await confirmAction({ title: 'Clear this conversation?', description: 'Your messages with the coach will be removed. This cannot be undone.', confirmLabel: 'Clear conversation', destructive: true }))) return;
     await apiService.resetCoachChat(recordId);
     setMessages([]);
     toast.success("Chat reset");

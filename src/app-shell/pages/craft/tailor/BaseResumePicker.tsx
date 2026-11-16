@@ -4,6 +4,8 @@
  * One parsed resume: a quiet "Using {filename}" line (today's flow).
  * Two or more: default "Best match for this job", with an option to pin
  * a specific file. Does not change the global active resume.
+ *
+ * Styled as one row of the start form, matching the Format row under it.
  */
 import { FileText } from 'lucide-react';
 import type { ResumeAssetRow } from '@/types/resume';
@@ -29,9 +31,9 @@ export function BaseResumePicker({
   if (parsed.length === 1) {
     const only = parsed[0];
     return (
-      <p className="flex items-center gap-2 text-xs text-muted-foreground">
-        <FileText className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-        <span>
+      <p className="flex min-h-11 items-center gap-2.5 rounded-container border border-border bg-muted/30 px-4 py-2.5 text-sm text-muted-foreground">
+        <FileText className="h-4 w-4 shrink-0" aria-hidden="true" />
+        <span className="min-w-0 truncate">
           Using <span className="font-medium text-foreground">{only.filename || 'Untitled resume'}</span>
         </span>
       </p>
@@ -39,13 +41,12 @@ export function BaseResumePicker({
   }
 
   return (
-    <div className="rounded-container border border-border bg-card px-4 py-3 shadow-soft">
+    <div className="rounded-container border border-border bg-muted/30 px-4 py-3">
       <label htmlFor="base-resume-pick" className="block">
-        <span className="text-caption-sm font-semibold uppercase tracking-wider text-muted-foreground">
-          Base resume for this job
-        </span>
+        <span className="text-sm font-medium text-foreground">Resume to start from</span>
         <select
           id="base-resume-pick"
+          aria-label="Base resume for this job"
           value={value}
           disabled={disabled}
           onChange={(e) => onChange(e.target.value)}
@@ -59,14 +60,14 @@ export function BaseResumePicker({
           {parsed.map((r) => (
             <option key={r.resume_id} value={r.resume_id}>
               {r.filename || 'Untitled resume'}
-              {r.is_active ? ' (active for job matching)' : ''}
+              {r.is_active ? ' (used for job matching)' : ''}
             </option>
           ))}
         </select>
       </label>
-      <p className="mt-1.5 text-caption-sm text-muted-foreground leading-relaxed">
-        We will pick the resume that fits this role best. Your active resume for
-        job matching stays the same unless you pin a file here.
+      <p className="mt-1.5 text-caption-sm leading-relaxed text-muted-foreground">
+        We pick the resume that fits this job best. The one used for job
+        matching stays the same unless you choose a file here.
       </p>
     </div>
   );

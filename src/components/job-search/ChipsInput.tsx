@@ -9,6 +9,8 @@ interface ChipsInputProps {
   values: string[];
   onChange: (next: string[]) => void;
   placeholder?: string;
+  /** Label of the button that restores `defaultValues`. */
+  resetLabel?: string;
   helperText?: string;
   maxItems?: number;
   defaultValues?: string[];
@@ -22,6 +24,7 @@ export function ChipsInput({
   values,
   onChange,
   placeholder = 'Type and press Enter...',
+  resetLabel = 'Reset',
   helperText,
   maxItems,
   defaultValues,
@@ -116,7 +119,7 @@ export function ChipsInput({
             className="hit-target gap-1 text-caption-sm text-muted-foreground hover:border-primary/30 hover:bg-primary/10 hover:text-primary"
           >
             <RotateCcw className="h-3 w-3" aria-hidden />
-            Reset
+            {resetLabel}
           </Button>
         )}
         {newSuggestions.length > 0 && (

@@ -1904,6 +1904,108 @@
   }
 }
 
+/* ===== Jobs search bar (2026-11-16) =====================================
+   One labelled strip holding everything that decides what is on the board.
+   Each segment is a question over its current answer. The fill on hover and
+   the raised state while its editor is open are what say "this is a control",
+   so the strip never reads as a status line. */
+.job-search-bar {
+  border: 1px solid hsl(var(--border));
+  border-radius: 1.125rem;
+  background-color: hsl(var(--card));
+  box-shadow: var(--shadow-soft);
+  padding: 0.25rem;
+}
+.job-search-segment {
+  border-radius: 0.875rem;
+  outline: none;
+  transition:
+    background-color 150ms ease,
+    box-shadow 150ms ease;
+}
+/* Hairline between segments. It steps aside for whichever segment is hovered
+   or open, so the fill reads as one clean shape. */
+.job-search-segment + .job-search-segment::before {
+  content: '';
+  position: absolute;
+  left: -0.5px;
+  top: 0.625rem;
+  bottom: 0.625rem;
+  width: 1px;
+  background-color: hsl(var(--border));
+  transition: opacity 150ms ease;
+}
+@media (hover: hover) {
+  .job-search-segment:hover {
+    background-color: hsl(var(--muted));
+  }
+  .job-search-segment:hover::before,
+  .job-search-segment:hover + .job-search-segment::before {
+    opacity: 0;
+  }
+}
+.job-search-segment.is-open {
+  background-color: hsl(var(--background));
+  box-shadow:
+    0 0 0 1px hsl(var(--primary) / 0.45),
+    var(--shadow-soft);
+}
+.job-search-segment.is-open::before,
+.job-search-segment.is-open + .job-search-segment::before {
+  opacity: 0;
+}
+.job-search-segment:active {
+  transform: scale(0.99);
+}
+.job-search-segment:focus-visible {
+  box-shadow: 0 0 0 2px hsl(var(--ring));
+}
+
+/* The editor a segment opens: an opaque surface in both themes. Deliberately
+   not `bg-popover` or `liquid-glass`, which the glass system turns
+   translucent; a form with explanatory text must not show cards through it. */
+.job-search-pop {
+  background-color: hsl(var(--popover));
+  box-shadow: var(--shadow-pop);
+}
+.dark .job-search-pop {
+  background-color: hsl(var(--card));
+}
+
+/* ===== Hover hints (2026-11-16) =========================================
+   The one tooltip the whole app uses (`components/ui/hover-tips.tsx` shows
+   every native `title` in it). Inverse of the page so it reads on any
+   surface, in both themes. Opaque on purpose: a hint is a line of text over
+   busy content. */
+.hover-tip {
+  position: fixed;
+  z-index: 200;
+  max-width: min(20rem, calc(100vw - 1rem));
+  padding: 0.375rem 0.625rem;
+  border-radius: 0.5rem;
+  background-color: hsl(var(--foreground));
+  color: hsl(var(--background));
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: 0;
+  text-align: left;
+  text-wrap: pretty;
+  overflow-wrap: anywhere;
+  box-shadow: 0 6px 20px -6px hsl(224 40% 10% / 0.4);
+  pointer-events: none;
+  opacity: 0;
+}
+.hover-tip[data-placed='true'] {
+  opacity: 1;
+  transition: opacity 120ms ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hover-tip[data-placed='true'] {
+    transition: none;
+  }
+}
+
 /* Buttons acknowledge a press everywhere on the board. Disabled controls
    never move (they take no pointer events). */
 .press {

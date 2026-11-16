@@ -1,9 +1,8 @@
 import { useMemo } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Radar, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { SubNav } from "../SubNav";
 import { JOBS_SECTIONS, appPath } from "../nav.config";
-import { Button } from "@/components/ui/button";
 import { JobFeedSheet } from "@/components/job-search/JobFeedSheet";
 import { JobsRefineBar } from "@/components/job-search/JobsRefineBar";
 import { useCombinedJobsCtx } from "@/components/job-search/CombinedJobsProvider";
@@ -15,44 +14,28 @@ function jobsSectionOf(pathname: string): string {
   return pathname.split("/").filter(Boolean).pop() ?? "";
 }
 
-/** Combined-feed chrome: title filter + Job feed drawer trigger. */
-export function JobsTopBar() {
-  const { search, setSearch, customizeOpen, setCustomizeOpen } = useCombinedJobsCtx();
+/**
+ * The title/company search for the For you board. It narrows the cards on
+ * screen as you type; it does not search Saved or Applied, so it is shown on
+ * For you only (it used to sit above all three tabs and do nothing on two).
+ */
+export function JobsSearchField({ className }: { className?: string }) {
+  const { search, setSearch } = useCombinedJobsCtx();
 
   return (
-    <div className="flex min-h-11 items-center gap-3">
-      <h1 className="shrink-0 font-display text-h3 font-bold tracking-tight text-foreground">
-        Jobs
-      </h1>
-      <div className="relative min-w-0 flex-1">
-        <Search
-          className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
-          aria-hidden
-        />
-        <input
-          type="search"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Filter title or company..."
-          aria-label="Filter jobs by title or company"
-          className="h-10 w-full rounded-lg border border-input bg-background pl-8 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-primary/40 focus-visible:ring-2 focus-visible:ring-ring"
-        />
-      </div>
-      <Button
-        size="sm"
-        variant="outline"
-        onClick={() => setCustomizeOpen((open) => !open)}
-        aria-expanded={customizeOpen}
-        aria-controls="job-feed-sheet"
-        className={cn(
-          "h-10 shrink-0 gap-1.5 rounded-lg border-border bg-background px-3.5 text-sm font-semibold shadow-none [&_svg]:h-3.5 [&_svg]:w-3.5",
-          "hover:border-primary hover:bg-primary/10 hover:text-primary",
-          customizeOpen && "border-primary bg-primary/10 text-primary",
-        )}
-      >
-        <Radar className="h-3.5 w-3.5" aria-hidden />
-        Job feed
-      </Button>
+    <div className={cn("relative", className)}>
+      <Search
+        className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
+        aria-hidden
+      />
+      <input
+        type="search"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        placeholder="Search title or company"
+        aria-label="Filter jobs by title or company"
+        className="h-10 w-full rounded-full border border-input bg-background pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-primary/40 focus-visible:ring-2 focus-visible:ring-ring"
+      />
     </div>
   );
 }
@@ -125,13 +108,37 @@ export default function DiscoverPage() {
     <div className="page-full flex flex-col gap-4 !pt-0">
       {/* One frosted chrome stack - avoids the seam from stacked glass bars and
           multiple border-b lines between title, tabs, and filters. Full-bleed
-          within the page padding so the frost matches the global top bar. */}
-      <div className="sticky top-0 z-20 -mx-4 border-b border-border/30 glass-nav px-4 pb-3 pt-2.5 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
-        {isPortals ? <PortalsJobsTopBar /> : <JobsTopBar />}
-        <div className="mt-3 space-y-2">
-          <SubNav ariaLabel="Jobs sections" items={jobsSections} className="border-0" />
-          {showListingRefine && <JobsRefineBar />}
-        </div>
+          within the page padding so the frost matches the global top bar.
+          Pinned from `md` up only: on a phone the stack is four rows, and
+          pinned it left less than half the screen for the jobs. */}
+      <div className="z-20 -mx-4 md:sticky md:top-0 border-b border-border/30 glass-nav px-4 pb-3 pt-2.5 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+        {isPortals ? (
+          <>
+            <PortalsJobsTopBar />
+            <SubNav ariaLabel="Jobs sections" items={jobsSections} className="mt-3 border-0" />
+          </>
+        ) : (
+          // Title, tabs and search share one row from `md` up. On a phone the
+          // tabs take their own line under the title and search.
+          <div className="flex min-h-11 flex-wrap items-center gap-x-4 gap-y-2.5">
+            <h1 className="shrink-0 font-display text-h3 font-bold tracking-tight text-foreground">
+              Jobs
+            </h1>
+            <SubNav
+              ariaLabel="Jobs sections"
+              items={jobsSections}
+              className="order-last w-full min-w-0 border-0 md:order-none md:w-auto"
+            />
+            {showListingRefine && (
+              <JobsSearchField className="min-w-0 flex-1 md:ml-auto md:max-w-xs" />
+            )}
+          </div>
+        )}
+        {showListingRefine && (
+          <div className="mt-3">
+            <JobsRefineBar />
+          </div>
+        )}
       </div>
       {showCombinedFeed && <JobFeedSheet />}
 

@@ -10,6 +10,7 @@
  * - /api/admin - Super-admin console (stats, users, feedback, quotas)
  */
 
+import { userFacingError } from './errorCopy';
 import { viewerTimeZone, viewerTzOffsetMinutes } from './viewerTimezone';
 import { toast } from 'sonner';
 
@@ -263,7 +264,7 @@ class ApiService {
 
       if (!response.ok) {
         return {
-          error: data.error || data.message || data.msg || `HTTP ${response.status}`,
+          error: userFacingError(data.error || data.message || data.msg, response.status),
           status: response.status,
           errorPayload: data,
         };
@@ -294,7 +295,7 @@ class ApiService {
         };
       }
       return {
-        error: error instanceof Error ? error.message : 'Network error',
+        error: userFacingError(error instanceof Error ? error.message : ''),
       };
     }
   }
@@ -568,7 +569,7 @@ class ApiService {
         const message =
           (typeof body.message === 'string' && body.message) ||
           (typeof body.error === 'string' && body.error) ||
-          `HTTP ${response.status}`;
+          userFacingError('', response.status);
         return { error: message, status: response.status, retryAfter };
       }
       const blob = await response.blob();
@@ -778,7 +779,7 @@ class ApiService {
     );
     if (submit.error)
       return { error: submit.error, status: submit.status, errorPayload: submit.errorPayload };
-    if (!submit.data?.job_id) return { error: 'Failed to start plan generation' };
+    if (!submit.data?.job_id) return { error: 'We could not start building your plan. Please try again.' };
     return this.pollJob<{ path_id: string; path: import('../types/learning').LearningPath }>(
       submit.data.job_id,
       150000,
@@ -1365,7 +1366,7 @@ class ApiService {
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
         return {
-          error: data.error || data.message || `HTTP ${response.status}`,
+          error: userFacingError(data.error || data.message, response.status),
           status: response.status,
           errorPayload: data,
         };
@@ -1852,7 +1853,7 @@ class ApiService {
       30000,
     );
     if (submitResp.error) return { error: submitResp.error };
-    if (!submitResp.data?.job_id) return { error: 'Failed to start pipeline' };
+    if (!submitResp.data?.job_id) return { error: 'We could not start that. Please try again.' };
     return this.pollJob<import('../types/jobs').DailyPipelineResult>(
       submitResp.data.job_id,
       900000,
@@ -1898,7 +1899,7 @@ class ApiService {
       });
       clearTimeout(timeoutId);
       const data = await response.json().catch(() => ({}));
-      if (!response.ok) return { error: data.error || `HTTP ${response.status}` };
+      if (!response.ok) return { error: userFacingError(data.error, response.status) };
       emitResumeSetChanged();
       return { data } as ApiResponse<{
         resume: import('../types/jobs').ParsedResume;
@@ -1926,7 +1927,7 @@ class ApiService {
     );
     if (!response.data?.job_id) return response;
     const completed = await this.pollJob<import('../types/resume').TailorPipelineResult>(response.data.job_id, 300000);
-    if (!completed.data) return { error: completed.error || 'Tailoring failed' };
+    if (!completed.data) return { error: completed.error || 'We could not tailor your resume. Please try again.' };
     const resume = completed.data.tailored_resume;
     return { data: { tailored: { summary: resume.summary,
       skills: Object.values(resume.skills).flat(),
@@ -2053,7 +2054,7 @@ class ApiService {
           errorPayload: data,
         };
       }
-      if (!response.ok) return { error: data.error || `HTTP ${response.status}` };
+      if (!response.ok) return { error: userFacingError(data.error, response.status) };
 
       // Backend returns { job_id } with 202 - poll for the parsed result
       if (data.job_id) {
@@ -2145,7 +2146,7 @@ class ApiService {
 
       consecutiveErrors = 0;
       const job = resp.data;
-      if (!job) return { error: 'Job not found' };
+      if (!job) return { error: 'We lost track of that request. Please try again.' };
 
       // Report the real backend status before terminal-state handling so the
       // caller sees queued/processing transitions live. Never let a callback
@@ -2173,7 +2174,7 @@ class ApiService {
             errorPayload: { error_code: 'LLM_RETRIES_EXHAUSTED' },
           };
         }
-        return { error: job.error || 'Job failed. Please try again.' };
+        return { error: job.error ? userFacingError(job.error, 500) : 'That did not finish. Please try again.' };
       }
 
       // Still processing - stream whatever partial result has been written.
@@ -2203,7 +2204,7 @@ class ApiService {
       30000,
     );
     if (submitResp.error) return { error: submitResp.error };
-    if (!submitResp.data?.job_id) return { error: 'Failed to submit job' };
+    if (!submitResp.data?.job_id) return { error: 'We could not start that. Please try again.' };
 
     return this.pollJob<{ jd_analysis: import('../types/resume').JDAnalysis }>(
       submitResp.data.job_id,
@@ -2226,7 +2227,7 @@ class ApiService {
       30000,
     );
     if (submitResp.error) return { error: submitResp.error };
-    if (!submitResp.data?.job_id) return { error: 'Failed to submit job' };
+    if (!submitResp.data?.job_id) return { error: 'We could not start that. Please try again.' };
 
     return this.pollJob<{
       tailored_resume: import('../types/resume').TailoredFullResume;
@@ -2315,7 +2316,7 @@ class ApiService {
         errorPayload: submitResp.errorPayload,
       };
     }
-    if (!submitResp.data?.job_id) return { error: 'Failed to submit job' };
+    if (!submitResp.data?.job_id) return { error: 'We could not start that. Please try again.' };
 
     return this.pollJob<{
       jd_analysis: import('../types/resume').JDAnalysis;
@@ -2428,7 +2429,7 @@ class ApiService {
       30000,
     );
     if (submitResp.error) return { error: submitResp.error };
-    if (!submitResp.data?.job_id) return { error: 'Failed to submit job' };
+    if (!submitResp.data?.job_id) return { error: 'We could not start that. Please try again.' };
 
     return this.pollJob<{ ats_scores: import('../types/resume').ATSScores }>(
       submitResp.data.job_id,
@@ -2608,7 +2609,7 @@ class ApiService {
         errorPayload: submitResp.errorPayload,
       };
     }
-    if (!submitResp.data?.job_id) return { error: 'Failed to submit job' };
+    if (!submitResp.data?.job_id) return { error: 'We could not start that. Please try again.' };
 
     return this.pollJob<{ cover_letter: string }>(submitResp.data.job_id, 120000, signal);
   }
@@ -2769,7 +2770,7 @@ class ApiService {
         if (response.status === 409 && errData.error === 'version_limit_reached') {
           return { error: VERSION_LIMIT_MESSAGE };
         }
-        return { error: errData.error || `HTTP ${response.status}` };
+        return { error: userFacingError(errData.error, response.status) };
       }
       const blob = await response.blob();
       const disposition = response.headers.get('content-disposition') || '';
@@ -3800,7 +3801,7 @@ class ApiService {
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
         return {
-          error: data.error || `HTTP ${response.status}`,
+          error: userFacingError(data.error, response.status),
           status: response.status,
           errorPayload: data,
         };

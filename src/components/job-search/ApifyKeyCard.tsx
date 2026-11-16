@@ -1,3 +1,4 @@
+import { notifyError } from '@/lib/notify';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import {
@@ -94,7 +95,7 @@ export function ApifyKeyCard({ onChange, forceOpenSignal }: ApifyKeyCardProps) {
     const resp = await apiService.deleteApifyKey();
     setSaving(false);
     if (resp.error) {
-      toast.error(resp.error);
+      notifyError("Couldn't remove the key", resp.error);
       return;
     }
     setStatus({ has_key: false });

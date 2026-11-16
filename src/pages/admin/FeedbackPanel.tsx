@@ -65,7 +65,7 @@ export function FeedbackPanel() {
     );
     setLoading(false);
     if (resp.error) {
-      toast.error('Failed to load feedback', { description: resp.error });
+      toast.error("Couldn't load feedback", { description: resp.error });
       return;
     }
     setItems(resp.data?.feedback || []);
@@ -107,7 +107,7 @@ export function FeedbackPanel() {
     });
     setSavingId(null);
     if (resp.error || !resp.data) {
-      toast.error('Failed to send response', { description: resp.error });
+      toast.error("Couldn't send your response", { description: resp.error });
       return;
     }
     setItems((prev) => prev.map((it) => (it.id === id ? resp.data! : it)));
@@ -120,7 +120,7 @@ export function FeedbackPanel() {
     const resp = await apiService.updateAdminFeedback(id, { status });
     setSavingId(null);
     if (resp.error || !resp.data) {
-      toast.error('Failed to update', { description: resp.error });
+      toast.error("Couldn't save that change", { description: resp.error });
       return;
     }
     setItems((prev) => prev.map((it) => (it.id === id ? resp.data! : it)));

@@ -94,7 +94,8 @@ export function SponsorshipBadge({ sponsorship }: { sponsorship: SponsorshipSign
 type FlagKey = keyof VisaFlags;
 
 const FLAG_LABELS: Record<FlagKey, string> = {
-  sponsors_h1b: 'Sponsors H-1B',
+  // Past tense on purpose: this is a filing record, not a promise.
+  sponsors_h1b: 'Has sponsored H-1B',
   cap_exempt: 'Cap-exempt',
   accepts_cpt: 'Accepts CPT',
   no_citizenship_requirement: 'No citizenship req',

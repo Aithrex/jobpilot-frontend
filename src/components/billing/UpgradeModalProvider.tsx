@@ -73,7 +73,7 @@ export function UpgradeModalProvider({ children }: { children: ReactNode }) {
     const res = await apiService.upgradePlan(tier);
     setPending(null);
     if (res.error) {
-      toast.error('Could not start upgrade', { description: res.error });
+      toast.error("Couldn't start the upgrade", { description: res.error });
       return;
     }
     if (res.data?.checkout_url) {

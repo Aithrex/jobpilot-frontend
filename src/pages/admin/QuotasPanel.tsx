@@ -52,7 +52,7 @@ export function QuotasPanel() {
     ]);
     setLoading(false);
     if (resp.error) {
-      toast.error('Failed to load users', { description: resp.error });
+      toast.error("Couldn't load users", { description: resp.error });
       return;
     }
     if (!resp.data) return;
@@ -112,7 +112,7 @@ export function QuotasPanel() {
     const resp = await apiService.updateAdminUserQuota(email, newLimit);
     if (resp.error) {
       setSavingEmail(null);
-      toast.error('Could not update quota', { description: resp.error });
+      toast.error("Couldn't update the quota", { description: resp.error });
       return;
     }
     if (!resp.data) {
@@ -254,7 +254,7 @@ function QuotaRow({
     }
     const n = parseInt(trimmed, 10);
     if (Number.isNaN(n) || n < 0 || n > 1000) {
-      toast.error('Limit must be 0-1000');
+      toast.error('Enter a limit between 0 and 1000');
       return;
     }
     onSave(n);

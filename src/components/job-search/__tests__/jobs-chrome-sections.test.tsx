@@ -1,8 +1,15 @@
 /**
- * Jobs chrome is section-aware: For you keeps the merged Job feed drawer;
- * Career Portals keeps Live listings + Customize and must not mount Job feed.
+ * Jobs chrome is section-aware.
+ *
+ * For you carries the search bar: every control that decides what is on the
+ * board (roles, place, experience, visa, company, match), each one a labelled
+ * segment that is always on screen. It replaced a "Job feed" button that hid
+ * half of them in a drawer.
+ *
+ * Saved and Applied are lists of the user's own roles. The board's search and
+ * filters do not apply to them, so they are not shown there.
  */
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { beforeEach, describe, expect, test, vi, type Mock } from 'vitest';
@@ -98,16 +105,33 @@ describe('DiscoverPage section-aware Jobs chrome', () => {
     api.getSavedJobs.mockResolvedValue({ data: { jobs: [] }, status: 200 });
   });
 
-  test('For you shows Job feed button and title filter', () => {
+  test('For you shows every search control as a labelled segment, and the title filter', () => {
     renderDiscover('/app/jobs/for-you');
-    expect(screen.getByRole('button', { name: /job feed/i })).toBeInTheDocument();
+    const bar = screen.getByRole('group', { name: /your job search/i });
+    // The question each segment answers is its visible label.
+    for (const label of ['Roles', 'Where', 'Experience', 'Visa', 'Company', 'Match']) {
+      expect(within(bar).getByText(label)).toBeInTheDocument();
+    }
+    // The sponsorship filter is on by default; it must be visible, not buried.
+    expect(within(bar).getByRole('button', { name: /visa sponsorship: hide refusals/i })).toBeInTheDocument();
+    expect(within(bar).getByRole('button', { name: /where: united states/i })).toBeInTheDocument();
+    expect(within(bar).getByRole('button', { name: /match: any match/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/filter jobs by title or company/i)).toBeInTheDocument();
+    // The drawer with the vague name is gone.
+    expect(screen.queryByRole('button', { name: /^job feed$/i })).not.toBeInTheDocument();
     expect(screen.queryByText(/scan one catalog at a time/i)).not.toBeInTheDocument();
   });
 
-  test('Career Portals hides Job feed button and combined search', () => {
+  test('a phone gets one summary button that opens every editor', () => {
+    renderDiscover('/app/jobs/for-you');
+    expect(
+      screen.getByRole('button', { name: /edit your job search and filters/i }),
+    ).toHaveAttribute('aria-controls', 'job-feed-sheet');
+  });
+
+  test('Career Portals hides the search bar and combined search', () => {
     renderDiscover('/app/jobs/portals');
-    expect(screen.queryByRole('button', { name: /job feed/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: /your job search/i })).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/filter jobs by title or company/i)).not.toBeInTheDocument();
     expect(screen.getByText(/scan one catalog at a time/i)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /see merged feed/i })).toHaveAttribute(
@@ -116,9 +140,11 @@ describe('DiscoverPage section-aware Jobs chrome', () => {
     );
   });
 
-  test('Saved keeps Job feed chrome without portals copy', () => {
+  test('Saved shows the tabs but not the board search, which does not apply to it', () => {
     renderDiscover('/app/jobs/saved');
-    expect(screen.getByRole('button', { name: /job feed/i })).toBeInTheDocument();
+    expect(screen.getByRole('navigation', { name: /jobs sections/i })).toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: /your job search/i })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/filter jobs by title or company/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/scan one catalog at a time/i)).not.toBeInTheDocument();
   });
 

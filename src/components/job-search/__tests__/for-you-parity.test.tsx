@@ -20,6 +20,7 @@ vi.mock('@/hooks/useJobTitles', () => ({ useJobTitles: () => ({
 vi.mock('@/hooks/useCombinedJobs', () => ({
   loadCombinedPrefs: () => ({}), saveCombinedPrefs: vi.fn(),
   useCombinedJobs: () => ({ jobs: state.jobs, ready: true, loading: false, hasResult: true,
+    titles: ['Analyst'], titlesPending: false,
     canSearch: true, resumeSkillCount: 5, progress: { done: 3, total: 3 },
     states: { workday: {}, careers: {}, mncs: {} }, run: vi.fn() }),
 }));
@@ -107,7 +108,7 @@ test('experience totals visibly include unspecified levels without dropping or r
   act(() => feed.setRecency('3d'));
   await waitFor(() => expect(feed.visibleJobs).toHaveLength(207));
 
-  const equation = '207 roles = 44 Entry + 103 Mid + 60 no level stated';
+  const equation = '207 roles: 44 Entry, 103 Mid, 60 with no level stated';
   expect(screen.getByLabelText('Experience count breakdown')).toHaveTextContent(equation);
   expect(screen.getByRole('radio', { name: 'Last 3 days 207' })).toBeChecked();
   const expectedOrder = [...selected.filter((job) => job.days_ago === 0), ...selected.filter((job) => job.days_ago === 2)];
@@ -124,7 +125,7 @@ test('experience totals visibly include unspecified levels without dropping or r
   act(() => feed.setRecency('today'));
   await waitFor(() => expect(feed.visibleJobs).toHaveLength(3));
   expect(screen.getAllByLabelText('Experience count breakdown').every((item) =>
-    item.textContent === '3 roles = 1 Entry + 1 Mid + 1 no level stated')).toBe(true);
+    item.textContent === '3 roles: 1 Entry, 1 Mid, 1 with no level stated')).toBe(true);
 
   await user.click(screen.getByRole('button', { name: 'Show all levels' }));
   expect(feed.visibleJobs).toHaveLength(4);

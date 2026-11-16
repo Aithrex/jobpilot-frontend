@@ -514,7 +514,7 @@ describe('slim list rows', () => {
     renderTracker();
 
     expect(await screen.findByText('Base resume')).toBeInTheDocument();
-    expect(screen.getByText('ATS 71')).toBeInTheDocument();
+    expect(screen.getByText('Match score 71')).toBeInTheDocument();
   });
 
   test('the list asks for slim rows and fetches the rest only when one is opened', async () => {

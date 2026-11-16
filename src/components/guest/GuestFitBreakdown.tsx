@@ -269,7 +269,6 @@ export function GuestFitBreakdown({ fit, className }: GuestFitBreakdownProps) {
   </span>
   )}
   {fit.confidence && <span>Confidence: {humanizeBand(fit.confidence)}</span>}
-  {fit.scoreVersion && <span className="tabular-nums">Scorer {fit.scoreVersion}</span>}
   </div>
   </div>
 

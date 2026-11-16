@@ -3,13 +3,17 @@ import { RECENCY_OPTIONS } from '@/lib/careerJobs';
 import { timeZoneName, useViewerTimeZone } from '@/lib/viewerTimezone';
 import { PillSwitch } from '@/components/ui/pill-switch';
 import { cn } from '@/lib/utils';
-import { ExperienceCountBreakdown, ExperienceLevelPicker } from '@/components/job-search/ExperienceLevelPicker';
-import { CompanyFilter } from '@/components/job-search/CompanyFilter';
+import { JobSearchBar } from '@/components/job-search/JobSearchBar';
 
 /**
- * For-you listing chrome: experience level, employer types, recency windows + Newest / Best match + open vs
- * applied. Lives under the Jobs section tabs so it stays visible even before
- * the first scan result.
+ * For-you chrome under the Jobs tabs: the search bar (what and who), then one
+ * row for when it was posted and how the list is ordered. Stays visible before
+ * the first result, so the controls are there to fix an empty board.
+ *
+ * What the list leaves out (weaker matches, repeat postings, roles already
+ * applied to) is said under the list, where each note carries its own "show"
+ * link. It used to be an "Open / Incl. applied" switch here, and nobody could
+ * say what "Open" meant.
  */
 export function JobsRefineBar() {
   const {
@@ -18,25 +22,24 @@ export function JobsRefineBar() {
     setRecency,
     sortBy,
     setSortBy,
-    showApplied,
-    setShowApplied,
     seenThrough,
     newCount,
     newOnly,
     setNewOnly,
+    visibleJobs,
   } = useCombinedJobsCtx();
-  // Only when the server told us when the last visit ended; while filtering,
-  // kept visible so the filter can always be turned off.
-  const showNewChip = !!seenThrough && (newCount > 0 || newOnly);
+  // Only when the server told us when the last visit ended, and only when it
+  // would narrow the list: with every role new, "New (7)" beside "Today 7"
+  // was the same number twice. While filtering it stays, so it can be undone.
+  const showNewChip = !!seenThrough && (newOnly || (newCount > 0 && newCount < visibleJobs.length));
   const zone = timeZoneName(useViewerTimeZone());
 
   return (
-    <div className="space-y-2">
-      {/* When it was posted is the first question, so it leads; who and how
-          to order sit together on the right. The old trailing "N roles" pill
-          looked like a button and repeated the count shown just below. */}
+    <div className="space-y-2.5">
+      <JobSearchBar />
+
       <div
-        className="flex flex-wrap items-center gap-2"
+        className="flex flex-wrap items-center gap-x-2 gap-y-2"
         role="toolbar"
         aria-label="Listing recency and sort"
       >
@@ -78,10 +81,7 @@ export function JobsRefineBar() {
             New <span className="tabular-nums">({newCount})</span>
           </button>
         )}
-        <span className="mx-1 hidden h-6 w-px shrink-0 bg-border sm:block" aria-hidden />
-        <ExperienceLevelPicker />
-        <CompanyFilter className="h-9" />
-        <div className="flex shrink-0 items-center gap-2 sm:ml-auto sm:pl-2">
+        <div className="flex shrink-0 items-center gap-2 sm:ml-auto">
           <PillSwitch
             aria-label="Sort jobs"
             value={sortBy}
@@ -89,28 +89,12 @@ export function JobsRefineBar() {
             layoutId="jobs-sort-pill"
             className="shrink-0"
             options={[
-              { value: 'score', label: 'Best match' },
-              { value: 'newest', label: 'Newest' },
-            ]}
-          />
-          <PillSwitch
-            aria-label="Applied roles visibility"
-            value={showApplied ? 'all' : 'open'}
-            onValueChange={(v) => setShowApplied(v === 'all')}
-            layoutId="jobs-applied-pill"
-            className="shrink-0"
-            options={[
-              { value: 'open', label: 'Open', title: 'Hide roles you already applied to' },
-              {
-                value: 'all',
-                label: 'Incl. applied',
-                title: 'Show applied roles at the bottom of the list',
-              },
+              { value: 'score', label: 'Best match', title: 'Closest matches to your resume first' },
+              { value: 'newest', label: 'Newest', title: 'Most recently posted first' },
             ]}
           />
         </div>
       </div>
-      <ExperienceCountBreakdown />
     </div>
   );
 }

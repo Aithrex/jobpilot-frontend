@@ -114,7 +114,7 @@ export default function VisaTimelineTab() {
     });
     setSaving(false);
     if (resp.error) {
-      toast.error('Could not save profile', { description: resp.error });
+      toast.error("Couldn't save your profile", { description: resp.error });
       return;
     }
     toast.success('Visa profile saved. Timeline refreshing.');

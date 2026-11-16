@@ -1,13 +1,21 @@
 /**
- * JdInputPanel - the Job Description inspector tab body.
+ * JdInputPanel - where a tailoring starts: paste the job posting, press one
+ * button.
  *
- * Presentational: a shadcn Textarea (10k cap + char counter), Paste / Clear /
- * Retry-fetch / Open-posting affordances, the extracted-requirements chips
- * (when a result exists), and the primary "Tailor My Resume" CTA. All data +
- * handlers arrive via props; the only local behavior is clipboard read.
+ * Before a result it is the whole left column, so it is written as a short
+ * form in reading order: the posting, the two quiet choices (which resume,
+ * what format) folded into one line each, then the action. The format
+ * controls used to sit open between the box and the button, which pushed
+ * "Tailor my resume" below the fold on a laptop.
+ *
+ * After a result it is the "Job posting" tab: the same box, plus the
+ * requirements we read from it.
+ *
+ * Presentational: all data + handlers arrive via props; the only local
+ * behaviour is the clipboard read.
  */
 import type React from 'react';
-import { Clipboard, RotateCw, ExternalLink, Sparkles, Loader2 } from 'lucide-react';
+import { ChevronDown, Clipboard, ExternalLink, Loader2, RotateCw, ShieldCheck, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -29,6 +37,10 @@ export interface JdInputPanelProps {
   onQuotaBlocked: () => void;
   /** Format choices shown before tailoring (ResumeFormatControls). */
   formatControls?: React.ReactNode;
+  /** One line naming the current format ("1 page, compact"). */
+  formatSummary?: string;
+  /** Which uploaded resume to start from (BaseResumePicker). */
+  resumePicker?: React.ReactNode;
 }
 
 export function JdInputPanel({
@@ -41,11 +53,14 @@ export function JdInputPanel({
   result,
   onSubmit,
   formatControls,
+  formatSummary,
+  resumePicker,
   dailyRemaining,
   usageLoading,
   onQuotaBlocked,
 }: JdInputPanelProps) {
   const quotaBlocked = dailyRemaining === 0;
+  const starting = !result;
 
   const handlePaste = async () => {
     try {
@@ -69,15 +84,19 @@ export function JdInputPanel({
   })();
 
   return (
-    <div className="p-5 sm:p-6 space-y-4">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <h2 className="text-title-sm text-foreground">Job description</h2>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Paste the complete job posting. We'll extract requirements automatically.
+    <div className="space-y-4 p-5 sm:p-6">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <h2 className={cn('text-foreground', starting ? 'font-display text-h2' : 'text-title-sm')}>
+            {starting ? 'Paste the job posting' : 'Job posting'}
+          </h2>
+          <p className="mt-1 max-w-prose text-caption text-muted-foreground">
+            {starting
+              ? 'Copy the whole posting from the company site. We read what it asks for and rewrite your resume around it.'
+              : 'The posting this resume was tailored for.'}
           </p>
         </div>
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="flex shrink-0 flex-wrap items-center justify-end gap-1">
           {pendingJobUrl && !jdText && (
             <Button
               type="button"
@@ -85,15 +104,15 @@ export function JdInputPanel({
               size="sm"
               onClick={onRetryFetch}
               disabled={disabled || retryingJdFetch}
-              className="hit-target h-auto gap-1 px-2.5 py-1.5 text-caption-sm text-primary border-primary/30 bg-primary/10 hover:bg-primary/20 hover:text-primary"
-              title={`Re-attempt auto-fetch from ${hostname}`}
+              className="hit-target h-auto gap-1 border-primary/30 bg-primary/10 px-2.5 py-1.5 text-caption-sm text-primary hover:bg-primary/20 hover:text-primary"
+              title={`Try reading the posting from ${hostname} again`}
             >
               {retryingJdFetch ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
               ) : (
-                <RotateCw className="w-3.5 h-3.5" aria-hidden="true" />
+                <RotateCw className="h-3.5 w-3.5" aria-hidden="true" />
               )}
-              {retryingJdFetch ? 'Fetching...' : 'Retry JD fetch'}
+              {retryingJdFetch ? 'Reading...' : 'Read the posting again'}
             </Button>
           )}
           {pendingJobUrl && (
@@ -101,7 +120,7 @@ export function JdInputPanel({
               asChild
               variant="ghost"
               size="sm"
-              className="hit-target h-auto gap-1 px-2.5 py-1.5 text-caption-sm text-muted-foreground hover:text-primary hover:bg-primary/10"
+              className="hit-target h-auto gap-1 px-2.5 py-1.5 text-caption-sm text-muted-foreground hover:bg-primary/10 hover:text-primary"
             >
               <a
                 href={pendingJobUrl}
@@ -110,19 +129,19 @@ export function JdInputPanel({
                 title="Open the original posting in a new tab"
               >
                 Open posting
-                <ExternalLink className="w-3 h-3" aria-hidden="true" />
+                <ExternalLink className="h-3 w-3" aria-hidden="true" />
               </a>
             </Button>
           )}
           <Button
             type="button"
-            variant="ghost"
+            variant="outline"
             size="sm"
             onClick={handlePaste}
             disabled={disabled}
-            className="hit-target h-auto gap-1 px-2.5 py-1.5 text-caption-sm text-muted-foreground hover:text-primary hover:bg-primary/10"
+            className="hit-target h-9 gap-1.5 px-3 text-xs font-medium"
           >
-            <Clipboard className="w-3.5 h-3.5" aria-hidden="true" />
+            <Clipboard className="h-3.5 w-3.5" aria-hidden="true" />
             Paste
           </Button>
           {jdText && (
@@ -132,7 +151,7 @@ export function JdInputPanel({
               size="sm"
               onClick={() => onJdTextChange('')}
               disabled={disabled}
-              className="hit-target h-auto px-2 py-1.5 text-caption-sm text-muted-foreground hover:text-destructive"
+              className="hit-target h-9 px-2.5 text-xs text-muted-foreground hover:text-destructive"
             >
               Clear
             </Button>
@@ -142,7 +161,7 @@ export function JdInputPanel({
 
       <div className="relative">
         <Textarea
-          placeholder="Paste the job description here. We'll extract key requirements and tailor your resume automatically..."
+          placeholder="Paste the job description here. For example: About the role, responsibilities, requirements..."
           value={jdText}
           onChange={(e) => onJdTextChange(e.target.value)}
           onKeyDown={(e) => {
@@ -156,12 +175,15 @@ export function JdInputPanel({
           }}
           aria-label="Job description"
           aria-describedby="jd-char-count"
-          rows={10}
+          rows={5}
           maxLength={10000}
           disabled={disabled}
-          className="min-h-[280px] rounded-container leading-relaxed resize-none focus-visible:ring-primary"
+          className={cn(
+            'resize-none rounded-container leading-relaxed focus-visible:ring-primary',
+            starting ? 'min-h-[150px] lg:min-h-[230px]' : 'min-h-[200px]',
+          )}
         />
-        <span id="jd-char-count" className="absolute bottom-3 right-3 text-caption-sm text-muted-foreground tabular-nums pointer-events-none">
+        <span id="jd-char-count" className="pointer-events-none absolute bottom-3 right-3 text-caption-sm tabular-nums text-muted-foreground">
           {jdText.length.toLocaleString()} / 10,000
         </span>
       </div>
@@ -174,23 +196,40 @@ export function JdInputPanel({
         />
       )}
 
-      {formatControls && !result && (
-        <div className="rounded-container border border-border bg-muted/30 p-4">
-          <p className="mb-3 text-sm font-semibold text-foreground">Resume format</p>
-          {formatControls}
+      {/* The two choices most people leave alone, one line each. */}
+      {starting && (resumePicker || formatControls) && (
+        <div className="space-y-2">
+          {resumePicker}
+          {formatControls && (
+            <details className="group rounded-container border border-border bg-muted/30">
+              <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-container px-4 py-2.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                <span className="min-w-0">
+                  <span className="font-medium text-foreground">Format</span>
+                  {formatSummary && (
+                    <span className="ml-2 text-caption text-muted-foreground">{formatSummary}</span>
+                  )}
+                </span>
+                <span className="flex shrink-0 items-center gap-1 text-caption font-medium text-primary">
+                  Change
+                  <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" aria-hidden="true" />
+                </span>
+              </summary>
+              <div className="border-t border-border px-4 py-4">{formatControls}</div>
+            </details>
+          )}
         </div>
       )}
 
       {/* Quota-exhausted banner - shown above the CTA so the reason is clear. */}
       {quotaBlocked && (
-        <div className="mb-3 rounded-container border border-warning/40 bg-warning/10 px-4 py-3">
+        <div className="rounded-container border border-warning/40 bg-warning/10 px-4 py-3">
           <div className="flex items-start gap-3">
-            <span className="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-warning/20 text-warning text-xs font-bold">
+            <span className="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-warning/20 text-xs font-bold text-warning">
               !
             </span>
             <div className="flex-1 text-sm">
               <p className="font-semibold text-warning">Daily limit reached</p>
-              <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                 Tailoring is capped per UTC day so the AI stays free for everyone. The
                 counter resets at midnight UTC.
               </p>
@@ -206,41 +245,56 @@ export function JdInputPanel({
         </div>
       )}
 
-      <Button
-        type="button"
-        onClick={() => {
-          if (quotaBlocked) {
-            onQuotaBlocked();
-            return;
-          }
-          onSubmit();
-        }}
-        disabled={!jdText.trim() || disabled}
-        className={cn(
-          'w-full h-auto min-h-12 py-3.5 rounded-container text-sm font-semibold shadow-soft transition-colors duration-200',
-        )}
-      >
-        {disabled ? (
-          <>
-            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-            Tailoring...
-          </>
-        ) : quotaBlocked ? (
-          <>
-            <Sparkles className="w-4 h-4" aria-hidden="true" />
-            Daily limit reached. See options
-          </>
-        ) : (
-          <>
-            <Sparkles className="w-4 h-4" aria-hidden="true" />
-            {result ? 'Re-tailor with new JD' : 'Tailor my resume'}
-          </>
-        )}
-      </Button>
+      <div className="space-y-2">
+        <Button
+          type="button"
+          onClick={() => {
+            if (quotaBlocked) {
+              onQuotaBlocked();
+              return;
+            }
+            onSubmit();
+          }}
+          disabled={!jdText.trim() || disabled}
+          className="h-auto min-h-12 w-full rounded-container py-3.5 text-sm font-semibold shadow-soft transition-colors duration-200"
+        >
+          {disabled ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              Tailoring...
+            </>
+          ) : quotaBlocked ? (
+            <>
+              <Sparkles className="h-4 w-4" aria-hidden="true" />
+              Daily limit reached. See options
+            </>
+          ) : (
+            <>
+              <Sparkles className="h-4 w-4" aria-hidden="true" />
+              {result ? 'Tailor again with this posting' : 'Tailor my resume'}
+            </>
+          )}
+        </Button>
 
-      {!usageLoading && dailyRemaining !== null && dailyRemaining > 0 && (
-        <p className="text-center text-caption-sm text-muted-foreground tabular-nums">
-          {dailyRemaining} tailor{dailyRemaining === 1 ? '' : 's'} left today
+        {starting && !jdText.trim() && !disabled && (
+          <p className="text-center text-caption-sm text-muted-foreground">
+            Paste a job posting above to turn this on.
+          </p>
+        )}
+        {!usageLoading && dailyRemaining !== null && dailyRemaining > 0 && (
+          <p className="text-center text-caption-sm tabular-nums text-muted-foreground">
+            {dailyRemaining} tailor{dailyRemaining === 1 ? '' : 's'} left today
+          </p>
+        )}
+      </div>
+
+      {starting && (
+        <p className="flex items-start gap-2 rounded-container bg-muted/40 px-3.5 py-3 text-caption leading-snug text-muted-foreground">
+          <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-signal" aria-hidden="true" />
+          <span>
+            We work from what is already in your resume. Anything we cannot trace back to it is
+            flagged for you to check before you download.
+          </span>
         </p>
       )}
     </div>

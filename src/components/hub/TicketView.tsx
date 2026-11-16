@@ -86,7 +86,7 @@ export default function TicketView({ day, params, onBack, onCompleted }: TicketV
         });
         return;
       }
-      toast.error("Could not submit", { description: err.message });
+      toast.error("Couldn't submit that", { description: err.message });
     }
   };
 

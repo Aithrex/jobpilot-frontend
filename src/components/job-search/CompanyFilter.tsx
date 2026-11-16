@@ -1,28 +1,32 @@
 import { useMemo, useState } from 'react';
-import { Building2, ChevronDown, Search, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Building2, Search, X } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useCombinedJobsCtx } from '@/components/job-search/CombinedJobsProvider';
+import { SearchSegment } from '@/components/job-search/SearchSegment';
 import { COMPANY_TYPE_META, COMPANY_TYPE_ORDER } from '@/lib/companyTypes';
 import type { CompanyFacet } from '@/lib/forYouSelection';
-import { cn } from '@/lib/utils';
 import type { CompanyType } from '@/types/jobs';
 
 /** Rows shown per group before "Show all". Keeps a 400-company board light. */
 const GROUP_PREVIEW = 8;
 
+/** What the Company segment says: "All companies", one name, or a count. */
+export function companySummary(companies: ReadonlySet<string>, facets: readonly CompanyFacet[]): string {
+  if (companies.size === 0) return 'All companies';
+  if (companies.size === 1) return facets.find((f) => companies.has(f.key))?.name ?? '1 company';
+  return `${companies.size} companies`;
+}
+
 /**
- * The board's company filter: every company in the current window, grouped by
- * the kind of employer, each with how many roles it holds here.
+ * The company checklist: every company in the current window, grouped by the
+ * kind of employer, each with how many roles it holds here.
  *
  * The free-text search above the board still matches titles and companies;
  * this is the "show me only these" control. Counts are what the board would
  * show with the other filters as they are, so ticking a row never surprises.
  */
-export function CompanyFilter({ className }: { className?: string }) {
+export function CompanyFilterList() {
   const { companyFacets, companies, setCompanies } = useCombinedJobsCtx();
-  const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [expanded, setExpanded] = useState<Set<CompanyType>>(new Set());
 
@@ -54,32 +58,11 @@ export function CompanyFilter({ className }: { className?: string }) {
   };
 
   const picked = companies.size;
-  const triggerLabel = picked === 0 ? 'Companies' : picked === 1
-    ? (companyFacets.find((f) => companies.has(f.key))?.name ?? '1 company')
-    : `${picked} companies`;
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          aria-label={picked ? `Companies filter, ${picked} selected` : 'Filter by company'}
-          className={cn(
-            'hit-target h-9 shrink-0 gap-1.5 rounded-full border-border/80 bg-background/80 px-3 text-xs font-semibold',
-            picked > 0 && 'border-primary/50 bg-primary/10 text-primary',
-            className,
-          )}
-          data-testid="company-filter-trigger"
-        >
-          <Building2 className="h-3.5 w-3.5" aria-hidden />
-          <span className="max-w-[9rem] truncate">{triggerLabel}</span>
-          <ChevronDown className={cn('h-3.5 w-3.5 transition-transform duration-base ease-standard motion-reduce:transition-none', open && 'rotate-180')} aria-hidden />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent align="start" className="w-[min(22rem,calc(100vw-2rem))] p-0">
+    <>
         <div className="border-b border-border/60 p-3">
+          <p className="mb-2 px-1 text-sm font-semibold text-foreground">Only show these companies</p>
           <div className="relative">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" aria-hidden />
             <input
@@ -171,7 +154,27 @@ export function CompanyFilter({ className }: { className?: string }) {
             );
           })}
         </div>
-      </PopoverContent>
-    </Popover>
+    </>
+  );
+}
+
+/** The Company segment of the search bar. */
+export function CompanyFilter() {
+  const { companyFacets, companies } = useCombinedJobsCtx();
+  const picked = companies.size;
+
+  return (
+    <SearchSegment
+      icon={Building2}
+      label="Company"
+      value={companySummary(companies, companyFacets)}
+      ariaLabel={picked ? `Companies filter, ${picked} selected` : 'Filter by company'}
+      changed={picked > 0}
+      align="end"
+      contentClassName="w-[min(24rem,calc(100vw-2rem))] p-0"
+      testId="company-filter-trigger"
+    >
+      <CompanyFilterList />
+    </SearchSegment>
   );
 }

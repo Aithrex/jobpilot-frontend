@@ -136,7 +136,7 @@ export default function InterviewPrepTab({ embedded }: InterviewPrepTabProps) {
     setGenerating(true);
     const resp = await apiService.generateInterviewPrep(selectedId, { force });
     setGenerating(false);
-    if (resp.error) { toast.error("Failed to generate prep", { description: resp.error }); return; }
+    if (resp.error) { toast.error("Couldn't generate the interview prep", { description: resp.error }); return; }
     const prep = resp.data?.interview_prep;
     if (prep?.content) {
       setContent(prep.content);
@@ -186,7 +186,7 @@ export default function InterviewPrepTab({ embedded }: InterviewPrepTabProps) {
     });
     setFetchingMore(null);
     if (r.error || !r.data?.question) {
-      toast.error("Couldn't get another", { description: r.error });
+      toast.error("Couldn't get another question", { description: r.error });
       return;
     }
     // Append into local content

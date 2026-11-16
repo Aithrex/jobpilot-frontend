@@ -164,8 +164,51 @@ describe('JobCard apply confirmation', () => {
         onHide={onHide}
       />,
     );
-    await userEvent.click(screen.getByRole('button', { name: /hide this job/i }));
+    // "Not interested" lives in the card's More menu, as a labelled item: the
+    // bare crossed-circle icon it used to be could not be guessed.
+    expect(screen.queryByRole('button', { name: /hide this job/i })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /more for platform engineer/i }));
+    const item = await screen.findByRole('menuitem', { name: /hide this job/i });
+    expect(item).toHaveTextContent('Not interested');
+    await userEvent.click(item);
     expect(onHide).toHaveBeenCalledTimes(1);
+  });
+
+  test('one or two skill gaps are named; the visa line says so when nothing is known', () => {
+    render(
+      <JobCard
+        job={{ ...JOB, matched_skills: ['sql'], missing_skills: ['Amplitude', 'dbt'] }}
+        saved={false}
+        jobStatus={null}
+        onSave={() => {}}
+        onUnsave={() => {}}
+        onQuickApply={() => {}}
+        showVisaUnknown
+      />,
+    );
+    expect(screen.getByTestId('job-skill-match')).toHaveTextContent('Matches sql · Missing Amplitude, dbt');
+    // Unknown is said as unknown, never implied as "no".
+    expect(screen.getByTestId('job-visa-unknown')).toHaveTextContent('No sponsorship information found');
+    expect(screen.queryByTestId('job-sponsorship-refused')).not.toBeInTheDocument();
+  });
+
+  test('a posting that refuses sponsorship says so on the card itself', () => {
+    render(
+      <JobCard
+        job={JOB}
+        saved={false}
+        jobStatus={null}
+        onSave={() => {}}
+        onUnsave={() => {}}
+        onQuickApply={() => {}}
+        sponsorshipRefused="Applicants must be authorized to work without sponsorship."
+        showVisaUnknown
+      />,
+    );
+    const refused = screen.getByTestId('job-sponsorship-refused');
+    expect(refused).toHaveTextContent('Says it will not sponsor a visa');
+    expect(refused).toHaveAttribute('title', 'Applicants must be authorized to work without sponsorship.');
+    expect(screen.queryByTestId('job-visa-unknown')).not.toBeInTheDocument();
   });
 
   test('Tailor resume is a visible tile action without starting the apply pipeline', async () => {

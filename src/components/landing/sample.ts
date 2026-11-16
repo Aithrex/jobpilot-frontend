@@ -58,7 +58,7 @@ export const SAMPLE_ROLES: readonly SampleRole[] = [
     level: 'Entry level',
     visa: {
       kind: 'sponsors',
-      chip: 'Sponsors H-1B',
+      chip: 'Has sponsored H-1B',
       detail: 'Public filings show approvals in similar roles. The data year is shown with the count.',
     },
     why: [
@@ -154,7 +154,7 @@ export const SAMPLE_ROLES: readonly SampleRole[] = [
     level: 'Mid level',
     visa: {
       kind: 'sponsors',
-      chip: 'Sponsors H-1B',
+      chip: 'Has sponsored H-1B',
       detail: 'Public filings show approvals for this employer.',
     },
     why: ['Your ', { mark: 'SQL' }, ' is a fit, but most of this role is pipeline work.'],

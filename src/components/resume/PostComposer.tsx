@@ -49,7 +49,7 @@ export function PostComposer({
       return;
     }
     if (res.error || !res.data?.variants?.length) {
-      toast.error('Could not draft post', { description: res.error || 'Please try again.' });
+      toast.error("Couldn't draft the post", { description: res.error || 'Please try again.' });
       return;
     }
     setVariants(res.data.variants);

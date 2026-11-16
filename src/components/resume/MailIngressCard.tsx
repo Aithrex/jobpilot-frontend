@@ -80,7 +80,7 @@ export function MailIngressCard() {
       return;
     }
     if (res.error) {
-      toast.error("Couldn't provision an address", { description: res.error });
+      toast.error("Couldn't create your address", { description: res.error });
       return;
     }
     setAddress(res.data ?? null);

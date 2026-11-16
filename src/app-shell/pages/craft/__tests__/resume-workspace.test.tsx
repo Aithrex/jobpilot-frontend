@@ -1,23 +1,28 @@
 /**
- * Resume workspace shell + overview.
+ * Resume destination shell + the Tailor start screen's two companions.
  *
- * Covers the information-architecture contract of the redesign:
- *   - the horizontal sub-tab strip is gone, replaced by a grouped left rail
- *     using the exact headings CREATE / MANAGE / INSIGHTS;
- *   - "Six Seconds" keeps its product name verbatim;
+ * Covers the information-architecture contract of the 2026-11-16 redesign:
+ *   - Resume has one header and one tab strip, like Jobs, Tracker and Grow
+ *     (the left dock, the overview page and the "resume health" panel are
+ *     gone);
+ *   - the tabs are named for what a person does there;
  *   - every existing deep link still resolves to its feature;
- *   - `/app/resume` renders the overview instead of redirecting to Tailor.
+ *   - `/app/resume` opens on the Tailor tool;
+ *   - the start screen shows the real resume file and the newest tailored
+ *     versions, which is what the old overview page was for.
  *
  * The API layer is mocked at the apiService boundary (house style).
  */
 import { render, screen, waitFor, within } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, test, vi, type Mock } from 'vitest';
 
 import { apiService } from '@/lib/api';
 import CraftPage from '@/app-shell/pages/CraftPage';
-import ResumeOverviewPage from '@/app-shell/pages/craft/ResumeOverviewPage';
 import { RESUME_SECTIONS } from '@/app-shell/nav.config';
+import { ResumeWorkspaceProvider } from '@/app-shell/pages/craft/ResumeWorkspaceContext';
+import { RecentTailored } from '@/app-shell/pages/craft/tailor/RecentTailored';
+import { StartPreview } from '@/app-shell/pages/craft/tailor/StartPreview';
 import type { ResumeAssetRow, TailoringRecord } from '@/types/resume';
 
 vi.mock('@/lib/api', () => ({
@@ -25,14 +30,7 @@ vi.mock('@/lib/api', () => ({
     listBaseResumes: vi.fn(),
     getTailoringHistoryPage: vi.fn(),
     downloadResumeFile: vi.fn(),
-    getApplicationStreak: vi.fn(),
-    getDailyUsage: vi.fn(),
   },
-}));
-
-// The overview panel's streak + quota both gate on an authenticated user.
-vi.mock('@/contexts/AuthContext', () => ({
-  useAuth: () => ({ isAuthenticated: true, user: { email: 'a@b.c' } }),
 }));
 
 const api = apiService as unknown as Record<string, Mock>;
@@ -63,13 +61,14 @@ function tailoringRecords(): TailoringRecord[] {
   ];
 }
 
-/** Mount the shell at `path` with a stub for each real child route. */
+/** Mount the shell at `path` with a stub for each real child route, and the
+ *  same index redirect the app's route table uses. */
 function renderShell(path: string) {
   return render(
     <MemoryRouter initialEntries={[path]}>
       <Routes>
         <Route path="/app/resume" element={<CraftPage />}>
-          <Route index element={<ResumeOverviewPage />} />
+          <Route index element={<Navigate to="tailor" replace />} />
           {RESUME_SECTIONS.map((s) => (
             <Route key={s.to} path={s.to} element={<div>stub:{s.to}</div>} />
           ))}
@@ -86,55 +85,50 @@ beforeEach(() => {
   // Default: the preview download fails, which exercises the fallback path.
   // Individual tests opt into a successful blob.
   api.downloadResumeFile.mockRejectedValue(new Error('no file'));
-  api.getApplicationStreak.mockResolvedValue({
-    data: {
-      current_streak: 3,
-      longest_streak: 9,
-      today_count: 1,
-      total_applications: 12,
-      last_application_date: '2026-07-30',
-      heatmap: [],
-    },
-  });
-  api.getDailyUsage.mockResolvedValue({
-    data: {
-      used: 2,
-      limit: 5,
-      remaining: 3,
-      resets_at: '2026-08-01T00:00:00Z',
-      resets_in_seconds: 3600,
-      date: '2026-07-31',
-    },
-  });
 });
 
-describe('Resume workspace navigation', () => {
-  test('renders a grouped rail, not a horizontal tab strip', async () => {
+describe('Resume destination navigation', () => {
+  test('one header and one tab strip, with no dock, overview column or health panel', async () => {
     renderShell('/app/resume/tailor');
 
-    // Exactly one Resume-scoped nav landmark on desktop + the mobile trigger's
-    // sheet content is not open, so the rail is the only section nav present.
-    const rail = await screen.findByRole('navigation', { name: /resume sections/i });
-
+    expect(await screen.findByRole('heading', { level: 1, name: 'Resume' })).toBeInTheDocument();
+    // Exactly one Resume-scoped nav landmark.
+    expect(screen.getAllByRole('navigation', { name: /resume sections/i })).toHaveLength(1);
+    expect(screen.queryByRole('complementary', { name: /resume overview/i })).toBeNull();
+    expect(screen.queryByText(/resume health/i)).toBeNull();
+    // The old dock's group headings are not navigation any more.
     for (const heading of ['Create', 'Manage']) {
-      expect(within(rail).getByText(heading)).toBeInTheDocument();
+      expect(screen.queryByText(heading)).toBeNull();
+    }
+  });
+
+  test('tabs are named for what you do there', async () => {
+    renderShell('/app/resume/tailor');
+    const tabs = await screen.findByRole('navigation', { name: /resume sections/i });
+
+    for (const name of ['Tailor for a job', 'Several jobs at once', 'My resumes', 'Tailored resumes']) {
+      expect(within(tabs).getByRole('link', { name })).toBeInTheDocument();
+    }
+    // The feature names these replaced needed explaining.
+    for (const jargon of ['Batch', 'Library', 'Tailored versions']) {
+      expect(within(tabs).queryByRole('link', { name: jargon })).toBeNull();
     }
   });
 
   test('hides deferred resume analysis tools', async () => {
     renderShell('/app/resume/tailor');
-    const rail = await screen.findByRole('navigation', { name: /resume sections/i });
+    const tabs = await screen.findByRole('navigation', { name: /resume sections/i });
 
-    expect(within(rail).queryByRole('link', { name: /six seconds|voice analysis/i })).not.toBeInTheDocument();
+    expect(within(tabs).queryByRole('link', { name: /six seconds|voice analysis/i })).not.toBeInTheDocument();
     // The rejected rename must not appear anywhere.
     expect(screen.queryByText(/first-glance scan/i)).not.toBeInTheDocument();
   });
 
-  test('rail exposes every section exactly once, with no orphans', async () => {
+  test('the strip exposes every section exactly once, with no orphans', async () => {
     renderShell('/app/resume/tailor');
-    const rail = await screen.findByRole('navigation', { name: /resume sections/i });
+    const tabs = await screen.findByRole('navigation', { name: /resume sections/i });
 
-    const hrefs = within(rail)
+    const hrefs = within(tabs)
       .getAllByRole('link')
       .map((a) => a.getAttribute('href'));
 
@@ -142,8 +136,6 @@ describe('Resume workspace navigation', () => {
     for (const section of RESUME_SECTIONS) {
       expect(hrefs).toContain(`/app/resume/${section.to}`);
     }
-    // No "More" fallback group means every section was explicitly placed.
-    expect(within(rail).queryByText('More')).not.toBeInTheDocument();
   });
 
   test.each(RESUME_SECTIONS.map((s) => s.to))('deep link /app/resume/%s still resolves', async (to) => {
@@ -153,155 +145,113 @@ describe('Resume workspace navigation', () => {
 
   test('marks the active section with aria-current, not colour alone', async () => {
     renderShell('/app/resume/library');
-    const rail = await screen.findByRole('navigation', { name: /resume sections/i });
+    const tabs = await screen.findByRole('navigation', { name: /resume sections/i });
 
-    const active = within(rail).getByRole('link', { current: 'page' });
+    const active = within(tabs).getByRole('link', { current: 'page' });
     expect(active).toHaveAttribute('href', '/app/resume/library');
   });
-});
 
-describe('Resume health panel', () => {
-  test('reports only checks derived from real loaded data', async () => {
-    renderShell('/app/resume/tailor');
-    const dock = await screen.findByRole('navigation', { name: /resume sections/i });
-
-    expect(within(dock).getByText('Resume health')).toBeInTheDocument();
-    // Active + parsed + has-tailored, all satisfied by the fixtures above.
-    expect(await within(dock).findByText('Active resume set')).toBeInTheDocument();
-    expect(within(dock).getByText('Resume parsed and ready')).toBeInTheDocument();
-    expect(within(dock).getByText('Recent version saved')).toBeInTheDocument();
-    expect(within(dock).getByText('3/3')).toBeInTheDocument();
-  });
-
-  test('states gaps honestly instead of inventing a score', async () => {
-    api.listBaseResumes.mockResolvedValue({ data: { versions: [] } });
-    api.getTailoringHistoryPage.mockResolvedValue({ data: { records: [], total: 0, next_cursor: null } });
-
-    renderShell('/app/resume/tailor');
-    const dock = await screen.findByRole('navigation', { name: /resume sections/i });
-
-    expect(await within(dock).findByText('No active resume')).toBeInTheDocument();
-    expect(within(dock).getByText('Nothing tailored yet')).toBeInTheDocument();
-    expect(within(dock).getByText('0/3')).toBeInTheDocument();
-  });
-
-  test('an unparsed resume counts as a real, actionable gap', async () => {
-    api.listBaseResumes.mockResolvedValue({
-      data: { versions: [{ ...baseResumes()[0], parse_status: 'pending' }] },
-    });
-
-    renderShell('/app/resume/tailor');
-    const dock = await screen.findByRole('navigation', { name: /resume sections/i });
-
-    expect(await within(dock).findByText('Active resume set')).toBeInTheDocument();
-    expect(within(dock).getByText('Resume not parsed yet')).toBeInTheDocument();
-    expect(within(dock).getByText('2/3')).toBeInTheDocument();
-  });
-
-  test('shows no ratio while data is still unknown', async () => {
-    // An endpoint that errors leaves its checks indeterminate - the panel must
-    // not present a confident "n/3" built on a failed read.
-    api.getTailoringHistoryPage.mockResolvedValue({ error: 'boom' });
-
-    renderShell('/app/resume/tailor');
-    const dock = await screen.findByRole('navigation', { name: /resume sections/i });
-
-    await waitFor(() =>
-      expect(within(dock).getByText('Active resume set')).toBeInTheDocument(),
-    );
-    expect(within(dock).queryByText(/^\d\/3$/)).toBeNull();
-    expect(within(dock).getByText('Tailored history unavailable')).toBeInTheDocument();
-    expect(within(dock).queryByText('Nothing tailored yet')).toBeNull();
-  });
-});
-
-describe('Resume overview', () => {
-  test('/app/resume renders the workspace overview, not a Tailor redirect', async () => {
+  test('/app/resume opens on the Tailor tool, the thing the destination is for', async () => {
     renderShell('/app/resume');
 
-    // The destination header is the page name alone (2026-11-15 redesign).
-    expect(await screen.findByRole('heading', { level: 1, name: 'Resume' })).toBeInTheDocument();
-    expect(screen.queryByText('stub:tailor')).not.toBeInTheDocument();
-  });
-
-  test('surfaces the active resume and recent tailored versions', async () => {
-    renderShell('/app/resume');
-
-    expect(await screen.findByText('alpha.pdf')).toBeInTheDocument();
-    // Scraped ALL-CAPS strings are title-cased for display.
-    expect(await screen.findByText('Staff Engineer')).toBeInTheDocument();
-    expect(screen.getByText(/Acme Corp/)).toBeInTheDocument();
-    expect(screen.getByText(/ATS 82/)).toBeInTheDocument();
-  });
-
-  test('offers an upload path when there is no resume yet', async () => {
-    api.listBaseResumes.mockResolvedValue({ data: { versions: [] } });
-    renderShell('/app/resume');
-
-    expect(await screen.findByText(/no resume yet/i)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /upload a resume/i })).toHaveAttribute(
+    expect(await screen.findByText('stub:tailor')).toBeInTheDocument();
+    const tabs = screen.getByRole('navigation', { name: /resume sections/i });
+    expect(within(tabs).getByRole('link', { current: 'page' })).toHaveAttribute(
       'href',
-      '/app/resume/library',
+      '/app/resume/tailor',
     );
   });
 
-  test('each panel fails independently and stays retryable', async () => {
+  test('the shell reads the shared model once, for whichever section wants it', async () => {
+    renderShell('/app/resume/tailor');
+    await screen.findByText('stub:tailor');
+
+    await waitFor(() => expect(api.listBaseResumes).toHaveBeenCalledTimes(1));
+    expect(api.getTailoringHistoryPage).toHaveBeenCalledTimes(1);
+    expect(api.getTailoringHistoryPage).toHaveBeenCalledWith({ page_size: 5, sort: 'newest' });
+  });
+});
+
+describe('Recently tailored (Tailor start screen)', () => {
+  function renderRecent() {
+    return render(
+      <MemoryRouter>
+        <ResumeWorkspaceProvider>
+          <RecentTailored />
+        </ResumeWorkspaceProvider>
+      </MemoryRouter>,
+    );
+  }
+
+  test('lists the newest tailored resumes with their facts', async () => {
+    renderRecent();
+
+    const section = await screen.findByRole('region', { name: /recently tailored/i });
+    // Scraped ALL-CAPS strings are title-cased for display.
+    expect(within(section).getByText('Staff Engineer')).toBeInTheDocument();
+    expect(within(section).getByText(/Acme Corp/)).toBeInTheDocument();
+    expect(within(section).getByText('82')).toBeInTheDocument();
+    // The count is the server's total, not the length of the page we loaded.
+    expect(within(section).getByRole('link', { name: /see all 123/i })).toHaveAttribute(
+      'href',
+      '/app/resume/tailored',
+    );
+  });
+
+  test('each one is a single link as a whole, not a small text target', async () => {
+    renderRecent();
+
+    const card = await screen.findByRole('link', {
+      name: /open the resume tailored for staff engineer at acme corp/i,
+    });
+    expect(card).toHaveAttribute('href', '/app/resume/tailored');
+    expect(within(card).queryByRole('link')).toBeNull();
+    expect(within(card).getByText('82')).toBeInTheDocument();
+  });
+
+  test('says nothing when nothing was tailored yet', async () => {
+    api.getTailoringHistoryPage.mockResolvedValue({ data: { records: [], total: 0, next_cursor: null } });
+    renderRecent();
+
+    await waitFor(() => expect(api.getTailoringHistoryPage).toHaveBeenCalled());
+    expect(screen.queryByRole('region', { name: /recently tailored/i })).toBeNull();
+  });
+
+  test('a failed history read hides the list instead of showing an empty one', async () => {
+    // A failed read is unknown, never "you have tailored nothing".
     api.getTailoringHistoryPage.mockResolvedValue({ error: 'boom' });
-    renderShell('/app/resume');
+    renderRecent();
 
-    // The resume panel still renders its data...
-    expect(await screen.findByText('alpha.pdf')).toBeInTheDocument();
-    // ...while only the tailored panel shows a recoverable error.
-    await waitFor(() =>
-      expect(screen.getByText(/could not load tailored versions/i)).toBeInTheDocument(),
+    await waitFor(() => expect(api.getTailoringHistoryPage).toHaveBeenCalled());
+    expect(screen.queryByRole('region', { name: /recently tailored/i })).toBeNull();
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  test('renders nothing outside the Resume shell', () => {
+    const { container } = render(
+      <MemoryRouter>
+        <RecentTailored />
+      </MemoryRouter>,
     );
-    expect(screen.getByRole('button', { name: /try again/i })).toBeInTheDocument();
-  });
-
-  test('a tailored row is clickable as a whole, not via a small text link', async () => {
-    renderShell('/app/resume');
-
-    // One link per record - the row itself. A separate "Review" text target
-    // inside the row would show up as a second, nested link.
-    const row = (await screen.findByRole('link', { name: /review tailored resume for staff engineer/i }));
-    expect(row).toHaveAttribute('href', '/app/resume/tailored');
-    expect(within(row).queryByRole('link')).toBeNull();
-    // The row carries the record's facts, so the label is not the only cue.
-    expect(within(row).getByText(/ATS 82/)).toBeInTheDocument();
-  });
-
-});
-
-describe('No duplicated controls', () => {
-  // The right column used to repeat Six Seconds / Voice analysis as tiles and
-  // the header repeated "Tailor a resume" as a button, so three destinations
-  // were each reachable twice from one viewport. The dock is now the only
-  // place tools launch from.
-  test.each([
-    ['Tailor a resume', /^tailor a resume$/i],
-  ])('%s appears exactly once on the overview', async (_label, pattern) => {
-    renderShell('/app/resume');
-    await screen.findByRole('navigation', { name: /resume sections/i });
-
-    expect(screen.getAllByRole('link', { name: pattern })).toHaveLength(1);
-  });
-
-  test('the only occurrence is the dock row', async () => {
-    renderShell('/app/resume');
-    const dock = await screen.findByRole('navigation', { name: /resume sections/i });
-
-    for (const pattern of [/^tailor a resume$/i]) {
-      expect(within(dock).getByRole('link', { name: pattern })).toBeInTheDocument();
-    }
-    expect(screen.queryByRole('link', { name: /six seconds|voice analysis/i })).not.toBeInTheDocument();
+    expect(container).toBeEmptyDOMElement();
   });
 });
 
-describe('Active resume preview', () => {
-  test('renders the real file inline when it is a PDF', async () => {
+describe('Your resume now (Tailor start screen)', () => {
+  function renderPreview(resume: ResumeAssetRow | null) {
+    return render(
+      <MemoryRouter>
+        <StartPreview resume={resume} />
+      </MemoryRouter>,
+    );
+  }
+
+  test('names the file and renders it inline when it is a PDF', async () => {
     api.downloadResumeFile.mockResolvedValue(new Blob(['%PDF-'], { type: 'application/pdf' }));
-    renderShell('/app/resume');
+    renderPreview(baseResumes()[0]);
 
+    expect(screen.getByText('Your resume now')).toBeInTheDocument();
+    expect(screen.getByText('alpha.pdf')).toBeInTheDocument();
     const frame = await screen.findByTitle(/preview of alpha\.pdf/i);
     expect(frame).toBeInTheDocument();
     expect(api.downloadResumeFile).toHaveBeenCalledWith('ra-1');
@@ -309,10 +259,7 @@ describe('Active resume preview', () => {
 
   test('falls back quietly when the file cannot be previewed', async () => {
     // A DOCX cannot render in a browser at all - no request should even fire.
-    api.listBaseResumes.mockResolvedValue({
-      data: { versions: [{ ...baseResumes()[0], filename: 'alpha.docx' }] },
-    });
-    renderShell('/app/resume');
+    renderPreview({ ...baseResumes()[0], filename: 'alpha.docx' });
 
     expect(await screen.findByText(/preview not available here/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /open resume/i })).toBeInTheDocument();
@@ -321,35 +268,30 @@ describe('Active resume preview', () => {
 
   test('a failed download degrades to the fallback, never an error banner', async () => {
     // `downloadResumeFile` rejects by default in beforeEach.
-    renderShell('/app/resume');
+    renderPreview(baseResumes()[0]);
 
     expect(await screen.findByText(/preview not available here/i)).toBeInTheDocument();
-    // The metadata above it is still correct and must survive.
+    // The file name above it is still correct and must survive.
     expect(screen.getByText('alpha.pdf')).toBeInTheDocument();
     expect(screen.queryByRole('alert')).toBeNull();
   });
-});
 
-describe('Overview panel', () => {
-  test('shows streak, library counts and the daily quota', async () => {
-    renderShell('/app/resume');
-    const panel = await screen.findByRole('complementary', { name: /resume overview/i });
+  test('always offers the way to change or add a resume', () => {
+    renderPreview(baseResumes()[0]);
 
-    // Streak comes from the reused StreakWidget.
-    expect(await within(panel).findByText('3')).toBeInTheDocument();
-    // Counts are raw list lengths, not derived metrics.
-    expect(within(panel).getByText('1 file')).toBeInTheDocument();
-    expect(within(panel).getByText('123 versions')).toBeInTheDocument();
-    expect(api.getTailoringHistoryPage).toHaveBeenCalledWith({ page_size: 5, sort: 'newest' });
-    // Quota reuses QuotaMeter.
-    expect(within(panel).getByText('Tailors today')).toBeInTheDocument();
-    expect(within(panel).getByText('2 / 5')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /change or add a resume/i })).toHaveAttribute(
+      'href',
+      '/app/resume/library',
+    );
   });
 
-  test('is absent inside a tool, where it would compete with the work', async () => {
-    renderShell('/app/resume/tailor');
-    await screen.findByText('stub:tailor');
+  test('says so when no resume is ready, without guessing why', () => {
+    renderPreview(null);
 
-    expect(screen.queryByRole('complementary', { name: /resume overview/i })).toBeNull();
+    expect(screen.getByText(/not ready yet/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /open my resumes/i })).toHaveAttribute(
+      'href',
+      '/app/resume/library',
+    );
   });
 });

@@ -1,4 +1,6 @@
 import { Toaster } from '@/components/ui/sonner';
+import { HoverTips } from '@/components/ui/hover-tips';
+import { ConfirmHost } from '@/components/ui/confirm';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
@@ -71,7 +73,6 @@ const CareerCopilotTab = lazy(() => import('@/components/resume/CareerCopilotTab
 const JobOpportunitiesTab = lazy(() => import('@/components/resume/JobOpportunitiesTab'));
 
 // Craft mounts the resume tools directly as nested sections.
-const ResumeOverviewPage = lazy(() => import('@/app-shell/pages/craft/ResumeOverviewPage'));
 const TailorPage = lazy(() => import('@/app-shell/pages/craft/TailorPage'));
 const MyResumesPage = lazy(() => import('@/app-shell/pages/craft/MyResumesPage'));
 const TailoredPage = lazy(() => import('@/app-shell/pages/craft/TailoredPage'));
@@ -134,6 +135,10 @@ function AppContent() {
   return (
     <>
       <Toaster />
+      {/* Every `title` in the app shows in one styled tooltip. */}
+      <HoverTips />
+      {/* The one confirmation dialog (`confirmAction`). */}
+      <ConfirmHost />
       <BrowserRouter>
         <Routes>
           {/* Public */}
@@ -211,9 +216,10 @@ function AppContent() {
                 <Route path="portals" element={<Navigate to="/app/jobs/for-you" replace />} />
               </Route>
               <Route path="resume" element={<CraftPage />}>
-                {/* The Resume workspace overview. This used to redirect to
-                    Tailor, leaving the section with no landing surface. */}
-                <Route index element={<ResumeOverviewPage />} />
+                {/* Resume opens on the tool it is for. The Tailor start screen
+                    carries what the old overview page showed (your resume and
+                    your recent tailored versions) next to the action itself. */}
+                <Route index element={<Navigate to="tailor" replace />} />
                 <Route path="tailor" element={<TailorPage />} />
                 <Route path="batch" element={<BatchTailor />} />
                 <Route path="library" element={<MyResumesPage />} />

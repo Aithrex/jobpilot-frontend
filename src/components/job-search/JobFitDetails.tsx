@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import {
   AlertTriangle,
   Check,
@@ -269,30 +269,51 @@ export function JobFitDetails({ job, className }: JobFitDetailsProps) {
  * evidence in a popover. A real `<button>` inside Radix's Popover, so it is
  * keyboard-operable, Escape-dismissable and focus-returning for free.
  */
-export function WhyThisScoreButton({ job, className }: { job: Job; className?: string }) {
+export function WhyThisScoreButton({
+  job,
+  className,
+  children,
+}: {
+  job: Job;
+  className?: string;
+  /** A custom trigger face (the card's score dial). The button then keeps
+   *  the "Why this score" name for assistive tech and drops the text label. */
+  children?: ReactNode;
+}) {
   const [open, setOpen] = useState(false);
   const band = fitBandOf(job);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button
-          type="button"
-          aria-label={`Why this score: ${band.label}`}
-          className={cn(
-            'interactive hit-target inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-caption-sm font-semibold text-muted-foreground hover:bg-accent hover:text-foreground',
-            className,
-          )}
-        >
-          Why this score
-          <ChevronDown
-            className={cn('h-3 w-3 transition-transform duration-fast ease-standard', open && 'rotate-180')}
-            aria-hidden
-          />
-        </button>
+        {children ? (
+          <button
+            type="button"
+            aria-label={`Why this score: ${band.label}`}
+            title="See why it got this score"
+            className={cn('interactive outline-none focus-visible:ring-2 focus-visible:ring-ring', className)}
+          >
+            {children}
+          </button>
+        ) : (
+          <button
+            type="button"
+            aria-label={`Why this score: ${band.label}`}
+            className={cn(
+              'interactive hit-target inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-caption-sm font-semibold text-muted-foreground hover:bg-accent hover:text-foreground',
+              className,
+            )}
+          >
+            Why this score
+            <ChevronDown
+              className={cn('h-3 w-3 transition-transform duration-fast ease-standard', open && 'rotate-180')}
+              aria-hidden
+            />
+          </button>
+        )}
       </PopoverTrigger>
       <PopoverContent
-        align="start"
+        align={children ? 'end' : 'start'}
         side="bottom"
         sideOffset={8}
         collisionPadding={{ top: 80, bottom: 16, left: 16, right: 16 }}

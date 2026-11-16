@@ -194,7 +194,7 @@ export default function InsightsSheet({
                               navigator.clipboard
                                 .writeText(`Subject: ${f.subject}\n\n${f.message}`)
                                 .then(() => toast.success('Copied. Paste into your email'))
-                                .catch(() => toast.error('Clipboard blocked'));
+                                .catch(() => toast.error("Couldn't copy"));
                             }}
                           >
                             Copy

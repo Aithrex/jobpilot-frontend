@@ -23,7 +23,7 @@ import type { ATSScores, MatchGaps, TailoredFullResume } from '@/types/resume';
 const SURFACE = 'rounded-container border border-border bg-card p-5 shadow-soft';
 
 const DISCLAIMER =
-  'CareerOS evaluates your resume against the job description. This is not an employer-specific score or a guarantee of passing screening.';
+  'Aspirely evaluates your resume against the job description. This is not an employer-specific score or a guarantee of passing screening.';
 
 interface AtsScorePanelProps {
   recordId?: string;
@@ -248,7 +248,7 @@ export function AtsScorePanel({
           )}
           <div className="flex-1 space-y-1">
             <p className="text-base font-semibold text-foreground">
-              ATS Score
+              Match score
             </p>
             <p className="text-sm text-foreground">{formatRequiredLine(reqCov)}</p>
             {prefCov &&
@@ -311,13 +311,13 @@ export function AtsScorePanel({
 
         <div className={SURFACE}>
           <p className="mb-1 text-sm font-semibold text-foreground">
-            Requirement evaluations
+            What the posting asks for
           </p>
           <p className="mb-3 text-caption-sm text-muted-foreground">
-            Every count above reconciles with this ledger.
+            Each requirement, and whether your resume shows it. The numbers above are counted from this list.
           </p>
           {diagnostics.length === 0 ? (
-            <p className="text-xs text-muted-foreground">No requirement rows yet.</p>
+            <p className="text-xs text-muted-foreground">No requirements were read from this posting yet.</p>
           ) : (
             <ul className="space-y-2 max-h-72 overflow-y-auto">
               {diagnostics.map((d, i) => {

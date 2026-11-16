@@ -56,18 +56,18 @@ export function ResumeEntryPanel({ onUploaded }: { onUploaded?: () => void }) {
     async (file: File) => {
       const fname = file.name.toLowerCase();
       if (!fname.endsWith('.pdf') && !fname.endsWith('.docx')) {
-        toast.error('Unsupported file', { description: 'Only PDF and DOCX files are accepted.' });
+        toast.error('That file type is not supported', { description: 'Only PDF and DOCX files are accepted.' });
         return;
       }
       if (file.size > MAX_BYTES) {
-        toast.error('File too large', { description: 'Maximum size is 5 MB.' });
+        toast.error('That file is too large', { description: 'Maximum size is 5 MB.' });
         return;
       }
       setUploading(true);
       try {
         const resp = await apiService.uploadResumeForParser(file);
         if (resp.error) {
-          toast.error('Upload failed', { description: resp.error });
+          toast.error("Couldn't upload that file", { description: resp.error });
           return;
         }
         toast.success('Resume uploaded');
@@ -76,7 +76,7 @@ export function ResumeEntryPanel({ onUploaded }: { onUploaded?: () => void }) {
       } catch {
         // A thrown request (offline, aborted) must not leave the card stuck
         // on "Uploading..." with no way out.
-        toast.error('Upload failed', { description: 'Check your connection and try again.' });
+        toast.error("Couldn't upload that file", { description: 'Check your connection and try again.' });
       } finally {
         setUploading(false);
       }

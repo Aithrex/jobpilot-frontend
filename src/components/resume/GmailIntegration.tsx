@@ -6,6 +6,7 @@
  * reads batch after batch by itself, so this component only watches
  * `status.sync` and never asks the user to press Continue.
  */
+import { confirmAction } from '@/components/ui/confirm';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -403,12 +404,14 @@ export default function GmailIntegration({
   }, []);
 
   const handleDisconnect = useCallback(async () => {
-    if (
-      !window.confirm(
-        'Disconnect Gmail? Aspirely deletes the access it saved and stops reading your email. Updates still waiting for your review are discarded. Your applications stay as they are.',
-      )
-    )
-      return;
+    const confirmed = await confirmAction({
+      title: 'Disconnect Gmail?',
+      description:
+        'Aspirely deletes the access it saved and stops reading your email. Updates still waiting for your review are discarded. Your applications stay as they are.',
+      confirmLabel: 'Disconnect Gmail',
+      destructive: true,
+    });
+    if (!confirmed) return;
     const resp = await apiService.disconnectGmail();
     if (resp.error) {
       setNotice({ tone: 'error', text: 'Gmail could not be disconnected. Try again in a moment.' });
