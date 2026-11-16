@@ -1,7 +1,7 @@
 import { type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { Check } from 'lucide-react';
 import { BrandMark } from '@/components/BrandMark';
+import { AuthScene } from './AuthScene';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { usePublicSurface } from '@/components/landing/_shared';
 import { LEGAL_ROUTES } from '@/lib/legal';
@@ -55,22 +55,6 @@ export function consumeAuthReturnTo(): string | null {
     return null;
   }
 }
-
-/** What the product does today, in the home page's own words. */
-const PROOF: ReadonlyArray<{ title: string; body: string }> = [
-  {
-    title: "From the employer's own careers page",
-    body: 'Every role links to the original posting, with the date it went up.',
-  },
-  {
-    title: 'Visa sponsorship evidence on the card',
-    body: 'Past H-1B filings sit beside the fit, before you spend an evening applying.',
-  },
-  {
-    title: 'Tailoring that invents nothing',
-    body: 'Your resume is reordered and reworded from what is already in it.',
-  },
-];
 
 const FOOT_LINK =
   'pub-auth-link inline-flex min-h-11 items-center px-1 text-sm !font-medium !text-ink-subtle hover:!text-foreground';
@@ -147,24 +131,12 @@ export function AuthShell({
 
         <aside className="pub-brand-band pub-auth-aside" aria-label="What Aspirely does">
           <div className="max-w-[31rem]">
-            <p className="pub-h2">Jobs worth applying to, matched to your resume.</p>
-            <ul className="mt-12 space-y-7">
-              {PROOF.map((item) => (
-                <li key={item.title} className="pub-auth-proof">
-                  <span className="pub-auth-proof-dot" aria-hidden>
-                    <Check className="h-4 w-4" strokeWidth={3} />
-                  </span>
-                  <div>
-                    <p className="pub-h4" style={{ color: 'hsl(var(--brand-band-foreground))' }}>
-                      {item.title}
-                    </p>
-                    <p className="pub-band-muted mt-1.5 text-[1.0625rem] leading-relaxed">
-                      {item.body}
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ul>
+            <p className="pub-h3" style={{ color: 'hsl(var(--brand-band-foreground))' }}>
+              Jobs worth applying to, matched to your resume.
+            </p>
+            <div className="mt-10">
+              <AuthScene />
+            </div>
           </div>
         </aside>
       </div>
