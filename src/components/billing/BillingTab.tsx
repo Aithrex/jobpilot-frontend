@@ -4,7 +4,8 @@ import { QuotaMeter } from './QuotaMeter';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { PLAN_LABEL, PLAN_PRICE, nextPlan, type PlanId } from '@/lib/entitlements';
+import { PLAN_LABEL, nextPlan, type PlanId } from '@/lib/entitlements';
+import { FREE_PRICE_LABEL, PRICE_TBD_LABEL } from '@/lib/pricing';
 import { AlertCircle, Crown, Zap, Sparkles, Check } from 'lucide-react';
 
 const USAGE_LABEL: Record<string, string> = {
@@ -100,9 +101,10 @@ export default function BillingTab() {
             </div>
           </div>
           <div className="sm:text-right">
-            <p className="font-display text-headline-sm tabular-nums text-foreground">${PLAN_PRICE[plan]}<span className="text-base font-medium text-muted-foreground">/mo</span></p>
+            {/* No amount is printed anywhere until the owner announces prices
+                (see the price rule in lib/pricing.ts). */}
             {upgradeTo && (
-              <Button className="mt-2" onClick={() => open({ highlight: upgradeTo })}>
+              <Button onClick={() => open({ highlight: upgradeTo })}>
                 Upgrade to {PLAN_LABEL[upgradeTo]}
               </Button>
             )}
@@ -142,7 +144,7 @@ export default function BillingTab() {
             return (
               <Card key={p} className={`flex flex-col p-4 ${isCurrent ? 'ring-1 ring-primary' : ''}`}>
                 <h3 className="text-title-sm text-foreground">{PLAN_LABEL[p]}</h3>
-                <p className="mt-1 font-display text-headline-sm tabular-nums text-foreground">${PLAN_PRICE[p]}<span className="text-sm font-medium text-muted-foreground">/mo</span></p>
+                <p className="mt-1 text-sm font-medium text-muted-foreground">{p === 'free' ? FREE_PRICE_LABEL : PRICE_TBD_LABEL}</p>
                 <ul className="mt-3 flex-1 space-y-1.5 text-xs text-muted-foreground">
                   {(data.plans?.[p]?.features || []).filter((f) => !['auto_apply', 'auto_submit', 'six_seconds', 'voice_graph'].includes(f)).slice(0, 6).map((f) => (
                     <li key={f} className="flex items-center gap-1.5">

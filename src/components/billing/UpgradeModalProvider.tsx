@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Check, Sparkles, Crown, Zap, Loader2 } from 'lucide-react';
 import { apiService } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
-import { PLAN_PRICE, type PlanId } from '@/lib/entitlements';
+import { type PlanId } from '@/lib/entitlements';
+import { PRICE_TBD_LABEL } from '@/lib/pricing';
 import { toast } from 'sonner';
 
 interface OpenOpts {
@@ -127,10 +128,8 @@ export function UpgradeModalProvider({ children }: { children: ReactNode }) {
                     <span className="text-title-md text-foreground">{tier.name}</span>
                   </div>
                   <p className="mt-0.5 text-xs text-muted-foreground">{tier.tagline}</p>
-                  <div className="mt-3 flex items-baseline gap-1">
-                    <span className="font-display text-headline-md tabular-nums text-foreground">${PLAN_PRICE[tier.id]}</span>
-                    <span className="text-sm text-muted-foreground">/mo</span>
-                  </div>
+                  {/* No amount is printed until prices are announced (lib/pricing.ts). */}
+                  <p className="mt-3 text-sm font-medium text-muted-foreground">{PRICE_TBD_LABEL}</p>
                   <ul className="mt-4 flex-1 space-y-2">
                     {tier.bullets.map((b) => (
                       <li key={b} className="flex items-start gap-2 text-sm">
