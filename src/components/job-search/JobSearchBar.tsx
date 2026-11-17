@@ -85,7 +85,6 @@ export function JobSearchBar() {
     canSearch,
     loading,
     sync,
-    usOnly,
     country,
     region,
     city,
@@ -107,7 +106,9 @@ export function JobSearchBar() {
   const where = whereSummary({ country, region, city, remoteOnly });
   const whereChanged = !(country === 'US' && !region && !city.trim() && !remoteOnly);
   // What the server is asked: only these need a new search when they change.
-  const scanKey = `${usOnly}|${remoteOnly}`;
+  // Nothing about place reaches the server any more (the board holds every
+  // country), so only titles start a search.
+  const scanKey = '';
   const mine = experienceView?.levels ?? [];
   const isMine = mine.length > 0 && sameLevels(seniorityLevels, mine);
   const levelChanged = mine.length > 0 ? !isMine : seniorityLevels.length > 0;

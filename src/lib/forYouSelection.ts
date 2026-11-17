@@ -111,7 +111,9 @@ export function selectForYouJobs(jobs: WorkdayJob[], filters: ForYouFilters) {
   const isNew = (job: WorkdayJob) => isNewSince(job, seenThrough);
   // Every filter but the company one, so the company checklist can count
   // what choosing a company would show.
-  const placeOn = !!place && (place.country !== 'US' || !!place.region || !!place.city.trim());
+  // Always on: the stored board holds every country, so even the default
+  // (United States) is a filter here.
+  const placeOn = !!place;
   const beforeCompany = jobs.filter((job) =>
     (!placeOn || inPlace(job, place!)) &&
     (!query || `${job.title} ${job.company}`.replace(/\s+/g, ' ').toLowerCase().includes(query)) &&

@@ -26,7 +26,15 @@ interface UseAutoSyncOptions {
    *  labels are calendar days ("Today", "Yesterday"): a scan taken at 11pm
    *  must not keep calling yesterday's roles "today" for up to an interval. */
   refreshOnNewDay?: boolean;
+  /** When the source of the data will have something new (epoch ms), e.g.
+   *  the server's next rebuild of a stored board. The next look is aimed
+   *  there instead of a full interval after the last one; when that moment
+   *  has already passed, the next look is a few minutes out. */
+  nextDueAt?: number | null;
 }
+
+/** A look aimed at a moment already passed waits this long. */
+const CATCH_UP_MS = 5 * 60 * 1000;
 
 /** Past local midnight before a day-rollover sync fires. The SERVER decides
  *  which day it is, so a client clock a little fast must not re-scan while
@@ -78,6 +86,7 @@ export function useAutoSync({
   isBusy,
   onSync,
   refreshOnNewDay = false,
+  nextDueAt = null,
 }: UseAutoSyncOptions): AutoSyncState {
   /** When the next sync is due after one that finished at `t`. */
   const dueAfter = useCallback(
@@ -192,6 +201,18 @@ export function useAutoSync({
       window.removeEventListener('online', goOnline);
     };
   }, [enabled, doSync]);
+
+  // Aim at the source's own schedule. Runs after every sync (lastSyncedAt) and
+  // whenever the source says when it is next due. A failing refresh keeps its
+  // backoff.
+  useEffect(() => {
+    if (!enabled || nextDueAt == null || lastSyncedAt == null || failuresRef.current > 0) return;
+    const now = Date.now();
+    let at = nextDueAt > now + 60_000 ? nextDueAt : now + CATCH_UP_MS;
+    at = Math.min(at, now + intervalMs);
+    if (refreshOnNewDay) at = Math.min(at, nextLocalMidnight(now) + NEW_DAY_GRACE_MS);
+    setNextSyncAt(at);
+  }, [enabled, nextDueAt, lastSyncedAt, intervalMs, refreshOnNewDay]);
 
   // 1-second ticker purely for the countdown display; only armed once we have
   // a scheduled next sync so idle surfaces don't tick.

@@ -292,7 +292,10 @@ export function useCombinedJobs(enabled = true): CombinedJobsController {
    * or 'none'. Never throws: a failed read is just "nothing stored".
    */
   const loadSnapshot = useCallback(
-    async (params: WorkdayJobsParams): Promise<'fresh' | 'shown' | 'none'> => {
+    async (
+      params: WorkdayJobsParams,
+      got: Partial<Record<SourceKey, WorkdayJob[]>> = {},
+    ): Promise<'fresh' | 'shown' | 'none'> => {
       let snap: BoardSnapshot | undefined;
       try {
         snap = (await apiService.getBoardSnapshot(params)).data;
@@ -309,6 +312,7 @@ export function useCombinedJobs(enabled = true): CombinedJobsController {
         const data = snap.sources?.[key];
         if (data && Array.isArray(data.jobs)) {
           applyResult(key, data);
+          got[key] = data.jobs;
           shown = true;
         }
       }
@@ -351,7 +355,8 @@ export function useCombinedJobs(enabled = true): CombinedJobsController {
       // The 30-minute tick is STAGED once something is on screen: what it
       // brings is compared with what the reader is looking at, and only roles
       // they have not seen are offered ("5 new roles"), never reshuffled in.
-      const staged = reason === 'interval' && hasResultRef.current;
+      // "Check now" (manual, not forced) is staged too: it offers what is new.
+      let staged = (reason === 'interval' || (reason === 'manual' && !force)) && hasResultRef.current;
       stagingRef.current = staged;
       if (staged) setRefreshing(true);
       stagedRef.current = staged ? { ...sourcesRef.current } : null;
@@ -359,14 +364,26 @@ export function useCombinedJobs(enabled = true): CombinedJobsController {
       let outcome: SyncOutcome = 'ok';
       try {
         let snapshot: 'fresh' | 'shown' | 'none' = 'none';
+        const got: Partial<Record<SourceKey, WorkdayJob[]>> = {};
         if (reason !== 'manual' || !force) {
-          snapshot = await loadSnapshot(params);
+          snapshot = await loadSnapshot(params, got);
+        }
+        if (snapshot === 'shown' && !staged) {
+          // A stored board is on screen but due for an update (owner,
+          // 2026-11-16: a reload must not "scan again"). It stays as it is
+          // and the update runs behind it, offering only what is new.
+          staged = true;
+          stagingRef.current = true;
+          stagedRef.current = { ...sourcesRef.current, ...got };
+          setRefreshing(true);
         }
         if (snapshot !== 'fresh') {
+          // Only "Sync now" skips the server's caches.
+          const bypass = force && reason === 'manual';
           const results = await Promise.all([
-            runOne('workday', apiService.searchWorkdayJobs.bind(apiService), { ...params, force_refresh: force }),
-            runOne('careers', apiService.searchCareerPagesJobs.bind(apiService), { ...params, force_refresh: force }),
-            runOne('mncs', apiService.searchMncJobs.bind(apiService), { ...params, force_refresh: force }),
+            runOne('workday', apiService.searchWorkdayJobs.bind(apiService), { ...params, force_refresh: bypass }),
+            runOne('careers', apiService.searchCareerPagesJobs.bind(apiService), { ...params, force_refresh: bypass }),
+            runOne('mncs', apiService.searchMncJobs.bind(apiService), { ...params, force_refresh: bypass }),
           ]);
           // Every source failed and nothing stored stood in: a failed refresh.
           if (results.every((ok) => !ok) && snapshot === 'none') outcome = 'error';

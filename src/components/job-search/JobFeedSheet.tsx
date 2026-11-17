@@ -69,7 +69,6 @@ export function JobFeedSheet() {
     repostsFolded,
     visibleJobs,
     titlesPending,
-    usOnly,
     country,
     region,
     city,
@@ -80,9 +79,9 @@ export function JobFeedSheet() {
   // narrows the list and has already applied. So the sheet's one button says
   // "Search" only when there is a new search to run, and otherwise just shows
   // the list.
-  // A place filters the board at once; only "US or not" and remote-only are
-  // asked of the server, so only they need a new search.
-  const scanKey = `${usOnly}|${remoteOnly}`;
+  // A place filters the board at once (the board holds every country), so
+  // titles are the only search.
+  const scanKey = '';
   const whereAtOpen = useRef(scanKey);
   useEffect(() => {
     if (customizeOpen) whereAtOpen.current = scanKey;
