@@ -1,0 +1,1 @@
+import{j as e,W as r,X as a,Y as s}from"./index-DCPRa1y4.js";import{P as i}from"./PublicPageShell-or853HED.js";function n(){return e.jsxs(i,{children:[e.jsx(r,{variant:"full",headingLevel:"h1"}),e.jsx(a,{}),e.jsx(s,{fallbackHref:"/register",fallbackLabel:"Create free account"})]})}export{n as default};

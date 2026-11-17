@@ -1,0 +1,6 @@
+# Aspirely security contact. Format: RFC 9116.
+Contact: mailto:security@aspirely.me
+Expires: 2027-11-11T00:00:00.000Z
+Preferred-Languages: en
+Canonical: https://aspirely.me/.well-known/security.txt
+Policy: https://aspirely.me/trust#vulnerability-disclosure
