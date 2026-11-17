@@ -37,6 +37,38 @@ import type { Job, WorkdayJob } from '@/types/jobs';
 // cap of 3 showed 6 cards from one employer. Do not re-declare it locally.
 const PAGE_SIZE = JOB_FEED_PAGE_SIZE;
 
+/** The board's update cadence, for the live ring. */
+const UPDATE_EVERY_S = 30 * 60;
+
+function formatCountdown(s: number): string {
+  const m = Math.floor(s / 60);
+  return m > 0 ? `${m}m ${String(s % 60).padStart(2, '0')}s` : `${s}s`;
+}
+
+/** A ring that fills toward the next update: the "live" timer. */
+function UpdateRing({ secondsLeft }: { secondsLeft: number }) {
+  const r = 6;
+  const c = 2 * Math.PI * r;
+  const done = 1 - Math.min(1, Math.max(0, secondsLeft / UPDATE_EVERY_S));
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" className="-rotate-90 shrink-0" aria-hidden>
+      <circle cx="8" cy="8" r={r} fill="none" stroke="hsl(var(--muted))" strokeWidth="2.5" />
+      <circle
+        cx="8"
+        cy="8"
+        r={r}
+        fill="none"
+        stroke="hsl(var(--signal))"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeDasharray={c}
+        strokeDashoffset={c - done * c}
+        style={{ transition: 'stroke-dashoffset 1s linear' }}
+      />
+    </svg>
+  );
+}
+
 function formatAgo(ms: number): string {
   const s = Math.max(0, Math.round((Date.now() - ms) / 1000));
   if (s < 45) return 'just now';
@@ -135,6 +167,7 @@ export function CombinedJobsPanel({
     refreshing,
     offline,
     refreshFailing,
+    secondsUntilNext,
   } = useCombinedJobsCtx();
   const coarse = useCoarsePointer();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -478,7 +511,7 @@ export function CombinedJobsPanel({
           about what was folded away sit under the list, where a seeker looks
           once the visible roles run out. */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <div className="min-w-0 flex-1" aria-live="polite">
+        <div className="min-w-[14rem] flex-1" aria-live="polite">
           {loading ? (
             <p className="text-sm text-muted-foreground">
               {progress.total > 0
@@ -497,8 +530,9 @@ export function CombinedJobsPanel({
         )}
         {!loading && lastSyncedAt && (
           <p
-            className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground"
-            title={`Days are counted in ${timeZoneName(viewerZone)}. The list checks for new roles every 30 minutes.`}
+            className="flex shrink-0 items-center gap-1.5 rounded-full border border-border bg-card py-0.5 pl-2.5 pr-0.5 text-xs text-muted-foreground shadow-soft"
+            title={`Your board updates itself every 30 minutes, even while you are away. Days are counted in ${timeZoneName(viewerZone)}.`}
+            data-testid="jobs-live"
           >
             {offline ? (
               <span className="inline-flex items-center gap-1 text-warning" data-testid="jobs-offline">
@@ -508,8 +542,25 @@ export function CombinedJobsPanel({
               <span className="inline-flex items-center gap-1" data-testid="jobs-refresh-failing">
                 <AlertCircle className="h-3.5 w-3.5 text-warning" aria-hidden /> Couldn't check for new roles. Trying again soon.
               </span>
+            ) : refreshing ? (
+              <span className="inline-flex items-center gap-1.5" data-testid="jobs-updating">
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-signal" aria-hidden /> Looking for new roles
+              </span>
             ) : (
-              <span data-testid="jobs-updated">Updated {formatAgo(lastSyncedAt)}</span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="relative flex h-2 w-2 shrink-0" aria-hidden>
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-signal opacity-60 motion-safe:animate-ping" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-signal" />
+                </span>
+                <span data-testid="jobs-updated">Updated {formatAgo(lastSyncedAt)}</span>
+                {secondsUntilNext != null && (
+                  <span className="inline-flex items-center gap-1 tabular-nums" data-testid="jobs-next">
+                    <span aria-hidden>·</span>
+                    <UpdateRing secondsLeft={secondsUntilNext} />
+                    <span>Next in {formatCountdown(secondsUntilNext)}</span>
+                  </span>
+                )}
+              </span>
             )}
             <button
               type="button"
@@ -558,7 +609,7 @@ export function CombinedJobsPanel({
           data-testid="jobs-title-review"
         >
           <FileText className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
-          <span className="min-w-0 flex-1">
+          <span className="min-w-[14rem] flex-1">
             {reviewTitles.length === 1 ? 'This job title is' : 'These job titles are'} not from your
             current resume: <span className="font-medium text-foreground">{reviewTitles.join(', ')}</span>.
             {' '}They still shape your matches.

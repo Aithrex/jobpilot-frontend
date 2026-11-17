@@ -62,3 +62,19 @@ describe('a state, province or city', () => {
     expect(placeSummary({ country: ANYWHERE, region: '', city: '' })).toBe('Anywhere');
   });
 });
+
+describe('the board tags each card US or not (2026-11-16)', () => {
+  test('a tagged card follows its tag', () => {
+    expect(inCountry(at('Austin, TX', { geo_us: true }), 'US')).toBe(true);
+    expect(inCountry(at('Austin, TX', { geo_us: true }), 'IN')).toBe(false);
+    expect(inCountry(at('Bengaluru, India', { geo_us: false }), 'US')).toBe(false);
+    expect(inCountry(at('Bengaluru, India', { geo_us: false }), 'IN')).toBe(true);
+    expect(inCountry(at('Bengaluru, India', { geo_us: false }), ANYWHERE)).toBe(true);
+  });
+
+  test('remote only keeps remote cards', () => {
+    const sel = { country: 'US', region: '', city: '', remoteOnly: true };
+    expect(inPlace(at('Remote, US', { geo_us: true, is_remote: true }), sel)).toBe(true);
+    expect(inPlace(at('Austin, TX', { geo_us: true, is_remote: false }), sel)).toBe(false);
+  });
+});

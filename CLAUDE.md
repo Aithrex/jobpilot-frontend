@@ -62,8 +62,9 @@ One voice for errors, hover hints and confirmations, enforced in one place each:
 - **Confirmations:** `await confirmAction({ title, description, confirmLabel, destructive })` (`src/components/ui/confirm.tsx`), never `window.confirm`. The confirm button names the action, never "OK".
 
 ## Jobs board refresh and place (2026-11-16)
-- The 30-minute refresh is STAGED (`useCombinedJobs.run(..., 'interval')`): it never reshuffles the list; new roles wait behind a "N new roles" pill (`pendingNewCount`, `applyPending`), a refresh with nothing new is applied quietly, failures retry with backoff, offline waits, tabs share refreshes over `BroadcastChannel('aspirely-board')`.
-- Where (country, region, city) is a filter on the stored board in the browser (`src/lib/places.ts`, `selectForYouJobs({ place })`). The server never read `location`; only `us_only` and `remote_only` reach it. Do not send a place to the scan: a different `location` makes the stored board look stale.
+- The server rebuilds each active user's board every 30 minutes (`board_snapshot.refresh_due`). Opening Jobs, a reload and the 30-minute look are READS of that stored board. A stored board that is due is shown at once and updated BEHIND it (`useCombinedJobs.run` stages it): the list never reshuffles and never shows the scanning state; new roles wait behind the "N new roles" pill (`pendingNewCount`, `applyPending`). Only a first visit (nothing stored) or a title change scans in view, and only "Sync now" sends `force_refresh`.
+- The open page looks right after the server's next rebuild (`useAutoSync({ nextDueAt: builtAt + 32 min })`), and the header pill shows it live: "Updated 12m ago · Next in 19m 49s" with a ring. Failures retry with backoff, offline waits, tabs share refreshes over `BroadcastChannel('aspirely-board')`.
+- Where (country, region, city) and remote-only are filters on the stored board in the browser (`src/lib/places.ts`, `selectForYouJobs({ place })`). The board holds every country; each card carries `geo_us` (the server's US rule). Every board request sends the same `BOARD_SCAN` (`location: ''`, `us_only: true`, `remote_only: false`), and the server ignores those three for the board anyway, so changing place never starts a search.
 
 ## Deleted features (2026-11-12)
 

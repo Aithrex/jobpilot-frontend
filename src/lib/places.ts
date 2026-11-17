@@ -123,7 +123,19 @@ export interface PlaceSelection {
   /** A region name from the country's list, or ''. */
   region: string;
   city: string;
+  /** Only jobs that can be done remotely. */
+  remoteOnly?: boolean;
 }
+
+/** A posting the stored board tagged (`geo_us`, server `us_geo` rule). */
+type Placed = {
+  location?: string | null;
+  country_code?: string | null;
+  is_remote?: boolean | null;
+  /** True: the server's US rule kept it. False: elsewhere. Absent: an older or
+   *  US-only source, which only ever held US postings. */
+  geo_us?: boolean | null;
+};
 
 const norm = (s: string) =>
   s
@@ -146,8 +158,11 @@ function namesUsState(raw: string): boolean {
 }
 
 /** Is this posting in the country? Unknown stays out unless nothing contradicts US. */
-export function inCountry(job: { location?: string | null; country_code?: string | null }, code: string): boolean {
+export function inCountry(job: Placed, code: string): boolean {
   if (code === ANYWHERE) return true;
+  // The board's tag is the server's stricter US rule; trust it when present.
+  if (job.geo_us === true) return code === 'US';
+  if (job.geo_us === false && code === 'US') return false;
   const iso = (job.country_code || '').toUpperCase();
   if (iso) return iso === code;
   const raw = job.location || '';
@@ -155,8 +170,8 @@ export function inCountry(job: { location?: string | null; country_code?: string
   const country = BY_CODE.get(code);
   if (!country) return false;
   if (code === 'US') {
-    // The server already kept US rows when US-only is on; a row that names
-    // another country is the only thing to drop here.
+    // Untagged (a board stored before tagging): the server kept US rows, so
+    // a row that names another country is the only thing to drop here.
     return !COUNTRIES.some((c) => c.code !== 'US' && c.aliases.some((a) => a.length > 2 && wordIn(hay, a)));
   }
   if (country.aliases.some((a) => wordIn(hay, a))) return true;
@@ -167,12 +182,10 @@ export function inCountry(job: { location?: string | null; country_code?: string
 
 /** Is this posting in the picked place? Remote postings in the country stay
  *  when a region is picked: someone there can do them. */
-export function inPlace(
-  job: { location?: string | null; country_code?: string | null; is_remote?: boolean | null },
-  sel: PlaceSelection,
-): boolean {
+export function inPlace(job: Placed, sel: PlaceSelection): boolean {
   if (!inCountry(job, sel.country)) return false;
   const raw = job.location || '';
+  if (sel.remoteOnly && !(job.is_remote || /\bremote\b/i.test(raw))) return false;
   const hay = norm(raw);
   if (sel.region) {
     const country = BY_CODE.get(sel.country);

@@ -62,14 +62,27 @@ describe('useCombinedJobs reads the stored board first', () => {
     });
   });
 
-  it('a stale board is shown, then replaced by a scan', async () => {
+  it('a stale board stays on screen and is updated behind it (owner, 2026-11-16: a reload must not scan again)', async () => {
     api.getBoardSnapshot.mockResolvedValue(snapshot(false, { workday: tab('w1') } as never));
     const { result } = renderHook(() => useCombinedJobs(true));
-    await act(async () => { await result.current.run(false, {}, 'interval'); });
+    await act(async () => { await result.current.run(false, {}, 'initial'); });
 
     expect(api.searchWorkdayJobs).toHaveBeenCalledTimes(1);
     expect(api.searchWorkdayJobs.mock.calls[0][0]).toMatchObject({ board: 'for_you', force_refresh: false });
+    // The stored board is what the reader sees; the update never replaced it
+    // or showed the scanning state.
+    expect(result.current.jobs.map((j) => j.job_id)).toEqual(['w1']);
+    expect(result.current.loading).toBe(false);
+    expect(result.current.pendingNewCount).toBe(3);
+    act(() => result.current.applyPending());
     expect(result.current.jobs.map((j) => j.job_id).sort()).toEqual(['c2', 'm2', 'w2']);
+  });
+
+  it('the 30-minute look never bypasses the server cache', async () => {
+    api.getBoardSnapshot.mockResolvedValue(snapshot(false, { workday: tab('w1') } as never));
+    const { result } = renderHook(() => useCombinedJobs(true));
+    await act(async () => { await result.current.run(true, {}, 'interval'); });
+    expect(api.searchCareerPagesJobs.mock.calls[0][0]).toMatchObject({ force_refresh: false });
   });
 
   it('nothing stored (or an older backend) just scans', async () => {

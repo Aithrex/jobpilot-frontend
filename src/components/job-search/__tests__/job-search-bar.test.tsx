@@ -176,29 +176,21 @@ describe('filters apply as they are chosen', () => {
 });
 
 describe('changing what is searched runs the search exactly once', () => {
-  test('closing Where after a change the server reads searches once; closing it unchanged does not', async () => {
+  test('Where never starts a search: country and remote filter the board at once (owner, 2026-11-16)', async () => {
     const user = userEvent.setup();
     mount();
     await waitFor(() => expect(feed.visibleJobs).toHaveLength(2));
 
-    // Opened and closed without a change: nothing to search for.
     await user.click(within(bar()).getByRole('button', { name: /^Where:/ }));
     await user.keyboard('{Escape}');
     expect(state.sync).not.toHaveBeenCalled();
 
-    // Remote-only is asked of the server, so it needs a search: the stored
-    // board for those settings first (not forced).
+    // Remote-only is a filter on the stored board now, like every other one.
     await user.click(within(bar()).getByRole('button', { name: /^Where:/ }));
     await user.click(screen.getByRole('switch', { name: /remote jobs only/i }));
     expect(within(bar()).getByRole('button', { name: 'Where: Remote · United States' })).toBeInTheDocument();
     await user.keyboard('{Escape}');
-    expect(state.sync).toHaveBeenCalledTimes(1);
-    expect(state.sync).toHaveBeenCalledWith(false);
-
-    // Reopened and closed with nothing new: no second search.
-    await user.click(within(bar()).getByRole('button', { name: /^Where:/ }));
-    await user.keyboard('{Escape}');
-    expect(state.sync).toHaveBeenCalledTimes(1);
+    expect(state.sync).not.toHaveBeenCalled();
   });
 
   test('a city filters the board at once and never starts a search', async () => {

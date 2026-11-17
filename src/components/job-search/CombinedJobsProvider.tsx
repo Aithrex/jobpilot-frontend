@@ -18,6 +18,13 @@ import { isPassedOverIn, loadImpressions } from '@/lib/boardImpressions';
 import type { ExperienceView, WorkdayJob, WorkdayRecency } from '@/types/jobs';
 
 const AUTO_SYNC_MS = 30 * 60 * 1000;
+/** The server rebuilds each active board every 30 minutes; look for the new
+ *  one a couple of minutes after it is due. */
+const SERVER_REBUILD_MS = 32 * 60 * 1000;
+/** What every board request asks the server. Place and remote are filters on
+ *  the board in the browser (src/lib/places.ts), so changing them is instant
+ *  and the stored board is never replaced by a different search. */
+const BOARD_SCAN = { location: '', remoteOnly: false, usOnly: true } as const;
 
 const listTitles = (titles: string[]) =>
   titles.length > 3 ? `${titles.slice(0, 3).join(', ')} and ${titles.length - 3} more` : titles.join(', ');
@@ -231,9 +238,10 @@ export function CombinedJobsProvider({ children }: { children: React.ReactNode }
   const [city, setCity] = useState(initialPrefs.city ?? '');
   // Place is a filter on the stored board, not a scan parameter (see
   // `scanLocation` below and src/lib/places.ts).
-  const place = useMemo(() => ({ country, region, city }), [country, region, city]);
+  const [remoteOnly, setRemoteOnlyState] = useState(initialPrefs.remoteOnly ?? false);
+  const setRemoteOnly = useCallback((v: boolean) => setRemoteOnlyState(v), []);
+  const place = useMemo(() => ({ country, region, city, remoteOnly }), [country, region, city, remoteOnly]);
   const [location, setLocation] = useState(initialPrefs.location ?? '');
-  const [remoteOnly, setRemoteOnly] = useState(initialPrefs.remoteOnly ?? false);
   const [customizeOpen, setCustomizeOpen] = useState(false);
   const [search, setSearch] = useState('');
   // Freshest first: open on today's postings. What made this look broken was
@@ -378,12 +386,14 @@ export function CombinedJobsProvider({ children }: { children: React.ReactNode }
   const autoSync = useAutoSync({
     enabled: started && feed.ready,
     intervalMs: AUTO_SYNC_MS,
+    // Aim the next look at the server's next rebuild of this board.
+    nextDueAt: feed.builtAt != null ? feed.builtAt + SERVER_REBUILD_MS : null,
     // "Today" / "Yesterday" are the viewer's calendar days: re-scan just past
     // local midnight rather than up to 30 minutes later.
     refreshOnNewDay: true,
     isBusy: feed.loading,
     onSync: async (force, reason) => {
-      const outcome = await feed.run(force, { location: scanLocation, remoteOnly, usOnly }, reason);
+      const outcome = await feed.run(force, BOARD_SCAN, reason);
       if (outcome !== 'error') broadcastRefreshed();
       return outcome;
     },
@@ -404,8 +414,7 @@ export function CombinedJobsProvider({ children }: { children: React.ReactNode }
   const { touch } = autoSync;
   const runRef = useRef(feed.run);
   runRef.current = feed.run;
-  const scanArgsRef = useRef({ location: scanLocation, remoteOnly, usOnly });
-  scanArgsRef.current = { location: scanLocation, remoteOnly, usOnly };
+  const scanArgsRef = useRef(BOARD_SCAN);
   useEffect(() => {
     if (typeof BroadcastChannel === 'undefined') return;
     const channel = new BroadcastChannel('aspirely-board');
